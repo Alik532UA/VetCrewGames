@@ -20,18 +20,28 @@
 			const style = getComputedStyle(node);
 			const transform = style.transform === 'none' ? '' : style.transform;
 			const opacity = +style.opacity;
-			const realDx = isSend ? dx : -dx;
-			const arcOffset = isSwapping ? (realDx > 0 ? -30 : 30) : 0;
+
+			let arcX = 0;
+			let arcY = 0;
+			if (isSwapping) {
+				const horizontal = Math.abs(dx) >= Math.abs(dy);
+				const sign = isSend ? 1 : -1;
+				if (horizontal) {
+					arcY = sign * -30;
+				} else {
+					arcX = sign * 30;
+				}
+			}
 
 			return {
 				duration: 300,
 				easing: cubicOut,
 				css: (t: number, u: number) => {
-					const arc = arcOffset * Math.sin(Math.PI * t);
+					const sine = Math.sin(Math.PI * t);
 					return `
 						opacity: ${t * opacity};
 						transform-origin: top left;
-						transform: ${transform} translate(${u * dx}px, ${u * dy + arc}px);
+						transform: ${transform} translate(${u * dx + arcX * sine}px, ${u * dy + arcY * sine}px);
 					`;
 				}
 			};
