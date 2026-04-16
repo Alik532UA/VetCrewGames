@@ -3,7 +3,7 @@
 	import { t, td } from '$lib/i18n/index';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
-	import { ChevronsRight } from 'lucide-svelte';
+	import { ChevronsRight, ChevronRight } from 'lucide-svelte';
 
 	onMount(() => {
 		(async () => {
@@ -159,6 +159,19 @@
 		}
 		initRound();
 	}
+
+	function getArrowColor(i: number) {
+		const startColor = '#E5E5E5';
+		const middleColor = '#93C84A';
+		const endColor = '#598F3A';
+		if (i < 5) {
+			// First half: startColor to middleColor
+			return `color-mix(in srgb, ${startColor}, ${middleColor} ${(i / 4.5) * 100}%)`;
+		} else {
+			// Second half: middleColor to endColor
+			return `color-mix(in srgb, ${middleColor}, ${endColor} ${((i - 4.5) / 4.5) * 100}%)`;
+		}
+	}
 </script>
 
 <!-- Header -->
@@ -200,23 +213,21 @@
 							role="button"
 							tabindex="0"
 						>
-							<span class="slot-card__name">{td(slotAnimal.nameKey)}</span>
 							<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="slot-card__img" />
+							<span class="slot-card__name">{td(slotAnimal.nameKey)}</span>
 							{#if checked}
 								<span class="slot-card__icon">{slotResults[i] ? '✅' : '❌'}</span>
 							{/if}
 						</div>
+					{:else}
+						<span class="slot__label">
+							{#if i === 0}{t('population.least')}
+							{:else if i === 1}{t('population.middle')}
+							{:else}{t('population.most')}{/if}
+						</span>
 					{/if}
 				</div>
 			{/each}
-		</div>
-
-		<div class="direction-bar">
-			<span class="direction-bar__label">{t('population.least')}</span>
-			<div class="direction-bar__arrows">
-				<ChevronsRight size={32} />
-			</div>
-			<span class="direction-bar__label">{t('population.most')}</span>
 		</div>
 	</div>
 
@@ -258,8 +269,8 @@
 						role="button"
 						tabindex="0"
 					>
-						<span class="animal-card__name">{td(animal.nameKey)}</span>
 						<img src={animal.image} alt={td(animal.nameKey)} class="animal-card__img" />
+						<span class="animal-card__name">{td(animal.nameKey)}</span>
 					</div>
 				{/each}
 			</div>
@@ -295,10 +306,11 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		width: 100%;
-		max-width: 520px;
-		padding: 0 var(--space-sm) var(--space-2xl);
+		width: 95%;
+		max-width: 600px;
+		padding: 0 0 var(--space-2xl);
 		gap: var(--space-lg);
+		margin: 0 auto;
 	}
 
 	/* === Sorting panel === */
@@ -315,7 +327,8 @@
 	}
 
 	.sorting-panel__instruction {
-		color: #13371B;
+		color: #ffffff;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		text-align: center;
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
@@ -331,7 +344,7 @@
 	.slot {
 		width: 110px;
 		height: 140px;
-		border: 2px dashed rgba(19, 55, 27, 0.3);
+		border: 2px dashed var(--color-text);
 		border-radius: var(--radius-md);
 		display: flex;
 		align-items: center;
@@ -345,12 +358,15 @@
 	}
 
 	.slot:not(.slot--filled) {
-		/* Animation removed as per request */
+		/* Adjusting dashed appearance by reducing opacity slightly to make it look less "busy" 
+		   or applying a mask if supported. Since custom gap is hard with CSS border, 
+		   we'll stick to 2px as requested but keep it clean. */
+		border-color: color-mix(in srgb, var(--color-text), transparent 30%);
 	}
 
 	.slot--filled {
 		border-style: solid;
-		border-color: var(--color-bg-panel-dark);
+		border-color: var(--color-text);
 		background-color: rgba(19, 55, 27, 0.1);
 	}
 
@@ -368,6 +384,16 @@
 	.slot--targetable {
 		border-color: var(--color-accent);
 		background-color: rgba(255, 179, 39, 0.05);
+	}
+
+	.slot__label {
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-bold);
+		color: #ffffff;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+		opacity: 0.5;
+		text-transform: uppercase;
+		pointer-events: none;
 	}
 
 	/* === Slot cards (inside sorting panel) === */
@@ -395,14 +421,15 @@
 		height: 80px;
 		border-radius: var(--radius-sm);
 		background-color: var(--color-bg-panel-dark);
-		border: 1px solid rgba(19, 55, 27, 0.2);
+		border: none;
 		object-fit: cover;
 	}
 
 	.slot-card__name {
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel);
+		color: #ffffff;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		text-align: center;
 	}
 
@@ -424,15 +451,18 @@
 	.direction-bar__label {
 		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel);
+		color: #ffffff;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 	}
 
 	.direction-bar__arrows {
-		color: #13371B;
 		display: flex;
 		align-items: center;
-		filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.1));
-		opacity: 0.8;
+		gap: -4px;
+	}
+
+	.direction-bar__arrows :global(svg) {
+		margin-right: -8px;
 	}
 
 	/* === Check button === */
@@ -493,7 +523,8 @@
 	}
 
 	.source-panel__title {
-		color: #E5E5E5;
+		color: #ffffff;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		text-align: center;
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
@@ -513,7 +544,7 @@
 		align-items: center;
 		gap: var(--space-sm);
 		padding: var(--space-sm);
-		background: linear-gradient(180deg, #7aa656 0%, #60883f 40%, #4a6a31 100%);
+		background-color: #4a6a31;
 		border-radius: var(--radius-md);
 		box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2);
 		cursor: grab;
@@ -548,14 +579,15 @@
 		height: 120px;
 		border-radius: var(--radius-sm);
 		background-color: var(--color-bg-panel-dark);
-		border: 2px solid rgba(89, 143, 58, 0.4);
+		border: none;
 		object-fit: cover;
 	}
 
 	.animal-card__name {
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel);
+		color: #ffffff;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		text-align: center;
 	}
 

@@ -25,6 +25,7 @@ export const en = {
 	'population.round': 'Round',
 	'population.description': 'Sort from Smallest to Largest Population',
 	'population.least': 'Smallest',
+	'population.middle': 'Middle',
 	'population.most': 'Largest',
 	'population.check': 'Check',
 	'population.nextRound': 'Next',

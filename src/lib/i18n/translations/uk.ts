@@ -25,6 +25,7 @@ export const uk = {
 	'population.round': 'Раунд',
 	'population.description': 'Розташуй від найменшої до найбільшої популяції',
 	'population.least': 'Найменша',
+	'population.middle': 'Середня',
 	'population.most': 'Найбільша',
 
 	'population.check': 'Перевірити',
