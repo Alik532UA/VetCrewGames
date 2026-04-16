@@ -512,7 +512,7 @@
 		grid-area: 1 / 1;
 		display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; gap: var(--space-xs); padding: var(--space-sm); 
 		background-color: #4a6a31; border-radius: var(--radius-md); box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2); 
-		cursor: grab; user-select: none; position: relative; transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast); z-index: 2; overflow: hidden;
+		cursor: grab; user-select: none; position: relative; transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast); z-index: 2;
 		touch-action: none;
 	}
 	.game-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
