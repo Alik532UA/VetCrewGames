@@ -1,28 +1,73 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { crossfade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { t, td } from '$lib/i18n/index';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { Check, X } from 'lucide-svelte';
 
-	const [send, receive] = crossfade({
-		duration: 300,
-		easing: cubicOut,
-		fallback(node, params) {
+	let isSwapping = $state(false);
+
+	function createCrossfade() {
+		const to_receive = new Map<any, HTMLElement>();
+		const to_send = new Map<any, HTMLElement>();
+
+		function doCrossfade(from_node: HTMLElement, node: HTMLElement, isSend: boolean) {
+			const from = from_node.getBoundingClientRect();
+			const to = node.getBoundingClientRect();
+			const dx = from.left - to.left;
+			const dy = from.top - to.top;
 			const style = getComputedStyle(node);
 			const transform = style.transform === 'none' ? '' : style.transform;
+			const opacity = +style.opacity;
+			const realDx = isSend ? dx : -dx;
+			const arcOffset = isSwapping ? (realDx > 0 ? -30 : 30) : 0;
+
 			return {
 				duration: 300,
 				easing: cubicOut,
-				css: t => `
-					transform: ${transform} scale(${t});
-					opacity: ${t}
-				`
+				css: (t: number, u: number) => {
+					const arc = arcOffset * Math.sin(Math.PI * t);
+					return `
+						opacity: ${t * opacity};
+						transform-origin: top left;
+						transform: ${transform} translate(${u * dx}px, ${u * dy + arc}px);
+					`;
+				}
 			};
 		}
-	});
+
+		function transition(items: Map<any, HTMLElement>, counterparts: Map<any, HTMLElement>, isSend: boolean) {
+			return (node: HTMLElement, params: { key: any }) => {
+				items.set(params.key, node);
+				return () => {
+					if (counterparts.has(params.key)) {
+						const other = counterparts.get(params.key)!;
+						counterparts.delete(params.key);
+						return doCrossfade(other, node, isSend);
+					}
+					items.delete(params.key);
+					const style = getComputedStyle(node);
+					const tfm = style.transform === 'none' ? '' : style.transform;
+					return {
+						duration: 300,
+						easing: cubicOut,
+						css: (t: number) => `
+							transform: ${tfm} scale(${t});
+							opacity: ${t}
+						`
+					};
+				};
+			};
+		}
+
+		return [
+			transition(to_send, to_receive, true),
+			transition(to_receive, to_send, false)
+		];
+	}
+
+	const [send, receive] = createCrossfade();
 
 	const SLOT_COUNT = 3;
 	const TOTAL_ROUNDS = 10;
@@ -70,6 +115,7 @@
 		if (checked || !draggedAnimal || !dragSource) return false;
 		const animal = draggedAnimal;
 		const source = dragSource;
+		isSwapping = slots[targetIndex] !== null;
 
 		if (source.type === 'slot') {
 			const oldSlotAnimal = slots[targetIndex];
@@ -88,6 +134,7 @@
 		if (checked || !draggedAnimal || !dragSource) return false;
 		const animal = draggedAnimal;
 		const source = dragSource;
+		isSwapping = sourceAnimals[targetIndex] !== null;
 
 		if (source.type === 'source') {
 			const oldSourceAnimal = sourceAnimals[targetIndex];
