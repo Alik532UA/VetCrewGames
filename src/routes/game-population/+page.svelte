@@ -516,7 +516,6 @@
 				<div class="result-card anim-stagger-{i + 1}">
 					<!-- Stats Focus (Modern) -->
 					<div class="result-card__left">
-						<span class="result-card__rank-large">0{i + 1}</span>
 						<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-small" />
 					</div>
 					<div class="result-card__right">
@@ -725,27 +724,18 @@
 	}
 
 	.result-card__left {
-		width: 80px;
+		width: 70px;
 		background: var(--color-bg-panel-dark);
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 8px;
-		padding: 12px 0;
-	}
-
-	.result-card__rank-large {
-		font-size: 24px;
-		font-weight: 900;
-		color: rgba(255,255,255,0.2);
-		line-height: 1;
+		padding: 8px;
 	}
 
 	.result-card__img-small {
-		width: 40px;
-		height: 40px;
-		border-radius: 8px;
+		width: 100%;
+		aspect-ratio: 3 / 4;
+		border-radius: 6px;
 		object-fit: cover;
 	}
 
