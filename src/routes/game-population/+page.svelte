@@ -510,7 +510,7 @@
 
 	/* === Source panel === */
 	.source-panel {
-		width: 100%;
+		/* width: 100%; */
 		background-color: #60883f;
 		border-radius: var(--radius-lg);
 		padding: var(--space-lg) var(--space-sm);
@@ -657,22 +657,16 @@
 		}
 
 		.slot {
-			width: 95px;
-			height: 125px;
 		}
 
 		.slot-card__img {
-			width: 50px;
-			height: 67px;
 		}
 
 		.animal-card {
-			min-width: 85px;
+			
 		}
 
 		.animal-card__img {
-			width: 70px;
-			height: 93px;
 		}
 
 		.source-panel__cards {
