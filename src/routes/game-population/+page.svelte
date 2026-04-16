@@ -337,11 +337,21 @@
 			}
 
 			if (slotEl) {
+				const targetIndex = parseInt(slotEl.dataset.slotIndex!, 10);
+				if (dragSource.type === 'slot' && dragSource.index === targetIndex) {
+					draggedAnimal = null; dragSource = null; isActuallyDragging = false;
+					return;
+				}
 				setDragElementDropPosition(draggedAnimal.id, touch.clientX, touch.clientY, startInfo.offsetX, startInfo.offsetY);
-				performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
+				performDropOnSlot(targetIndex);
 			} else if (srcEl) {
+				const targetIndex = parseInt(srcEl.dataset.sourceIndex!, 10);
+				if (dragSource.type === 'source' && dragSource.index === targetIndex) {
+					draggedAnimal = null; dragSource = null; isActuallyDragging = false;
+					return;
+				}
 				setDragElementDropPosition(draggedAnimal.id, touch.clientX, touch.clientY, startInfo.offsetX, startInfo.offsetY);
-				performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
+				performDropOnSource(targetIndex);
 			} else { 
 				draggedAnimal = null; dragSource = null; isActuallyDragging = false; 
 			}
