@@ -30,9 +30,9 @@
 
 	// Touch drag state
 	let touchDragClone: HTMLElement | null = null;
-	let touchStartInfo: { x: number; y: number; animal: Animal; source: NonNullable<typeof dragSource>; target: HTMLElement } | null = null;
+	let touchStartInfo: { x: number; y: number; animal: Animal; source: NonNullable<typeof dragSource>; target: HTMLElement; w: number; h: number } | null = null;
 	let touchDragStarted = false;
-	const TOUCH_DRAG_THRESHOLD = 10;
+	const TOUCH_DRAG_THRESHOLD = 8;
 
 	function initRound() {
 		const picked = getRandomAnimals(SLOT_COUNT);
@@ -40,9 +40,7 @@
 		slots = Array(SLOT_COUNT).fill(null);
 		checked = false;
 		correctOrder = [...picked].sort((a, b) => a.population - b.population);
-		draggedAnimal = null;
-		dragSource = null;
-		isActuallyDragging = false;
+		draggedAnimal = null; dragSource = null; isActuallyDragging = false;
 	}
 
 	function performDropOnSlot(targetIndex: number): boolean {
@@ -94,9 +92,7 @@
 			e.dataTransfer.setData('text/plain', animal.id.toString());
 			e.dataTransfer.effectAllowed = 'move';
 		}
-		draggedAnimal = animal;
-		dragSource = source;
-		// Delay to allow browser to create drag image before hiding original
+		draggedAnimal = animal; dragSource = source;
 		setTimeout(() => { isActuallyDragging = true; }, 0);
 	}
 
@@ -116,7 +112,10 @@
 
 	function handleSelect(animal: Animal, source: typeof dragSource) {
 		if (checked) return;
-		if (draggedAnimal?.id === animal.id && !isActuallyDragging) {
+		// If we are already dragging, don't toggle select (let the drop handler work)
+		if (isActuallyDragging) return;
+
+		if (draggedAnimal?.id === animal.id) {
 			draggedAnimal = null; dragSource = null;
 		} else {
 			draggedAnimal = animal; dragSource = source;
@@ -138,25 +137,22 @@
 	// --- Touch handlers ---
 	function handleTouchStart(e: TouchEvent) {
 		const target = (e.target as HTMLElement).closest('[data-drag-animal]') as HTMLElement | null;
-		if (!target) {
-			if (draggedAnimal && !checked) {
-				const elUnder = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-				const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-				const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
-				if (slotEl) { e.preventDefault(); performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10)); }
-				else if (srcEl) { e.preventDefault(); performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10)); }
-			}
-			return;
-		}
+		if (!target) return;
 		if (checked) return;
+
 		const sourceType = target.dataset.dragSourceType as 'source' | 'slot';
 		const sourceIndex = parseInt(target.dataset.dragSourceIndex!, 10);
 		const animal = sourceType === 'source' ? sourceAnimals[sourceIndex] : slots[sourceIndex];
 		if (!animal) return;
-		e.preventDefault();
-		const touch = e.touches[0];
-		touchStartInfo = { x: touch.clientX, y: touch.clientY, animal, source: { type: sourceType, index: sourceIndex }, target };
+		
+		const rect = target.getBoundingClientRect();
+		touchStartInfo = { 
+			x: e.touches[0].clientX, y: e.touches[0].clientY, 
+			animal, source: { type: sourceType, index: sourceIndex }, 
+			target, w: rect.width, h: rect.height 
+		};
 		touchDragStarted = false;
+		// NO preventDefault here to allow click event to fire later if it's a tap
 	}
 
 	function handleTouchMove(e: TouchEvent) {
@@ -166,67 +162,62 @@
 			const dx = touch.clientX - touchStartInfo.x;
 			const dy = touch.clientY - touchStartInfo.y;
 			if (Math.abs(dx) < TOUCH_DRAG_THRESHOLD && Math.abs(dy) < TOUCH_DRAG_THRESHOLD) return;
-			e.preventDefault();
+			
+			// It is a drag!
 			touchDragStarted = true;
 			isActuallyDragging = true;
-			const { animal, source, target } = touchStartInfo;
+			const { animal, source, target, w, h } = touchStartInfo;
 			draggedAnimal = animal; dragSource = source;
-			const rect = target.getBoundingClientRect();
 			const clone = target.cloneNode(true) as HTMLElement;
 			clone.classList.add('touch-drag-clone');
-			clone.style.position = 'fixed'; clone.style.pointerEvents = 'none'; clone.style.zIndex = '9999';
-			clone.style.width = rect.width + 'px'; clone.style.height = rect.height + 'px';
-			clone.style.left = touch.clientX - rect.width / 2 + 'px'; clone.style.top = touch.clientY - rect.height / 2 + 'px';
-			clone.style.transform = 'scale(1.1)'; clone.style.opacity = '0.85';
+			clone.style.width = w + 'px'; clone.style.height = h + 'px';
+			clone.style.transform = `translate3d(${touch.clientX - w/2}px, ${touch.clientY - h/2}px, 0) scale(1.1)`;
 			document.body.appendChild(clone);
 			touchDragClone = clone;
-			return;
 		}
-		e.preventDefault();
-		if (touchDragClone) {
-			touchDragClone.style.left = touch.clientX - touchDragClone.offsetWidth / 2 + 'px';
-			touchDragClone.style.top = touch.clientY - touchDragClone.offsetHeight / 2 + 'px';
+
+		if (touchDragStarted) {
+			if (e.cancelable) e.preventDefault();
+			if (touchDragClone && touchStartInfo) {
+				const { w, h } = touchStartInfo;
+				touchDragClone.style.transform = `translate3d(${touch.clientX - w/2}px, ${touch.clientY - h/2}px, 0) scale(1.1)`;
+			}
+			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+			document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
+			const containerUnder = elUnder?.closest('[data-slot-index], [data-source-index]') as HTMLElement | null;
+			if (containerUnder) containerUnder.classList.add('container--touch-over');
 		}
-		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-		document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
-		const containerUnder = elUnder?.closest('[data-slot-index], [data-source-index]') as HTMLElement | null;
-		if (containerUnder) containerUnder.classList.add('container--touch-over');
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
 		document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
-		if (!touchStartInfo) {
+		if (!touchStartInfo) return;
+		
+		const wasDragging = touchDragStarted;
+		touchStartInfo = null;
+		touchDragStarted = false;
+
+		if (wasDragging) {
+			if (e.cancelable) e.preventDefault();
 			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
-			return;
-		}
-		const info = touchStartInfo; touchStartInfo = null;
-		if (!touchDragStarted) {
+			
 			const touch = e.changedTouches[0];
 			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 			const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
 			const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
-			if (draggedAnimal && slotEl) performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
-			else if (draggedAnimal && srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
-			else handleSelect(info.animal, info.source);
-			return;
+			
+			if (slotEl) performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
+			else if (srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
+			else { draggedAnimal = null; dragSource = null; isActuallyDragging = false; }
 		}
-		if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
-		if (!draggedAnimal || !dragSource) return;
-		const touch = e.changedTouches[0];
-		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-		const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-		const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
-		if (slotEl) performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
-		else if (srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
-		else { draggedAnimal = null; dragSource = null; isActuallyDragging = false; }
-		touchDragStarted = false;
+		// If not dragging, we do nothing and the standard 'click' handler will fire automatically
 	}
 
 	onMount(() => {
 		initRound();
 		document.addEventListener('touchstart', handleTouchStart, { passive: false });
 		document.addEventListener('touchmove', handleTouchMove, { passive: false });
-		document.addEventListener('touchend', handleTouchEnd);
+		document.addEventListener('touchend', handleTouchEnd, { passive: false });
 		return () => {
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchmove', handleTouchMove);
@@ -311,7 +302,6 @@
 	.sorting-panel__instruction { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
 
-	/* Container (all 6) */
 	.game-container { 
 		flex: 1; max-width: 110px; aspect-ratio: 11 / 17; 
 		border: 2px dashed rgba(255,255,255,0.3); border-radius: var(--radius-md); 
@@ -322,11 +312,11 @@
 	.container--touch-over { border-color: var(--color-accent) !important; background-color: rgba(255, 179, 39, 0.15) !important; }
 	.game-container__label { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
 	
-	/* Card (all 6) */
 	.game-card { 
 		display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; gap: var(--space-xs); padding: var(--space-sm); 
 		background-color: #4a6a31; border-radius: var(--radius-md); box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2); 
-		cursor: grab; user-select: none; position: relative; transition: all var(--transition-fast); z-index: 2; overflow: hidden;
+		cursor: grab; user-select: none; position: relative; transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast); z-index: 2; overflow: hidden;
+		touch-action: none; /* CRITICAL: Prevent browser scroll while interacting with cards */
 	}
 	.game-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
 	.game-card:active { cursor: grabbing; }
@@ -355,10 +345,13 @@
 	.btn-check { padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; background: linear-gradient(180deg, #FFD060 0%, #FFB327 40%, #E89E10 100%); color: var(--color-text-on-panel); box-shadow: 0 5px 0 #b87e0a, 0 8px 20px rgba(255, 179, 39, 0.35); border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); }
 	.btn-check:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 #b87e0a, 0 10px 24px rgba(255, 179, 39, 0.45); }
 	.btn-check:disabled { background: var(--color-disabled); color: var(--color-disabled-text); box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15); cursor: not-allowed; }
-	
 	.source-panel { width: 100%; background-color: #60883f; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
 	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	
-	:global(.touch-drag-clone) { filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35)); border-radius: var(--radius-md); }
+	:global(.touch-drag-clone) { 
+		position: fixed !important; pointer-events: none !important; z-index: 9999 !important; 
+		transition: none !important; 
+		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5)); border-radius: var(--radius-md); 
+	}
 	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
 </style>
