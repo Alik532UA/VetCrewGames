@@ -30,7 +30,10 @@
 
 	// Touch drag state
 	let touchDragClone: HTMLElement | null = null;
-	let touchStartInfo: { x: number; y: number; animal: Animal; source: NonNullable<typeof dragSource>; target: HTMLElement; w: number; h: number } | null = null;
+	let touchStartInfo: { 
+		x: number; y: number; offsetX: number; offsetY: number;
+		animal: Animal; source: NonNullable<typeof dragSource>; target: HTMLElement; w: number; h: number 
+	} | null = null;
 	let touchDragStarted = false;
 	const TOUCH_DRAG_THRESHOLD = 8;
 
@@ -43,6 +46,7 @@
 		draggedAnimal = null; dragSource = null; isActuallyDragging = false;
 	}
 
+	// --- Core drop logic ---
 	function performDropOnSlot(targetIndex: number): boolean {
 		if (checked || !draggedAnimal || !dragSource) return false;
 		const animal = draggedAnimal;
@@ -86,7 +90,7 @@
 	});
 
 	// --- Handlers ---
-	function handleDragStart(e: DragEvent, animal: Animal, source: typeof dragSource) {
+	function handleDragStart(e: DragEvent, animal: Animal, source: NonNullable<typeof dragSource>) {
 		if (checked) return;
 		if (e.dataTransfer) {
 			e.dataTransfer.setData('text/plain', animal.id.toString());
@@ -110,10 +114,16 @@
 	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) { e.preventDefault(); performDropOnSlot(targetIndex); }
 	function handleDropOnSource_DnD(e: DragEvent, targetIndex: number) { e.preventDefault(); performDropOnSource(targetIndex); }
 
-	function handleSelect(animal: Animal, source: typeof dragSource) {
+	function handleSelect(animal: Animal, source: NonNullable<typeof dragSource>) {
 		if (checked) return;
-		// If we are already dragging, don't toggle select (let the drop handler work)
 		if (isActuallyDragging) return;
+
+		// IF we already have a selection, and click another card - SWAP them
+		if (draggedAnimal && draggedAnimal.id !== animal.id) {
+			if (source.type === 'slot') performDropOnSlot(source.index);
+			else performDropOnSource(source.index);
+			return;
+		}
 
 		if (draggedAnimal?.id === animal.id) {
 			draggedAnimal = null; dragSource = null;
@@ -125,13 +135,13 @@
 	function handleSlotClick(i: number) {
 		if (checked) return;
 		if (draggedAnimal && !isActuallyDragging) performDropOnSlot(i);
-		else if (slots[i]) handleSelect(slots[i]!, { type: 'slot', index: i });
+		else if (slots[i]) handleSelect(slots[i] as Animal, { type: 'slot', index: i });
 	}
 
 	function handleSourcePlaceholderClick(i: number) {
 		if (checked) return;
 		if (draggedAnimal && !isActuallyDragging) performDropOnSource(i);
-		else if (sourceAnimals[i]) handleSelect(sourceAnimals[i]!, { type: 'source', index: i });
+		else if (sourceAnimals[i]) handleSelect(sourceAnimals[i] as Animal, { type: 'source', index: i });
 	}
 
 	// --- Touch handlers ---
@@ -146,13 +156,15 @@
 		if (!animal) return;
 		
 		const rect = target.getBoundingClientRect();
+		const touch = e.touches[0];
 		touchStartInfo = { 
-			x: e.touches[0].clientX, y: e.touches[0].clientY, 
+			x: touch.clientX, y: touch.clientY, 
+			offsetX: touch.clientX - rect.left,
+			offsetY: touch.clientY - rect.top,
 			animal, source: { type: sourceType, index: sourceIndex }, 
 			target, w: rect.width, h: rect.height 
 		};
 		touchDragStarted = false;
-		// NO preventDefault here to allow click event to fire later if it's a tap
 	}
 
 	function handleTouchMove(e: TouchEvent) {
@@ -163,15 +175,14 @@
 			const dy = touch.clientY - touchStartInfo.y;
 			if (Math.abs(dx) < TOUCH_DRAG_THRESHOLD && Math.abs(dy) < TOUCH_DRAG_THRESHOLD) return;
 			
-			// It is a drag!
 			touchDragStarted = true;
 			isActuallyDragging = true;
-			const { animal, source, target, w, h } = touchStartInfo;
+			const { animal, source, target, w, h, offsetX, offsetY } = touchStartInfo;
 			draggedAnimal = animal; dragSource = source;
 			const clone = target.cloneNode(true) as HTMLElement;
 			clone.classList.add('touch-drag-clone');
 			clone.style.width = w + 'px'; clone.style.height = h + 'px';
-			clone.style.transform = `translate3d(${touch.clientX - w/2}px, ${touch.clientY - h/2}px, 0) scale(1.1)`;
+			clone.style.transform = `translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`;
 			document.body.appendChild(clone);
 			touchDragClone = clone;
 		}
@@ -179,8 +190,8 @@
 		if (touchDragStarted) {
 			if (e.cancelable) e.preventDefault();
 			if (touchDragClone && touchStartInfo) {
-				const { w, h } = touchStartInfo;
-				touchDragClone.style.transform = `translate3d(${touch.clientX - w/2}px, ${touch.clientY - h/2}px, 0) scale(1.1)`;
+				const { offsetX, offsetY } = touchStartInfo;
+				touchDragClone.style.transform = `translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`;
 			}
 			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 			document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
@@ -210,7 +221,6 @@
 			else if (srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
 			else { draggedAnimal = null; dragSource = null; isActuallyDragging = false; }
 		}
-		// If not dragging, we do nothing and the standard 'click' handler will fire automatically
 	}
 
 	onMount(() => {
@@ -237,9 +247,32 @@
 		<p class="sorting-panel__instruction">{t('population.description')}</p>
 		<div class="slots-row">
 			{#each slots as slotAnimal, i (slotAnimal?.id ?? `empty-slot-${i}`)}
-				<div class="game-container" data-slot-index={i} ondragover={handleDragOver} ondrop={(e) => handleDropOnSlot_DnD(e, i)} onclick={() => handleSlotClick(i)} role="button" tabindex="0">
+				<div 
+					class="game-container" 
+					data-slot-index={i} 
+					ondragover={handleDragOver} 
+					ondrop={(e) => handleDropOnSlot_DnD(e, i)} 
+					onclick={() => handleSlotClick(i)} 
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
+					role="button" 
+					tabindex="0"
+				>
 					{#if slotAnimal}
-						<div class="game-card" class:card--selected={draggedAnimal?.id === slotAnimal.id && !isActuallyDragging} class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'slot' && dragSource?.index === i} draggable={!checked ? 'true' : 'false'} data-drag-animal={slotAnimal.id} data-drag-source-type="slot" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })} ondragend={handleDragEnd} onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }} role="button" tabindex="0">
+						<div 
+							class="game-card" 
+							class:card--selected={draggedAnimal?.id === slotAnimal.id && !isActuallyDragging} 
+							class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'slot' && dragSource?.index === i} 
+							draggable={!checked ? 'true' : 'false'} 
+							data-drag-animal={slotAnimal.id} 
+							data-drag-source-type="slot" 
+							data-drag-source-index={i} 
+							ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })} 
+							ondragend={handleDragEnd} 
+							onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }} 
+							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); } }}
+							role="button" 
+							tabindex="0"
+						>
 							<div class="game-card__img-container">
 								<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="game-card__img" />
 								{#if checked}<div class="game-card__pop-overlay">{formatPopulation(slotAnimal.population)}</div>{/if}
@@ -265,9 +298,32 @@
 			<p class="source-panel__title">{t('population.yourAnimals')}</p>
 			<div class="source-panel__cards">
 				{#each sourceAnimals as animal, i (animal?.id ?? `empty-src-${i}`)}
-					<div class="game-container" data-source-index={i} ondragover={handleDragOver} ondrop={(e) => handleDropOnSource_DnD(e, i)} onclick={() => handleSourcePlaceholderClick(i)} role="button" tabindex="0">
+					<div 
+						class="game-container" 
+						data-source-index={i} 
+						ondragover={handleDragOver} 
+						ondrop={(e) => handleDropOnSource_DnD(e, i)} 
+						onclick={() => handleSourcePlaceholderClick(i)} 
+						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
+						role="button" 
+						tabindex="0"
+					>
 						{#if animal}
-							<div class="game-card" class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging} class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'source' && dragSource?.index === i} draggable="true" data-drag-animal={animal.id} data-drag-source-type="source" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} ondragend={handleDragEnd} onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} role="button" tabindex="0">
+							<div 
+								class="game-card" 
+								class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging} 
+								class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'source' && dragSource?.index === i} 
+								draggable="true" 
+								data-drag-animal={animal.id} 
+								data-drag-source-type="source" 
+								data-drag-source-index={i} 
+								ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} 
+								ondragend={handleDragEnd} 
+								onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} 
+								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); } }}
+								role="button" 
+								tabindex="0"
+							>
 								<div class="game-card__img-container">
 									<img src={animal.image} alt={td(animal.nameKey)} class="game-card__img" />
 								</div>
@@ -316,7 +372,7 @@
 		display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; gap: var(--space-xs); padding: var(--space-sm); 
 		background-color: #4a6a31; border-radius: var(--radius-md); box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2); 
 		cursor: grab; user-select: none; position: relative; transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast); z-index: 2; overflow: hidden;
-		touch-action: none; /* CRITICAL: Prevent browser scroll while interacting with cards */
+		touch-action: none;
 	}
 	.game-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
 	.game-card:active { cursor: grabbing; }
@@ -350,7 +406,7 @@
 	
 	:global(.touch-drag-clone) { 
 		position: fixed !important; pointer-events: none !important; z-index: 9999 !important; 
-		transition: none !important; 
+		transition: none !important; top: 0; left: 0;
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5)); border-radius: var(--radius-md); 
 	}
 	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
