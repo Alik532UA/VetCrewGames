@@ -465,7 +465,7 @@
 
 	/* === Sorting panel === */
 	.sorting-panel {
-		/* width: 100%; */
+		width: 100%;
 		background-color: #94c04d;
 		border-radius: var(--radius-lg);
 		padding: var(--space-md) var(--space-sm);
@@ -489,11 +489,13 @@
 		display: flex;
 		gap: var(--space-sm);
 		justify-content: center;
+		width: 100%;
 	}
 
 	.slot {
-		width: 110px;
-		height: 140px;
+		flex: 1;
+		max-width: 110px;
+		aspect-ratio: 11 / 14;
 		border: 2px dashed var(--color-text);
 		border-radius: var(--radius-md);
 		display: flex;
@@ -505,6 +507,7 @@
 			border-color var(--transition-normal),
 			background-color var(--transition-normal),
 			box-shadow var(--transition-normal);
+		min-width: 0;
 	}
 
 	.slot:not(.slot--filled) {
@@ -537,13 +540,15 @@
 	}
 
 	.slot__label {
-		font-size: var(--font-size-sm);
+		font-size: var(--font-size-xs);
 		font-weight: var(--font-weight-bold);
 		color: #ffffff;
 		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		opacity: 0.5;
 		text-transform: uppercase;
 		pointer-events: none;
+		text-align: center;
+		padding: 0 4px;
 	}
 
 	/* === Slot cards (inside sorting panel) === */
@@ -551,6 +556,9 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		width: 100%;
+		height: 100%;
+		justify-content: center;
 		gap: var(--space-xs);
 		cursor: grab;
 		user-select: none;
@@ -558,6 +566,7 @@
 		-webkit-touch-callout: none;
 		position: relative;
 		transition: transform var(--transition-fast);
+		padding: 4px;
 	}
 
 	.slot-card:hover {
@@ -569,8 +578,9 @@
 	}
 
 	.slot-card__img {
-		width: 60px;
-		height: 80px;
+		width: 100%;
+		max-width: 60px;
+		aspect-ratio: 3 / 4;
 		border-radius: var(--radius-sm);
 		background-color: var(--color-bg-panel-dark);
 		border: none;
@@ -579,11 +589,15 @@
 	}
 
 	.slot-card__name {
-		font-size: var(--font-size-sm);
+		font-size: var(--font-size-xs);
 		font-weight: var(--font-weight-bold);
 		color: #ffffff;
 		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		width: 100%;
 	}
 
 	.slot-card__icon {
@@ -663,7 +677,7 @@
 
 	/* === Source panel === */
 	.source-panel {
-		/* width: 100%; */
+		width: 100%;
 		background-color: #60883f;
 		border-radius: var(--radius-lg);
 		padding: var(--space-md) var(--space-sm);
@@ -687,7 +701,8 @@
 		display: flex;
 		gap: var(--space-md);
 		justify-content: center;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
+		width: 100%;
 	}
 
 	/* === Animal cards (source) === */
@@ -695,6 +710,9 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		flex: 1;
+		max-width: 110px;
+		min-width: 0;
 		gap: var(--space-sm);
 		padding: var(--space-sm);
 		background-color: #4a6a31;
@@ -708,7 +726,6 @@
 			transform var(--transition-fast),
 			box-shadow var(--transition-fast);
 		animation: card-enter 400ms ease both;
-		min-width: 100px;
 		border: none;
 	}
 
@@ -730,8 +747,9 @@
 	}
 
 	.animal-card__img {
-		width: 90px;
-		height: 120px;
+		width: 100%;
+		max-width: 80px;
+		aspect-ratio: 4/5;
 		border-radius: var(--radius-sm);
 		background-color: var(--color-bg-panel-dark);
 		border: none;
@@ -745,6 +763,10 @@
 		color: #ffffff;
 		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		width: 100%;
 	}
 
 	/* === Results zone === */
@@ -752,7 +774,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-md);
-		width: 100%;
 	}
 
 	.result-card {
