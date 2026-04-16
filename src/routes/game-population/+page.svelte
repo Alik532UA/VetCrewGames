@@ -10,7 +10,7 @@
 
 	// Game state
 	let roundNumber = $state(1);
-	let sourceAnimals = $state<Animal[]>([]);
+	let sourceAnimals = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
 	let slots = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
 	let checked = $state(false);
 	let correctOrder = $state<Animal[]>([]);
@@ -23,29 +23,13 @@
 		return `~${num.toLocaleString()}`;
 	}
 
-	// Drag state
 	let draggedAnimal = $state<Animal | null>(null);
 	let dragSource = $state<{ type: 'source'; index: number } | { type: 'slot'; index: number } | null>(null);
 
-	// Touch drag state
 	let touchDragClone: HTMLElement | null = null;
 	let touchStartInfo: { x: number; y: number; animal: Animal; source: NonNullable<typeof dragSource>; target: HTMLElement } | null = null;
 	let touchDragStarted = false;
-	const TOUCH_DRAG_THRESHOLD = 10; // px of movement before drag begins
-
-	// --- Logging ---
-	function logState(label: string) {
-		console.log(
-			`%c[STATE] ${label}`,
-			'color: #4CAF50; font-weight: bold;',
-			'\n  sourceAnimals:', sourceAnimals.map(a => a.id),
-			'\n  slots:', slots.map(s => s?.id ?? null),
-			'\n  draggedAnimal:', draggedAnimal?.id ?? null,
-			'\n  dragSource:', dragSource,
-			'\n  checked:', checked,
-			'\n  roundNumber:', roundNumber
-		);
-	}
+	const TOUCH_DRAG_THRESHOLD = 10;
 
 	function initRound() {
 		const picked = getRandomAnimals(SLOT_COUNT);
@@ -55,18 +39,10 @@
 		correctOrder = [...picked].sort((a, b) => a.population - b.population);
 		draggedAnimal = null;
 		dragSource = null;
-		console.log(
-			`%c[INIT] Round ${roundNumber} initialized`,
-			'color: #FF9800; font-weight: bold;',
-			'\n  picked:', picked.map(a => ({ id: a.id, population: a.population }))
-		);
-		logState('After initRound');
 	}
 
-	// --- Core drop logic (shared between D&D, touch, click) ---
 	function performDropOnSlot(targetIndex: number): boolean {
 		if (checked || !draggedAnimal || !dragSource) return false;
-
 		const animal = draggedAnimal;
 		const source = dragSource;
 
@@ -76,46 +52,37 @@
 			slots[targetIndex] = animal;
 		} else {
 			const displacedAnimal = slots[targetIndex];
-			sourceAnimals = sourceAnimals.filter((a) => a.id !== animal.id);
-			if (displacedAnimal) {
-				sourceAnimals = [...sourceAnimals, displacedAnimal];
-			}
+			sourceAnimals[source.index] = displacedAnimal;
 			slots[targetIndex] = animal;
 		}
-
-		draggedAnimal = null;
-		dragSource = null;
-		logState('After performDropOnSlot');
+		draggedAnimal = null; dragSource = null;
 		return true;
 	}
 
-	function performReturnToSource(): boolean {
+	function performDropOnSource(targetIndex: number): boolean {
 		if (checked || !draggedAnimal || !dragSource) return false;
+		const animal = draggedAnimal;
+		const source = dragSource;
 
-		if (dragSource.type === 'slot') {
-			const animal = draggedAnimal;
-			slots[dragSource.index] = null;
-			sourceAnimals = [...sourceAnimals, animal];
+		if (source.type === 'source') {
+			const oldSourceAnimal = sourceAnimals[targetIndex];
+			sourceAnimals[source.index] = oldSourceAnimal;
+			sourceAnimals[targetIndex] = animal;
+		} else {
+			const displacedAnimal = sourceAnimals[targetIndex];
+			slots[source.index] = displacedAnimal;
+			sourceAnimals[targetIndex] = animal;
 		}
-
-		draggedAnimal = null;
-		dragSource = null;
-		logState('After performReturnToSource');
+		draggedAnimal = null; dragSource = null;
 		return true;
 	}
 
-	// Derived
 	let allSlotsFilled = $derived(slots.every((s) => s !== null));
-
 	let slotResults = $derived.by(() => {
 		if (!checked) return [];
-		return slots.map((animal, i) => {
-			if (!animal) return false;
-			return animal.id === correctOrder[i].id;
-		});
+		return slots.map((animal, i) => animal?.id === correctOrder[i].id);
 	});
 
-	// --- HTML5 Drag & Drop handlers (desktop) ---
 	function handleDragStart(e: DragEvent, animal: Animal, source: typeof dragSource) {
 		if (checked) return;
 		if (e.dataTransfer) {
@@ -126,98 +93,54 @@
 		dragSource = source;
 	}
 
-	function handleDragOverSlot(e: DragEvent) {
+	function handleDragOver(e: DragEvent) {
 		if (checked) return;
 		e.preventDefault();
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 	}
 
-	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) {
-		e.preventDefault();
-		performDropOnSlot(targetIndex);
-	}
-
-	function handleDropOnSource_DnD(e: DragEvent) {
-		e.preventDefault();
-		performReturnToSource();
-	}
+	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) { e.preventDefault(); performDropOnSlot(targetIndex); }
+	function handleDropOnSource_DnD(e: DragEvent, targetIndex: number) { e.preventDefault(); performDropOnSource(targetIndex); }
 
 	function handleSelect(animal: Animal, source: typeof dragSource) {
 		if (checked) return;
-		if (draggedAnimal?.id === animal.id) {
-			draggedAnimal = null;
-			dragSource = null;
-		} else {
-			draggedAnimal = animal;
-			dragSource = source;
-		}
+		if (draggedAnimal?.id === animal.id) { draggedAnimal = null; dragSource = null; }
+		else { draggedAnimal = animal; dragSource = source; }
 	}
 
 	function handleSlotClick(i: number) {
 		if (checked) return;
-		if (draggedAnimal) {
-			performDropOnSlot(i);
-		} else if (slots[i]) {
-			handleSelect(slots[i]!, { type: 'slot', index: i });
-		}
+		if (draggedAnimal) performDropOnSlot(i);
+		else if (slots[i]) handleSelect(slots[i]!, { type: 'slot', index: i });
 	}
 
-	function handleSourcePanelClick(e: MouseEvent) {
-		if (checked || !draggedAnimal || !dragSource) return;
-		if ((e.target as HTMLElement).classList.contains('source-panel') ||
-			(e.target as HTMLElement).classList.contains('source-panel__cards')) {
-			performReturnToSource();
-		}
+	function handleSourcePlaceholderClick(i: number) {
+		if (checked) return;
+		if (draggedAnimal) performDropOnSource(i);
+		else if (sourceAnimals[i]) handleSelect(sourceAnimals[i]!, { type: 'source', index: i });
 	}
 
-	// --- Touch handlers (mobile) ---
 	function handleTouchStart(e: TouchEvent) {
 		const target = (e.target as HTMLElement).closest('[data-drag-animal]') as HTMLElement | null;
 		if (!target) {
 			if (draggedAnimal && !checked) {
-				const slotEl = (e.target as HTMLElement).closest('[data-slot-index]') as HTMLElement | null;
-				if (slotEl) {
-					e.preventDefault();
-					const idx = parseInt(slotEl.dataset.slotIndex!, 10);
-					performDropOnSlot(idx);
-				}
+				const elUnder = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+				const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
+				const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
+				if (slotEl) { e.preventDefault(); performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10)); }
+				else if (srcEl) { e.preventDefault(); performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10)); }
 			}
 			return;
 		}
 		if (checked) return;
-
-		const animalId = target.dataset.dragAnimal!;
 		const sourceType = target.dataset.dragSourceType as 'source' | 'slot';
 		const sourceIndex = parseInt(target.dataset.dragSourceIndex!, 10);
-		const animal = sourceType === 'source' ? sourceAnimals.find(a => a.id === animalId) : slots[sourceIndex];
+		const animal = sourceType === 'source' ? sourceAnimals[sourceIndex] : slots[sourceIndex];
 		if (!animal) return;
-
 		e.preventDefault();
 		const touch = e.touches[0];
 		touchStartInfo = { x: touch.clientX, y: touch.clientY, animal, source: { type: sourceType, index: sourceIndex }, target };
 		touchDragStarted = false;
-	}
-
-	function beginTouchDrag(touch: Touch) {
-		if (!touchStartInfo) return;
-		touchDragStarted = true;
-		const { animal, source, target } = touchStartInfo;
-		draggedAnimal = animal;
-		dragSource = source;
-
-		const rect = target.getBoundingClientRect();
-		const clone = target.cloneNode(true) as HTMLElement;
-		clone.classList.add('touch-drag-clone');
-		clone.style.position = 'fixed';
-		clone.style.pointerEvents = 'none';
-		clone.style.zIndex = '9999';
-		clone.style.opacity = '0.85';
-		clone.style.width = rect.width + 'px';
-		clone.style.left = touch.clientX - rect.width / 2 + 'px';
-		clone.style.top = touch.clientY - rect.height / 2 + 'px';
-		clone.style.transform = 'scale(1.1)';
-		document.body.appendChild(clone);
-		touchDragClone = clone;
 	}
 
 	function handleTouchMove(e: TouchEvent) {
@@ -228,59 +151,57 @@
 			const dy = touch.clientY - touchStartInfo.y;
 			if (Math.abs(dx) < TOUCH_DRAG_THRESHOLD && Math.abs(dy) < TOUCH_DRAG_THRESHOLD) return;
 			e.preventDefault();
-			beginTouchDrag(touch);
+			touchDragStarted = true;
+			const { animal, source, target } = touchStartInfo;
+			draggedAnimal = animal; dragSource = source;
+			const rect = target.getBoundingClientRect();
+			const clone = target.cloneNode(true) as HTMLElement;
+			clone.classList.add('touch-drag-clone');
+			clone.style.position = 'fixed'; clone.style.pointerEvents = 'none'; clone.style.zIndex = '9999';
+			clone.style.width = rect.width + 'px'; clone.style.height = rect.height + 'px';
+			clone.style.left = touch.clientX - rect.width / 2 + 'px'; clone.style.top = touch.clientY - rect.height / 2 + 'px';
+			clone.style.transform = 'scale(1.1)'; clone.style.opacity = '0.85';
+			document.body.appendChild(clone);
+			touchDragClone = clone;
 			return;
 		}
 		e.preventDefault();
 		if (touchDragClone) {
-			const w = touchDragClone.offsetWidth;
-			const h = touchDragClone.offsetHeight;
-			touchDragClone.style.left = touch.clientX - w / 2 + 'px';
-			touchDragClone.style.top = touch.clientY - h / 2 + 'px';
+			touchDragClone.style.left = touch.clientX - touchDragClone.offsetWidth / 2 + 'px';
+			touchDragClone.style.top = touch.clientY - touchDragClone.offsetHeight / 2 + 'px';
 		}
 		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-		const slotUnder = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
-		if (slotUnder) slotUnder.classList.add('slot--touch-over');
+		document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
+		const containerUnder = elUnder?.closest('[data-slot-index], [data-source-index]') as HTMLElement | null;
+		if (containerUnder) containerUnder.classList.add('container--touch-over');
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
-		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
+		document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
 		if (!touchStartInfo) {
 			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
 			return;
 		}
-		const info = touchStartInfo;
-		touchStartInfo = null;
-
+		const info = touchStartInfo; touchStartInfo = null;
 		if (!touchDragStarted) {
 			const touch = e.changedTouches[0];
 			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 			const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-			if (draggedAnimal && slotEl) {
-				const idx = parseInt(slotEl.dataset.slotIndex!, 10);
-				performDropOnSlot(idx);
-			} else {
-				handleSelect(info.animal, info.source);
-			}
+			const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
+			if (draggedAnimal && slotEl) performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
+			else if (draggedAnimal && srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
+			else handleSelect(info.animal, info.source);
 			return;
 		}
-
 		if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
 		if (!draggedAnimal || !dragSource) return;
 		const touch = e.changedTouches[0];
 		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 		const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-		const sourcePanel = elUnder?.closest('.source-panel');
-
-		if (slotEl) {
-			performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
-		} else if (sourcePanel) {
-			performReturnToSource();
-		} else {
-			draggedAnimal = null;
-			dragSource = null;
-		}
+		const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
+		if (slotEl) performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
+		else if (srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
+		else { draggedAnimal = null; dragSource = null; }
 		touchDragStarted = false;
 	}
 
@@ -293,19 +214,12 @@
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchmove', handleTouchMove);
 			document.removeEventListener('touchend', handleTouchEnd);
-			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
+			if (touchDragClone) touchDragClone.remove();
 		};
 	});
 
-	function handleCheck() {
-		if (!allSlotsFilled) return;
-		checked = true;
-	}
-
-	function handleNextRound() {
-		roundNumber = roundNumber < TOTAL_ROUNDS ? roundNumber + 1 : 1;
-		initRound();
-	}
+	function handleCheck() { if (allSlotsFilled) checked = true; }
+	function handleNextRound() { roundNumber = roundNumber < TOTAL_ROUNDS ? roundNumber + 1 : 1; initRound(); }
 </script>
 
 <GameHeader titleKey="population.title" roundInfo="{t('population.round')} {roundNumber}/{TOTAL_ROUNDS}" />
@@ -314,23 +228,19 @@
 	<div class="sorting-panel">
 		<p class="sorting-panel__instruction">{t('population.description')}</p>
 		<div class="slots-row">
-			{#each slots as slotAnimal, i (slotAnimal?.id ?? `empty-${i}`)}
-				<div class="slot" class:slot--filled={slotAnimal !== null} class:slot--correct={checked && slotResults[i] === true} class:slot--wrong={checked && slotResults[i] === false} class:slot--targetable={!checked && draggedAnimal !== null} data-slot-index={i} role="button" tabindex="0" ondragover={handleDragOverSlot} ondrop={(e) => handleDropOnSlot_DnD(e, i)} onclick={() => handleSlotClick(i)} onkeydown={(e) => e.key === 'Enter' && handleSlotClick(i)}>
+			{#each slots as slotAnimal, i (slotAnimal?.id ?? `empty-slot-${i}`)}
+				<div class="game-container" data-slot-index={i} ondragover={handleDragOver} ondrop={(e) => handleDropOnSlot_DnD(e, i)} onclick={() => handleSlotClick(i)} role="button" tabindex="0">
 					{#if slotAnimal}
-						<div class="slot-card" class:slot-card--correct={checked && slotResults[i] === true} class:slot-card--wrong={checked && slotResults[i] === false} class:card--selected={draggedAnimal?.id === slotAnimal.id} draggable={!checked ? 'true' : 'false'} data-drag-animal={slotAnimal.id} data-drag-source-type="slot" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })} onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }} onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(slotAnimal, { type: 'slot', index: i }))} role="button" tabindex="0">
-							<div class="slot-card__img-container">
-								<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="slot-card__img" />
-								{#if checked}<div class="slot-card__pop-overlay">{formatPopulation(slotAnimal.population)}</div>{/if}
+						<div class="game-card" class:card--selected={draggedAnimal?.id === slotAnimal.id} draggable={!checked ? 'true' : 'false'} data-drag-animal={slotAnimal.id} data-drag-source-type="slot" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })} onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }} role="button" tabindex="0">
+							<div class="game-card__img-container">
+								<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="game-card__img" />
+								{#if checked}<div class="game-card__pop-overlay">{formatPopulation(slotAnimal.population)}</div>{/if}
 							</div>
-							<span class="slot-card__name">{td(slotAnimal.nameKey)}</span>
-							{#if checked}
-								<span class="slot-card__icon" class:slot-card__icon--correct={slotResults[i]} class:slot-card__icon--wrong={!slotResults[i]}>
-									{#if slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X size={18} strokeWidth={3} />{/if}
-								</span>
-							{/if}
+							<span class="game-card__name">{td(slotAnimal.nameKey)}</span>
+							{#if checked}<span class="game-card__icon" class:game-card__icon--correct={slotResults[i]} class:game-card__icon--wrong={!slotResults[i]}>{#if slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X size={18} strokeWidth={3} />{/if}</span>{/if}
 						</div>
 					{:else}
-						<span class="slot__label">{#if i === 0}{t('population.least')}{:else if i === 1}{t('population.middle')}{:else}{t('population.most')}{/if}</span>
+						<span class="game-container__label">{#if i === 0}{t('population.least')}{:else if i === 1}{t('population.middle')}{:else}{t('population.most')}{/if}</span>
 					{/if}
 				</div>
 			{/each}
@@ -343,13 +253,19 @@
 	</div>
 
 	{#if !checked}
-		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1" ondragover={(e) => e.preventDefault()} ondrop={handleDropOnSource_DnD} onclick={handleSourcePanelClick} onkeydown={(e) => e.key === 'Enter' && handleSourcePanelClick(e as any)}>
+		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
 			<p class="source-panel__title">{t('population.yourAnimals')}</p>
 			<div class="source-panel__cards">
-				{#each sourceAnimals as animal, i (animal.id)}
-					<div class="animal-card anim-stagger-{i + 1}" class:card--selected={draggedAnimal?.id === animal.id} draggable="true" data-drag-animal={animal.id} data-drag-source-type="source" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(animal, { type: 'source', index: i }))} role="button" tabindex="0">
-						<img src={animal.image} alt={td(animal.nameKey)} class="animal-card__img" />
-						<span class="animal-card__name">{td(animal.nameKey)}</span>
+				{#each sourceAnimals as animal, i (animal?.id ?? `empty-src-${i}`)}
+					<div class="game-container" data-source-index={i} ondragover={handleDragOver} ondrop={(e) => handleDropOnSource_DnD(e, i)} onclick={() => handleSourcePlaceholderClick(i)} role="button" tabindex="0">
+						{#if animal}
+							<div class="game-card" class:card--selected={draggedAnimal?.id === animal.id} draggable="true" data-drag-animal={animal.id} data-drag-source-type="source" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} role="button" tabindex="0">
+								<div class="game-card__img-container">
+									<img src={animal.image} alt={td(animal.nameKey)} class="game-card__img" />
+								</div>
+								<span class="game-card__name">{td(animal.nameKey)}</span>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -360,14 +276,9 @@
 		<div class="results-zone">
 			{#each correctOrder as animal, i (animal.id)}
 				<div class="result-card anim-stagger-{i + 1}">
-					<div class="result-card__left">
-						<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-small" />
-					</div>
+					<div class="result-card__left"><img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-small" /></div>
 					<div class="result-card__right">
-						<div class="result-card__top">
-							<span class="result-card__name-bold">{td(animal.nameKey)}</span>
-							<span class="result-card__stat">{formatPopulation(animal.population)}</span>
-						</div>
+						<div class="result-card__top"><span class="result-card__name-bold">{td(animal.nameKey)}</span><span class="result-card__stat">{formatPopulation(animal.population)}</span></div>
 						<div class="result-card__divider"></div>
 						<p class="result-card__fact-simple">{td(animal.factKey)}</p>
 					</div>
@@ -378,345 +289,57 @@
 </div>
 
 <style>
-	.game-page {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		width: 95%;
-		max-width: 600px;
-		padding: 0 0 var(--space-2xl);
-		gap: var(--space-lg);
-		margin: 0 auto;
+	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 600px; padding: 0 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
+	.sorting-panel { width: 100%; background-color: #94c04d; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
+	.sorting-panel__instruction { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
+
+	/* Container (all 6) */
+	.game-container { 
+		flex: 1; max-width: 110px; aspect-ratio: 11 / 17; 
+		border: 2px dashed rgba(255,255,255,0.3); border-radius: var(--radius-md); 
+		display: flex; align-items: center; justify-content: center; 
+		background-color: rgba(0, 0, 0, 0.05); box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.1); 
+		transition: all var(--transition-normal); min-width: 0; position: relative; 
 	}
-
-	.sorting-panel {
-		width: 100%;
-		background-color: #94c04d;
-		border-radius: var(--radius-lg);
-		padding: var(--space-md) var(--space-sm);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		box-shadow: var(--shadow-card);
-		animation: card-enter 400ms ease both;
+	.container--touch-over { border-color: var(--color-accent) !important; background-color: rgba(255, 179, 39, 0.15) !important; }
+	.game-container__label { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
+	
+	/* Card (all 6) */
+	.game-card { 
+		display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; gap: var(--space-xs); padding: var(--space-sm); 
+		background-color: #4a6a31; border-radius: var(--radius-md); box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2); 
+		cursor: grab; user-select: none; position: relative; transition: all var(--transition-fast); z-index: 2; overflow: hidden;
 	}
+	.game-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
+	.card--selected { box-shadow: 0 0 15px var(--color-accent) !important; border: 2px solid var(--color-accent) !important; transform: scale(1.05) translateY(-2px) !important; }
 
-	.sorting-panel__instruction {
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-		text-align: center;
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-bold);
-	}
-
-	.slots-row {
-		display: flex;
-		gap: var(--space-sm);
-		justify-content: center;
-		width: 100%;
-	}
-
-	.slot {
-		flex: 1;
-		max-width: 110px;
-		aspect-ratio: 11 / 14;
-		border: 2px dashed var(--color-text);
-		border-radius: var(--radius-md);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background-color: rgba(0, 0, 0, 0.05);
-		box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.1);
-		transition: border-color var(--transition-normal), background-color var(--transition-normal), box-shadow var(--transition-normal);
-		min-width: 0;
-	}
-
-	.slot:not(.slot--filled) {
-		border-color: color-mix(in srgb, var(--color-text), transparent 30%);
-	}
-
-	.slot--filled {
-		border-style: solid;
-		border-color: var(--color-text);
-		background-color: rgba(19, 55, 27, 0.1);
-	}
-
-	.slot--correct { border-color: #fff; box-shadow: var(--shadow-glow-success); }
-	.slot--wrong { border-color: var(--color-error); box-shadow: var(--shadow-glow-error); animation: shake 500ms ease; }
-	.slot--targetable { border-color: var(--color-accent); background-color: rgba(255, 179, 39, 0.05); }
-
-	.slot__label {
-		font-size: var(--font-size-xs);
-		font-weight: var(--font-weight-bold);
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-		opacity: 0.5;
-		text-transform: uppercase;
-		pointer-events: none;
-		text-align: center;
-		padding: 0 4px;
-	}
-
-	.slot-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-		justify-content: center;
-		gap: var(--space-xs);
-		cursor: grab;
-		user-select: none;
-		position: relative;
-		transition: transform var(--transition-fast);
-		padding: 4px;
-	}
-
-	.slot-card:hover { transform: scale(1.05); }
-	.slot-card:active { cursor: grabbing; }
-
-	.slot-card__img-container {
-		position: relative;
-		width: 100%;
-		max-width: 60px;
-		aspect-ratio: 3 / 4;
-	}
-
-	.slot-card__img {
-		width: 100%;
-		height: 100%;
-		border-radius: var(--radius-sm);
-		background-color: var(--color-bg-panel-dark);
-		object-fit: cover;
-		pointer-events: none;
-	}
-
-	.slot-card__pop-overlay {
-		position: absolute;
-		bottom: 0; left: 0; right: 0;
-		padding: 8px 2px 2px;
-		background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
-		color: #ffffff;
-		font-size: 8px;
-		font-weight: var(--font-weight-bold);
-		text-align: center;
-		border-bottom-left-radius: var(--radius-sm);
-		border-bottom-right-radius: var(--radius-sm);
-		pointer-events: none;
-		white-space: nowrap;
-		overflow: hidden;
-	}
-
-	.slot-card__name {
-		font-size: var(--font-size-xs);
-		font-weight: var(--font-weight-bold);
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-		text-align: center;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		width: 100%;
-	}
-
-	.slot-card__icon {
-		position: absolute;
-		top: -10px; right: -10px;
-		width: 24px; height: 24px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: #ffffff;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-		z-index: 2;
-	}
-	.slot-card__icon--correct { background-color: #4CAF50; }
-	.slot-card__icon--wrong { background-color: #f44336; }
+	.game-card__img-container { position: relative; width: 100%; aspect-ratio: 3 / 4; min-height: 0; }
+	.game-card__img { width: 100%; height: 100%; border-radius: var(--radius-sm); background-color: var(--color-bg-panel-dark); object-fit: cover; }
+	.game-card__pop-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 2px 2px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.85)); color: #ffffff; font-size: 8px; font-weight: var(--font-weight-bold); text-align: center; border-bottom-left-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm); white-space: nowrap; overflow: hidden; }
+	.game-card__name { font-size: var(--font-size-md); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; width: 100%; line-height: 1.2; flex: 1; display: flex; align-items: center; justify-content: center; }
+	.game-card__icon { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
+	.game-card__icon--correct { background-color: #4CAF50; }
+	.game-card__icon--wrong { background-color: #f44336; }
 
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
-
-	.result-card {
-		background-color: var(--color-bg-surface);
-		border-radius: var(--radius-md);
-		box-shadow: var(--shadow-card);
-		overflow: hidden;
-		animation: slide-up 400ms ease both;
-		border: 1px solid var(--color-border);
-		display: flex;
-		padding: 0;
-	}
-
-	.result-card__left {
-		width: 70px;
-		background: var(--color-bg-panel-dark);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 8px;
-	}
-
-	.result-card__img-small {
-		width: 100%;
-		aspect-ratio: 3 / 4;
-		border-radius: 6px;
-		object-fit: cover;
-	}
-
-	.result-card__right {
-		flex: 1;
-		padding: 12px 16px;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-	}
-
+	.result-card { background-color: var(--color-bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; border: 1px solid var(--color-border); display: flex; padding: 0; }
+	.result-card__left { width: 70px; background: var(--color-bg-panel-dark); display: flex; align-items: center; justify-content: center; padding: 8px; }
+	.result-card__img-small { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; object-fit: cover; }
+	.result-card__right { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; }
 	.result-card__top { display: flex; justify-content: space-between; align-items: baseline; }
-
-	.result-card__name-bold {
-		font-size: 18px;
-		font-weight: 800;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-	}
-
-	.result-card__stat {
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--color-accent);
-	}
-
-	.result-card__divider {
-		height: 2px;
-		width: 30px;
-		background: var(--color-accent);
-		margin: 2px 0;
-	}
-
-	.result-card__fact-simple {
-		font-size: 12px;
-		margin: 0;
-		color: var(--color-text-muted);
-		font-style: italic;
-	}
-
-	.action-zone { width: 100%; display: flex; justify-content: center; }
-
-	.btn-check {
-		padding: var(--space-md) 4rem;
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-bold);
-		border-radius: 2rem;
-		background: linear-gradient(180deg, #FFD060 0%, #FFB327 40%, #E89E10 100%);
-		color: var(--color-text-on-panel);
-		box-shadow: 0 5px 0 #b87e0a, 0 8px 20px rgba(255, 179, 39, 0.35);
-		border: none;
-		cursor: pointer;
-		text-transform: uppercase;
-		letter-spacing: 2px;
-		transition: transform var(--transition-fast), box-shadow var(--transition-normal), background-color var(--transition-normal);
-	}
-
-	.btn-check:hover:not(:disabled) {
-		background: linear-gradient(180deg, #FFD870 0%, #FFC04A 40%, #F0A820 100%);
-		transform: translateY(-2px);
-		box-shadow: 0 7px 0 #b87e0a, 0 10px 24px rgba(255, 179, 39, 0.45);
-	}
-
-	.btn-check:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #b87e0a; }
-
-	.btn-check:disabled {
-		background: var(--color-disabled);
-		color: var(--color-disabled-text);
-		box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
-		cursor: not-allowed;
-	}
-
-	.source-panel {
-		width: 100%;
-		background-color: #60883f;
-		border-radius: var(--radius-lg);
-		padding: var(--space-md) var(--space-sm);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		box-shadow: var(--shadow-card);
-		animation: card-enter 400ms ease both;
-		animation-delay: 100ms;
-	}
-
-	.source-panel__title {
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-		text-align: center;
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-bold);
-	}
-
-	.source-panel__cards { display: flex; gap: var(--space-md); justify-content: center; flex-wrap: nowrap; width: 100%; }
-
-	.animal-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		flex: 1;
-		max-width: 110px;
-		min-width: 0;
-		gap: var(--space-sm);
-		padding: var(--space-sm);
-		background-color: #4a6a31;
-		border-radius: var(--radius-md);
-		box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2);
-		cursor: grab;
-		user-select: none;
-		transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-		animation: card-enter 400ms ease both;
-		border: none;
-	}
-
-	.animal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
-	.animal-card:active { cursor: grabbing; transform: translateY(2px); box-shadow: 0 1px 0 #324a21, 0 2px 5px rgba(0, 0, 0, 0.2); }
-
-	.card--selected {
-		box-shadow: 0 0 15px var(--color-accent) !important;
-		border: 2px solid var(--color-accent) !important;
-		transform: scale(1.05) translateY(-2px) !important;
-	}
-
-	.animal-card__img {
-		width: 100%;
-		max-width: 80px;
-		aspect-ratio: 4/5;
-		border-radius: var(--radius-sm);
-		background-color: var(--color-bg-panel-dark);
-		border: none;
-		object-fit: cover;
-		pointer-events: none;
-	}
-
-	.animal-card__name {
-		font-size: var(--font-size-md);
-		font-weight: var(--font-weight-bold);
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-		text-align: center;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		width: 100%;
-	}
-
-	.slot--touch-over {
-		border-color: var(--color-accent) !important;
-		background-color: rgba(255, 179, 39, 0.15) !important;
-		box-shadow: 0 0 10px var(--color-accent);
-	}
-
+	.result-card__name-bold { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+	.result-card__stat { font-size: 12px; font-weight: 700; color: var(--color-accent); }
+	.result-card__divider { height: 2px; width: 30px; background: var(--color-accent); margin: 2px 0; }
+	.result-card__fact-simple { font-size: 12px; margin: 0; color: var(--color-text-muted); font-style: italic; }
+	
+	.btn-check { padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; background: linear-gradient(180deg, #FFD060 0%, #FFB327 40%, #E89E10 100%); color: var(--color-text-on-panel); box-shadow: 0 5px 0 #b87e0a, 0 8px 20px rgba(255, 179, 39, 0.35); border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); }
+	.btn-check:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 #b87e0a, 0 10px 24px rgba(255, 179, 39, 0.45); }
+	.btn-check:disabled { background: var(--color-disabled); color: var(--color-disabled-text); box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15); cursor: not-allowed; }
+	
+	.source-panel { width: 100%; background-color: #60883f; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
+	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+	
 	:global(.touch-drag-clone) { filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35)); border-radius: var(--radius-md); }
-
-	@media (max-width: 480px) {
-		.slots-row { gap: var(--space-xs); }
-		.source-panel__cards { gap: var(--space-sm); }
-		.btn-check { padding: var(--space-md) 3rem; }
-	}
+	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
 </style>

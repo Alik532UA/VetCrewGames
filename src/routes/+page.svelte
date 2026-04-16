@@ -75,7 +75,7 @@
 		align-items: center;
 		justify-content: center;
 		width: 100%;
-		padding: var(--space-lg) var(--space-xl);
+		padding: var(--space-md) var(--space-xl);
 		font-size: var(--font-size-lg);
 		font-weight: var(--font-weight-medium);
 		border-radius: var(--radius-md);
