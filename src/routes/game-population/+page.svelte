@@ -65,23 +65,17 @@
 
 	// --- Core drop logic (shared between D&D, touch, click) ---
 	function performDropOnSlot(targetIndex: number): boolean {
-		console.log('[DROP] performDropOnSlot:', { targetIndex, draggedAnimal: draggedAnimal?.id, dragSource });
-		if (checked || !draggedAnimal || !dragSource) {
-			console.warn('[DROP] Ignored:', { checked, noDraggedAnimal: !draggedAnimal, noDragSource: !dragSource });
-			return false;
-		}
+		if (checked || !draggedAnimal || !dragSource) return false;
 
 		const animal = draggedAnimal;
 		const source = dragSource;
 
 		if (source.type === 'slot') {
 			const oldSlotAnimal = slots[targetIndex];
-			console.log('[DROP] Slot→Slot swap:', { from: source.index, to: targetIndex, displaced: oldSlotAnimal?.id ?? null });
 			slots[source.index] = oldSlotAnimal;
 			slots[targetIndex] = animal;
 		} else {
 			const displacedAnimal = slots[targetIndex];
-			console.log('[DROP] Source→Slot:', { animal: animal.id, targetIndex, displaced: displacedAnimal?.id ?? null });
 			sourceAnimals = sourceAnimals.filter((a) => a.id !== animal.id);
 			if (displacedAnimal) {
 				sourceAnimals = [...sourceAnimals, displacedAnimal];
@@ -96,14 +90,12 @@
 	}
 
 	function performReturnToSource(): boolean {
-		console.log('[DROP] performReturnToSource:', { draggedAnimal: draggedAnimal?.id, dragSource });
 		if (checked || !draggedAnimal || !dragSource) return false;
 
 		if (dragSource.type === 'slot') {
 			const animal = draggedAnimal;
 			slots[dragSource.index] = null;
 			sourceAnimals = [...sourceAnimals, animal];
-			console.log('[DROP] Returned to source:', animal.id);
 		}
 
 		draggedAnimal = null;
@@ -125,18 +117,13 @@
 
 	// --- HTML5 Drag & Drop handlers (desktop) ---
 	function handleDragStart(e: DragEvent, animal: Animal, source: typeof dragSource) {
-		console.log('[D&D] dragstart:', { animal: animal.id, source });
-		logState('Before dragstart');
 		if (checked) return;
-
 		if (e.dataTransfer) {
 			e.dataTransfer.setData('text/plain', animal.id.toString());
 			e.dataTransfer.effectAllowed = 'move';
 		}
-
 		draggedAnimal = animal;
 		dragSource = source;
-		logState('After dragstart');
 	}
 
 	function handleDragOverSlot(e: DragEvent) {
@@ -156,25 +143,18 @@
 	}
 
 	function handleSelect(animal: Animal, source: typeof dragSource) {
-		console.log('[SELECT]', { animal: animal.id, source });
 		if (checked) return;
-
 		if (draggedAnimal?.id === animal.id) {
-			console.log('[SELECT] Deselected:', animal.id);
 			draggedAnimal = null;
 			dragSource = null;
 		} else {
 			draggedAnimal = animal;
 			dragSource = source;
-			console.log('[SELECT] Selected:', animal.id);
 		}
-		logState('After select');
 	}
 
 	function handleSlotClick(i: number) {
-		console.log('[CLICK] Slot:', i);
 		if (checked) return;
-
 		if (draggedAnimal) {
 			performDropOnSlot(i);
 		} else if (slots[i]) {
@@ -184,7 +164,6 @@
 
 	function handleSourcePanelClick(e: MouseEvent) {
 		if (checked || !draggedAnimal || !dragSource) return;
-
 		if ((e.target as HTMLElement).classList.contains('source-panel') ||
 			(e.target as HTMLElement).classList.contains('source-panel__cards')) {
 			performReturnToSource();
@@ -194,15 +173,12 @@
 	// --- Touch handlers (mobile) ---
 	function handleTouchStart(e: TouchEvent) {
 		const target = (e.target as HTMLElement).closest('[data-drag-animal]') as HTMLElement | null;
-		
 		if (!target) {
-			// Not on a draggable card — check if tapping a slot while an animal is selected
 			if (draggedAnimal && !checked) {
 				const slotEl = (e.target as HTMLElement).closest('[data-slot-index]') as HTMLElement | null;
 				if (slotEl) {
 					e.preventDefault();
 					const idx = parseInt(slotEl.dataset.slotIndex!, 10);
-					console.log('%c[TOUCH] tap slot with selection', 'color: #E91E63; font-weight: bold;', { slot: idx, animal: draggedAnimal.id });
 					performDropOnSlot(idx);
 				}
 			}
@@ -213,36 +189,19 @@
 		const animalId = target.dataset.dragAnimal!;
 		const sourceType = target.dataset.dragSourceType as 'source' | 'slot';
 		const sourceIndex = parseInt(target.dataset.dragSourceIndex!, 10);
-
-		const animal = sourceType === 'source'
-			? sourceAnimals.find(a => a.id === animalId)
-			: slots[sourceIndex];
-
+		const animal = sourceType === 'source' ? sourceAnimals.find(a => a.id === animalId) : slots[sourceIndex];
 		if (!animal) return;
 
-		// Prevent scrolling from taking over AND prevent duplicate click event
 		e.preventDefault();
-
 		const touch = e.touches[0];
-		touchStartInfo = {
-			x: touch.clientX,
-			y: touch.clientY,
-			animal,
-			source: { type: sourceType, index: sourceIndex },
-			target
-		};
+		touchStartInfo = { x: touch.clientX, y: touch.clientY, animal, source: { type: sourceType, index: sourceIndex }, target };
 		touchDragStarted = false;
-
-		console.log('%c[TOUCH] touchstart (pending)', 'color: #E91E63; font-weight: bold;', { animal: animal.id, sourceType, sourceIndex });
 	}
 
 	function beginTouchDrag(touch: Touch) {
 		if (!touchStartInfo) return;
 		touchDragStarted = true;
-
 		const { animal, source, target } = touchStartInfo;
-		console.log('%c[TOUCH] drag started', 'color: #E91E63; font-weight: bold;', { animal: animal.id, source });
-
 		draggedAnimal = animal;
 		dragSource = source;
 
@@ -259,116 +218,77 @@
 		clone.style.transform = 'scale(1.1)';
 		document.body.appendChild(clone);
 		touchDragClone = clone;
-
-		logState('After beginTouchDrag');
 	}
 
 	function handleTouchMove(e: TouchEvent) {
 		if (!touchStartInfo) return;
 		const touch = e.touches[0];
-
 		if (!touchDragStarted) {
-			// Check if finger moved enough to start a drag
 			const dx = touch.clientX - touchStartInfo.x;
 			const dy = touch.clientY - touchStartInfo.y;
 			if (Math.abs(dx) < TOUCH_DRAG_THRESHOLD && Math.abs(dy) < TOUCH_DRAG_THRESHOLD) return;
-
 			e.preventDefault();
 			beginTouchDrag(touch);
 			return;
 		}
-
 		e.preventDefault();
-
 		if (touchDragClone) {
 			const w = touchDragClone.offsetWidth;
 			const h = touchDragClone.offsetHeight;
 			touchDragClone.style.left = touch.clientX - w / 2 + 'px';
 			touchDragClone.style.top = touch.clientY - h / 2 + 'px';
 		}
-
-		// Highlight slot under finger
 		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 		const slotUnder = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
 		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
-		if (slotUnder) {
-			slotUnder.classList.add('slot--touch-over');
-		}
+		if (slotUnder) slotUnder.classList.add('slot--touch-over');
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
-		// Remove highlight
 		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
-
 		if (!touchStartInfo) {
 			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
 			return;
 		}
-
 		const info = touchStartInfo;
 		touchStartInfo = null;
 
 		if (!touchDragStarted) {
-			// It was a tap, not a drag — treat as click/select
-			console.log('%c[TOUCH] tap → select', 'color: #E91E63; font-weight: bold;', { animal: info.animal.id });
-
-			// If there's already a selected animal and we tapped a slot, drop it there
 			const touch = e.changedTouches[0];
 			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 			const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-
 			if (draggedAnimal && slotEl) {
 				const idx = parseInt(slotEl.dataset.slotIndex!, 10);
 				performDropOnSlot(idx);
 			} else {
-				// Toggle select on this animal
 				handleSelect(info.animal, info.source);
 			}
 			return;
 		}
 
-		// It was a drag — handle drop
-		console.log('%c[TOUCH] touchend (drag)', 'color: #E91E63; font-weight: bold;');
-		logState('Before touchend');
-
-		const touch = e.changedTouches[0];
 		if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
-
 		if (!draggedAnimal || !dragSource) return;
-
+		const touch = e.changedTouches[0];
 		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-		console.log('[TOUCH] Element under finger:', elUnder?.tagName, elUnder?.className?.toString().slice(0, 60));
-
 		const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
 		const sourcePanel = elUnder?.closest('.source-panel');
 
 		if (slotEl) {
-			const idx = parseInt(slotEl.dataset.slotIndex!, 10);
-			console.log('[TOUCH] Drop on slot:', idx);
-			performDropOnSlot(idx);
+			performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
 		} else if (sourcePanel) {
-			console.log('[TOUCH] Return to source');
 			performReturnToSource();
 		} else {
-			console.log('[TOUCH] Dropped outside — cancelling drag');
 			draggedAnimal = null;
 			dragSource = null;
 		}
-
-		logState('After touchend');
 		touchDragStarted = false;
 	}
 
 	onMount(() => {
-		console.log('%c[MOUNT] Component mounted', 'color: #2196F3; font-weight: bold;');
 		initRound();
-		logState('On mount');
-
-		// Global touch handlers (must be on document with passive:false for reliable tracking)
 		document.addEventListener('touchstart', handleTouchStart, { passive: false });
 		document.addEventListener('touchmove', handleTouchMove, { passive: false });
 		document.addEventListener('touchend', handleTouchEnd);
-
 		return () => {
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchmove', handleTouchMove);
@@ -380,127 +300,54 @@
 	function handleCheck() {
 		if (!allSlotsFilled) return;
 		checked = true;
-		logState('After check');
 	}
 
 	function handleNextRound() {
-		if (roundNumber < TOTAL_ROUNDS) {
-			roundNumber++;
-		} else {
-			roundNumber = 1;
-		}
+		roundNumber = roundNumber < TOTAL_ROUNDS ? roundNumber + 1 : 1;
 		initRound();
 	}
 </script>
 
-<!-- Header -->
-<GameHeader 
-	titleKey="population.title" 
-	roundInfo="{t('population.round')} {roundNumber}/{TOTAL_ROUNDS}" 
-/>
+<GameHeader titleKey="population.title" roundInfo="{t('population.round')} {roundNumber}/{TOTAL_ROUNDS}" />
 
 <div class="game-page">
-	<!-- Sorting panel -->
 	<div class="sorting-panel">
 		<p class="sorting-panel__instruction">{t('population.description')}</p>
-
 		<div class="slots-row">
 			{#each slots as slotAnimal, i (slotAnimal?.id ?? `empty-${i}`)}
-				<div
-					class="slot"
-					class:slot--filled={slotAnimal !== null}
-					class:slot--correct={checked && slotResults[i] === true}
-					class:slot--wrong={checked && slotResults[i] === false}
-					class:slot--targetable={!checked && draggedAnimal !== null}
-					data-slot-index={i}
-					role="button"
-					tabindex="0"
-					ondragover={handleDragOverSlot}
-					ondrop={(e) => handleDropOnSlot_DnD(e, i)}
-					onclick={() => handleSlotClick(i)}
-					onkeydown={(e) => e.key === 'Enter' && handleSlotClick(i)}
-				>
+				<div class="slot" class:slot--filled={slotAnimal !== null} class:slot--correct={checked && slotResults[i] === true} class:slot--wrong={checked && slotResults[i] === false} class:slot--targetable={!checked && draggedAnimal !== null} data-slot-index={i} role="button" tabindex="0" ondragover={handleDragOverSlot} ondrop={(e) => handleDropOnSlot_DnD(e, i)} onclick={() => handleSlotClick(i)} onkeydown={(e) => e.key === 'Enter' && handleSlotClick(i)}>
 					{#if slotAnimal}
-						<div
-							class="slot-card"
-							class:slot-card--correct={checked && slotResults[i] === true}
-							class:slot-card--wrong={checked && slotResults[i] === false}
-							class:card--selected={draggedAnimal?.id === slotAnimal.id}
-							draggable={!checked ? 'true' : 'false'}
-							data-drag-animal={slotAnimal.id}
-							data-drag-source-type="slot"
-							data-drag-source-index={i}
-							ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })}
-							onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }}
-							onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(slotAnimal, { type: 'slot', index: i }))}
-							role="button"
-							tabindex="0"
-						>
-							<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="slot-card__img" />
+						<div class="slot-card" class:slot-card--correct={checked && slotResults[i] === true} class:slot-card--wrong={checked && slotResults[i] === false} class:card--selected={draggedAnimal?.id === slotAnimal.id} draggable={!checked ? 'true' : 'false'} data-drag-animal={slotAnimal.id} data-drag-source-type="slot" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })} onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }} onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(slotAnimal, { type: 'slot', index: i }))} role="button" tabindex="0">
+							<div class="slot-card__img-container">
+								<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="slot-card__img" />
+								{#if checked}<div class="slot-card__pop-overlay">{formatPopulation(slotAnimal.population)}</div>{/if}
+							</div>
 							<span class="slot-card__name">{td(slotAnimal.nameKey)}</span>
 							{#if checked}
 								<span class="slot-card__icon" class:slot-card__icon--correct={slotResults[i]} class:slot-card__icon--wrong={!slotResults[i]}>
-									{#if slotResults[i]}
-										<Check size={18} strokeWidth={3} />
-									{:else}
-										<X size={18} strokeWidth={3} />
-									{/if}
+									{#if slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X size={18} strokeWidth={3} />{/if}
 								</span>
 							{/if}
 						</div>
 					{:else}
-						<span class="slot__label">
-							{#if i === 0}{t('population.least')}
-							{:else if i === 1}{t('population.middle')}
-							{:else}{t('population.most')}{/if}
-						</span>
+						<span class="slot__label">{#if i === 0}{t('population.least')}{:else if i === 1}{t('population.middle')}{:else}{t('population.most')}{/if}</span>
 					{/if}
 				</div>
 			{/each}
 		</div>
 	</div>
 
-	<!-- Action button -->
 	<div class="action-zone">
-		{#if !checked}
-			<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>
-				{t('population.check')}
-			</button>
-		{:else}
-			<button class="btn-check" onclick={handleNextRound}>
-				{t('population.nextRound')}
-			</button>
-		{/if}
+		{#if !checked}<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>{t('population.check')}</button>
+		{:else}<button class="btn-check" onclick={handleNextRound}>{t('population.nextRound')}</button>{/if}
 	</div>
 
-	<!-- Source cards panel -->
 	{#if !checked}
-		<div
-			class="source-panel"
-			role="group"
-			aria-label="source cards"
-			tabindex="-1"
-			ondragover={(e) => { e.preventDefault(); }}
-			ondrop={handleDropOnSource_DnD}
-			onclick={handleSourcePanelClick}
-			onkeydown={(e) => e.key === 'Enter' && handleSourcePanelClick(e as any)}
-		>
+		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1" ondragover={(e) => e.preventDefault()} ondrop={handleDropOnSource_DnD} onclick={handleSourcePanelClick} onkeydown={(e) => e.key === 'Enter' && handleSourcePanelClick(e as any)}>
 			<p class="source-panel__title">{t('population.yourAnimals')}</p>
 			<div class="source-panel__cards">
 				{#each sourceAnimals as animal, i (animal.id)}
-					<div
-						class="animal-card anim-stagger-{i + 1}"
-						class:card--selected={draggedAnimal?.id === animal.id}
-						draggable="true"
-						data-drag-animal={animal.id}
-						data-drag-source-type="source"
-						data-drag-source-index={i}
-						ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })}
-						onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }}
-						onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(animal, { type: 'source', index: i }))}
-						role="button"
-						tabindex="0"
-					>
+					<div class="animal-card anim-stagger-{i + 1}" class:card--selected={draggedAnimal?.id === animal.id} draggable="true" data-drag-animal={animal.id} data-drag-source-type="source" data-drag-source-index={i} ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(animal, { type: 'source', index: i }))} role="button" tabindex="0">
 						<img src={animal.image} alt={td(animal.nameKey)} class="animal-card__img" />
 						<span class="animal-card__name">{td(animal.nameKey)}</span>
 					</div>
@@ -509,12 +356,10 @@
 		</div>
 	{/if}
 
-	<!-- Results info -->
 	{#if checked}
 		<div class="results-zone">
 			{#each correctOrder as animal, i (animal.id)}
 				<div class="result-card anim-stagger-{i + 1}">
-					<!-- Stats Focus (Modern) -->
 					<div class="result-card__left">
 						<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-small" />
 					</div>
@@ -544,7 +389,6 @@
 		margin: 0 auto;
 	}
 
-	/* === Sorting panel === */
 	.sorting-panel {
 		width: 100%;
 		background-color: #94c04d;
@@ -565,7 +409,6 @@
 		font-weight: var(--font-weight-bold);
 	}
 
-	/* === Slots === */
 	.slots-row {
 		display: flex;
 		gap: var(--space-sm);
@@ -584,17 +427,11 @@
 		justify-content: center;
 		background-color: rgba(0, 0, 0, 0.05);
 		box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.1);
-		transition:
-			border-color var(--transition-normal),
-			background-color var(--transition-normal),
-			box-shadow var(--transition-normal);
+		transition: border-color var(--transition-normal), background-color var(--transition-normal), box-shadow var(--transition-normal);
 		min-width: 0;
 	}
 
 	.slot:not(.slot--filled) {
-		/* Adjusting dashed appearance by reducing opacity slightly to make it look less "busy" 
-		   or applying a mask if supported. Since custom gap is hard with CSS border, 
-		   we'll stick to 2px as requested but keep it clean. */
 		border-color: color-mix(in srgb, var(--color-text), transparent 30%);
 	}
 
@@ -604,21 +441,9 @@
 		background-color: rgba(19, 55, 27, 0.1);
 	}
 
-	.slot--correct {
-		border-color: #fff;
-		box-shadow: var(--shadow-glow-success);
-	}
-
-	.slot--wrong {
-		border-color: var(--color-error);
-		box-shadow: var(--shadow-glow-error);
-		animation: shake 500ms ease;
-	}
-
-	.slot--targetable {
-		border-color: var(--color-accent);
-		background-color: rgba(255, 179, 39, 0.05);
-	}
+	.slot--correct { border-color: #fff; box-shadow: var(--shadow-glow-success); }
+	.slot--wrong { border-color: var(--color-error); box-shadow: var(--shadow-glow-error); animation: shake 500ms ease; }
+	.slot--targetable { border-color: var(--color-accent); background-color: rgba(255, 179, 39, 0.05); }
 
 	.slot__label {
 		font-size: var(--font-size-xs);
@@ -632,7 +457,6 @@
 		padding: 0 4px;
 	}
 
-	/* === Slot cards (inside sorting panel) === */
 	.slot-card {
 		display: flex;
 		flex-direction: column;
@@ -643,30 +467,44 @@
 		gap: var(--space-xs);
 		cursor: grab;
 		user-select: none;
-		-webkit-user-drag: element;
-		-webkit-touch-callout: none;
 		position: relative;
 		transition: transform var(--transition-fast);
 		padding: 4px;
 	}
 
-	.slot-card:hover {
-		transform: scale(1.05);
-	}
+	.slot-card:hover { transform: scale(1.05); }
+	.slot-card:active { cursor: grabbing; }
 
-	.slot-card:active {
-		cursor: grabbing;
+	.slot-card__img-container {
+		position: relative;
+		width: 100%;
+		max-width: 60px;
+		aspect-ratio: 3 / 4;
 	}
 
 	.slot-card__img {
 		width: 100%;
-		max-width: 60px;
-		aspect-ratio: 3 / 4;
+		height: 100%;
 		border-radius: var(--radius-sm);
 		background-color: var(--color-bg-panel-dark);
-		border: none;
 		object-fit: cover;
 		pointer-events: none;
+	}
+
+	.slot-card__pop-overlay {
+		position: absolute;
+		bottom: 0; left: 0; right: 0;
+		padding: 8px 2px 2px;
+		background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+		color: #ffffff;
+		font-size: 8px;
+		font-weight: var(--font-weight-bold);
+		text-align: center;
+		border-bottom-left-radius: var(--radius-sm);
+		border-bottom-right-radius: var(--radius-sm);
+		pointer-events: none;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
 	.slot-card__name {
@@ -683,10 +521,8 @@
 
 	.slot-card__icon {
 		position: absolute;
-		top: -10px;
-		right: -10px;
-		width: 24px;
-		height: 24px;
+		top: -10px; right: -10px;
+		width: 24px; height: 24px;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
@@ -695,22 +531,10 @@
 		box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 		z-index: 2;
 	}
+	.slot-card__icon--correct { background-color: #4CAF50; }
+	.slot-card__icon--wrong { background-color: #f44336; }
 
-	.slot-card__icon--correct {
-		background-color: #4CAF50;
-	}
-
-	.slot-card__icon--wrong {
-		background-color: #f44336;
-	}
-
-	/* === Results zone === */
-	.results-zone {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		width: 100%;
-	}
+	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
 
 	.result-card {
 		background-color: var(--color-bg-surface);
@@ -747,11 +571,7 @@
 		justify-content: center;
 	}
 
-	.result-card__top {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-	}
+	.result-card__top { display: flex; justify-content: space-between; align-items: baseline; }
 
 	.result-card__name-bold {
 		font-size: 18px;
@@ -770,7 +590,7 @@
 		height: 2px;
 		width: 30px;
 		background: var(--color-accent);
-		margin: 8px 0;
+		margin: 2px 0;
 	}
 
 	.result-card__fact-simple {
@@ -780,12 +600,7 @@
 		font-style: italic;
 	}
 
-	/* === Check button === */
-	.action-zone {
-		width: 100%;
-		display: flex;
-		justify-content: center;
-	}
+	.action-zone { width: 100%; display: flex; justify-content: center; }
 
 	.btn-check {
 		padding: var(--space-md) 4rem;
@@ -799,10 +614,7 @@
 		cursor: pointer;
 		text-transform: uppercase;
 		letter-spacing: 2px;
-		transition:
-			transform var(--transition-fast),
-			box-shadow var(--transition-normal),
-			background-color var(--transition-normal);
+		transition: transform var(--transition-fast), box-shadow var(--transition-normal), background-color var(--transition-normal);
 	}
 
 	.btn-check:hover:not(:disabled) {
@@ -811,10 +623,7 @@
 		box-shadow: 0 7px 0 #b87e0a, 0 10px 24px rgba(255, 179, 39, 0.45);
 	}
 
-	.btn-check:active:not(:disabled) {
-		transform: translateY(3px);
-		box-shadow: 0 1px 0 #b87e0a;
-	}
+	.btn-check:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #b87e0a; }
 
 	.btn-check:disabled {
 		background: var(--color-disabled);
@@ -823,7 +632,6 @@
 		cursor: not-allowed;
 	}
 
-	/* === Source panel === */
 	.source-panel {
 		width: 100%;
 		background-color: #60883f;
@@ -845,15 +653,8 @@
 		font-weight: var(--font-weight-bold);
 	}
 
-	.source-panel__cards {
-		display: flex;
-		gap: var(--space-md);
-		justify-content: center;
-		flex-wrap: nowrap;
-		width: 100%;
-	}
+	.source-panel__cards { display: flex; gap: var(--space-md); justify-content: center; flex-wrap: nowrap; width: 100%; }
 
-	/* === Animal cards (source) === */
 	.animal-card {
 		display: flex;
 		flex-direction: column;
@@ -868,25 +669,13 @@
 		box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2);
 		cursor: grab;
 		user-select: none;
-		-webkit-user-drag: element;
-		-webkit-touch-callout: none;
-		transition:
-			transform var(--transition-fast),
-			box-shadow var(--transition-fast);
+		transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 		animation: card-enter 400ms ease both;
 		border: none;
 	}
 
-	.animal-card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25);
-	}
-
-	.animal-card:active {
-		cursor: grabbing;
-		transform: translateY(2px);
-		box-shadow: 0 1px 0 #324a21, 0 2px 5px rgba(0, 0, 0, 0.2);
-	}
+	.animal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
+	.animal-card:active { cursor: grabbing; transform: translateY(2px); box-shadow: 0 1px 0 #324a21, 0 2px 5px rgba(0, 0, 0, 0.2); }
 
 	.card--selected {
 		box-shadow: 0 0 15px var(--color-accent) !important;
@@ -917,30 +706,17 @@
 		width: 100%;
 	}
 
-	/* === Touch drag === */
 	.slot--touch-over {
 		border-color: var(--color-accent) !important;
 		background-color: rgba(255, 179, 39, 0.15) !important;
 		box-shadow: 0 0 10px var(--color-accent);
 	}
 
-	:global(.touch-drag-clone) {
-		filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
-		border-radius: var(--radius-md);
-	}
+	:global(.touch-drag-clone) { filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35)); border-radius: var(--radius-md); }
 
-	/* === Responsive === */
 	@media (max-width: 480px) {
-		.slots-row {
-			gap: var(--space-xs);
-		}
-
-		.source-panel__cards {
-			gap: var(--space-sm);
-		}
-
-		.btn-check {
-			padding: var(--space-md) 3rem;
-		}
+		.slots-row { gap: var(--space-xs); }
+		.source-panel__cards { gap: var(--space-sm); }
+		.btn-check { padding: var(--space-md) 3rem; }
 	}
 </style>
