@@ -529,7 +529,7 @@
 	.game-card__icon--wrong { background-color: #f44336; }
 
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
-	.result-card { background-color: var(--color-bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; border: 1px solid var(--color-border); display: flex; padding: 0; }
+	.result-card { background-color: var(--color-bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; }
 	.result-card__left { width: 70px; background: var(--color-bg-panel-dark); display: flex; align-items: center; justify-content: center; padding: 8px; }
 	.result-card__img-small { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; object-fit: cover; }
 	.result-card__right { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; }
