@@ -130,8 +130,45 @@
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 	}
 
-	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) { e.preventDefault(); performDropOnSlot(targetIndex); }
-	function handleDropOnSource_DnD(e: DragEvent, targetIndex: number) { e.preventDefault(); performDropOnSource(targetIndex); }
+	function setDragElementDropPosition(animalId: number | string, clientX: number, clientY: number, offsetX?: number, offsetY?: number) {
+		const el = document.querySelector(`[data-drag-animal="${animalId}"]`) as HTMLElement;
+		if (!el) return;
+		
+		el.style.setProperty('transition', 'none', 'important');
+		el.style.setProperty('transform', 'none', 'important');
+		
+		const rect = el.getBoundingClientRect();
+		const ox = offsetX !== undefined ? offsetX : el.offsetWidth / 2;
+		const oy = offsetY !== undefined ? offsetY : el.offsetHeight / 2;
+		
+		const dx = (clientX - ox) - rect.left;
+		const dy = (clientY - oy) - rect.top;
+		
+		el.style.setProperty('transform', `translate3d(${dx}px, ${dy}px, 0)`, 'important');
+		el.style.setProperty('z-index', '9999', 'important');
+	}
+
+	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) { 
+		e.preventDefault(); 
+		if (checked || !draggedAnimal || !dragSource) return;
+		if (dragSource.type === 'slot' && dragSource.index === targetIndex) {
+			draggedAnimal = null; dragSource = null; isActuallyDragging = false;
+			return;
+		}
+		setDragElementDropPosition(draggedAnimal.id, e.clientX, e.clientY);
+		performDropOnSlot(targetIndex); 
+	}
+
+	function handleDropOnSource_DnD(e: DragEvent, targetIndex: number) { 
+		e.preventDefault(); 
+		if (checked || !draggedAnimal || !dragSource) return;
+		if (dragSource.type === 'source' && dragSource.index === targetIndex) {
+			draggedAnimal = null; dragSource = null; isActuallyDragging = false;
+			return;
+		}
+		setDragElementDropPosition(draggedAnimal.id, e.clientX, e.clientY);
+		performDropOnSource(targetIndex); 
+	}
 
 	function handleSelect(animal: Animal, source: NonNullable<typeof dragSource>) {
 		if (checked) return;
@@ -224,6 +261,7 @@
 		if (!touchStartInfo) return;
 		
 		const wasDragging = touchDragStarted;
+		const startInfo = touchStartInfo;
 		touchStartInfo = null;
 		touchDragStarted = false;
 
@@ -236,9 +274,20 @@
 			const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
 			const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
 			
-			if (slotEl) performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
-			else if (srcEl) performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
-			else { draggedAnimal = null; dragSource = null; isActuallyDragging = false; }
+			if (checked || !draggedAnimal || !dragSource) {
+				draggedAnimal = null; dragSource = null; isActuallyDragging = false;
+				return;
+			}
+
+			if (slotEl) {
+				setDragElementDropPosition(draggedAnimal.id, touch.clientX, touch.clientY, startInfo.offsetX, startInfo.offsetY);
+				performDropOnSlot(parseInt(slotEl.dataset.slotIndex!, 10));
+			} else if (srcEl) {
+				setDragElementDropPosition(draggedAnimal.id, touch.clientX, touch.clientY, startInfo.offsetX, startInfo.offsetY);
+				performDropOnSource(parseInt(srcEl.dataset.sourceIndex!, 10));
+			} else { 
+				draggedAnimal = null; dragSource = null; isActuallyDragging = false; 
+			}
 		}
 	}
 
