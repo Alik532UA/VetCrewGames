@@ -315,10 +315,10 @@
 
 	/* === Sorting panel === */
 	.sorting-panel {
-		width: 100%;
+		/* width: 100%; */
 		background-color: #94c04d;
 		border-radius: var(--radius-lg);
-		padding: var(--space-lg) var(--space-sm);
+		padding: var(--space-md) var(--space-sm);
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-md);
@@ -513,7 +513,7 @@
 		/* width: 100%; */
 		background-color: #60883f;
 		border-radius: var(--radius-lg);
-		padding: var(--space-lg) var(--space-sm);
+		padding: var(--space-md) var(--space-sm);
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-md);
