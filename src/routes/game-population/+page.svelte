@@ -20,6 +20,9 @@
 
 	// Touch drag state
 	let touchDragClone: HTMLElement | null = null;
+	let touchStartInfo: { x: number; y: number; animal: Animal; source: NonNullable<typeof dragSource>; target: HTMLElement } | null = null;
+	let touchDragStarted = false;
+	const TOUCH_DRAG_THRESHOLD = 10; // px of movement before drag begins
 
 	// --- Logging ---
 	function logState(label: string) {
@@ -182,7 +185,21 @@
 	// --- Touch handlers (mobile) ---
 	function handleTouchStart(e: TouchEvent) {
 		const target = (e.target as HTMLElement).closest('[data-drag-animal]') as HTMLElement | null;
-		if (!target) return;
+		
+		if (!target) {
+			// Not on a draggable card — check if tapping a slot while an animal is selected
+			if (draggedAnimal && !checked) {
+				const slotEl = (e.target as HTMLElement).closest('[data-slot-index]') as HTMLElement | null;
+				if (slotEl) {
+					e.preventDefault();
+					const idx = parseInt(slotEl.dataset.slotIndex!, 10);
+					console.log('%c[TOUCH] tap slot with selection', 'color: #E91E63; font-weight: bold;', { slot: idx, animal: draggedAnimal.id });
+					performDropOnSlot(idx);
+				}
+			}
+			return;
+		}
+		if (checked) return;
 
 		const animalId = target.dataset.dragAnimal!;
 		const sourceType = target.dataset.dragSourceType as 'source' | 'slot';
@@ -194,20 +211,33 @@
 
 		if (!animal) return;
 
-		const source: typeof dragSource = { type: sourceType, index: sourceIndex };
-
-		console.log('%c[TOUCH] touchstart', 'color: #E91E63; font-weight: bold;', { animal: animal.id, source });
-		logState('Before touchstart');
-		if (checked) return;
+		// Prevent scrolling from taking over AND prevent duplicate click event
 		e.preventDefault();
+
+		const touch = e.touches[0];
+		touchStartInfo = {
+			x: touch.clientX,
+			y: touch.clientY,
+			animal,
+			source: { type: sourceType, index: sourceIndex },
+			target
+		};
+		touchDragStarted = false;
+
+		console.log('%c[TOUCH] touchstart (pending)', 'color: #E91E63; font-weight: bold;', { animal: animal.id, sourceType, sourceIndex });
+	}
+
+	function beginTouchDrag(touch: Touch) {
+		if (!touchStartInfo) return;
+		touchDragStarted = true;
+
+		const { animal, source, target } = touchStartInfo;
+		console.log('%c[TOUCH] drag started', 'color: #E91E63; font-weight: bold;', { animal: animal.id, source });
 
 		draggedAnimal = animal;
 		dragSource = source;
 
-		const touch = e.touches[0];
 		const rect = target.getBoundingClientRect();
-
-		// Create visual clone that follows the finger
 		const clone = target.cloneNode(true) as HTMLElement;
 		clone.classList.add('touch-drag-clone');
 		clone.style.position = 'fixed';
@@ -221,18 +251,32 @@
 		document.body.appendChild(clone);
 		touchDragClone = clone;
 
-		logState('After touchstart');
+		logState('After beginTouchDrag');
 	}
 
 	function handleTouchMove(e: TouchEvent) {
-		if (!draggedAnimal || !touchDragClone) return;
+		if (!touchStartInfo) return;
+		const touch = e.touches[0];
+
+		if (!touchDragStarted) {
+			// Check if finger moved enough to start a drag
+			const dx = touch.clientX - touchStartInfo.x;
+			const dy = touch.clientY - touchStartInfo.y;
+			if (Math.abs(dx) < TOUCH_DRAG_THRESHOLD && Math.abs(dy) < TOUCH_DRAG_THRESHOLD) return;
+
+			e.preventDefault();
+			beginTouchDrag(touch);
+			return;
+		}
+
 		e.preventDefault();
 
-		const touch = e.touches[0];
-		const w = touchDragClone.offsetWidth;
-		const h = touchDragClone.offsetHeight;
-		touchDragClone.style.left = touch.clientX - w / 2 + 'px';
-		touchDragClone.style.top = touch.clientY - h / 2 + 'px';
+		if (touchDragClone) {
+			const w = touchDragClone.offsetWidth;
+			const h = touchDragClone.offsetHeight;
+			touchDragClone.style.left = touch.clientX - w / 2 + 'px';
+			touchDragClone.style.top = touch.clientY - h / 2 + 'px';
+		}
 
 		// Highlight slot under finger
 		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -244,23 +288,45 @@
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
-		console.log('%c[TOUCH] touchend', 'color: #E91E63; font-weight: bold;');
-		logState('Before touchend');
-
 		// Remove highlight
 		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
 
-		if (!draggedAnimal || !dragSource) {
+		if (!touchStartInfo) {
 			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
 			return;
 		}
 
-		const touch = e.changedTouches[0];
+		const info = touchStartInfo;
+		touchStartInfo = null;
 
-		// Remove clone
+		if (!touchDragStarted) {
+			// It was a tap, not a drag — treat as click/select
+			console.log('%c[TOUCH] tap → select', 'color: #E91E63; font-weight: bold;', { animal: info.animal.id });
+
+			// If there's already a selected animal and we tapped a slot, drop it there
+			const touch = e.changedTouches[0];
+			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+			const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
+
+			if (draggedAnimal && slotEl) {
+				const idx = parseInt(slotEl.dataset.slotIndex!, 10);
+				performDropOnSlot(idx);
+			} else {
+				// Toggle select on this animal
+				handleSelect(info.animal, info.source);
+			}
+			return;
+		}
+
+		// It was a drag — handle drop
+		console.log('%c[TOUCH] touchend (drag)', 'color: #E91E63; font-weight: bold;');
+		logState('Before touchend');
+
+		const touch = e.changedTouches[0];
 		if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
 
-		// Find what's under the finger
+		if (!draggedAnimal || !dragSource) return;
+
 		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 		console.log('[TOUCH] Element under finger:', elUnder?.tagName, elUnder?.className?.toString().slice(0, 60));
 
@@ -281,6 +347,7 @@
 		}
 
 		logState('After touchend');
+		touchDragStarted = false;
 	}
 
 	onMount(() => {
