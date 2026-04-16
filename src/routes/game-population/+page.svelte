@@ -3,26 +3,6 @@
 	import { t, td } from '$lib/i18n/index';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
-	import { ChevronsRight, ChevronRight } from 'lucide-svelte';
-
-	onMount(() => {
-		(async () => {
-			const { polyfill } = await import('mobile-drag-drop');
-			const { scrollBehaviourDragImageTranslateOverride } = await import('mobile-drag-drop/scroll-behaviour');
-			
-			polyfill({
-				dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
-			});
-		})();
-
-		// Workaround for mobile devices to allow dragging without scrolling the page
-		const noop = () => {};
-		window.addEventListener('touchmove', noop, { passive: false });
-		
-		return () => {
-			window.removeEventListener('touchmove', noop);
-		};
-	});
 
 	const SLOT_COUNT = 3;
 	const TOTAL_ROUNDS = 10;
@@ -38,6 +18,23 @@
 	let draggedAnimal = $state<Animal | null>(null);
 	let dragSource = $state<{ type: 'source'; index: number } | { type: 'slot'; index: number } | null>(null);
 
+	// Touch drag state
+	let touchDragClone: HTMLElement | null = null;
+
+	// --- Logging ---
+	function logState(label: string) {
+		console.log(
+			`%c[STATE] ${label}`,
+			'color: #4CAF50; font-weight: bold;',
+			'\n  sourceAnimals:', sourceAnimals.map(a => a.id),
+			'\n  slots:', slots.map(s => s?.id ?? null),
+			'\n  draggedAnimal:', draggedAnimal?.id ?? null,
+			'\n  dragSource:', dragSource,
+			'\n  checked:', checked,
+			'\n  roundNumber:', roundNumber
+		);
+	}
+
 	function initRound() {
 		const picked = getRandomAnimals(SLOT_COUNT);
 		sourceAnimals = picked;
@@ -46,61 +43,33 @@
 		correctOrder = [...picked].sort((a, b) => a.population - b.population);
 		draggedAnimal = null;
 		dragSource = null;
+		console.log(
+			`%c[INIT] Round ${roundNumber} initialized`,
+			'color: #FF9800; font-weight: bold;',
+			'\n  picked:', picked.map(a => ({ id: a.id, population: a.population }))
+		);
+		logState('After initRound');
 	}
 
-	initRound();
-
-	// Derived: all slots filled
-	let allSlotsFilled = $derived(slots.every((s) => s !== null));
-
-	// Derived: result per slot (after check)
-	let slotResults = $derived.by(() => {
-		if (!checked) return [];
-		return slots.map((animal, i) => {
-			if (!animal) return false;
-			return animal.id === correctOrder[i].id;
-		});
-	});
-
-	// --- Drag & Drop / Click to Move logic ---
-	function handleDragStart(animal: Animal, source: typeof dragSource) {
-		draggedAnimal = animal;
-		dragSource = source;
-	}
-
-	function handleDragOverSlot(e: DragEvent) {
-		if (checked) return;
-		e.preventDefault();
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-	}
-
-	function handleSelect(animal: Animal, source: typeof dragSource) {
-		if (checked) return;
-
-		if (draggedAnimal?.id === animal.id) {
-			// Deselect if clicking the same
-			draggedAnimal = null;
-			dragSource = null;
-		} else {
-			draggedAnimal = animal;
-			dragSource = source;
+	// --- Core drop logic (shared between D&D, touch, click) ---
+	function performDropOnSlot(targetIndex: number): boolean {
+		console.log('[DROP] performDropOnSlot:', { targetIndex, draggedAnimal: draggedAnimal?.id, dragSource });
+		if (checked || !draggedAnimal || !dragSource) {
+			console.warn('[DROP] Ignored:', { checked, noDraggedAnimal: !draggedAnimal, noDragSource: !dragSource });
+			return false;
 		}
-	}
-
-	function handleDropOnSlot(targetIndex: number) {
-		if (checked || !draggedAnimal || !dragSource) return;
 
 		const animal = draggedAnimal;
 		const source = dragSource;
 
-		// If moving from one slot to another
 		if (source.type === 'slot') {
 			const oldSlotAnimal = slots[targetIndex];
+			console.log('[DROP] Slot→Slot swap:', { from: source.index, to: targetIndex, displaced: oldSlotAnimal?.id ?? null });
 			slots[source.index] = oldSlotAnimal;
 			slots[targetIndex] = animal;
 		} else {
-			// From source to slot
 			const displacedAnimal = slots[targetIndex];
+			console.log('[DROP] Source→Slot:', { animal: animal.id, targetIndex, displaced: displacedAnimal?.id ?? null });
 			sourceAnimals = sourceAnimals.filter((a) => a.id !== animal.id);
 			if (displacedAnimal) {
 				sourceAnimals = [...sourceAnimals, displacedAnimal];
@@ -110,45 +79,232 @@
 
 		draggedAnimal = null;
 		dragSource = null;
+		logState('After performDropOnSlot');
+		return true;
 	}
 
-	function handleSlotClick(i: number) {
-		if (checked) return;
-
-		if (draggedAnimal) {
-			handleDropOnSlot(i);
-		} else if (slots[i]) {
-			handleSelect(slots[i]!, { type: 'slot', index: i });
-		}
-	}
-
-	function handleDropOnSource(e?: DragEvent) {
-		if (e) e.preventDefault();
-		if (checked || !draggedAnimal || !dragSource) return;
+	function performReturnToSource(): boolean {
+		console.log('[DROP] performReturnToSource:', { draggedAnimal: draggedAnimal?.id, dragSource });
+		if (checked || !draggedAnimal || !dragSource) return false;
 
 		if (dragSource.type === 'slot') {
 			const animal = draggedAnimal;
 			slots[dragSource.index] = null;
 			sourceAnimals = [...sourceAnimals, animal];
+			console.log('[DROP] Returned to source:', animal.id);
 		}
 
 		draggedAnimal = null;
 		dragSource = null;
+		logState('After performReturnToSource');
+		return true;
+	}
+
+	// Derived
+	let allSlotsFilled = $derived(slots.every((s) => s !== null));
+
+	let slotResults = $derived.by(() => {
+		if (!checked) return [];
+		return slots.map((animal, i) => {
+			if (!animal) return false;
+			return animal.id === correctOrder[i].id;
+		});
+	});
+
+	// --- HTML5 Drag & Drop handlers (desktop) ---
+	function handleDragStart(e: DragEvent, animal: Animal, source: typeof dragSource) {
+		console.log('[D&D] dragstart:', { animal: animal.id, source });
+		logState('Before dragstart');
+		if (checked) return;
+
+		if (e.dataTransfer) {
+			e.dataTransfer.setData('text/plain', animal.id.toString());
+			e.dataTransfer.effectAllowed = 'move';
+		}
+
+		draggedAnimal = animal;
+		dragSource = source;
+		logState('After dragstart');
+	}
+
+	function handleDragOverSlot(e: DragEvent) {
+		if (checked) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+	}
+
+	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) {
+		e.preventDefault();
+		performDropOnSlot(targetIndex);
+	}
+
+	function handleDropOnSource_DnD(e: DragEvent) {
+		e.preventDefault();
+		performReturnToSource();
+	}
+
+	function handleSelect(animal: Animal, source: typeof dragSource) {
+		console.log('[SELECT]', { animal: animal.id, source });
+		if (checked) return;
+
+		if (draggedAnimal?.id === animal.id) {
+			console.log('[SELECT] Deselected:', animal.id);
+			draggedAnimal = null;
+			dragSource = null;
+		} else {
+			draggedAnimal = animal;
+			dragSource = source;
+			console.log('[SELECT] Selected:', animal.id);
+		}
+		logState('After select');
+	}
+
+	function handleSlotClick(i: number) {
+		console.log('[CLICK] Slot:', i);
+		if (checked) return;
+
+		if (draggedAnimal) {
+			performDropOnSlot(i);
+		} else if (slots[i]) {
+			handleSelect(slots[i]!, { type: 'slot', index: i });
+		}
 	}
 
 	function handleSourcePanelClick(e: MouseEvent) {
 		if (checked || !draggedAnimal || !dragSource) return;
 
-		// Only if clicking the panel itself, not a card inside it
-		if ((e.target as HTMLElement).classList.contains('source-panel') || 
+		if ((e.target as HTMLElement).classList.contains('source-panel') ||
 			(e.target as HTMLElement).classList.contains('source-panel__cards')) {
-			handleDropOnSource();
+			performReturnToSource();
 		}
 	}
+
+	// --- Touch handlers (mobile) ---
+	function handleTouchStart(e: TouchEvent) {
+		const target = (e.target as HTMLElement).closest('[data-drag-animal]') as HTMLElement | null;
+		if (!target) return;
+
+		const animalId = target.dataset.dragAnimal!;
+		const sourceType = target.dataset.dragSourceType as 'source' | 'slot';
+		const sourceIndex = parseInt(target.dataset.dragSourceIndex!, 10);
+
+		const animal = sourceType === 'source'
+			? sourceAnimals.find(a => a.id === animalId)
+			: slots[sourceIndex];
+
+		if (!animal) return;
+
+		const source: typeof dragSource = { type: sourceType, index: sourceIndex };
+
+		console.log('%c[TOUCH] touchstart', 'color: #E91E63; font-weight: bold;', { animal: animal.id, source });
+		logState('Before touchstart');
+		if (checked) return;
+		e.preventDefault();
+
+		draggedAnimal = animal;
+		dragSource = source;
+
+		const touch = e.touches[0];
+		const rect = target.getBoundingClientRect();
+
+		// Create visual clone that follows the finger
+		const clone = target.cloneNode(true) as HTMLElement;
+		clone.classList.add('touch-drag-clone');
+		clone.style.position = 'fixed';
+		clone.style.pointerEvents = 'none';
+		clone.style.zIndex = '9999';
+		clone.style.opacity = '0.85';
+		clone.style.width = rect.width + 'px';
+		clone.style.left = touch.clientX - rect.width / 2 + 'px';
+		clone.style.top = touch.clientY - rect.height / 2 + 'px';
+		clone.style.transform = 'scale(1.1)';
+		document.body.appendChild(clone);
+		touchDragClone = clone;
+
+		logState('After touchstart');
+	}
+
+	function handleTouchMove(e: TouchEvent) {
+		if (!draggedAnimal || !touchDragClone) return;
+		e.preventDefault();
+
+		const touch = e.touches[0];
+		const w = touchDragClone.offsetWidth;
+		const h = touchDragClone.offsetHeight;
+		touchDragClone.style.left = touch.clientX - w / 2 + 'px';
+		touchDragClone.style.top = touch.clientY - h / 2 + 'px';
+
+		// Highlight slot under finger
+		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+		const slotUnder = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
+		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
+		if (slotUnder) {
+			slotUnder.classList.add('slot--touch-over');
+		}
+	}
+
+	function handleTouchEnd(e: TouchEvent) {
+		console.log('%c[TOUCH] touchend', 'color: #E91E63; font-weight: bold;');
+		logState('Before touchend');
+
+		// Remove highlight
+		document.querySelectorAll('.slot--touch-over').forEach(el => el.classList.remove('slot--touch-over'));
+
+		if (!draggedAnimal || !dragSource) {
+			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
+			return;
+		}
+
+		const touch = e.changedTouches[0];
+
+		// Remove clone
+		if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
+
+		// Find what's under the finger
+		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+		console.log('[TOUCH] Element under finger:', elUnder?.tagName, elUnder?.className?.toString().slice(0, 60));
+
+		const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
+		const sourcePanel = elUnder?.closest('.source-panel');
+
+		if (slotEl) {
+			const idx = parseInt(slotEl.dataset.slotIndex!, 10);
+			console.log('[TOUCH] Drop on slot:', idx);
+			performDropOnSlot(idx);
+		} else if (sourcePanel) {
+			console.log('[TOUCH] Return to source');
+			performReturnToSource();
+		} else {
+			console.log('[TOUCH] Dropped outside — cancelling drag');
+			draggedAnimal = null;
+			dragSource = null;
+		}
+
+		logState('After touchend');
+	}
+
+	onMount(() => {
+		console.log('%c[MOUNT] Component mounted', 'color: #2196F3; font-weight: bold;');
+		initRound();
+		logState('On mount');
+
+		// Global touch handlers (must be on document with passive:false for reliable tracking)
+		document.addEventListener('touchstart', handleTouchStart, { passive: false });
+		document.addEventListener('touchmove', handleTouchMove, { passive: false });
+		document.addEventListener('touchend', handleTouchEnd);
+
+		return () => {
+			document.removeEventListener('touchstart', handleTouchStart);
+			document.removeEventListener('touchmove', handleTouchMove);
+			document.removeEventListener('touchend', handleTouchEnd);
+			if (touchDragClone) { touchDragClone.remove(); touchDragClone = null; }
+		};
+	});
 
 	function handleCheck() {
 		if (!allSlotsFilled) return;
 		checked = true;
+		logState('After check');
 	}
 
 	function handleNextRound() {
@@ -158,19 +314,6 @@
 			roundNumber = 1;
 		}
 		initRound();
-	}
-
-	function getArrowColor(i: number) {
-		const startColor = '#E5E5E5';
-		const middleColor = '#93C84A';
-		const endColor = '#598F3A';
-		if (i < 5) {
-			// First half: startColor to middleColor
-			return `color-mix(in srgb, ${startColor}, ${middleColor} ${(i / 4.5) * 100}%)`;
-		} else {
-			// Second half: middleColor to endColor
-			return `color-mix(in srgb, ${middleColor}, ${endColor} ${((i - 4.5) / 4.5) * 100}%)`;
-		}
 	}
 </script>
 
@@ -186,17 +329,18 @@
 		<p class="sorting-panel__instruction">{t('population.description')}</p>
 
 		<div class="slots-row">
-			{#each slots as slotAnimal, i}
+			{#each slots as slotAnimal, i (slotAnimal?.id ?? `empty-${i}`)}
 				<div
 					class="slot"
 					class:slot--filled={slotAnimal !== null}
 					class:slot--correct={checked && slotResults[i] === true}
 					class:slot--wrong={checked && slotResults[i] === false}
 					class:slot--targetable={!checked && draggedAnimal !== null}
+					data-slot-index={i}
 					role="button"
 					tabindex="0"
 					ondragover={handleDragOverSlot}
-					ondrop={() => handleDropOnSlot(i)}
+					ondrop={(e) => handleDropOnSlot_DnD(e, i)}
 					onclick={() => handleSlotClick(i)}
 					onkeydown={(e) => e.key === 'Enter' && handleSlotClick(i)}
 				>
@@ -207,7 +351,10 @@
 							class:slot-card--wrong={checked && slotResults[i] === false}
 							class:card--selected={draggedAnimal?.id === slotAnimal.id}
 							draggable={!checked ? 'true' : 'false'}
-							ondragstart={() => handleDragStart(slotAnimal, { type: 'slot', index: i })}
+							data-drag-animal={slotAnimal.id}
+							data-drag-source-type="slot"
+							data-drag-source-index={i}
+							ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })}
 							onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }}
 							onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(slotAnimal, { type: 'slot', index: i }))}
 							role="button"
@@ -252,18 +399,21 @@
 			aria-label="source cards"
 			tabindex="-1"
 			ondragover={(e) => { e.preventDefault(); }}
-			ondrop={handleDropOnSource}
+			ondrop={handleDropOnSource_DnD}
 			onclick={handleSourcePanelClick}
 			onkeydown={(e) => e.key === 'Enter' && handleSourcePanelClick(e as any)}
 		>
 			<p class="source-panel__title">{t('population.yourAnimals')}</p>
 			<div class="source-panel__cards">
-				{#each sourceAnimals as animal, i}
+				{#each sourceAnimals as animal, i (animal.id)}
 					<div
 						class="animal-card anim-stagger-{i + 1}"
 						class:card--selected={draggedAnimal?.id === animal.id}
 						draggable="true"
-						ondragstart={() => handleDragStart(animal, { type: 'source', index: i })}
+						data-drag-animal={animal.id}
+						data-drag-source-type="source"
+						data-drag-source-index={i}
+						ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })}
 						onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }}
 						onkeydown={(e) => e.key === 'Enter' && (e.stopPropagation(), handleSelect(animal, { type: 'source', index: i }))}
 						role="button"
@@ -280,7 +430,7 @@
 	<!-- Results info -->
 	{#if checked}
 		<div class="results-zone">
-			{#each correctOrder as animal, i}
+			{#each correctOrder as animal, i (animal.id)}
 				<div class="result-card anim-stagger-{i + 1}">
 					<div class="result-card__header">
 						<span class="result-card__rank">#{i + 1}</span>
@@ -404,6 +554,8 @@
 		gap: var(--space-xs);
 		cursor: grab;
 		user-select: none;
+		-webkit-user-drag: element;
+		-webkit-touch-callout: none;
 		position: relative;
 		transition: transform var(--transition-fast);
 	}
@@ -423,6 +575,7 @@
 		background-color: var(--color-bg-panel-dark);
 		border: none;
 		object-fit: cover;
+		pointer-events: none;
 	}
 
 	.slot-card__name {
@@ -549,6 +702,8 @@
 		box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2);
 		cursor: grab;
 		user-select: none;
+		-webkit-user-drag: element;
+		-webkit-touch-callout: none;
 		transition:
 			transform var(--transition-fast),
 			box-shadow var(--transition-fast);
@@ -581,6 +736,7 @@
 		background-color: var(--color-bg-panel-dark);
 		border: none;
 		object-fit: cover;
+		pointer-events: none;
 	}
 
 	.animal-card__name {
@@ -648,6 +804,18 @@
 	.result-card__population strong,
 	.result-card__fact strong {
 		color: var(--color-text);
+	}
+
+	/* === Touch drag === */
+	.slot--touch-over {
+		border-color: var(--color-accent) !important;
+		background-color: rgba(255, 179, 39, 0.15) !important;
+		box-shadow: 0 0 10px var(--color-accent);
+	}
+
+	:global(.touch-drag-clone) {
+		filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+		border-radius: var(--radius-md);
 	}
 
 	/* === Responsive === */
