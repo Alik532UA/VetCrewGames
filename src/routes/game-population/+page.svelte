@@ -1,9 +1,28 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { crossfade } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import { t, td } from '$lib/i18n/index';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { Check, X } from 'lucide-svelte';
+
+	const [send, receive] = crossfade({
+		duration: 300,
+		easing: cubicOut,
+		fallback(node, params) {
+			const style = getComputedStyle(node);
+			const transform = style.transform === 'none' ? '' : style.transform;
+			return {
+				duration: 300,
+				easing: cubicOut,
+				css: t => `
+					transform: ${transform} scale(${t});
+					opacity: ${t}
+				`
+			};
+		}
+	});
 
 	const SLOT_COUNT = 3;
 	const TOTAL_ROUNDS = 10;
@@ -182,7 +201,7 @@
 			const clone = target.cloneNode(true) as HTMLElement;
 			clone.classList.add('touch-drag-clone');
 			clone.style.width = w + 'px'; clone.style.height = h + 'px';
-			clone.style.transform = `translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`;
+			clone.style.setProperty('transform', `translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`, 'important');
 			document.body.appendChild(clone);
 			touchDragClone = clone;
 		}
@@ -191,7 +210,7 @@
 			if (e.cancelable) e.preventDefault();
 			if (touchDragClone && touchStartInfo) {
 				const { offsetX, offsetY } = touchStartInfo;
-				touchDragClone.style.transform = `translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`;
+				touchDragClone.style.setProperty('transform', `translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`, 'important');
 			}
 			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
 			document.querySelectorAll('.container--touch-over').forEach(el => el.classList.remove('container--touch-over'));
@@ -246,7 +265,7 @@
 	<div class="sorting-panel">
 		<p class="sorting-panel__instruction">{t('population.description')}</p>
 		<div class="slots-row">
-			{#each slots as slotAnimal, i (slotAnimal?.id ?? `empty-slot-${i}`)}
+			{#each slots as slotAnimal, i (i)}
 				<div 
 					class="game-container" 
 					data-slot-index={i} 
@@ -257,30 +276,33 @@
 					role="button" 
 					tabindex="0"
 				>
-					{#if slotAnimal}
+					{#each slotAnimal ? [slotAnimal] : [] as animal (animal.id)}
 						<div 
 							class="game-card" 
-							class:card--selected={draggedAnimal?.id === slotAnimal.id && !isActuallyDragging} 
+							class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging} 
 							class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'slot' && dragSource?.index === i} 
 							draggable={!checked ? 'true' : 'false'} 
-							data-drag-animal={slotAnimal.id} 
+							data-drag-animal={animal.id} 
 							data-drag-source-type="slot" 
 							data-drag-source-index={i} 
-							ondragstart={(e) => handleDragStart(e, slotAnimal, { type: 'slot', index: i })} 
+							ondragstart={(e) => handleDragStart(e, animal, { type: 'slot', index: i })} 
 							ondragend={handleDragEnd} 
-							onclick={(e) => { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); }} 
-							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(slotAnimal, { type: 'slot', index: i }); } }}
+							onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'slot', index: i }); }} 
+							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(animal, { type: 'slot', index: i }); } }}
 							role="button" 
 							tabindex="0"
+							in:receive={{ key: animal.id }}
+							out:send={{ key: animal.id }}
 						>
 							<div class="game-card__img-container">
-								<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="game-card__img" />
-								{#if checked}<div class="game-card__pop-overlay">{formatPopulation(slotAnimal.population)}</div>{/if}
+								<img src={animal.image} alt={td(animal.nameKey)} class="game-card__img" />
+								{#if checked}<div class="game-card__pop-overlay">{formatPopulation(animal.population)}</div>{/if}
 							</div>
-							<span class="game-card__name">{td(slotAnimal.nameKey)}</span>
+							<span class="game-card__name">{td(animal.nameKey)}</span>
 							{#if checked}<span class="game-card__icon" class:game-card__icon--correct={slotResults[i]} class:game-card__icon--wrong={!slotResults[i]}>{#if slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X size={18} strokeWidth={3} />{/if}</span>{/if}
 						</div>
-					{:else}
+					{/each}
+					{#if !slotAnimal}
 						<span class="game-container__label">{#if i === 0}{t('population.least')}{:else if i === 1}{t('population.middle')}{:else}{t('population.most')}{/if}</span>
 					{/if}
 				</div>
@@ -297,7 +319,7 @@
 		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
 			<p class="source-panel__title">{t('population.yourAnimals')}</p>
 			<div class="source-panel__cards">
-				{#each sourceAnimals as animal, i (animal?.id ?? `empty-src-${i}`)}
+				{#each sourceAnimals as srcAnimal, i (i)}
 					<div 
 						class="game-container" 
 						data-source-index={i} 
@@ -308,7 +330,7 @@
 						role="button" 
 						tabindex="0"
 					>
-						{#if animal}
+						{#each srcAnimal ? [srcAnimal] : [] as animal (animal.id)}
 							<div 
 								class="game-card" 
 								class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging} 
@@ -323,13 +345,15 @@
 								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); } }}
 								role="button" 
 								tabindex="0"
+								in:receive={{ key: animal.id }}
+								out:send={{ key: animal.id }}
 							>
 								<div class="game-card__img-container">
 									<img src={animal.image} alt={td(animal.nameKey)} class="game-card__img" />
 								</div>
 								<span class="game-card__name">{td(animal.nameKey)}</span>
 							</div>
-						{/if}
+						{/each}
 					</div>
 				{/each}
 			</div>
@@ -361,14 +385,15 @@
 	.game-container { 
 		flex: 1; max-width: 110px; aspect-ratio: 11 / 17; 
 		border: 2px dashed rgba(255,255,255,0.3); border-radius: var(--radius-md); 
-		display: flex; align-items: center; justify-content: center; 
+		display: grid; place-items: center; 
 		background-color: rgba(0, 0, 0, 0.05); box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.1); 
 		transition: all var(--transition-normal); min-width: 0; position: relative; 
 	}
 	.container--touch-over { border-color: var(--color-accent) !important; background-color: rgba(255, 179, 39, 0.15) !important; }
-	.game-container__label { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
+	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
 	
 	.game-card { 
+		grid-area: 1 / 1;
 		display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; gap: var(--space-xs); padding: var(--space-sm); 
 		background-color: #4a6a31; border-radius: var(--radius-md); box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2); 
 		cursor: grab; user-select: none; position: relative; transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast); z-index: 2; overflow: hidden;
