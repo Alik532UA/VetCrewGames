@@ -1,0 +1,142 @@
+/* ===== Game Animation Keyframes ===== */
+
+/* Card entrance - slides up and fades in */
+@keyframes card-enter {
+	from {
+		opacity: 0;
+		transform: translateY(30px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+/* Bounce in - for success feedback */
+@keyframes bounce-in {
+	0% {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	50% {
+		transform: scale(1.08);
+	}
+	70% {
+		transform: scale(0.95);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Shake - for wrong answer feedback */
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+	20%, 40%, 60%, 80% { transform: translateX(6px); }
+}
+
+/* Pulse glow - for interactive hints */
+@keyframes pulse-glow {
+	0%, 100% {
+		box-shadow: var(--shadow-card);
+	}
+	50% {
+		box-shadow: var(--shadow-glow-primary);
+	}
+}
+
+/* Pop - for button clicks */
+@keyframes pop {
+	0% { transform: scale(1); }
+	50% { transform: scale(0.92); }
+	100% { transform: scale(1); }
+}
+
+/* Slide in from bottom */
+@keyframes slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(40px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Slide in from left */
+@keyframes slide-left {
+	from {
+		opacity: 0;
+		transform: translateX(-40px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+/* Slide in from right */
+@keyframes slide-right {
+	from {
+		opacity: 0;
+		transform: translateX(40px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+/* Fade in */
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+/* Confetti burst - for correct answer */
+@keyframes confetti-pop {
+	0% {
+		transform: scale(0) rotate(0deg);
+		opacity: 1;
+	}
+	50% {
+		transform: scale(1.2) rotate(180deg);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(0.8) rotate(360deg);
+		opacity: 0;
+	}
+}
+
+/* Float - idle animation for cards */
+@keyframes float {
+	0%, 100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+}
+
+/* Drag pickup */
+@keyframes drag-pickup {
+	from {
+		transform: scale(1);
+		box-shadow: var(--shadow-card);
+	}
+	to {
+		transform: scale(1.06);
+		box-shadow: var(--shadow-card-hover);
+	}
+}
+
+/* Stagger entry helper - use with animation-delay */
+.anim-stagger-1 { animation-delay: 0ms; }
+.anim-stagger-2 { animation-delay: 80ms; }
+.anim-stagger-3 { animation-delay: 160ms; }
+.anim-stagger-4 { animation-delay: 240ms; }
+.anim-stagger-5 { animation-delay: 320ms; }
