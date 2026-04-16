@@ -536,7 +536,7 @@
 	.result-card__top { display: flex; justify-content: space-between; align-items: baseline; }
 	.result-card__name-bold { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
 	.result-card__stat { font-size: 12px; font-weight: 700; color: var(--color-accent); }
-	.result-card__divider { height: 2px; width: 30px; background: var(--color-accent); margin: 2px 0; }
+	.result-card__divider { height: 2px; width: 30px; background: var(--color-accent); margin: 2px 0; border-radius: 2px; }
 	.result-card__fact-simple { font-size: 12px; margin: 0; color: var(--color-text-muted); font-style: italic; }
 	
 	.btn-check { padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; background: linear-gradient(180deg, #FFD060 0%, #FFB327 40%, #E89E10 100%); color: var(--color-text-on-panel); box-shadow: 0 5px 0 #b87e0a, 0 8px 20px rgba(255, 179, 39, 0.35); border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); }
