@@ -35,6 +35,12 @@ export const uk = {
 	'population.population': 'Популяція',
 	'population.fact': 'Цікавий факт',
 
+	// Units
+	'unit.billion': 'млрд',
+	'unit.million': 'млн',
+	'unit.trillion': 'трлн',
+	'unit.thousand': 'тис',
+
 	// Animals
 	'animal.chicken': 'Курка',
 	'animal.cow': 'Корова',

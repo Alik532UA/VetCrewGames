@@ -4,7 +4,6 @@ export interface Animal {
 	id: string;
 	nameKey: string;
 	population: number;
-	populationLabel: string;
 	factKey: string;
 	image: string;
 }
@@ -14,7 +13,6 @@ export const animals: Animal[] = [
 		id: 'chicken',
 		nameKey: 'animal.chicken',
 		population: 33_000_000_000,
-		populationLabel: '~33 млрд',
 		factKey: 'fact.chicken',
 		image: `${base}/animals/chicken.jpg`
 	},
@@ -22,7 +20,6 @@ export const animals: Animal[] = [
 		id: 'cow',
 		nameKey: 'animal.cow',
 		population: 1_000_000_000,
-		populationLabel: '~1 млрд',
 		factKey: 'fact.cow',
 		image: `${base}/animals/cow.jpg`
 	},
@@ -30,7 +27,6 @@ export const animals: Animal[] = [
 		id: 'dog',
 		nameKey: 'animal.dog',
 		population: 500_000_000,
-		populationLabel: '~500 млн',
 		factKey: 'fact.dog',
 		image: `${base}/animals/dog.jpg`
 	},
@@ -38,7 +34,6 @@ export const animals: Animal[] = [
 		id: 'cat',
 		nameKey: 'animal.cat',
 		population: 600_000_000,
-		populationLabel: '~600 млн',
 		factKey: 'fact.cat',
 		image: `${base}/animals/cat.jpg`
 	},
@@ -46,7 +41,6 @@ export const animals: Animal[] = [
 		id: 'rat',
 		nameKey: 'animal.rat',
 		population: 7_000_000_000,
-		populationLabel: '~7 млрд',
 		factKey: 'fact.rat',
 		image: `${base}/animals/rat.png`
 	},
@@ -54,7 +48,6 @@ export const animals: Animal[] = [
 		id: 'sparrow',
 		nameKey: 'animal.sparrow',
 		population: 1_600_000_000,
-		populationLabel: '~1.6 млрд',
 		factKey: 'fact.sparrow',
 		image: `${base}/animals/sparrow.jpg`
 	},
@@ -62,7 +55,6 @@ export const animals: Animal[] = [
 		id: 'ant',
 		nameKey: 'animal.ant',
 		population: 20_000_000_000_000,
-		populationLabel: '~20 трлн',
 		factKey: 'fact.ant',
 		image: `${base}/animals/ant.jpg`
 	},
@@ -70,7 +62,6 @@ export const animals: Animal[] = [
 		id: 'elephant',
 		nameKey: 'animal.elephant',
 		population: 415_000,
-		populationLabel: '~415 тис',
 		factKey: 'fact.elephant',
 		image: `${base}/animals/elephant.jpg`
 	},
@@ -78,7 +69,6 @@ export const animals: Animal[] = [
 		id: 'tiger',
 		nameKey: 'animal.tiger',
 		population: 4_500,
-		populationLabel: '~4 500',
 		factKey: 'fact.tiger',
 		image: `${base}/animals/tiger.jpg`
 	},
@@ -86,7 +76,6 @@ export const animals: Animal[] = [
 		id: 'penguin',
 		nameKey: 'animal.penguin',
 		population: 30_000_000,
-		populationLabel: '~30 млн',
 		factKey: 'fact.penguin',
 		image: `${base}/animals/penguin.jpg`
 	},
@@ -94,7 +83,6 @@ export const animals: Animal[] = [
 		id: 'bee',
 		nameKey: 'animal.bee',
 		population: 2_000_000_000_000,
-		populationLabel: '~2 трлн',
 		factKey: 'fact.bee',
 		image: `${base}/animals/bee.jpg`
 	},
@@ -102,7 +90,6 @@ export const animals: Animal[] = [
 		id: 'panda',
 		nameKey: 'animal.panda',
 		population: 1_864,
-		populationLabel: '~1 864',
 		factKey: 'fact.panda',
 		image: `${base}/animals/panda.jpg`
 	},
@@ -110,7 +97,6 @@ export const animals: Animal[] = [
 		id: 'wolf',
 		nameKey: 'animal.wolf',
 		population: 300_000,
-		populationLabel: '~300 тис',
 		factKey: 'fact.wolf',
 		image: `${base}/animals/wolf.jpg`
 	},
@@ -118,7 +104,6 @@ export const animals: Animal[] = [
 		id: 'dolphin',
 		nameKey: 'animal.dolphin',
 		population: 12_000_000,
-		populationLabel: '~12 млн',
 		factKey: 'fact.dolphin',
 		image: `${base}/animals/dolphin.jpg`
 	},
@@ -126,7 +111,6 @@ export const animals: Animal[] = [
 		id: 'parrot',
 		nameKey: 'animal.parrot',
 		population: 50_000_000,
-		populationLabel: '~50 млн',
 		factKey: 'fact.parrot',
 		image: `${base}/animals/parrot.jpg`
 	}

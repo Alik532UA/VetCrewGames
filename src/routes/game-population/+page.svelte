@@ -3,6 +3,7 @@
 	import { t, td } from '$lib/i18n/index';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
+	import { Check, X } from 'lucide-svelte';
 
 	const SLOT_COUNT = 3;
 	const TOTAL_ROUNDS = 10;
@@ -13,6 +14,15 @@
 	let slots = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
 	let checked = $state(false);
 	let correctOrder = $state<Animal[]>([]);
+	let resultVariant = $state(1); // 1, 2, 3, or 4
+
+	function formatPopulation(num: number): string {
+		if (num >= 1_000_000_000_000) return `~${num / 1_000_000_000_000} ${t('unit.trillion')}`;
+		if (num >= 1_000_000_000) return `~${num / 1_000_000_000} ${t('unit.billion')}`;
+		if (num >= 1_000_000) return `~${num / 1_000_000} ${t('unit.million')}`;
+		if (num >= 1_000) return `~${num / 1_000} ${t('unit.thousand')}`;
+		return `~${num.toLocaleString()}`;
+	}
 
 	// Drag state
 	let draggedAnimal = $state<Animal | null>(null);
@@ -430,7 +440,13 @@
 							<img src={slotAnimal.image} alt={td(slotAnimal.nameKey)} class="slot-card__img" />
 							<span class="slot-card__name">{td(slotAnimal.nameKey)}</span>
 							{#if checked}
-								<span class="slot-card__icon">{slotResults[i] ? '✅' : '❌'}</span>
+								<span class="slot-card__icon" class:slot-card__icon--correct={slotResults[i]} class:slot-card__icon--wrong={!slotResults[i]}>
+									{#if slotResults[i]}
+										<Check size={18} strokeWidth={3} />
+									{:else}
+										<X size={18} strokeWidth={3} />
+									{/if}
+								</span>
 							{/if}
 						</div>
 					{:else}
@@ -496,22 +512,78 @@
 
 	<!-- Results info -->
 	{#if checked}
-		<div class="results-zone">
+		<div class="variant-switcher">
+			{#each [1, 2, 3, 4] as v}
+				<button 
+					class="variant-btn" 
+					class:variant-btn--active={resultVariant === v}
+					onclick={() => resultVariant = v}
+				>
+					V{v}
+				</button>
+			{/each}
+		</div>
+
+		<div class="results-zone results-zone--v{resultVariant}">
 			{#each correctOrder as animal, i (animal.id)}
-				<div class="result-card anim-stagger-{i + 1}">
-					<div class="result-card__header">
-						<span class="result-card__rank">#{i + 1}</span>
-						<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img" />
-						<span class="result-card__name">{td(animal.nameKey)}</span>
-					</div>
-					<div class="result-card__info">
-						<div class="result-card__population">
-							<strong>{t('population.population')}:</strong> {animal.populationLabel}
+				<div class="result-card result-card--v{resultVariant} anim-stagger-{i + 1}">
+					{#if resultVariant === 1}
+						<!-- Variant 1: Grid (Balanced) -->
+						<div class="result-card__header">
+							<span class="result-card__rank">#{i + 1}</span>
+							<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img" />
+							<div class="result-card__title-group">
+								<span class="result-card__name">{td(animal.nameKey)}</span>
+								<div class="result-card__population">
+									{formatPopulation(animal.population)}
+								</div>
+							</div>
 						</div>
 						<div class="result-card__fact">
 							<strong>{t('population.fact')}:</strong> {td(animal.factKey)}
 						</div>
-					</div>
+
+					{:else if resultVariant === 2}
+						<!-- Variant 2: Horizontal Row (Compact) -->
+						<span class="result-card__rank">#{i + 1}</span>
+						<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img" />
+						<div class="result-card__main">
+							<div class="result-card__header-row">
+								<span class="result-card__name">{td(animal.nameKey)}</span>
+								<span class="result-card__population-badge">{formatPopulation(animal.population)}</span>
+							</div>
+							<p class="result-card__fact-inline">{td(animal.factKey)}</p>
+						</div>
+
+					{:else if resultVariant === 3}
+						<!-- Variant 3: Visual Card (Hero) -->
+						<div class="result-card__hero">
+							<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-hero" />
+							<span class="result-card__rank-badge">#{i + 1}</span>
+						</div>
+						<div class="result-card__content">
+							<div class="result-card__header-hero">
+								<span class="result-card__name">{td(animal.nameKey)}</span>
+								<span class="result-card__pop">{formatPopulation(animal.population)}</span>
+							</div>
+							<p class="result-card__fact-text">{td(animal.factKey)}</p>
+						</div>
+
+					{:else}
+						<!-- Variant 4: Stats Focus (Modern) -->
+						<div class="result-card__left">
+							<span class="result-card__rank-large">0{i + 1}</span>
+							<img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-small" />
+						</div>
+						<div class="result-card__right">
+							<div class="result-card__top">
+								<span class="result-card__name-bold">{td(animal.nameKey)}</span>
+								<span class="result-card__stat">{formatPopulation(animal.population)}</span>
+							</div>
+							<div class="result-card__divider"></div>
+							<p class="result-card__fact-simple">{td(animal.factKey)}</p>
+						</div>
+					{/if}
 				</div>
 			{/each}
 		</div>
@@ -669,34 +741,262 @@
 
 	.slot-card__icon {
 		position: absolute;
-		top: -6px;
-		right: -6px;
-		font-size: var(--font-size-sm);
-	}
-
-	/* === Direction bar === */
-	.direction-bar {
+		top: -10px;
+		right: -10px;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		padding: 0 var(--space-sm);
-	}
-
-	.direction-bar__label {
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-bold);
+		justify-content: center;
 		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+		box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+		z-index: 2;
 	}
 
-	.direction-bar__arrows {
+	.slot-card__icon--correct {
+		background-color: #4CAF50;
+	}
+
+	.slot-card__icon--wrong {
+		background-color: #f44336;
+	}
+
+	/* === Results Variant Switcher === */
+	.variant-switcher {
+		display: flex;
+		gap: var(--space-xs);
+		margin-bottom: var(--space-md);
+		background: rgba(0,0,0,0.05);
+		padding: 4px;
+		border-radius: var(--radius-md);
+	}
+
+	.variant-btn {
+		padding: 4px 12px;
+		border: none;
+		border-radius: var(--radius-sm);
+		background: transparent;
+		cursor: pointer;
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-bold);
+		transition: all var(--transition-fast);
+	}
+
+	.variant-btn--active {
+		background: var(--color-accent);
+		color: #fff;
+	}
+
+	/* === Results zone === */
+	.results-zone {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+		width: 100%;
+	}
+
+	.result-card {
+		background-color: var(--color-bg-surface);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-card);
+		overflow: hidden;
+		animation: slide-up 400ms ease both;
+		border: 1px solid var(--color-border);
+	}
+
+	/* --- Variant 1: Grid (Balanced) --- */
+	.result-card--v1 {
+		padding: var(--space-md);
+	}
+	.result-card--v1 .result-card__header {
 		display: flex;
 		align-items: center;
-		gap: -4px;
+		gap: var(--space-md);
+		margin-bottom: var(--space-sm);
+	}
+	.result-card--v1 .result-card__rank {
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-bold);
+		color: var(--color-accent);
+	}
+	.result-card--v1 .result-card__img {
+		width: 50px;
+		height: 50px;
+		object-fit: cover;
+		border-radius: var(--radius-sm);
+	}
+	.result-card--v1 .result-card__name {
+		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-bold);
+		display: block;
+	}
+	.result-card--v1 .result-card__population {
+		font-size: var(--font-size-sm);
+		color: var(--color-accent);
+		font-weight: var(--font-weight-bold);
+	}
+	.result-card--v1 .result-card__fact {
+		font-size: var(--font-size-sm);
+		line-height: 1.4;
+		color: var(--color-text-muted);
 	}
 
-	.direction-bar__arrows :global(svg) {
-		margin-right: -8px;
+	/* --- Variant 2: Horizontal (Compact) --- */
+	.result-card--v2 {
+		display: flex;
+		align-items: center;
+		padding: var(--space-sm) var(--space-md);
+		gap: var(--space-md);
+	}
+	.result-card--v2 .result-card__rank {
+		font-size: var(--font-size-lg);
+		font-weight: 900;
+		color: var(--color-border);
+		min-width: 1.5rem;
+	}
+	.result-card--v2 .result-card__img {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+	.result-card--v2 .result-card__main {
+		flex: 1;
+	}
+	.result-card--v2 .result-card__header-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2px;
+	}
+	.result-card--v2 .result-card__name {
+		font-weight: var(--font-weight-bold);
+	}
+	.result-card--v2 .result-card__population-badge {
+		background: var(--color-accent-muted);
+		color: var(--color-accent);
+		padding: 2px 8px;
+		border-radius: 10px;
+		font-size: 10px;
+		font-weight: 800;
+		text-transform: uppercase;
+	}
+	.result-card--v2 .result-card__fact-inline {
+		font-size: 11px;
+		color: var(--color-text-muted);
+		margin: 0;
+		display: -webkit-box;
+		-webkit-line-clamp: 1;
+		line-clamp: 1;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	/* --- Variant 3: Visual Hero --- */
+	.result-card--v3 {
+		display: flex;
+		flex-direction: column;
+	}
+	.result-card--v3 .result-card__hero {
+		position: relative;
+		height: 100px;
+	}
+	.result-card--v3 .result-card__img-hero {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.result-card--v3 .result-card__rank-badge {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		background: var(--color-accent);
+		color: #fff;
+		padding: 4px 8px;
+		border-radius: var(--radius-sm);
+		font-weight: 900;
+		box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+	}
+	.result-card--v3 .result-card__content {
+		padding: var(--space-sm) var(--space-md);
+	}
+	.result-card--v3 .result-card__header-hero {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 4px;
+	}
+	.result-card--v3 .result-card__pop {
+		font-weight: 800;
+		color: var(--color-accent);
+	}
+	.result-card--v3 .result-card__fact-text {
+		font-size: var(--font-size-xs);
+		margin: 0;
+		color: var(--color-text-muted);
+	}
+
+	/* --- Variant 4: Stats Focus --- */
+	.result-card--v4 {
+		display: flex;
+		padding: 0;
+	}
+	.result-card--v4 .result-card__left {
+		width: 80px;
+		background: var(--color-bg-panel-dark);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 12px 0;
+	}
+	.result-card--v4 .result-card__rank-large {
+		font-size: 24px;
+		font-weight: 900;
+		color: rgba(255,255,255,0.2);
+		line-height: 1;
+	}
+	.result-card--v4 .result-card__img-small {
+		width: 40px;
+		height: 40px;
+		border-radius: 8px;
+		object-fit: cover;
+	}
+	.result-card--v4 .result-card__right {
+		flex: 1;
+		padding: 12px 16px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+	.result-card--v4 .result-card__top {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+	}
+	.result-card--v4 .result-card__name-bold {
+		font-size: 18px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+	}
+	.result-card--v4 .result-card__stat {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--color-accent);
+	}
+	.result-card--v4 .result-card__divider {
+		height: 2px;
+		width: 30px;
+		background: var(--color-accent);
+		margin: 8px 0;
+	}
+	.result-card--v4 .result-card__fact-simple {
+		font-size: 12px;
+		margin: 0;
+		color: var(--color-text-muted);
+		font-style: italic;
 	}
 
 	/* === Check button === */
@@ -836,64 +1136,6 @@
 		width: 100%;
 	}
 
-	/* === Results zone === */
-	.results-zone {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-	}
-
-	.result-card {
-		background-color: var(--color-bg-surface);
-		border-radius: var(--radius-md);
-		padding: var(--space-lg);
-		box-shadow: var(--shadow-card);
-		animation: slide-up 400ms ease both;
-	}
-
-	.result-card__header {
-		display: flex;
-		align-items: center;
-		gap: var(--space-md);
-		margin-bottom: var(--space-md);
-	}
-
-	.result-card__rank {
-		font-size: var(--font-size-xl);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-accent);
-		min-width: 2rem;
-	}
-
-	.result-card__img {
-		width: 48px;
-		height: 64px;
-		border-radius: var(--radius-sm);
-		background-color: var(--color-bg-card);
-		border: 1px solid var(--color-border);
-		flex-shrink: 0;
-		object-fit: cover;
-	}
-
-	.result-card__name {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-bold);
-	}
-
-	.result-card__info {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
-		color: var(--color-text-muted);
-		font-size: var(--font-size-sm);
-		line-height: 1.5;
-	}
-
-	.result-card__population strong,
-	.result-card__fact strong {
-		color: var(--color-text);
-	}
-
 	/* === Touch drag === */
 	.slot--touch-over {
 		border-color: var(--color-accent) !important;
@@ -910,19 +1152,6 @@
 	@media (max-width: 480px) {
 		.slots-row {
 			gap: var(--space-xs);
-		}
-
-		.slot {
-		}
-
-		.slot-card__img {
-		}
-
-		.animal-card {
-			
-		}
-
-		.animal-card__img {
 		}
 
 		.source-panel__cards {

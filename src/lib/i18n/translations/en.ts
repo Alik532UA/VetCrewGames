@@ -34,6 +34,12 @@ export const en = {
 	'population.population': 'Population',
 	'population.fact': 'Interesting fact',
 
+	// Units
+	'unit.billion': 'billion',
+	'unit.million': 'million',
+	'unit.trillion': 'trillion',
+	'unit.thousand': 'thousand',
+
 	// Animals
 	'animal.chicken': 'Chicken',
 	'animal.cow': 'Cow',
