@@ -31,19 +31,43 @@
 	}
 
 	function toggleFullscreen() {
-		if (!document.fullscreenElement) {
-			document.documentElement.requestFullscreen().catch(err => {
-				console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-			});
+		const doc = document as any;
+		const el = document.documentElement as any;
+
+		if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+			const request = el.requestFullscreen || el.webkitRequestFullscreen;
+			if (request) {
+				request.call(el).catch((err: any) => {
+					console.error(`Error: ${err.message}`);
+					// Fallback for iPhone where requestFullscreen is not supported
+					document.documentElement.setAttribute('data-fake-fullscreen', 'true');
+					isFullscreen = true;
+				});
+			} else {
+				// Direct fallback if no API exists
+				document.documentElement.setAttribute('data-fake-fullscreen', 'true');
+				isFullscreen = true;
+			}
 		} else {
-			document.exitFullscreen();
+			const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+			if (exit) {
+				exit.call(doc);
+			}
+			document.documentElement.removeAttribute('data-fake-fullscreen');
+			isFullscreen = false;
 		}
 	}
 
 	onMount(() => {
-		const handler = () => { isFullscreen = !!document.fullscreenElement; };
+		const handler = () => { 
+			isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || document.documentElement.hasAttribute('data-fake-fullscreen')); 
+		};
 		document.addEventListener('fullscreenchange', handler);
-		return () => document.removeEventListener('fullscreenchange', handler);
+		document.addEventListener('webkitfullscreenchange', handler);
+		return () => {
+			document.removeEventListener('fullscreenchange', handler);
+			document.removeEventListener('webkitfullscreenchange', handler);
+		};
 	});
 </script>
 
