@@ -17,6 +17,7 @@
 	let isFullscreen = $state(false);
 
 	const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+	const isIPhone = typeof navigator !== 'undefined' && /iPhone/.test(navigator.userAgent);
 
 	$effect(() => {
 		if (settings.score > lastScore) {
