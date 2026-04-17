@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { storage } from '$lib/services/storage';
 
 export type Theme = 'dark' | 'light';
 export type Locale = 'uk' | 'en';
@@ -12,7 +13,7 @@ class Settings {
 
 	constructor() {
 		if (browser) {
-			const savedTheme = localStorage.getItem('vetcrewgames_theme') as Theme;
+			const savedTheme = storage.get('theme') as Theme;
 			if (savedTheme) {
 				this.theme = savedTheme;
 				document.documentElement.setAttribute('data-theme', savedTheme);
@@ -27,17 +28,17 @@ class Settings {
 			}
 
 			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-				if (!localStorage.getItem('vetcrewgames_theme')) {
+				if (!storage.get('theme')) {
 					this.theme = e.matches ? 'dark' : 'light';
 				}
 			});
 
-			const savedLocale = localStorage.getItem('vetcrewgames_locale') as Locale;
+			const savedLocale = storage.get('locale') as Locale;
 			if (savedLocale) {
 				this.locale = savedLocale;
 			}
 
-			const savedFont = localStorage.getItem('vetcrewgames_font') as Font;
+			const savedFont = storage.get('font') as Font;
 			if (savedFont) {
 				this.font = savedFont;
 				document.documentElement.setAttribute('data-font', savedFont);
@@ -45,7 +46,7 @@ class Settings {
 				document.documentElement.setAttribute('data-font', this.font);
 			}
 
-			const savedScore = localStorage.getItem('vetcrewgames_score');
+			const savedScore = storage.get('score');
 			if (savedScore) {
 				this.score = parseInt(savedScore, 10);
 			}
@@ -54,7 +55,7 @@ class Settings {
 		$effect.root(() => {
 			$effect(() => {
 				if (browser) {
-					localStorage.setItem('vetcrewgames_theme', this.theme);
+					storage.set('theme', this.theme);
 					document.documentElement.setAttribute('data-theme', this.theme);
 					const meta = document.querySelector('meta[name="color-scheme"]');
 					if (meta) meta.setAttribute('content', this.theme === 'dark' ? 'dark' : 'light dark');
@@ -63,20 +64,20 @@ class Settings {
 
 			$effect(() => {
 				if (browser) {
-					localStorage.setItem('vetcrewgames_locale', this.locale);
+					storage.set('locale', this.locale);
 				}
 			});
 
 			$effect(() => {
 				if (browser) {
-					localStorage.setItem('vetcrewgames_font', this.font);
+					storage.set('font', this.font);
 					document.documentElement.setAttribute('data-font', this.font);
 				}
 			});
 
 			$effect(() => {
 				if (browser) {
-					localStorage.setItem('vetcrewgames_score', this.score.toString());
+					storage.set('score', this.score.toString());
 				}
 			});
 		});

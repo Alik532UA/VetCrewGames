@@ -13,7 +13,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch(`${base}/app-version.json`);
+			const res = await fetch(`${base}/app-version.json?v=${Date.now()}`);
 			if (res.ok) {
 				const data = await res.json();
 				appVersion = data.version;

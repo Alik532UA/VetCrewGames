@@ -498,7 +498,7 @@
 		<div class="results-zone">
 			{#each correctOrder as animal, i (animal.id)}
 				<div class="result-card anim-stagger-{i + 1}">
-					<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" /></div>
+					<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" loading="lazy" /></div>
 					<div class="result-card__right">
 						<div class="result-card__top"><span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span><span class="result-card__stat">{@html formatPopulationHtml(animal.population)}</span></div>
 						<div class="result-card__divider"></div>
@@ -583,4 +583,6 @@
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5)); border-radius: var(--radius-md); 
 	}
 	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
+</style>
+} }
 </style>

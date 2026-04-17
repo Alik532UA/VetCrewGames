@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { sessionStore } from '$lib/services/storage';
 
 export type LogLevel = 'info' | 'warn' | 'error';
 export type LogCategory = 'app' | 'ui' | 'network' | 'game_engine' | 'i18n';
@@ -34,7 +35,7 @@ class LogService {
 
 	constructor() {
 		if (browser) {
-			const savedLogs = sessionStorage.getItem('vetcrewgames_logs');
+			const savedLogs = sessionStore.get('logs');
 			if (savedLogs) {
 				try {
 					this.logs = JSON.parse(savedLogs);
@@ -47,7 +48,7 @@ class LogService {
 
 	private persistLogs() {
 		if (browser) {
-			sessionStorage.setItem('vetcrewgames_logs', JSON.stringify(this.logs));
+			sessionStore.set('logs', JSON.stringify(this.logs));
 		}
 	}
 

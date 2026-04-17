@@ -2,6 +2,7 @@
 	import { Copy, Check } from 'lucide-svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { dev } from '$app/environment';
+	import { base } from '$app/paths';
 
 	// According to rules, visible in dev, hidden in prod (unless overridden)
 	let showButton = dev;
@@ -12,7 +13,7 @@
 		const logs = logService.getLogs();
 		let version = 'unknown';
 		try {
-			const res = await fetch('/app-version.json');
+			const res = await fetch(`${base}/app-version.json?v=${Date.now()}`);
 			if (res.ok) {
 				const data = await res.json();
 				version = data.version;
