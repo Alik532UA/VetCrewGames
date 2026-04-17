@@ -72,7 +72,7 @@
 
 	.game-round {
 		font-size: var(--font-size-sm);
-		color: rgba(229, 229, 229, 0.7);
+		color: color-mix(in srgb, var(--color-text), transparent 30%);
 	}
 
 	.game-header {
@@ -114,9 +114,9 @@
 		width: 44px;
 		height: 44px;
 		border-radius: var(--radius-md);
-		background-color: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		color: #E5E5E5;
+		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 90%);
+		border: 1px solid color-mix(in srgb, var(--color-bg-surface), transparent 90%);
+		color: var(--color-text);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -133,7 +133,7 @@
 	}
 
 	.header-btn:hover {
-		background-color: rgba(255, 255, 255, 0.2);
+		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 80%);
 		transform: scale(1.05);
 	}
 
@@ -151,7 +151,7 @@
 	.game-title {
 		font-size: var(--font-size-xl);
 		font-weight: var(--font-weight-bold);
-		color: #E5E5E5;
+		color: var(--color-text);
 		margin: 0;
 		text-align: center;
 	}

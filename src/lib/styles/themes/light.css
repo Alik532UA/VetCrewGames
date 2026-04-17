@@ -1,7 +1,7 @@
 [data-theme='light'] {
 	--color-bg: #f2f5ec;
 	--color-bg-surface: #e4ebd8;
-	--color-bg-panel: #93C84A;
+	--color-bg-panel: #93bf4c;
 	--color-bg-panel-dark: #598F3A;
 	--color-bg-card: #598F3A;
 	--color-bg-card-hover: #6da043;
@@ -17,7 +17,8 @@
 	--color-error: #d44;
 	--color-disabled: #ccc;
 	--color-disabled-text: #999;
-	--color-border: #93C84A;
+	--color-border: #93bf4c;
+	--color-stat: #13371B;
 
 	--shadow-card: 0 4px 16px rgba(0, 0, 0, 0.1);
 	--shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.15);

@@ -494,28 +494,28 @@
 
 <style>
 	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 600px; padding: 0 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
-	.sorting-panel { width: 100%; background-color: #94c04d; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
-	.sorting-panel__instruction { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+	.sorting-panel { width: 100%; background-color: var(--color-bg-panel); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
+	.sorting-panel__instruction { color: var(--color-text-on-panel); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
 
 	.game-container { 
 		flex: 1; max-width: 110px; aspect-ratio: 11 / 17; 
-		border: 2px dashed rgba(255,255,255,0.3); border-radius: var(--radius-md); 
+		border: 2px dashed color-mix(in srgb, var(--color-text-on-panel), transparent 70%); border-radius: var(--radius-md); 
 		display: grid; place-items: center; 
 		background-color: rgba(0, 0, 0, 0.05); box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.1); 
 		transition: all var(--transition-normal); min-width: 0; position: relative; 
 	}
-	.container--touch-over { border-color: var(--color-accent) !important; background-color: rgba(255, 179, 39, 0.15) !important; }
-	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
+	.container--touch-over { border-color: var(--color-accent) !important; background-color: var(--color-accent-shadow) !important; }
+	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-on-panel); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
 	
 	.game-card { 
 		grid-area: 1 / 1;
 		display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; gap: var(--space-xs); padding: var(--space-sm); 
-		background-color: #4a6a31; border-radius: var(--radius-md); box-shadow: 0 4px 0 #324a21, 0 8px 15px rgba(0, 0, 0, 0.2); 
+		background-color: var(--color-bg-card); border-radius: var(--radius-md); box-shadow: 0 4px 0 var(--color-bg-panel-dark), var(--shadow-card); 
 		cursor: grab; user-select: none; position: relative; transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast); z-index: 2;
 		touch-action: none;
 	}
-	.game-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #324a21, 0 10px 20px rgba(0, 0, 0, 0.25); }
+	.game-card:hover { transform: translateY(-2px); background-color: var(--color-bg-card-hover); box-shadow: 0 6px 0 var(--color-bg-panel-dark), var(--shadow-card-hover); }
 	.game-card:active { cursor: grabbing; }
 	.card--selected { box-shadow: 0 0 15px var(--color-accent) !important; border: 2px solid var(--color-accent) !important; transform: scale(1.05) translateY(-2px) !important; }
 	.card--dragging-orig { opacity: 0 !important; pointer-events: none; }
@@ -525,25 +525,38 @@
 	.game-card__pop-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 2px 2px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.85)); color: #ffffff; font-size: 8px; font-weight: var(--font-weight-bold); text-align: center; border-bottom-left-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm); white-space: nowrap; overflow: hidden; }
 	.game-card__name { font-size: var(--font-size-md); font-weight: var(--font-weight-bold); color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; width: 100%; line-height: 1.2; flex: 1; display: flex; align-items: center; justify-content: center; }
 	.game-card__icon { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
-	.game-card__icon--correct { background-color: #4CAF50; }
-	.game-card__icon--wrong { background-color: #f44336; }
+	.game-card__icon--correct { background-color: var(--color-success); }
+	.game-card__icon--wrong { background-color: var(--color-error); }
 
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
 	.result-card { background-color: var(--color-bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; }
-	.result-card__left { width: 70px; background: var(--color-bg-panel-dark); display: flex; align-items: center; justify-content: center; padding: 8px; }
+	.result-card__left { width: 70px; 
+		/* background: var(--color-bg-panel-dark);  */
+		display: flex; align-items: center; justify-content: center; 
+		/* padding: 8px; */
+	 }
 	.result-card__img-small { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; object-fit: cover; }
 	.result-card__right { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; }
 	.result-card__top { display: flex; justify-content: space-between; align-items: baseline; }
 	.result-card__name-bold { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-	.result-card__stat { font-size: 12px; font-weight: 700; color: var(--color-accent); }
+	.result-card__stat { font-size: 12px; font-weight: 700; color: var(--color-stat); }
 	.result-card__divider { height: 2px; width: 30px; background: var(--color-accent); margin: 2px 0; border-radius: 2px; }
 	.result-card__fact-simple { font-size: 12px; margin: 0; color: var(--color-text-muted); font-style: italic; }
 	
-	.btn-check { padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; background: linear-gradient(180deg, #FFD060 0%, #FFB327 40%, #E89E10 100%); color: var(--color-text-on-panel); box-shadow: 0 5px 0 #b87e0a, 0 8px 20px rgba(255, 179, 39, 0.35); border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); }
-	.btn-check:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 #b87e0a, 0 10px 24px rgba(255, 179, 39, 0.45); }
+	.btn-check { 
+		padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; 
+		background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent) 40%, color-mix(in srgb, var(--color-accent), black 20%) 100%); 
+		color: var(--color-text-on-panel); 
+		box-shadow: 0 5px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 8px 20px var(--color-accent-shadow); 
+		border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); 
+	}
+	.btn-check:hover:not(:disabled) { 
+		transform: translateY(-2px); 
+		box-shadow: 0 7px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 10px 24px var(--color-accent-shadow); 
+	}
 	.btn-check:disabled { background: var(--color-disabled); color: var(--color-disabled-text); box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15); cursor: not-allowed; }
-	.source-panel { width: 100%; background-color: #60883f; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
-	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+	.source-panel { width: 100%; background-color: var(--color-bg-panel-dark); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
+	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	
 	:global(.touch-drag-clone) { 
 		position: fixed !important; pointer-events: none !important; z-index: 9999 !important; 
