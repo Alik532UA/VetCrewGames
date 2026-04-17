@@ -34,8 +34,12 @@ export const formatFont = (text: string): string => {
 	return text
 		.replace(/і/g, 'i')
 		.replace(/І/g, 'I')
-		.replace(/є/g, '<span class="flip-e">э</span>')
-		.replace(/Є/g, '<span class="flip-e">Э</span>');
+		.replace(/є/g, '<span class="font-noto">є</span>')
+		.replace(/Є/g, '<span class="font-noto">Є</span>')
+		.replace(/ї/g, '<span class="font-comfortaa">ї</span>')
+		.replace(/Ї/g, '<span class="font-comfortaa">Ї</span>')
+		.replace(/ґ/g, '<span class="font-comfortaa">ґ</span>')
+		.replace(/Ґ/g, '<span class="font-comfortaa">Ґ</span>');
 };
 
 export const formatPlain = (text: string): string => {

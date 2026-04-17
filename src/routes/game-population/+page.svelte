@@ -511,10 +511,10 @@
 </div>
 
 <style>
-	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 600px; padding: 0 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
+	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 600px; padding: var(--space-md) 0 var(--space-xl); gap: var(--space-lg); margin: 0 auto; }
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 	.sorting-panel { width: 100%; background-color: var(--color-bg-panel); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
-	.sorting-panel__instruction { color: var(--color-text-on-panel); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+	.sorting-panel__instruction { color: #ffffff; text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
 
 	.game-container { 

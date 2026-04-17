@@ -105,7 +105,7 @@
 </div>
 
 <style>
-	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 500px; padding: 0 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
+	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 500px; padding: var(--space-2xl) 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 
 	.progress-container { width: 100%; display: flex; align-items: center; gap: var(--space-md); }

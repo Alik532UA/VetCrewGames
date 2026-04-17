@@ -143,3 +143,11 @@ img {
 	clip: rect(0, 0, 0, 0);
 	border: 0;
 }
+
+.font-noto {
+	font-family: 'Noto Serif', serif;
+}
+
+.font-comfortaa {
+	font-family: 'Comfortaa', cursive;
+}
