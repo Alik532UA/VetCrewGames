@@ -16,6 +16,8 @@
 	let isPulsing = $state(false);
 	let isFullscreen = $state(false);
 
+	const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 	$effect(() => {
 		if (settings.score > lastScore) {
 			isPulsing = true;
@@ -31,28 +33,37 @@
 	}
 
 	function toggleFullscreen() {
+		if (isIOS) {
+			// iOS Safari (especially iPhone) doesn't support Fullscreen API for elements.
+			// Force Fake Fullscreen instead.
+			const isFake = document.documentElement.hasAttribute('data-fake-fullscreen');
+			if (!isFake) {
+				document.documentElement.setAttribute('data-fake-fullscreen', 'true');
+				isFullscreen = true;
+			} else {
+				document.documentElement.removeAttribute('data-fake-fullscreen');
+				isFullscreen = false;
+			}
+			return;
+		}
+
 		const doc = document as any;
 		const el = document.documentElement as any;
 
 		if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
 			const request = el.requestFullscreen || el.webkitRequestFullscreen;
 			if (request) {
-				request.call(el).catch((err: any) => {
-					console.error(`Error: ${err.message}`);
-					// Fallback for iPhone where requestFullscreen is not supported
+				request.call(el).catch(() => {
 					document.documentElement.setAttribute('data-fake-fullscreen', 'true');
 					isFullscreen = true;
 				});
 			} else {
-				// Direct fallback if no API exists
 				document.documentElement.setAttribute('data-fake-fullscreen', 'true');
 				isFullscreen = true;
 			}
 		} else {
 			const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
-			if (exit) {
-				exit.call(doc);
-			}
+			if (exit) exit.call(doc);
 			document.documentElement.removeAttribute('data-fake-fullscreen');
 			isFullscreen = false;
 		}
@@ -60,7 +71,9 @@
 
 	onMount(() => {
 		const handler = () => { 
-			isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || document.documentElement.hasAttribute('data-fake-fullscreen')); 
+			const native = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+			const fake = document.documentElement.hasAttribute('data-fake-fullscreen');
+			isFullscreen = native || fake; 
 		};
 		document.addEventListener('fullscreenchange', handler);
 		document.addEventListener('webkitfullscreenchange', handler);
