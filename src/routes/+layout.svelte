@@ -5,6 +5,7 @@
 	import { settings } from '$lib/settings.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 
 	let { children } = $props();
 	
@@ -12,7 +13,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch('/app-version.json');
+			const res = await fetch(`${base}/app-version.json`);
 			if (res.ok) {
 				const data = await res.json();
 				appVersion = data.version;
@@ -24,7 +25,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href="/favicon.svg" />
+	<link rel="icon" href="{base}/favicon.svg" />
 	<title>{formatPlain(t('app.title'))}</title>
 </svelte:head>
 
