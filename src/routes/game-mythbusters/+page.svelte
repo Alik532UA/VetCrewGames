@@ -4,7 +4,7 @@
 	import { settings } from '$lib/settings.svelte';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import GameHeader from '$lib/components/GameHeader.svelte';
-	import { getNextQuestion, type GameQuestion } from '$lib/data/myth-game';
+	import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
 	import { CheckCircle2, XCircle } from 'lucide-svelte';
 
 	// Game state

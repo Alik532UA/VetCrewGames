@@ -3,7 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/settings.svelte';
-	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
+	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { Check, X } from 'lucide-svelte';
 
@@ -429,7 +429,7 @@
 							out:send={{ key: animal.id }}
 						>
 							<div class="game-card__img-container">
-								<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" />
+								<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" loading="lazy" />
 								{#if checked}<div class="game-card__pop-overlay">{@html formatPopulationHtml(animal.population)}</div>{/if}
 							</div>
 							<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
@@ -483,7 +483,7 @@
 								out:send={{ key: animal.id }}
 							>
 								<div class="game-card__img-container">
-									<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" />
+									<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" loading="lazy" />
 								</div>
 								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
 							</div>
