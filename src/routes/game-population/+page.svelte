@@ -48,8 +48,8 @@
 			};
 		}
 
-		function transition(items: Map<any, HTMLElement>, counterparts: Map<any, HTMLElement>, isSend: boolean) {
-			return (node: HTMLElement, params: { key: any }) => {
+		function transition(items: Map<string, HTMLElement>, counterparts: Map<string, HTMLElement>, isSend: boolean) {
+			return (node: HTMLElement, params: { key: string }) => {
 				items.set(params.key, node);
 				return () => {
 					if (counterparts.has(params.key)) {

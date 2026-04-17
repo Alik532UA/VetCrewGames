@@ -93,7 +93,7 @@ class LogService {
 		this.addLog('warn', category, message, data);
 	}
 
-	error(category: LogCategory, message: string, data?: any) {
+	error(category: LogCategory, message: string, data?: unknown) {
 		this.addLog('error', category, message, data);
 	}
 

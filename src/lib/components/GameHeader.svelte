@@ -72,7 +72,7 @@
 
 	onMount(() => {
 		const handler = () => { 
-			const native = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+			const native = !!(document.fullscreenElement || (document as unknown as { webkitFullscreenElement: unknown }).webkitFullscreenElement);
 			const fake = document.documentElement.hasAttribute('data-fake-fullscreen');
 			isFullscreen = native || fake; 
 		};
@@ -275,11 +275,7 @@
 		font-size: 11px;
 	}
 
-	.desktop-only { display: none; }
-	@media (min-width: 769px) { .desktop-only { display: flex; } }
-
 	@media (max-width: 768px) {
-		.desktop-only { display: none; }
 		.game-title { font-size: var(--font-size-sm); }
 		.game-header { padding: var(--space-xs) var(--space-sm); }
 		.game-header__inner { gap: var(--space-sm); }

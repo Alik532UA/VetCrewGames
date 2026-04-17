@@ -108,11 +108,6 @@
 	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 500px; padding: var(--space-2xl) 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 
-	.progress-container { width: 100%; display: flex; align-items: center; gap: var(--space-md); }
-	.progress-bar { flex: 1; height: 12px; background: var(--color-bg-surface); border-radius: var(--radius-full); overflow: hidden; border: 2px solid var(--color-bg-panel-dark); }
-	.progress-fill { height: 100%; background: var(--color-accent); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-	.progress-text { font-weight: var(--font-weight-bold); font-size: var(--font-size-sm); color: var(--color-text-muted); min-width: 45px; }
-
 	.myth-card {
 		width: 100%; background: var(--color-bg-surface); border-radius: var(--radius-lg); overflow: hidden;
 		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: all var(--transition-normal);
@@ -150,7 +145,6 @@
 	.myth-card__result { display: flex; flex-direction: column; gap: var(--space-md); animation: slide-up 0.4s ease both; }
 	.result-header { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); font-weight: var(--font-weight-bold); font-size: var(--font-size-xl); }
 	.result-header--correct { color: var(--color-success); }
-	.result-header--wrong { color: var(--color-error); }
 	
 	.myth-card__explanation { font-size: var(--font-size-md); line-height: 1.5; color: var(--color-text); background: color-mix(in srgb, var(--color-bg-panel), transparent 90%); padding: var(--space-md); border-radius: var(--radius-md); border-left: 4px solid var(--color-accent); margin: 0; }
 
