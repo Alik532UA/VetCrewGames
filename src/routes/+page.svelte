@@ -86,6 +86,9 @@
 		text-align: center;
 		text-decoration: none;
 		animation: card-enter 400ms ease both;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+		user-select: none;
 	}
 
 	.menu-btn--game {
@@ -94,14 +97,23 @@
 		box-shadow: var(--shadow-card);
 	}
 
-	.menu-btn--game:hover {
-		background-color: var(--color-bg-card-hover);
-		box-shadow: var(--shadow-glow-primary);
-		transform: translateY(-2px);
+	@media (hover: hover) {
+		.menu-btn--game:hover {
+			background-color: var(--color-bg-card-hover);
+			box-shadow: var(--shadow-glow-primary);
+			transform: translateY(-2px);
+		}
+		.menu-btn--link:hover {
+			background-color: var(--color-bg-surface);
+			box-shadow: var(--shadow-glow-primary);
+			transform: translateY(-2px);
+		}
 	}
 
 	.menu-btn--game:active {
-		animation: pop 200ms ease;
+		background-color: var(--color-bg-card-hover);
+		transform: scale(0.98);
+		box-shadow: none;
 	}
 
 	.menu-btn--disabled {
@@ -111,9 +123,7 @@
 		box-shadow: none;
 	}
 
-	.menu-btn--disabled:hover {
-		background-color: var(--color-disabled);
-		box-shadow: none;
+	.menu-btn--disabled:active {
 		transform: none;
 	}
 
@@ -131,9 +141,8 @@
 		box-shadow: none;
 	}
 
-	.menu-btn--link:hover {
+	.menu-btn--link:active {
 		background-color: var(--color-bg-surface);
-		box-shadow: var(--shadow-glow-primary);
-		transform: translateY(-2px);
+		transform: scale(0.98);
 	}
 </style>
