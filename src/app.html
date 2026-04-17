@@ -19,7 +19,7 @@
 				}
 				document.documentElement.setAttribute('data-theme', theme);
 				let meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) meta.setAttribute('content', theme);
+				if (meta) meta.setAttribute('content', theme === 'dark' ? 'dark' : 'light dark');
 			} catch (e) {}
 		</script>
 		%sveltekit.head%

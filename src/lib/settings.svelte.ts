@@ -17,13 +17,13 @@ class Settings {
 				this.theme = savedTheme;
 				document.documentElement.setAttribute('data-theme', savedTheme);
 				const meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) meta.setAttribute('content', savedTheme);
+				if (meta) meta.setAttribute('content', savedTheme === 'dark' ? 'dark' : 'light dark');
 			} else {
 				const mql = window.matchMedia('(prefers-color-scheme: dark)');
 				this.theme = mql.matches ? 'dark' : 'light';
 				document.documentElement.setAttribute('data-theme', this.theme);
 				const meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) meta.setAttribute('content', this.theme);
+				if (meta) meta.setAttribute('content', this.theme === 'dark' ? 'dark' : 'light dark');
 			}
 
 			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -57,7 +57,7 @@ class Settings {
 					localStorage.setItem('vetcrewgames_theme', this.theme);
 					document.documentElement.setAttribute('data-theme', this.theme);
 					const meta = document.querySelector('meta[name="color-scheme"]');
-					if (meta) meta.setAttribute('content', this.theme);
+					if (meta) meta.setAttribute('content', this.theme === 'dark' ? 'dark' : 'light dark');
 				}
 			});
 
