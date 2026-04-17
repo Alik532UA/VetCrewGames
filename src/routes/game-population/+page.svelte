@@ -584,5 +584,3 @@
 	}
 	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
 </style>
-} }
-</style>
