@@ -11,6 +11,19 @@
 		showBack?: boolean;
 	}>();
 
+	let lastScore = $state(settings.score);
+	let isPulsing = $state(false);
+
+	$effect(() => {
+		if (settings.score > lastScore) {
+			isPulsing = true;
+			setTimeout(() => { isPulsing = false; }, 600);
+			lastScore = settings.score;
+		} else {
+			lastScore = settings.score;
+		}
+	});
+
 	function toggleLocale() {
 		settings.setLocale(settings.locale === 'uk' ? 'en' : 'uk');
 	}
@@ -30,7 +43,16 @@
 
 		<div class="game-header__center">
 			<div class="title-group desktop-only">
-				<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
+				<div class="title-with-score">
+					<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
+					<div class="global-score" class:is-pulsing={isPulsing}>
+						<svg class="score-circle" viewBox="0 0 36 36">
+							<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+							<path class="circle-fill" stroke-dasharray="{(settings.score % 100) * 10}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+						</svg>
+						<span class="score-value">{settings.score}</span>
+					</div>
+				</div>
 				{#if roundInfo}
 					<span class="game-round">{@html formatFont(roundInfo)}</span>
 				{/if}
@@ -56,10 +78,16 @@
 
 <div class="mobile-title-container mobile-only">
 	<div class="title-group">
-		<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
-		{#if roundInfo}
-			<span class="game-round">{@html formatFont(roundInfo)}</span>
-		{/if}
+		<div class="title-with-score">
+			<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
+			<div class="global-score" class:is-pulsing={isPulsing}>
+				<svg class="score-circle" viewBox="0 0 36 36">
+					<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+					<path class="circle-fill" stroke-dasharray="{(settings.score % 100) * 10}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+				</svg>
+				<span class="score-value">{settings.score}</span>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -68,6 +96,54 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+	}
+
+	.title-with-score {
+		display: flex;
+		align-items: center;
+		gap: var(--space-md);
+	}
+
+	.global-score {
+		position: relative;
+		width: 44px;
+		height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	}
+
+	.global-score.is-pulsing {
+		transform: scale(1.2);
+	}
+
+	.score-circle {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		transform: rotate(-90deg);
+	}
+
+	.circle-bg {
+		fill: none;
+		stroke: color-mix(in srgb, var(--color-text), transparent 90%);
+		stroke-width: 2.8;
+	}
+
+	.circle-fill {
+		fill: none;
+		stroke: var(--color-accent);
+		stroke-width: 2.8;
+		stroke-linecap: round;
+		transition: stroke-dasharray 0.5s ease;
+	}
+
+	.score-value {
+		font-size: 14px;
+		font-weight: 900;
+		color: var(--color-accent);
+		z-index: 1;
 	}
 
 	.game-round {
@@ -85,6 +161,7 @@
 		animation: slide-up 400ms ease both;
 		z-index: 100;
 	}
+/* ... rest of styles ... */
 
 	.game-header__inner {
 		width: 100%;

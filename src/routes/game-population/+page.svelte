@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
+	import { settings } from '$lib/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { Check, X } from 'lucide-svelte';
@@ -379,11 +380,20 @@
 		};
 	});
 
-	function handleCheck() { if (allSlotsFilled) checked = true; }
+	function handleCheck() { 
+		if (allSlotsFilled) {
+			checked = true;
+			// Award points: +1 for each correctly placed animal
+			const correctCount = slotResults.filter(r => r).length;
+			if (correctCount > 0) {
+				settings.addScore(correctCount);
+			}
+		}
+	}
 	function handleNextRound() { roundNumber = roundNumber < TOTAL_ROUNDS ? roundNumber + 1 : 1; initRound(); }
 </script>
 
-<GameHeader titleKey="population.title" roundInfo="{t('population.round')} {roundNumber}/{TOTAL_ROUNDS}" />
+<GameHeader titleKey="population.title" />
 
 <div class="game-page">
 	<div class="sorting-panel">

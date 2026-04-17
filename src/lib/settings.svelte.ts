@@ -8,6 +8,7 @@ class Settings {
 	theme = $state<Theme>('dark');
 	locale = $state<Locale>('uk');
 	font = $state<Font>('inglobal');
+	score = $state<number>(0);
 
 	constructor() {
 		if (browser) {
@@ -28,6 +29,11 @@ class Settings {
 				document.documentElement.setAttribute('data-font', savedFont);
 			} else {
 				document.documentElement.setAttribute('data-font', this.font);
+			}
+
+			const savedScore = localStorage.getItem('vetcrewgames_score');
+			if (savedScore) {
+				this.score = parseInt(savedScore, 10);
 			}
 		}
 
@@ -51,7 +57,17 @@ class Settings {
 					document.documentElement.setAttribute('data-font', this.font);
 				}
 			});
+
+			$effect(() => {
+				if (browser) {
+					localStorage.setItem('vetcrewgames_score', this.score.toString());
+				}
+			});
 		});
+	}
+
+	addScore(points: number) {
+		this.score += points;
 	}
 
 	toggleTheme() {

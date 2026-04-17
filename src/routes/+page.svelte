@@ -6,8 +6,8 @@
 	const games = [
 		{ key: 'menu.game.feeding' as const, href: `${base}/game-feeding`, disabled: true },
 		{ key: 'menu.game.population' as const, href: `${base}/game-population`, disabled: false },
+		{ key: 'menu.game.mythbusters' as const, href: `${base}/game-mythbusters`, disabled: false },
 		{ key: 'menu.game.habitat' as const, href: `${base}/game-habitat`, disabled: true },
-		{ key: 'menu.game.mythbusters' as const, href: `${base}/game-mythbusters`, disabled: true },
 		{ key: 'menu.game.family' as const, href: `${base}/game-family`, disabled: true }
 	];
 
