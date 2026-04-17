@@ -28,3 +28,19 @@ export const td = (key: string): string => {
 	const dict = translations[settings.locale] as Record<string, string> | undefined;
 	return dict?.[key] ?? key;
 };
+
+export const formatFont = (text: string): string => {
+	if (settings.font !== 'inglobal') return text;
+	return text
+		.replace(/і/g, 'i')
+		.replace(/І/g, 'I')
+		.replace(/є/g, '<span class="flip-e">э</span>')
+		.replace(/Є/g, '<span class="flip-e">Э</span>');
+};
+
+export const formatPlain = (text: string): string => {
+	if (settings.font !== 'inglobal') return text;
+	return text
+		.replace(/і/g, 'i')
+		.replace(/І/g, 'I');
+};

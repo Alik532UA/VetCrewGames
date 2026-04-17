@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
-	import { t, td } from '$lib/i18n/index';
+	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { getRandomAnimals, type Animal } from '$lib/data/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { Check, X } from 'lucide-svelte';
@@ -89,12 +89,20 @@
 	let checked = $state(false);
 	let correctOrder = $state<Animal[]>([]);
 
-	function formatPopulation(num: number): string {
-		if (num >= 1_000_000_000_000) return `~${num / 1_000_000_000_000} ${t('unit.trillion')}`;
-		if (num >= 1_000_000_000) return `~${num / 1_000_000_000} ${t('unit.billion')}`;
-		if (num >= 1_000_000) return `~${num / 1_000_000} ${t('unit.million')}`;
-		if (num >= 1_000) return `~${num / 1_000} ${t('unit.thousand')}`;
-		return `~${num.toLocaleString()}`;
+	function formatPopulationPlain(num: number): string {
+		if (num >= 1_000_000_000_000) return formatPlain(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
+		if (num >= 1_000_000_000) return formatPlain(`~${num / 1_000_000_000} ${t('unit.billion')}`);
+		if (num >= 1_000_000) return formatPlain(`~${num / 1_000_000} ${t('unit.million')}`);
+		if (num >= 1_000) return formatPlain(`~${num / 1_000} ${t('unit.thousand')}`);
+		return formatPlain(`~${num.toLocaleString()}`);
+	}
+
+	function formatPopulationHtml(num: number): string {
+		if (num >= 1_000_000_000_000) return formatFont(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
+		if (num >= 1_000_000_000) return formatFont(`~${num / 1_000_000_000} ${t('unit.billion')}`);
+		if (num >= 1_000_000) return formatFont(`~${num / 1_000_000} ${t('unit.million')}`);
+		if (num >= 1_000) return formatFont(`~${num / 1_000} ${t('unit.thousand')}`);
+		return formatFont(`~${num.toLocaleString()}`);
 	}
 
 	// Drag state
@@ -379,7 +387,7 @@
 
 <div class="game-page">
 	<div class="sorting-panel">
-		<p class="sorting-panel__instruction">{t('population.description')}</p>
+		<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
 		<div class="slots-row">
 			{#each slots as slotAnimal, i (i)}
 				<div 
@@ -411,15 +419,15 @@
 							out:send={{ key: animal.id }}
 						>
 							<div class="game-card__img-container">
-								<img src={animal.image} alt={td(animal.nameKey)} class="game-card__img" />
-								{#if checked}<div class="game-card__pop-overlay">{formatPopulation(animal.population)}</div>{/if}
+								<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" />
+								{#if checked}<div class="game-card__pop-overlay">{@html formatPopulationHtml(animal.population)}</div>{/if}
 							</div>
-							<span class="game-card__name">{td(animal.nameKey)}</span>
+							<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
 							{#if checked}<span class="game-card__icon" class:game-card__icon--correct={slotResults[i]} class:game-card__icon--wrong={!slotResults[i]}>{#if slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X size={18} strokeWidth={3} />{/if}</span>{/if}
 						</div>
 					{/each}
 					{#if !slotAnimal}
-						<span class="game-container__label">{#if i === 0}{t('population.least')}{:else if i === 1}{t('population.middle')}{:else}{t('population.most')}{/if}</span>
+						<span class="game-container__label">{#if i === 0}{@html formatFont(t('population.least'))}{:else if i === 1}{@html formatFont(t('population.middle'))}{:else}{@html formatFont(t('population.most'))}{/if}</span>
 					{/if}
 				</div>
 			{/each}
@@ -427,13 +435,13 @@
 	</div>
 
 	<div class="action-zone">
-		{#if !checked}<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>{t('population.check')}</button>
-		{:else}<button class="btn-check" onclick={handleNextRound}>{t('population.nextRound')}</button>{/if}
+		{#if !checked}<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>{@html formatFont(t('population.check'))}</button>
+		{:else}<button class="btn-check" onclick={handleNextRound}>{@html formatFont(t('population.nextRound'))}</button>{/if}
 	</div>
 
 	{#if !checked}
 		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
-			<p class="source-panel__title">{t('population.yourAnimals')}</p>
+			<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
 			<div class="source-panel__cards">
 				{#each sourceAnimals as srcAnimal, i (i)}
 					<div 
@@ -465,9 +473,9 @@
 								out:send={{ key: animal.id }}
 							>
 								<div class="game-card__img-container">
-									<img src={animal.image} alt={td(animal.nameKey)} class="game-card__img" />
+									<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" />
 								</div>
-								<span class="game-card__name">{td(animal.nameKey)}</span>
+								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
 							</div>
 						{/each}
 					</div>
@@ -480,11 +488,11 @@
 		<div class="results-zone">
 			{#each correctOrder as animal, i (animal.id)}
 				<div class="result-card anim-stagger-{i + 1}">
-					<div class="result-card__left"><img src={animal.image} alt={td(animal.nameKey)} class="result-card__img-small" /></div>
+					<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" /></div>
 					<div class="result-card__right">
-						<div class="result-card__top"><span class="result-card__name-bold">{td(animal.nameKey)}</span><span class="result-card__stat">{formatPopulation(animal.population)}</span></div>
+						<div class="result-card__top"><span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span><span class="result-card__stat">{@html formatPopulationHtml(animal.population)}</span></div>
 						<div class="result-card__divider"></div>
-						<p class="result-card__fact-simple">{td(animal.factKey)}</p>
+						<p class="result-card__fact-simple">{@html formatFont(td(animal.factKey))}</p>
 					</div>
 				</div>
 			{/each}
@@ -494,6 +502,7 @@
 
 <style>
 	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 600px; padding: 0 0 var(--space-2xl); gap: var(--space-lg); margin: 0 auto; }
+	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 	.sorting-panel { width: 100%; background-color: var(--color-bg-panel); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
 	.sorting-panel__instruction { color: var(--color-text-on-panel); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }

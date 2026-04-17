@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { base } from '$app/paths';
 
@@ -31,11 +31,11 @@
 		{#each games as game, i}
 			{#if game.disabled}
 				<button class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}" disabled>
-					{t(game.key)}
+					{@html formatFont(t(game.key))}
 				</button>
 			{:else}
 				<a href={game.href} class="menu-btn menu-btn--game anim-stagger-{i + 1}">
-					{t(game.key)}
+					{@html formatFont(t(game.key))}
 				</a>
 			{/if}
 		{/each}
@@ -44,7 +44,7 @@
 	<div class="menu-links">
 		{#each links as link}
 			<a href={link.href} class="menu-btn menu-btn--link" target="_blank" rel="noopener noreferrer">
-				{t(link.key)}
+				{@html formatFont(t(link.key))}
 			</a>
 		{/each}
 	</div>

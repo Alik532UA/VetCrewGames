@@ -2,7 +2,7 @@
 	import '$lib/styles/global.css';
 	import '$lib/styles/animations.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { t } from '$lib/i18n/index';
+	import { t, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/settings.svelte';
 
 	let { children } = $props();
@@ -10,7 +10,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>{t('app.title')}</title>
+	<title>{formatPlain(t('app.title'))}</title>
 </svelte:head>
 
 <main class="app-shell">

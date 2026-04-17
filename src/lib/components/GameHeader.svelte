@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowLeft, Sun, Moon, Languages } from 'lucide-svelte';
 	import { settings } from '$lib/settings.svelte';
-	import { t } from '$lib/i18n';
+	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { base } from '$app/paths';
 
@@ -20,7 +20,7 @@
 	<div class="game-header__inner">
 		<div class="game-header__left">
 			{#if showBack}
-				<a href="{base}/" class="header-btn" aria-label={t('common.back')}>
+				<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))}>
 					<ArrowLeft size={24} />
 				</a>
 			{:else}
@@ -30,9 +30,9 @@
 
 		<div class="game-header__center">
 			<div class="title-group desktop-only">
-				<h1 class="game-title">{t(titleKey)}</h1>
+				<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
 				{#if roundInfo}
-					<span class="game-round">{roundInfo}</span>
+					<span class="game-round">{@html formatFont(roundInfo)}</span>
 				{/if}
 			</div>
 		</div>
@@ -56,9 +56,9 @@
 
 <div class="mobile-title-container mobile-only">
 	<div class="title-group">
-		<h1 class="game-title">{t(titleKey)}</h1>
+		<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
 		{#if roundInfo}
-			<span class="game-round">{roundInfo}</span>
+			<span class="game-round">{@html formatFont(roundInfo)}</span>
 		{/if}
 	</div>
 </div>
