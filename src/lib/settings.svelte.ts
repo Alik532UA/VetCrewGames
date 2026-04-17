@@ -16,7 +16,21 @@ class Settings {
 			if (savedTheme) {
 				this.theme = savedTheme;
 				document.documentElement.setAttribute('data-theme', savedTheme);
+				const meta = document.querySelector('meta[name="color-scheme"]');
+				if (meta) meta.setAttribute('content', savedTheme);
+			} else {
+				const mql = window.matchMedia('(prefers-color-scheme: dark)');
+				this.theme = mql.matches ? 'dark' : 'light';
+				document.documentElement.setAttribute('data-theme', this.theme);
+				const meta = document.querySelector('meta[name="color-scheme"]');
+				if (meta) meta.setAttribute('content', this.theme);
 			}
+
+			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+				if (!localStorage.getItem('vetcrewgames_theme')) {
+					this.theme = e.matches ? 'dark' : 'light';
+				}
+			});
 
 			const savedLocale = localStorage.getItem('vetcrewgames_locale') as Locale;
 			if (savedLocale) {
@@ -42,6 +56,8 @@ class Settings {
 				if (browser) {
 					localStorage.setItem('vetcrewgames_theme', this.theme);
 					document.documentElement.setAttribute('data-theme', this.theme);
+					const meta = document.querySelector('meta[name="color-scheme"]');
+					if (meta) meta.setAttribute('content', this.theme);
 				}
 			});
 
