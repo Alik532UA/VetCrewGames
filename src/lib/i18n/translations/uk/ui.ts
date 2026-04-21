@@ -17,6 +17,7 @@ export const ui = {
 	'common.playAgain': 'Грати знову',
 	'common.next': 'Далі',
 	'common.back': 'Назад',
+	'common.mainMenu': 'Головне меню',
 	'common.correct': 'Правильно!',
 	'common.incorrect': 'Неправильно!',
 	'common.gameOver': 'Гру завершено!',

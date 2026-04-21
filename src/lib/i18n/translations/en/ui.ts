@@ -17,6 +17,7 @@ export const ui = {
 	'common.playAgain': 'Play again',
 	'common.next': 'Next',
 	'common.back': 'Back',
+	'common.mainMenu': 'Main menu',
 	'common.correct': 'Correct!',
 	'common.incorrect': 'Incorrect!',
 	'common.gameOver': 'Game Over!',

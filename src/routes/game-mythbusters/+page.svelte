@@ -6,7 +6,8 @@
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { myths, type GameQuestion } from '$lib/config/myth-game';
 	import { animals } from '$lib/config/population-game';
-	import { CheckCircle2, XCircle, RotateCcw } from 'lucide-svelte';
+	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
+	import { base } from '$app/paths';
 
 	// Game state
 	let currentQuestion = $state<GameQuestion | null>(null);
@@ -227,4 +228,12 @@
 		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 	}
 	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
+
+	.btn-main-menu {
+		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+		padding: var(--space-md) var(--space-xl); background: var(--color-bg-panel); color: var(--color-text-on-panel);
+		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
+		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 var(--color-bg-panel-dark); text-decoration: none; width: 100%;
+	}
+	.btn-main-menu:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
 </style>

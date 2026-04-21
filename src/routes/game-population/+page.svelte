@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
+	import { fade } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 	import GameHeader from '$lib/components/GameHeader.svelte';
-	import { Check, X } from 'lucide-svelte';
+	import { Check, X, RotateCcw, Home } from 'lucide-svelte';
+	import { base } from '$app/paths';
 
 	let isSwapping = $state(false);
 
@@ -86,6 +88,7 @@
 	// Game state
 	let roundNumber = $state(1);
 	let sourceAnimals = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
+	let initialSourceAnimals = $state<(Animal | null)[]>([]);
 	let slots = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
 	let checked = $state(false);
 	let correctOrder = $state<Animal[]>([]);
@@ -127,6 +130,7 @@
 	function initRound() {
 		const picked = getRandomAnimals(SLOT_COUNT);
 		sourceAnimals = picked;
+		initialSourceAnimals = [...picked];
 		slots = Array(SLOT_COUNT).fill(null);
 		checked = false;
 		correctOrder = [...picked].sort((a, b) => a.population - b.population);
@@ -245,6 +249,60 @@
 		}
 		setDragElementDropPosition(draggedAnimal.id, e.clientX, e.clientY);
 		performDropOnSource(targetIndex); 
+	}
+
+	function handleDoubleClick(animal: Animal, source: NonNullable<typeof dragSource>) {
+		if (checked) return;
+		if (isActuallyDragging) return;
+
+		if (draggedAnimal?.id === animal.id) {
+			draggedAnimal = null; dragSource = null;
+		}
+
+		if (source.type === 'source') {
+			const emptySlotIndex = slots.indexOf(null);
+			if (emptySlotIndex !== -1) {
+				isSwapping = false;
+				slots[emptySlotIndex] = animal;
+				sourceAnimals[source.index] = null;
+			}
+		} else {
+			const origIndex = initialSourceAnimals.findIndex(a => a?.id === animal.id);
+			if (origIndex !== -1 && sourceAnimals[origIndex] === null) {
+				isSwapping = false;
+				sourceAnimals[origIndex] = animal;
+				slots[source.index] = null;
+			} else {
+				const emptySourceIndex = sourceAnimals.indexOf(null);
+				if (emptySourceIndex !== -1) {
+					isSwapping = false;
+					sourceAnimals[emptySourceIndex] = animal;
+					slots[source.index] = null;
+				}
+			}
+		}
+	}
+
+	let lastClickTime = 0;
+	let lastClickedAnimalId: string | number | null = null;
+
+	function handleCardClick(e: Event, animal: Animal, source: NonNullable<typeof dragSource>) {
+		e.stopPropagation();
+		if (checked) return;
+		if (isActuallyDragging) return;
+
+		const currentTime = Date.now();
+		const timeDiff = currentTime - lastClickTime;
+
+		if (timeDiff < 400 && lastClickedAnimalId === animal.id) {
+			lastClickTime = 0;
+			lastClickedAnimalId = null;
+			handleDoubleClick(animal, source);
+		} else {
+			lastClickTime = currentTime;
+			lastClickedAnimalId = animal.id;
+			handleSelect(animal, source);
+		}
 	}
 
 	function handleSelect(animal: Animal, source: NonNullable<typeof dragSource>) {
@@ -448,8 +506,8 @@
 							data-drag-source-index={i} 
 							ondragstart={(e) => handleDragStart(e, animal, { type: 'slot', index: i })} 
 							ondragend={handleDragEnd} 
-							onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'slot', index: i }); }} 
-							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(animal, { type: 'slot', index: i }); } }}
+							onclick={(e) => handleCardClick(e, animal, { type: 'slot', index: i })} 
+							onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e, animal, { type: 'slot', index: i }); }}
 							role="button" 
 							tabindex="0"
 							in:receive={{ key: animal.id }}
@@ -505,6 +563,7 @@
 								ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} 
 								ondragend={handleDragEnd} 
 								onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} 
+								ondblclick={(e) => { e.stopPropagation(); handleDoubleClick(animal, { type: 'source', index: i }); }}
 								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); } }}
 								role="button" 
 								tabindex="0"
@@ -633,4 +692,12 @@
 		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 	}
 	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
+
+	.btn-main-menu {
+		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+		padding: var(--space-md) var(--space-xl); background: var(--color-bg-panel); color: var(--color-text-on-panel);
+		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
+		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 var(--color-bg-panel-dark); text-decoration: none; width: 100%;
+	}
+	.btn-main-menu:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
 </style>
