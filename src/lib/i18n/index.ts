@@ -49,15 +49,23 @@ export const tp = (count: number, keyOne: TranslationKey, keyFew?: TranslationKe
 
 export const formatFont = (text: string): string => {
 	if (settings.font !== 'inglobal') return text;
+	// Шрифт inglobal не містить українських літер 'і', 'ї', 'є', 'ґ'.
+	// Тому ми вимушені замінювати 'і' на латинську 'i', а для інших букв 
+	// використовувати fallback-шрифти (Noto Serif та Comfortaa) через <span>.
 	return text
 		.replace(/і/g, 'i')
 		.replace(/І/g, 'I')
-		.replace(/є/g, '<span class="font-noto">є</span>')
-		.replace(/Є/g, '<span class="font-noto">Є</span>')
-		.replace(/ї/g, '<span class="font-comfortaa">ї</span>')
-		.replace(/Ї/g, '<span class="font-comfortaa">Ї</span>')
-		.replace(/ґ/g, '<span class="font-comfortaa">ґ</span>')
-		.replace(/Ґ/g, '<span class="font-comfortaa">Ґ</span>');
+		// Візуальний баг: коли перед fallback-літерою є пробіл (напр. "Що їмо?"),
+		// через специфічний кернінг та від'ємний лівий відступ у шрифтів Comfortaa/Noto, 
+		// літера "наїжджає" на пробіл базового шрифту, через що він візуально "зникає".
+		// Ми повертаємо пробіл на місце (поза span) і додаємо самій літері `margin-left: 0.15em`, 
+		// щоб примусово відштовхнути її від пробілу. Всередині слів (без пробілу) відступ не додається.
+		.replace(/(\s)?(є|Є)/g, (match, space, letter) =>
+			space ? `${space}<span class="font-noto" style="margin-left: 0.15em;">${letter}</span>` : `<span class="font-noto">${letter}</span>`
+		)
+		.replace(/(\s)?(ї|Ї|ґ|Ґ)/g, (match, space, letter) =>
+			space ? `${space}<span class="font-comfortaa" style="margin-left: 0.15em;">${letter}</span>` : `<span class="font-comfortaa">${letter}</span>`
+		);
 };
 
 export const formatPlain = (text: string): string => {
