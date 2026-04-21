@@ -55,17 +55,24 @@ export const formatFont = (text: string): string => {
 	return text
 		.replace(/і/g, 'i')
 		.replace(/І/g, 'I')
-		// Візуальний баг: коли перед fallback-літерою є пробіл (напр. "Що їмо?"),
-		// через специфічний кернінг та від'ємний лівий відступ у шрифтів Comfortaa/Noto, 
-		// літера "наїжджає" на пробіл базового шрифту, через що він візуально "зникає".
-		// Ми повертаємо пробіл на місце (поза span) і додаємо самій літері `margin-left: 0.15em`, 
-		// щоб примусово відштовхнути її від пробілу. Всередині слів (без пробілу) відступ не додається.
-		.replace(/(\s)?(є|Є)/g, (match, space, letter) =>
-			space ? `${space}<span class="font-noto" style="margin-left: 0.15em;">${letter}</span>` : `<span class="font-noto">${letter}</span>`
-		)
-		.replace(/(\s)?(ї|Ї|ґ|Ґ)/g, (match, space, letter) =>
-			space ? `${space}<span class="font-comfortaa" style="margin-left: 0.15em;">${letter}</span>` : `<span class="font-comfortaa">${letter}</span>`
-		);
+		// Візуальний баг: через специфічний кернінг та від'ємні відступи (sidebearings) 
+		// у шрифтів Comfortaa/Noto, літери можуть "наїжджати" на сусідні пробіли базового шрифту.
+		// Це трапляється як до літери ("Що їмо?"), так і після неї ("іншої родини").
+		// Ми додаємо інлайн-відступи margin-left/right, щоб примусово відштовхнути літеру від пробілів.
+		.replace(/(\s)?(є|Є)(\s)?/g, (match, spaceBefore, letter, spaceAfter) => {
+			const styles = [];
+			if (spaceBefore) styles.push('margin-left: 0.15em');
+			if (spaceAfter) styles.push('margin-right: 0.15em');
+			const styleAttr = styles.length ? ` style="${styles.join('; ')};"` : '';
+			return `${spaceBefore ?? ''}<span class="font-noto"${styleAttr}>${letter}</span>${spaceAfter ?? ''}`;
+		})
+		.replace(/(\s)?(ї|Ї|ґ|Ґ)(\s)?/g, (match, spaceBefore, letter, spaceAfter) => {
+			const styles = [];
+			if (spaceBefore) styles.push('margin-left: 0.15em');
+			if (spaceAfter) styles.push('margin-right: 0.15em');
+			const styleAttr = styles.length ? ` style="${styles.join('; ')};"` : '';
+			return `${spaceBefore ?? ''}<span class="font-comfortaa"${styleAttr}>${letter}</span>${spaceAfter ?? ''}`;
+		});
 };
 
 export const formatPlain = (text: string): string => {
