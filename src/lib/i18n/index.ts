@@ -57,20 +57,21 @@ export const formatFont = (text: string): string => {
 		.replace(/І/g, 'I')
 		// Візуальний баг: через специфічний кернінг та від'ємні відступи (sidebearings) 
 		// у шрифтів Comfortaa/Noto, літери можуть "наїжджати" на сусідні пробіли базового шрифту.
-		// Це трапляється як до літери ("Що їмо?"), так і після неї ("іншої родини").
-		// Ми додаємо інлайн-відступи margin-left/right, щоб примусово відштовхнути літеру від пробілів.
+		// Також Comfortaa/Noto візуально більші за inglobal та мають іншу базову лінію.
+		// Оскільки батьківські елементи (напр. кнопки) часто є flex-контейнерами, 
+		// vertical-align не працює. Використовуємо transform для точного вирівнювання.
 		.replace(/(\s)?(є|Є)(\s)?/g, (match, spaceBefore, letter, spaceAfter) => {
-			const styles = [];
+			const styles = ['display: inline-block', 'font-size: 0.9em'];
 			if (spaceBefore) styles.push('margin-left: 0.15em');
 			if (spaceAfter) styles.push('margin-right: 0.15em');
-			const styleAttr = styles.length ? ` style="${styles.join('; ')};"` : '';
+			const styleAttr = ` style="${styles.join('; ')};"`;
 			return `${spaceBefore ?? ''}<span class="font-noto"${styleAttr}>${letter}</span>${spaceAfter ?? ''}`;
 		})
 		.replace(/(\s)?(ї|Ї|ґ|Ґ)(\s)?/g, (match, spaceBefore, letter, spaceAfter) => {
-			const styles = [];
+			const styles = ['display: inline-block', 'font-size: 0.9em', 'transform: translateY(0.07em)'];
 			if (spaceBefore) styles.push('margin-left: 0.15em');
 			if (spaceAfter) styles.push('margin-right: 0.15em');
-			const styleAttr = styles.length ? ` style="${styles.join('; ')};"` : '';
+			const styleAttr = ` style="${styles.join('; ')};"`;
 			return `${spaceBefore ?? ''}<span class="font-comfortaa"${styleAttr}>${letter}</span>${spaceAfter ?? ''}`;
 		});
 };
