@@ -117,6 +117,8 @@
 	let dragSource = $state<{ type: 'source'; index: number } | { type: 'slot'; index: number } | null>(null);
 	let isActuallyDragging = $state(false);
 	let dragOverId = $state<string | null>(null);
+	let hoverSlotIndex = $state<number | null>(null);
+	let hoverSourceIndex = $state<number | null>(null);
 
 	// Touch drag state
 	let touchDragClone: HTMLElement | null = null;
@@ -135,6 +137,7 @@
 		checked = false;
 		correctOrder = [...picked].sort((a, b) => a.population - b.population);
 		draggedAnimal = null; dragSource = null; isActuallyDragging = false;
+		hoverSlotIndex = null; hoverSourceIndex = null;
 	}
 
 	// --- Core drop logic ---
@@ -489,6 +492,8 @@
 					data-slot-index={i} 
 					ondragover={(e) => handleDragOver(e, `slot-${i}`)} 
 					ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
+					onmouseenter={() => hoverSlotIndex = i}
+					onmouseleave={() => hoverSlotIndex = null}
 					ondrop={(e) => handleDropOnSlot_DnD(e, i)} 
 					onclick={() => handleSlotClick(i)} 
 					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
@@ -522,7 +527,16 @@
 						</div>
 					{/each}
 					{#if !slotAnimal}
-						<span class="game-container__label">{#if i === 0}{@html formatFont(t('population.least'))}{:else if i === 1}{@html formatFont(t('population.middle'))}{:else}{@html formatFont(t('population.most'))}{/if}</span>
+						{#if draggedAnimal && !isActuallyDragging && hoverSlotIndex === i}
+							<div class="game-card ghost-card">
+								<div class="game-card__img-container">
+									<img src={draggedAnimal.image} alt="" class="game-card__img" draggable="false" />
+								</div>
+								<span class="game-card__name">{@html formatFont(td(draggedAnimal.nameKey))}</span>
+							</div>
+						{:else}
+							<span class="game-container__label">{#if i === 0}{@html formatFont(t('population.least'))}{:else if i === 1}{@html formatFont(t('population.middle'))}{:else}{@html formatFont(t('population.most'))}{/if}</span>
+						{/if}
 					{/if}
 				</div>
 			{/each}
@@ -530,8 +544,11 @@
 	</div>
 
 	<div class="action-zone">
-		{#if !checked}<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>{@html formatFont(t('population.check'))}</button>
-		{:else}<button class="btn-check" onclick={handleNextRound}>{@html formatFont(t('population.nextRound'))}</button>{/if}
+		{#if !checked}
+			<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>{@html formatFont(t('population.check'))}</button>
+		{:else}
+			<button class="btn-check" onclick={handleNextRound}>{@html formatFont(t('population.nextRound'))}</button>
+		{/if}
 	</div>
 
 	{#if !checked}
@@ -545,6 +562,8 @@
 						data-source-index={i} 
 						ondragover={(e) => handleDragOver(e, `source-${i}`)} 
 						ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
+						onmouseenter={() => hoverSourceIndex = i}
+						onmouseleave={() => hoverSourceIndex = null}
 						ondrop={(e) => handleDropOnSource_DnD(e, i)} 
 						onclick={() => handleSourcePlaceholderClick(i)} 
 						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
@@ -576,6 +595,14 @@
 								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
 							</div>
 						{/each}
+						{#if !srcAnimal && draggedAnimal && !isActuallyDragging && hoverSourceIndex === i}
+							<div class="game-card ghost-card">
+								<div class="game-card__img-container">
+									<img src={draggedAnimal.image} alt="" class="game-card__img" draggable="false" />
+								</div>
+								<span class="game-card__name">{@html formatFont(td(draggedAnimal.nameKey))}</span>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -626,6 +653,7 @@
 	.game-card:active { cursor: grabbing; }
 	.card--selected { box-shadow: 0 0 15px var(--color-accent) !important; border: 2px solid var(--color-accent) !important; transform: scale(1.05) translateY(-2px) !important; }
 	.card--dragging-orig { opacity: 0 !important; pointer-events: none; }
+	.ghost-card { opacity: 0.5 !important; transform: scale(0.8) !important; pointer-events: none; z-index: 1; }
 
 	.game-card__img-container { position: relative; width: 100%; aspect-ratio: 3 / 4; min-height: 0; }
 	.game-card__img { width: 100%; height: 100%; border-radius: var(--radius-sm); background-color: var(--color-bg-panel-dark); object-fit: cover; }
@@ -637,11 +665,7 @@
 
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
 	.result-card { background-color: var(--color-bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; }
-	.result-card__left { width: 70px; 
-		/* background: var(--color-bg-panel-dark);  */
-		display: flex; align-items: center; justify-content: center; 
-		/* padding: 8px; */
-	 }
+	.result-card__left { width: 70px; display: flex; align-items: center; justify-content: center; }
 	.result-card__img-small { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; object-fit: cover; }
 	.result-card__right { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; }
 	.result-card__top { display: flex; justify-content: space-between; align-items: baseline; }
@@ -671,33 +695,4 @@
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5)); border-radius: var(--radius-md); 
 	}
 	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
-	.round-indicator {
-		font-size: var(--font-size-md); font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-accent); opacity: 0.8; margin-bottom: var(--space-sm);
-	}
-
-	.game-over-card {
-		width: 100%; background: var(--color-bg-surface); border-radius: var(--radius-lg); padding: var(--space-2xl);
-		box-shadow: var(--shadow-card); display: flex; flex-direction: column; align-items: center; gap: var(--space-xl);
-		text-align: center;
-	}
-	.game-over-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text); }
-	.game-over-score { display: flex; flex-direction: column; gap: var(--space-xs); }
-	.score-label { font-size: var(--font-size-md); color: var(--color-text-muted); text-transform: uppercase; }
-	.score-value { font-size: 3rem; font-weight: 900; color: var(--color-accent); line-height: 1; }
-	.btn-play-again {
-		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
-		padding: var(--space-md) var(--space-xl); background: var(--color-accent); color: var(--color-text-on-accent);
-		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
-		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
-	}
-	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
-
-	.btn-main-menu {
-		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
-		padding: var(--space-md) var(--space-xl); background: var(--color-bg-panel); color: var(--color-text-on-panel);
-		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
-		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 var(--color-bg-panel-dark); text-decoration: none; width: 100%;
-	}
-	.btn-main-menu:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
 </style>
