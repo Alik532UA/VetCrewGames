@@ -558,6 +558,650 @@ export const myths: MythStatement[] = [
 		isTrue: false,
 		statementKey: 'myth.turtle-shell.statement',
 		explanationKey: 'myth.turtle-shell.explanation'
+	},
+	{
+		id: 'antelope-horns',
+		animalId: 'antelope',
+		isTrue: true,
+		statementKey: 'myth.antelope-horns.statement',
+		explanationKey: 'myth.antelope-horns.explanation'
+	},
+	{
+		id: 'antelope-diet',
+		animalId: 'antelope',
+		isTrue: false,
+		statementKey: 'myth.antelope-diet.statement',
+		explanationKey: 'myth.antelope-diet.explanation'
+	},
+	{
+		id: 'armadillo-bullet',
+		animalId: 'armadillo',
+		isTrue: true,
+		statementKey: 'myth.armadillo-bullet.statement',
+		explanationKey: 'myth.armadillo-bullet.explanation'
+	},
+	{
+		id: 'armadillo-ball',
+		animalId: 'armadillo',
+		isTrue: false,
+		statementKey: 'myth.armadillo-ball.statement',
+		explanationKey: 'myth.armadillo-ball.explanation'
+	},
+	{
+		id: 'axolotl-lungs',
+		animalId: 'axolotl',
+		isTrue: true,
+		statementKey: 'myth.axolotl-lungs.statement',
+		explanationKey: 'myth.axolotl-lungs.explanation'
+	},
+	{
+		id: 'axolotl-land',
+		animalId: 'axolotl',
+		isTrue: false,
+		statementKey: 'myth.axolotl-land.statement',
+		explanationKey: 'myth.axolotl-land.explanation'
+	},
+	{
+		id: 'bat-blind',
+		animalId: 'bat',
+		isTrue: false,
+		statementKey: 'myth.bat-blind.statement',
+		explanationKey: 'myth.bat-blind.explanation'
+	},
+	{
+		id: 'bat-blood',
+		animalId: 'bat',
+		isTrue: true,
+		statementKey: 'myth.bat-blood.statement',
+		explanationKey: 'myth.bat-blood.explanation'
+	},
+	{
+		id: 'bear-run',
+		animalId: 'bear',
+		isTrue: false,
+		statementKey: 'myth.bear-run.statement',
+		explanationKey: 'myth.bear-run.explanation'
+	},
+	{
+		id: 'bear-winter',
+		animalId: 'bear',
+		isTrue: true,
+		statementKey: 'myth.bear-winter.statement',
+		explanationKey: 'myth.bear-winter.explanation'
+	},
+	{
+		id: 'beaver-tail',
+		animalId: 'beaver',
+		isTrue: true,
+		statementKey: 'myth.beaver-tail.statement',
+		explanationKey: 'myth.beaver-tail.explanation'
+	},
+	{
+		id: 'beaver-fish',
+		animalId: 'beaver',
+		isTrue: false,
+		statementKey: 'myth.beaver-fish.statement',
+		explanationKey: 'myth.beaver-fish.explanation'
+	},
+	{
+		id: 'bison-snow',
+		animalId: 'bison',
+		isTrue: true,
+		statementKey: 'myth.bison-snow.statement',
+		explanationKey: 'myth.bison-snow.explanation'
+	},
+	{
+		id: 'bison-cow',
+		animalId: 'bison',
+		isTrue: false,
+		statementKey: 'myth.bison-cow.statement',
+		explanationKey: 'myth.bison-cow.explanation'
+	},
+	{
+		id: 'camel-water',
+		animalId: 'camel',
+		isTrue: false,
+		statementKey: 'myth.camel-water.statement',
+		explanationKey: 'myth.camel-water.explanation'
+	},
+	{
+		id: 'camel-drink',
+		animalId: 'camel',
+		isTrue: true,
+		statementKey: 'myth.camel-drink.statement',
+		explanationKey: 'myth.camel-drink.explanation'
+	},
+	{
+		id: 'capybara-water',
+		animalId: 'capybara',
+		isTrue: true,
+		statementKey: 'myth.capybara-water.statement',
+		explanationKey: 'myth.capybara-water.explanation'
+	},
+	{
+		id: 'capybara-predator',
+		animalId: 'capybara',
+		isTrue: false,
+		statementKey: 'myth.capybara-predator.statement',
+		explanationKey: 'myth.capybara-predator.explanation'
+	},
+	{
+		id: 'crow-tools',
+		animalId: 'crow',
+		isTrue: true,
+		statementKey: 'myth.crow-tools.statement',
+		explanationKey: 'myth.crow-tools.explanation'
+	},
+	{
+		id: 'crow-lifespan',
+		animalId: 'crow',
+		isTrue: false,
+		statementKey: 'myth.crow-lifespan.statement',
+		explanationKey: 'myth.crow-lifespan.explanation'
+	},
+	{
+		id: 'dodo-flight',
+		animalId: 'dodo',
+		isTrue: false,
+		statementKey: 'myth.dodo-flight.statement',
+		explanationKey: 'myth.dodo-flight.explanation'
+	},
+	{
+		id: 'dodo-pigeon',
+		animalId: 'dodo',
+		isTrue: true,
+		statementKey: 'myth.dodo-pigeon.statement',
+		explanationKey: 'myth.dodo-pigeon.explanation'
+	},
+	{
+		id: 'duck-echo',
+		animalId: 'duck',
+		isTrue: false,
+		statementKey: 'myth.duck-echo.statement',
+		explanationKey: 'myth.duck-echo.explanation'
+	},
+	{
+		id: 'duck-sleep',
+		animalId: 'duck',
+		isTrue: true,
+		statementKey: 'myth.duck-sleep.statement',
+		explanationKey: 'myth.duck-sleep.explanation'
+	},
+	{
+		id: 'eagle-bald',
+		animalId: 'eagle',
+		isTrue: false,
+		statementKey: 'myth.eagle-bald.statement',
+		explanationKey: 'myth.eagle-bald.explanation'
+	},
+	{
+		id: 'eagle-nest',
+		animalId: 'eagle',
+		isTrue: true,
+		statementKey: 'myth.eagle-nest.statement',
+		explanationKey: 'myth.eagle-nest.explanation'
+	},
+	{
+		id: 'flamingo-knees',
+		animalId: 'flamingo',
+		isTrue: false,
+		statementKey: 'myth.flamingo-knees.statement',
+		explanationKey: 'myth.flamingo-knees.explanation'
+	},
+	{
+		id: 'flamingo-eat',
+		animalId: 'flamingo',
+		isTrue: true,
+		statementKey: 'myth.flamingo-eat.statement',
+		explanationKey: 'myth.flamingo-eat.explanation'
+	},
+	{
+		id: 'fox-dog',
+		animalId: 'fox',
+		isTrue: false,
+		statementKey: 'myth.fox-dog.statement',
+		explanationKey: 'myth.fox-dog.explanation'
+	},
+	{
+		id: 'fox-climb',
+		animalId: 'fox',
+		isTrue: true,
+		statementKey: 'myth.fox-climb.statement',
+		explanationKey: 'myth.fox-climb.explanation'
+	},
+	{
+		id: 'giant_anteater-teeth',
+		animalId: 'giant_anteater',
+		isTrue: true,
+		statementKey: 'myth.giant_anteater-teeth.statement',
+		explanationKey: 'myth.giant_anteater-teeth.explanation'
+	},
+	{
+		id: 'giant_anteater-bite',
+		animalId: 'giant_anteater',
+		isTrue: false,
+		statementKey: 'myth.giant_anteater-bite.statement',
+		explanationKey: 'myth.giant_anteater-bite.explanation'
+	},
+	{
+		id: 'goose-teeth',
+		animalId: 'goose',
+		isTrue: true,
+		statementKey: 'myth.goose-teeth.statement',
+		explanationKey: 'myth.goose-teeth.explanation'
+	},
+	{
+		id: 'goose-flight',
+		animalId: 'goose',
+		isTrue: false,
+		statementKey: 'myth.goose-flight.statement',
+		explanationKey: 'myth.goose-flight.explanation'
+	},
+	{
+		id: 'hamster-nocturnal',
+		animalId: 'hamster',
+		isTrue: true,
+		statementKey: 'myth.hamster-nocturnal.statement',
+		explanationKey: 'myth.hamster-nocturnal.explanation'
+	},
+	{
+		id: 'hamster-vision',
+		animalId: 'hamster',
+		isTrue: false,
+		statementKey: 'myth.hamster-vision.statement',
+		explanationKey: 'myth.hamster-vision.explanation'
+	},
+	{
+		id: 'hawk-speed',
+		animalId: 'hawk',
+		isTrue: false,
+		statementKey: 'myth.hawk-speed.statement',
+		explanationKey: 'myth.hawk-speed.explanation'
+	},
+	{
+		id: 'hawk-vision',
+		animalId: 'hawk',
+		isTrue: true,
+		statementKey: 'myth.hawk-vision.statement',
+		explanationKey: 'myth.hawk-vision.explanation'
+	},
+	{
+		id: 'hedgehog-shoot',
+		animalId: 'hedgehog',
+		isTrue: false,
+		statementKey: 'myth.hedgehog-shoot.statement',
+		explanationKey: 'myth.hedgehog-shoot.explanation'
+	},
+	{
+		id: 'hedgehog-lactose',
+		animalId: 'hedgehog',
+		isTrue: true,
+		statementKey: 'myth.hedgehog-lactose.statement',
+		explanationKey: 'myth.hedgehog-lactose.explanation'
+	},
+	{
+		id: 'honey_badger-venom',
+		animalId: 'honey_badger',
+		isTrue: true,
+		statementKey: 'myth.honey_badger-venom.statement',
+		explanationKey: 'myth.honey_badger-venom.explanation'
+	},
+	{
+		id: 'honey_badger-honey',
+		animalId: 'honey_badger',
+		isTrue: false,
+		statementKey: 'myth.honey_badger-honey.statement',
+		explanationKey: 'myth.honey_badger-honey.explanation'
+	},
+	{
+		id: 'horse-breathe',
+		animalId: 'horse',
+		isTrue: true,
+		statementKey: 'myth.horse-breathe.statement',
+		explanationKey: 'myth.horse-breathe.explanation'
+	},
+	{
+		id: 'horse-blind',
+		animalId: 'horse',
+		isTrue: false,
+		statementKey: 'myth.horse-blind.statement',
+		explanationKey: 'myth.horse-blind.explanation'
+	},
+	{
+		id: 'koala-bear',
+		animalId: 'koala',
+		isTrue: false,
+		statementKey: 'myth.koala-bear.statement',
+		explanationKey: 'myth.koala-bear.explanation'
+	},
+	{
+		id: 'koala-sleep',
+		animalId: 'koala',
+		isTrue: true,
+		statementKey: 'myth.koala-sleep.statement',
+		explanationKey: 'myth.koala-sleep.explanation'
+	},
+	{
+		id: 'mammoth-ice',
+		animalId: 'mammoth',
+		isTrue: false,
+		statementKey: 'myth.mammoth-ice.statement',
+		explanationKey: 'myth.mammoth-ice.explanation'
+	},
+	{
+		id: 'mammoth-tusk',
+		animalId: 'mammoth',
+		isTrue: true,
+		statementKey: 'myth.mammoth-tusk.statement',
+		explanationKey: 'myth.mammoth-tusk.explanation'
+	},
+	{
+		id: 'manta_ray-sting',
+		animalId: 'manta_ray',
+		isTrue: false,
+		statementKey: 'myth.manta_ray-sting.statement',
+		explanationKey: 'myth.manta_ray-sting.explanation'
+	},
+	{
+		id: 'manta_ray-jump',
+		animalId: 'manta_ray',
+		isTrue: true,
+		statementKey: 'myth.manta_ray-jump.statement',
+		explanationKey: 'myth.manta_ray-jump.explanation'
+	},
+	{
+		id: 'manul-pupil',
+		animalId: 'manul',
+		isTrue: true,
+		statementKey: 'myth.manul-pupil.statement',
+		explanationKey: 'myth.manul-pupil.explanation'
+	},
+	{
+		id: 'manul-speed',
+		animalId: 'manul',
+		isTrue: false,
+		statementKey: 'myth.manul-speed.statement',
+		explanationKey: 'myth.manul-speed.explanation'
+	},
+	{
+		id: 'mole-blind',
+		animalId: 'mole',
+		isTrue: false,
+		statementKey: 'myth.mole-blind.statement',
+		explanationKey: 'myth.mole-blind.explanation'
+	},
+	{
+		id: 'mole-eat',
+		animalId: 'mole',
+		isTrue: true,
+		statementKey: 'myth.mole-eat.statement',
+		explanationKey: 'myth.mole-eat.explanation'
+	},
+	{
+		id: 'octopus-tentacle',
+		animalId: 'octopus',
+		isTrue: true,
+		statementKey: 'myth.octopus-tentacle.statement',
+		explanationKey: 'myth.octopus-tentacle.explanation'
+	},
+	{
+		id: 'octopus-bones',
+		animalId: 'octopus',
+		isTrue: false,
+		statementKey: 'myth.octopus-bones.statement',
+		explanationKey: 'myth.octopus-bones.explanation'
+	},
+	{
+		id: 'passenger_pigeon-number',
+		animalId: 'passenger_pigeon',
+		isTrue: true,
+		statementKey: 'myth.passenger_pigeon-number.statement',
+		explanationKey: 'myth.passenger_pigeon-number.explanation'
+	},
+	{
+		id: 'passenger_pigeon-disease',
+		animalId: 'passenger_pigeon',
+		isTrue: false,
+		statementKey: 'myth.passenger_pigeon-disease.statement',
+		explanationKey: 'myth.passenger_pigeon-disease.explanation'
+	},
+	{
+		id: 'pelican-food',
+		animalId: 'pelican',
+		isTrue: false,
+		statementKey: 'myth.pelican-food.statement',
+		explanationKey: 'myth.pelican-food.explanation'
+	},
+	{
+		id: 'pelican-dive',
+		animalId: 'pelican',
+		isTrue: true,
+		statementKey: 'myth.pelican-dive.statement',
+		explanationKey: 'myth.pelican-dive.explanation'
+	},
+	{
+		id: 'pig-sweat',
+		animalId: 'pig',
+		isTrue: false,
+		statementKey: 'myth.pig-sweat.statement',
+		explanationKey: 'myth.pig-sweat.explanation'
+	},
+	{
+		id: 'pig-snout',
+		animalId: 'pig',
+		isTrue: true,
+		statementKey: 'myth.pig-snout.statement',
+		explanationKey: 'myth.pig-snout.explanation'
+	},
+	{
+		id: 'platypus-stomach',
+		animalId: 'platypus',
+		isTrue: true,
+		statementKey: 'myth.platypus-stomach.statement',
+		explanationKey: 'myth.platypus-stomach.explanation'
+	},
+	{
+		id: 'platypus-beak',
+		animalId: 'platypus',
+		isTrue: false,
+		statementKey: 'myth.platypus-beak.statement',
+		explanationKey: 'myth.platypus-beak.explanation'
+	},
+	{
+		id: 'porcupine-shoot',
+		animalId: 'porcupine',
+		isTrue: false,
+		statementKey: 'myth.porcupine-shoot.statement',
+		explanationKey: 'myth.porcupine-shoot.explanation'
+	},
+	{
+		id: 'porcupine-antibiotic',
+		animalId: 'porcupine',
+		isTrue: true,
+		statementKey: 'myth.porcupine-antibiotic.statement',
+		explanationKey: 'myth.porcupine-antibiotic.explanation'
+	},
+	{
+		id: 'raccoon-wash',
+		animalId: 'raccoon',
+		isTrue: true,
+		statementKey: 'myth.raccoon-wash.statement',
+		explanationKey: 'myth.raccoon-wash.explanation'
+	},
+	{
+		id: 'raccoon-winter',
+		animalId: 'raccoon',
+		isTrue: false,
+		statementKey: 'myth.raccoon-winter.statement',
+		explanationKey: 'myth.raccoon-winter.explanation'
+	},
+	{
+		id: 'red_panda-bear',
+		animalId: 'red_panda',
+		isTrue: false,
+		statementKey: 'myth.red_panda-bear.statement',
+		explanationKey: 'myth.red_panda-bear.explanation'
+	},
+	{
+		id: 'red_panda-stand',
+		animalId: 'red_panda',
+		isTrue: true,
+		statementKey: 'myth.red_panda-stand.statement',
+		explanationKey: 'myth.red_panda-stand.explanation'
+	},
+	{
+		id: 'shark-cancer',
+		animalId: 'shark',
+		isTrue: false,
+		statementKey: 'myth.shark-cancer.statement',
+		explanationKey: 'myth.shark-cancer.explanation'
+	},
+	{
+		id: 'shark-sleep',
+		animalId: 'shark',
+		isTrue: true,
+		statementKey: 'myth.shark-sleep.statement',
+		explanationKey: 'myth.shark-sleep.explanation'
+	},
+	{
+		id: 'sheep-memory',
+		animalId: 'sheep',
+		isTrue: true,
+		statementKey: 'myth.sheep-memory.statement',
+		explanationKey: 'myth.sheep-memory.explanation'
+	},
+	{
+		id: 'sheep-wool',
+		animalId: 'sheep',
+		isTrue: false,
+		statementKey: 'myth.sheep-wool.statement',
+		explanationKey: 'myth.sheep-wool.explanation'
+	},
+	{
+		id: 'sifaka-trees',
+		animalId: 'sifaka',
+		isTrue: true,
+		statementKey: 'myth.sifaka-trees.statement',
+		explanationKey: 'myth.sifaka-trees.explanation'
+	},
+	{
+		id: 'sifaka-monkey',
+		animalId: 'sifaka',
+		isTrue: false,
+		statementKey: 'myth.sifaka-monkey.statement',
+		explanationKey: 'myth.sifaka-monkey.explanation'
+	},
+	{
+		id: 'sloth-digestion',
+		animalId: 'sloth',
+		isTrue: true,
+		statementKey: 'myth.sloth-digestion.statement',
+		explanationKey: 'myth.sloth-digestion.explanation'
+	},
+	{
+		id: 'sloth-sleep',
+		animalId: 'sloth',
+		isTrue: false,
+		statementKey: 'myth.sloth-sleep.statement',
+		explanationKey: 'myth.sloth-sleep.explanation'
+	},
+	{
+		id: 'snake-milk',
+		animalId: 'snake',
+		isTrue: false,
+		statementKey: 'myth.snake-milk.statement',
+		explanationKey: 'myth.snake-milk.explanation'
+	},
+	{
+		id: 'snake-jaw',
+		animalId: 'snake',
+		isTrue: true,
+		statementKey: 'myth.snake-jaw.statement',
+		explanationKey: 'myth.snake-jaw.explanation'
+	},
+	{
+		id: 'squirrel-fall',
+		animalId: 'squirrel',
+		isTrue: true,
+		statementKey: 'myth.squirrel-fall.statement',
+		explanationKey: 'myth.squirrel-fall.explanation'
+	},
+	{
+		id: 'squirrel-rabies',
+		animalId: 'squirrel',
+		isTrue: false,
+		statementKey: 'myth.squirrel-rabies.statement',
+		explanationKey: 'myth.squirrel-rabies.explanation'
+	},
+	{
+		id: 'toucan-beak',
+		animalId: 'toucan',
+		isTrue: false,
+		statementKey: 'myth.toucan-beak.statement',
+		explanationKey: 'myth.toucan-beak.explanation'
+	},
+	{
+		id: 'toucan-temp',
+		animalId: 'toucan',
+		isTrue: true,
+		statementKey: 'myth.toucan-temp.statement',
+		explanationKey: 'myth.toucan-temp.explanation'
+	},
+	{
+		id: 'walrus-tusk',
+		animalId: 'walrus',
+		isTrue: false,
+		statementKey: 'myth.walrus-tusk.statement',
+		explanationKey: 'myth.walrus-tusk.explanation'
+	},
+	{
+		id: 'walrus-sleep',
+		animalId: 'walrus',
+		isTrue: true,
+		statementKey: 'myth.walrus-sleep.statement',
+		explanationKey: 'myth.walrus-sleep.explanation'
+	},
+	{
+		id: 'weasel-winter',
+		animalId: 'weasel',
+		isTrue: true,
+		statementKey: 'myth.weasel-winter.statement',
+		explanationKey: 'myth.weasel-winter.explanation'
+	},
+	{
+		id: 'weasel-blood',
+		animalId: 'weasel',
+		isTrue: false,
+		statementKey: 'myth.weasel-blood.statement',
+		explanationKey: 'myth.weasel-blood.explanation'
+	},
+	{
+		id: 'yak-altitude',
+		animalId: 'yak',
+		isTrue: false,
+		statementKey: 'myth.yak-altitude.statement',
+		explanationKey: 'myth.yak-altitude.explanation'
+	},
+	{
+		id: 'yak-sweat',
+		animalId: 'yak',
+		isTrue: true,
+		statementKey: 'myth.yak-sweat.statement',
+		explanationKey: 'myth.yak-sweat.explanation'
+	},
+	{
+		id: 'zebra-black',
+		animalId: 'zebra',
+		isTrue: true,
+		statementKey: 'myth.zebra-black.statement',
+		explanationKey: 'myth.zebra-black.explanation'
+	},
+	{
+		id: 'zebra-horse',
+		animalId: 'zebra',
+		isTrue: false,
+		statementKey: 'myth.zebra-horse.statement',
+		explanationKey: 'myth.zebra-horse.explanation'
 	}
 ];
 
