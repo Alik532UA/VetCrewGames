@@ -184,6 +184,7 @@
 		if (!checked) return [];
 		return slots.map((animal, i) => animal?.id === correctOrder[i].id);
 	});
+	let availableAnimals = $derived(initialSourceAnimals.filter((a): a is Animal => a !== null));
 
 	// --- Handlers ---
 	function handleDragStart(e: DragEvent, animal: Animal, source: NonNullable<typeof dragSource>) {
@@ -477,6 +478,36 @@
 		gameOver = false;
 		initRound();
 	}
+
+	function moveAnimalToIndex(animal: Animal, targetType: 'slot' | 'source', targetIndex: number) {
+		if (checked) return;
+
+		let fromType: 'slot' | 'source' | null = null;
+		let fromIndex = -1;
+
+		const sIdx = slots.findIndex((a) => a?.id === animal.id);
+		if (sIdx !== -1) {
+			fromType = 'slot';
+			fromIndex = sIdx;
+		} else {
+			const srcIdx = sourceAnimals.findIndex((a) => a?.id === animal.id);
+			if (srcIdx !== -1) {
+				fromType = 'source';
+				fromIndex = srcIdx;
+			}
+		}
+
+		if (!fromType) return;
+
+		// Skip if moving to the same place
+		if (fromType === targetType && fromIndex === targetIndex) return;
+
+		draggedAnimal = animal;
+		dragSource = { type: fromType, index: fromIndex };
+
+		if (targetType === 'slot') performDropOnSlot(targetIndex);
+		else performDropOnSource(targetIndex);
+	}
 </script>
 
 <GameHeader titleKey="population.title" />
@@ -527,15 +558,26 @@
 						</div>
 					{/each}
 					{#if !slotAnimal}
-						{#if draggedAnimal && !isActuallyDragging && hoverSlotIndex === i}
-							<div class="game-card ghost-card">
-								<div class="game-card__img-container">
-									<img src={draggedAnimal.image} alt="" class="game-card__img" draggable="false" />
-								</div>
-								<span class="game-card__name">{@html formatFont(td(draggedAnimal.nameKey))}</span>
+						<span class="game-container__label">
+							{#if i === 0}{@html formatFont(t('population.least'))}
+							{:else if i === 1}{@html formatFont(t('population.middle'))}
+							{:else}{@html formatFont(t('population.most'))}
+							{/if}
+						</span>
+						{#if !isActuallyDragging && hoverSlotIndex === i}
+							<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
+								{#each availableAnimals as animal (animal.id)}
+									<button 
+										class="mini-ghost-card" 
+										class:mini-ghost-card--selected={draggedAnimal?.id === animal.id}
+										onclick={(e) => { e.stopPropagation(); moveAnimalToIndex(animal, 'slot', i); }}
+										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && moveAnimalToIndex(animal, 'slot', i)}
+										aria-label={formatPlain(td(animal.nameKey))}
+									>
+										<img src={animal.image} alt="" class="mini-ghost-card__img" />
+									</button>
+								{/each}
 							</div>
-						{:else}
-							<span class="game-container__label">{#if i === 0}{@html formatFont(t('population.least'))}{:else if i === 1}{@html formatFont(t('population.middle'))}{:else}{@html formatFont(t('population.most'))}{/if}</span>
 						{/if}
 					{/if}
 				</div>
@@ -581,9 +623,8 @@
 								data-drag-source-index={i} 
 								ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} 
 								ondragend={handleDragEnd} 
-								onclick={(e) => { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); }} 
-								ondblclick={(e) => { e.stopPropagation(); handleDoubleClick(animal, { type: 'source', index: i }); }}
-								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleSelect(animal, { type: 'source', index: i }); } }}
+								onclick={(e) => handleCardClick(e, animal, { type: 'source', index: i })} 
+								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e, animal, { type: 'source', index: i }); }}
 								role="button" 
 								tabindex="0"
 								in:receive={{ key: animal.id }}
@@ -595,12 +636,19 @@
 								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
 							</div>
 						{/each}
-						{#if !srcAnimal && draggedAnimal && !isActuallyDragging && hoverSourceIndex === i}
-							<div class="game-card ghost-card">
-								<div class="game-card__img-container">
-									<img src={draggedAnimal.image} alt="" class="game-card__img" draggable="false" />
-								</div>
-								<span class="game-card__name">{@html formatFont(td(draggedAnimal.nameKey))}</span>
+						{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
+							<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
+								{#each availableAnimals as animal (animal.id)}
+									<button 
+										class="mini-ghost-card" 
+										class:mini-ghost-card--selected={draggedAnimal?.id === animal.id}
+										onclick={(e) => { e.stopPropagation(); moveAnimalToIndex(animal, 'source', i); }}
+										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && moveAnimalToIndex(animal, 'source', i)}
+										aria-label={formatPlain(td(animal.nameKey))}
+									>
+										<img src={animal.image} alt="" class="mini-ghost-card__img" />
+									</button>
+								{/each}
 							</div>
 						{/if}
 					</div>
@@ -654,6 +702,28 @@
 	.card--selected { box-shadow: 0 0 15px var(--color-accent) !important; border: 2px solid var(--color-accent) !important; transform: scale(1.05) translateY(-2px) !important; }
 	.card--dragging-orig { opacity: 0 !important; pointer-events: none; }
 	.ghost-card { opacity: 0.5 !important; transform: scale(0.8) !important; pointer-events: none; z-index: 1; }
+
+	.mini-ghost-grid {
+		grid-area: 1 / 1;
+		display: flex; flex-direction: row; gap: 4px; padding: 6px; 
+		justify-content: center; align-items: flex-end; width: 100%; height: 100%;
+		z-index: 10;
+	}
+	.mini-ghost-card {
+		flex: 1; max-width: 28%; aspect-ratio: 3 / 4; border-radius: 4px; overflow: hidden;
+		background-color: var(--color-bg-card); opacity: 0.9;
+		border: 1px solid rgba(255, 255, 255, 0.4);
+		transition: all var(--transition-fast);
+		display: flex; flex-direction: column;
+		cursor: pointer; padding: 0; margin-bottom: 4px;
+	}
+	.mini-ghost-card:hover { transform: scale(1.1); z-index: 2; border-color: var(--color-accent); }
+	.mini-ghost-card__img { width: 100%; height: 100%; object-fit: cover; }
+	.mini-ghost-card--selected { 
+		opacity: 1; border-color: var(--color-accent); 
+		box-shadow: 0 0 8px var(--color-accent); transform: scale(1.1);
+		z-index: 2;
+	}
 
 	.game-card__img-container { position: relative; width: 100%; aspect-ratio: 3 / 4; min-height: 0; }
 	.game-card__img { width: 100%; height: 100%; border-radius: var(--radius-sm); background-color: var(--color-bg-panel-dark); object-fit: cover; }
