@@ -113,6 +113,7 @@
 	let draggedAnimal = $state<Animal | null>(null);
 	let dragSource = $state<{ type: 'source'; index: number } | { type: 'slot'; index: number } | null>(null);
 	let isActuallyDragging = $state(false);
+	let dragOverId = $state<string | null>(null);
 
 	// Touch drag state
 	let touchDragClone: HTMLElement | null = null;
@@ -193,10 +194,15 @@
 		if (!touchDragStarted) { draggedAnimal = null; dragSource = null; }
 	}
 
-	function handleDragOver(e: DragEvent) {
+	function handleDragOver(e: DragEvent, id: string) {
 		if (checked) return;
 		e.preventDefault();
+		dragOverId = id;
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+	}
+
+	function handleDragLeave(e: DragEvent, id: string) {
+		if (dragOverId === id) dragOverId = null;
 	}
 
 	function setDragElementDropPosition(animalId: number | string, clientX: number, clientY: number, offsetX?: number, offsetY?: number) {
@@ -219,6 +225,7 @@
 
 	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) { 
 		e.preventDefault(); 
+		dragOverId = null;
 		if (checked || !draggedAnimal || !dragSource) return;
 		if (dragSource.type === 'slot' && dragSource.index === targetIndex) {
 			draggedAnimal = null; dragSource = null; isActuallyDragging = false;
@@ -230,6 +237,7 @@
 
 	function handleDropOnSource_DnD(e: DragEvent, targetIndex: number) { 
 		e.preventDefault(); 
+		dragOverId = null;
 		if (checked || !draggedAnimal || !dragSource) return;
 		if (dragSource.type === 'source' && dragSource.index === targetIndex) {
 			draggedAnimal = null; dragSource = null; isActuallyDragging = false;
@@ -419,8 +427,10 @@
 			{#each slots as slotAnimal, i (i)}
 				<div 
 					class="game-container" 
+					class:container--touch-over={dragOverId === `slot-${i}`}
 					data-slot-index={i} 
-					ondragover={handleDragOver} 
+					ondragover={(e) => handleDragOver(e, `slot-${i}`)} 
+					ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
 					ondrop={(e) => handleDropOnSlot_DnD(e, i)} 
 					onclick={() => handleSlotClick(i)} 
 					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
@@ -446,7 +456,7 @@
 							out:send={{ key: animal.id }}
 						>
 							<div class="game-card__img-container">
-								<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" loading="lazy" />
+								<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" draggable="false" loading="lazy" />
 								{#if checked}<div class="game-card__pop-overlay">{@html formatPopulationHtml(animal.population)}</div>{/if}
 							</div>
 							<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
@@ -473,8 +483,10 @@
 				{#each sourceAnimals as srcAnimal, i (i)}
 					<div 
 						class="game-container" 
+						class:container--touch-over={dragOverId === `source-${i}`}
 						data-source-index={i} 
-						ondragover={handleDragOver} 
+						ondragover={(e) => handleDragOver(e, `source-${i}`)} 
+						ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
 						ondrop={(e) => handleDropOnSource_DnD(e, i)} 
 						onclick={() => handleSourcePlaceholderClick(i)} 
 						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
@@ -500,7 +512,7 @@
 								out:send={{ key: animal.id }}
 							>
 								<div class="game-card__img-container">
-									<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" loading="lazy" />
+									<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" draggable="false" loading="lazy" />
 								</div>
 								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
 							</div>
@@ -542,7 +554,7 @@
 		transition: all var(--transition-normal); min-width: 0; position: relative; 
 	}
 	.container--touch-over { border-color: var(--color-accent) !important; background-color: var(--color-accent-shadow) !important; }
-	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-on-accent); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
+	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
 	
 	.game-card { 
 		grid-area: 1 / 1;
