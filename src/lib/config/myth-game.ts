@@ -72,14 +72,14 @@ export const myths: MythStatement[] = [
 	{
 		id: 'ant-sleep',
 		animalId: 'ant',
-		isTrue: true,
+		isTrue: false,
 		statementKey: 'myth.ant-sleep.statement',
 		explanationKey: 'myth.ant-sleep.explanation'
 	},
 	{
 		id: 'ant-wings',
 		animalId: 'ant',
-		isTrue: false,
+		isTrue: true,
 		statementKey: 'myth.ant-wings.statement',
 		explanationKey: 'myth.ant-wings.explanation'
 	},
