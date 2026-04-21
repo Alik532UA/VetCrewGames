@@ -7,5 +7,8 @@ export default defineConfig({
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		environment: 'jsdom',
 		globals: true,
+		alias: {
+			'$app/paths': new URL('./src/lib/mocks/app-paths.ts', import.meta.url).pathname
+		}
 	}
 });

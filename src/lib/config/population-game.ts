@@ -197,6 +197,90 @@ export const animals: Animal[] = [
 		population: 21_000_000_000_000,
 		factKey: 'fact.spider',
 		image: `${base}/images/animals/spider.webp`
+	},
+	{
+		id: 'blue_whale',
+		nameKey: 'animal.blue_whale',
+		population: 25000,
+		factKey: 'fact.blue_whale',
+		image: `${base}/images/animals/blue_whale.webp`
+	},
+	{
+		id: 'deer',
+		nameKey: 'animal.deer',
+		population: 100000000,
+		factKey: 'fact.deer',
+		image: `${base}/images/animals/deer.webp`
+	},
+	{
+		id: 'falcon',
+		nameKey: 'animal.falcon',
+		population: 100000,
+		factKey: 'fact.falcon',
+		image: `${base}/images/animals/falcon.webp`
+	},
+	{
+		id: 'frog',
+		nameKey: 'animal.frog',
+		population: 5000000000,
+		factKey: 'fact.frog',
+		image: `${base}/images/animals/frog.webp`
+	},
+	{
+		id: 'hippo',
+		nameKey: 'animal.hippo',
+		population: 130000,
+		factKey: 'fact.hippo',
+		image: `${base}/images/animals/hippo.webp`
+	},
+	{
+		id: 'leopard',
+		nameKey: 'animal.leopard',
+		population: 50000,
+		factKey: 'fact.leopard',
+		image: `${base}/images/animals/leopard.webp`
+	},
+	{
+		id: 'lizard',
+		nameKey: 'animal.lizard',
+		population: 10000000000,
+		factKey: 'fact.lizard',
+		image: `${base}/images/animals/lizard.webp`
+	},
+	{
+		id: 'ostrich',
+		nameKey: 'animal.ostrich',
+		population: 150000,
+		factKey: 'fact.ostrich',
+		image: `${base}/images/animals/ostrich.webp`
+	},
+	{
+		id: 'owl',
+		nameKey: 'animal.owl',
+		population: 10000000,
+		factKey: 'fact.owl',
+		image: `${base}/images/animals/owl.webp`
+	},
+	{
+		id: 'seal',
+		nameKey: 'animal.seal',
+		population: 5000000,
+		factKey: 'fact.seal',
+		image: `${base}/images/animals/seal.webp`
+	},
+	{
+		id: 'stork',
+		nameKey: 'animal.stork',
+		population: 500000,
+		factKey: 'fact.stork',
+		image: `${base}/images/animals/stork.webp`
+	},
+	{
+		id: 'turtle',
+		nameKey: 'animal.turtle',
+		population: 1000000000,
+		factKey: 'fact.turtle',
+		image: `${base}/images/animals/turtle.webp`
 	}
 ];
 
