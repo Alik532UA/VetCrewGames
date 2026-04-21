@@ -90,6 +90,9 @@
 	let checked = $state(false);
 	let correctOrder = $state<Animal[]>([]);
 
+	let sessionScore = $state(0);
+	let gameOver = $state(false);
+
 	function formatPopulationPlain(num: number): string {
 		if (num >= 1_000_000_000_000) return formatPlain(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
 		if (num >= 1_000_000_000) return formatPlain(`~${num / 1_000_000_000} ${t('unit.billion')}`);
@@ -390,7 +393,21 @@
 			}
 		}
 	}
-	function handleNextRound() { roundNumber = roundNumber < TOTAL_ROUNDS ? roundNumber + 1 : 1; initRound(); }
+	function handleNextRound() { 
+		if (roundNumber < TOTAL_ROUNDS) {
+			roundNumber++; 
+			initRound(); 
+		} else {
+			gameOver = true;
+		}
+	}
+
+	function resetGame() {
+		roundNumber = 1;
+		sessionScore = 0;
+		gameOver = false;
+		initRound();
+	}
 </script>
 
 <GameHeader titleKey="population.title" />
@@ -525,7 +542,7 @@
 		transition: all var(--transition-normal); min-width: 0; position: relative; 
 	}
 	.container--touch-over { border-color: var(--color-accent) !important; background-color: var(--color-accent-shadow) !important; }
-	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-on-panel); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
+	.game-container__label { grid-area: 1 / 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-on-accent); text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); opacity: 0.5; text-transform: uppercase; text-align: center; padding: 0 4px; }
 	
 	.game-card { 
 		grid-area: 1 / 1;
@@ -565,7 +582,7 @@
 	.btn-check { 
 		padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; 
 		background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent) 40%, color-mix(in srgb, var(--color-accent), black 20%) 100%); 
-		color: var(--color-text-on-panel); 
+		color: var(--color-text-on-accent); 
 		box-shadow: 0 5px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 8px 20px var(--color-accent-shadow); 
 		border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); 
 	}
@@ -583,4 +600,25 @@
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5)); border-radius: var(--radius-md); 
 	}
 	@media (max-width: 480px) { .slots-row, .source-panel__cards { gap: var(--space-xs); } .btn-check { padding: var(--space-md) 3rem; } }
+	.round-indicator {
+		font-size: var(--font-size-md); font-weight: var(--font-weight-bold);
+		color: var(--color-text-on-accent); opacity: 0.8; margin-bottom: var(--space-sm);
+	}
+
+	.game-over-card {
+		width: 100%; background: var(--color-bg-surface); border-radius: var(--radius-lg); padding: var(--space-2xl);
+		box-shadow: var(--shadow-card); display: flex; flex-direction: column; align-items: center; gap: var(--space-xl);
+		text-align: center;
+	}
+	.game-over-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text); }
+	.game-over-score { display: flex; flex-direction: column; gap: var(--space-xs); }
+	.score-label { font-size: var(--font-size-md); color: var(--color-text-muted); text-transform: uppercase; }
+	.score-value { font-size: 3rem; font-weight: 900; color: var(--color-accent); line-height: 1; }
+	.btn-play-again {
+		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+		padding: var(--space-md) var(--space-xl); background: var(--color-accent); color: var(--color-text-on-accent);
+		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
+		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
+	}
+	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
 </style>

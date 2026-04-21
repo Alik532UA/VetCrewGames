@@ -68,6 +68,55 @@ export const myths: MythStatement[] = [
 		isTrue: false, // Most but not all, and often only for a season
 		statementKey: 'myth.penguin.love.statement',
 		explanationKey: 'myth.penguin.love.explanation'
+	},
+	{
+		id: 'dolphin-sleep',
+		animalId: 'dolphin',
+		isTrue: true,
+		statementKey: 'myth.dolphin.sleep.statement',
+		explanationKey: 'myth.dolphin.sleep.explanation'
+	},
+	{
+		id: 'parrot-mimic',
+		animalId: 'parrot',
+		isTrue: false,
+		statementKey: 'myth.parrot.mimic.statement',
+		explanationKey: 'myth.parrot.mimic.explanation'
+	},
+	{
+		id: 'chicken-fly',
+		animalId: 'chicken',
+		isTrue: false,
+		statementKey: 'myth.chicken.fly.statement',
+		explanationKey: 'myth.chicken.fly.explanation'
+	},
+	{
+		id: 'rat-dirty',
+		animalId: 'rat',
+		isTrue: false,
+		statementKey: 'myth.rat.dirty.statement',
+		explanationKey: 'myth.rat.dirty.explanation'
+	},
+	{
+		id: 'sparrow-migrate',
+		animalId: 'sparrow',
+		isTrue: false,
+		statementKey: 'myth.sparrow.migrate.statement',
+		explanationKey: 'myth.sparrow.migrate.explanation'
+	},
+	{
+		id: 'tiger-stripes',
+		animalId: 'tiger',
+		isTrue: false,
+		statementKey: 'myth.tiger.stripes.statement',
+		explanationKey: 'myth.tiger.stripes.explanation'
+	},
+	{
+		id: 'panda-diet',
+		animalId: 'panda',
+		isTrue: false,
+		statementKey: 'myth.panda.diet.statement',
+		explanationKey: 'myth.panda.diet.explanation'
 	}
 ];
 

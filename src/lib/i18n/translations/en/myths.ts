@@ -22,5 +22,19 @@ export const myths = {
 	'myth.wolf.alpha.statement': 'There is always a dominant alpha male in a wolf pack who fought for power',
 	'myth.wolf.alpha.explanation': 'Myth. Wolf packs are usually just families where the parents are the leaders by fact of their status, not through fighting.',
 	'myth.penguin.love.statement': 'Penguins choose one partner for life',
-	'myth.penguin.love.explanation': 'Myth. While they are monogamous during the breeding season, many species may change partners the following year.'
+	'myth.penguin.love.explanation': 'Myth. While they are monogamous during the breeding season, many species may change partners the following year.',
+	'myth.dolphin.sleep.statement': 'Dolphins sleep with one eye open',
+	'myth.dolphin.sleep.explanation': 'Fact. Dolphins shut down only half of their brain at a time to stay alert for predators and to remember to breathe.',
+	'myth.parrot.mimic.statement': 'Parrots only mimic sounds and don\'t understand what they are saying',
+	'myth.parrot.mimic.explanation': 'Myth. Many parrots can associate words with meanings, identify objects, count, and even answer complex questions.',
+	'myth.chicken.fly.statement': 'Chickens can\'t fly at all',
+	'myth.chicken.fly.explanation': 'Myth. While they aren\'t great flyers, chickens can fly short distances to clear fences or roost in trees.',
+	'myth.rat.dirty.statement': 'Rats are naturally dirty animals',
+	'myth.rat.dirty.explanation': 'Myth. Rats are actually very clean and spend several hours a day grooming themselves, much like cats do.',
+	'myth.sparrow.migrate.statement': 'All sparrows migrate south for the winter',
+	'myth.sparrow.migrate.explanation': 'Myth. Many sparrow species, including the common House Sparrow, are year-round residents and do not migrate.',
+	'myth.tiger.stripes.statement': 'Tigers only have stripes on their fur, not on their skin',
+	'myth.tiger.stripes.explanation': 'Myth. A tiger\'s stripes are also pigmented into their skin. If you shaved a tiger, it would still be striped.',
+	'myth.panda.diet.statement': 'Giant pandas eat absolutely nothing but bamboo',
+	'myth.panda.diet.explanation': 'Myth. While bamboo makes up 99% of their diet, they occasionally eat small mammals, birds, or fish.'
 } as const;

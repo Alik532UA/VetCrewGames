@@ -18,5 +18,7 @@ export const ui = {
 	'common.next': 'Next',
 	'common.back': 'Back',
 	'common.correct': 'Correct!',
-	'common.incorrect': 'Incorrect!'
+	'common.incorrect': 'Incorrect!',
+	'common.gameOver': 'Game Over!',
+	'common.yourScore': 'Your Score:'
 } as const;

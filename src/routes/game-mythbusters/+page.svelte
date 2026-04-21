@@ -4,36 +4,58 @@
 	import { settings } from '$lib/settings.svelte';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import GameHeader from '$lib/components/GameHeader.svelte';
-	import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
-	import { CheckCircle2, XCircle } from 'lucide-svelte';
+	import { myths, type GameQuestion } from '$lib/config/myth-game';
+	import { animals } from '$lib/config/population-game';
+	import { CheckCircle2, XCircle, RotateCcw } from 'lucide-svelte';
 
 	// Game state
 	let currentQuestion = $state<GameQuestion | null>(null);
 	let answered = $state(false);
 	let selectedTrue = $state<boolean | null>(null);
 	let isCorrect = $state(false);
-	let score = $state(0);
-	let totalAnswered = $state(0);
-	let usedIds = $state<string[]>([]);
+
+	const TOTAL_ROUNDS = 10;
+	let roundNumber = $state(1);
+	let sessionScore = $state(0);
+	let gameOver = $state(false);
+
+	let localUsedIds = $state<string[]>([]);
+	let globalUsedIds = $state<string[]>([]);
 
 	function nextQuestion() {
-		if (usedIds.length >= 20) { // Keep last 20 to avoid repeats
-			usedIds = usedIds.slice(1);
+		if (roundNumber > TOTAL_ROUNDS) {
+			currentQuestion = null;
+			gameOver = true;
+			return;
 		}
-		
-		const next = getNextQuestion(usedIds);
-		if (next) {
-			currentQuestion = next;
-			usedIds.push(next.id);
-			answered = false;
-			selectedTrue = null;
-		} else {
-			// If we ran out of myths (unlikely with random), clear history and try again
-			usedIds = [];
-			currentQuestion = getNextQuestion([]);
-			answered = false;
-			selectedTrue = null;
+
+		let availableMyths = myths.filter(m => !localUsedIds.includes(m.id));
+		let globalAvailable = availableMyths.filter(m => !globalUsedIds.includes(m.id));
+
+		if (globalAvailable.length === 0) {
+			// Clear global history but maintain local exclusions for this game
+			globalUsedIds = [];
+			if (typeof window !== 'undefined') {
+				localStorage.setItem('vetcrewgames_shown_myths', JSON.stringify([]));
+			}
+			globalAvailable = availableMyths;
 		}
+
+		if (globalAvailable.length === 0) return; // Fallback
+
+		const randomMyth = globalAvailable[Math.floor(Math.random() * globalAvailable.length)];
+		const animal = animals.find(a => a.id === randomMyth.animalId)!;
+
+		currentQuestion = { ...randomMyth, animal };
+		localUsedIds.push(randomMyth.id);
+		globalUsedIds.push(randomMyth.id);
+
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('vetcrewgames_shown_myths', JSON.stringify(globalUsedIds));
+		}
+
+		answered = false;
+		selectedTrue = null;
 	}
 
 	function handleAnswer(choice: boolean) {
@@ -42,14 +64,30 @@
 		selectedTrue = choice;
 		isCorrect = choice === currentQuestion.isTrue;
 		answered = true;
-		totalAnswered++;
 		if (isCorrect) {
-			score++;
+			sessionScore++;
 			settings.addScore(1);
 		}
 	}
 
+	function onNext() {
+		roundNumber++;
+		nextQuestion();
+	}
+
+	function resetGame() {
+		roundNumber = 1;
+		sessionScore = 0;
+		localUsedIds = [];
+		gameOver = false;
+		nextQuestion();
+	}
+
 	onMount(() => {
+		const stored = localStorage.getItem('vetcrewgames_shown_myths');
+		if (stored) {
+			try { globalUsedIds = JSON.parse(stored); } catch(e) {}
+		}
 		nextQuestion();
 	});
 </script>
@@ -57,7 +95,20 @@
 <GameHeader titleKey="myth.title" />
 
 <div class="game-page">
-	{#if currentQuestion}
+	{#if gameOver}
+		<div class="game-over-card" in:fade={{ duration: 300 }}>
+			<h2 class="game-over-title">{@html formatFont(t('common.gameOver' as any))}</h2>
+			<div class="game-over-score">
+				<span class="score-label">{@html formatFont(t('common.yourScore' as any))}</span>
+				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS}</span>
+			</div>
+			<button class="btn-play-again" onclick={resetGame}>
+				<RotateCcw size={24} />
+				{@html formatFont(t('common.playAgain' as any))}
+			</button>
+		</div>
+	{:else if currentQuestion}
+		<div class="round-indicator">{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}</div>
 		{#key currentQuestion.id}
 			<div class="myth-card" 
 				class:myth-card--correct={answered && isCorrect} 
@@ -83,6 +134,9 @@
 						</div>
 					{:else}
 						<div class="myth-card__result" in:slide>
+							<button class="btn-next" onclick={onNext}>
+								{@html formatFont(t('myth.next'))}
+							</button>
 							<div class="result-header" class:result-header--correct={isCorrect}>
 								{#if isCorrect}
 									<CheckCircle2 size={24} />
@@ -93,9 +147,6 @@
 								{/if}
 							</div>
 							<p class="myth-card__explanation">{@html formatFont(t(currentQuestion.explanationKey as any))}</p>
-							<button class="btn-next" onclick={nextQuestion}>
-								{@html formatFont(t('myth.next'))}
-							</button>
 						</div>
 					{/if}
 				</div>
@@ -139,7 +190,7 @@
 	.btn-myth { background: #e5e5e5; color: #333; box-shadow: 0 4px 0 #b0b0b0; }
 	.btn-myth:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #b0b0b0; background: #eee; }
 
-	.btn-truth { background: var(--color-accent); color: var(--color-text-on-panel); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); }
+	.btn-truth { background: var(--color-accent); color: var(--color-text-on-accent); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); }
 	.btn-truth:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
 
 	.myth-card__result { display: flex; flex-direction: column; gap: var(--space-md); animation: slide-up 0.4s ease both; }
@@ -154,4 +205,26 @@
 		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 var(--color-bg-panel-dark);
 	}
 	.btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
+
+	.round-indicator {
+		font-size: var(--font-size-md); font-weight: var(--font-weight-bold);
+		color: var(--color-text-on-panel); opacity: 0.8; margin-bottom: var(--space-sm);
+	}
+
+	.game-over-card {
+		width: 100%; background: var(--color-bg-surface); border-radius: var(--radius-lg); padding: var(--space-2xl);
+		box-shadow: var(--shadow-card); display: flex; flex-direction: column; align-items: center; gap: var(--space-xl);
+		text-align: center;
+	}
+	.game-over-title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text); }
+	.game-over-score { display: flex; flex-direction: column; gap: var(--space-xs); }
+	.score-label { font-size: var(--font-size-md); color: var(--color-text-muted); text-transform: uppercase; }
+	.score-value { font-size: 3rem; font-weight: 900; color: var(--color-accent); line-height: 1; }
+	.btn-play-again {
+		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
+		padding: var(--space-md) var(--space-xl); background: var(--color-accent); color: var(--color-text-on-accent);
+		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
+		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
+	}
+	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
 </style>

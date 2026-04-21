@@ -18,5 +18,7 @@ export const ui = {
 	'common.next': 'Далі',
 	'common.back': 'Назад',
 	'common.correct': 'Правильно!',
-	'common.incorrect': 'Неправильно!'
+	'common.incorrect': 'Неправильно!',
+	'common.gameOver': 'Гру завершено!',
+	'common.yourScore': 'Ваш рахунок:'
 } as const;
