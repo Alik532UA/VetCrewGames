@@ -116,7 +116,7 @@
 			in:fade={{ duration: 300 }}
 		>
 			{#key currentQuestion.id}
-				<div class="myth-card__inner-key" in:fade={{ duration: 300 }}>
+				<div class="myth-card__inner-key" in:fade={{ duration: 300, delay: 250 }} out:fade={{ duration: 250 }}>
 					<div class="myth-card__image-wrap">
 						<img src={currentQuestion.animal.image} alt={formatPlain(td(currentQuestion.animal.nameKey))} class="myth-card__image" loading="lazy" />
 						<div class="myth-card__animal-name">{@html formatFont(td(currentQuestion.animal.nameKey))}</div>
