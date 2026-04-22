@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
-	import { fade } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
@@ -594,7 +594,7 @@
 	</div>
 
 	{#if !checked}
-		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
+		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1" transition:slide>
 			<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
 			<div class="source-panel__cards">
 				{#each sourceAnimals as srcAnimal, i (i)}
@@ -658,7 +658,7 @@
 	{/if}
 
 	{#if checked}
-		<div class="results-zone">
+		<div class="results-zone" transition:slide>
 			{#each correctOrder as animal, i (animal.id)}
 				<div class="result-card anim-stagger-{i + 1}">
 					<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" loading="lazy" /></div>
@@ -678,6 +678,7 @@
 		display: flex; flex-direction: column; align-items: center; justify-content: center;
 		flex: 1;
 		width: 95%; max-width: 600px; padding: var(--space-md) 0; gap: var(--space-lg); margin: 0 auto; 
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 	.sorting-panel { 
@@ -686,6 +687,7 @@
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 	.sorting-panel__instruction { color: #ffffff; text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
