@@ -4,11 +4,11 @@
 	import { base } from '$app/paths';
 
 	const games = [
-		{ key: 'menu.game.feeding' as const, href: `${base}/game-feeding`, disabled: true },
-		{ key: 'menu.game.population' as const, href: `${base}/game-population`, disabled: false },
 		{ key: 'menu.game.mythbusters' as const, href: `${base}/game-mythbusters`, disabled: false },
+		{ key: 'menu.game.population' as const, href: `${base}/game-population`, disabled: false },
 		{ key: 'menu.game.habitat' as const, href: `${base}/game-habitat`, disabled: true },
-		{ key: 'menu.game.family' as const, href: `${base}/game-family`, disabled: true }
+		{ key: 'menu.game.family' as const, href: `${base}/game-family`, disabled: true },
+		{ key: 'menu.game.feeding' as const, href: `${base}/game-feeding`, disabled: true }
 	];
 
 	const links = [
@@ -92,19 +92,22 @@
 	}
 
 	.menu-btn--game {
-		background-color: var(--color-bg-panel);
+		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		color: var(--color-text-on-panel);
 		box-shadow: var(--shadow-card);
+		border: none;
 	}
 
 	@media (hover: hover) {
 		.menu-btn--game:hover {
-			background-color: var(--color-bg-card-hover);
+			background-color: color-mix(in srgb, var(--color-bg-card-hover), transparent 15%);
 			box-shadow: var(--shadow-glow-primary);
 			transform: translateY(-2px);
 		}
 		.menu-btn--link:hover {
-			background-color: var(--color-bg-surface);
+			background-color: color-mix(in srgb, var(--color-bg-surface), transparent 20%);
 			box-shadow: var(--shadow-glow-primary);
 			transform: translateY(-2px);
 		}
@@ -117,10 +120,13 @@
 	}
 
 	.menu-btn--disabled {
-		background-color: var(--color-disabled);
+		background-color: color-mix(in srgb, var(--color-disabled), transparent 50%);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		color: var(--color-disabled-text);
 		cursor: not-allowed;
 		box-shadow: none;
+		border: none;
 	}
 
 	.menu-btn--disabled:active {
@@ -135,14 +141,16 @@
 	}
 
 	.menu-btn--link {
-		background-color: transparent;
-		color: var(--color-primary);
-		border: 1px solid var(--color-border);
+		background-color: color-mix(in srgb, var(--color-primary), transparent 50%);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		color: #ffffff;
+		border: none;
 		box-shadow: none;
 	}
 
 	.menu-btn--link:active {
-		background-color: var(--color-bg-surface);
+		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 30%);
 		transform: scale(0.98);
 	}
 </style>

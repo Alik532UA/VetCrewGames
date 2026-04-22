@@ -1,5 +1,6 @@
 [data-theme='light'] {
 	--color-bg: #f2f5ec;
+	--bg-image: url('/images/background/bg-light-v01.webp');
 	--color-bg-surface: #e4ebd8;
 	--color-bg-panel: #93bf4c;
 	--color-bg-panel-dark: #598F3A;

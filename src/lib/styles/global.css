@@ -84,6 +84,54 @@
 	-webkit-tap-highlight-color: transparent;
 }
 
+/* Глобальний перехід для всіх елементів */
+:global(html),
+:global(body),
+:global(body *) {
+	transition: background-color 1s ease, 
+	            color 1s ease, 
+	            border-color 1s ease, 
+	            box-shadow 1s ease, 
+	            outline-color 1s ease, 
+	            fill 1s ease, 
+	            stroke 1s ease;
+}
+
+/* Специфічний перехід для фону через псевдоелементи, бо background-image не анімується */
+body::before,
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	transition: opacity 1s ease;
+	pointer-events: none;
+}
+
+/* Шар для світлої теми */
+body::before {
+	background-image: url('/images/background/bg-light-v01.webp');
+	opacity: 0;
+}
+
+/* Шар для темної теми */
+body::after {
+	background-image: url('/images/background/bg-dark-v01.webp');
+	opacity: 0;
+}
+
+[data-theme='light'] body::before {
+	opacity: 1;
+}
+
+[data-theme='dark'] body::after {
+	opacity: 1;
+}
+
 html {
 	font-size: 16px;
 	height: 100%;
@@ -93,6 +141,7 @@ body {
 	margin: 0;
 	padding: 0;
 	background-color: var(--color-bg);
+	/* Прибираємо пряме використання картинки тут, бо ми використовуємо псевдоелементи */
 	color: var(--color-text);
 	font-family: var(--font-main);
 	line-height: 1.5;
@@ -101,6 +150,27 @@ body {
 	min-height: 100%;
 	display: flex;
 	flex-direction: column;
+}
+
+.app-shell {
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	position: relative;
+	transition: background-color 1s ease;
+}
+
+.app-version {
+	position: fixed;
+	bottom: 4px;
+	right: 8px;
+	font-size: 10px;
+	color: var(--color-text-muted, #888);
+	opacity: 0.5;
+	pointer-events: none;
+	z-index: 1000;
+	transition: color 1s ease;
 }
 
 h1,
@@ -159,6 +229,13 @@ img {
 	z-index: 9999;
 	background-color: var(--color-bg);
 	overflow-y: auto;
+	transition: background-color 1s ease;
+}
+
+/* Прибираємо картинку з .app-shell, бо вона вже є в body::before/after */
+[data-fake-fullscreen='true'] .app-shell::before,
+[data-fake-fullscreen='true'] .app-shell::after {
+	display: none;
 }
 
 [data-fake-fullscreen='true'] .game-header {

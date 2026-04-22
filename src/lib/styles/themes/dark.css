@@ -1,6 +1,7 @@
 :root,
 [data-theme='dark'] {
 	--color-bg: #1a1a1a;
+	--bg-image: url('/images/background/bg-dark-v01.webp');
 	--color-bg-surface: #242424;
 	--color-bg-panel: #2a3d1d;
 	--color-bg-panel-dark: #132510;
