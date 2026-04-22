@@ -23,6 +23,15 @@ export const storage = {
 			if (key?.startsWith(PREFIX)) keysToRemove.push(key);
 		}
 		keysToRemove.forEach((k) => localStorage.removeItem(k));
+	},
+	getJSON<T>(key: string): T | null {
+		const raw = storage.get(key);
+		if (raw === null) return null;
+		try { return JSON.parse(raw) as T; }
+		catch { return null; }
+	},
+	setJSON(key: string, value: unknown): void {
+		storage.set(key, JSON.stringify(value));
 	}
 };
 

@@ -8,6 +8,7 @@
 	import { animals } from '$lib/config/population-game';
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
 	import { base } from '$app/paths';
+	import { storage } from '$lib/services/storage';
 
 	type ActiveQuestion = GameQuestion & { 
 		animal: typeof animals[0]; 
@@ -118,9 +119,9 @@
 	}
 
 	onMount(() => {
-		const stored = localStorage.getItem('vetcrewgames_shown_myths');
+		const stored = storage.getJSON<string[]>('shown_myths');
 		if (stored) {
-			try { globalUsedIds = JSON.parse(stored); } catch(e) {}
+			globalUsedIds = stored;
 		}
 		nextQuestion();
 		settings.setHeaderTitle('myth.title');
