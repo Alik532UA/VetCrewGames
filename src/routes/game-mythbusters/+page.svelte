@@ -3,7 +3,6 @@
 	import { fade, slide } from 'svelte/transition';
 	import { settings } from '$lib/settings.svelte';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
-	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { myths, type GameQuestion } from '$lib/config/myth-game';
 	import { animals } from '$lib/config/population-game';
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
@@ -90,14 +89,14 @@
 			try { globalUsedIds = JSON.parse(stored); } catch(e) {}
 		}
 		nextQuestion();
+		settings.setHeaderTitle('myth.title');
+		return () => settings.setHeaderTitle(null);
 	});
 </script>
 
-<GameHeader titleKey="myth.title" />
-
 <div class="game-page">
 	{#if gameOver}
-		<div class="game-over-card" in:fade={{ duration: 300 }}>
+		<div class="game-over-card" in:fade={{ duration: 400 }}>
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver' as any))}</h2>
 			<div class="game-over-score">
 				<span class="score-label">{@html formatFont(t('common.yourScore' as any))}</span>
@@ -109,50 +108,55 @@
 			</button>
 		</div>
 	{:else if currentQuestion}
-		<div class="round-indicator">{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}</div>
-		{#key currentQuestion.id}
-			<div class="myth-card" 
-				class:myth-card--correct={answered && isCorrect} 
-				class:myth-card--wrong={answered && !isCorrect}
-				in:fade={{ duration: 300 }}
-			>
-				<div class="myth-card__image-wrap">
-					<img src={currentQuestion.animal.image} alt={formatPlain(td(currentQuestion.animal.nameKey))} class="myth-card__image" loading="lazy" />
-					<div class="myth-card__animal-name">{@html formatFont(td(currentQuestion.animal.nameKey))}</div>
-				</div>
-				
-				<div class="myth-card__content">
-					<p class="myth-card__statement">{@html formatFont(t(currentQuestion.statementKey as any))}</p>
+		<div class="round-indicator" in:fade>{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}</div>
+		
+		<div class="myth-card" 
+			class:myth-card--correct={answered && isCorrect} 
+			class:myth-card--wrong={answered && !isCorrect}
+			in:fade={{ duration: 300 }}
+		>
+			{#key currentQuestion.id}
+				<div class="myth-card__inner-key" in:fade={{ duration: 300 }}>
+					<div class="myth-card__image-wrap">
+						<img src={currentQuestion.animal.image} alt={formatPlain(td(currentQuestion.animal.nameKey))} class="myth-card__image" loading="lazy" />
+						<div class="myth-card__animal-name">{@html formatFont(td(currentQuestion.animal.nameKey))}</div>
+					</div>
 					
-					{#if !answered}
-						<div class="myth-card__actions" transition:fade>
-							<button class="btn-myth" onclick={() => handleAnswer(false)}>
-								{@html formatFont(t('myth.myth'))}
-							</button>
-							<button class="btn-truth" onclick={() => handleAnswer(true)}>
-								{@html formatFont(t('myth.truth'))}
-							</button>
+					<div class="myth-card__content">
+						<p class="myth-card__statement">{@html formatFont(t(currentQuestion.statementKey as any))}</p>
+						
+						<div class="myth-card__dynamic-container">
+							{#if !answered}
+								<div class="myth-card__actions" out:slide={{ duration: 400 }} in:fade>
+									<button class="btn-myth" onclick={() => handleAnswer(false)}>
+										{@html formatFont(t('myth.myth'))}
+									</button>
+									<button class="btn-truth" onclick={() => handleAnswer(true)}>
+										{@html formatFont(t('myth.truth'))}
+									</button>
+								</div>
+							{:else}
+								<div class="myth-card__result" in:slide={{ duration: 400 }} out:fade>
+									<button class="btn-next" onclick={onNext}>
+										{@html formatFont(t('myth.next'))}
+									</button>
+									<div class="result-header" class:result-header--correct={isCorrect}>
+										{#if isCorrect}
+											<CheckCircle2 size={24} />
+											<span>{@html formatFont(t('myth.correct'))}</span>
+										{:else}
+											<XCircle size={24} />
+											<span>{@html formatFont(t('myth.incorrect'))}</span>
+										{/if}
+									</div>
+									<p class="myth-card__explanation">{@html formatFont(t(currentQuestion.explanationKey as any))}</p>
+								</div>
+							{/if}
 						</div>
-					{:else}
-						<div class="myth-card__result" in:slide>
-							<button class="btn-next" onclick={onNext}>
-								{@html formatFont(t('myth.next'))}
-							</button>
-							<div class="result-header" class:result-header--correct={isCorrect}>
-								{#if isCorrect}
-									<CheckCircle2 size={24} />
-									<span>{@html formatFont(t('myth.correct'))}</span>
-								{:else}
-									<XCircle size={24} />
-									<span>{@html formatFont(t('myth.incorrect'))}</span>
-								{/if}
-							</div>
-							<p class="myth-card__explanation">{@html formatFont(t(currentQuestion.explanationKey as any))}</p>
-						</div>
-					{/if}
+					</div>
 				</div>
-			</div>
-		{/key}
+			{/key}
+		</div>
 	{/if}
 </div>
 
@@ -170,9 +174,11 @@
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		border-radius: var(--radius-lg); overflow: hidden;
-		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: all var(--transition-normal);
-		display: flex; flex-direction: column;
+		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: border-color 0.4s ease, box-shadow 0.4s ease;
+		display: grid; grid-template-areas: "card-inner";
 	}
+	.myth-card__inner-key { grid-area: card-inner; display: flex; flex-direction: column; width: 100%; }
+
 	.myth-card--correct { border-color: var(--color-success); box-shadow: var(--shadow-glow-success); }
 	.myth-card--wrong { border-color: var(--color-error); box-shadow: var(--shadow-glow-error); }
 
@@ -188,6 +194,17 @@
 	.myth-card__content { padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-lg); }
 	.myth-card__statement { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); text-align: center; line-height: 1.4; margin: 0; }
 
+	.myth-card__dynamic-container {
+		display: grid;
+		grid-template-areas: "stack";
+		align-items: start;
+	}
+
+	.myth-card__actions, .myth-card__result { 
+		grid-area: stack;
+		width: 100%;
+	}
+
 	.myth-card__actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
 	
 	.btn-myth, .btn-truth {
@@ -202,7 +219,7 @@
 	.btn-truth { background: var(--color-accent); color: var(--color-text-on-accent); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); }
 	.btn-truth:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
 
-	.myth-card__result { display: flex; flex-direction: column; gap: var(--space-md); animation: slide-up 0.4s ease both; }
+	.myth-card__result { display: flex; flex-direction: column; gap: var(--space-md); }
 	.result-header { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); font-weight: var(--font-weight-bold); font-size: var(--font-size-xl); }
 	.result-header--correct { color: var(--color-success); }
 	
@@ -235,13 +252,5 @@
 		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
 		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 	}
-	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
-
-	.btn-main-menu {
-		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
-		padding: var(--space-md) var(--space-xl); background: var(--color-bg-panel); color: var(--color-text-on-panel);
-		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
-		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 var(--color-bg-panel-dark); text-decoration: none; width: 100%;
-	}
-	.btn-main-menu:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
-</style>
+	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
+	</style>

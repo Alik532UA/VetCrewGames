@@ -5,7 +5,6 @@
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
-	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { Check, X, RotateCcw, Home } from 'lucide-svelte';
 	import { base } from '$app/paths';
 
@@ -440,19 +439,6 @@
 		}
 	}
 
-	onMount(() => {
-		initRound();
-		document.addEventListener('touchstart', handleTouchStart, { passive: false });
-		document.addEventListener('touchmove', handleTouchMove, { passive: false });
-		document.addEventListener('touchend', handleTouchEnd, { passive: false });
-		return () => {
-			document.removeEventListener('touchstart', handleTouchStart);
-			document.removeEventListener('touchmove', handleTouchMove);
-			document.removeEventListener('touchend', handleTouchEnd);
-			if (touchDragClone) touchDragClone.remove();
-		};
-	});
-
 	function handleCheck() { 
 		if (allSlotsFilled) {
 			checked = true;
@@ -470,13 +456,6 @@
 		} else {
 			gameOver = true;
 		}
-	}
-
-	function resetGame() {
-		roundNumber = 1;
-		sessionScore = 0;
-		gameOver = false;
-		initRound();
 	}
 
 	function moveAnimalToIndex(animal: Animal, targetType: 'slot' | 'source', targetIndex: number) {
@@ -508,9 +487,22 @@
 		if (targetType === 'slot') performDropOnSlot(targetIndex);
 		else performDropOnSource(targetIndex);
 	}
-</script>
 
-<GameHeader titleKey="population.title" />
+	onMount(() => {
+		initRound();
+		settings.setHeaderTitle('population.title');
+		document.addEventListener('touchstart', handleTouchStart, { passive: false });
+		document.addEventListener('touchmove', handleTouchMove, { passive: false });
+		document.addEventListener('touchend', handleTouchEnd, { passive: false });
+		return () => {
+			settings.setHeaderTitle(null);
+			document.removeEventListener('touchstart', handleTouchStart);
+			document.removeEventListener('touchmove', handleTouchMove);
+			document.removeEventListener('touchend', handleTouchEnd);
+			if (touchDragClone) touchDragClone.remove();
+		};
+	});
+</script>
 
 <div class="game-page">
 	<div class="sorting-panel">
@@ -593,84 +585,90 @@
 		{/if}
 	</div>
 
-	{#if !checked}
-		<div class="source-panel" role="group" aria-label="source cards" tabindex="-1" transition:slide>
-			<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
-			<div class="source-panel__cards">
-				{#each sourceAnimals as srcAnimal, i (i)}
-					<div 
-						class="game-container" 
-						class:container--touch-over={dragOverId === `source-${i}`}
-						data-source-index={i} 
-						ondragover={(e) => handleDragOver(e, `source-${i}`)} 
-						ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
-						onmouseenter={() => hoverSourceIndex = i}
-						onmouseleave={() => hoverSourceIndex = null}
-						ondrop={(e) => handleDropOnSource_DnD(e, i)} 
-						onclick={() => handleSourcePlaceholderClick(i)} 
-						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
-						role="button" 
-						tabindex="0"
-					>
-						{#each srcAnimal ? [srcAnimal] : [] as animal (animal.id)}
+	<div class="dynamic-zone-wrapper">
+		{#if !checked}
+			<div class="source-panel-wrapper" transition:slide={{ duration: 400 }}>
+				<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
+					<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
+					<div class="source-panel__cards">
+						{#each sourceAnimals as srcAnimal, i (i)}
 							<div 
-								class="game-card" 
-								class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging} 
-								class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'source' && dragSource?.index === i} 
-								draggable="true" 
-								data-drag-animal={animal.id} 
-								data-drag-source-type="source" 
-								data-drag-source-index={i} 
-								ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} 
-								ondragend={handleDragEnd} 
-								onclick={(e) => handleCardClick(e, animal, { type: 'source', index: i })} 
-								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e, animal, { type: 'source', index: i }); }}
+								class="game-container" 
+								class:container--touch-over={dragOverId === `source-${i}`}
+								data-source-index={i} 
+								ondragover={(e) => handleDragOver(e, `source-${i}`)} 
+								ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
+								onmouseenter={() => hoverSourceIndex = i}
+								onmouseleave={() => hoverSourceIndex = null}
+								ondrop={(e) => handleDropOnSource_DnD(e, i)} 
+								onclick={() => handleSourcePlaceholderClick(i)} 
+								onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
 								role="button" 
 								tabindex="0"
-								in:receive={{ key: animal.id }}
-								out:send={{ key: animal.id }}
 							>
-								<div class="game-card__img-container">
-									<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" draggable="false" loading="lazy" />
-								</div>
-								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
+								{#each srcAnimal ? [srcAnimal] : [] as animal (animal.id)}
+									<div 
+										class="game-card" 
+										class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging} 
+										class:card--dragging-orig={isActuallyDragging && dragSource?.type === 'source' && dragSource?.index === i} 
+										draggable="true" 
+										data-drag-animal={animal.id} 
+										data-drag-source-type="source" 
+										data-drag-source-index={i} 
+										ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })} 
+										ondragend={handleDragEnd} 
+										onclick={(e) => handleCardClick(e, animal, { type: 'source', index: i })} 
+										onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e, animal, { type: 'source', index: i }); }}
+										role="button" 
+										tabindex="0"
+										in:receive={{ key: animal.id }}
+										out:send={{ key: animal.id }}
+									>
+										<div class="game-card__img-container">
+											<img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="game-card__img" draggable="false" loading="lazy" />
+										</div>
+										<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
+									</div>
+								{/each}
+								{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
+									<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
+										{#each availableAnimals as animal (animal.id)}
+											<button 
+												class="mini-ghost-card" 
+												class:mini-ghost-card--selected={draggedAnimal?.id === animal.id}
+												onclick={(e) => { e.stopPropagation(); moveAnimalToIndex(animal, 'source', i); }}
+												onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && moveAnimalToIndex(animal, 'source', i)}
+												aria-label={formatPlain(td(animal.nameKey))}
+											>
+												<img src={animal.image} alt="" class="mini-ghost-card__img" />
+											</button>
+										{/each}
+									</div>
+								{/if}
 							</div>
 						{/each}
-						{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
-							<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
-								{#each availableAnimals as animal (animal.id)}
-									<button 
-										class="mini-ghost-card" 
-										class:mini-ghost-card--selected={draggedAnimal?.id === animal.id}
-										onclick={(e) => { e.stopPropagation(); moveAnimalToIndex(animal, 'source', i); }}
-										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && moveAnimalToIndex(animal, 'source', i)}
-										aria-label={formatPlain(td(animal.nameKey))}
-									>
-										<img src={animal.image} alt="" class="mini-ghost-card__img" />
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	{#if checked}
-		<div class="results-zone" transition:slide>
-			{#each correctOrder as animal, i (animal.id)}
-				<div class="result-card anim-stagger-{i + 1}">
-					<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" loading="lazy" /></div>
-					<div class="result-card__right">
-						<div class="result-card__top"><span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span><span class="result-card__stat">{@html formatPopulationHtml(animal.population)}</span></div>
-						<div class="result-card__divider"></div>
-						<p class="result-card__fact-simple">{@html formatFont(td(animal.factKey))}</p>
 					</div>
 				</div>
-			{/each}
-		</div>
-	{/if}
+			</div>
+		{/if}
+
+		{#if checked}
+			<div class="results-zone-wrapper" transition:slide={{ duration: 400 }}>
+				<div class="results-zone">
+					{#each correctOrder as animal, i (animal.id)}
+						<div class="result-card anim-stagger-{i + 1}">
+							<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" loading="lazy" /></div>
+							<div class="result-card__right">
+								<div class="result-card__top"><span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span><span class="result-card__stat">{@html formatPopulationHtml(animal.population)}</span></div>
+								<div class="result-card__divider"></div>
+								<p class="result-card__fact-simple">{@html formatFont(td(animal.factKey))}</p>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -678,7 +676,6 @@
 		display: flex; flex-direction: column; align-items: center; justify-content: center;
 		flex: 1;
 		width: 95%; max-width: 600px; padding: var(--space-md) 0; gap: var(--space-lg); margin: 0 auto; 
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 	.sorting-panel { 
@@ -687,7 +684,6 @@
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 	.sorting-panel__instruction { color: #ffffff; text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
@@ -745,6 +741,18 @@
 	.game-card__icon--correct { background-color: var(--color-success); }
 	.game-card__icon--wrong { background-color: var(--color-error); }
 
+	.dynamic-zone-wrapper {
+		display: grid;
+		grid-template-areas: "stack";
+		width: 100%;
+		align-items: start;
+	}
+
+	.source-panel-wrapper, .results-zone-wrapper {
+		grid-area: stack;
+		width: 100%;
+	}
+
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
 	.result-card { 
 		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 25%); 
@@ -779,6 +787,7 @@
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
+		margin: 0;
 	}
 	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	

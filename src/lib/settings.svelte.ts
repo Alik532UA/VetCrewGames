@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { storage } from '$lib/services/storage';
+import type { TranslationKey } from './i18n/translations/uk';
 
 export type Theme = 'dark' | 'light';
 export type Locale = 'uk' | 'en';
@@ -10,6 +11,7 @@ class Settings {
 	locale = $state<Locale>('uk');
 	font = $state<Font>('inglobal');
 	score = $state<number>(0);
+	headerTitleKey = $state<TranslationKey | null>(null);
 
 	constructor() {
 		if (browser) {
@@ -97,6 +99,10 @@ class Settings {
 
 	setFont(font: Font) {
 		this.font = font;
+	}
+
+	setHeaderTitle(key: TranslationKey | null) {
+		this.headerTitleKey = key;
 	}
 }
 

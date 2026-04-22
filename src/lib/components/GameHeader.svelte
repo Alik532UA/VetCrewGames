@@ -5,12 +5,15 @@
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 
 	let { titleKey, roundInfo, showBack = true } = $props<{ 
-		titleKey: TranslationKey; 
+		titleKey?: TranslationKey; 
 		roundInfo?: string;
 		showBack?: boolean;
 	}>();
+
+	const activeTitleKey = $derived(titleKey || settings.headerTitleKey || 'app.title');
 
 	let lastScore = $state(settings.score);
 	let isPulsing = $state(false);
@@ -88,7 +91,7 @@
 <header class="game-header">
 	<div class="game-header__inner">
 		<div class="game-header__left">
-			{#if showBack}
+			{#if showBack && activeTitleKey !== 'app.title'}
 				<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))}>
 					<ArrowLeft size={22} />
 				</a>
@@ -99,7 +102,13 @@
 
 		<div class="game-header__center">
 			<div class="title-with-score">
-				<h1 class="game-title">{@html formatFont(t(titleKey))}</h1>
+				<div class="game-title-wrapper">
+					{#key activeTitleKey}
+						<h1 class="game-title" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
+							{@html formatFont(t(activeTitleKey as any))}
+						</h1>
+					{/key}
+				</div>
 				<div class="global-score" class:is-pulsing={isPulsing}>
 					<svg class="score-circle" viewBox="0 0 36 36">
 						<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -138,14 +147,16 @@
 	.game-header {
 		width: 100vw;
 		margin-left: calc(-50vw + 50%);
-		background-color: var(--color-bg-panel-dark);
+		background-color: color-mix(in srgb, var(--color-bg-panel-dark), transparent 25%);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
 		padding: var(--space-sm) var(--space-md);
 		display: flex;
 		justify-content: center;
-		animation: slide-up 400ms ease both;
 		z-index: 100;
 		position: sticky;
 		top: 0;
+		transition: background-color var(--transition-normal);
 	}
 
 	.game-header__inner {
@@ -176,7 +187,15 @@
 		min-width: 0;
 	}
 
+	.game-title-wrapper {
+		display: grid;
+		grid-template-areas: "title";
+		align-items: center;
+		min-width: 0;
+	}
+
 	.game-title {
+		grid-area: title;
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
 		color: #ffffff;
@@ -280,9 +299,5 @@
 		.game-header { padding: var(--space-xs) var(--space-sm); }
 		.game-header__inner { gap: var(--space-sm); }
 	}
-
-	@keyframes slide-up {
-		from { transform: translateY(-100%); opacity: 0; }
-		to { transform: translateY(0); opacity: 1; }
-	}
 </style>
+

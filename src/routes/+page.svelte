@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
-	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { base } from '$app/paths';
 
 	const games = [
@@ -22,8 +21,6 @@
 		}
 	];
 </script>
-
-<GameHeader titleKey="app.title" showBack={false} />
 
 <div class="menu-page">
 
