@@ -676,7 +676,13 @@
 <style>
 	.game-page { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 600px; padding: var(--space-md) 0 var(--space-xl); gap: var(--space-lg); margin: 0 auto; }
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
-	.sorting-panel { width: 100%; background-color: var(--color-bg-panel); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
+	.sorting-panel { 
+		width: 100%; 
+		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%); 
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
+	}
 	.sorting-panel__instruction { color: #ffffff; text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
 
@@ -734,7 +740,12 @@
 	.game-card__icon--wrong { background-color: var(--color-error); }
 
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
-	.result-card { background-color: var(--color-bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; }
+	.result-card { 
+		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 25%); 
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; 
+	}
 	.result-card__left { width: 70px; display: flex; align-items: center; justify-content: center; }
 	.result-card__img-small { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; object-fit: cover; }
 	.result-card__right { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; }
@@ -756,7 +767,13 @@
 		box-shadow: 0 7px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 10px 24px var(--color-accent-shadow); 
 	}
 	.btn-check:disabled { background: var(--color-disabled); color: var(--color-disabled-text); box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15); cursor: not-allowed; }
-	.source-panel { width: 100%; background-color: var(--color-bg-panel-dark); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; }
+	.source-panel { 
+		width: 100%; 
+		background-color: color-mix(in srgb, var(--color-bg-panel-dark), transparent 25%); 
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
+	}
 	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	
 	:global(.touch-drag-clone) { 

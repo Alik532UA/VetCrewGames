@@ -161,7 +161,11 @@
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 
 	.myth-card {
-		width: 100%; background: var(--color-bg-surface); border-radius: var(--radius-lg); overflow: hidden;
+		width: 100%; 
+		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border-radius: var(--radius-lg); overflow: hidden;
 		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: all var(--transition-normal);
 		display: flex; flex-direction: column;
 	}
