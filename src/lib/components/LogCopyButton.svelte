@@ -3,11 +3,17 @@
 	import { logService } from '$lib/services/logService.svelte';
 	import { dev } from '$app/environment';
 	import { base } from '$app/paths';
+	import { onDestroy } from 'svelte';
 
 	// According to rules, visible in dev, hidden in prod (unless overridden)
-	let showButton = dev;
+	let isVisible = $derived(dev && logService.errorCount > 0);
 
 	let copied = $state(false);
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+	onDestroy(() => {
+		if (timeoutId) clearTimeout(timeoutId);
+	});
 
 	async function copyLogs() {
 		const logs = logService.getLogs();
@@ -45,7 +51,7 @@ VERSION: ${version}
 	}
 </script>
 
-{#if showButton}
+{#if isVisible}
 	<button
 		class="log-copy-btn"
 		class:has-errors={logService.errorCount > 0}
@@ -53,11 +59,11 @@ VERSION: ${version}
 		title="Copy Logs"
 	>
 		{#if copied}
-			<Check size={24} />
+			<Check class="log-icon" />
 		{:else if logService.errorCount > 0}
 			<span class="error-count">{logService.errorCount}</span>
 		{:else}
-			<Copy size={24} />
+			<Copy class="log-icon" />
 		{/if}
 	</button>
 {/if}
@@ -65,10 +71,10 @@ VERSION: ${version}
 <style>
 	.log-copy-btn {
 		position: fixed;
-		bottom: 20px;
-		left: 20px;
-		width: 50px;
-		height: 50px;
+		bottom: 16px;
+		left: 16px;
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
 		background-color: var(--bg-surface, #333);
 		color: var(--text-primary, #fff);
@@ -94,6 +100,27 @@ VERSION: ${version}
 
 	.error-count {
 		font-weight: bold;
-		font-size: 1.2rem;
+		font-size: 0.9rem;
+	}
+
+	.log-copy-btn :global(.log-icon) {
+		width: 16px;
+		height: 16px;
+	}
+
+	@media (max-width: 768px) {
+		.log-copy-btn {
+			width: 24px;
+			height: 24px;
+		}
+
+		.log-copy-btn :global(.log-icon) {
+			width: 12px;
+			height: 12px;
+		}
+
+		.error-count {
+			font-size: 0.75rem;
+		}
 	}
 </style>

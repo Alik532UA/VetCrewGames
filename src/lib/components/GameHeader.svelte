@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, Sun, Moon, Languages, Maximize, Minimize } from 'lucide-svelte';
-	import { settings } from '$lib/settings.svelte';
+	import { settings } from '$lib/services/settings.svelte';
 	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { base } from '$app/paths';
@@ -23,13 +23,17 @@
 	const isIPhone = typeof navigator !== 'undefined' && /iPhone/.test(navigator.userAgent);
 
 	$effect(() => {
+		let timeoutId: ReturnType<typeof setTimeout>;
 		if (settings.score > lastScore) {
 			isPulsing = true;
-			setTimeout(() => { isPulsing = false; }, 600);
+			timeoutId = setTimeout(() => { isPulsing = false; }, 600);
 			lastScore = settings.score;
 		} else {
 			lastScore = settings.score;
 		}
+		return () => {
+			if (timeoutId) clearTimeout(timeoutId);
+		};
 	});
 
 	function toggleLocale() {

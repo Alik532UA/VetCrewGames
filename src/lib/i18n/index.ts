@@ -1,6 +1,6 @@
 import { uk, type TranslationKey } from './translations/uk';
 import { en } from './translations/en';
-import { settings } from '../settings.svelte';
+import { settings } from '$lib/services/settings.svelte';
 
 type Translations = Record<TranslationKey, string>;
 

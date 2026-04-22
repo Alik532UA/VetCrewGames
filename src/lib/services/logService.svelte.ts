@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser, dev } from '$app/environment';
 import { sessionStore } from '$lib/services/storage';
 
 export type LogLevel = 'info' | 'warn' | 'error';
@@ -78,10 +78,12 @@ class LogService {
 		
 		if (level === 'error') {
 			console.error(formattedMessage, data || '');
-		} else if (level === 'warn') {
-			console.warn(formattedMessage, data || '');
-		} else {
-			console.log(formattedMessage, data || '');
+		} else if (dev) {
+			if (level === 'warn') {
+				console.warn(formattedMessage, data || '');
+			} else {
+				console.log(formattedMessage, data || '');
+			}
 		}
 	}
 

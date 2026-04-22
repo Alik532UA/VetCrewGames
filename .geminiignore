@@ -3,5 +3,8 @@ node_modules
 .git
 .svelte-kit
 build
+dist/
 .env
 .env.local
+*.lock
+package-lock.json

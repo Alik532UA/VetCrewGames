@@ -2,7 +2,7 @@
 	import '$lib/styles/global.css';
 	import '$lib/styles/animations.css';
 	import { t, formatPlain } from '$lib/i18n/index';
-	import { settings } from '$lib/settings.svelte';
+	import { settings } from '$lib/services/settings.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { onMount } from 'svelte';

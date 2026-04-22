@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { storage } from '$lib/services/storage';
-import type { TranslationKey } from './i18n/translations/uk';
+import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 export type Theme = 'dark' | 'light';
 export type Locale = 'uk' | 'en';

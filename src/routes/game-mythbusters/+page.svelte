@@ -1,18 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fade, slide } from 'svelte/transition';
-	import { settings } from '$lib/settings.svelte';
+	import { fade, slide, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
+	import { settings } from '$lib/services/settings.svelte';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { myths, type GameQuestion } from '$lib/config/myth-game';
 	import { animals } from '$lib/config/population-game';
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
 	import { base } from '$app/paths';
 
+	type ActiveQuestion = GameQuestion & { 
+		animal: typeof animals[0]; 
+		answered?: boolean; 
+		selectedTrue?: boolean | null; 
+		isCorrect?: boolean; 
+	};
+
 	// Game state
-	let currentQuestion = $state<GameQuestion | null>(null);
-	let answered = $state(false);
-	let selectedTrue = $state<boolean | null>(null);
-	let isCorrect = $state(false);
+	let currentQuestion = $state<ActiveQuestion | null>(null);
 
 	const TOTAL_ROUNDS = 10;
 	let roundNumber = $state(1);
@@ -21,6 +26,32 @@
 
 	let localUsedIds = $state<string[]>([]);
 	let globalUsedIds = $state<string[]>([]);
+
+	function flyAndSlide(node: HTMLElement, { delay = 0, duration = 400, easing = cubicOut, y = 0 } = {}) {
+		const style = getComputedStyle(node);
+		const target_opacity = +style.opacity;
+		const transform = style.transform === 'none' ? '' : style.transform;
+		const height = parseFloat(style.height);
+		const padding_top = parseFloat(style.paddingTop);
+		const padding_bottom = parseFloat(style.paddingBottom);
+
+		return {
+			delay,
+			duration,
+			easing,
+			css: (t: number) => {
+				const y_val = y * (1 - t);
+				return `
+					transform: ${transform} translateY(${y_val}px);
+					opacity: ${target_opacity * t};
+					height: ${t * height}px;
+					padding-top: ${t * padding_top}px;
+					padding-bottom: ${t * padding_bottom}px;
+					overflow: hidden;
+				`;
+			}
+		};
+	}
 
 	function nextQuestion() {
 		if (roundNumber > TOTAL_ROUNDS) {
@@ -46,25 +77,28 @@
 		const randomMyth = globalAvailable[Math.floor(Math.random() * globalAvailable.length)];
 		const animal = animals.find(a => a.id === randomMyth.animalId)!;
 
-		currentQuestion = { ...randomMyth, animal };
+		currentQuestion = { 
+			...randomMyth, 
+			animal,
+			answered: false,
+			selectedTrue: null,
+			isCorrect: false
+		};
 		localUsedIds.push(randomMyth.id);
 		globalUsedIds.push(randomMyth.id);
 
 		if (typeof window !== 'undefined') {
 			localStorage.setItem('vetcrewgames_shown_myths', JSON.stringify(globalUsedIds));
 		}
-
-		answered = false;
-		selectedTrue = null;
 	}
 
 	function handleAnswer(choice: boolean) {
-		if (answered || !currentQuestion) return;
+		if (!currentQuestion || currentQuestion.answered) return;
 		
-		selectedTrue = choice;
-		isCorrect = choice === currentQuestion.isTrue;
-		answered = true;
-		if (isCorrect) {
+		currentQuestion.selectedTrue = choice;
+		currentQuestion.isCorrect = choice === currentQuestion.isTrue;
+		currentQuestion.answered = true;
+		if (currentQuestion.isCorrect) {
 			sessionScore++;
 			settings.addScore(1);
 		}
@@ -108,76 +142,92 @@
 			</button>
 		</div>
 	{:else if currentQuestion}
-		<div class="round-indicator" in:fade>{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}</div>
+		<div class="round-indicator-wrapper">
+			{#key roundNumber}
+				<div class="round-indicator" in:fly={{ y: 10, duration: 350, delay: 300 }} out:fly={{ y: -10, duration: 300 }}>
+					{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}
+				</div>
+			{/key}
+		</div>
 		
-		<div class="myth-card" 
-			class:myth-card--correct={answered && isCorrect} 
-			class:myth-card--wrong={answered && !isCorrect}
-			in:fade={{ duration: 300 }}
-		>
-			{#key currentQuestion.id}
-				<div class="myth-card__inner-key" in:fade={{ duration: 300, delay: 250 }} out:fade={{ duration: 250 }}>
-					<div class="myth-card__image-wrap">
-						<img src={currentQuestion.animal.image} alt={formatPlain(td(currentQuestion.animal.nameKey))} class="myth-card__image" loading="lazy" />
-						<div class="myth-card__animal-name">{@html formatFont(td(currentQuestion.animal.nameKey))}</div>
-					</div>
-					
-					<div class="myth-card__content">
-						<p class="myth-card__statement">{@html formatFont(t(currentQuestion.statementKey as any))}</p>
+		<div class="myth-card-wrapper" in:fade={{ duration: 300 }}>
+			{#each [currentQuestion] as q (q.id)}
+				<div class="myth-card" 
+					class:myth-card--correct={q.answered && q.isCorrect} 
+					class:myth-card--wrong={q.answered && !q.isCorrect}
+					in:fly={{ y: 20, duration: 350, delay: 300 }} out:flyAndSlide={{ y: -20, duration: 300 }}
+				>
+					<div class="myth-card__inner-key">
+						<div class="myth-card__image-wrap">
+							<img src={q.animal.image} alt={formatPlain(td(q.animal.nameKey))} class="myth-card__image" loading="lazy" width="200" height="266" />
+							<div class="myth-card__animal-name">{@html formatFont(td(q.animal.nameKey))}</div>
+						</div>
 						
-						<div class="myth-card__dynamic-container">
-							{#if !answered}
-								<div class="myth-card__actions" out:slide={{ duration: 400 }} in:fade>
-									<button class="btn-myth" onclick={() => handleAnswer(false)}>
-										{@html formatFont(t('myth.myth'))}
-									</button>
-									<button class="btn-truth" onclick={() => handleAnswer(true)}>
-										{@html formatFont(t('myth.truth'))}
-									</button>
-								</div>
-							{:else}
-								<div class="myth-card__result" in:slide={{ duration: 400 }} out:fade>
-									<button class="btn-next" onclick={onNext}>
-										{@html formatFont(t('myth.next'))}
-									</button>
-									<div class="result-header" class:result-header--correct={isCorrect}>
-										{#if isCorrect}
-											<CheckCircle2 size={24} />
-											<span>{@html formatFont(t('myth.correct'))}</span>
-										{:else}
-											<XCircle size={24} />
-											<span>{@html formatFont(t('myth.incorrect'))}</span>
-										{/if}
+						<div class="myth-card__content">
+							<p class="myth-card__statement">{@html formatFont(t(q.statementKey as any))}</p>
+							
+							<div class="myth-card__dynamic-container">
+								{#if !q.answered}
+									<div class="myth-card__actions" out:slide={{ duration: 400 }} in:fade>
+										<button class="btn-myth" onclick={() => handleAnswer(false)}>
+											{@html formatFont(t('myth.myth'))}
+										</button>
+										<button class="btn-truth" onclick={() => handleAnswer(true)}>
+											{@html formatFont(t('myth.truth'))}
+										</button>
 									</div>
-									<p class="myth-card__explanation">{@html formatFont(t(currentQuestion.explanationKey as any))}</p>
-								</div>
-							{/if}
+								{:else}
+									<div class="myth-card__result" in:slide={{ duration: 400 }} out:fade>
+										<button class="btn-next" onclick={onNext}>
+											{@html formatFont(t('myth.next'))}
+										</button>
+										<div class="result-header" class:result-header--correct={q.isCorrect}>
+											{#if q.isCorrect}
+												<CheckCircle2 size={24} />
+												<span>{@html formatFont(t('myth.correct'))}</span>
+											{:else}
+												<XCircle size={24} />
+												<span>{@html formatFont(t('myth.incorrect'))}</span>
+											{/if}
+										</div>
+										<p class="myth-card__explanation">{@html formatFont(t(q.explanationKey as any))}</p>
+									</div>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
-			{/key}
+			{/each}
 		</div>
 	{/if}
 </div>
 
 <style>
 	.game-page { 
-		display: flex; flex-direction: column; align-items: center; justify-content: center;
+		display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
 		flex: 1;
-		width: 95%; max-width: 500px; padding: var(--space-lg) 0; gap: var(--space-lg); margin: 0 auto; 
+		width: 95%; max-width: 500px; padding: 10vh 0 var(--space-lg); gap: var(--space-lg); margin: 0 auto; 
 	}
-	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
+	@media (min-width: 769px) { .game-page { padding: 15vh 0 var(--space-2xl); } }
+
+	.myth-card-wrapper {
+		width: 100%;
+		display: grid;
+		grid-template-areas: "card";
+		align-items: start;
+	}
 
 	.myth-card {
+		grid-area: card;
 		width: 100%; 
 		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		border-radius: var(--radius-lg); overflow: hidden;
 		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: border-color 0.4s ease, box-shadow 0.4s ease;
-		display: grid; grid-template-areas: "card-inner";
+		display: flex; flex-direction: column;
 	}
-	.myth-card__inner-key { grid-area: card-inner; display: flex; flex-direction: column; width: 100%; }
+	.myth-card__inner-key { display: flex; flex-direction: column; width: 100%; }
 
 	.myth-card--correct { border-color: var(--color-success); box-shadow: var(--shadow-glow-success); }
 	.myth-card--wrong { border-color: var(--color-error); box-shadow: var(--shadow-glow-error); }
@@ -232,9 +282,17 @@
 	}
 	.btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
 
+	.round-indicator-wrapper {
+		display: grid;
+		grid-template-areas: "indicator";
+		align-items: center;
+		justify-items: center;
+		margin-bottom: var(--space-sm);
+	}
 	.round-indicator {
+		grid-area: indicator;
 		font-size: var(--font-size-md); font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel); opacity: 0.8; margin-bottom: var(--space-sm);
+		color: var(--color-text-on-panel); opacity: 0.8; margin-bottom: 0;
 	}
 
 	.game-over-card {
@@ -253,4 +311,4 @@
 		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 	}
 	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
-	</style>
+</style>

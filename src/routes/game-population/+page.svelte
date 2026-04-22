@@ -3,7 +3,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { fade, slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
-	import { settings } from '$lib/settings.svelte';
+	import { settings } from '$lib/services/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 	import { Check, X, RotateCcw, Home } from 'lucide-svelte';
 	import { base } from '$app/paths';
@@ -657,7 +657,7 @@
 				<div class="results-zone">
 					{#each correctOrder as animal, i (animal.id)}
 						<div class="result-card anim-stagger-{i + 1}">
-							<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" loading="lazy" /></div>
+							<div class="result-card__left"><img src={animal.image} alt={formatPlain(td(animal.nameKey))} class="result-card__img-small" loading="lazy" width="70" height="93" /></div>
 							<div class="result-card__right">
 								<div class="result-card__top"><span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span><span class="result-card__stat">{@html formatPopulationHtml(animal.population)}</span></div>
 								<div class="result-card__divider"></div>
