@@ -17,16 +17,7 @@
 
 	async function copyLogs() {
 		const logs = logService.getLogs();
-		let version = 'unknown';
-		try {
-			const res = await fetch(`${base}/app-version.json?v=${Date.now()}`);
-			if (res.ok) {
-				const data = await res.json();
-				version = data.version;
-			}
-		} catch (e) {
-			// ignore
-		}
+		let version = logService.appVersion;
 
 		const header = `--- REPORT from Copy LOG button ---
 DATE: ${new Date().toLocaleString()}

@@ -32,6 +32,7 @@ class LogService {
 	private logs: LogEntry[] = [];
 	private maxLogs = 1000;
 	public errorCount = $state(0);
+	public appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
 
 	constructor() {
 		if (browser) {
