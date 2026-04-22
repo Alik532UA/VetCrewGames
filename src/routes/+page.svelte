@@ -55,8 +55,8 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: flex-start;
-		min-height: calc(100dvh - 80px);
+		justify-content: center;
+		flex: 1;
 		padding: var(--space-xl);
 		gap: var(--space-2xl);
 		width: 100%;
