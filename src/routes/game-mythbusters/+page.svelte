@@ -220,10 +220,10 @@
 
 	.myth-card {
 		grid-area: card;
-		width: 100%; 
+		width: 100%;
 		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-lg); overflow: hidden;
 		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: border-color 0.4s ease, box-shadow 0.4s ease;
 		display: flex; flex-direction: column;
@@ -239,9 +239,9 @@
 		position: absolute; bottom: var(--space-sm); right: var(--space-sm); 
 		background: rgba(0,0,0,0.6); color: white; padding: 2px var(--space-sm); 
 		border-radius: var(--radius-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold);
-		backdrop-filter: blur(4px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 	}
-
 	.myth-card__content { padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-lg); }
 	.myth-card__statement { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); text-align: center; line-height: 1.4; margin: 0; }
 
@@ -274,7 +274,13 @@
 	.result-header { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); font-weight: var(--font-weight-bold); font-size: var(--font-size-xl); }
 	.result-header--correct { color: var(--color-success); }
 	
-	.myth-card__explanation { font-size: var(--font-size-md); line-height: 1.5; color: var(--color-text); background: color-mix(in srgb, var(--color-bg-panel), transparent 90%); padding: var(--space-md); border-radius: var(--radius-md); border-left: 4px solid var(--color-accent); margin: 0; }
+	.myth-card__explanation { 
+		font-size: var(--font-size-md); line-height: 1.5; color: var(--color-text); 
+		background: color-mix(in srgb, var(--color-bg-panel), transparent 90%); 
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
+		padding: var(--space-md); border-radius: var(--radius-md); border-left: 4px solid var(--color-accent); margin: 0; 
+	}
 
 	.btn-next {
 		padding: var(--space-md); background: var(--color-bg-panel); color: var(--color-text-on-panel);

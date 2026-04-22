@@ -681,8 +681,8 @@
 	.sorting-panel { 
 		width: 100%; 
 		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%); 
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
 	}
 	.sorting-panel__instruction { color: #ffffff; text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
@@ -756,8 +756,8 @@
 	.results-zone { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
 	.result-card { 
 		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 25%); 
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; 
 	}
 	.result-card__left { width: 70px; display: flex; align-items: center; justify-content: center; }
@@ -771,7 +771,13 @@
 	
 	.btn-check { 
 		padding: var(--space-md) 4rem; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); border-radius: 2rem; 
-		background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent) 40%, color-mix(in srgb, var(--color-accent), black 20%) 100%); 
+		background: linear-gradient(180deg, 
+			color-mix(in srgb, var(--color-accent-hover), transparent 25%) 0%, 
+			color-mix(in srgb, var(--color-accent), transparent 25%) 40%, 
+			color-mix(in srgb, color-mix(in srgb, var(--color-accent), black 20%), transparent 25%) 100%
+		); 
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		color: var(--color-text-on-accent); 
 		box-shadow: 0 5px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 8px 20px var(--color-accent-shadow); 
 		border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); 
@@ -784,8 +790,8 @@
 	.source-panel { 
 		width: 100%; 
 		background-color: color-mix(in srgb, var(--color-bg-panel-dark), transparent 25%); 
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
 		margin: 0;
 	}

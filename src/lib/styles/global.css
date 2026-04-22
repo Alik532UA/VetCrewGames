@@ -50,6 +50,9 @@
 	--transition-fast: 150ms ease;
 	--transition-normal: 300ms ease;
 
+	/* Blur */
+	--blur-glass: blur(10px);
+
 	/* Z-index */
 	--z-header: 100;
 	--z-modal: 1000;

@@ -152,8 +152,8 @@
 		width: 100vw;
 		margin-left: calc(-50vw + 50%);
 		background-color: color-mix(in srgb, var(--color-bg-panel-dark), transparent 25%);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		padding: var(--space-sm) var(--space-md);
 		display: flex;
 		justify-content: center;

@@ -90,8 +90,8 @@
 
 	.menu-btn--game {
 		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		color: var(--color-text-on-panel);
 		box-shadow: var(--shadow-card);
 		border: none;
@@ -118,8 +118,8 @@
 
 	.menu-btn--disabled {
 		background-color: color-mix(in srgb, var(--color-disabled), transparent 50%);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		color: var(--color-disabled-text);
 		cursor: not-allowed;
 		box-shadow: none;
@@ -139,8 +139,8 @@
 
 	.menu-btn--link {
 		background-color: color-mix(in srgb, var(--color-primary), transparent 50%);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
 		color: #ffffff;
 		border: none;
 		box-shadow: none;
