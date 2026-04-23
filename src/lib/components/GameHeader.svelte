@@ -159,6 +159,7 @@
 		z-index: 100;
 		position: sticky;
 		top: 0;
+		flex-shrink: 0;
 		transition: background-color var(--transition-normal);
 		animation: blur-in 3s ease both;
 	}

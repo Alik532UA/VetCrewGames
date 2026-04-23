@@ -58,6 +58,7 @@
 		gap: var(--space-2xl);
 		width: 100%;
 		max-width: 480px;
+		box-sizing: border-box;
 	}
 
 	.menu-grid {

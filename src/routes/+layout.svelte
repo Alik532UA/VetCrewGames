@@ -84,8 +84,9 @@
 	.app-container {
 		display: flex;
 		flex-direction: column;
-		min-height: 100dvh;
+		height: 100dvh;
 		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.app-shell {
@@ -95,6 +96,7 @@
 		align-items: center;
 		position: relative;
 		width: 100%;
+		min-height: 0;
 	}
 
 	.page-transition-wrapper {
@@ -103,10 +105,11 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
+		justify-content: flex-start;
 		position: absolute;
 		top: 0;
 		left: 0;
+		overflow-y: auto;
 	}
 
 	.app-version {

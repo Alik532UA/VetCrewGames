@@ -208,6 +208,7 @@
 		display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
 		flex: 1;
 		width: 95%; max-width: 500px; padding: 10vh 0 var(--space-lg); gap: var(--space-lg); margin: 0 auto; 
+		box-sizing: border-box;
 	}
 	@media (min-width: 769px) { .game-page { padding: 15vh 0 var(--space-2xl); } }
 
