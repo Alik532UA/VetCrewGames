@@ -717,7 +717,9 @@
 	.game-page { 
 		display: flex; flex-direction: column; align-items: center; justify-content: center;
 		flex: 1;
-		width: 95%; max-width: 600px; padding: var(--space-md) 0; gap: var(--space-lg); margin: 0 auto; 
+		width: 95%; max-width: 600px; padding: var(--space-md) 0; 
+		gap: clamp(var(--space-xs), 2vh, var(--space-lg)); 
+		margin: 0 auto; 
 	}
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 
