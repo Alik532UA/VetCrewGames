@@ -96,11 +96,15 @@
 	<div class="game-header__inner">
 		<div class="game-header__left">
 			{#if showBack && activeTitleKey !== 'app.title'}
-				<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))}>
-					<ArrowLeft size={22} />
-				</a>
+				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
+					<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))}>
+						<ArrowLeft size={22} />
+					</a>
+				</div>
 			{:else}
-				<div class="header-btn placeholder"></div>
+				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
+					<div class="header-btn placeholder"></div>
+				</div>
 			{/if}
 		</div>
 
@@ -179,6 +183,15 @@
 		gap: var(--space-xs);
 	}
 
+	.btn-wrap {
+		display: grid;
+		grid-template-areas: "btn";
+		align-items: center;
+	}
+	.btn-wrap > * {
+		grid-area: btn;
+	}
+
 	.game-header__center {
 		display: flex;
 		justify-content: center;
@@ -213,8 +226,8 @@
 
 	.global-score {
 		position: relative;
-		width: 36px;
 		height: 36px;
+		aspect-ratio: 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -228,9 +241,11 @@
 
 	.score-circle {
 		position: absolute;
-		width: 100%;
-		height: 100%;
-		transform: rotate(-90deg);
+		width: 90%;
+		height: 90%;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%) rotate(-90deg);
 	}
 
 	.circle-bg {
@@ -305,4 +320,3 @@
 		.game-header__inner { gap: var(--space-sm); }
 	}
 </style>
-

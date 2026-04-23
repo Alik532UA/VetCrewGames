@@ -6,6 +6,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 	import { Check, X, RotateCcw, Home } from 'lucide-svelte';
+	import RoundIndicator, { type RoundStatus } from '$lib/components/RoundIndicator.svelte';
 	import { base } from '$app/paths';
 
 	let isSwapping = $state(false);
@@ -86,6 +87,7 @@
 
 	// Game state
 	let roundNumber = $state(1);
+	let roundResults = $state<RoundStatus[]>([]);
 	let sourceAnimals = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
 	let initialSourceAnimals = $state<(Animal | null)[]>([]);
 	let slots = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
@@ -442,8 +444,15 @@
 	function handleCheck() { 
 		if (allSlotsFilled) {
 			checked = true;
-			// Award points: +1 for each correctly placed animal
 			const correctCount = slotResults.filter(r => r).length;
+			
+			// Визначаємо статус раунду для індикатора
+			let status: RoundStatus = 'incorrect';
+			if (correctCount === SLOT_COUNT) status = 'correct';
+			else if (correctCount > 0) status = 'partial';
+			
+			roundResults.push(status);
+
 			if (correctCount > 0) {
 				sessionScore += correctCount;
 				settings.addScore(correctCount);
@@ -453,6 +462,7 @@
 
 	function resetGame() {
 		roundNumber = 1;
+		roundResults = [];
 		sessionScore = 0;
 		gameOver = false;
 		initRound();
@@ -528,11 +538,12 @@
 		</div>
 	{:else}
 		<div class="round-indicator-wrapper">
-			{#key roundNumber}
-				<div class="round-indicator" in:fly={{ y: 10, duration: 350, delay: 300 }} out:fly={{ y: -10, duration: 300 }}>
-					{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}
-				</div>
-			{/key}
+			<RoundIndicator 
+				current={roundNumber} 
+				total={TOTAL_ROUNDS} 
+				results={roundResults}
+				label={t('population.round' as any)} 
+			/>
 		</div>
 
 		<div class="sorting-panel">
@@ -711,16 +722,12 @@
 	@media (min-width: 769px) { .game-page { padding: var(--space-2xl) 0 var(--space-2xl); } }
 
 	.round-indicator-wrapper {
-		display: grid;
-		grid-template-areas: "indicator";
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-items: center;
 		margin-bottom: var(--space-sm);
-	}
-	.round-indicator {
-		grid-area: indicator;
-		font-size: var(--font-size-md); font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel); opacity: 0.8; margin-bottom: 0;
+		position: relative;
+		width: 100%;
 	}
 
 	.game-over-card {
@@ -733,13 +740,33 @@
 	.game-over-score { display: flex; flex-direction: column; gap: var(--space-xs); }
 	.score-label { font-size: var(--font-size-md); color: var(--color-text-muted); text-transform: uppercase; }
 	.score-value { font-size: 3rem; font-weight: 900; color: var(--color-accent); line-height: 1; }
-	.btn-play-again {
+	
+	.game-over-actions {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+		width: 100%;
+		max-width: 300px;
+	}
+
+	.btn-play-again, .btn-menu {
 		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
-		padding: var(--space-md) var(--space-xl); background: var(--color-accent); color: var(--color-text-on-accent);
-		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
-		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
+		padding: var(--space-md) var(--space-xl); border-radius: var(--radius-md); border: none; 
+		font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
+		cursor: pointer; transition: all var(--transition-fast); text-decoration: none;
+	}
+
+	.btn-play-again {
+		background: var(--color-accent); color: var(--color-text-on-accent);
+		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 	}
 	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
+
+	.btn-menu {
+		background: rgba(255, 255, 255, 0.1); color: #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	.btn-menu:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
 
 	.sorting-panel { 
 		width: 100%; 

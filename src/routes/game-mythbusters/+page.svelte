@@ -9,6 +9,7 @@
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
 	import { base } from '$app/paths';
 	import { storage } from '$lib/services/storage';
+	import RoundIndicator, { type RoundStatus } from '$lib/components/RoundIndicator.svelte';
 
 	type ActiveQuestion = GameQuestion & { 
 		animal: typeof animals[0]; 
@@ -22,6 +23,7 @@
 
 	const TOTAL_ROUNDS = 10;
 	let roundNumber = $state(1);
+	let roundResults = $state<RoundStatus[]>([]);
 	let sessionScore = $state(0);
 	let gameOver = $state(false);
 
@@ -65,7 +67,6 @@
 		let globalAvailable = availableMyths.filter(m => !globalUsedIds.includes(m.id));
 
 		if (globalAvailable.length === 0) {
-			// Clear global history but maintain local exclusions for this game
 			globalUsedIds = [];
 			if (typeof window !== 'undefined') {
 				localStorage.setItem('vetcrewgames_shown_myths', JSON.stringify([]));
@@ -73,7 +74,7 @@
 			globalAvailable = availableMyths;
 		}
 
-		if (globalAvailable.length === 0) return; // Fallback
+		if (globalAvailable.length === 0) return;
 
 		const randomMyth = globalAvailable[Math.floor(Math.random() * globalAvailable.length)];
 		const animal = animals.find(a => a.id === randomMyth.animalId)!;
@@ -99,6 +100,9 @@
 		currentQuestion.selectedTrue = choice;
 		currentQuestion.isCorrect = choice === currentQuestion.isTrue;
 		currentQuestion.answered = true;
+
+		roundResults.push(currentQuestion.isCorrect ? 'correct' : 'incorrect');
+
 		if (currentQuestion.isCorrect) {
 			sessionScore++;
 			settings.addScore(1);
@@ -112,6 +116,7 @@
 
 	function resetGame() {
 		roundNumber = 1;
+		roundResults = [];
 		sessionScore = 0;
 		localUsedIds = [];
 		gameOver = false;
@@ -137,18 +142,25 @@
 				<span class="score-label">{@html formatFont(t('common.yourScore' as any))}</span>
 				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS}</span>
 			</div>
-			<button class="btn-play-again" onclick={resetGame}>
-				<RotateCcw size={24} />
-				{@html formatFont(t('common.playAgain' as any))}
-			</button>
+			<div class="game-over-actions">
+				<button class="btn-play-again" onclick={resetGame}>
+					<RotateCcw size={24} />
+					{@html formatFont(t('common.playAgain' as any))}
+				</button>
+				<a href="{base}/" class="btn-menu">
+					<Home size={24} />
+					{@html formatFont(t('common.mainMenu' as any))}
+				</a>
+			</div>
 		</div>
 	{:else if currentQuestion}
 		<div class="round-indicator-wrapper">
-			{#key roundNumber}
-				<div class="round-indicator" in:fly={{ y: 10, duration: 350, delay: 300 }} out:fly={{ y: -10, duration: 300 }}>
-					{@html formatFont(t('population.round' as any))} {roundNumber} / {TOTAL_ROUNDS}
-				</div>
-			{/key}
+			<RoundIndicator 
+				current={roundNumber} 
+				total={TOTAL_ROUNDS} 
+				results={roundResults}
+				label={t('myth.round' as any)} 
+			/>
 		</div>
 		
 		<div class="myth-card-wrapper" in:fade={{ duration: 300 }}>
@@ -291,16 +303,11 @@
 	.btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--color-bg-panel-dark); background: var(--color-bg-card-hover); }
 
 	.round-indicator-wrapper {
-		display: grid;
-		grid-template-areas: "indicator";
+		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-items: center;
 		margin-bottom: var(--space-sm);
-	}
-	.round-indicator {
-		grid-area: indicator;
-		font-size: var(--font-size-md); font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel); opacity: 0.8; margin-bottom: 0;
+		width: 100%;
 	}
 
 	.game-over-card {
@@ -312,11 +319,31 @@
 	.game-over-score { display: flex; flex-direction: column; gap: var(--space-xs); }
 	.score-label { font-size: var(--font-size-md); color: var(--color-text-muted); text-transform: uppercase; }
 	.score-value { font-size: 3rem; font-weight: 900; color: var(--color-accent); line-height: 1; }
-	.btn-play-again {
+
+	.game-over-actions {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+		width: 100%;
+		max-width: 300px;
+	}
+
+	.btn-play-again, .btn-menu {
 		display: flex; align-items: center; justify-content: center; gap: var(--space-sm);
-		padding: var(--space-md) var(--space-xl); background: var(--color-accent); color: var(--color-text-on-accent);
-		border-radius: var(--radius-md); border: none; font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
-		cursor: pointer; transition: all var(--transition-fast); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
+		padding: var(--space-md) var(--space-xl); border-radius: var(--radius-md); border: none; 
+		font-weight: var(--font-weight-bold); font-size: var(--font-size-lg);
+		cursor: pointer; transition: all var(--transition-fast); text-decoration: none;
+	}
+
+	.btn-play-again {
+		background: var(--color-accent); color: var(--color-text-on-accent);
+		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 	}
 	.btn-play-again:hover { transform: translateY(-2px); box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%); background: var(--color-accent-hover); }
+
+	.btn-menu {
+		background: rgba(255, 255, 255, 0.1); color: #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	.btn-menu:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
 </style>
