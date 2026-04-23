@@ -682,7 +682,6 @@
 		width: 100%; 
 		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%); 
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); 
 		animation: 
 			card-enter 400ms ease both,
@@ -760,7 +759,6 @@
 	.result-card { 
 		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 25%); 
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; 
 		animation: 
 			slide-up 400ms ease both,
@@ -784,7 +782,6 @@
 			color-mix(in srgb, color-mix(in srgb, var(--color-accent), black 20%), transparent 25%) 100%
 		); 
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		color: var(--color-text-on-accent); 
 		box-shadow: 0 5px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 8px 20px var(--color-accent-shadow); 
 		border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); 
@@ -799,7 +796,6 @@
 		width: 100%; 
 		background-color: color-mix(in srgb, var(--color-bg-panel-dark), transparent 25%); 
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); 
 		animation: 
 			card-enter 400ms ease both,

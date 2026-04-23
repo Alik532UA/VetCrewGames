@@ -223,7 +223,6 @@
 		width: 100%;
 		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		border-radius: var(--radius-lg); overflow: hidden;
 		box-shadow: var(--shadow-card); border: 4px solid transparent; transition: border-color 0.4s ease, box-shadow 0.4s ease;
 		display: flex; flex-direction: column;
@@ -241,7 +240,6 @@
 		background: rgba(0,0,0,0.6); color: white; padding: 2px var(--space-sm); 
 		border-radius: var(--radius-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold);
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		animation: blur-in 3s ease 1s both;
 	}
 	.myth-card__content { padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-lg); }
@@ -280,7 +278,6 @@
 		font-size: var(--font-size-md); line-height: 1.5; color: var(--color-text); 
 		background: color-mix(in srgb, var(--color-bg-panel), transparent 90%); 
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 		padding: var(--space-md); border-radius: var(--radius-md); border-left: 4px solid var(--color-accent); margin: 0; 
 		animation: blur-in 3s ease 400ms both;
 	}

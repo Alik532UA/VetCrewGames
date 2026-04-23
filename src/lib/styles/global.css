@@ -88,9 +88,9 @@
 }
 
 /* Глобальний перехід для всіх елементів */
-:global(html),
-:global(body),
-:global(body *) {
+html,
+body,
+body * {
 	transition: background-color 1s ease, 
 	            color 1s ease, 
 	            border-color 1s ease, 

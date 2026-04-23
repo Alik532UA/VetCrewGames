@@ -138,11 +138,9 @@
 @keyframes blur-in {
 	from {
 		backdrop-filter: blur(0);
-		-webkit-backdrop-filter: blur(0);
 	}
 	to {
 		backdrop-filter: var(--blur-glass);
-		-webkit-backdrop-filter: var(--blur-glass);
 	}
 }
 
