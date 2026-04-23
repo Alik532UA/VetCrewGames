@@ -82,7 +82,9 @@
 			background-color var(--transition-normal);
 		text-align: center;
 		text-decoration: none;
-		animation: card-enter 400ms ease both;
+		animation: 
+			card-enter 400ms ease both,
+			blur-in 3s ease 400ms both;
 		cursor: pointer;
 		-webkit-tap-highlight-color: transparent;
 		user-select: none;

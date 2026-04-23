@@ -134,6 +134,18 @@
 	}
 }
 
+/* Blur entrance - for smooth backdrop-filter appearance */
+@keyframes blur-in {
+	from {
+		backdrop-filter: blur(0);
+		-webkit-backdrop-filter: blur(0);
+	}
+	to {
+		backdrop-filter: var(--blur-glass);
+		-webkit-backdrop-filter: var(--blur-glass);
+	}
+}
+
 /* Stagger entry helper - use with animation-delay */
 .anim-stagger-1 { animation-delay: 0ms; }
 .anim-stagger-2 { animation-delay: 80ms; }

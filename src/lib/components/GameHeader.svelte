@@ -161,6 +161,7 @@
 		position: sticky;
 		top: 0;
 		transition: background-color var(--transition-normal);
+		animation: blur-in 3s ease both;
 	}
 
 	.game-header__inner {

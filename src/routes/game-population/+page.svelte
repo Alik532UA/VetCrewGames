@@ -683,7 +683,10 @@
 		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%); 
 		backdrop-filter: var(--blur-glass);
 		-webkit-backdrop-filter: var(--blur-glass);
-		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
+		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); 
+		animation: 
+			card-enter 400ms ease both,
+			blur-in 3s ease 400ms both; 
 	}
 	.sorting-panel__instruction { color: #ffffff; text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
 	.slots-row, .source-panel__cards { display: flex; gap: var(--space-sm); justify-content: center; width: 100%; }
@@ -758,7 +761,11 @@
 		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 25%); 
 		backdrop-filter: var(--blur-glass);
 		-webkit-backdrop-filter: var(--blur-glass);
-		border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; animation: slide-up 400ms ease both; display: flex; padding: 0; 
+		border-radius: var(--radius-md); box-shadow: var(--shadow-card); overflow: hidden; 
+		animation: 
+			slide-up 400ms ease both,
+			blur-in 3s ease 400ms both; 
+		display: flex; padding: 0; 
 	}
 	.result-card__left { width: 70px; display: flex; align-items: center; justify-content: center; }
 	.result-card__img-small { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; object-fit: cover; }
@@ -781,6 +788,7 @@
 		color: var(--color-text-on-accent); 
 		box-shadow: 0 5px 0 color-mix(in srgb, var(--color-accent), black 40%), 0 8px 20px var(--color-accent-shadow); 
 		border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all var(--transition-fast); 
+		animation: blur-in 3s ease 400ms both;
 	}
 	.btn-check:hover:not(:disabled) { 
 		transform: translateY(-2px); 
@@ -792,7 +800,10 @@
 		background-color: color-mix(in srgb, var(--color-bg-panel-dark), transparent 25%); 
 		backdrop-filter: var(--blur-glass);
 		-webkit-backdrop-filter: var(--blur-glass);
-		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); animation: card-enter 400ms ease both; 
+		border-radius: var(--radius-lg); padding: var(--space-md) var(--space-sm); display: flex; flex-direction: column; gap: var(--space-md); box-shadow: var(--shadow-card); 
+		animation: 
+			card-enter 400ms ease both,
+			blur-in 3s ease 400ms both; 
 		margin: 0;
 	}
 	.source-panel__title { color: #ffffff; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); text-align: center; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
