@@ -180,7 +180,6 @@
 		</div>
 	</div>
 </header>
-style>
 
 <style>
 	.game-header {
