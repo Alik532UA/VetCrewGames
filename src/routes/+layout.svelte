@@ -3,6 +3,7 @@
 	import '$lib/styles/animations.css';
 	import { t, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
+	import { logService } from '$lib/services/logService.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { onMount } from 'svelte';
@@ -45,6 +46,24 @@
 
 	onMount(() => {
 		// Version is now injected at build time
+
+		// Глобальна сітка безпеки для unhandled promise rejections
+		const onRejection = (event: PromiseRejectionEvent) => {
+			logService.error('app', 'Unhandled promise rejection', { reason: String(event.reason) });
+		};
+		const onError = (event: ErrorEvent) => {
+			logService.error('app', 'Window error', {
+				message: event.message,
+				source: event.filename,
+				line: event.lineno
+			});
+		};
+		window.addEventListener('unhandledrejection', onRejection);
+		window.addEventListener('error', onError);
+		return () => {
+			window.removeEventListener('unhandledrejection', onRejection);
+			window.removeEventListener('error', onError);
+		};
 	});
 </script>
 
@@ -56,14 +75,27 @@
 <div class="app-container">
 	<GameHeader />
 
-	<main class="app-shell">
+	<main class="app-shell" id="main-content">
 		{#key page.url.pathname}
 			<div 
 				class="page-transition-wrapper"
 				in:fly={{ x: 300 * transitionDirection, duration: 400, delay: 400 }}
 				out:fly={{ x: -300 * transitionDirection, duration: 400 }}
 			>
-				{@render children()}
+				<svelte:boundary onerror={(error) => logService.error('app', 'Render boundary caught error', { error: String(error) })}>
+					{@render children()}
+
+					{#snippet failed(error, reset)}
+						<div class="error-fallback" role="alert" aria-live="assertive">
+							<h2>{formatPlain(t('error.title'))}</h2>
+							<p>{formatPlain(t('error.message'))}</p>
+							<div class="error-fallback__actions">
+								<button type="button" onclick={reset}>{formatPlain(t('error.retry'))}</button>
+								<a href="{base}/">{formatPlain(t('error.goHome'))}</a>
+							</div>
+						</div>
+					{/snippet}
+				</svelte:boundary>
 			</div>
 		{/key}
 	</main>
@@ -121,5 +153,36 @@
 		opacity: 0.5;
 		pointer-events: none;
 		z-index: 1000;
+	}
+
+	.error-fallback {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-md);
+		padding: var(--space-xl);
+		text-align: center;
+		max-width: 600px;
+		margin: var(--space-xl) auto;
+	}
+
+	.error-fallback__actions {
+		display: flex;
+		gap: var(--space-md);
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.error-fallback button,
+	.error-fallback a {
+		padding: var(--space-sm) var(--space-lg);
+		border: 2px solid currentColor;
+		border-radius: var(--radius-md);
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+		text-decoration: none;
 	}
 </style>

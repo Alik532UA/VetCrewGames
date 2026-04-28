@@ -21,5 +21,11 @@ export const ui = {
 	'common.correct': 'Correct!',
 	'common.incorrect': 'Incorrect!',
 	'common.gameOver': 'Game Over!',
-	'common.yourScore': 'Your Score:'
+	'common.yourScore': 'Your Score:',
+
+	// Errors
+	'error.title': 'Something went wrong',
+	'error.message': 'An unexpected error occurred. Please try again.',
+	'error.retry': 'Try again',
+	'error.goHome': 'Go home'
 } as const;

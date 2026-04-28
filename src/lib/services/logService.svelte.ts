@@ -44,7 +44,8 @@ class LogService {
 				try {
 					this.logs = JSON.parse(savedLogs);
 				} catch (e) {
-					// Ignore
+					// Не викликаємо this.error() щоб уникнути рекурсії; логуємо напряму.
+					console.warn('[logService] Failed to restore logs from sessionStorage', e);
 				}
 			}
 		}

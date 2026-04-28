@@ -21,5 +21,11 @@ export const ui = {
 	'common.correct': 'Правильно!',
 	'common.incorrect': 'Неправильно!',
 	'common.gameOver': 'Гру завершено!',
-	'common.yourScore': 'Ваш рахунок:'
+	'common.yourScore': 'Ваш рахунок:',
+
+	// Errors
+	'error.title': 'Щось пішло не так',
+	'error.message': 'Сталася неочікувана помилка. Спробуйте ще раз.',
+	'error.retry': 'Спробувати знову',
+	'error.goHome': 'На головну'
 } as const;
