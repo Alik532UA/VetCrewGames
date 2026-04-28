@@ -604,7 +604,7 @@
 				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
 				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS * SLOT_COUNT}</span>
 			</div>
-			<button class="btn-play-again" onclick={resetGame}>
+			<button class="btn-play-again" onclick={resetGame} data-testid="population-play-again-btn">
 				<RotateCcw size={24} />
 				{@html formatFont(t('common.playAgain'))}
 			</button>
@@ -725,7 +725,7 @@
 
 		<div class="action-zone">
 			{#if !checked}
-				<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}
+				<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck} data-testid="population-check-btn"
 					>{@html formatFont(t('population.check'))}</button
 				>
 			{:else}
