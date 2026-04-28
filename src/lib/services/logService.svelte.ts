@@ -4,6 +4,9 @@ import { sessionStore } from '$lib/services/storage';
 export type LogLevel = 'info' | 'warn' | 'error';
 export type LogCategory = 'app' | 'ui' | 'network' | 'game_engine' | 'i18n';
 
+// Будь-який JSON-серіалізовний контекст для логів. `unknown` — щоб явно narrow перед використанням.
+export type LogContext = Record<string, unknown>;
+
 interface LogConfig {
 	app: boolean;
 	ui: boolean;
@@ -17,7 +20,7 @@ export interface LogEntry {
 	level: LogLevel;
 	category: LogCategory;
 	message: string;
-	data?: any;
+	data?: unknown;
 }
 
 const config: LogConfig = {
@@ -53,7 +56,7 @@ class LogService {
 		}
 	}
 
-	private addLog(level: LogLevel, category: LogCategory, message: string, data?: any) {
+	private addLog(level: LogLevel, category: LogCategory, message: string, data?: unknown) {
 		const entry: LogEntry = {
 			timestamp: new Date().toISOString(),
 			level,
@@ -88,11 +91,11 @@ class LogService {
 		}
 	}
 
-	info(category: LogCategory, message: string, data?: any) {
+	info(category: LogCategory, message: string, data?: LogContext) {
 		this.addLog('info', category, message, data);
 	}
 
-	warn(category: LogCategory, message: string, data?: any) {
+	warn(category: LogCategory, message: string, data?: LogContext) {
 		this.addLog('warn', category, message, data);
 	}
 
