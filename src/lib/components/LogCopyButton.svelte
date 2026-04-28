@@ -2,7 +2,6 @@
 	import { Copy, Check } from 'lucide-svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { dev } from '$app/environment';
-	import { base } from '$app/paths';
 	import { onDestroy } from 'svelte';
 
 	// According to rules, visible in dev, hidden in prod (unless overridden)

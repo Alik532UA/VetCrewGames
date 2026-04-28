@@ -31,7 +31,7 @@ function extractKeys(filePath: string): string[] {
 			keys.push(match[1]);
 		}
 		return keys;
-	} catch (e) {
+	} catch {
 		return [];
 	}
 }

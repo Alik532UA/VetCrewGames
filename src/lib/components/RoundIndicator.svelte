@@ -1,18 +1,14 @@
 <script lang="ts">
-	import { formatFont } from '$lib/i18n/index';
-
 	export type RoundStatus = 'pending' | 'correct' | 'incorrect' | 'partial';
 
 	let {
 		current,
 		total,
-		results = [],
-		label = 'Раунд'
+		results = []
 	}: {
 		current: number;
 		total: number;
 		results?: RoundStatus[];
-		label?: string;
 	} = $props();
 
 	const rounds = $derived(Array.from({ length: total }, (_, i) => i + 1));

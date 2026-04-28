@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, Sun, Moon, Languages, Maximize, Minimize } from 'lucide-svelte';
+	import { ArrowLeft, Sun, Moon, Maximize, Minimize } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
@@ -9,11 +9,9 @@
 
 	let {
 		titleKey,
-		roundInfo,
 		showBack = true
 	} = $props<{
 		titleKey?: TranslationKey;
-		roundInfo?: string;
 		showBack?: boolean;
 	}>();
 
@@ -24,7 +22,6 @@
 	let isFullscreen = $state(false);
 
 	const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-	const isIPhone = typeof navigator !== 'undefined' && /iPhone/.test(navigator.userAgent);
 
 	$effect(() => {
 		let timeoutId: ReturnType<typeof setTimeout>;
@@ -45,25 +42,31 @@
 	function toggleLocale() {
 		settings.setLocale(settings.locale === 'uk' ? 'en' : 'uk');
 	}
+interface FullscreenDocument extends Document {
+	webkitFullscreenElement?: Element;
+	webkitExitFullscreen?: () => Promise<void>;
+}
 
-	function toggleFullscreen() {
-		if (isIOS) {
-			// iOS Safari (especially iPhone) doesn't support Fullscreen API for elements.
-			// Force Fake Fullscreen instead.
-			const isFake = document.documentElement.hasAttribute('data-fake-fullscreen');
-			if (!isFake) {
-				document.documentElement.setAttribute('data-fake-fullscreen', 'true');
-				isFullscreen = true;
-			} else {
-				document.documentElement.removeAttribute('data-fake-fullscreen');
-				isFullscreen = false;
-			}
-			return;
+interface FullscreenHTMLElement extends HTMLElement {
+	webkitRequestFullscreen?: () => Promise<void>;
+}
+
+function toggleFullscreen() {
+	if (isIOS) {		// iOS Safari (especially iPhone) doesn't support Fullscreen API for elements.
+		// Force Fake Fullscreen instead.
+		const isFake = document.documentElement.hasAttribute('data-fake-fullscreen');
+		if (!isFake) {
+			document.documentElement.setAttribute('data-fake-fullscreen', 'true');
+			isFullscreen = true;
+		} else {
+			document.documentElement.removeAttribute('data-fake-fullscreen');
+			isFullscreen = false;
 		}
+		return;
+	}
 
-		const doc = document as any;
-		const el = document.documentElement as any;
-
+	const doc = document as FullscreenDocument;
+	const el = document.documentElement as FullscreenHTMLElement;
 		if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
 			const request = el.requestFullscreen || el.webkitRequestFullscreen;
 			if (request) {
@@ -86,8 +89,7 @@
 	onMount(() => {
 		const handler = () => {
 			const native = !!(
-				document.fullscreenElement ||
-				(document as unknown as { webkitFullscreenElement: unknown }).webkitFullscreenElement
+				document.fullscreenElement || (document as FullscreenDocument).webkitFullscreenElement
 			);
 			const fake = document.documentElement.hasAttribute('data-fake-fullscreen');
 			isFullscreen = native || fake;

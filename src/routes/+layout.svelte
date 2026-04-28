@@ -2,7 +2,6 @@
 	import '$lib/styles/global.css';
 	import '$lib/styles/animations.css';
 	import { t, formatPlain } from '$lib/i18n/index';
-	import { settings } from '$lib/services/settings.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
@@ -91,7 +90,7 @@
 				>
 					{@render children()}
 
-					{#snippet failed(error, reset)}
+					{#snippet failed(_, reset)}
 						<div class="error-fallback" role="alert" aria-live="assertive">
 							<h2>{formatPlain(t('error.title'))}</h2>
 							<p>{formatPlain(t('error.message'))}</p>

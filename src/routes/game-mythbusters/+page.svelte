@@ -136,19 +136,19 @@
 <div class="game-page">
 	{#if gameOver}
 		<div class="game-over-card" in:fade={{ duration: 400 }}>
-			<h2 class="game-over-title">{@html formatFont(t('common.gameOver' as any))}</h2>
+			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
-				<span class="score-label">{@html formatFont(t('common.yourScore' as any))}</span>
+				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
 				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS}</span>
 			</div>
 			<div class="game-over-actions">
 				<button class="btn-play-again" onclick={resetGame}>
 					<RotateCcw size={24} />
-					{@html formatFont(t('common.playAgain' as any))}
+					{@html formatFont(t('common.playAgain'))}
 				</button>
 				<a href="{base}/" class="btn-menu">
 					<Home size={24} />
-					{@html formatFont(t('common.mainMenu' as any))}
+					{@html formatFont(t('common.mainMenu'))}
 				</a>
 			</div>
 		</div>
@@ -158,7 +158,6 @@
 				current={roundNumber}
 				total={TOTAL_ROUNDS}
 				results={roundResults}
-				label={t('myth.round' as any)}
 			/>
 		</div>
 
@@ -185,7 +184,7 @@
 						</div>
 
 						<div class="myth-card__content">
-							<p class="myth-card__statement">{@html formatFont(t(q.statementKey as any))}</p>
+							<p class="myth-card__statement">{@html formatFont(td(q.statementKey))}</p>
 
 							<div class="myth-card__dynamic-container">
 								{#if !q.answered}
@@ -217,9 +216,7 @@
 											{/if}
 										</div>
 										<p class="myth-card__explanation">
-											{@html formatFont(
-												t(q.explanationKey as keyof typeof import('$lib/i18n/translations/uk').uk)
-											)}
+											{@html formatFont(td(q.explanationKey))}
 										</p>
 									</div>
 								{/if}

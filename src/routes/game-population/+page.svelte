@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
-	import { fade, slide, fly } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
 	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
-	import { Check, X, RotateCcw, Home } from 'lucide-svelte';
+	import { Check, X, RotateCcw } from 'lucide-svelte';
 	import RoundIndicator, { type RoundStatus } from '$lib/components/RoundIndicator.svelte';
-	import { base } from '$app/paths';
 
 	let isSwapping = $state(false);
 
@@ -97,16 +96,6 @@
 
 	let sessionScore = $state(0);
 	let gameOver = $state(false);
-
-	function formatPopulationPlain(num: number): string {
-		const locale = settings.locale;
-		if (num >= 1_000_000_000_000)
-			return formatPlain(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
-		if (num >= 1_000_000_000) return formatPlain(`~${num / 1_000_000_000} ${t('unit.billion')}`);
-		if (num >= 1_000_000) return formatPlain(`~${num / 1_000_000} ${t('unit.million')}`);
-		if (num >= 1_000) return formatPlain(`~${num / 1_000} ${t('unit.thousand')}`);
-		return formatPlain(`~${num.toLocaleString(locale)}`);
-	}
 
 	function formatPopulationHtml(num: number): string {
 		const locale = settings.locale;
@@ -610,14 +599,14 @@
 <div class="game-page">
 	{#if gameOver}
 		<div class="game-over-card" in:fade={{ duration: 400 }}>
-			<h2 class="game-over-title">{@html formatFont(t('common.gameOver' as any))}</h2>
+			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
-				<span class="score-label">{@html formatFont(t('common.yourScore' as any))}</span>
+				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
 				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS * SLOT_COUNT}</span>
 			</div>
 			<button class="btn-play-again" onclick={resetGame}>
 				<RotateCcw size={24} />
-				{@html formatFont(t('common.playAgain' as any))}
+				{@html formatFont(t('common.playAgain'))}
 			</button>
 		</div>
 	{:else}
@@ -626,7 +615,6 @@
 				current={roundNumber}
 				total={TOTAL_ROUNDS}
 				results={roundResults}
-				label={t('population.round' as any)}
 			/>
 		</div>
 
