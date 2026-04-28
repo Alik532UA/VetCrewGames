@@ -624,7 +624,7 @@
 			{#if !checked}
 				<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck}>{@html formatFont(t('population.check'))}</button>
 			{:else}
-				<button type="button" class="btn-check" onclick={handleNextRound}>{@html formatFont(t('population.nextRound'))}</button>
+				<button type="button" class="btn-check" onclick={handleNextRound} data-testid="population-next-round-btn">{@html formatFont(t('population.nextRound'))}</button>
 			{/if}
 		</div>
 

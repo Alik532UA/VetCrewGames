@@ -27,11 +27,10 @@
 	<nav class="menu-grid">
 		{#each games as game, i}
 			{#if game.disabled}
-				<button type="button" class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}" disabled>
-					{@html formatFont(t(game.key))}
+				<button type="button" class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}" disabled data-testid="menu-{game.key.split('.').pop()}-btn">					{@html formatFont(t(game.key))}
 				</button>
 			{:else}
-				<a href={game.href} class="menu-btn menu-btn--game anim-stagger-{i + 1}">
+				<a href={game.href} class="menu-btn menu-btn--game anim-stagger-{i + 1}" data-testid="menu-{game.key.split('.').pop()}-link">
 					{@html formatFont(t(game.key))}
 				</a>
 			{/if}

@@ -97,7 +97,7 @@
 		<div class="game-header__left">
 			{#if showBack && activeTitleKey !== 'app.title'}
 				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
-					<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))}>
+					<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))} data-testid="header-back-link">
 						<ArrowLeft size={22} />
 					</a>
 				</div>
@@ -320,3 +320,4 @@
 		.game-header__inner { gap: var(--space-sm); }
 	}
 </style>
+style>
