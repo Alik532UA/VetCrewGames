@@ -609,7 +609,7 @@
 											onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && moveAnimalToIndex(animal, 'slot', i)}
 											aria-label={formatPlain(td(animal.nameKey))}
 										>
-											<img src={animal.image} alt="" class="mini-ghost-card__img" />
+											<img src={animal.image} alt="" class="mini-ghost-card__img" loading="lazy" width="60" height="80" />
 										</button>
 									{/each}
 								</div>
@@ -683,7 +683,7 @@
 													onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && moveAnimalToIndex(animal, 'source', i)}
 													aria-label={formatPlain(td(animal.nameKey))}
 												>
-													<img src={animal.image} alt="" class="mini-ghost-card__img" />
+													<img src={animal.image} alt="" class="mini-ghost-card__img" loading="lazy" width="60" height="80" />
 												</button>
 											{/each}
 										</div>
