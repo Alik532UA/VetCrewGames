@@ -37,7 +37,7 @@ VERSION: ${version}
 				copied = false;
 			}, 1000);
 		} catch (err) {
-			console.error('Failed to copy logs', err);
+			logService.error('ui', 'Failed to copy logs', { error: err });
 		}
 	}
 </script>
