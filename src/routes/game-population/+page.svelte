@@ -1279,9 +1279,9 @@
 		border-radius: 2rem;
 		background: linear-gradient(
 			180deg,
-			color-mix(in srgb, var(--color-accent-hover), transparent 25%) 0%,
-			color-mix(in srgb, var(--color-accent), transparent 25%) 40%,
-			color-mix(in srgb, color-mix(in srgb, var(--color-accent), black 20%), transparent 25%) 100%
+			var(--color-accent-hover) 0%,
+			var(--color-accent) 40%,
+			color-mix(in srgb, var(--color-accent), black 20%) 100%
 		);
 		backdrop-filter: var(--blur-glass);
 		color: var(--color-text-on-accent);
@@ -1306,6 +1306,7 @@
 		color: var(--color-disabled-text);
 		box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
 		cursor: not-allowed;
+		opacity: 0.6;
 	}
 	.source-panel {
 		width: 100%;
