@@ -181,7 +181,7 @@
 										<button class="btn-myth" onclick={() => handleAnswer(false)}>
 											{@html formatFont(t('myth.myth'))}
 										</button>
-										<button class="btn-truth" onclick={() => handleAnswer(true)}>
+										<button type="button" class="btn-truth" onclick={() => handleAnswer(true)}>
 											{@html formatFont(t('myth.truth'))}
 										</button>
 									</div>

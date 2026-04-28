@@ -73,6 +73,7 @@
 </svelte:head>
 
 <div class="app-container">
+	<a href="#main-content" class="skip-link">{formatPlain(t('common.skipLink') || 'Перейти до основного вмісту')}</a>
 	<GameHeader />
 
 	<main class="app-shell" id="main-content">

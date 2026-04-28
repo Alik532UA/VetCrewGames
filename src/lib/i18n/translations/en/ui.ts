@@ -13,6 +13,7 @@ export const ui = {
 	'menu.link.order': 'Order a game or website',
 
 	// Common
+	'common.skipLink': 'Skip to main content',
 	'common.check': 'Check',
 	'common.playAgain': 'Play again',
 	'common.next': 'Next',

@@ -13,6 +13,7 @@ export const ui = {
 	'menu.link.order': 'Замовити гру чи сайт',
 
 	// Common
+	'common.skipLink': 'Перейти до основного вмісту',
 	'common.check': 'Перевірити',
 	'common.playAgain': 'Грати знову',
 	'common.next': 'Далі',

@@ -136,7 +136,7 @@
 				{/if}
 			</button>
 
-			<button class="header-btn lang-btn" onclick={toggleLocale} aria-label="Toggle language">
+			<button type="button" class="header-btn lang-btn" onclick={toggleLocale} aria-label="Toggle language">
 				<span class="lang-text">{settings.locale.toUpperCase()}</span>
 			</button>
 
