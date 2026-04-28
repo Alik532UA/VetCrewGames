@@ -51,5 +51,27 @@ export const sessionStore = {
 	remove(key: string): void {
 		if (!browser) return;
 		sessionStorage.removeItem(PREFIX + key);
+	},
+	clear(): void {
+		if (!browser) return;
+		const keysToRemove: string[] = [];
+		for (let i = 0; i < sessionStorage.length; i++) {
+			const key = sessionStorage.key(i);
+			if (key?.startsWith(PREFIX)) keysToRemove.push(key);
+		}
+		keysToRemove.forEach((k) => sessionStorage.removeItem(k));
+	},
+	getJSON<T>(key: string): T | null {
+		const raw = sessionStore.get(key);
+		if (raw === null) return null;
+		try {
+			return JSON.parse(raw) as T;
+		} catch (err) {
+			console.warn(`[storage] Failed to parse "${key}" from sessionStorage`, err);
+			return null;
+		}
+	},
+	setJSON(key: string, value: unknown): void {
+		sessionStore.set(key, JSON.stringify(value));
 	}
 };
