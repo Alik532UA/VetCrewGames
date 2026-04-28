@@ -7,8 +7,12 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
-	let { titleKey, roundInfo, showBack = true } = $props<{ 
-		titleKey?: TranslationKey; 
+	let {
+		titleKey,
+		roundInfo,
+		showBack = true
+	} = $props<{
+		titleKey?: TranslationKey;
 		roundInfo?: string;
 		showBack?: boolean;
 	}>();
@@ -26,7 +30,9 @@
 		let timeoutId: ReturnType<typeof setTimeout>;
 		if (settings.score > lastScore) {
 			isPulsing = true;
-			timeoutId = setTimeout(() => { isPulsing = false; }, 600);
+			timeoutId = setTimeout(() => {
+				isPulsing = false;
+			}, 600);
 			lastScore = settings.score;
 		} else {
 			lastScore = settings.score;
@@ -78,10 +84,13 @@
 	}
 
 	onMount(() => {
-		const handler = () => { 
-			const native = !!(document.fullscreenElement || (document as unknown as { webkitFullscreenElement: unknown }).webkitFullscreenElement);
+		const handler = () => {
+			const native = !!(
+				document.fullscreenElement ||
+				(document as unknown as { webkitFullscreenElement: unknown }).webkitFullscreenElement
+			);
 			const fake = document.documentElement.hasAttribute('data-fake-fullscreen');
-			isFullscreen = native || fake; 
+			isFullscreen = native || fake;
 		};
 		document.addEventListener('fullscreenchange', handler);
 		document.addEventListener('webkitfullscreenchange', handler);
@@ -97,7 +106,12 @@
 		<div class="game-header__left">
 			{#if showBack && activeTitleKey !== 'app.title'}
 				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
-					<a href="{base}/" class="header-btn" aria-label={formatPlain(t('common.back'))} data-testid="header-back-link">
+					<a
+						href="{base}/"
+						class="header-btn"
+						aria-label={formatPlain(t('common.back'))}
+						data-testid="header-back-link"
+					>
 						<ArrowLeft size={22} />
 					</a>
 				</div>
@@ -112,15 +126,26 @@
 			<div class="title-with-score">
 				<div class="game-title-wrapper">
 					{#key activeTitleKey}
-						<h1 class="game-title" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
+						<h1
+							class="game-title"
+							in:fade={{ duration: 300, delay: 150 }}
+							out:fade={{ duration: 150 }}
+						>
 							{@html formatFont(t(activeTitleKey as TranslationKey))}
 						</h1>
 					{/key}
 				</div>
 				<div class="global-score" class:is-pulsing={isPulsing}>
 					<svg class="score-circle" viewBox="0 0 36 36">
-						<path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-						<path class="circle-fill" stroke-dasharray="{(settings.score % 100) * 1}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+						<path
+							class="circle-bg"
+							d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+						/>
+						<path
+							class="circle-fill"
+							stroke-dasharray="{(settings.score % 100) * 1}, 100"
+							d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+						/>
 					</svg>
 					<span class="score-value">{settings.score}</span>
 				</div>
@@ -136,7 +161,12 @@
 				{/if}
 			</button>
 
-			<button type="button" class="header-btn lang-btn" onclick={toggleLocale} aria-label="Toggle language">
+			<button
+				type="button"
+				class="header-btn lang-btn"
+				onclick={toggleLocale}
+				aria-label="Toggle language"
+			>
 				<span class="lang-text">{settings.locale.toUpperCase()}</span>
 			</button>
 
@@ -150,6 +180,7 @@
 		</div>
 	</div>
 </header>
+style>
 
 <style>
 	.game-header {
@@ -177,7 +208,8 @@
 		gap: var(--space-md);
 	}
 
-	.game-header__left, .game-header__right {
+	.game-header__left,
+	.game-header__right {
 		display: flex;
 		align-items: center;
 		gap: var(--space-xs);
@@ -185,7 +217,7 @@
 
 	.btn-wrap {
 		display: grid;
-		grid-template-areas: "btn";
+		grid-template-areas: 'btn';
 		align-items: center;
 	}
 	.btn-wrap > * {
@@ -207,7 +239,7 @@
 
 	.game-title-wrapper {
 		display: grid;
-		grid-template-areas: "title";
+		grid-template-areas: 'title';
 		align-items: center;
 		min-width: 0;
 	}
@@ -315,9 +347,14 @@
 	}
 
 	@media (max-width: 768px) {
-		.game-title { font-size: var(--font-size-sm); }
-		.game-header { padding: var(--space-xs) var(--space-sm); }
-		.game-header__inner { gap: var(--space-sm); }
+		.game-title {
+			font-size: var(--font-size-sm);
+		}
+		.game-header {
+			padding: var(--space-xs) var(--space-sm);
+		}
+		.game-header__inner {
+			gap: var(--space-sm);
+		}
 	}
 </style>
-style>

@@ -8,7 +8,7 @@ export interface MythStatement {
 	explanationKey: string;
 }
 
-/** 
+/**
  * Central registry of animal myths.
  * Scalable to hundreds of animals and thousands of statements.
  */
@@ -1210,12 +1210,12 @@ export interface GameQuestion extends MythStatement {
 }
 
 export function getNextQuestion(excludeIds: string[] = []): GameQuestion | null {
-	const available = myths.filter(m => !excludeIds.includes(m.id));
+	const available = myths.filter((m) => !excludeIds.includes(m.id));
 	if (available.length === 0) return null;
-	
+
 	const randomMyth = available[Math.floor(Math.random() * available.length)];
-	const animal = animals.find(a => a.id === randomMyth.animalId)!;
-	
+	const animal = animals.find((a) => a.id === randomMyth.animalId)!;
+
 	return {
 		...randomMyth,
 		animal

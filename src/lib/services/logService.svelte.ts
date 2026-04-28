@@ -70,7 +70,7 @@ class LogService {
 		if (this.logs.length > this.maxLogs) {
 			this.logs.shift();
 		}
-		
+
 		if (level === 'error') {
 			this.errorCount++;
 		}
@@ -80,7 +80,7 @@ class LogService {
 		if (!config[category]) return;
 
 		const formattedMessage = `[${entry.timestamp}] [${level.toUpperCase()}] [${category.toUpperCase()}] ${message}`;
-		
+
 		if (level === 'error') {
 			console.error(formattedMessage, data || '');
 		} else if (dev) {

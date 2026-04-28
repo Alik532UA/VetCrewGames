@@ -29,4 +29,6 @@ const versionObj = {
 };
 fs.writeFileSync(appVersionPath, JSON.stringify(versionObj, null, '\t') + '\n');
 
-console.log(`[Version Bump] Successfully bumped version from ${versionParts.join('.')} (old) to ${newVersion}`);
+console.log(
+	`[Version Bump] Successfully bumped version from ${versionParts.join('.')} (old) to ${newVersion}`
+);

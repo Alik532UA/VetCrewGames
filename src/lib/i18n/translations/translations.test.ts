@@ -10,8 +10,12 @@ describe('translations: uk ↔ en parity', () => {
 		const missingInEn = ukKeys.filter((k) => !(k in en));
 		const missingInUk = enKeys.filter((k) => !(k in uk));
 
-		expect(missingInEn, `Keys present in uk but missing in en: ${missingInEn.join(', ')}`).toEqual([]);
-		expect(missingInUk, `Keys present in en but missing in uk: ${missingInUk.join(', ')}`).toEqual([]);
+		expect(missingInEn, `Keys present in uk but missing in en: ${missingInEn.join(', ')}`).toEqual(
+			[]
+		);
+		expect(missingInUk, `Keys present in en but missing in uk: ${missingInUk.join(', ')}`).toEqual(
+			[]
+		);
 	});
 
 	it('every value is a non-empty string in both locales', () => {
@@ -29,7 +33,8 @@ describe('translations: uk ↔ en parity', () => {
 describe('translations: XSS-safety guard', () => {
 	// Ці значення йдуть через {@html formatFont(...)} — додаткова гарантія, що
 	// у файлах перекладу не з'явиться небезпечний HTML / javascript URI.
-	const FORBIDDEN = /<script|<\/script|javascript:|on(?:click|error|load|mouseover|focus|blur|submit)\s*=/i;
+	const FORBIDDEN =
+		/<script|<\/script|javascript:|on(?:click|error|load|mouseover|focus|blur|submit)\s*=/i;
 
 	for (const [locale, dict] of Object.entries({ uk, en })) {
 		it(`${locale}: no forbidden HTML patterns in any translation value`, () => {

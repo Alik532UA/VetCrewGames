@@ -26,14 +26,19 @@ DEVICE: ${navigator.userAgent}
 VERSION: ${version}
 ------------------------
 `;
-		const logText = logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.category.toUpperCase()}] ${l.message} ${l.data ? JSON.stringify(l.data) : ''}`).join('\n');
-		
+		const logText = logs
+			.map(
+				(l) =>
+					`[${l.timestamp}] [${l.level.toUpperCase()}] [${l.category.toUpperCase()}] ${l.message} ${l.data ? JSON.stringify(l.data) : ''}`
+			)
+			.join('\n');
+
 		const fullText = header + logText;
 
 		try {
 			await navigator.clipboard.writeText(fullText);
 			copied = true;
-			setTimeout(() => {
+			timeoutId = setTimeout(() => {
 				copied = false;
 			}, 1000);
 		} catch (err) {
@@ -75,7 +80,7 @@ VERSION: ${version}
 		justify-content: center;
 		cursor: pointer;
 		z-index: 9999;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 		transition: all 0.2s;
 	}
 

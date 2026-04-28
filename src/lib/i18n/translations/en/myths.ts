@@ -8,342 +8,517 @@ export const myths = {
 
 	// Myth Statements & Explanations
 	'myth.cow-red.statement': 'Bulls react aggressively to the color red',
-	'myth.cow-red.explanation': 'Myth. Bulls are actually color-blind to red. They react to the sharp movements of the matador\'s cloth.',
+	'myth.cow-red.explanation':
+		"Myth. Bulls are actually color-blind to red. They react to the sharp movements of the matador's cloth.",
 	'myth.cow-stomach.statement': 'Cows have four digestive compartments',
-	'myth.cow-stomach.explanation': 'Fact. Cows have one stomach with four compartments to help digest tough plant matter.',
+	'myth.cow-stomach.explanation':
+		'Fact. Cows have one stomach with four compartments to help digest tough plant matter.',
 	'myth.cat-vision.statement': 'Cats can see in total darkness',
-	'myth.cat-vision.explanation': 'Myth. Cats need at least some light. Their eyes reflect light, but they cannot see in absolute darkness.',
+	'myth.cat-vision.explanation':
+		'Myth. Cats need at least some light. Their eyes reflect light, but they cannot see in absolute darkness.',
 	'myth.cat-sleep.statement': 'Cats spend 70% of their lives sleeping',
 	'myth.cat-sleep.explanation': 'Fact. Cats sleep for 13-16 hours a day to conserve energy.',
 	'myth.dog-bw.statement': 'Dogs see the world only in black and white',
-	'myth.dog-bw.explanation': 'Myth. Dogs do see colors, but differently than humans — mostly shades of yellow and blue.',
-	'myth.dog-nose.statement': 'A dog\'s nose print is unique like a human fingerprint',
-	'myth.dog-nose.explanation': 'Fact. Every dog has a unique nose print that can be used to identify them.',
+	'myth.dog-bw.explanation':
+		'Myth. Dogs do see colors, but differently than humans — mostly shades of yellow and blue.',
+	'myth.dog-nose.statement': "A dog's nose print is unique like a human fingerprint",
+	'myth.dog-nose.explanation':
+		'Fact. Every dog has a unique nose print that can be used to identify them.',
 	'myth.elephant-trunk.statement': 'Elephants drink water directly through their trunks',
-	'myth.elephant-trunk.explanation': 'Myth. They only use their trunk as a pump to draw in water, then squirt it into their mouths.',
+	'myth.elephant-trunk.explanation':
+		'Myth. They only use their trunk as a pump to draw in water, then squirt it into their mouths.',
 	'myth.elephant-jump.statement': 'Elephants are the only mammals that cannot jump',
-	'myth.elephant-jump.explanation': 'Fact. Due to their massive weight and leg structure, elephants cannot jump.',
+	'myth.elephant-jump.explanation':
+		'Fact. Due to their massive weight and leg structure, elephants cannot jump.',
 	'myth.ant-sleep.statement': 'Ants never sleep',
-	'myth.ant-sleep.explanation': 'Myth. Although they seem constantly active, worker ants sleep about 4 hours a day, broken into hundreds of minute-long micro-naps.',
+	'myth.ant-sleep.explanation':
+		'Myth. Although they seem constantly active, worker ants sleep about 4 hours a day, broken into hundreds of minute-long micro-naps.',
 	'myth.ant-wings.statement': 'Worker ants do not have wings',
-	'myth.ant-wings.explanation': 'Fact. Only reproductive ants (queens and males) are born with wings for their mating flight.',
+	'myth.ant-wings.explanation':
+		'Fact. Only reproductive ants (queens and males) are born with wings for their mating flight.',
 	'myth.bee-sting.statement': 'All bees die after they sting',
-	'myth.bee-sting.explanation': 'Myth. Only honey bees have a barbed stinger that gets stuck in mammalian skin. Other bee species can sting multiple times.',
+	'myth.bee-sting.explanation':
+		'Myth. Only honey bees have a barbed stinger that gets stuck in mammalian skin. Other bee species can sting multiple times.',
 	'myth.bee-dance.statement': 'Bees communicate by dancing',
-	'myth.bee-dance.explanation': 'Fact. Bees perform a \'waggle dance\' to tell other bees where to find food.',
-	'myth.wolf-alpha.statement': 'There is always a dominant alpha male in a wolf pack who fought for power',
-	'myth.wolf-alpha.explanation': 'Myth. Wolf packs are usually just families where the parents are the leaders by fact of their status, not through fighting.',
+	'myth.bee-dance.explanation':
+		"Fact. Bees perform a 'waggle dance' to tell other bees where to find food.",
+	'myth.wolf-alpha.statement':
+		'There is always a dominant alpha male in a wolf pack who fought for power',
+	'myth.wolf-alpha.explanation':
+		'Myth. Wolf packs are usually just families where the parents are the leaders by fact of their status, not through fighting.',
 	'myth.wolf-howl.statement': 'Wolves howl to communicate over long distances',
-	'myth.wolf-howl.explanation': 'Fact. A wolf\'s howl can be heard up to 16 kilometers away in open terrain.',
+	'myth.wolf-howl.explanation':
+		"Fact. A wolf's howl can be heard up to 16 kilometers away in open terrain.",
 	'myth.penguin-love.statement': 'Penguins choose one partner for life',
-	'myth.penguin-love.explanation': 'Myth. While they are monogamous during the breeding season, many species may change partners the following year.',
+	'myth.penguin-love.explanation':
+		'Myth. While they are monogamous during the breeding season, many species may change partners the following year.',
 	'myth.penguin-egg.statement': 'Emperor penguins keep their eggs warm on their feet',
-	'myth.penguin-egg.explanation': 'Fact. The male penguins balance the egg on their feet and cover it with a brood pouch to keep it warm.',
+	'myth.penguin-egg.explanation':
+		'Fact. The male penguins balance the egg on their feet and cover it with a brood pouch to keep it warm.',
 	'myth.dolphin-sleep.statement': 'Dolphins sleep with one eye open',
-	'myth.dolphin-sleep.explanation': 'Fact. Dolphins shut down only half of their brain at a time to stay alert for predators and to remember to breathe.',
+	'myth.dolphin-sleep.explanation':
+		'Fact. Dolphins shut down only half of their brain at a time to stay alert for predators and to remember to breathe.',
 	'myth.dolphin-fish.statement': 'Dolphins are a type of fish',
-	'myth.dolphin-fish.explanation': 'Myth. Dolphins are marine mammals, meaning they give birth to live young and breathe air.',
-	'myth.parrot-mimic.statement': 'Parrots only mimic sounds and don\'t understand what they are saying',
-	'myth.parrot-mimic.explanation': 'Myth. Many parrots can associate words with meanings, identify objects, count, and even answer complex questions.',
+	'myth.dolphin-fish.explanation':
+		'Myth. Dolphins are marine mammals, meaning they give birth to live young and breathe air.',
+	'myth.parrot-mimic.statement':
+		"Parrots only mimic sounds and don't understand what they are saying",
+	'myth.parrot-mimic.explanation':
+		'Myth. Many parrots can associate words with meanings, identify objects, count, and even answer complex questions.',
 	'myth.parrot-age.statement': 'Some parrots can live over 80 years',
-	'myth.parrot-age.explanation': 'Fact. Larger parrot species like macaws and cockatoos have lifespans comparable to humans.',
-	'myth.chicken-fly.statement': 'Chickens can\'t fly at all',
-	'myth.chicken-fly.explanation': 'Myth. While they aren\'t great flyers, chickens can fly short distances to clear fences or roost in trees.',
+	'myth.parrot-age.explanation':
+		'Fact. Larger parrot species like macaws and cockatoos have lifespans comparable to humans.',
+	'myth.chicken-fly.statement': "Chickens can't fly at all",
+	'myth.chicken-fly.explanation':
+		"Myth. While they aren't great flyers, chickens can fly short distances to clear fences or roost in trees.",
 	'myth.chicken-population.statement': 'There are more chickens than humans on Earth',
-	'myth.chicken-population.explanation': 'Fact. With over 33 billion chickens, they outnumber humans by about 4 to 1.',
+	'myth.chicken-population.explanation':
+		'Fact. With over 33 billion chickens, they outnumber humans by about 4 to 1.',
 	'myth.rat-dirty.statement': 'Rats are naturally dirty animals',
-	'myth.rat-dirty.explanation': 'Myth. Rats are actually very clean and spend several hours a day grooming themselves, much like cats do.',
+	'myth.rat-dirty.explanation':
+		'Myth. Rats are actually very clean and spend several hours a day grooming themselves, much like cats do.',
 	'myth.rat-laugh.statement': 'Rats laugh when tickled',
-	'myth.rat-laugh.explanation': 'Fact. Rats emit high-frequency ultrasonic chirps, similar to laughter, when they are tickled or playing.',
+	'myth.rat-laugh.explanation':
+		'Fact. Rats emit high-frequency ultrasonic chirps, similar to laughter, when they are tickled or playing.',
 	'myth.sparrow-migrate.statement': 'All sparrows migrate south for the winter',
-	'myth.sparrow-migrate.explanation': 'Myth. Many sparrow species, including the common House Sparrow, are year-round residents and do not migrate.',
+	'myth.sparrow-migrate.explanation':
+		'Myth. Many sparrow species, including the common House Sparrow, are year-round residents and do not migrate.',
 	'myth.sparrow-human.statement': 'Sparrows have lived alongside humans for over 10,000 years',
-	'myth.sparrow-human.explanation': 'Fact. House sparrows evolved alongside human agriculture and spread worldwide with us.',
+	'myth.sparrow-human.explanation':
+		'Fact. House sparrows evolved alongside human agriculture and spread worldwide with us.',
 	'myth.tiger-stripes.statement': 'Tigers only have stripes on their fur, not on their skin',
-	'myth.tiger-stripes.explanation': 'Myth. A tiger\'s stripes are also pigmented into their skin. If you shaved a tiger, it would still be striped.',
+	'myth.tiger-stripes.explanation':
+		"Myth. A tiger's stripes are also pigmented into their skin. If you shaved a tiger, it would still be striped.",
 	'myth.tiger-swim.statement': 'Tigers are excellent swimmers',
-	'myth.tiger-swim.explanation': 'Fact. Unlike most big cats, tigers love water and frequently swim across rivers and lakes.',
+	'myth.tiger-swim.explanation':
+		'Fact. Unlike most big cats, tigers love water and frequently swim across rivers and lakes.',
 	'myth.panda-diet.statement': 'Giant pandas eat absolutely nothing but bamboo',
-	'myth.panda-diet.explanation': 'Myth. While bamboo makes up 99% of their diet, they occasionally eat small mammals, birds, or fish.',
-	'myth.panda-thumb.statement': 'Pandas have a \'false thumb\' to help them hold bamboo',
-	'myth.panda-thumb.explanation': 'Fact. Pandas have an enlarged wrist bone that functions like an opposable thumb to grasp bamboo stalks.',
+	'myth.panda-diet.explanation':
+		'Myth. While bamboo makes up 99% of their diet, they occasionally eat small mammals, birds, or fish.',
+	'myth.panda-thumb.statement': "Pandas have a 'false thumb' to help them hold bamboo",
+	'myth.panda-thumb.explanation':
+		'Fact. Pandas have an enlarged wrist bone that functions like an opposable thumb to grasp bamboo stalks.',
 	'myth.alligator-tongue.statement': 'Alligators have no tongue',
-	'myth.alligator-tongue.explanation': 'Myth. They do have a tongue, but it is attached to the bottom of their mouth so they cannot stick it out.',
+	'myth.alligator-tongue.explanation':
+		'Myth. They do have a tongue, but it is attached to the bottom of their mouth so they cannot stick it out.',
 	'myth.alligator-teeth.statement': 'Alligators continuously replace their teeth',
-	'myth.alligator-teeth.explanation': 'Fact. An alligator can go through 3,000 teeth in a lifetime, replacing them as they wear down.',
-	'myth.chameleon-color.statement': 'Chameleons change color primarily to blend in with their surroundings',
-	'myth.chameleon-color.explanation': 'Myth. They mainly change color to regulate their temperature or to communicate their mood to other chameleons.',
+	'myth.alligator-teeth.explanation':
+		'Fact. An alligator can go through 3,000 teeth in a lifetime, replacing them as they wear down.',
+	'myth.chameleon-color.statement':
+		'Chameleons change color primarily to blend in with their surroundings',
+	'myth.chameleon-color.explanation':
+		'Myth. They mainly change color to regulate their temperature or to communicate their mood to other chameleons.',
 	'myth.chameleon-eyes.statement': 'Chameleons can move their eyes independently',
-	'myth.chameleon-eyes.explanation': 'Fact. They can look in two completely different directions at the same time, giving them a 360-degree view.',
+	'myth.chameleon-eyes.explanation':
+		'Fact. They can look in two completely different directions at the same time, giving them a 360-degree view.',
 	'myth.giraffe-sound.statement': 'Giraffes are completely mute and make no sounds',
-	'myth.giraffe-sound.explanation': 'Myth. Giraffes do make sounds, such as moans, snorts, and low-frequency hums at night.',
-	'myth.giraffe-tongue.statement': 'A giraffe\'s tongue is blue-black in color',
-	'myth.giraffe-tongue.explanation': 'Fact. Their dark tongue is believed to protect it from sunburn while they eat leaves all day.',
+	'myth.giraffe-sound.explanation':
+		'Myth. Giraffes do make sounds, such as moans, snorts, and low-frequency hums at night.',
+	'myth.giraffe-tongue.statement': "A giraffe's tongue is blue-black in color",
+	'myth.giraffe-tongue.explanation':
+		'Fact. Their dark tongue is believed to protect it from sunburn while they eat leaves all day.',
 	'myth.jellyfish-immortal.statement': 'All jellyfish are immortal',
-	'myth.jellyfish-immortal.explanation': 'Myth. While one specific species (Turritopsis dohrnii) is considered biologically immortal, most jellyfish live only a few months to a year.',
+	'myth.jellyfish-immortal.explanation':
+		'Myth. While one specific species (Turritopsis dohrnii) is considered biologically immortal, most jellyfish live only a few months to a year.',
 	'myth.jellyfish-brain.statement': 'Jellyfish have no brain or heart',
-	'myth.jellyfish-brain.explanation': 'Fact. Jellyfish are simple organisms made of 95% water and possess a basic nerve net instead of a brain.',
+	'myth.jellyfish-brain.explanation':
+		'Fact. Jellyfish are simple organisms made of 95% water and possess a basic nerve net instead of a brain.',
 	'myth.kangaroo-pouch.statement': 'Kangaroos keep their babies in their pouch for 5 years',
-	'myth.kangaroo-pouch.explanation': 'Myth. Joeys stay in the pouch for only about 8 to 10 months before leaving it entirely.',
+	'myth.kangaroo-pouch.explanation':
+		'Myth. Joeys stay in the pouch for only about 8 to 10 months before leaving it entirely.',
 	'myth.kangaroo-backward.statement': 'Kangaroos cannot walk backward',
-	'myth.kangaroo-backward.explanation': 'Fact. Due to the shape of their thick muscular tail and long hind legs, they cannot move in reverse.',
+	'myth.kangaroo-backward.explanation':
+		'Fact. Due to the shape of their thick muscular tail and long hind legs, they cannot move in reverse.',
 	'myth.lemur-dog.statement': 'Lemurs are closely related to dogs',
-	'myth.lemur-dog.explanation': 'Myth. Lemurs are primates, making them distant relatives of monkeys, apes, and humans, not dogs.',
+	'myth.lemur-dog.explanation':
+		'Myth. Lemurs are primates, making them distant relatives of monkeys, apes, and humans, not dogs.',
 	'myth.lemur-madagascar.statement': 'Lemurs are found naturally only in Madagascar',
-	'myth.lemur-madagascar.explanation': 'Fact. Madagascar is the only place in the world where lemurs evolved and live in the wild.',
+	'myth.lemur-madagascar.explanation':
+		'Fact. Madagascar is the only place in the world where lemurs evolved and live in the wild.',
 	'myth.lion-jungle.statement': 'Lions live in thick jungles',
-	'myth.lion-jungle.explanation': 'Myth. Despite being called \'King of the Jungle\', lions actually live in open savannas and grasslands.',
+	'myth.lion-jungle.explanation':
+		"Myth. Despite being called 'King of the Jungle', lions actually live in open savannas and grasslands.",
 	'myth.lion-hunt.statement': 'Female lions do most of the hunting',
-	'myth.lion-hunt.explanation': 'Fact. Lionesses are faster and more agile, working together to hunt and provide for the pride.',
+	'myth.lion-hunt.explanation':
+		'Fact. Lionesses are faster and more agile, working together to hunt and provide for the pride.',
 	'myth.monkey-tail.statement': 'All monkeys have tails that can grasp branches',
-	'myth.monkey-tail.explanation': 'Myth. Only some New World monkeys have prehensile tails. Old World monkeys have regular tails or no tails at all.',
+	'myth.monkey-tail.explanation':
+		'Myth. Only some New World monkeys have prehensile tails. Old World monkeys have regular tails or no tails at all.',
 	'myth.monkey-tools.statement': 'Some monkeys use tools to get food',
-	'myth.monkey-tools.explanation': 'Fact. Capuchin monkeys, for example, use stones as hammers to crack open hard nuts.',
+	'myth.monkey-tools.explanation':
+		'Fact. Capuchin monkeys, for example, use stones as hammers to crack open hard nuts.',
 	'myth.panther-species.statement': 'Panthers are a completely separate species of big cat',
-	'myth.panther-species.explanation': 'Myth. A \'black panther\' is simply a leopard or jaguar with a genetic condition called melanism, causing dark fur.',
-	'myth.panther-melanism.statement': 'You can still see a panther\'s spots in bright sunlight',
-	'myth.panther-melanism.explanation': 'Fact. Because they are just melanistic leopards or jaguars, their original rosette patterns are still visible under bright light.',
+	'myth.panther-species.explanation':
+		"Myth. A 'black panther' is simply a leopard or jaguar with a genetic condition called melanism, causing dark fur.",
+	'myth.panther-melanism.statement': "You can still see a panther's spots in bright sunlight",
+	'myth.panther-melanism.explanation':
+		'Fact. Because they are just melanistic leopards or jaguars, their original rosette patterns are still visible under bright light.',
 	'myth.peacock-fly.statement': 'Peacocks cannot fly at all due to their long tails',
-	'myth.peacock-fly.explanation': 'Myth. Despite their massive tail feathers, peacocks can fly short distances to escape predators or roost in trees.',
-	'myth.peacock-male.statement': 'Only the males are actually called \'peacocks\'',
-	'myth.peacock-male.explanation': 'Fact. The collective term is \'peafowl\'. Males are peacocks, females are peahens, and babies are peachicks.',
+	'myth.peacock-fly.explanation':
+		'Myth. Despite their massive tail feathers, peacocks can fly short distances to escape predators or roost in trees.',
+	'myth.peacock-male.statement': "Only the males are actually called 'peacocks'",
+	'myth.peacock-male.explanation':
+		"Fact. The collective term is 'peafowl'. Males are peacocks, females are peahens, and babies are peachicks.",
 	'myth.rhino-eyesight.statement': 'Rhinos have excellent eyesight to spot predators',
-	'myth.rhino-eyesight.explanation': 'Myth. Rhinos have very poor vision and rely mostly on their strong senses of smell and hearing.',
-	'myth.rhino-horn.statement': 'A rhino\'s horn is made of the same material as human hair',
-	'myth.rhino-horn.explanation': 'Fact. Rhino horns are composed entirely of keratin, the same protein that makes up human hair and fingernails.',
+	'myth.rhino-eyesight.explanation':
+		'Myth. Rhinos have very poor vision and rely mostly on their strong senses of smell and hearing.',
+	'myth.rhino-horn.statement': "A rhino's horn is made of the same material as human hair",
+	'myth.rhino-horn.explanation':
+		'Fact. Rhino horns are composed entirely of keratin, the same protein that makes up human hair and fingernails.',
 	'myth.spider-web.statement': 'All spiders spin webs to catch their prey',
-	'myth.spider-web.explanation': 'Myth. Many species, like wolf spiders and jumping spiders, hunt their prey actively instead of building webs.',
+	'myth.spider-web.explanation':
+		'Myth. Many species, like wolf spiders and jumping spiders, hunt their prey actively instead of building webs.',
 	'myth.spider-arachnid.statement': 'Spiders are not insects',
-	'myth.spider-arachnid.explanation': 'Fact. Spiders are arachnids. They have eight legs and two main body parts, while insects have six legs and three body parts.',	'myth.blue_whale-heart.statement': 'A blue whale\'s heart is roughly the size of a car',
-	'myth.blue_whale-heart.explanation': 'Fact. A blue whale has a massive heart that can weigh up to 400 pounds.',
+	'myth.spider-arachnid.explanation':
+		'Fact. Spiders are arachnids. They have eight legs and two main body parts, while insects have six legs and three body parts.',
+	'myth.blue_whale-heart.statement': "A blue whale's heart is roughly the size of a car",
+	'myth.blue_whale-heart.explanation':
+		'Fact. A blue whale has a massive heart that can weigh up to 400 pounds.',
 	'myth.blue_whale-swallow.statement': 'Blue whales can easily swallow a small car',
-	'myth.blue_whale-swallow.explanation': 'Myth. Despite their huge size, their throat is only about the size of a grapefruit.',
+	'myth.blue_whale-swallow.explanation':
+		'Myth. Despite their huge size, their throat is only about the size of a grapefruit.',
 	'myth.deer-speed.statement': 'Deer can sprint at speeds up to 40 mph',
-	'myth.deer-speed.explanation': 'Fact. White-tailed deer are extremely fast and agile, capable of reaching 40 mph.',
+	'myth.deer-speed.explanation':
+		'Fact. White-tailed deer are extremely fast and agile, capable of reaching 40 mph.',
 	'myth.deer-hearing.statement': 'Deer have very poor hearing',
-	'myth.deer-hearing.explanation': 'Myth. Deer actually have excellent hearing and can pivot their ears to pinpoint sounds.',
+	'myth.deer-hearing.explanation':
+		'Myth. Deer actually have excellent hearing and can pivot their ears to pinpoint sounds.',
 	'myth.falcon-dive.statement': 'Falcons dive at over 200 mph to catch prey',
-	'myth.falcon-dive.explanation': 'Fact. The peregrine falcon\'s hunting dive, or stoop, is the fastest recorded animal speed.',
+	'myth.falcon-dive.explanation':
+		"Fact. The peregrine falcon's hunting dive, or stoop, is the fastest recorded animal speed.",
 	'myth.falcon-beak.statement': 'Falcons use their sharp beaks to kill prey in the air',
-	'myth.falcon-beak.explanation': 'Myth. Falcons use the immense force of their talons striking at high speed to kill their prey.',
+	'myth.falcon-beak.explanation':
+		'Myth. Falcons use the immense force of their talons striking at high speed to kill their prey.',
 	'myth.frog-freeze.statement': 'Some frogs can freeze solid in winter and survive',
-	'myth.frog-freeze.explanation': 'Fact. The wood frog can freeze solid, stopping its heart, and then thaw back to life in spring.',
+	'myth.frog-freeze.explanation':
+		'Fact. The wood frog can freeze solid, stopping its heart, and then thaw back to life in spring.',
 	'myth.frog-warts.statement': 'Touching a frog or toad gives you warts',
-	'myth.frog-warts.explanation': 'Myth. Warts are caused by human viruses, not by touching frogs or toads.',
+	'myth.frog-warts.explanation':
+		'Myth. Warts are caused by human viruses, not by touching frogs or toads.',
 	'myth.hippo-swim.statement': 'Hippos cannot actually swim',
-	'myth.hippo-swim.explanation': 'Fact. Despite spending most of their lives in water, they simply walk or run along the river bottom.',
+	'myth.hippo-swim.explanation':
+		'Fact. Despite spending most of their lives in water, they simply walk or run along the river bottom.',
 	'myth.hippo-meat.statement': 'Hippos regularly hunt and eat meat',
-	'myth.hippo-meat.explanation': 'Myth. Hippos are herbivores and primarily eat short grass, consuming up to 80 pounds a night.',
+	'myth.hippo-meat.explanation':
+		'Myth. Hippos are herbivores and primarily eat short grass, consuming up to 80 pounds a night.',
 	'myth.leopard-habitat.statement': 'Leopards can live in both deserts and snowy mountains',
-	'myth.leopard-habitat.explanation': 'Fact. Leopards are highly adaptable and live in diverse habitats from the Kalahari Desert to Russian snows.',
+	'myth.leopard-habitat.explanation':
+		'Fact. Leopards are highly adaptable and live in diverse habitats from the Kalahari Desert to Russian snows.',
 	'myth.leopard-jaguar.statement': 'Leopards are just jaguars that live in Africa',
-	'myth.leopard-jaguar.explanation': 'Myth. Leopards and jaguars are completely different species, with jaguars being bulkier and living in the Americas.',
+	'myth.leopard-jaguar.explanation':
+		'Myth. Leopards and jaguars are completely different species, with jaguars being bulkier and living in the Americas.',
 	'myth.lizard-blood.statement': 'Some lizards can shoot blood from their eyes',
-	'myth.lizard-blood.explanation': 'Fact. The horned lizard can squirt a stream of blood from its eyes as a defense mechanism against predators.',
+	'myth.lizard-blood.explanation':
+		'Fact. The horned lizard can squirt a stream of blood from its eyes as a defense mechanism against predators.',
 	'myth.lizard-slimy.statement': 'Lizards have slimy skin to help them slide through rocks',
-	'myth.lizard-slimy.explanation': 'Myth. Lizards are reptiles and have dry, scaly skin, unlike amphibians such as frogs.',
+	'myth.lizard-slimy.explanation':
+		'Myth. Lizards are reptiles and have dry, scaly skin, unlike amphibians such as frogs.',
 	'myth.ostrich-speed.statement': 'Ostriches are the fastest two-legged animals on Earth',
-	'myth.ostrich-speed.explanation': 'Fact. They can run at sustained speeds of 30 mph and sprint up to 43 mph.',
+	'myth.ostrich-speed.explanation':
+		'Fact. They can run at sustained speeds of 30 mph and sprint up to 43 mph.',
 	'myth.ostrich-hide.statement': 'Ostriches bury their heads in the sand when scared',
-	'myth.ostrich-hide.explanation': 'Myth. They do not bury their heads. They may lie flat on the ground to hide from predators.',
+	'myth.ostrich-hide.explanation':
+		'Myth. They do not bury their heads. They may lie flat on the ground to hide from predators.',
 	'myth.owl-flight.statement': 'Owls can fly almost completely silently',
-	'myth.owl-flight.explanation': 'Fact. Owls have special feathers with fringed edges that muffle the sound of air rushing over their wings.',
+	'myth.owl-flight.explanation':
+		'Fact. Owls have special feathers with fringed edges that muffle the sound of air rushing over their wings.',
 	'myth.owl-blind.statement': 'Owls are completely blind during the day',
-	'myth.owl-blind.explanation': 'Myth. Owls can see perfectly well during the day, although their eyes are highly specialized for night vision.',
+	'myth.owl-blind.explanation':
+		'Myth. Owls can see perfectly well during the day, although their eyes are highly specialized for night vision.',
 	'myth.seal-whiskers.statement': 'Seals use their whiskers to track prey in dark water',
-	'myth.seal-whiskers.explanation': 'Fact. A seal\'s whiskers are incredibly sensitive and can detect the water currents left by swimming fish.',
+	'myth.seal-whiskers.explanation':
+		"Fact. A seal's whiskers are incredibly sensitive and can detect the water currents left by swimming fish.",
 	'myth.seal-lion.statement': 'Seals and sea lions are exactly the same thing',
-	'myth.seal-lion.explanation': 'Myth. They are different families. Sea lions have visible ear flaps and can walk on their flippers, while seals cannot.',
+	'myth.seal-lion.explanation':
+		'Myth. They are different families. Sea lions have visible ear flaps and can walk on their flippers, while seals cannot.',
 	'myth.stork-nest.statement': 'Some storks build nests that can weigh over 1,000 pounds',
-	'myth.stork-nest.explanation': 'Fact. Storks often use the same nest year after year, adding to it until it becomes massive and extremely heavy.',
+	'myth.stork-nest.explanation':
+		'Fact. Storks often use the same nest year after year, adding to it until it becomes massive and extremely heavy.',
 	'myth.stork-baby.statement': 'Storks occasionally deliver human babies to families',
-	'myth.stork-baby.explanation': 'Myth. This is a famous European folk tale popularized in the 19th century, likely because storks returned during spring when many babies were born.',
-	'myth.turtle-gender.statement': 'The temperature of the sand determines a sea turtle\'s gender',
-	'myth.turtle-gender.explanation': 'Fact. Warmer sand temperatures produce female sea turtles, while cooler sand produces males.',
+	'myth.stork-baby.explanation':
+		'Myth. This is a famous European folk tale popularized in the 19th century, likely because storks returned during spring when many babies were born.',
+	'myth.turtle-gender.statement': "The temperature of the sand determines a sea turtle's gender",
+	'myth.turtle-gender.explanation':
+		'Fact. Warmer sand temperatures produce female sea turtles, while cooler sand produces males.',
 	'myth.turtle-shell.statement': 'Turtles can climb completely out of their shells',
-	'myth.turtle-shell.explanation': 'Myth. A turtle\'s shell is an integrated part of its skeleton, growing with its spine and rib cage.',
+	'myth.turtle-shell.explanation':
+		"Myth. A turtle's shell is an integrated part of its skeleton, growing with its spine and rib cage.",
 	'myth.antelope-horns.statement': 'Antelope horns are permanently attached and not shed',
-	'myth.antelope-horns.explanation': 'Fact. Unlike deer, true antelopes have permanent unbranched horns that are not shed yearly.',
+	'myth.antelope-horns.explanation':
+		'Fact. Unlike deer, true antelopes have permanent unbranched horns that are not shed yearly.',
 	'myth.antelope-diet.statement': 'Antelopes frequently hunt small animals',
-	'myth.antelope-diet.explanation': 'Myth. Antelopes are strict herbivores that feed on grasses, leaves, and stems.',
+	'myth.antelope-diet.explanation':
+		'Myth. Antelopes are strict herbivores that feed on grasses, leaves, and stems.',
 	'myth.armadillo-bullet.statement': 'Armadillo shells can deflect bullets',
-	'myth.armadillo-bullet.explanation': 'Fact. There are reported cases where bullets have ricocheted off an armadillo\'s hard bony shell.',
+	'myth.armadillo-bullet.explanation':
+		"Fact. There are reported cases where bullets have ricocheted off an armadillo's hard bony shell.",
 	'myth.armadillo-ball.statement': 'All armadillos can roll into a perfect ball',
-	'myth.armadillo-ball.explanation': 'Myth. Only the three-banded armadillo can roll into a complete ball for defense.',
+	'myth.armadillo-ball.explanation':
+		'Myth. Only the three-banded armadillo can roll into a complete ball for defense.',
 	'myth.axolotl-lungs.statement': 'Axolotls have both gills and lungs',
-	'myth.axolotl-lungs.explanation': 'Fact. While they primarily use their feathery external gills, they also have lungs to gulp air from the surface.',
+	'myth.axolotl-lungs.explanation':
+		'Fact. While they primarily use their feathery external gills, they also have lungs to gulp air from the surface.',
 	'myth.axolotl-land.statement': 'Axolotls regularly walk on land',
-	'myth.axolotl-land.explanation': 'Myth. Axolotls remain in their aquatic larval stage their entire lives and do not naturally move to land.',
+	'myth.axolotl-land.explanation':
+		'Myth. Axolotls remain in their aquatic larval stage their entire lives and do not naturally move to land.',
 	'myth.bat-blind.statement': 'Bats are completely blind',
-	'myth.bat-blind.explanation': 'Myth. Bats are not blind. Many species have good vision, but they rely on echolocation for hunting in the dark.',
+	'myth.bat-blind.explanation':
+		'Myth. Bats are not blind. Many species have good vision, but they rely on echolocation for hunting in the dark.',
 	'myth.bat-blood.statement': 'Some bats actually drink blood',
-	'myth.bat-blood.explanation': 'Fact. Vampire bats drink the blood of livestock and birds, though they represent only a tiny fraction of bat species.',
+	'myth.bat-blood.explanation':
+		'Fact. Vampire bats drink the blood of livestock and birds, though they represent only a tiny fraction of bat species.',
 	'myth.bear-run.statement': 'You can easily outrun a bear by running downhill',
-	'myth.bear-run.explanation': 'Myth. Bears are excellent runners both uphill and downhill, reaching speeds up to 35 mph.',
+	'myth.bear-run.explanation':
+		'Myth. Bears are excellent runners both uphill and downhill, reaching speeds up to 35 mph.',
 	'myth.bear-winter.statement': 'Bears do not eat or drink during winter hibernation',
-	'myth.bear-winter.explanation': 'Fact. While in a deep sleep, their bodies recycle waste, so they don\'t need to eat, drink, or relieve themselves for months.',
+	'myth.bear-winter.explanation':
+		"Fact. While in a deep sleep, their bodies recycle waste, so they don't need to eat, drink, or relieve themselves for months.",
 	'myth.beaver-tail.statement': 'Beavers slap their tails on the water to warn of danger',
-	'myth.beaver-tail.explanation': 'Fact. A loud tail slap on the water\'s surface serves as an alarm signal to other beavers.',
+	'myth.beaver-tail.explanation':
+		"Fact. A loud tail slap on the water's surface serves as an alarm signal to other beavers.",
 	'myth.beaver-fish.statement': 'Beavers are excellent fish hunters',
-	'myth.beaver-fish.explanation': 'Myth. Beavers are strict herbivores that eat tree bark, leaves, and aquatic plants.',
+	'myth.beaver-fish.explanation':
+		'Myth. Beavers are strict herbivores that eat tree bark, leaves, and aquatic plants.',
 	'myth.bison-snow.statement': 'Bison use their massive heads like snowplows',
-	'myth.bison-snow.explanation': 'Fact. They swing their heavy heads side to side to clear snow and reach buried grass in winter.',
+	'myth.bison-snow.explanation':
+		'Fact. They swing their heavy heads side to side to clear snow and reach buried grass in winter.',
 	'myth.bison-cow.statement': 'Bison and buffalo are exactly the same animal',
-	'myth.bison-cow.explanation': 'Myth. While related, true buffalo live in Africa and Asia, whereas bison live in North America and Europe.',
+	'myth.bison-cow.explanation':
+		'Myth. While related, true buffalo live in Africa and Asia, whereas bison live in North America and Europe.',
 	'myth.camel-water.statement': 'Camels store liquid water in their humps',
-	'myth.camel-water.explanation': 'Myth. Camels store fatty tissue in their humps, which yields energy and water when metabolized.',
+	'myth.camel-water.explanation':
+		'Myth. Camels store fatty tissue in their humps, which yields energy and water when metabolized.',
 	'myth.camel-drink.statement': 'A thirsty camel can drink 30 gallons of water in 13 minutes',
-	'myth.camel-drink.explanation': 'Fact. Camels can rehydrate very quickly, consuming massive amounts of water when it\'s available.',
+	'myth.camel-drink.explanation':
+		"Fact. Camels can rehydrate very quickly, consuming massive amounts of water when it's available.",
 	'myth.capybara-water.statement': 'Capybaras can sleep underwater',
-	'myth.capybara-water.explanation': 'Fact. They can nap underwater by keeping just their noses above the surface.',
+	'myth.capybara-water.explanation':
+		'Fact. They can nap underwater by keeping just their noses above the surface.',
 	'myth.capybara-predator.statement': 'Capybaras have no natural predators',
-	'myth.capybara-predator.explanation': 'Myth. Capybaras are heavily preyed upon by jaguars, anacondas, and caimans.',
+	'myth.capybara-predator.explanation':
+		'Myth. Capybaras are heavily preyed upon by jaguars, anacondas, and caimans.',
 	'myth.crow-tools.statement': 'Crows can craft and use complex tools',
-	'myth.crow-tools.explanation': 'Fact. New Caledonian crows have been observed bending wires to create hooks for extracting food.',
+	'myth.crow-tools.explanation':
+		'Fact. New Caledonian crows have been observed bending wires to create hooks for extracting food.',
 	'myth.crow-lifespan.statement': 'Crows commonly live for more than 100 years',
-	'myth.crow-lifespan.explanation': 'Myth. In the wild, crows generally live 7 to 10 years, though they can live longer in captivity.',
+	'myth.crow-lifespan.explanation':
+		'Myth. In the wild, crows generally live 7 to 10 years, though they can live longer in captivity.',
 	'myth.dodo-flight.statement': 'Dodos could fly for short distances',
-	'myth.dodo-flight.explanation': 'Myth. Dodos had small wings and a heavy body, rendering them completely flightless.',
+	'myth.dodo-flight.explanation':
+		'Myth. Dodos had small wings and a heavy body, rendering them completely flightless.',
 	'myth.dodo-pigeon.statement': 'The dodo was related to pigeons',
-	'myth.dodo-pigeon.explanation': 'Fact. Genetic analysis shows the dodo\'s closest living relative is the Nicobar pigeon.',
-	'myth.duck-echo.statement': 'A duck\'s quack does not echo',
-	'myth.duck-echo.explanation': 'Myth. A duck\'s quack does echo, but the echo is sometimes difficult to hear due to its acoustic properties.',
+	'myth.dodo-pigeon.explanation':
+		"Fact. Genetic analysis shows the dodo's closest living relative is the Nicobar pigeon.",
+	'myth.duck-echo.statement': "A duck's quack does not echo",
+	'myth.duck-echo.explanation':
+		"Myth. A duck's quack does echo, but the echo is sometimes difficult to hear due to its acoustic properties.",
 	'myth.duck-sleep.statement': 'Ducks can sleep with one half of their brain awake',
-	'myth.duck-sleep.explanation': 'Fact. Ducks sleeping at the edge of a group keep one eye open to watch for predators.',
+	'myth.duck-sleep.explanation':
+		'Fact. Ducks sleeping at the edge of a group keep one eye open to watch for predators.',
 	'myth.eagle-bald.statement': 'Bald eagles are actually bald',
-	'myth.eagle-bald.explanation': 'Myth. The name \'bald\' comes from an old English word \'balde\', meaning white, referring to their white heads.',
+	'myth.eagle-bald.explanation':
+		"Myth. The name 'bald' comes from an old English word 'balde', meaning white, referring to their white heads.",
 	'myth.eagle-nest.statement': 'Eagles build some of the largest bird nests',
-	'myth.eagle-nest.explanation': 'Fact. A bald eagle\'s nest can weigh over a ton and measure up to 10 feet across.',
-	'myth.flamingo-knees.statement': 'Flamingos\' knees bend backwards',
-	'myth.flamingo-knees.explanation': 'Myth. The joint that bends backwards is actually their ankle; their knees are hidden close to their body.',
+	'myth.eagle-nest.explanation':
+		"Fact. A bald eagle's nest can weigh over a ton and measure up to 10 feet across.",
+	'myth.flamingo-knees.statement': "Flamingos' knees bend backwards",
+	'myth.flamingo-knees.explanation':
+		'Myth. The joint that bends backwards is actually their ankle; their knees are hidden close to their body.',
 	'myth.flamingo-eat.statement': 'Flamingos must eat with their heads upside down',
-	'myth.flamingo-eat.explanation': 'Fact. Because of the shape of their bills, they sweep their heads upside down to filter food from the mud.',
+	'myth.flamingo-eat.explanation':
+		'Fact. Because of the shape of their bills, they sweep their heads upside down to filter food from the mud.',
 	'myth.fox-dog.statement': 'Foxes can be kept easily as domestic dogs',
-	'myth.fox-dog.explanation': 'Myth. While some foxes have been selectively bred, wild foxes retain wild instincts and are very difficult to domesticate.',
+	'myth.fox-dog.explanation':
+		'Myth. While some foxes have been selectively bred, wild foxes retain wild instincts and are very difficult to domesticate.',
 	'myth.fox-climb.statement': 'Some foxes can climb trees',
-	'myth.fox-climb.explanation': 'Fact. The gray fox has semi-retractable claws that allow it to scale vertical tree trunks.',
+	'myth.fox-climb.explanation':
+		'Fact. The gray fox has semi-retractable claws that allow it to scale vertical tree trunks.',
 	'myth.giant_anteater-teeth.statement': 'Giant anteaters have absolutely no teeth',
-	'myth.giant_anteater-teeth.explanation': 'Fact. They use their strong stomach muscles and swallowed pebbles to crush the insects they eat.',
+	'myth.giant_anteater-teeth.explanation':
+		'Fact. They use their strong stomach muscles and swallowed pebbles to crush the insects they eat.',
 	'myth.giant_anteater-bite.statement': 'Giant anteaters have a powerful venomous bite',
-	'myth.giant_anteater-bite.explanation': 'Myth. They have no teeth and no venom; they defend themselves using their large, sharp claws.',
+	'myth.giant_anteater-bite.explanation':
+		'Myth. They have no teeth and no venom; they defend themselves using their large, sharp claws.',
 	'myth.goose-teeth.statement': 'Geese have serrated edges on their tongues that look like teeth',
-	'myth.goose-teeth.explanation': 'Fact. These structures, called tomia, help them grip and pull grass from the ground.',
+	'myth.goose-teeth.explanation':
+		'Fact. These structures, called tomia, help them grip and pull grass from the ground.',
 	'myth.goose-flight.statement': 'Geese only fly at low altitudes',
-	'myth.goose-flight.explanation': 'Myth. Bar-headed geese can fly at extreme altitudes, sometimes passing over the Himalayas.',
+	'myth.goose-flight.explanation':
+		'Myth. Bar-headed geese can fly at extreme altitudes, sometimes passing over the Himalayas.',
 	'myth.hamster-nocturnal.statement': 'Hamsters are naturally twilight or night-active animals',
-	'myth.hamster-nocturnal.explanation': 'Fact. In the wild, they are crepuscular or nocturnal to avoid extreme daytime heat and predators.',
+	'myth.hamster-nocturnal.explanation':
+		'Fact. In the wild, they are crepuscular or nocturnal to avoid extreme daytime heat and predators.',
 	'myth.hamster-vision.statement': 'Hamsters have excellent long-distance vision',
-	'myth.hamster-vision.explanation': 'Myth. Hamsters are near-sighted and rely primarily on smell and their whiskers to navigate.',
+	'myth.hamster-vision.explanation':
+		'Myth. Hamsters are near-sighted and rely primarily on smell and their whiskers to navigate.',
 	'myth.hawk-speed.statement': 'Hawks are faster than falcons in a dive',
-	'myth.hawk-speed.explanation': 'Myth. While hawks are fast, falcons are built for speed and are much faster during a hunting dive.',
+	'myth.hawk-speed.explanation':
+		'Myth. While hawks are fast, falcons are built for speed and are much faster during a hunting dive.',
 	'myth.hawk-vision.statement': 'Hawks can see a mouse from a mile away',
-	'myth.hawk-vision.explanation': 'Fact. Their visual acuity is several times sharper than a human\'s, allowing them to spot tiny prey from great heights.',
+	'myth.hawk-vision.explanation':
+		"Fact. Their visual acuity is several times sharper than a human's, allowing them to spot tiny prey from great heights.",
 	'myth.hedgehog-shoot.statement': 'Hedgehogs can shoot their quills at enemies',
-	'myth.hedgehog-shoot.explanation': 'Myth. Hedgehog spines are firmly attached to their skin and cannot be shot out, unlike porcupine quills, which detach easily.',
+	'myth.hedgehog-shoot.explanation':
+		'Myth. Hedgehog spines are firmly attached to their skin and cannot be shot out, unlike porcupine quills, which detach easily.',
 	'myth.hedgehog-lactose.statement': 'Hedgehogs are lactose intolerant',
-	'myth.hedgehog-lactose.explanation': 'Fact. Feeding a hedgehog cow\'s milk will make it sick, as they cannot digest lactose.',
+	'myth.hedgehog-lactose.explanation':
+		"Fact. Feeding a hedgehog cow's milk will make it sick, as they cannot digest lactose.",
 	'myth.honey_badger-venom.statement': 'Honey badgers can survive deadly snake bites',
-	'myth.honey_badger-venom.explanation': 'Fact. They have a natural resistance to many types of snake venom and can recover even after a severe bite.',
+	'myth.honey_badger-venom.explanation':
+		'Fact. They have a natural resistance to many types of snake venom and can recover even after a severe bite.',
 	'myth.honey_badger-honey.statement': 'Honey badgers only eat honey',
-	'myth.honey_badger-honey.explanation': 'Myth. They are omnivorous and aggressive predators that eat insects, birds, reptiles, and mammals.',
+	'myth.honey_badger-honey.explanation':
+		'Myth. They are omnivorous and aggressive predators that eat insects, birds, reptiles, and mammals.',
 	'myth.horse-breathe.statement': 'Horses cannot breathe through their mouths',
-	'myth.horse-breathe.explanation': 'Fact. Horses are obligate nasal breathers, meaning they can only breathe through their noses.',
+	'myth.horse-breathe.explanation':
+		'Fact. Horses are obligate nasal breathers, meaning they can only breathe through their noses.',
 	'myth.horse-blind.statement': 'Horses have poor vision at night',
-	'myth.horse-blind.explanation': 'Myth. Horses actually have very good night vision, better than humans, thanks to a reflective layer behind their retinas.',
+	'myth.horse-blind.explanation':
+		'Myth. Horses actually have very good night vision, better than humans, thanks to a reflective layer behind their retinas.',
 	'myth.koala-bear.statement': 'Koalas are a species of bear',
-	'myth.koala-bear.explanation': 'Myth. Koalas are marsupials, closely related to kangaroos and wombats, not bears.',
+	'myth.koala-bear.explanation':
+		'Myth. Koalas are marsupials, closely related to kangaroos and wombats, not bears.',
 	'myth.koala-sleep.statement': 'Koalas sleep up to 22 hours a day',
-	'myth.koala-sleep.explanation': 'Fact. Eucalyptus leaves are low in nutrients and toxic, requiring intense energy to digest, which makes koalas extremely lethargic.',
+	'myth.koala-sleep.explanation':
+		'Fact. Eucalyptus leaves are low in nutrients and toxic, requiring intense energy to digest, which makes koalas extremely lethargic.',
 	'myth.mammoth-ice.statement': 'All mammoths were frozen instantly in an ice age',
-	'myth.mammoth-ice.explanation': 'Myth. Mammoths went extinct gradually due to climate change and human hunting over thousands of years.',
-	'myth.mammoth-tusk.statement': 'A mammoth\'s tusk could grow up to 14 feet long',
-	'myth.mammoth-tusk.explanation': 'Fact. The curved tusks of woolly mammoths were massive, used for fighting and clearing snow.',
+	'myth.mammoth-ice.explanation':
+		'Myth. Mammoths went extinct gradually due to climate change and human hunting over thousands of years.',
+	'myth.mammoth-tusk.statement': "A mammoth's tusk could grow up to 14 feet long",
+	'myth.mammoth-tusk.explanation':
+		'Fact. The curved tusks of woolly mammoths were massive, used for fighting and clearing snow.',
 	'myth.manta_ray-sting.statement': 'Manta rays can sting you with a venomous tail',
-	'myth.manta_ray-sting.explanation': 'Myth. Unlike stingrays, manta rays do not have a venomous stinger on their tail.',
+	'myth.manta_ray-sting.explanation':
+		'Myth. Unlike stingrays, manta rays do not have a venomous stinger on their tail.',
 	'myth.manta_ray-jump.statement': 'Manta rays can leap completely out of the water',
-	'myth.manta_ray-jump.explanation': 'Fact. They are known to breach the surface, possibly to escape predators or remove parasites.',
+	'myth.manta_ray-jump.explanation':
+		'Fact. They are known to breach the surface, possibly to escape predators or remove parasites.',
 	'myth.manul-pupil.statement': 'Manuls have round pupils instead of slit-shaped ones',
-	'myth.manul-pupil.explanation': 'Fact. Unlike most small cats, Pallas\'s cats have circular pupils that constrict into small dots.',
+	'myth.manul-pupil.explanation':
+		"Fact. Unlike most small cats, Pallas's cats have circular pupils that constrict into small dots.",
 	'myth.manul-speed.statement': 'Manuls are extremely fast runners',
-	'myth.manul-speed.explanation': 'Myth. Due to their stocky build and short legs, they are poor runners and prefer to hide from danger.',
+	'myth.manul-speed.explanation':
+		'Myth. Due to their stocky build and short legs, they are poor runners and prefer to hide from danger.',
 	'myth.mole-blind.statement': 'Moles are completely blind',
-	'myth.mole-blind.explanation': 'Myth. Moles have tiny eyes hidden under their fur. They cannot see clearly but can distinguish light from dark.',
+	'myth.mole-blind.explanation':
+		'Myth. Moles have tiny eyes hidden under their fur. They cannot see clearly but can distinguish light from dark.',
 	'myth.mole-eat.statement': 'A mole can eat its own body weight in worms every day',
-	'myth.mole-eat.explanation': 'Fact. Moles have extremely high metabolisms and must eat constantly to survive.',
-	'myth.octopus-tentacle.statement': 'An octopus\'s arms have a mind of their own',
-	'myth.octopus-tentacle.explanation': 'Fact. Two-thirds of an octopus\'s neurons are in its arms, allowing them to taste, touch, and move independently.',
+	'myth.mole-eat.explanation':
+		'Fact. Moles have extremely high metabolisms and must eat constantly to survive.',
+	'myth.octopus-tentacle.statement': "An octopus's arms have a mind of their own",
+	'myth.octopus-tentacle.explanation':
+		"Fact. Two-thirds of an octopus's neurons are in its arms, allowing them to taste, touch, and move independently.",
 	'myth.octopus-bones.statement': 'Octopuses have a cartilaginous skeleton inside their bodies',
-	'myth.octopus-bones.explanation': 'Myth. Octopuses are entirely soft-bodied invertebrates with no bones, allowing them to squeeze through tiny gaps.',
-	'myth.passenger_pigeon-number.statement': 'Passenger pigeon flocks used to block out the sun for days',
-	'myth.passenger_pigeon-number.explanation': 'Fact. Historical accounts describe flocks of millions of birds that took hours or days to pass over.',
-	'myth.passenger_pigeon-disease.statement': 'The passenger pigeon went extinct due to a mysterious virus',
-	'myth.passenger_pigeon-disease.explanation': 'Myth. Their extinction was entirely caused by extreme human overhunting and habitat destruction.',
+	'myth.octopus-bones.explanation':
+		'Myth. Octopuses are entirely soft-bodied invertebrates with no bones, allowing them to squeeze through tiny gaps.',
+	'myth.passenger_pigeon-number.statement':
+		'Passenger pigeon flocks used to block out the sun for days',
+	'myth.passenger_pigeon-number.explanation':
+		'Fact. Historical accounts describe flocks of millions of birds that took hours or days to pass over.',
+	'myth.passenger_pigeon-disease.statement':
+		'The passenger pigeon went extinct due to a mysterious virus',
+	'myth.passenger_pigeon-disease.explanation':
+		'Myth. Their extinction was entirely caused by extreme human overhunting and habitat destruction.',
 	'myth.pelican-food.statement': 'Pelicans store food in their pouch for days',
-	'myth.pelican-food.explanation': 'Myth. They use their pouch only to catch fish, swallowing them immediately, not to store them.',
+	'myth.pelican-food.explanation':
+		'Myth. They use their pouch only to catch fish, swallowing them immediately, not to store them.',
 	'myth.pelican-dive.statement': 'Brown pelicans dive from 60 feet in the air to catch fish',
-	'myth.pelican-dive.explanation': 'Fact. They perform spectacular plunge-dives from high up, stunning fish with the impact.',
+	'myth.pelican-dive.explanation':
+		'Fact. They perform spectacular plunge-dives from high up, stunning fish with the impact.',
 	'myth.pig-sweat.statement': 'Pigs sweat profusely when they are hot',
-	'myth.pig-sweat.explanation': 'Myth. Pigs have very few sweat glands. They roll in mud to cool down and protect their skin.',
-	'myth.pig-snout.statement': 'A pig\'s snout is an incredibly sensitive tool',
-	'myth.pig-snout.explanation': 'Fact. A pig\'s snout has as many tactile receptors as the human hand, making it perfect for rooting in soil.',
+	'myth.pig-sweat.explanation':
+		'Myth. Pigs have very few sweat glands. They roll in mud to cool down and protect their skin.',
+	'myth.pig-snout.statement': "A pig's snout is an incredibly sensitive tool",
+	'myth.pig-snout.explanation':
+		"Fact. A pig's snout has as many tactile receptors as the human hand, making it perfect for rooting in soil.",
 	'myth.platypus-stomach.statement': 'The platypus has no stomach',
-	'myth.platypus-stomach.explanation': 'Fact. Their food goes directly from the esophagus to the intestines.',
-	'myth.platypus-beak.statement': 'A platypus\'s bill is hard like a duck\'s',
-	'myth.platypus-beak.explanation': 'Myth. The bill is soft, fleshy, and packed with electroreceptors to find prey in muddy water.',
+	'myth.platypus-stomach.explanation':
+		'Fact. Their food goes directly from the esophagus to the intestines.',
+	'myth.platypus-beak.statement': "A platypus's bill is hard like a duck's",
+	'myth.platypus-beak.explanation':
+		'Myth. The bill is soft, fleshy, and packed with electroreceptors to find prey in muddy water.',
 	'myth.porcupine-shoot.statement': 'Porcupines can shoot their quills at attackers',
-	'myth.porcupine-shoot.explanation': 'Myth. They cannot shoot quills. The quills detach easily when a predator touches them.',
+	'myth.porcupine-shoot.explanation':
+		'Myth. They cannot shoot quills. The quills detach easily when a predator touches them.',
 	'myth.porcupine-antibiotic.statement': 'Porcupine quills are coated in topical antibiotics',
-	'myth.porcupine-antibiotic.explanation': 'Fact. This prevents infection if a porcupine accidentally stings itself.',
-	'myth.raccoon-wash.statement': 'Raccoons often \'wash\' their food in water before eating',
-	'myth.raccoon-wash.explanation': 'Fact. Wetting their paws enhances their tactile sensitivity, allowing them to \'see\' the food with their hands.',
+	'myth.porcupine-antibiotic.explanation':
+		'Fact. This prevents infection if a porcupine accidentally stings itself.',
+	'myth.raccoon-wash.statement': "Raccoons often 'wash' their food in water before eating",
+	'myth.raccoon-wash.explanation':
+		"Fact. Wetting their paws enhances their tactile sensitivity, allowing them to 'see' the food with their hands.",
 	'myth.raccoon-winter.statement': 'Raccoons hibernate in winter like bears',
-	'myth.raccoon-winter.explanation': 'Myth. Raccoons do not hibernate. They sleep for extended periods during cold weather but wake up to forage.',
+	'myth.raccoon-winter.explanation':
+		'Myth. Raccoons do not hibernate. They sleep for extended periods during cold weather but wake up to forage.',
 	'myth.red_panda-bear.statement': 'Red pandas are closely related to giant pandas',
-	'myth.red_panda-bear.explanation': 'Myth. Red pandas belong to their own unique family and are more closely related to raccoons and skunks.',
-	'myth.red_panda-stand.statement': 'Red pandas stand on their hind legs to look larger when threatened',
-	'myth.red_panda-stand.explanation': 'Fact. When frightened, they stand up and spread their arms to appear more intimidating.',
+	'myth.red_panda-bear.explanation':
+		'Myth. Red pandas belong to their own unique family and are more closely related to raccoons and skunks.',
+	'myth.red_panda-stand.statement':
+		'Red pandas stand on their hind legs to look larger when threatened',
+	'myth.red_panda-stand.explanation':
+		'Fact. When frightened, they stand up and spread their arms to appear more intimidating.',
 	'myth.shark-cancer.statement': 'Sharks never get cancer',
 	'myth.shark-cancer.explanation': 'Myth. While rare, sharks can and do develop tumors and cancer.',
 	'myth.shark-sleep.statement': 'Some sharks must swim constantly to stay alive',
-	'myth.shark-sleep.explanation': 'Fact. Species like the great white shark must keep moving to force oxygen-rich water over their gills.',
+	'myth.shark-sleep.explanation':
+		'Fact. Species like the great white shark must keep moving to force oxygen-rich water over their gills.',
 	'myth.sheep-memory.statement': 'Sheep have excellent facial recognition',
-	'myth.sheep-memory.explanation': 'Fact. They can remember the faces of up to 50 other sheep and humans for years.',
+	'myth.sheep-memory.explanation':
+		'Fact. They can remember the faces of up to 50 other sheep and humans for years.',
 	'myth.sheep-wool.statement': 'Wild sheep need to be sheared by humans to survive',
-	'myth.sheep-wool.explanation': 'Myth. Wild sheep shed their wool naturally. Only domesticated sheep require shearing because they were bred for continuous wool growth.',
+	'myth.sheep-wool.explanation':
+		'Myth. Wild sheep shed their wool naturally. Only domesticated sheep require shearing because they were bred for continuous wool growth.',
 	'myth.sifaka-trees.statement': 'Sifakas can jump nearly 30 feet between trees',
-	'myth.sifaka-trees.explanation': 'Fact. Their powerful hind legs allow them to make massive leaps through the forest canopy.',
+	'myth.sifaka-trees.explanation':
+		'Fact. Their powerful hind legs allow them to make massive leaps through the forest canopy.',
 	'myth.sifaka-monkey.statement': 'Sifakas are a type of monkey found in South America',
-	'myth.sifaka-monkey.explanation': 'Myth. Sifakas are lemurs, and like all wild lemurs, they are found only on the island of Madagascar.',
+	'myth.sifaka-monkey.explanation':
+		'Myth. Sifakas are lemurs, and like all wild lemurs, they are found only on the island of Madagascar.',
 	'myth.sloth-digestion.statement': 'It can take a sloth a month to digest a single leaf',
-	'myth.sloth-digestion.explanation': 'Fact. Sloths have an incredibly slow metabolic rate, making their digestion the slowest of any mammal.',
+	'myth.sloth-digestion.explanation':
+		'Fact. Sloths have an incredibly slow metabolic rate, making their digestion the slowest of any mammal.',
 	'myth.sloth-sleep.statement': 'Wild sloths sleep 20 hours a day',
-	'myth.sloth-sleep.explanation': 'Myth. While captive sloths sleep a lot, wild sloths typically sleep only around 9 to 10 hours a day.',
+	'myth.sloth-sleep.explanation':
+		'Myth. While captive sloths sleep a lot, wild sloths typically sleep only around 9 to 10 hours a day.',
 	'myth.snake-milk.statement': 'Snakes drink milk from cows',
-	'myth.snake-milk.explanation': 'Myth. Snakes lack the mouth anatomy to suck milk and are lactose intolerant. This is an old folktale.',
+	'myth.snake-milk.explanation':
+		'Myth. Snakes lack the mouth anatomy to suck milk and are lactose intolerant. This is an old folktale.',
 	'myth.snake-jaw.statement': 'Snakes can eat prey much wider than their own heads',
-	'myth.snake-jaw.explanation': 'Fact. Their lower jaw is not rigidly attached to their skull, allowing it to stretch incredibly wide.',
+	'myth.snake-jaw.explanation':
+		'Fact. Their lower jaw is not rigidly attached to their skull, allowing it to stretch incredibly wide.',
 	'myth.squirrel-fall.statement': 'A squirrel can survive a fall from any height',
-	'myth.squirrel-fall.explanation': 'Fact. Thanks to their low terminal velocity and fluffy tail functioning as a parachute, squirrels survive falls without injury.',
+	'myth.squirrel-fall.explanation':
+		'Fact. Thanks to their low terminal velocity and fluffy tail functioning as a parachute, squirrels survive falls without injury.',
 	'myth.squirrel-rabies.statement': 'Squirrels are common carriers of rabies',
-	'myth.squirrel-rabies.explanation': 'Myth. Small rodents like squirrels are almost never found to be infected with rabies.',
-	'myth.toucan-beak.statement': 'A toucan\'s beak is extremely heavy and solid',
-	'myth.toucan-beak.explanation': 'Myth. The beak is actually very light, made of keratin supported by a spongy, hollow bone structure.',
+	'myth.squirrel-rabies.explanation':
+		'Myth. Small rodents like squirrels are almost never found to be infected with rabies.',
+	'myth.toucan-beak.statement': "A toucan's beak is extremely heavy and solid",
+	'myth.toucan-beak.explanation':
+		'Myth. The beak is actually very light, made of keratin supported by a spongy, hollow bone structure.',
 	'myth.toucan-temp.statement': 'Toucans use their large beaks to regulate body temperature',
-	'myth.toucan-temp.explanation': 'Fact. Blood flows to the beak to release excess heat, acting like an elephant\'s ears.',
+	'myth.toucan-temp.explanation':
+		"Fact. Blood flows to the beak to release excess heat, acting like an elephant's ears.",
 	'myth.walrus-tusk.statement': 'Only male walruses have tusks',
-	'myth.walrus-tusk.explanation': 'Myth. Both male and female walruses have tusks, though the males\' are typically longer and thicker.',
+	'myth.walrus-tusk.explanation':
+		"Myth. Both male and female walruses have tusks, though the males' are typically longer and thicker.",
 	'myth.walrus-sleep.statement': 'Walruses can inflate their throats to sleep in the water',
-	'myth.walrus-sleep.explanation': 'Fact. They have special air sacs in their throats that act like life jackets, allowing them to bob vertically and sleep.',
+	'myth.walrus-sleep.explanation':
+		'Fact. They have special air sacs in their throats that act like life jackets, allowing them to bob vertically and sleep.',
 	'myth.weasel-winter.statement': 'Some weasels change their fur color to pure white in winter',
-	'myth.weasel-winter.explanation': 'Fact. In cold climates, stoats and least weasels shed their brown coats for white ones to camouflage in snow.',
+	'myth.weasel-winter.explanation':
+		'Fact. In cold climates, stoats and least weasels shed their brown coats for white ones to camouflage in snow.',
 	'myth.weasel-blood.statement': 'Weasels suck the blood of their prey',
-	'myth.weasel-blood.explanation': 'Myth. Weasels are fierce predators that kill with a bite to the neck and eat the meat, but they do not suck blood.',
+	'myth.weasel-blood.explanation':
+		'Myth. Weasels are fierce predators that kill with a bite to the neck and eat the meat, but they do not suck blood.',
 	'myth.yak-altitude.statement': 'Yaks thrive in warm tropical climates',
-	'myth.yak-altitude.explanation': 'Myth. Yaks are adapted to extreme cold and high altitudes; they suffer from heat exhaustion at lower, warmer elevations.',
+	'myth.yak-altitude.explanation':
+		'Myth. Yaks are adapted to extreme cold and high altitudes; they suffer from heat exhaustion at lower, warmer elevations.',
 	'myth.yak-sweat.statement': 'Yaks secrete a special sweat that acts as insulation',
-	'myth.yak-sweat.explanation': 'Fact. Their sweat mats their underhair together, providing extra protection against severe cold.',
+	'myth.yak-sweat.explanation':
+		'Fact. Their sweat mats their underhair together, providing extra protection against severe cold.',
 	'myth.zebra-black.statement': 'Zebras are actually black with white stripes',
-	'myth.zebra-black.explanation': 'Fact. Underneath their fur, zebra skin is black. The white stripes are areas lacking pigmentation.',
+	'myth.zebra-black.explanation':
+		'Fact. Underneath their fur, zebra skin is black. The white stripes are areas lacking pigmentation.',
 	'myth.zebra-horse.statement': 'Zebras can be easily ridden like horses',
-	'myth.zebra-horse.explanation': 'Myth. Zebras lack the domestication history of horses, are highly unpredictable, and have weaker backs.'
+	'myth.zebra-horse.explanation':
+		'Myth. Zebras lack the domestication history of horses, are highly unpredictable, and have weaker backs.'
 } as const;

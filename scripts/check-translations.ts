@@ -4,7 +4,7 @@ import { join } from 'path';
 const TRANSLATIONS_DIR = './src/lib/i18n/translations';
 
 // Find all locale folders (uk, en)
-const locales = readdirSync(TRANSLATIONS_DIR).filter(file => 
+const locales = readdirSync(TRANSLATIONS_DIR).filter((file) =>
 	statSync(join(TRANSLATIONS_DIR, file)).isDirectory()
 );
 
@@ -41,8 +41,8 @@ const localeKeys: Record<string, string[]> = {};
 
 for (const locale of locales) {
 	const localeDir = join(TRANSLATIONS_DIR, locale);
-	const files = readdirSync(localeDir).filter(f => f.endsWith('.ts'));
-	
+	const files = readdirSync(localeDir).filter((f) => f.endsWith('.ts'));
+
 	localeKeys[locale] = [];
 	for (const file of files) {
 		const keys = extractKeys(join(localeDir, file));
@@ -55,11 +55,11 @@ let hasErrors = false;
 
 for (const locale of locales) {
 	if (locale === baseLocale) continue;
-	
+
 	const keys = localeKeys[locale];
-	const missing = [...baseKeys].filter(k => !keys.includes(k));
-	const extra = keys.filter(k => !baseKeys.has(k));
-	
+	const missing = [...baseKeys].filter((k) => !keys.includes(k));
+	const extra = keys.filter((k) => !baseKeys.has(k));
+
 	if (missing.length || extra.length) {
 		console.error(`[${locale}] missing: ${missing.length}, extra: ${extra.length}`);
 		if (missing.length) console.error('  missing keys:', missing);

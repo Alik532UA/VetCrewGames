@@ -32,14 +32,29 @@
 
 /* Shake - for wrong answer feedback */
 @keyframes shake {
-	0%, 100% { transform: translateX(0); }
-	10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
-	20%, 40%, 60%, 80% { transform: translateX(6px); }
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	10%,
+	30%,
+	50%,
+	70%,
+	90% {
+		transform: translateX(-6px);
+	}
+	20%,
+	40%,
+	60%,
+	80% {
+		transform: translateX(6px);
+	}
 }
 
 /* Pulse glow - for interactive hints */
 @keyframes pulse-glow {
-	0%, 100% {
+	0%,
+	100% {
 		box-shadow: var(--shadow-card);
 	}
 	50% {
@@ -49,9 +64,15 @@
 
 /* Pop - for button clicks */
 @keyframes pop {
-	0% { transform: scale(1); }
-	50% { transform: scale(0.92); }
-	100% { transform: scale(1); }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(0.92);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 /* Slide in from bottom */
@@ -92,8 +113,12 @@
 
 /* Fade in */
 @keyframes fade-in {
-	from { opacity: 0; }
-	to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* Confetti burst - for correct answer */
@@ -114,7 +139,8 @@
 
 /* Float - idle animation for cards */
 @keyframes float {
-	0%, 100% {
+	0%,
+	100% {
 		transform: translateY(0);
 	}
 	50% {
@@ -145,8 +171,18 @@
 }
 
 /* Stagger entry helper - use with animation-delay */
-.anim-stagger-1 { animation-delay: 0ms; }
-.anim-stagger-2 { animation-delay: 80ms; }
-.anim-stagger-3 { animation-delay: 160ms; }
-.anim-stagger-4 { animation-delay: 240ms; }
-.anim-stagger-5 { animation-delay: 320ms; }
+.anim-stagger-1 {
+	animation-delay: 0ms;
+}
+.anim-stagger-2 {
+	animation-delay: 80ms;
+}
+.anim-stagger-3 {
+	animation-delay: 160ms;
+}
+.anim-stagger-4 {
+	animation-delay: 240ms;
+}
+.anim-stagger-5 {
+	animation-delay: 320ms;
+}

@@ -22,7 +22,10 @@ export class NotFoundError extends AppError {
 }
 
 export class NetworkError extends AppError {
-	constructor(message: string, public readonly status?: number) {
+	constructor(
+		message: string,
+		public readonly status?: number
+	) {
 		super('NETWORK_ERROR', message);
 	}
 }

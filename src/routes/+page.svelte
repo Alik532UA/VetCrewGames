@@ -23,14 +23,23 @@
 </script>
 
 <div class="menu-page">
-
 	<nav class="menu-grid">
 		{#each games as game, i}
 			{#if game.disabled}
-				<button type="button" class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}" disabled data-testid="menu-{game.key.split('.').pop()}-btn">					{@html formatFont(t(game.key))}
+				<button
+					type="button"
+					class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}"
+					disabled
+					data-testid="menu-{game.key.split('.').pop()}-btn"
+				>
+					{@html formatFont(t(game.key))}
 				</button>
 			{:else}
-				<a href={game.href} class="menu-btn menu-btn--game anim-stagger-{i + 1}" data-testid="menu-{game.key.split('.').pop()}-link">
+				<a
+					href={game.href}
+					class="menu-btn menu-btn--game anim-stagger-{i + 1}"
+					data-testid="menu-{game.key.split('.').pop()}-link"
+				>
 					{@html formatFont(t(game.key))}
 				</a>
 			{/if}
@@ -82,7 +91,7 @@
 			background-color var(--transition-normal);
 		text-align: center;
 		text-decoration: none;
-		animation: 
+		animation:
 			card-enter 400ms ease both,
 			blur-in 3s ease 400ms both;
 		cursor: pointer;

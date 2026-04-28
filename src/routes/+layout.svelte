@@ -12,11 +12,11 @@
 	import { fly } from 'svelte/transition';
 
 	let { children } = $props();
-	
+
 	let appVersion = $state('');
 
 	// Handle transition direction
-	let transitionDirection = $state(1); 
+	let transitionDirection = $state(1);
 	let lastPath = page.url.pathname;
 
 	function isHome(path: string) {
@@ -73,17 +73,22 @@
 </svelte:head>
 
 <div class="app-container">
-	<a href="#main-content" class="skip-link">{formatPlain(t('common.skipLink') || 'Перейти до основного вмісту')}</a>
+	<a href="#main-content" class="skip-link"
+		>{formatPlain(t('common.skipLink') || 'Перейти до основного вмісту')}</a
+	>
 	<GameHeader />
 
 	<main class="app-shell" id="main-content">
 		{#key page.url.pathname}
-			<div 
+			<div
 				class="page-transition-wrapper"
 				in:fly={{ x: 300 * transitionDirection, duration: 400, delay: 400 }}
 				out:fly={{ x: -300 * transitionDirection, duration: 400 }}
 			>
-				<svelte:boundary onerror={(error) => logService.error('app', 'Render boundary caught error', { error: String(error) })}>
+				<svelte:boundary
+					onerror={(error) =>
+						logService.error('app', 'Render boundary caught error', { error: String(error) })}
+				>
 					{@render children()}
 
 					{#snippet failed(error, reset)}

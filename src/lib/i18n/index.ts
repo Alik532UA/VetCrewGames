@@ -40,7 +40,12 @@ export const getPluralForm = (count: number): 'one' | 'few' | 'many' => {
 	return count === 1 ? 'one' : 'many';
 };
 
-export const tp = (count: number, keyOne: TranslationKey, keyFew?: TranslationKey, keyMany?: TranslationKey): string => {
+export const tp = (
+	count: number,
+	keyOne: TranslationKey,
+	keyFew?: TranslationKey,
+	keyMany?: TranslationKey
+): string => {
 	const form = getPluralForm(count);
 	if (form === 'one') return t(keyOne);
 	if (form === 'few') return t(keyFew ?? keyMany ?? keyOne);
@@ -63,10 +68,10 @@ export const formatFont = (text: string): string => {
 		} else {
 			styles.push('font-size: 0.9em', 'top: 0.06em');
 		}
-		
+
 		if (spaceBefore) styles.push('margin-left: 0.15em');
 		if (spaceAfter) styles.push('margin-right: 0.15em');
-		
+
 		const styleAttr = ` style="${styles.join('; ')};"`;
 		const span = `<span class="${isNoto ? 'font-noto' : 'font-comfortaa'}"${styleAttr}>${letter}</span>`;
 		return (spaceBefore ?? '') + span + (spaceAfter ?? '');
@@ -78,7 +83,7 @@ export const formatFont = (text: string): string => {
 		.replace(/(\s)?(є|Є)(\s)?/g, (match, b, l, a) => format(l, true, b, a))
 		.replace(/(\s)?(ї|Ї|ґ|Ґ)(\s)?/g, (match, b, l, a) => format(l, false, b, a));
 
-	// Обгортаємо весь результат у span з display: inline. 
+	// Обгортаємо весь результат у span з display: inline.
 	// Якщо батьківський елемент - flex-контейнер, він побачить лише один flex-item,
 	// і текст всередині нього буде переноситися по словах згідно з правилами мови.
 	return `<span style="display: inline;">${res}</span>`;
@@ -86,7 +91,5 @@ export const formatFont = (text: string): string => {
 
 export const formatPlain = (text: string): string => {
 	if (settings.font !== 'inglobal') return text;
-	return text
-		.replace(/і/g, 'i')
-		.replace(/І/g, 'I');
+	return text.replace(/і/g, 'i').replace(/І/g, 'I');
 };

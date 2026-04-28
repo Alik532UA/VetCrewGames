@@ -27,32 +27,41 @@ export const animals = {
 	'animal.rhino': 'Rhino',
 	'animal.spider': 'Spider',
 
-	'fact.chicken': 'There are more chickens on Earth than any other birds. There are about 4 chickens for every person.',
+	'fact.chicken':
+		'There are more chickens on Earth than any other birds. There are about 4 chickens for every person.',
 	'fact.cow': 'Cows have best friends and get stressed when separated.',
-	'fact.dog': 'Dogs can understand up to 250 words and gestures, and their intelligence is compared to a two-year-old child.',
-	'fact.cat': 'Cats spend 70% of their lives sleeping — that\'s about 13-16 hours a day.',
+	'fact.dog':
+		'Dogs can understand up to 250 words and gestures, and their intelligence is compared to a two-year-old child.',
+	'fact.cat': "Cats spend 70% of their lives sleeping — that's about 13-16 hours a day.",
 	'fact.rat': 'Rats laugh when tickled and can express joy with ultrasound.',
 	'fact.sparrow': 'Sparrows have lived alongside humans for over 10,000 years.',
-	'fact.ant': 'The total mass of all ants on Earth is approximately equal to the total mass of all humans.',
-	'fact.elephant': 'Elephants are the only animals that cannot jump, but they can swim long distances.',
-	'fact.tiger': 'A tiger\'s stripes are unique, like human fingerprints — no two are the same.',
-	'fact.penguin': 'Emperor penguins can dive to a depth of 500 meters and hold their breath for 20 minutes.',
+	'fact.ant':
+		'The total mass of all ants on Earth is approximately equal to the total mass of all humans.',
+	'fact.elephant':
+		'Elephants are the only animals that cannot jump, but they can swim long distances.',
+	'fact.tiger': "A tiger's stripes are unique, like human fingerprints — no two are the same.",
+	'fact.penguin':
+		'Emperor penguins can dive to a depth of 500 meters and hold their breath for 20 minutes.',
 	'fact.bee': 'One bee produces only 1/12 of a teaspoon of honey in its entire life.',
 	'fact.panda': 'Pandas eat bamboo for up to 14 hours a day and consume up to 38 kg per day.',
 	'fact.wolf': 'Wolves can run up to 60 km/h and cover 30 km in a night looking for food.',
-	'fact.dolphin': 'Dolphins sleep with one eye open — one half of the brain sleeps, while the other stays on watch.',
+	'fact.dolphin':
+		'Dolphins sleep with one eye open — one half of the brain sleeps, while the other stays on watch.',
 	'fact.parrot': 'Some parrots can live over 80 years and learn more than 100 words.',
-	'fact.alligator': 'Alligators have existed for over 150 million years, surviving even the dinosaurs.',
-	'fact.chameleon': 'Chameleons change color not just for camouflage, but also to regulate temperature and express emotions.',
-	'fact.giraffe': 'A giraffe\'s tongue is blue and can be up to 50 cm long.',
+	'fact.alligator':
+		'Alligators have existed for over 150 million years, surviving even the dinosaurs.',
+	'fact.chameleon':
+		'Chameleons change color not just for camouflage, but also to regulate temperature and express emotions.',
+	'fact.giraffe': "A giraffe's tongue is blue and can be up to 50 cm long.",
 	'fact.jellyfish': 'Jellyfish are 95% water and have no brain, heart, or blood.',
 	'fact.kangaroo': 'Kangaroos cannot walk backward.',
 	'fact.lemur': 'Madagascar is the only place in the world where lemurs live in the wild.',
-	'fact.lion': 'A lion\'s roar can be heard from up to 8 kilometers away.',
+	'fact.lion': "A lion's roar can be heard from up to 8 kilometers away.",
 	'fact.monkey': 'Monkeys can use tools, such as stones, to crack open nuts.',
-	'fact.panther': 'A black panther is not a separate species, but a leopard or jaguar with melanism.',
+	'fact.panther':
+		'A black panther is not a separate species, but a leopard or jaguar with melanism.',
 	'fact.peacock': 'Only male peacocks have bright tail feathers.',
-	'fact.rhino': 'A rhino\'s horn is made of keratin — the same protein found in our hair and nails.',
+	'fact.rhino': "A rhino's horn is made of keratin — the same protein found in our hair and nails.",
 	'fact.spider': 'A spider silk thread of the same thickness as human hair is stronger than steel.',
 	'animal.blue_whale': 'Blue Whale',
 	'animal.deer': 'Deer',
@@ -66,18 +75,27 @@ export const animals = {
 	'animal.seal': 'Seal',
 	'animal.stork': 'Stork',
 	'animal.turtle': 'Turtle',
-	'fact.blue_whale': 'The blue whale is the largest animal known to have ever lived, and its tongue weighs as much as an elephant.',
-	'fact.deer': 'Deer antlers grow back every year and are one of the fastest-growing tissues in the animal kingdom.',
-	'fact.falcon': 'The peregrine falcon is the fastest animal on earth, reaching speeds of over 240 mph during its hunting dive.',
+	'fact.blue_whale':
+		'The blue whale is the largest animal known to have ever lived, and its tongue weighs as much as an elephant.',
+	'fact.deer':
+		'Deer antlers grow back every year and are one of the fastest-growing tissues in the animal kingdom.',
+	'fact.falcon':
+		'The peregrine falcon is the fastest animal on earth, reaching speeds of over 240 mph during its hunting dive.',
 	'fact.frog': 'Frogs absorb water through their skin, so they do not need to drink water.',
-	'fact.hippo': 'Hippos secrete a reddish, oily fluid sometimes called "blood sweat" that acts as a natural sunscreen.',
-	'fact.leopard': 'Leopards are incredibly strong and can drag prey much heavier than themselves high up into trees.',
-	'fact.lizard': 'Many lizards can detach their tails to escape from predators, and the tail will later grow back.',
-	'fact.ostrich': 'An ostrich\'s eye is bigger than its entire brain.',
-	'fact.owl': 'Owls can turn their heads up to 270 degrees because they have extra vertebrae in their necks.',
-	'fact.seal': 'Some seals can sleep underwater and only wake up briefly to take a breath without fully waking.',
+	'fact.hippo':
+		'Hippos secrete a reddish, oily fluid sometimes called "blood sweat" that acts as a natural sunscreen.',
+	'fact.leopard':
+		'Leopards are incredibly strong and can drag prey much heavier than themselves high up into trees.',
+	'fact.lizard':
+		'Many lizards can detach their tails to escape from predators, and the tail will later grow back.',
+	'fact.ostrich': "An ostrich's eye is bigger than its entire brain.",
+	'fact.owl':
+		'Owls can turn their heads up to 270 degrees because they have extra vertebrae in their necks.',
+	'fact.seal':
+		'Some seals can sleep underwater and only wake up briefly to take a breath without fully waking.',
 	'fact.stork': 'Storks lack a voice box, so they communicate primarily by clattering their bills.',
-	'fact.turtle': 'Turtles are one of the oldest reptile groups in the world, dating back over 200 million years.',
+	'fact.turtle':
+		'Turtles are one of the oldest reptile groups in the world, dating back over 200 million years.',
 	'animal.antelope': 'Antelope',
 	'animal.armadillo': 'Armadillo',
 	'animal.axolotl': 'Axolotl',
@@ -103,7 +121,7 @@ export const animals = {
 	'animal.koala': 'Koala',
 	'animal.mammoth': 'Mammoth',
 	'animal.manta_ray': 'Manta Ray',
-	'animal.manul': 'Pallas\'s Cat (Manul)',
+	'animal.manul': "Pallas's Cat (Manul)",
 	'animal.mole': 'Mole',
 	'animal.octopus': 'Octopus',
 	'animal.passenger_pigeon': 'Passenger Pigeon',
@@ -134,40 +152,54 @@ export const animals = {
 	'fact.camel': 'Camels store fat, not water, in their humps.',
 	'fact.capybara': 'Capybaras are the largest living rodents in the world.',
 	'fact.crow': 'Crows can remember human faces and hold grudges.',
-	'fact.dodo': 'The dodo was a flightless bird endemic to the island of Mauritius that went extinct in the 17th century.',
+	'fact.dodo':
+		'The dodo was a flightless bird endemic to the island of Mauritius that went extinct in the 17th century.',
 	'fact.duck': 'Ducks have waterproof feathers that keep them dry even when diving.',
 	'fact.eagle': 'Eagles have eyesight up to eight times stronger than humans.',
-	'fact.flamingo': 'Flamingos are pink because of the beta-carotene in their diet of shrimp and algae.',
-	'fact.fox': 'Foxes use Earth\'s magnetic field to help them hunt.',
-	'fact.giant_anteater': 'Giant anteaters have no teeth and use their long, sticky tongues to catch up to 30,000 ants a day.',
-	'fact.goose': 'Geese honk while flying in a V-formation to encourage those in front to keep up their speed.',
-	'fact.hamster': 'Hamsters have expandable cheek pouches that can stretch to their shoulders to store food.',
+	'fact.flamingo':
+		'Flamingos are pink because of the beta-carotene in their diet of shrimp and algae.',
+	'fact.fox': "Foxes use Earth's magnetic field to help them hunt.",
+	'fact.giant_anteater':
+		'Giant anteaters have no teeth and use their long, sticky tongues to catch up to 30,000 ants a day.',
+	'fact.goose':
+		'Geese honk while flying in a V-formation to encourage those in front to keep up their speed.',
+	'fact.hamster':
+		'Hamsters have expandable cheek pouches that can stretch to their shoulders to store food.',
 	'fact.hawk': 'Hawks can see ultraviolet light, helping them track prey.',
 	'fact.hedgehog': 'A hedgehog has between 5,000 and 7,000 spines on its back.',
-	'fact.honey_badger': 'Honey badgers have remarkably thick skin that is resistant to machete blows and bee stings.',
+	'fact.honey_badger':
+		'Honey badgers have remarkably thick skin that is resistant to machete blows and bee stings.',
 	'fact.horse': 'Horses can sleep both standing up and lying down.',
-	'fact.koala': 'Koalas have fingerprints that are almost indistinguishable from human fingerprints.',
-	'fact.mammoth': 'Mammoths went extinct around 4,000 years ago, meaning they lived during the time the Great Pyramid of Giza was built.',
+	'fact.koala':
+		'Koalas have fingerprints that are almost indistinguishable from human fingerprints.',
+	'fact.mammoth':
+		'Mammoths went extinct around 4,000 years ago, meaning they lived during the time the Great Pyramid of Giza was built.',
 	'fact.manta_ray': 'Manta rays have the largest brain-to-body mass ratio of all fish.',
-	'fact.manul': 'Manuls have the longest and thickest fur of any cat species to survive in cold mountains.',
+	'fact.manul':
+		'Manuls have the longest and thickest fur of any cat species to survive in cold mountains.',
 	'fact.mole': 'Moles can dig up to 18 feet of tunnel in an hour.',
 	'fact.octopus': 'Octopuses have three hearts and blue blood.',
-	'fact.passenger_pigeon': 'The passenger pigeon was once the most abundant bird in North America before going extinct in 1914.',
-	'fact.pelican': 'A pelican\'s throat pouch can hold more than three gallons of water.',
+	'fact.passenger_pigeon':
+		'The passenger pigeon was once the most abundant bird in North America before going extinct in 1914.',
+	'fact.pelican': "A pelican's throat pouch can hold more than three gallons of water.",
 	'fact.pig': 'Pigs are highly intelligent and can learn to play video games.',
 	'fact.platypus': 'The platypus is a mammal that lays eggs and sweats milk.',
 	'fact.porcupine': 'A porcupine has about 30,000 quills on its body.',
 	'fact.raccoon': 'Raccoons have highly sensitive front paws that function like human hands.',
 	'fact.red_panda': 'Red pandas use their bushy tails as wraparound blankets in the cold.',
-	'fact.shark': 'Sharks do not have any bones in their bodies; their skeletons are made of cartilage.',
+	'fact.shark':
+		'Sharks do not have any bones in their bodies; their skeletons are made of cartilage.',
 	'fact.sheep': 'Sheep have rectangular pupils that give them 320 to 360-degree vision.',
 	'fact.sifaka': 'Sifakas move across open ground by performing an upright, sideways dance.',
 	'fact.sloth': 'Sloths move so slowly that algae can grow on their fur.',
 	'fact.snake': 'Snakes smell with their tongues using a special organ in the roof of their mouth.',
-	'fact.squirrel': 'Squirrels plant thousands of new trees each year by forgetting where they hid their nuts.',
-	'fact.toucan': 'A toucan\'s beak can account for up to half of its body surface area.',
-	'fact.walrus': 'Walruses use their long tusks to pull their massive bodies out of the water and onto the ice.',
+	'fact.squirrel':
+		'Squirrels plant thousands of new trees each year by forgetting where they hid their nuts.',
+	'fact.toucan': "A toucan's beak can account for up to half of its body surface area.",
+	'fact.walrus':
+		'Walruses use their long tusks to pull their massive bodies out of the water and onto the ice.',
 	'fact.weasel': 'Weasels perform a hypnotic "war dance" to confuse and mesmerize their prey.',
-	'fact.yak': 'Yaks have lungs that are exceptionally large to absorb enough oxygen at high altitudes.',
+	'fact.yak':
+		'Yaks have lungs that are exceptionally large to absorb enough oxygen at high altitudes.',
 	'fact.zebra': 'Every zebra has a unique pattern of stripes, like human fingerprints.'
 } as const;

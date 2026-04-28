@@ -3,16 +3,16 @@
 
 	export type RoundStatus = 'pending' | 'correct' | 'incorrect' | 'partial';
 
-	let { 
-		current, 
-		total, 
+	let {
+		current,
+		total,
 		results = [],
 		label = 'Раунд'
-	}: { 
-		current: number, 
-		total: number, 
-		results?: RoundStatus[],
-		label?: string
+	}: {
+		current: number;
+		total: number;
+		results?: RoundStatus[];
+		label?: string;
 	} = $props();
 
 	const rounds = $derived(Array.from({ length: total }, (_, i) => i + 1));
@@ -22,11 +22,9 @@
 	<div class="segments-wrapper">
 		{#each rounds as r}
 			{@const result = results[r - 1]}
-			{@const status = result 
-				? result 
-				: (r === current ? 'current' : 'future')}
-			<div 
-				class="segment" 
+			{@const status = result ? result : r === current ? 'current' : 'future'}
+			<div
+				class="segment"
 				class:status-current={status === 'current'}
 				class:status-correct={status === 'correct'}
 				class:status-incorrect={status === 'incorrect'}
@@ -68,21 +66,39 @@
 		transition: all 0.4s ease;
 	}
 
-	.status-current { background: #ffffff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-	.status-correct { background: var(--color-success); }
-	.status-incorrect { background: var(--color-error); }
-	.status-partial { background: var(--color-warning, #facc15); }
-	.status-future { background: rgba(255, 255, 255, 0.1); }
+	.status-current {
+		background: #ffffff;
+		box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+	}
+	.status-correct {
+		background: var(--color-success);
+	}
+	.status-incorrect {
+		background: var(--color-error);
+	}
+	.status-partial {
+		background: var(--color-warning, #facc15);
+	}
+	.status-future {
+		background: rgba(255, 255, 255, 0.1);
+	}
 
 	.segment-glow {
 		position: absolute;
-		top: 0; left: 0; width: 100%; height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
 		animation: scan 2s infinite;
 	}
 
 	@keyframes scan {
-		from { transform: translateX(-100%); }
-		to { transform: translateX(100%); }
+		from {
+			transform: translateX(-100%);
+		}
+		to {
+			transform: translateX(100%);
+		}
 	}
 </style>
