@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { logService } from './logService.svelte';
 
 const PREFIX = 'vetcrewgames_';
 
@@ -30,7 +31,7 @@ export const storage = {
 		try {
 			return JSON.parse(raw) as T;
 		} catch (err) {
-			console.warn(`[storage] Failed to parse "${key}" from localStorage`, err);
+			logService.warn('app', `[storage] Failed to parse "${key}" from localStorage`, { error: String(err) });
 			return null;
 		}
 	},
@@ -67,7 +68,7 @@ export const sessionStore = {
 		try {
 			return JSON.parse(raw) as T;
 		} catch (err) {
-			console.warn(`[storage] Failed to parse "${key}" from sessionStorage`, err);
+			logService.warn('app', `[storage] Failed to parse "${key}" from sessionStorage`, { error: String(err) });
 			return null;
 		}
 	},
