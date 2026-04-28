@@ -68,9 +68,7 @@
 
 		if (globalAvailable.length === 0) {
 			globalUsedIds = [];
-			if (typeof window !== 'undefined') {
-				localStorage.setItem('vetcrewgames_shown_myths', JSON.stringify([]));
-			}
+			storage.setJSON('shown_myths', []);
 			globalAvailable = availableMyths;
 		}
 
@@ -89,9 +87,7 @@
 		localUsedIds.push(randomMyth.id);
 		globalUsedIds.push(randomMyth.id);
 
-		if (typeof window !== 'undefined') {
-			localStorage.setItem('vetcrewgames_shown_myths', JSON.stringify(globalUsedIds));
-		}
+		storage.setJSON('shown_myths', globalUsedIds);
 	}
 
 	function handleAnswer(choice: boolean) {
