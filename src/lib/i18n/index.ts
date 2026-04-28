@@ -11,7 +11,7 @@ const translations: Record<string, Translations> = {
 
 export const setLocale = (locale: string) => {
 	if (translations[locale]) {
-		settings.setLocale(locale as any);
+		settings.setLocale(locale as 'uk' | 'en');
 	}
 };
 

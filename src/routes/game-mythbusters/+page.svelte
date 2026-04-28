@@ -199,7 +199,7 @@
 												<span>{@html formatFont(t('myth.incorrect'))}</span>
 											{/if}
 										</div>
-										<p class="myth-card__explanation">{@html formatFont(t(q.explanationKey as any))}</p>
+										<p class="myth-card__explanation">{@html formatFont(t(q.explanationKey as keyof typeof import('$lib/i18n/translations/uk').uk))}</p>
 									</div>
 								{/if}
 							</div>

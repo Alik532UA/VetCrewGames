@@ -113,7 +113,7 @@
 				<div class="game-title-wrapper">
 					{#key activeTitleKey}
 						<h1 class="game-title" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
-							{@html formatFont(t(activeTitleKey as any))}
+							{@html formatFont(t(activeTitleKey as TranslationKey))}
 						</h1>
 					{/key}
 				</div>

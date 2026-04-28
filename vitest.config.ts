@@ -15,6 +15,10 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		environment: 'jsdom',
-		globals: true
+		globals: true,
+		coverage: {
+			include: ['src/lib/services/**'],
+			thresholds: { statements: 70, branches: 70 }
+		}
 	}
 });

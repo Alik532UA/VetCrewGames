@@ -12,8 +12,8 @@
 	let isSwapping = $state(false);
 
 	function createCrossfade() {
-		const to_receive = new Map<any, HTMLElement>();
-		const to_send = new Map<any, HTMLElement>();
+		const to_receive = new Map<string | number, HTMLElement>();
+		const to_send = new Map<string | number, HTMLElement>();
 
 		function doCrossfade(from_node: HTMLElement, node: HTMLElement, isSend: boolean) {
 			const from = from_node.getBoundingClientRect();
@@ -50,8 +50,8 @@
 			};
 		}
 
-		function transition(items: Map<string, HTMLElement>, counterparts: Map<string, HTMLElement>, isSend: boolean) {
-			return (node: HTMLElement, params: { key: string }) => {
+		function transition(items: Map<string | number, HTMLElement>, counterparts: Map<string | number, HTMLElement>, isSend: boolean) {
+			return (node: HTMLElement, params: { key: string | number }) => {
 				items.set(params.key, node);
 				return () => {
 					if (counterparts.has(params.key)) {
