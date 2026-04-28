@@ -98,19 +98,21 @@
 	let gameOver = $state(false);
 
 	function formatPopulationPlain(num: number): string {
+		const locale = settings.locale;
 		if (num >= 1_000_000_000_000) return formatPlain(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
 		if (num >= 1_000_000_000) return formatPlain(`~${num / 1_000_000_000} ${t('unit.billion')}`);
 		if (num >= 1_000_000) return formatPlain(`~${num / 1_000_000} ${t('unit.million')}`);
 		if (num >= 1_000) return formatPlain(`~${num / 1_000} ${t('unit.thousand')}`);
-		return formatPlain(`~${num.toLocaleString()}`);
+		return formatPlain(`~${num.toLocaleString(locale)}`);
 	}
 
 	function formatPopulationHtml(num: number): string {
+		const locale = settings.locale;
 		if (num >= 1_000_000_000_000) return formatFont(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
 		if (num >= 1_000_000_000) return formatFont(`~${num / 1_000_000_000} ${t('unit.billion')}`);
 		if (num >= 1_000_000) return formatFont(`~${num / 1_000_000} ${t('unit.million')}`);
 		if (num >= 1_000) return formatFont(`~${num / 1_000} ${t('unit.thousand')}`);
-		return formatFont(`~${num.toLocaleString()}`);
+		return formatFont(`~${num.toLocaleString(locale)}`);
 	}
 
 	// Drag state

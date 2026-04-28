@@ -67,6 +67,7 @@ class Settings {
 			$effect(() => {
 				if (browser) {
 					storage.set('locale', this.locale);
+					document.documentElement.setAttribute('lang', this.locale);
 				}
 			});
 
