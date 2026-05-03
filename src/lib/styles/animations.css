@@ -170,6 +170,16 @@
 	}
 }
 
+/* Blur background - for smooth filter blur on images */
+@keyframes blur-bg-in {
+	from {
+		filter: blur(0);
+	}
+	to {
+		filter: blur(8px);
+	}
+}
+
 /* Stagger entry helper - use with animation-delay */
 .anim-stagger-1 {
 	animation-delay: 0ms;

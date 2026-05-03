@@ -118,6 +118,8 @@ body::after,
 	background-attachment: fixed;
 	transition: opacity 1s ease;
 	pointer-events: none;
+	transform: scale(1.05); /* Slightly scale to avoid blur bleeding edges */
+	filter: blur(8px); /* Default state is blurred so outgoing theme stays blurred */
 }
 
 /* Шар для теми light-green */
@@ -146,18 +148,22 @@ body::after {
 
 [data-theme='light-green'] body::before {
 	opacity: 1;
+	animation: blur-bg-in 30s ease-out both;
 }
 
 [data-theme='dark'] body::after {
 	opacity: 1;
+	animation: blur-bg-in 30s ease-out both;
 }
 
 [data-theme='winter'] .app-shell::before {
 	opacity: 1;
+	animation: blur-bg-in 30s ease-out both;
 }
 
 [data-theme='orange-purple'] .app-shell::after {
 	opacity: 1;
+	animation: blur-bg-in 30s ease-out both;
 }
 
 * {
