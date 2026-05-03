@@ -1,0 +1,31 @@
+[data-theme='orange-purple'] {
+	--color-bg: #1a0f2e;
+	--bg-image: url('/images/background/bg-orange-purple-v01.webp');
+	--color-bg-surface: #261742;
+	--color-bg-panel: #4a2e7a;
+	--color-bg-panel-dark: #2d1a4d;
+	--color-bg-card: #6b44a3;
+	--color-bg-card-hover: #7e53bd;
+	--color-text: #f0e6ff;
+	--color-text-on-panel: #f0e6ff;
+	--color-text-on-accent: #1a0f2e;
+	--color-text-muted: #b3a0cc;
+	--color-primary: #ff8c00;
+	--color-primary-hover: #ffa500;
+	--color-accent: #ff8c00;
+	--color-accent-hover: #ffa500;
+	--color-accent-shadow: rgba(255, 140, 0, 0.2);
+	--color-success: #93bf4c;
+	--color-error: #ff6b6b;
+	--color-disabled: #332244;
+	--color-disabled-text: #776688;
+	--color-border: #4a2e7a;
+	--color-stat: #ff8c00;
+
+	--shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
+	--shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.5);
+	--shadow-glow-primary: 0 0 20px rgba(255, 140, 0, 0.2);
+	--shadow-glow-success: 0 0 20px rgba(147, 200, 74, 0.2);
+	--shadow-glow-error: 0 0 20px rgba(255, 107, 107, 0.2);
+	--shadow-glow-accent: 0 0 20px rgba(255, 140, 0, 0.2);
+}

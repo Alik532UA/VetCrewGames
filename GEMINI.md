@@ -23,7 +23,7 @@
 
 - **Сховище:** Завжди використовуй префікс `vetcrewgames_` для будь-яких ключів в `localStorage` та `sessionStorage`.
 - **Локалізація:** Усі тексти в UI мають проходити через систему i18n (`src/lib/i18n/index.ts`). Не хардкодь рядки в `.svelte` файлах.
-- **Теми:** Тема перемикається через `data-theme` на `documentElement`. Зверни увагу, що ми блокуємо мобільний "Force Dark Mode" мета-тегом `<meta name="color-scheme" content="light dark" />`, який оновлюється динамічно.
+- **Теми:** Тема перемикається через `data-theme` на `documentElement`. Доступні теми: `dark`, `light-green`, `winter`, `orange-purple`. Зверни увагу, що ми блокуємо мобільний "Force Dark Mode" мета-тегом `<meta name="color-scheme" content="light dark" />`, який оновлюється динамічно (для темних тем він стає `dark`).
 - **Іконки:** Використовувати тільки `lucide-svelte`. Системні емодзі (🌞, 🌙) заборонені в UI через неузгодженість між платформами.
 - **Версіонування:** Проєкт використовує автоматичне підняття версії. Поточна версія експортується в `static/app-version.json`.
 - **Збірка:** Жодних кастомних скриптів у корені проєкту, всі такі скрипти розміщуються у папці `scripts/`.
@@ -58,10 +58,13 @@
 
 ```typescript
 class SettingsService {
-	theme = $state<'light' | 'dark'>('light');
+	theme = $state<'dark' | 'light-green' | 'winter' | 'orange-purple'>('dark');
+	private themes: Theme[] = ['dark', 'light-green', 'winter', 'orange-purple'];
 
 	toggleTheme() {
-		this.theme = this.theme === 'light' ? 'dark' : 'light';
+		const currentIndex = this.themes.indexOf(this.theme);
+		const nextIndex = (currentIndex + 1) % this.themes.length;
+		this.theme = this.themes[nextIndex];
 	}
 }
 export const settings = new SettingsService();

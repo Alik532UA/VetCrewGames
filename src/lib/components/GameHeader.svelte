@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, Sun, Moon, Maximize, Minimize } from 'lucide-svelte';
+	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Cloud, Snowflake, Leaf } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
@@ -157,9 +157,13 @@ function toggleFullscreen() {
 		<div class="game-header__right">
 			<button class="header-btn" onclick={() => settings.toggleTheme()} aria-label="Toggle theme">
 				{#if settings.theme === 'dark'}
-					<Sun size={20} />
-				{:else}
 					<Moon size={20} />
+				{:else if settings.theme === 'light-green'}
+					<Sun size={20} />
+				{:else if settings.theme === 'winter'}
+					<Snowflake size={20} />
+				{:else if settings.theme === 'orange-purple'}
+					<Leaf size={20} />
 				{/if}
 			</button>
 

@@ -22,12 +22,14 @@
 			// SYNC: keep key 'vetcrewgames_theme' in sync with PREFIX in src/lib/services/storage.ts
 			try {
 				let theme = localStorage.getItem('vetcrewgames_theme');
+				if (theme === 'light') theme = 'light-green';
 				if (!theme) {
-					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light-green';
 				}
 				document.documentElement.setAttribute('data-theme', theme);
 				let meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) meta.setAttribute('content', theme === 'dark' ? 'dark' : 'light dark');
+				const isDark = theme === 'dark' || theme === 'orange-purple';
+				if (meta) meta.setAttribute('content', isDark ? 'dark' : 'light dark');
 			} catch (e) {}
 		</script>
 		%sveltekit.head%

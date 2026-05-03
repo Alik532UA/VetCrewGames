@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { storage } from '$lib/services/storage';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'dark' | 'light-green' | 'winter' | 'orange-purple';
 export type Locale = 'uk' | 'en';
 export type Font = 'inglobal' | 'e-ukraine';
 
@@ -13,25 +13,37 @@ class Settings {
 	score = $state<number>(0);
 	headerTitleKey = $state<TranslationKey | null>(null);
 
+	private themes: Theme[] = ['dark', 'light-green', 'winter', 'orange-purple'];
+
 	constructor() {
 		if (browser) {
-			const savedTheme = storage.get('theme') as Theme;
-			if (savedTheme) {
-				this.theme = savedTheme;
-				document.documentElement.setAttribute('data-theme', savedTheme);
-				const meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) meta.setAttribute('content', savedTheme === 'dark' ? 'dark' : 'light dark');
-			} else {
-				const mql = window.matchMedia('(prefers-color-scheme: dark)');
-				this.theme = mql.matches ? 'dark' : 'light';
+			let savedTheme = storage.get('theme') as Theme | 'light';
+
+			// Migration from 'light' to 'light-green'
+			if (savedTheme === 'light') {
+				savedTheme = 'light-green';
+			}
+
+			if (savedTheme && this.themes.includes(savedTheme as Theme)) {
+				this.theme = savedTheme as Theme;
 				document.documentElement.setAttribute('data-theme', this.theme);
 				const meta = document.querySelector('meta[name="color-scheme"]');
-				if (meta) meta.setAttribute('content', this.theme === 'dark' ? 'dark' : 'light dark');
+				if (meta) {
+					meta.setAttribute('content', this.isDark(this.theme) ? 'dark' : 'light dark');
+				}
+			} else {
+				const mql = window.matchMedia('(prefers-color-scheme: dark)');
+				this.theme = mql.matches ? 'dark' : 'light-green';
+				document.documentElement.setAttribute('data-theme', this.theme);
+				const meta = document.querySelector('meta[name="color-scheme"]');
+				if (meta) {
+					meta.setAttribute('content', this.isDark(this.theme) ? 'dark' : 'light dark');
+				}
 			}
 
 			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
 				if (!storage.get('theme')) {
-					this.theme = e.matches ? 'dark' : 'light';
+					this.theme = e.matches ? 'dark' : 'light-green';
 				}
 			});
 
@@ -60,7 +72,9 @@ class Settings {
 					storage.set('theme', this.theme);
 					document.documentElement.setAttribute('data-theme', this.theme);
 					const meta = document.querySelector('meta[name="color-scheme"]');
-					if (meta) meta.setAttribute('content', this.theme === 'dark' ? 'dark' : 'light dark');
+					if (meta) {
+						meta.setAttribute('content', this.isDark(this.theme) ? 'dark' : 'light dark');
+					}
 				}
 			});
 
@@ -86,12 +100,18 @@ class Settings {
 		});
 	}
 
+	private isDark(theme: Theme): boolean {
+		return theme === 'dark' || theme === 'orange-purple';
+	}
+
 	addScore(points: number) {
 		this.score += points;
 	}
 
 	toggleTheme() {
-		this.theme = this.theme === 'dark' ? 'light' : 'dark';
+		const currentIndex = this.themes.indexOf(this.theme);
+		const nextIndex = (currentIndex + 1) % this.themes.length;
+		this.theme = this.themes[nextIndex];
 	}
 
 	setLocale(locale: Locale) {

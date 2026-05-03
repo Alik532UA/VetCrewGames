@@ -1,6 +1,8 @@
 @import 'mobile-drag-drop/default.css';
 @import './themes/dark.css';
-@import './themes/light.css';
+@import './themes/light-green.css';
+@import './themes/winter.css';
+@import './themes/orange-purple.css';
 
 /* ===== Fonts ===== */
 @font-face {
@@ -103,7 +105,9 @@ body * {
 
 /* Специфічний перехід для фону через псевдоелементи, бо background-image не анімується */
 body::before,
-body::after {
+body::after,
+.app-shell::before,
+.app-shell::after {
 	content: '';
 	position: fixed;
 	inset: 0;
@@ -116,23 +120,43 @@ body::after {
 	pointer-events: none;
 }
 
-/* Шар для світлої теми */
+/* Шар для теми light-green */
 body::before {
-	background-image: url('/images/background/bg-light-v01.webp');
+	background-image: url('/images/background/bg-light-green-v01.webp');
 	opacity: 0;
 }
 
-/* Шар для темної теми */
+/* Шар для теми dark */
 body::after {
 	background-image: url('/images/background/bg-dark-v01.webp');
 	opacity: 0;
 }
 
-[data-theme='light'] body::before {
+/* Шар для теми winter */
+.app-shell::before {
+	background-image: url('/images/background/bg-winter-v01.webp');
+	opacity: 0;
+}
+
+/* Шар для теми orange-purple */
+.app-shell::after {
+	background-image: url('/images/background/bg-orange-purple-v01.webp');
+	opacity: 0;
+}
+
+[data-theme='light-green'] body::before {
 	opacity: 1;
 }
 
 [data-theme='dark'] body::after {
+	opacity: 1;
+}
+
+[data-theme='winter'] .app-shell::before {
+	opacity: 1;
+}
+
+[data-theme='orange-purple'] .app-shell::after {
 	opacity: 1;
 }
 
@@ -143,12 +167,14 @@ body::after {
 html {
 	font-size: 16px;
 	height: 100%;
+	background-color: var(--color-bg);
+	transition: background-color 1s ease;
 }
 
 body {
 	margin: 0;
 	padding: 0;
-	background-color: var(--color-bg);
+	background-color: transparent;
 	/* Прибираємо пряме використання картинки тут, бо ми використовуємо псевдоелементи */
 	color: var(--color-text);
 	font-family: var(--font-main);
