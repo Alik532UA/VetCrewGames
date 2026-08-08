@@ -10,9 +10,33 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
+	import { afterNavigate } from '$app/navigation';
+	import { trackPageView } from '$lib/services/analytics';
 	import { fly } from 'svelte/transition';
 
 	let { children } = $props();
+
+	// Spelled out rather than taken from page.url / $app/paths: these tags are
+	// read out of the prerendered HTML, where page.url.origin is SvelteKit's
+	// "sveltekit-prerender" placeholder and `base` is a relative "." that cannot
+	// be glued onto an absolute origin.
+	const SITE_ORIGIN = 'https://alik532ua.github.io';
+	const SITE_BASE = '/VetCrewGames';
+
+	// Deliberately not formatPlain: that swaps Cyrillic і for Latin i to work
+	// around a font missing the glyph. Fine for text on screen, wrong for
+	// anything a machine reads — a search engine would index "Безкоштовнi" with
+	// a Latin i, which no Ukrainian query matches. The tab title is drawn in the
+	// system font too, so it does not want the substitution either.
+	let pageTitle = $derived(t('app.title'));
+	let seoDescription = $derived(t('app.description'));
+	let canonical = $derived(`${SITE_ORIGIN}${page.url.pathname}`);
+	let ogImage = $derived(`${SITE_ORIGIN}${SITE_BASE}/images/VetCrewGames_logo_v1.png`);
+
+	// Fires on the initial load too, so this covers the first view and each
+	// client-side move between the games. trackPageView initialises analytics
+	// itself, so there is no ordering to get wrong against onMount.
+	afterNavigate(() => trackPageView());
 
 	let appVersion = $state('');
 
@@ -70,7 +94,23 @@
 
 <svelte:head>
 	<link rel="icon" href="{base}/favicon.svg" />
-	<title>{formatPlain(t('app.title'))}</title>
+	<title>{pageTitle}</title>
+	<meta name="description" content={seoDescription} />
+	<link rel="canonical" href={canonical} />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:title" content={pageTitle} />
+	<meta property="og:description" content={seoDescription} />
+	<meta property="og:image" content={ogImage} />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta property="twitter:url" content={canonical} />
+	<meta property="twitter:title" content={pageTitle} />
+	<meta property="twitter:description" content={seoDescription} />
+	<meta property="twitter:image" content={ogImage} />
 </svelte:head>
 
 <div class="app-container">

@@ -1,6 +1,10 @@
 export const ui = {
 	// App
 	'app.title': 'Vet Crew Games',
+	// Used for the meta description and link previews, so it has to read as a
+	// standalone sentence rather than as UI copy.
+	'app.description':
+		'Безкоштовні освітні ігри про тварин: перевір, що знаєш про їхнє харчування, чисельність і поширені міфи. Проєкт на підтримку захисту тварин.',
 
 	// Main menu
 	'menu.title': 'Vet Crew Games',
