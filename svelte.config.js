@@ -15,10 +15,20 @@ const config = {
 		}),
 		csp: {
 			directives: {
-				'script-src': ['self', 'unsafe-inline', 'https://plausible.io'],
+				// gtag.js is injected at runtime by the analytics service; without
+				// this the browser blocks it and analytics silently never starts.
+				'script-src': ['self', 'unsafe-inline', 'https://www.googletagmanager.com'],
 				'style-src': ['self', 'unsafe-inline', 'https://fonts.googleapis.com'],
 				'font-src': ['self', 'https://fonts.gstatic.com'],
-				'connect-src': ['self', 'https://*.sentry.io', 'https://plausible.io']
+				// ...and without these the beacons themselves are blocked, so the
+				// script would load and then fail to report anything.
+				'connect-src': [
+					'self',
+					'https://*.sentry.io',
+					'https://www.googletagmanager.com',
+					'https://*.google-analytics.com',
+					'https://*.analytics.google.com'
+				]
 			}
 		},
 		paths: {
