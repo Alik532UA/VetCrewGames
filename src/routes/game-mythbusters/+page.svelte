@@ -189,7 +189,7 @@
 							<div class="myth-card__dynamic-container">
 								{#if !q.answered}
 									<div class="myth-card__actions" out:slide={{ duration: 400 }} in:fade>
-										<button class="btn-myth" onclick={() => handleAnswer(false)}>
+										<button class="btn-myth" onclick={() => handleAnswer(false)} data-testid="mythbusters-myth-btn">
 											{@html formatFont(t('myth.myth'))}
 										</button>
 										<button
@@ -203,7 +203,7 @@
 									</div>
 								{:else}
 									<div class="myth-card__result" in:slide={{ duration: 400 }} out:fade>
-										<button class="btn-next" onclick={onNext}>
+										<button class="btn-next" onclick={onNext} data-testid="mythbusters-next-btn">
 											{@html formatFont(t('myth.next'))}
 										</button>
 										<div class="result-header" class:result-header--correct={q.isCorrect}>
