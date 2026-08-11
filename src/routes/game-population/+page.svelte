@@ -193,7 +193,7 @@
 	let allSlotsFilled = $derived(slots.every((s) => s !== null));
 	let slotResults = $derived.by(() => {
 		if (!checked) return [];
-		return slots.map((animal, i) => animal?.id === correctOrder[i].id);
+		return slots.map((animal, i) => animal?.population === correctOrder[i].population);
 	});
 	let availableAnimals = $derived(initialSourceAnimals.filter((a): a is Animal => a !== null));
 
