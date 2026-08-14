@@ -73,7 +73,7 @@
 		background: var(--color-error);
 	}
 	.status-partial {
-		background: var(--color-warning, #facc15);
+		background: var(--color-warning);
 	}
 	.status-future {
 		background: rgba(255, 255, 255, 0.1);

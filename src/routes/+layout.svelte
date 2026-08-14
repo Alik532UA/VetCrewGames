@@ -196,7 +196,7 @@
 		bottom: 4px;
 		right: 8px;
 		font-size: 10px;
-		color: var(--text-muted, #888);
+		color: var(--color-text-muted);
 		opacity: 0.5;
 		pointer-events: none;
 		z-index: 1000;

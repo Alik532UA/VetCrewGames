@@ -71,9 +71,9 @@ VERSION: ${version}
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;
-		background-color: var(--bg-surface, #333);
-		color: var(--text-primary, #fff);
-		border: 2px solid var(--border-color, #555);
+		background-color: var(--color-bg-surface);
+		color: var(--color-text);
+		border: 2px solid var(--color-border);
 		display: flex;
 		align-items: center;
 		justify-content: center;
