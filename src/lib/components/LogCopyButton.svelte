@@ -18,8 +18,12 @@
 		const logs = logService.getLogs();
 		let version = logService.appVersion;
 
+		// ISO, а не toLocaleString(): звіт читає той, хто розбирає збій, а не
+		// відвідувач, який його скопіював. Голий toLocaleString() рендериться в
+		// локалі СИСТЕМИ відвідувача — 03.08 чи 08.03 залежно від того, де він
+		// живе, і розрізнити їх у звіті нема по чому (I18N-v8 § 4.3).
 		const header = `--- REPORT from Copy LOG button ---
-DATE: ${new Date().toLocaleString()}
+DATE: ${new Date().toISOString()}
 URL: ${window.location.href}
 DEVICE: ${navigator.userAgent}
 VERSION: ${version}

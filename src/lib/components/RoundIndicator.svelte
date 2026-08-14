@@ -16,7 +16,7 @@
 
 <div class="round-indicator-container">
 	<div class="segments-wrapper">
-		{#each rounds as r}
+		{#each rounds as r (r)}
 			{@const result = results[r - 1]}
 			{@const status = result ? result : r === current ? 'current' : 'future'}
 			<div

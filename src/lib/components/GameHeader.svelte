@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Cloud, Snowflake, Leaf } from 'lucide-svelte';
+	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Snowflake, Leaf } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';

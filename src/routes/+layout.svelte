@@ -3,8 +3,6 @@
 	import '$lib/styles/animations.css';
 	import { t, formatPlain } from '$lib/i18n/index';
 	import { logService } from '$lib/services/logService.svelte';
-	import { settings } from '$lib/services/settings.svelte';
-	import { browser } from '$app/environment';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { onMount } from 'svelte';

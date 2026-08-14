@@ -24,7 +24,7 @@
 
 <div class="menu-page">
 	<nav class="menu-grid">
-		{#each games as game, i}
+		{#each games as game, i (game.key)}
 			{#if game.disabled}
 				<button
 					type="button"
@@ -47,7 +47,7 @@
 	</nav>
 
 	<div class="menu-links">
-		{#each links as link}
+		{#each links as link (link.key)}
 			<a href={link.href} class="menu-btn menu-btn--link" target="_blank" rel="noopener noreferrer">
 				{@html formatFont(t(link.key))}
 			</a>
