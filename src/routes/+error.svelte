@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
 	import { Home, RotateCcw } from 'lucide-svelte';
 	import { base } from '$app/paths';
@@ -8,9 +8,9 @@
 
 <div class="error-page">
 	<div class="error-card">
-		<h1 class="error-status">{$page.status}</h1>
+		<h1 class="error-status">{page.status}</h1>
 		<h2 class="error-title">{@html formatFont(t('error.title'))}</h2>
-		<p class="error-message">{$page.error?.message ?? t('error.message')}</p>
+		<p class="error-message">{page.error?.message ?? t('error.message')}</p>
 
 		<div class="error-actions">
 			<button class="btn-retry" onclick={() => window.location.reload()}>
