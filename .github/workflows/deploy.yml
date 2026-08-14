@@ -31,6 +31,17 @@ jobs:
       - name: Test
         run: npm run test
 
+      # eslint був у проєкті, а гейта не було: `npm run lint` існував і в CI не
+      # викликався (CODE-QUALITY-v8 § 6.5).
+      - name: Lint
+        run: npm run lint
+
+      # Поріг high, а не moderate: після оновлення лишилися лише 4 low, але
+      # moderate-поріг довелося б вимкнути на першому ж транзитивному
+      # попередженні, а вимкнений гейт гірший за відсутній.
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
       - name: Build
         run: npm run build
 

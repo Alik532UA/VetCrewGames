@@ -1,0 +1,27 @@
+# Автоматичні PR на оновлення залежностей (SECURITY-v8 § — HIGH: «залежності з
+# відомими CVE без оновлення», DEPENDENCIES-v8 § 3).
+#
+# Гейт `npm audit --audit-level=high` у CI ловить факт, що вразливість є.
+# Dependabot — те, що приносить виправлення, не чекаючи, поки хтось згадає
+# запустити `npm audit fix`.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Патчі й мінори — одним PR: поодинці вони створюють шум, а ризик однаковий.
+    # Мажори — окремими, бо кожен вимагає читання changelog
+    # (DEPENDENCIES-v8 § 3.2: мажор не їде разом з іншими змінами).
+    groups:
+      minor-and-patch:
+        patterns: ['*']
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'deps'
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
