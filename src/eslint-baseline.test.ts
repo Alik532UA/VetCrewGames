@@ -57,7 +57,11 @@ describe('базовий набір ESLint (CODE-QUALITY-v8 § 6.4.1)', () => {
 			rules: Record<string, unknown>;
 		};
 		rules = config.rules;
-	});
+		// 30 c, а не типові 5: розвʼязання конфігу тягне пресети svelte та
+		// typescript-eslint і в найбільшому з проєктів займає 3,5 c. Під
+		// паралельним прогоном у CI типового ліміту не вистачає — файл падав
+		// з 14 пропущеними перевірками, тобто гейт червонів без порушення.
+	}, 30_000);
 
 	it.each(BASELINE)('%s не вимкнене', (rule) => {
 		const level = levelOf(rules[rule]);
