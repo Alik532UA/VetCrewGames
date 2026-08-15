@@ -138,5 +138,54 @@ export default ts.config(
 	},
 	{
 		ignores: ['build/', '.svelte-kit/', 'dist/']
+	},
+
+	/**
+	 * STORAGE-NAMESPACE-v8, Крок 3: прямий доступ до Web Storage заборонений.
+	 *
+	 * Origin спільний із сусідніми проєктами, тож ключ без префікса — це не
+	 * дрібниця, а чужі дані. Доти заборона трималася лише на рядку в AGENTS.md,
+	 * і три проєкти з восьми вже її порушували, чого не помітив ніхто.
+	 *
+	 * Правил два, і друге не зайве: `no-restricted-globals` НЕ ловить
+	 * `window.localStorage`. Канон у Кроці 3 наводить лише його — а саме ця
+	 * форма й трапилася в DigitalWorkshop, тричі поспіль.
+	 */
+	{
+		rules: {
+			'no-restricted-globals': [
+				'error',
+				{ name: 'localStorage', message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.' },
+				{ name: 'sessionStorage', message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.' }
+			],
+			'no-restricted-properties': [
+				'error',
+				{ object: 'window', property: 'localStorage', message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.' },
+				{ object: 'window', property: 'sessionStorage', message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.' }
+			]
+		}
+	},
+	{
+		// Три категорії, і кожна законна за самим каноном:
+		//   1. Фасад — тут прямий доступ Є реалізацією (Крок 3).
+		//   2. Модуль міграції — читає ключі БЕЗ префікса, і це єдине легальне
+		//      місце, де так можна (Крок 4). Лежить у services/ або utils/
+		//      залежно від проєкту, тому шаблон без шляху.
+		//   3. Тести фасаду й e2e — вони мусять читати й засівати сирі ключі,
+		//      інакше нічим довести, що префікс справді додається.
+		files: [
+			'src/lib/services/storage.ts',
+			'src/lib/services/storage/**',
+			'src/lib/config/storage.ts',
+			'**/storageMigration.ts',
+			'**/storage.test.ts',
+			'**/storage.spec.ts',
+			'tests/**',
+			'e2e/**'
+		],
+		rules: {
+			'no-restricted-globals': 'off',
+			'no-restricted-properties': 'off'
+		}
 	}
 );
