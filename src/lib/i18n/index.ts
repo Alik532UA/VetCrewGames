@@ -9,16 +9,6 @@ const translations: Record<string, Translations> = {
 	en
 };
 
-export const setLocale = (locale: string) => {
-	if (translations[locale]) {
-		settings.setLocale(locale as 'uk' | 'en');
-	}
-};
-
-export const getLocale = () => {
-	return settings.locale;
-};
-
 export const t = (key: TranslationKey): string => {
 	return translations[settings.locale]?.[key] ?? key;
 };
@@ -29,29 +19,21 @@ export const td = (key: string): string => {
 	return dict?.[key] ?? key;
 };
 
-export const getPluralForm = (count: number): 'one' | 'few' | 'many' => {
-	if (settings.locale === 'uk') {
-		const mod10 = count % 10;
-		const mod100 = count % 100;
-		if (mod10 === 1 && mod100 !== 11) return 'one';
-		if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'few';
-		return 'many';
-	}
-	return count === 1 ? 'one' : 'many';
-};
-
-export const tp = (
-	count: number,
-	keyOne: TranslationKey,
-	keyFew?: TranslationKey,
-	keyMany?: TranslationKey
-): string => {
-	const form = getPluralForm(count);
-	if (form === 'one') return t(keyOne);
-	if (form === 'few') return t(keyFew ?? keyMany ?? keyOne);
-	return t(keyMany ?? keyFew ?? keyOne);
-};
-
+/*
+ * Тут були `tp()` і `getPluralForm()` — власна арифметика плюралізації на
+ * `n % 10` та `n % 100`. I18N-v8 § 4.2 забороняє її прямо (рівень HIGH):
+ * ручні формули помиляються на 11–14 і на 111, а правильна відповідь уже є в
+ * платформі — `Intl.PluralRules`.
+ *
+ * Обидві функції при цьому не викликалися ніде: жодного числа з множиною в
+ * інтерфейсі немає, кількість раундів завжди «N / 10». Тобто це був
+ * одночасно й анти-патерн, і мертвий код — а мертвий код читається як
+ * зроблена робота (PROJECT-STRUCTURE-v8 § 4.3).
+ *
+ * Коли множина знадобиться, писати треба НЕ це:
+ *   const rules = new Intl.PluralRules(settings.locale);
+ *   rules.select(n);   // 'one' | 'few' | 'many' | 'other'
+ */
 export const formatFont = (text: string): string => {
 	if (settings.font !== 'inglobal') return text;
 	// Шрифт inglobal не містить українських літер 'і', 'ї', 'є', 'ґ'.
