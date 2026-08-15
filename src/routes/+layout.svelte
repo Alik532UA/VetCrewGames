@@ -3,6 +3,7 @@
 	import '$lib/styles/animations.css';
 	import { t, formatPlain } from '$lib/i18n/index';
 	import { logService } from '$lib/services/logService.svelte';
+	import { settings } from '$lib/services/settings.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import { onMount } from 'svelte';
@@ -68,7 +69,11 @@
 	});
 
 	onMount(() => {
-		// Version is now injected at build time
+		// Підписка на системну тему. `settings` — module-level singleton, тож
+		// $effect у ньому недоступний (effect_orphan), і життєвий цикл підписки
+		// веде цей компонент: init() повертає cleanup, який іде в загальний
+		// return нижче (SVELTE-CORE-v8 § 2.6).
+		const stopThemeSync = settings.init();
 
 		// Глобальна сітка безпеки для unhandled promise rejections
 		const onRejection = (event: PromiseRejectionEvent) => {
@@ -84,6 +89,7 @@
 		window.addEventListener('unhandledrejection', onRejection);
 		window.addEventListener('error', onError);
 		return () => {
+			stopThemeSync();
 			window.removeEventListener('unhandledrejection', onRejection);
 			window.removeEventListener('error', onError);
 		};

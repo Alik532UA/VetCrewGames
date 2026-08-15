@@ -43,7 +43,11 @@
 			збірці, не в dev.
 		-->
 		<script>
-			// SYNC: keep key 'vetcrewgames_theme' in sync with PREFIX in src/lib/services/storage.ts
+			// SYNC: ключ 'vetcrewgames_theme' — це PREFIX із src/lib/services/storage.ts,
+			// а міграція 'light' → 'light-green' і вибір за prefers-color-scheme
+			// продубльовані в конструкторі Settings (src/lib/services/settings.svelte.ts).
+			// Скрипт першого кадру не може імпортувати нічого, тож логіка неминуче
+			// існує у двох місцях; правляться вони РАЗОМ (UI-UX-v8 § 1.1).
 			try {
 				let theme = localStorage.getItem('vetcrewgames_theme');
 				if (theme === 'light') theme = 'light-green';
