@@ -28,6 +28,18 @@ export const ui = {
 	'common.gameOver': 'Game Over!',
 	'common.yourScore': 'Your Score:',
 
+	// Icon-button labels in the header: not text on screen but what a screen
+	// reader announces — which is exactly why they belong in the dictionary
+	// (ACCESSIBILITY-v8 § 4.1). Verb first, so it reads as an action.
+	'header.toggleTheme': 'Change theme',
+	'header.toggleLocale': 'Change language',
+	'header.toggleFullscreen': 'Enter fullscreen',
+	'header.exitFullscreen': 'Exit fullscreen',
+	'header.score': 'Total score',
+
+	// Log report button, enabled in production by debug mode.
+	'debug.copyLogs': 'Copy log report',
+
 	// Errors
 	'error.title': 'Something went wrong',
 	'error.message': 'An unexpected error occurred. Please try again.',

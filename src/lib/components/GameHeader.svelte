@@ -1,19 +1,26 @@
 <script lang="ts">
 	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Snowflake, Leaf } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
+	// `formatPlain` міняє кириличну «і» на латинську «i», щоб літера була у
+	// шрифті inglobal, — це правильно для того, що МАЛЮЄТЬСЯ, і неправильно
+	// для того, що ЧИТАЄ скрінрідер: «Змiнити» з латинською i вимовляється як
+	// покруч. Той самий висновок уже записаний у +layout.svelte для <title>.
+	import { t, formatFont } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { base } from '$app/paths';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
 
-	let {
-		titleKey,
-		showBack = true
-	} = $props<{
+	interface Props {
 		titleKey?: TranslationKey;
 		showBack?: boolean;
-	}>();
+	}
+
+	// `let {…}: Props = $props()`, а не `$props<Props>()`: форма з типовим
+	// аргументом була в ранніх прев'ю Svelte 5 і з релізу не підтримується —
+	// тип там мовчки ігнорується (SVELTE-UI-v8 § 1.1).
+	let { titleKey, showBack = true }: Props = $props();
 
 	const activeTitleKey = $derived(titleKey || settings.headerTitleKey || 'app.title');
 
@@ -23,20 +30,23 @@
 
 	const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
+	// Ефект тут законний: він не обчислює похідне значення, а запускає ЗОВНІШНІЙ
+	// таймер у відповідь на подію (SVELTE-CORE-v8 § 2.1). `untrack` для читання
+	// `lastScore` обов'язковий: без нього запис у нього ж робить ефект залежним
+	// від власного результату, і його доводиться проганяти вдруге, щоб він
+	// заспокоївся. Cleanup знімає таймер — інакше швидкі влучання поспіль
+	// гасили б підсвітку одне одному (§ 2.2).
 	$effect(() => {
-		let timeoutId: ReturnType<typeof setTimeout>;
-		if (settings.score > lastScore) {
-			isPulsing = true;
-			timeoutId = setTimeout(() => {
-				isPulsing = false;
-			}, 600);
-			lastScore = settings.score;
-		} else {
-			lastScore = settings.score;
-		}
-		return () => {
-			if (timeoutId) clearTimeout(timeoutId);
-		};
+		const score = settings.score;
+		const previous = untrack(() => lastScore);
+		lastScore = score;
+		if (score <= previous) return;
+
+		isPulsing = true;
+		const timeoutId = setTimeout(() => {
+			isPulsing = false;
+		}, 600);
+		return () => clearTimeout(timeoutId);
 	});
 
 	function toggleLocale() {
@@ -111,7 +121,7 @@ function toggleFullscreen() {
 					<a
 						href="{base}/"
 						class="header-btn"
-						aria-label={formatPlain(t('common.back'))}
+						aria-label={t('common.back')}
 						data-testid="header-back-link"
 					>
 						<ArrowLeft size={22} />
@@ -137,8 +147,15 @@ function toggleFullscreen() {
 						</h1>
 					{/key}
 				</div>
-				<div class="global-score" class:is-pulsing={isPulsing}>
-					<svg class="score-circle" viewBox="0 0 36 36">
+				<div
+					class="global-score"
+					class:is-pulsing={isPulsing}
+					role="status"
+					aria-label={t('header.score')}
+					data-testid="header-score-value"
+				>
+					<!-- Декоративний: те саме число нижче текстом (ACCESSIBILITY-v8 § 4.5). -->
+					<svg class="score-circle" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
 						<path
 							class="circle-bg"
 							d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -155,7 +172,13 @@ function toggleFullscreen() {
 		</div>
 
 		<div class="game-header__right">
-			<button class="header-btn" onclick={() => settings.toggleTheme()} aria-label="Toggle theme">
+			<button
+				type="button"
+				class="header-btn"
+				onclick={() => settings.toggleTheme()}
+				aria-label={t('header.toggleTheme')}
+				data-testid="header-theme-btn"
+			>
 				{#if settings.theme === 'dark'}
 					<Moon size={20} />
 				{:else if settings.theme === 'light-green'}
@@ -171,12 +194,19 @@ function toggleFullscreen() {
 				type="button"
 				class="header-btn lang-btn"
 				onclick={toggleLocale}
-				aria-label="Toggle language"
+				aria-label={t('header.toggleLocale')}
+				data-testid="header-locale-btn"
 			>
 				<span class="lang-text">{settings.locale.toUpperCase()}</span>
 			</button>
 
-			<button class="header-btn" onclick={toggleFullscreen} aria-label="Toggle fullscreen">
+			<button
+				type="button"
+				class="header-btn"
+				onclick={toggleFullscreen}
+				aria-label={t(isFullscreen ? 'header.exitFullscreen' : 'header.toggleFullscreen')}
+				data-testid="header-fullscreen-btn"
+			>
 				{#if isFullscreen}
 					<Minimize size={20} />
 				{:else}
