@@ -44,7 +44,9 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// Три екрани, у яких логіка живе просто в маршруті. Розбирати їх треба
 	// винесенням стану в контролери `.svelte.ts` — це окрема робота, не правка.
 	'src/routes/game-population/+page.svelte': 1358,
-	'src/routes/game-mythbusters/+page.svelte': 520,
+	// 520 → 437 після винесення логіки партії в `controllers/mythGame.svelte.ts`.
+	// Далі число має лише спадати.
+	'src/routes/game-mythbusters/+page.svelte': 437,
 	'src/lib/components/GameHeader.svelte': 396
 };
 

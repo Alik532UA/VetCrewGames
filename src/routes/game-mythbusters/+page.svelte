@@ -4,31 +4,15 @@
 	import { cubicOut } from 'svelte/easing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
-	import { myths, type GameQuestion } from '$lib/config/myth-game';
-	import { animals } from '$lib/config/population-game';
+	import { MythGameController } from '$lib/controllers/mythGame.svelte';
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
 	import { base } from '$app/paths';
-	import { storage } from '$lib/services/storage';
-	import RoundIndicator, { type RoundStatus } from '$lib/components/RoundIndicator.svelte';
+	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 
-	type ActiveQuestion = GameQuestion & {
-		animal: (typeof animals)[0];
-		answered?: boolean;
-		selectedTrue?: boolean | null;
-		isCorrect?: boolean;
-	};
-
-	// Game state
-	let currentQuestion = $state<ActiveQuestion | null>(null);
-
-	const TOTAL_ROUNDS = 10;
-	let roundNumber = $state(1);
-	let roundResults = $state<RoundStatus[]>([]);
-	let sessionScore = $state(0);
-	let gameOver = $state(false);
-
-	let localUsedIds = $state<string[]>([]);
-	let globalUsedIds = $state<string[]>([]);
+	// Компонент лише СТВОРЮЄ контролер і малює його стан (SVELTE-CORE-v8 § 3.1).
+	// Стан партії гине разом зі сторінкою — саме тому контролер тут `new`, а не
+	// module-level синглтон.
+	const game = new MythGameController();
 
 	function flyAndSlide(
 		node: HTMLElement,
@@ -59,90 +43,23 @@
 		};
 	}
 
-	function nextQuestion() {
-		if (roundNumber > TOTAL_ROUNDS) {
-			currentQuestion = null;
-			gameOver = true;
-			return;
-		}
-
-		let availableMyths = myths.filter((m) => !localUsedIds.includes(m.id));
-		let globalAvailable = availableMyths.filter((m) => !globalUsedIds.includes(m.id));
-
-		if (globalAvailable.length === 0) {
-			globalUsedIds = [];
-			storage.setJSON('shown_myths', []);
-			globalAvailable = availableMyths;
-		}
-
-		if (globalAvailable.length === 0) return;
-
-		const randomMyth = globalAvailable[Math.floor(Math.random() * globalAvailable.length)];
-		const animal = animals.find((a) => a.id === randomMyth.animalId)!;
-
-		currentQuestion = {
-			...randomMyth,
-			animal,
-			answered: false,
-			selectedTrue: null,
-			isCorrect: false
-		};
-		localUsedIds.push(randomMyth.id);
-		globalUsedIds.push(randomMyth.id);
-
-		storage.setJSON('shown_myths', globalUsedIds);
-	}
-
-	function handleAnswer(choice: boolean) {
-		if (!currentQuestion || currentQuestion.answered) return;
-
-		currentQuestion.selectedTrue = choice;
-		currentQuestion.isCorrect = choice === currentQuestion.isTrue;
-		currentQuestion.answered = true;
-
-		roundResults.push(currentQuestion.isCorrect ? 'correct' : 'incorrect');
-
-		if (currentQuestion.isCorrect) {
-			sessionScore++;
-			settings.addScore(1);
-		}
-	}
-
-	function onNext() {
-		roundNumber++;
-		nextQuestion();
-	}
-
-	function resetGame() {
-		roundNumber = 1;
-		roundResults = [];
-		sessionScore = 0;
-		localUsedIds = [];
-		gameOver = false;
-		nextQuestion();
-	}
-
 	onMount(() => {
-		const stored = storage.getJSON<string[]>('shown_myths');
-		if (stored) {
-			globalUsedIds = stored;
-		}
-		nextQuestion();
+		game.start();
 		settings.setHeaderTitle('myth.title');
 		return () => settings.setHeaderTitle(null);
 	});
 </script>
 
 <div class="game-page">
-	{#if gameOver}
+	{#if game.gameOver}
 		<div class="game-over-card" in:fade={{ duration: 400 }}>
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
 				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
-				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS}</span>
+				<span class="score-value">{game.sessionScore} / {game.totalRounds}</span>
 			</div>
 			<div class="game-over-actions">
-				<button class="btn-play-again" onclick={resetGame}>
+				<button class="btn-play-again" onclick={() => game.reset()}>
 					<RotateCcw size={24} />
 					{@html formatFont(t('common.playAgain'))}
 				</button>
@@ -152,17 +69,17 @@
 				</a>
 			</div>
 		</div>
-	{:else if currentQuestion}
+	{:else if game.current}
 		<div class="round-indicator-wrapper">
 			<RoundIndicator
-				current={roundNumber}
-				total={TOTAL_ROUNDS}
-				results={roundResults}
+				current={game.roundNumber}
+				total={game.totalRounds}
+				results={game.roundResults}
 			/>
 		</div>
 
 		<div class="myth-card-wrapper" in:fade={{ duration: 300 }}>
-			{#each [currentQuestion] as q (q.id)}
+			{#each [game.current] as q (q.id)}
 				<div
 					class="myth-card"
 					class:myth-card--correct={q.answered && q.isCorrect}
@@ -189,13 +106,13 @@
 							<div class="myth-card__dynamic-container">
 								{#if !q.answered}
 									<div class="myth-card__actions" out:slide={{ duration: 400 }} in:fade>
-										<button class="btn-myth" onclick={() => handleAnswer(false)} data-testid="mythbusters-myth-btn">
+										<button class="btn-myth" onclick={() => game.answer(false)} data-testid="mythbusters-myth-btn">
 											{@html formatFont(t('myth.myth'))}
 										</button>
 										<button
 											type="button"
 											class="btn-truth"
-											onclick={() => handleAnswer(true)}
+											onclick={() => game.answer(true)}
 											data-testid="mythbusters-truth-btn"
 										>
 											{@html formatFont(t('myth.truth'))}
@@ -203,7 +120,7 @@
 									</div>
 								{:else}
 									<div class="myth-card__result" in:slide={{ duration: 400 }} out:fade>
-										<button class="btn-next" onclick={onNext} data-testid="mythbusters-next-btn">
+										<button class="btn-next" onclick={() => game.nextRound()} data-testid="mythbusters-next-btn">
 											{@html formatFont(t('myth.next'))}
 										</button>
 										<div class="result-header" class:result-header--correct={q.isCorrect}>
