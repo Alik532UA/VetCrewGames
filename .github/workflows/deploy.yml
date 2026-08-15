@@ -9,6 +9,16 @@ permissions:
   pages: write
   id-token: write
 
+# `cancel-in-progress: false` — не смак, а умова того, що гейти взагалі
+# виконуються (CI-CD-AND-TOOLS-v8 § 1.3, AI-AGENT-PITFALLS-v8 § 1.4). При
+# `true` пуш пачкою комітів скасовує всі проміжні прогони, і прогін, який
+# УПЕРШЕ виконав би щойно доданий гейт, не завершується ніколи: у переліку
+# кроків він виглядає як «не дійшло», а читається як «там усе гаразд».
+# Група `pages` заразом не дає двом деплоям писати на Pages одночасно.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build_site:
     runs-on: ubuntu-latest
@@ -16,10 +26,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Версія збігається з `engines.node` у package.json і з .nvmrc
+      # (DEPENDENCIES-v8 § 2.3). Було 20 — а Node 20 вийшов з підтримки
+      # 30.04.2026, тобто CI збирав продакшн на рантаймі без оновлень безпеки.
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies

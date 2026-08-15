@@ -13,10 +13,21 @@ const DIR = '.github/workflows';
 
 const files = existsSync(DIR) ? readdirSync(DIR).filter((f) => /\.ya?ml$/.test(f)) : [];
 const all = files.map((f) => readFileSync(`${DIR}/${f}`, 'utf8')).join('\n');
+
+/**
+ * Те саме без коментарів. Пояснення у workflow цитують значення, які тут-таки
+ * перевіряються, — і перевірка по сирому тексту знаходить власну документацію
+ * замість дійсності.
+ */
+const directives = all.replace(/(^|\s)#.*$/gm, '');
 const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
 	scripts?: Record<string, string>;
+	engines?: Record<string, string>;
 };
 const scripts = pkg.scripts ?? {};
+
+/** Мажор із будь-якої форми запису: `22`, `>=22.12.0`, `22.12`. */
+const major = (value: string | undefined) => value?.match(/(\d+)/)?.[1] ?? null;
 
 describe('перевірка жива', () => {
 	it('workflow знайдено', () => {
@@ -60,6 +71,42 @@ describe('CI', () => {
 	 * ламає рівно той крок CI, який на нього посилався, і виявляється це вже
 	 * після push. Тут це видно до коміту.
 	 */
+	/**
+	 * DEPENDENCIES-v8 § 2.3: версія Node у workflow збігається з `engines.node`
+	 * і з `.nvmrc`. Розбіжність не ламає нічого одразу — вона означає, що
+	 * продакшн збирається на іншому рантаймі, ніж той, на якому це перевіряли,
+	 * і виявляється це вже після push.
+	 */
+	it('версія Node однакова у workflow, engines і .nvmrc (§ 1.2)', () => {
+		const workflow = major(/node-version:\s*'?([\d.]+)'?/.exec(all)?.[1]);
+		const engines = major(pkg.engines?.node);
+		const nvmrc = existsSync('.nvmrc') ? major(readFileSync('.nvmrc', 'utf8').trim()) : null;
+
+		expect(workflow, 'у workflow не знайдено node-version').not.toBeNull();
+		expect(engines, 'engines.node не оголошено в package.json').not.toBeNull();
+		expect({ workflow, engines, nvmrc }).toEqual({
+			workflow,
+			engines: workflow,
+			nvmrc: nvmrc === null ? null : workflow
+		});
+	});
+
+	it('деплой не скасовує проміжні прогони (§ 1.3)', () => {
+		// `cancel-in-progress: true` разом із пушем пачкою комітів дає прогін,
+		// якого не було: щойно доданий гейт не виконується жодного разу, а в
+		// переліку кроків це виглядає як «не дійшло» (AI-AGENT-PITFALLS-v8 § 1.4).
+		//
+		// Коментарі відрізаються ПЕРЕД пошуком, і це не педантизм: у самому
+		// workflow значення процитоване в поясненні, тому перевірка по сирому
+		// тексту лишалася зеленою і при `true`. Знайдено зворотним експериментом
+		// (§ 1.1) — тест мовчав саме там, де мав червоніти.
+		expect(directives, 'блоку concurrency немає взагалі').toMatch(/concurrency:/);
+		expect(directives).toMatch(/cancel-in-progress:\s*false/);
+		expect(directives, 'скасування проміжних прогонів увімкнене').not.toMatch(
+			/cancel-in-progress:\s*true/
+		);
+	});
+
 	it('кожен npm-скрипт із workflow існує в package.json', () => {
 		const referenced = [...all.matchAll(/run:\s*npm run ([\w:-]+)/g)].map((m) => m[1]);
 		const missing = [...new Set(referenced)].filter((name) => !(name in scripts));
