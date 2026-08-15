@@ -21,6 +21,13 @@ npm install
 npm run dev
 ```
 
-## Деплой
+## Деплой і адреса
 
 Автоматично через GitHub Actions при пуші в гілку `main`.
+
+🌐 **https://alik532ua.github.io/VetCrewGames/** — спільний домен із рештою проєктів, власного тут немає. Звідси дві наслідки, які легко забути:
+
+- `paths.base` дорівнює `/VetCrewGames` у продакшені й `''` у dev, тож шлях, зашитий вручну, зламається на одному з двох;
+- `localStorage` спільний із сусідніми проєктами, тому всі ключі обов'язково мають префікс `vetcrewgames_`.
+
+Якщо колись з'явиться власний домен — не міняй `base` наосліп: набір граблів зібраний у [CUSTOM-DOMAIN-v8.md](../sveltekit-canon/selection_criteria/v8/CUSTOM-DOMAIN-v8.md).
