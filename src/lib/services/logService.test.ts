@@ -64,4 +64,51 @@ describe('logService', () => {
 		const stored = sessionStoreMock.set.mock.calls.at(-1)?.[1];
 		expect(stored).toContain('persist me');
 	});
+
+	/**
+	 * DEBUGGING-v8 § 1.5: у дзеркало йде ХВІСТ буфера. Складати туди всі 1000
+	 * записів означає серіалізувати весь журнал на КОЖЕН лог — і впертися в
+	 * квоту sessionStorage тим швидше, чим більше подій сталося.
+	 */
+	it('дзеркало у sessionStore обрізане, а не вся історія', () => {
+		for (let i = 0; i < 150; i++) logService.info('app', `подія ${i}`);
+
+		const stored = JSON.parse(sessionStoreMock.set.mock.calls.at(-1)?.[1] ?? '[]');
+		expect(stored).toHaveLength(100);
+		expect(stored.at(-1).message, 'останній запис має бути в дзеркалі').toBe('подія 149');
+		expect(stored.at(0).message, 'найстаріші витісняються').toBe('подія 50');
+		expect(logService.getLogs(), 'у памʼяті буфер лишається повним').toHaveLength(150);
+	});
+
+	/**
+	 * DEBUGGING-v8 § 1.4 / SECURITY-v8 § 10, CRITICAL. Редакція живе в логері, а
+	 * не на місцях виклику: достатньо одного забутого місця, щоб правило не
+	 * працювало. Звіт із кнопки збору логів надсилають третій особі.
+	 */
+	it('редагує чутливі поля перед записом', () => {
+		logService.error('network', 'request failed', {
+			email: 'user@example.com',
+			token: 'abc123',
+			nested: { password: 'hunter2', status: 500 },
+			list: [{ authorization: 'Bearer x' }],
+			url: '/api/items'
+		});
+
+		const [entry] = logService.getLogs();
+		expect(entry.data).toEqual({
+			email: '«приховано»',
+			token: '«приховано»',
+			nested: { password: '«приховано»', status: 500 },
+			list: [{ authorization: '«приховано»' }],
+			url: '/api/items'
+		});
+	});
+
+	it('циклічне посилання не зациклює логер', () => {
+		const cyclic: Record<string, unknown> = { name: 'loop' };
+		cyclic.self = cyclic;
+
+		expect(() => logService.warn('app', 'cyclic', cyclic)).not.toThrow();
+		expect(logService.getLogs()).toHaveLength(1);
+	});
 });
