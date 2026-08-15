@@ -1,10 +1,13 @@
 import { browser, dev } from '$app/environment';
 
 /**
- * Google Analytics 4.
+ * Google Analytics 4 — єдиний лічильник проєкту.
  *
- * Note that app.html also loads Plausible. Both run side by side for now; see
- * the note there before removing either.
+ * Тут стояв рядок «app.html also loads Plausible. Both run side by side» —
+ * і це неправда: жодного Plausible у `app.html` немає й не було. Документ, що
+ * суперечить коду, вводить в оману активніше за його відсутність
+ * (DOCUMENTATION-v8 § 8): наступний читач шукав би другий лічильник, а перед
+ * тим ще й вирішував би, який із двох правильний (ANALYTICS-v8 § 1).
  *
  * The measurement ID sits here rather than in an environment variable: it is
  * public by design — it ships in the page source of every site that uses GA —

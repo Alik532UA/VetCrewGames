@@ -3,7 +3,11 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
-	plugins: [svelte({ hot: !process.env.VITEST })],
+	// Без `hot`: опції з такою назвою в плагіні більше немає, і кожен прогін
+	// тестів починався з рядка `invalid plugin options "hot" in inline config`.
+	// Попередження, яке бачать сто разів на день, навчає не читати вивід —
+	// а саме у виводі й лежить те, заради чого тести запускають.
+	plugins: [svelte()],
 	resolve: {
 		conditions: ['browser'],
 		alias: {
