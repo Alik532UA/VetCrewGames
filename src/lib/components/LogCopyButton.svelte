@@ -1,11 +1,32 @@
 <script lang="ts">
 	import { Copy, Check } from 'lucide-svelte';
 	import { logService } from '$lib/services/logService.svelte';
-	import { dev } from '$app/environment';
+	import { storage } from '$lib/services/storage';
+	import { t } from '$lib/i18n';
+	import { browser, dev } from '$app/environment';
+	import { page } from '$app/state';
 	import { onDestroy } from 'svelte';
 
-	// According to rules, visible in dev, hidden in prod (unless overridden)
-	let isVisible = $derived(dev && logService.errorCount > 0);
+	/**
+	 * DEBUGGING-v8 § 2.1. У продакшні логи пишуться в кільцевий буфер завжди —
+	 * але доти кнопка була `dev && …`, тобто зняти звіт із пристрою користувача
+	 * було неможливо в принципі. Збір логів у prod працював у нікуди.
+	 *
+	 * Тепер: у dev кнопка з'являється на першій помилці, у prod — коли ввімкнено
+	 * debug-режим, `?debug=1` або ключем сховища. Ключ читається один раз: без
+	 * перезавантаження він не змінюється.
+	 */
+	const debugFlag = browser && storage.get('debug_mode') === '1';
+
+	// `browser &&` тут обов'язковий, і це не перестраховка: під час prerender
+	// звернення до `page.url.searchParams` кидає «Cannot access url.searchParams
+	// on a page with prerendering enabled» і валить збірку цілком. Приклад у
+	// DEBUGGING-v8 § 2.1 написаний без цього guard — він для профілю, де
+	// сторінка рендериться на запит.
+	const debugMode = $derived(
+		browser && (page.url.searchParams.get('debug') === '1' || debugFlag)
+	);
+	const isVisible = $derived(dev ? logService.errorCount > 0 : debugMode);
 
 	let copied = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -22,11 +43,15 @@
 		// відвідувач, який його скопіював. Голий toLocaleString() рендериться в
 		// локалі СИСТЕМИ відвідувача — 03.08 чи 08.03 залежно від того, де він
 		// живе, і розрізнити їх у звіті нема по чому (I18N-v8 § 4.3).
+		//
+		// ONLINE — не прикраса: половина звітів «нічого не працює» пояснюється
+		// саме цим рядком (DEBUGGING-v8 § 2.3).
 		const header = `--- REPORT from Copy LOG button ---
 DATE: ${new Date().toISOString()}
 URL: ${window.location.href}
 DEVICE: ${navigator.userAgent}
 VERSION: ${version}
+ONLINE: ${navigator.onLine}
 ------------------------
 `;
 		const logText = logs
@@ -52,10 +77,12 @@ VERSION: ${version}
 
 {#if isVisible}
 	<button
+		type="button"
 		class="log-copy-btn"
 		class:has-errors={logService.errorCount > 0}
 		onclick={copyLogs}
-		title="Copy Logs"
+		aria-label={t('debug.copyLogs')}
+		data-testid="debug-copy-logs-btn"
 	>
 		{#if copied}
 			<Check class="log-icon" />
@@ -107,19 +134,29 @@ VERSION: ${version}
 		height: 16px;
 	}
 
-	@media (max-width: 768px) {
+	/*
+	 * Було `@media (max-width: 768px)` із розміром 24×24 — рівно на абсолютному
+	 * мінімумі WCAG 2.2 AA (SC 2.5.8) і вдвічі менше за власний стандарт
+	 * проєкту. Причому вузьке вікно — не те саме, що палець: на десктопі 900px
+	 * кнопка лишалася б маленькою для миші, а на планшеті 1024px — маленькою
+	 * для дотику.
+	 *
+	 * Тепер розмір залежить від СПОСОБУ ВВЕДЕННЯ: 44×44 там, де немає точного
+	 * вказівника (ACCESSIBILITY-v8 § 8, DEBUGGING-v8 § 2.2).
+	 */
+	@media (hover: none) {
 		.log-copy-btn {
-			width: 24px;
-			height: 24px;
+			width: 44px;
+			height: 44px;
 		}
 
 		.log-copy-btn :global(.log-icon) {
-			width: 12px;
-			height: 12px;
+			width: 20px;
+			height: 20px;
 		}
 
 		.error-count {
-			font-size: 0.75rem;
+			font-size: 1rem;
 		}
 	}
 </style>
