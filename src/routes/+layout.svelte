@@ -37,7 +37,14 @@
 	// itself, so there is no ordering to get wrong against onMount.
 	afterNavigate(() => trackPageView());
 
-	let appVersion = $state('');
+	// Версія інжектується Vite на етапі збірки (VERSIONING-v8 § 2, підхід A):
+	// нуль мережевих запитів, синхронний доступ, і номер той самий, що у звіті
+	// логів та в `release` Sentry.
+	//
+	// Доти тут стояло `let appVersion = $state('')`, якому ніхто нічого не
+	// присвоював, — тобто блок нижче не рендерився ніколи, а виглядав як
+	// реалізований показ версії.
+	const appVersion = __APP_VERSION__;
 
 	// Handle transition direction
 	let transitionDirection = $state(1);
@@ -152,9 +159,7 @@
 	</main>
 </div>
 
-{#if appVersion}
-	<div class="app-version">{appVersion}</div>
-{/if}
+<div class="app-version" data-testid="app-version-value">{appVersion}</div>
 
 <LogCopyButton />
 

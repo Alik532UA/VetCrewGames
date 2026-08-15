@@ -200,18 +200,6 @@ body {
 	transition: background-color 1s ease;
 }
 
-.app-version {
-	position: fixed;
-	bottom: 4px;
-	right: 8px;
-	font-size: 10px;
-	color: var(--color-text-muted, #888);
-	opacity: 0.5;
-	pointer-events: none;
-	z-index: 1000;
-	transition: color 1s ease;
-}
-
 h1,
 h2,
 h3,

@@ -22,7 +22,12 @@ export default ts.config(
 		languageOptions: {
 			globals: {
 				...globals.browser,
-				...globals.node
+				...globals.node,
+				// Інжектується Vite через `define` (VERSIONING-v8 § 2, підхід A).
+				// Для TypeScript це оголошено в `src/app.d.ts`, але ESLint читає
+				// власний список — і без цього рядка `no-undef` у `.svelte`-файлах
+				// звітує про змінну, яка на етапі збірки цілком реальна.
+				__APP_VERSION__: 'readonly'
 			}
 		}
 	},
