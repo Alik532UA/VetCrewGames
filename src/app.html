@@ -2,10 +2,19 @@
 <html lang="uk">
 	<head>
 		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-		/>
+		<!--
+			Без `maximum-scale=1, user-scalable=no`: заборона масштабування — це
+			провал WCAG 1.4.4 (ACCESSIBILITY-v8 § 9, «текст масштабується до 200%
+			без втрати функціональності»). Android Chrome цю заборону поважає, тож
+			людина зі слабким зором не могла збільшити ні пояснення міфу, ні
+			підписи тварин.
+
+			Те, заради чого її ставлять, — випадковий зум від подвійного дотику по
+			кнопці — знімається `touch-action: manipulation` у global.css, і саме
+			там, де воно й потрібно: на кнопках і посиланнях, а не на всій
+			сторінці.
+		-->
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
