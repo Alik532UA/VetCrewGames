@@ -30,4 +30,4 @@ npm run dev
 - `paths.base` дорівнює `/VetCrewGames` у продакшені й `''` у dev, тож шлях, зашитий вручну, зламається на одному з двох;
 - `localStorage` спільний із сусідніми проєктами, тому всі ключі обов'язково мають префікс `vetcrewgames_`.
 
-Якщо колись з'явиться власний домен — не міняй `base` наосліп: набір граблів зібраний у [CUSTOM-DOMAIN-v8.md](../sveltekit-canon/selection_criteria/v8/CUSTOM-DOMAIN-v8.md).
+Якщо колись з'явиться власний домен — не міняй `base` наосліп: набір граблів зібраний у [CUSTOM-DOMAIN-v8.md](../sveltekit-canon/selection_criteria/v8/ops/CUSTOM-DOMAIN-v8.md).
