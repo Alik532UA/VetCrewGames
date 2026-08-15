@@ -45,6 +45,20 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Частина дефектів не існує в джерелах — вона виникає під час збірки, і
+      # видно її лише у build/*.html (CODE-QUALITY-v8 § 7, SEO-v8 § 6.1).
+      # Скрипт читає згенеровані сторінки: порожнє тіло, canonical на чужий
+      # origin, `unsafe-inline` у script-src, інлайн-скрипт, не покритий
+      # хешем, .map поруч із бандлом, бюджет initial JS.
+      - name: Check build output
+        run: npm run check:build
+
+      # Ловить артефакт, що бруднить дерево: згенерований app-version.json,
+      # оновлений lockfile (CI-CD-AND-TOOLS-v8 § 1.5). Це єдина машинна
+      # перевірка правила «артефакт збірки не комітиться».
+      - name: Build does not modify tracked files
+        run: git diff --exit-code
+
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
         with:

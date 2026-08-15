@@ -10,6 +10,7 @@
 		"prepare": "svelte-kit sync || echo '' ; husky",
 		"bump": "node scripts/bump-version.js",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:build": "node scripts/check-build.mjs",
 		"check:i18n": "npx tsx scripts/check-translations.ts",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "eslint .",
