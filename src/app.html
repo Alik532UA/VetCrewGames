@@ -17,6 +17,22 @@
 			rel="stylesheet"
 		/>
 		<meta name="color-scheme" content="light dark" />
+		%sveltekit.head%
+		<!--
+			Скрипт стоїть ПІСЛЯ %sveltekit.head% навмисно (SECURITY-v8 § 6.3).
+			У static-профілі політика приходить мета-тегом, який SvelteKit
+			вставляє саме на це місце, а мета-політика діє лише на те, що йде
+			ПІСЛЯ неї. Доти скрипт стояв вище — тобто політикою не покривався
+			зовсім, і його хеш був би декоративним.
+
+			Затримка нульова: до цього місця в <head> лише мета-теги й
+			посилання; жодного скрипта, який виконався б раніше, немає.
+
+			Хеш цього тіла обчислює svelte.config.js із САМОГО ЦЬОГО ФАЙЛУ під
+			час збірки. Правка нижче міняє хеш автоматично — вписаний рядком у
+			конфіг він розійшовся б зі скриптом і зламав би сайт лише у
+			збірці, не в dev.
+		-->
 		<script>
 			// SYNC: keep key 'vetcrewgames_theme' in sync with PREFIX in src/lib/services/storage.ts
 			try {
@@ -31,7 +47,6 @@
 				if (meta) meta.setAttribute('content', isDark ? 'dark' : 'light dark');
 			} catch (e) {}
 		</script>
-		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
