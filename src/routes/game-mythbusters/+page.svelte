@@ -238,14 +238,14 @@
 		flex: 1;
 		width: 95%;
 		max-width: 500px;
-		padding: 10vh 0 var(--space-lg);
-		gap: clamp(var(--space-xs), 2vh, var(--space-lg));
+		padding: 10dvh 0 var(--space-lg);
+		gap: clamp(var(--space-xs), 2dvh, var(--space-lg));
 		margin: 0 auto;
 		box-sizing: border-box;
 	}
 	@media (min-width: 769px) {
 		.game-page {
-			padding: 15vh 0 var(--space-2xl);
+			padding: 15dvh 0 var(--space-2xl);
 		}
 	}
 

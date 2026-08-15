@@ -666,6 +666,8 @@
 										class="game-card__img"
 										draggable="false"
 										loading="lazy"
+										width="300"
+										height="400"
 									/>
 									{#if checked}<div class="game-card__pop-overlay">
 											{@html formatPopulationHtml(animal.population)}
@@ -791,6 +793,8 @@
 													class="game-card__img"
 													draggable="false"
 													loading="lazy"
+													width="300"
+													height="400"
 												/>
 											</div>
 											<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
@@ -875,7 +879,7 @@
 		width: 95%;
 		max-width: 600px;
 		padding: var(--space-md) 0;
-		gap: clamp(var(--space-xs), 2vh, var(--space-lg));
+		gap: clamp(var(--space-xs), 2dvh, var(--space-lg));
 		margin: 0 auto;
 	}
 	@media (min-width: 769px) {

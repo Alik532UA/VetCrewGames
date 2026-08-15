@@ -73,12 +73,23 @@ function declarations(source: string): Set<string> {
 }
 
 /**
- * Variables a script sets: `style.setProperty('--x', …)`. There is no CSS
- * declaration for those and cannot be — the value appears at runtime, and until
- * then the fallback in `var()` is what applies.
+ * Variables set at runtime rather than declared in CSS. Two forms, and both are
+ * legitimate:
+ *
+ *  - `element.style.setProperty('--x', …)` — plain DOM;
+ *  - `style:--x={value}` — the Svelte directive, which compiles to exactly that
+ *    call. Left out of this list it reads as an undeclared variable, and the
+ *    check reports the one place that is doing it properly.
+ *
+ * There is no CSS declaration for either, and there cannot be: the value
+ * appears at runtime, and until then the fallback in `var()` is what applies —
+ * which is why a fallback IS correct here, unlike in § 1.6.
  */
 function runtimeDeclarations(source: string): Set<string> {
-	return new Set([...source.matchAll(/setProperty\(\s*[`'"](--[\w-]+)/g)].map((m) => m[1]));
+	return new Set([
+		...[...source.matchAll(/setProperty\(\s*[`'"](--[\w-]+)/g)].map((m) => m[1]),
+		...[...source.matchAll(/\bstyle:(--[\w-]+)/g)].map((m) => m[1])
+	]);
 }
 
 describe("CSS variables", () => {

@@ -15,7 +15,13 @@
 </script>
 
 <div class="round-indicator-container">
-	<div class="segments-wrapper">
+	<!--
+		Кількість колонок приходить із пропа, а не зашита числом: доти в CSS
+		стояло `repeat(10, 1fr)`, і компонент мовчки ламався б на будь-якому
+		`total`, крім десяти — обидві гри зараз мають рівно десять раундів, тож
+		помітити це було б нічим.
+	-->
+	<div class="segments-wrapper" style:--rounds={total}>
 		{#each rounds as r (r)}
 			{@const result = results[r - 1]}
 			{@const status = result ? result : r === current ? 'current' : 'future'}
@@ -47,7 +53,13 @@
 
 	.segments-wrapper {
 		display: grid;
-		grid-template-columns: repeat(10, 1fr);
+		/*
+		 * `minmax(0, 1fr)`, а не `1fr`: `1fr` — це `minmax(auto, 1fr)`, тобто
+		 * колонка не стає вужчою за min-content вмісту. З десятьма сегментами й
+		 * проміжками це дає підлогу ширини, за якою смужка розпирає сторінку на
+		 * вузькому екрані (FLUID-SIZING-v8 § 1).
+		 */
+		grid-template-columns: repeat(var(--rounds, 10), minmax(0, 1fr));
 		width: 100%;
 		max-width: 300px;
 		gap: 4px;
