@@ -4,11 +4,42 @@
 	import { fade, slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
-	import { getRandomAnimals, type Animal } from '$lib/config/population-game';
+	import { PopulationGameController, type Place } from '$lib/controllers/populationGame.svelte';
+	import type { Animal } from '$lib/config/population-game';
 	import { Check, X, RotateCcw } from 'lucide-svelte';
-	import RoundIndicator, { type RoundStatus } from '$lib/components/RoundIndicator.svelte';
+	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 
-	let isSwapping = $state(false);
+	/**
+	 * Правила гри — у контролері; тут лишається СПОСІБ ВВЕДЕННЯ: миша, палець,
+	 * клік і подвійний клік (SVELTE-CORE-v8 § 3.1). Ділити довелося саме так:
+	 * `game.dropOnSlot()` викликають усі чотири шляхи, і жоден із них
+	 * контролеру не видно.
+	 */
+	const game = new PopulationGameController();
+
+	/** Чисто візуальний стан — контролер про нього не знає й знати не має. */
+	let isActuallyDragging = $state(false);
+	let dragOverId = $state<string | null>(null);
+	let hoverSlotIndex = $state<number | null>(null);
+	let hoverSourceIndex = $state<number | null>(null);
+	const isSwapping = $derived(game.isSwapping);
+
+	// Стан перетягування пальцем: HTML5 DnD на мобільних не працює, тож клон
+	// картки їздить за пальцем вручну.
+	let touchDragClone: HTMLElement | null = null;
+	let touchStartInfo: {
+		x: number;
+		y: number;
+		offsetX: number;
+		offsetY: number;
+		animal: Animal;
+		source: Place;
+		target: HTMLElement;
+		w: number;
+		h: number;
+	} | null = null;
+	let touchDragStarted = false;
+	const TOUCH_DRAG_THRESHOLD = 8;
 
 	function createCrossfade() {
 		const to_receive = new Map<string | number, HTMLElement>();
@@ -82,21 +113,6 @@
 
 	const [send, receive] = createCrossfade();
 
-	const SLOT_COUNT = 3;
-	const TOTAL_ROUNDS = 10;
-
-	// Game state
-	let roundNumber = $state(1);
-	let roundResults = $state<RoundStatus[]>([]);
-	let sourceAnimals = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
-	let initialSourceAnimals = $state<(Animal | null)[]>([]);
-	let slots = $state<(Animal | null)[]>(Array(SLOT_COUNT).fill(null));
-	let checked = $state(false);
-	let correctOrder = $state<Animal[]>([]);
-
-	let sessionScore = $state(0);
-	let gameOver = $state(false);
-
 	function formatPopulationHtml(num: number): string {
 		const locale = settings.locale;
 		if (num >= 1_000_000_000_000)
@@ -107,105 +123,20 @@
 		return formatFont(`~${num.toLocaleString(locale)}`);
 	}
 
-	// Drag state
-	let draggedAnimal = $state<Animal | null>(null);
-	let dragSource = $state<
-		{ type: 'source'; index: number } | { type: 'slot'; index: number } | null
-	>(null);
-	let isActuallyDragging = $state(false);
-	let dragOverId = $state<string | null>(null);
-	let hoverSlotIndex = $state<number | null>(null);
-	let hoverSourceIndex = $state<number | null>(null);
-
-	// Touch drag state
-	let touchDragClone: HTMLElement | null = null;
-	let touchStartInfo: {
-		x: number;
-		y: number;
-		offsetX: number;
-		offsetY: number;
-		animal: Animal;
-		source: NonNullable<typeof dragSource>;
-		target: HTMLElement;
-		w: number;
-		h: number;
-	} | null = null;
-	let touchDragStarted = false;
-	const TOUCH_DRAG_THRESHOLD = 8;
-
-	function initRound() {
-		const picked = getRandomAnimals(SLOT_COUNT);
-		sourceAnimals = picked;
-		initialSourceAnimals = [...picked];
-		slots = Array(SLOT_COUNT).fill(null);
-		checked = false;
-		correctOrder = [...picked].sort((a, b) => a.population - b.population);
-		draggedAnimal = null;
-		dragSource = null;
-		isActuallyDragging = false;
-		hoverSlotIndex = null;
-		hoverSourceIndex = null;
+	/** Хід зроблено — візуальний стан перетягування знімається тут, не в правилах. */
+	function afterDrop(moved: boolean) {
+		if (moved) isActuallyDragging = false;
 	}
 
-	// --- Core drop logic ---
-	function performDropOnSlot(targetIndex: number): boolean {
-		if (checked || !draggedAnimal || !dragSource) return false;
-		const animal = draggedAnimal;
-		const source = dragSource;
-		isSwapping = slots[targetIndex] !== null;
-
-		if (source.type === 'slot') {
-			const oldSlotAnimal = slots[targetIndex];
-			slots[source.index] = oldSlotAnimal;
-			slots[targetIndex] = animal;
-		} else {
-			const displacedAnimal = slots[targetIndex];
-			sourceAnimals[source.index] = displacedAnimal;
-			slots[targetIndex] = animal;
-		}
-		draggedAnimal = null;
-		dragSource = null;
-		isActuallyDragging = false;
-		return true;
-	}
-
-	function performDropOnSource(targetIndex: number): boolean {
-		if (checked || !draggedAnimal || !dragSource) return false;
-		const animal = draggedAnimal;
-		const source = dragSource;
-		isSwapping = sourceAnimals[targetIndex] !== null;
-
-		if (source.type === 'source') {
-			const oldSourceAnimal = sourceAnimals[targetIndex];
-			sourceAnimals[source.index] = oldSourceAnimal;
-			sourceAnimals[targetIndex] = animal;
-		} else {
-			const displacedAnimal = sourceAnimals[targetIndex];
-			slots[source.index] = displacedAnimal;
-			sourceAnimals[targetIndex] = animal;
-		}
-		draggedAnimal = null;
-		dragSource = null;
-		isActuallyDragging = false;
-		return true;
-	}
-
-	let allSlotsFilled = $derived(slots.every((s) => s !== null));
-	let slotResults = $derived.by(() => {
-		if (!checked) return [];
-		return slots.map((animal, i) => animal?.population === correctOrder[i].population);
-	});
-	let availableAnimals = $derived(initialSourceAnimals.filter((a): a is Animal => a !== null));
-
-	// --- Handlers ---
-	function handleDragStart(e: DragEvent, animal: Animal, source: NonNullable<typeof dragSource>) {
-		if (checked) return;
+	// --- Миша: HTML5 drag and drop ---
+	function handleDragStart(e: DragEvent, animal: Animal, source: Place) {
+		if (game.checked) return;
 		if (e.dataTransfer) {
 			e.dataTransfer.setData('text/plain', animal.id.toString());
 			e.dataTransfer.effectAllowed = 'move';
 		}
-		draggedAnimal = animal;
-		dragSource = source;
+		game.picked = animal;
+		game.pickedFrom = source;
 		setTimeout(() => {
 			isActuallyDragging = true;
 		}, 0);
@@ -213,23 +144,27 @@
 
 	function handleDragEnd() {
 		isActuallyDragging = false;
-		if (!touchDragStarted) {
-			draggedAnimal = null;
-			dragSource = null;
-		}
+		// Під час дотику вибір лишається за touchend — інакше палець «губить»
+		// картку між подіями.
+		if (!touchDragStarted) game.clearSelection();
 	}
 
 	function handleDragOver(e: DragEvent, id: string) {
-		if (checked) return;
+		if (game.checked) return;
 		e.preventDefault();
 		dragOverId = id;
 		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 	}
 
-	function handleDragLeave(e: DragEvent, id: string) {
+	function handleDragLeave(_e: DragEvent, id: string) {
 		if (dragOverId === id) dragOverId = null;
 	}
 
+	/**
+	 * Ставить елемент рівно туди, де його відпустили, ДО того як Svelte
+	 * перемалює список: інакше картка стрибнула б із курсора у стару позицію і
+	 * лише звідти полетіла б у нову.
+	 */
 	function setDragElementDropPosition(
 		animalId: number | string,
 		clientX: number,
@@ -247,138 +182,73 @@
 		const ox = offsetX !== undefined ? offsetX : el.offsetWidth / 2;
 		const oy = offsetY !== undefined ? offsetY : el.offsetHeight / 2;
 
-		const dx = clientX - ox - rect.left;
-		const dy = clientY - oy - rect.top;
-
-		el.style.setProperty('transform', `translate3d(${dx}px, ${dy}px, 0)`, 'important');
+		el.style.setProperty(
+			'transform',
+			`translate3d(${clientX - ox - rect.left}px, ${clientY - oy - rect.top}px, 0)`,
+			'important'
+		);
 		el.style.setProperty('z-index', '9999', 'important');
 	}
 
-	function handleDropOnSlot_DnD(e: DragEvent, targetIndex: number) {
+	function dropFromMouse(e: DragEvent, target: 'slot' | 'source', targetIndex: number) {
 		e.preventDefault();
 		dragOverId = null;
-		if (checked || !draggedAnimal || !dragSource) return;
-		if (dragSource.type === 'slot' && dragSource.index === targetIndex) {
-			draggedAnimal = null;
-			dragSource = null;
+		const from = game.pickedFrom;
+		if (game.checked || !game.picked || !from) return;
+
+		// Відпустили там само, звідки взяли — це не хід, а скасування.
+		if (from.type === target && from.index === targetIndex) {
+			game.clearSelection();
 			isActuallyDragging = false;
 			return;
 		}
-		setDragElementDropPosition(draggedAnimal.id, e.clientX, e.clientY);
-		performDropOnSlot(targetIndex);
+
+		setDragElementDropPosition(game.picked.id, e.clientX, e.clientY);
+		afterDrop(target === 'slot' ? game.dropOnSlot(targetIndex) : game.dropOnSource(targetIndex));
 	}
 
-	function handleDropOnSource_DnD(e: DragEvent, targetIndex: number) {
-		e.preventDefault();
-		dragOverId = null;
-		if (checked || !draggedAnimal || !dragSource) return;
-		if (dragSource.type === 'source' && dragSource.index === targetIndex) {
-			draggedAnimal = null;
-			dragSource = null;
-			isActuallyDragging = false;
-			return;
-		}
-		setDragElementDropPosition(draggedAnimal.id, e.clientX, e.clientY);
-		performDropOnSource(targetIndex);
-	}
-
-	function handleDoubleClick(animal: Animal, source: NonNullable<typeof dragSource>) {
-		if (checked) return;
-		if (isActuallyDragging) return;
-
-		if (draggedAnimal?.id === animal.id) {
-			draggedAnimal = null;
-			dragSource = null;
-		}
-
-		if (source.type === 'source') {
-			const emptySlotIndex = slots.indexOf(null);
-			if (emptySlotIndex !== -1) {
-				isSwapping = false;
-				slots[emptySlotIndex] = animal;
-				sourceAnimals[source.index] = null;
-			}
-		} else {
-			const origIndex = initialSourceAnimals.findIndex((a) => a?.id === animal.id);
-			if (origIndex !== -1 && sourceAnimals[origIndex] === null) {
-				isSwapping = false;
-				sourceAnimals[origIndex] = animal;
-				slots[source.index] = null;
-			} else {
-				const emptySourceIndex = sourceAnimals.indexOf(null);
-				if (emptySourceIndex !== -1) {
-					isSwapping = false;
-					sourceAnimals[emptySourceIndex] = animal;
-					slots[source.index] = null;
-				}
-			}
-		}
-	}
-
+	// --- Клік і подвійний клік ---
 	let lastClickTime = 0;
 	let lastClickedAnimalId: string | number | null = null;
 
-	function handleCardClick(e: Event, animal: Animal, source: NonNullable<typeof dragSource>) {
+	function handleCardClick(e: Event, animal: Animal, source: Place) {
 		e.stopPropagation();
-		if (checked) return;
-		if (isActuallyDragging) return;
+		if (game.checked || isActuallyDragging) return;
 
-		const currentTime = Date.now();
-		const timeDiff = currentTime - lastClickTime;
-
-		if (timeDiff < 400 && lastClickedAnimalId === animal.id) {
+		const now = Date.now();
+		if (now - lastClickTime < 400 && lastClickedAnimalId === animal.id) {
 			lastClickTime = 0;
 			lastClickedAnimalId = null;
-			handleDoubleClick(animal, source);
+			game.sendToFreeSpot(animal, source);
 		} else {
-			lastClickTime = currentTime;
+			lastClickTime = now;
 			lastClickedAnimalId = animal.id;
-			handleSelect(animal, source);
-		}
-	}
-
-	function handleSelect(animal: Animal, source: NonNullable<typeof dragSource>) {
-		if (checked) return;
-		if (isActuallyDragging) return;
-
-		// IF we already have a selection, and click another card - SWAP them
-		if (draggedAnimal && draggedAnimal.id !== animal.id) {
-			if (source.type === 'slot') performDropOnSlot(source.index);
-			else performDropOnSource(source.index);
-			return;
-		}
-
-		if (draggedAnimal?.id === animal.id) {
-			draggedAnimal = null;
-			dragSource = null;
-		} else {
-			draggedAnimal = animal;
-			dragSource = source;
+			afterDrop(game.select(animal, source));
 		}
 	}
 
 	function handleSlotClick(i: number) {
-		if (checked) return;
-		if (draggedAnimal && !isActuallyDragging) performDropOnSlot(i);
-		else if (slots[i]) handleSelect(slots[i] as Animal, { type: 'slot', index: i });
+		if (game.checked) return;
+		if (game.picked && !isActuallyDragging) afterDrop(game.dropOnSlot(i));
+		else if (game.slots[i]) game.select(game.slots[i] as Animal, { type: 'slot', index: i });
 	}
 
 	function handleSourcePlaceholderClick(i: number) {
-		if (checked) return;
-		if (draggedAnimal && !isActuallyDragging) performDropOnSource(i);
-		else if (sourceAnimals[i])
-			handleSelect(sourceAnimals[i] as Animal, { type: 'source', index: i });
+		if (game.checked) return;
+		if (game.picked && !isActuallyDragging) afterDrop(game.dropOnSource(i));
+		else if (game.sourceAnimals[i])
+			game.select(game.sourceAnimals[i] as Animal, { type: 'source', index: i });
 	}
 
-	// --- Touch handlers ---
+	// --- Дотик ---
 	function handleTouchStart(e: TouchEvent) {
 		const target = (e.target as HTMLElement).closest('[data-drag-animal]') as HTMLElement | null;
-		if (!target) return;
-		if (checked) return;
+		if (!target || game.checked) return;
 
 		const sourceType = target.dataset.dragSourceType as 'source' | 'slot';
 		const sourceIndex = parseInt(target.dataset.dragSourceIndex!, 10);
-		const animal = sourceType === 'source' ? sourceAnimals[sourceIndex] : slots[sourceIndex];
+		const animal =
+			sourceType === 'source' ? game.sourceAnimals[sourceIndex] : game.slots[sourceIndex];
 		if (!animal) return;
 
 		const rect = target.getBoundingClientRect();
@@ -400,20 +270,23 @@
 	function handleTouchMove(e: TouchEvent) {
 		if (!touchStartInfo) return;
 		const touch = e.touches[0];
+
 		if (!touchDragStarted) {
 			const dx = touch.clientX - touchStartInfo.x;
 			const dy = touch.clientY - touchStartInfo.y;
+			// Поріг обов'язковий: без нього звичайний тап читається як перетягування.
 			if (Math.abs(dx) < TOUCH_DRAG_THRESHOLD && Math.abs(dy) < TOUCH_DRAG_THRESHOLD) return;
 
 			touchDragStarted = true;
 			isActuallyDragging = true;
 			const { animal, source, target, w, h, offsetX, offsetY } = touchStartInfo;
-			draggedAnimal = animal;
-			dragSource = source;
+			game.picked = animal;
+			game.pickedFrom = source;
+
 			const clone = target.cloneNode(true) as HTMLElement;
 			clone.classList.add('touch-drag-clone');
-			clone.style.width = w + 'px';
-			clone.style.height = h + 'px';
+			clone.style.width = `${w}px`;
+			clone.style.height = `${h}px`;
 			clone.style.setProperty(
 				'transform',
 				`translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`,
@@ -423,25 +296,23 @@
 			touchDragClone = clone;
 		}
 
-		if (touchDragStarted) {
-			if (e.cancelable) e.preventDefault();
-			if (touchDragClone && touchStartInfo) {
-				const { offsetX, offsetY } = touchStartInfo;
-				touchDragClone.style.setProperty(
-					'transform',
-					`translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`,
-					'important'
-				);
-			}
-			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-			document
-				.querySelectorAll('.container--touch-over')
-				.forEach((el) => el.classList.remove('container--touch-over'));
-			const containerUnder = elUnder?.closest(
-				'[data-slot-index], [data-source-index]'
-			) as HTMLElement | null;
-			if (containerUnder) containerUnder.classList.add('container--touch-over');
+		if (e.cancelable) e.preventDefault();
+		if (touchDragClone) {
+			const { offsetX, offsetY } = touchStartInfo;
+			touchDragClone.style.setProperty(
+				'transform',
+				`translate3d(${touch.clientX - offsetX}px, ${touch.clientY - offsetY}px, 0) scale(1.1)`,
+				'important'
+			);
 		}
+
+		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+		document
+			.querySelectorAll('.container--touch-over')
+			.forEach((el) => el.classList.remove('container--touch-over'));
+		elUnder
+			?.closest('[data-slot-index], [data-source-index]')
+			?.classList.add('container--touch-over');
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
@@ -454,134 +325,53 @@
 		const startInfo = touchStartInfo;
 		touchStartInfo = null;
 		touchDragStarted = false;
+		if (!wasDragging) return;
 
-		if (wasDragging) {
-			if (e.cancelable) e.preventDefault();
-			if (touchDragClone) {
-				touchDragClone.remove();
-				touchDragClone = null;
-			}
+		if (e.cancelable) e.preventDefault();
+		touchDragClone?.remove();
+		touchDragClone = null;
 
-			const touch = e.changedTouches[0];
-			const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
-			const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
-			const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
-
-			if (checked || !draggedAnimal || !dragSource) {
-				draggedAnimal = null;
-				dragSource = null;
-				isActuallyDragging = false;
-				return;
-			}
-
-			if (slotEl) {
-				const targetIndex = parseInt(slotEl.dataset.slotIndex!, 10);
-				if (dragSource.type === 'slot' && dragSource.index === targetIndex) {
-					draggedAnimal = null;
-					dragSource = null;
-					isActuallyDragging = false;
-					return;
-				}
-				setDragElementDropPosition(
-					draggedAnimal.id,
-					touch.clientX,
-					touch.clientY,
-					startInfo.offsetX,
-					startInfo.offsetY
-				);
-				performDropOnSlot(targetIndex);
-			} else if (srcEl) {
-				const targetIndex = parseInt(srcEl.dataset.sourceIndex!, 10);
-				if (dragSource.type === 'source' && dragSource.index === targetIndex) {
-					draggedAnimal = null;
-					dragSource = null;
-					isActuallyDragging = false;
-					return;
-				}
-				setDragElementDropPosition(
-					draggedAnimal.id,
-					touch.clientX,
-					touch.clientY,
-					startInfo.offsetX,
-					startInfo.offsetY
-				);
-				performDropOnSource(targetIndex);
-			} else {
-				draggedAnimal = null;
-				dragSource = null;
-				isActuallyDragging = false;
-			}
-		}
-	}
-
-	function handleCheck() {
-		if (allSlotsFilled) {
-			checked = true;
-			const correctCount = slotResults.filter((r) => r).length;
-
-			// Визначаємо статус раунду для індикатора
-			let status: RoundStatus = 'incorrect';
-			if (correctCount === SLOT_COUNT) status = 'correct';
-			else if (correctCount > 0) status = 'partial';
-
-			roundResults.push(status);
-
-			if (correctCount > 0) {
-				sessionScore += correctCount;
-				settings.addScore(correctCount);
-			}
-		}
-	}
-
-	function resetGame() {
-		roundNumber = 1;
-		roundResults = [];
-		sessionScore = 0;
-		gameOver = false;
-		initRound();
-	}
-
-	function handleNextRound() {
-		if (roundNumber < TOTAL_ROUNDS) {
-			roundNumber++;
-			initRound();
-		} else {
-			gameOver = true;
-		}
-	}
-
-	function moveAnimalToIndex(animal: Animal, targetType: 'slot' | 'source', targetIndex: number) {
-		if (checked) return;
-
-		let fromType: 'slot' | 'source' | null = null;
-		let fromIndex = -1;
-
-		const sIdx = slots.findIndex((a) => a?.id === animal.id);
-		if (sIdx !== -1) {
-			fromType = 'slot';
-			fromIndex = sIdx;
-		} else {
-			const srcIdx = sourceAnimals.findIndex((a) => a?.id === animal.id);
-			if (srcIdx !== -1) {
-				fromType = 'source';
-				fromIndex = srcIdx;
-			}
+		const from = game.pickedFrom;
+		if (game.checked || !game.picked || !from) {
+			game.clearSelection();
+			isActuallyDragging = false;
+			return;
 		}
 
-		if (!fromType) return;
+		const touch = e.changedTouches[0];
+		const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+		const slotEl = elUnder?.closest('[data-slot-index]') as HTMLElement | null;
+		const srcEl = elUnder?.closest('[data-source-index]') as HTMLElement | null;
 
-		// Skip if moving to the same place
-		if (fromType === targetType && fromIndex === targetIndex) return;
+		const target: 'slot' | 'source' | null = slotEl ? 'slot' : srcEl ? 'source' : null;
+		if (!target) {
+			game.clearSelection();
+			isActuallyDragging = false;
+			return;
+		}
 
-		draggedAnimal = animal;
-		dragSource = { type: fromType, index: fromIndex };
+		const targetIndex = parseInt(
+			(target === 'slot' ? slotEl!.dataset.slotIndex : srcEl!.dataset.sourceIndex)!,
+			10
+		);
+		if (from.type === target && from.index === targetIndex) {
+			game.clearSelection();
+			isActuallyDragging = false;
+			return;
+		}
 
-		if (targetType === 'slot') performDropOnSlot(targetIndex);
-		else performDropOnSource(targetIndex);
+		setDragElementDropPosition(
+			game.picked.id,
+			touch.clientX,
+			touch.clientY,
+			startInfo.offsetX,
+			startInfo.offsetY
+		);
+		afterDrop(target === 'slot' ? game.dropOnSlot(targetIndex) : game.dropOnSource(targetIndex));
 	}
 
 	onMount(() => {
-		initRound();
+		game.startRound();
 		settings.setHeaderTitle('population.title');
 		document.addEventListener('touchstart', handleTouchStart, { passive: false });
 		document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -591,20 +381,20 @@
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchmove', handleTouchMove);
 			document.removeEventListener('touchend', handleTouchEnd);
-			if (touchDragClone) touchDragClone.remove();
+			touchDragClone?.remove();
 		};
 	});
 </script>
 
 <div class="game-page">
-	{#if gameOver}
+	{#if game.gameOver}
 		<div class="game-over-card" in:fade={{ duration: 400 }}>
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
 				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
-				<span class="score-value">{sessionScore} / {TOTAL_ROUNDS * SLOT_COUNT}</span>
+				<span class="score-value">{game.sessionScore} / {game.maxScore}</span>
 			</div>
-			<button class="btn-play-again" onclick={resetGame} data-testid="population-play-again-btn">
+			<button class="btn-play-again" onclick={() => game.reset()} data-testid="population-play-again-btn">
 				<RotateCcw size={24} />
 				{@html formatFont(t('common.playAgain'))}
 			</button>
@@ -612,16 +402,16 @@
 	{:else}
 		<div class="round-indicator-wrapper">
 			<RoundIndicator
-				current={roundNumber}
-				total={TOTAL_ROUNDS}
-				results={roundResults}
+				current={game.roundNumber}
+				total={game.totalRounds}
+				results={game.roundResults}
 			/>
 		</div>
 
 		<div class="sorting-panel">
 			<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
-			<div class="slots-row">
-				{#each slots as slotAnimal, i (i)}
+			<div class="game.slots-row">
+				{#each game.slots as slotAnimal, i (i)}
 					<div
 						class="game-container"
 						class:container--touch-over={dragOverId === `slot-${i}`}
@@ -630,7 +420,7 @@
 						ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
 						onmouseenter={() => (hoverSlotIndex = i)}
 						onmouseleave={() => (hoverSlotIndex = null)}
-						ondrop={(e) => handleDropOnSlot_DnD(e, i)}
+						ondrop={(e) => dropFromMouse(e, 'slot', i)}
 						onclick={() => handleSlotClick(i)}
 						onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
 						role="button"
@@ -639,11 +429,11 @@
 						{#each slotAnimal ? [slotAnimal] : [] as animal (animal.id)}
 							<div
 								class="game-card"
-								class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging}
+								class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
 								class:card--dragging-orig={isActuallyDragging &&
-									dragSource?.type === 'slot' &&
-									dragSource?.index === i}
-								draggable={!checked ? 'true' : 'false'}
+									game.pickedFrom?.type === 'slot' &&
+									game.pickedFrom?.index === i}
+								draggable={!game.checked ? 'true' : 'false'}
 								data-drag-animal={animal.id}
 								data-drag-source-type="slot"
 								data-drag-source-index={i}
@@ -669,16 +459,16 @@
 										width="300"
 										height="400"
 									/>
-									{#if checked}<div class="game-card__pop-overlay">
+									{#if game.checked}<div class="game-card__pop-overlay">
 											{@html formatPopulationHtml(animal.population)}
 										</div>{/if}
 								</div>
 								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
-								{#if checked}<span
+								{#if game.checked}<span
 										class="game-card__icon"
-										class:game-card__icon--correct={slotResults[i]}
-										class:game-card__icon--wrong={!slotResults[i]}
-										>{#if slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X
+										class:game-card__icon--correct={game.slotResults[i]}
+										class:game-card__icon--wrong={!game.slotResults[i]}
+										>{#if game.slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X
 												size={18}
 												strokeWidth={3}
 											/>{/if}</span
@@ -694,17 +484,17 @@
 							</span>
 							{#if !isActuallyDragging && hoverSlotIndex === i}
 								<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
-									{#each availableAnimals as animal (animal.id)}
+									{#each game.availableAnimals as animal (animal.id)}
 										<button
 											class="mini-ghost-card"
-											class:mini-ghost-card--selected={draggedAnimal?.id === animal.id}
+											class:mini-ghost-card--selected={game.picked?.id === animal.id}
 											onclick={(e) => {
 												e.stopPropagation();
-												moveAnimalToIndex(animal, 'slot', i);
+												game.moveTo(animal, 'slot', i);
 											}}
 											onkeydown={(e) =>
 												(e.key === 'Enter' || e.key === ' ') &&
-												moveAnimalToIndex(animal, 'slot', i)}
+												game.moveTo(animal, 'slot', i)}
 											aria-label={formatPlain(td(animal.nameKey))}
 										>
 											<img
@@ -726,15 +516,15 @@
 		</div>
 
 		<div class="action-zone">
-			{#if !checked}
-				<button class="btn-check" disabled={!allSlotsFilled} onclick={handleCheck} data-testid="population-check-btn"
+			{#if !game.checked}
+				<button class="btn-check" disabled={!game.allSlotsFilled} onclick={() => game.check()} data-testid="population-check-btn"
 					>{@html formatFont(t('population.check'))}</button
 				>
 			{:else}
 				<button
 					type="button"
 					class="btn-check"
-					onclick={handleNextRound}
+					onclick={() => game.nextRound()}
 					data-testid="population-next-round-btn"
 					>{@html formatFont(t('population.nextRound'))}</button
 				>
@@ -742,12 +532,12 @@
 		</div>
 
 		<div class="dynamic-zone-wrapper">
-			{#if !checked}
+			{#if !game.checked}
 				<div class="source-panel-wrapper" transition:slide={{ duration: 400 }}>
 					<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
 						<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
 						<div class="source-panel__cards">
-							{#each sourceAnimals as srcAnimal, i (i)}
+							{#each game.sourceAnimals as srcAnimal, i (i)}
 								<div
 									class="game-container"
 									class:container--touch-over={dragOverId === `source-${i}`}
@@ -756,7 +546,7 @@
 									ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
 									onmouseenter={() => (hoverSourceIndex = i)}
 									onmouseleave={() => (hoverSourceIndex = null)}
-									ondrop={(e) => handleDropOnSource_DnD(e, i)}
+									ondrop={(e) => dropFromMouse(e, 'source', i)}
 									onclick={() => handleSourcePlaceholderClick(i)}
 									onkeydown={(e) =>
 										(e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
@@ -766,10 +556,10 @@
 									{#each srcAnimal ? [srcAnimal] : [] as animal (animal.id)}
 										<div
 											class="game-card"
-											class:card--selected={draggedAnimal?.id === animal.id && !isActuallyDragging}
+											class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
 											class:card--dragging-orig={isActuallyDragging &&
-												dragSource?.type === 'source' &&
-												dragSource?.index === i}
+												game.pickedFrom?.type === 'source' &&
+												game.pickedFrom?.index === i}
 											draggable="true"
 											data-drag-animal={animal.id}
 											data-drag-source-type="source"
@@ -802,17 +592,17 @@
 									{/each}
 									{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
 										<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
-											{#each availableAnimals as animal (animal.id)}
+											{#each game.availableAnimals as animal (animal.id)}
 												<button
 													class="mini-ghost-card"
-													class:mini-ghost-card--selected={draggedAnimal?.id === animal.id}
+													class:mini-ghost-card--selected={game.picked?.id === animal.id}
 													onclick={(e) => {
 														e.stopPropagation();
-														moveAnimalToIndex(animal, 'source', i);
+														game.moveTo(animal, 'source', i);
 													}}
 													onkeydown={(e) =>
 														(e.key === 'Enter' || e.key === ' ') &&
-														moveAnimalToIndex(animal, 'source', i)}
+														game.moveTo(animal, 'source', i)}
 													aria-label={formatPlain(td(animal.nameKey))}
 												>
 													<img
@@ -834,10 +624,10 @@
 				</div>
 			{/if}
 
-			{#if checked}
+			{#if game.checked}
 				<div class="results-zone-wrapper" transition:slide={{ duration: 400 }}>
 					<div class="results-zone">
-						{#each correctOrder as animal, i (animal.id)}
+						{#each game.correctOrder as animal, i (animal.id)}
 							<div class="result-card anim-stagger-{i + 1}">
 								<div class="result-card__left">
 									<img

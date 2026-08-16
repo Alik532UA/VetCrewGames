@@ -1,6 +1,7 @@
 import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
 import { settings } from '$lib/services/settings.svelte';
 import { storage } from '$lib/services/storage';
+import type { RoundOutcome } from '$lib/types/game';
 
 /**
  * Стан гри «Правда чи міф?».
@@ -17,9 +18,6 @@ import { storage } from '$lib/services/storage';
  * він відповідає сценарію «зіграти ще раз» на екрані підсумку
  * (SVELTE-CORE-v8 § 1.4).
  */
-
-/** Підмножина `RoundStatus` із `RoundIndicator`: гра дає лише два результати. */
-export type RoundOutcome = 'correct' | 'incorrect';
 
 export type ActiveQuestion = GameQuestion & {
 	answered: boolean;

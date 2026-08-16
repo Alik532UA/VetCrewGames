@@ -1,5 +1,8 @@
 <script lang="ts">
-	export type RoundStatus = 'pending' | 'correct' | 'incorrect' | 'partial';
+	// Тип переїхав у `$lib/types/game`: контролери мусили імпортувати його
+	// звідси, тобто з компонента, і залежність текла в зворотний бік
+	// (SVELTE-CORE-v8 § 3.5).
+	import type { RoundStatus } from '$lib/types/game';
 
 	let {
 		current,
