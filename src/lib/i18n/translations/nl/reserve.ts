@@ -70,7 +70,8 @@ export const reserve = {
 	'reserve.reputation': 'Reputatie',
 	'reserve.inReserve': 'In het reservaat',
 	'reserve.inWild': 'In de natuur',
-	'reserve.noVetWarning': 'Er is geen dierenarts: het dier wordt opgenomen, maar het fonds krijgt er kritiek op.',
+	'reserve.noVetWarning':
+		'Er is geen dierenarts: het dier wordt opgenomen, maar het fonds krijgt er kritiek op.',
 	'reserve.reject.no-such-species': 'Deze soort neemt het reservaat niet op.',
 	'reserve.reject.no-such-enclosure': 'Bouw eerst een verblijf.',
 	'reserve.reject.enclosure-taken': 'Dit verblijf is al bezet.',
@@ -78,7 +79,8 @@ export const reserve = {
 	'reserve.reject.bad-size': 'Een verblijf van die grootte bestaat niet.',
 
 	'reserve.pickBiome': 'Waar het reservaat komt te staan',
-	'reserve.pickBiomeHint': 'Het bioom bepaalt wie hier wordt gebracht. Hoe groter de soorten, hoe duurder de verblijven.',
+	'reserve.pickBiomeHint':
+		'Het bioom bepaalt wie hier wordt gebracht. Hoe groter de soorten, hoe duurder de verblijven.',
 	'reserve.speciesHere': 'soorten',
 	'reserve.fromPrice': 'verblijf vanaf',
 	'reserve.map': 'Kaart',
@@ -104,5 +106,12 @@ export const reserve = {
 	'reserve.goal.keeper': 'Een verzorger aannemen',
 	'reserve.goal.take': 'Het eerste dier opnemen',
 	'reserve.goal.heal': 'Een dier gezond maken',
-	'reserve.goal.release': 'Een dier terugbrengen naar de natuur'
+	'reserve.goal.release': 'Een dier terugbrengen naar de natuur',
+
+	'reserve.reject.campaign-done': 'Vandaag is er al een campagne geweest.',
+	'reserve.campaign': 'Socialemediacampagne',
+	'reserve.campaignHint':
+		'Vertel over het reservaat. Niets voor de natuur, een plus voor de reputatie.',
+	'reserve.victory': 'Doel bereikt! Het reservaat heeft de planeet veranderd.',
+	'reserve.toWin': 'Tot de overwinning'
 } as const;

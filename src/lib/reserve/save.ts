@@ -27,7 +27,7 @@ import type { ReserveState } from './types';
  * читається неправильно. **Разом із номером додається сходинка в `MIGRATIONS`** —
  * без неї підйом версії просто викидає чужу партію.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export interface SaveFile {
 	version: number;
@@ -132,7 +132,10 @@ function checkState(value: unknown): string | null {
 	if (reputation < REPUTATION_MIN || reputation > REPUTATION_MAX)
 		return `reputation = ${String(reputation)}`;
 
-	for (const field of ['gameOver', 'subsidy']) if (typeof value[field] !== 'boolean') return field;
+	if (!isNumber(value.lastCampaignDay)) return 'lastCampaignDay';
+
+	for (const field of ['gameOver', 'victory', 'subsidy'])
+		if (typeof value[field] !== 'boolean') return field;
 
 	if (!isObject(value.staff)) return 'staff';
 	for (const role of Object.keys(WAGES)) if (!isNumber(value.staff[role])) return `staff.${role}`;

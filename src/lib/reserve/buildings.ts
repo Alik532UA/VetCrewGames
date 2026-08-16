@@ -1,4 +1,10 @@
-import { enclosurePrice, QUALITIES, repairPrice, upgradePrice } from './constants';
+import {
+	ENCLOSURE_IMPACT,
+	enclosurePrice,
+	QUALITIES,
+	repairPrice,
+	upgradePrice
+} from './constants';
 import { ENCLOSURE_SIZES } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
 
@@ -27,6 +33,10 @@ export function buildings(
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };
 
 			state.budget -= cost;
+			// Будівництво саме по собі природі не допомагає: ресурси спалено, земля
+			// зайнята, жодної врятованої тварини. Публіка ж розділилася — хтось
+			// бачить благі наміри, хтось піар, — і репутація не рухається взагалі.
+			state.impact += ENCLOSURE_IMPACT;
 			state.enclosures.push({
 				id: state.nextEnclosureId++,
 				size: command.size,

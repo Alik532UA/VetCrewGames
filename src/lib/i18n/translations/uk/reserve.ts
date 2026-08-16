@@ -83,7 +83,8 @@ export const reserve = {
 	'reserve.reject.bad-size': 'Такого розміру вольєра не буває.',
 
 	'reserve.pickBiome': 'Де стоятиме заповідник',
-	'reserve.pickBiomeHint': 'Біом вирішує, кого сюди привозять. Що більші види — то дорожчі вольєри.',
+	'reserve.pickBiomeHint':
+		'Біом вирішує, кого сюди привозять. Що більші види — то дорожчі вольєри.',
 	'reserve.speciesHere': 'видів',
 	'reserve.fromPrice': 'вольєр від',
 	'reserve.map': 'Карта',
@@ -109,5 +110,11 @@ export const reserve = {
 	'reserve.goal.keeper': 'Найняти доглядача',
 	'reserve.goal.take': 'Прийняти першу тварину',
 	'reserve.goal.heal': 'Вилікувати тварину',
-	'reserve.goal.release': 'Повернути тварину в природу'
+	'reserve.goal.release': 'Повернути тварину в природу',
+
+	'reserve.reject.campaign-done': 'Сьогодні кампанія вже була.',
+	'reserve.campaign': 'Кампанія в соцмережах',
+	'reserve.campaignHint': 'Розповісти про заповідник. Природі — нуль, репутації — плюс.',
+	'reserve.victory': 'Мету досягнуто! Заповідник змінив планету.',
+	'reserve.toWin': 'До перемоги'
 } as const;

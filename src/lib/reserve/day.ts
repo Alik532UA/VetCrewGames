@@ -1,6 +1,11 @@
 import {
 	ANIMALS_PER_KEEPER,
 	COLLAPSE_DAYS,
+	HEAL_IMPACT,
+	HEAL_REPUTATION,
+	REPUTATION_DECAY_PER_DAY,
+	REPUTATION_MAX,
+	REPUTATION_MIN,
 	DONATION_PER_REPUTATION,
 	QUALITY_SPEED,
 	RECOVERY_PER_VET_DAY,
@@ -91,7 +96,13 @@ export function endOfDay(state: ReserveState): void {
 			// Стрес не спиняє одужання, а гальмує його; тіснота множить те, що лишилося.
 			const rate = perAnimal * (1 - animal.stress / 2) * comfortFor(state, animal);
 			animal.recovery = Math.min(1, animal.recovery + rate);
-			if (animal.recovery >= 1) animal.stage = 'healthy';
+			if (animal.recovery >= 1) {
+				animal.stage = 'healthy';
+				// Вилікувана тварина в неволі допомагає природі мало (+1), а от
+				// публіці видно саме одужання (+5).
+				state.impact += HEAL_IMPACT;
+				state.reputation = Math.min(REPUTATION_MAX, state.reputation + HEAL_REPUTATION);
+			}
 		}
 	}
 
@@ -109,6 +120,10 @@ export function endOfDay(state: ReserveState): void {
 	 * мінусі. Вихід у нуль обнуляє лічильник: тридцять днів із перервою не
 	 * означають, що фонд шкодить постійно.
 	 */
+	// Публіка забуває: без щоденного спаду шкала насичується за десять хвилин
+	// і перестає бути рішенням.
+	state.reputation = Math.max(REPUTATION_MIN, state.reputation - REPUTATION_DECAY_PER_DAY);
+
 	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
 	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;
 }

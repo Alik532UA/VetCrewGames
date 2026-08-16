@@ -146,7 +146,20 @@
 			onSpeed={(value: Speed) => (game.speed = value)}
 		/>
 
-		{#if game.state.gameOver}
+		{#if game.state.victory}
+			<section class="reserve-over" data-testid="reserve-victory-section">
+				<p>{t('reserve.victory')}</p>
+				<p class="reserve-over__score">
+					{t('reserve.impact')}: {game.state.impact} · {t('reserve.day')}: {game.day}
+				</p>
+				<button
+					type="button"
+					class="btn-primary"
+					onclick={startOver}
+					data-testid="reserve-victory-restart-btn">{t('reserve.newGame')}</button
+				>
+			</section>
+		{:else if game.state.gameOver}
 			<section class="reserve-over" data-testid="reserve-game-over-section">
 				<p>{t('reserve.gameOver')}</p>
 				<button
@@ -187,6 +200,19 @@
 						{t(item.key)}
 					</button>
 				{/each}
+				<!--
+					Кампанія — окрема кнопка просто на смузі, бо це ХІД, а не список:
+					ховати її в панель означало б два кліки на дію, яку роблять щодня.
+				-->
+				<button
+					type="button"
+					class="reserve-bar__btn"
+					title={t('reserve.campaignHint')}
+					onclick={() => command({ type: 'campaign' })}
+					data-testid="reserve-campaign-btn"
+				>
+					{t('reserve.campaign')}
+				</button>
 				<button
 					type="button"
 					class="reserve-bar__btn"
@@ -300,5 +326,10 @@
 
 	.reserve-over p {
 		margin: 0;
+	}
+
+	.reserve-over__score {
+		font-variant-numeric: tabular-nums;
+		opacity: 0.8;
 	}
 </style>

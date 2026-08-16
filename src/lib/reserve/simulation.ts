@@ -1,6 +1,8 @@
 import { seededRandom } from '$lib/utils/seededRandom';
 import {
-	BLACK_MARKET_REPUTATION,
+	CAMPAIGN_PRICE,
+	CAMPAIGN_REPUTATION,
+	IMPACT_TO_WIN,
 	NO_VET_REPUTATION,
 	ORIGINS,
 	RELEASE_IMPACT,
@@ -48,6 +50,8 @@ export function createReserve(seed: number, biome: ReserveBiome = 'forest'): Res
 		staff: { vet: 0, keeper: 0 },
 		collapseDays: 0,
 		gameOver: false,
+		victory: false,
+		lastCampaignDay: -1,
 		subsidy: false,
 		seed,
 		rolls: 0,
@@ -88,7 +92,8 @@ const occupant = (state: ReserveState, enclosureId: number) =>
 	present(state).find((a) => a.enclosureId === enclosureId);
 
 export function execute(state: ReserveState, command: ReserveCommand): CommandResult {
-	if (state.gameOver) return { ok: false, reason: 'game-over' };
+	// Партія скінчилася — байдуже, перемогою чи поразкою: ходів більше немає.
+	if (state.gameOver || state.victory) return { ok: false, reason: 'game-over' };
 
 	/*
 	 * Субсидія покриває виживання, а не зростання. Заборона стоїть ТУТ, одним
@@ -131,7 +136,7 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 
 			state.budget -= cost;
 			state.impact += terms.impact;
-			if (command.origin === 'black-market') addReputation(state, BLACK_MARKET_REPUTATION);
+			addReputation(state, terms.reputation);
 
 			/*
 			 * Узяти хвору тварину, не маючи ветеринара, гра ДОЗВОЛЯЄ: забрати її
@@ -166,6 +171,7 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 			animal.stage = 'released';
 			animal.releasedOnDay = dayOf(state);
 			state.impact += RELEASE_IMPACT;
+			if (state.impact >= IMPACT_TO_WIN) state.victory = true;
 			// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
 			// суто оборонною — плюс до умови програшу й жодної копійки.
 			addReputation(state, RELEASE_REPUTATION);
@@ -175,6 +181,18 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 		case 'hire':
 			state.staff[command.role] += 1;
 			return { ok: true };
+
+		case 'campaign': {
+			// Раз на день: другий допис того самого дня нікого не переконує.
+			if (state.lastCampaignDay === dayOf(state)) return { ok: false, reason: 'campaign-done' };
+			if (state.budget < CAMPAIGN_PRICE) return { ok: false, reason: 'no-money' };
+
+			state.budget -= CAMPAIGN_PRICE;
+			state.lastCampaignDay = dayOf(state);
+			// Природі від допису НУЛЬ — росте лише те, що про фонд знають.
+			addReputation(state, CAMPAIGN_REPUTATION);
+			return { ok: true };
+		}
 
 		case 'dismiss':
 			if (state.staff[command.role] === 0) return { ok: false, reason: 'nobody-to-dismiss' };

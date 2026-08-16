@@ -13,7 +13,6 @@ import {
 } from './simulation';
 import type { ReserveCommand, ReserveState } from './types';
 import {
-	BLACK_MARKET_REPUTATION,
 	COLLAPSE_DAYS,
 	enclosurePrice,
 	NO_VET_REPUTATION,
@@ -23,6 +22,13 @@ import {
 	STARTING_BUDGET,
 	STARTING_REPUTATION,
 	TICKS_PER_DAY,
+	CAMPAIGN_PRICE,
+	CAMPAIGN_REPUTATION,
+	ENCLOSURE_IMPACT,
+	HEAL_IMPACT,
+	HEAL_REPUTATION,
+	IMPACT_TO_WIN,
+	REPUTATION_DECAY_PER_DAY,
 	repairPrice,
 	WEAR_PER_DAY,
 	type Quality
@@ -67,11 +73,19 @@ const SCRIPT: ReserveCommand[] = [
 ];
 
 describe('детермінізм', () => {
+	/**
+	 * Заразом ця перевірка показує, що тиск нової економіки справжній: два
+	 * вольєри дають −4 до «Користі планеті», порятунок не компенсує нічого, і
+	 * партія, у якій нікого не випустили, ЗАКІНЧУЄТЬСЯ на тридцятий день. Саме
+	 * тому час зупиняється раніше за 10 000 тіків.
+	 */
 	it('перевірка жива: партія справді щось змінює', () => {
 		const state = play(1, SCRIPT, 10_000);
-		expect(state.ticks).toBe(10_000);
 		expect(state.animals.length).toBe(2);
 		expect(state.enclosures.length).toBe(2);
+		expect(state.impact, 'будівництво коштує користі').toBeLessThan(0);
+		expect(state.gameOver, 'без жодного випуску заповідник не виживає').toBe(true);
+		expect(state.ticks).toBe(COLLAPSE_DAYS * TICKS_PER_DAY);
 	});
 
 	/**
@@ -297,14 +311,30 @@ describe('економіка надходження', () => {
 			expect(state.budget, origin).toBe(
 				1_000_000 - enclosurePrice(4) - terms.price - terms.logistics
 			);
-			expect(state.impact, origin).toBe(terms.impact);
+			// Вольєр теж коштує користі — його мінус входить у підсумок.
+			expect(state.impact, origin).toBe(ENCLOSURE_IMPACT + terms.impact);
 		}
 	});
 
-	it('порятунок плюсує, обидві покупки мінусують', () => {
-		expect(ORIGINS.rescue.impact).toBeGreaterThan(0);
+	/**
+	 * Найгостріше місце всієї економіки: порятунок дає НУЛЬ до «Користі
+	 * планеті» й ПЛЮС до репутації.
+	 *
+	 * З одного боку, у природи забрали особину — ланка випала. З іншого,
+	 * зʼявився шанс урятувати. Сума чесно нульова: користь настане тоді, коли
+	 * тварина повернеться, а не коли її привезли. Публіка ж бачить гуманний
+	 * вчинок одразу — і саме цей розрив між «робити добро» і «виглядати добре»
+	 * виправдовує дві шкали замість однієї.
+	 */
+	it('порятунок не додає користі, але додає репутації', () => {
+		expect(ORIGINS.rescue.impact).toBe(0);
+		expect(ORIGINS.rescue.reputation).toBeGreaterThan(0);
+	});
+
+	it('покупки мінусують: вони створюють попит', () => {
 		expect(ORIGINS.official.impact).toBeLessThan(0);
 		expect(ORIGINS['black-market'].impact).toBeLessThan(ORIGINS.official.impact);
+		expect(ORIGINS['black-market'].reputation).toBeLessThan(0);
 	});
 
 	it('без грошей тварина не зʼявляється', () => {
@@ -331,7 +361,9 @@ describe('репутація', () => {
 	it('тварина без ветеринара коштує репутації, але проходить', () => {
 		const { state, result } = withLion(4);
 		expect(result).toEqual({ ok: true });
-		expect(state.reputation).toBe(STARTING_REPUTATION + NO_VET_REPUTATION);
+		expect(state.reputation).toBe(
+			STARTING_REPUTATION + ORIGINS.rescue.reputation + NO_VET_REPUTATION
+		);
 	});
 
 	it('із ветеринаром докору немає', () => {
@@ -340,7 +372,7 @@ describe('репутація', () => {
 		execute(state, { type: 'hire', role: 'vet' });
 		execute(state, { type: 'build', size: 4, quality: 2 });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
-		expect(state.reputation).toBe(STARTING_REPUTATION);
+		expect(state.reputation).toBe(STARTING_REPUTATION + ORIGINS.rescue.reputation);
 	});
 
 	it('чорний ринок бʼє і по репутації, і по «Користі планеті»', () => {
@@ -350,8 +382,8 @@ describe('репутація', () => {
 		execute(state, { type: 'build', size: 4, quality: 2 });
 		execute(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
 
-		expect(state.reputation).toBe(STARTING_REPUTATION + BLACK_MARKET_REPUTATION);
-		expect(state.impact).toBe(ORIGINS['black-market'].impact);
+		expect(state.reputation).toBe(STARTING_REPUTATION + ORIGINS['black-market'].reputation);
+		expect(state.impact).toBe(ENCLOSURE_IMPACT + ORIGINS['black-market'].impact);
 	});
 
 	/**
@@ -465,19 +497,22 @@ describe('два списки замість одного', () => {
 		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
 		execute(state, { type: 'release', animalId: 1 });
 
+		// Репутація знімається ДО доби: наприкінці кожної вона спадає на 0.5, а
+		// пожертви рахуються з неї — інакше два заповідники порівнювалися б із
+		// різними репутаціями й розійшлися б рівно на 2 монети.
+		const reputation = state.reputation;
 		const before = state.budget;
 		day(state);
 		const withReleased = before - state.budget;
 
-		const empty = createReserve(1);
+		const empty = createReserve(1, 'savanna');
 		empty.budget = 1_000_000;
+		empty.reputation = reputation;
 		execute(empty, { type: 'build', size: 4, quality: 2 });
 		const emptyBefore = empty.budget;
-		empty.reputation = state.reputation;
 		day(empty);
 
-		expect(before - state.budget).toBe(withReleased);
-		expect(emptyBefore - empty.budget).toBe(withReleased);
+		expect(emptyBefore - empty.budget, 'випущена тварина все ще щось коштує').toBe(withReleased);
 	});
 });
 
@@ -757,5 +792,123 @@ describe('знос і ремонт', () => {
 
 		execute(state, { type: 'upgrade', enclosureId: 1, quality: 3 });
 		expect(state.enclosures[0].durability).toBe(1);
+	});
+});
+
+describe('дві шкали розходяться саме там, де це щось означає', () => {
+	const savanna = () => {
+		const state = createReserve(1, 'savanna');
+		state.budget = 1_000_000;
+		state.staff.vet = 1;
+		return state;
+	};
+
+	/**
+	 * Будівництво САМЕ ПО СОБІ природі не допомагає.
+	 *
+	 * Майже кожен тайкун нараховує очки за будівництво. Тут воно витрата:
+	 * ресурси спалено, земля зайнята, жодної врятованої тварини. Публіці ж
+	 * байдуже — хтось бачить благі наміри, хтось піар, і в сумі нуль.
+	 */
+	it('вольєр забирає користь і не дає репутації', () => {
+		const state = savanna();
+		execute(state, { type: 'build', size: 4, quality: 2 });
+
+		expect(state.impact).toBe(ENCLOSURE_IMPACT);
+		expect(state.reputation, 'публіка розділилася — у сумі нуль').toBe(STARTING_REPUTATION);
+	});
+
+	/** Кампанія — дзеркальний випадок: природі нуль, репутації плюс. */
+	it('кампанія в соцмережах додає лише репутації', () => {
+		const state = savanna();
+		const impact = state.impact;
+
+		expect(execute(state, { type: 'campaign' })).toEqual({ ok: true });
+		expect(state.impact, 'допис нікого не врятував').toBe(impact);
+		expect(state.reputation).toBe(STARTING_REPUTATION + CAMPAIGN_REPUTATION);
+	});
+
+	it('кампанія коштує грошей і буває раз на день', () => {
+		const state = savanna();
+		const before = state.budget;
+
+		execute(state, { type: 'campaign' });
+		expect(before - state.budget).toBe(CAMPAIGN_PRICE);
+		expect(execute(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'campaign-done' });
+
+		day(state);
+		expect(execute(state, { type: 'campaign' }), 'новий день — новий привід').toEqual({ ok: true });
+	});
+
+	it('одужання дає мало користі й багато репутації', () => {
+		const state = savanna();
+		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+
+		const before = { impact: state.impact, reputation: state.reputation };
+		state.animals[0].recovery = 0.99;
+		day(state);
+
+		expect(state.animals[0].stage).toBe('healthy');
+		expect(state.impact - before.impact).toBe(HEAL_IMPACT);
+		// Спад репутації за ту саму добу теж треба врахувати.
+		expect(state.reputation - before.reputation).toBeCloseTo(
+			HEAL_REPUTATION - REPUTATION_DECAY_PER_DAY
+		);
+	});
+
+	/**
+	 * Публіка забуває. Без цього шкала 0–100 насичується за три тварини, і
+	 * репутація перестає бути рішенням — стає туторіалом.
+	 */
+	it('репутація сама спадає, поки нічого не відбувається', () => {
+		const state = savanna();
+		day(state, 4);
+		expect(state.reputation).toBeCloseTo(STARTING_REPUTATION - 4 * REPUTATION_DECAY_PER_DAY);
+	});
+
+	it('спад не заганяє репутацію нижче нуля', () => {
+		const state = savanna();
+		state.reputation = 0;
+		day(state, 5);
+		expect(state.reputation).toBe(0);
+	});
+});
+
+describe('перемога', () => {
+	const ready = () => {
+		const state = createReserve(1, 'savanna');
+		state.budget = 1_000_000;
+		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
+		return state;
+	};
+
+	it('перевірка жива: звичайний випуск перемоги не дає', () => {
+		const state = ready();
+		execute(state, { type: 'release', animalId: 1 });
+		expect(state.victory).toBe(false);
+	});
+
+	/**
+	 * Перемога настає лише за «Користю планеті» — не за грошима й не за
+	 * репутацією. Гроші й слава тут засоби, а не мета.
+	 */
+	it('поріг користі завершує партію перемогою', () => {
+		const state = ready();
+		state.impact = IMPACT_TO_WIN - RELEASE_IMPACT;
+		execute(state, { type: 'release', animalId: 1 });
+
+		expect(state.impact).toBeGreaterThanOrEqual(IMPACT_TO_WIN);
+		expect(state.victory).toBe(true);
+		expect(state.gameOver, 'перемога — не поразка').toBe(false);
+	});
+
+	it('після перемоги ходів більше немає', () => {
+		const state = ready();
+		state.impact = IMPACT_TO_WIN;
+		state.victory = true;
+		expect(execute(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'game-over' });
 	});
 });

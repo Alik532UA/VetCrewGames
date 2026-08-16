@@ -69,7 +69,8 @@ export const reserve = {
 	'reserve.reputation': 'Reputation',
 	'reserve.inReserve': 'In the reserve',
 	'reserve.inWild': 'In the wild',
-	'reserve.noVetWarning': 'There is no vet: the animal will be taken in, but the fund will be criticised for it.',
+	'reserve.noVetWarning':
+		'There is no vet: the animal will be taken in, but the fund will be criticised for it.',
 	'reserve.reject.no-such-species': 'The reserve does not take this species.',
 	'reserve.reject.no-such-enclosure': 'Build an enclosure first.',
 	'reserve.reject.enclosure-taken': 'This enclosure is already occupied.',
@@ -77,7 +78,8 @@ export const reserve = {
 	'reserve.reject.bad-size': 'There is no enclosure of that size.',
 
 	'reserve.pickBiome': 'Where the reserve will stand',
-	'reserve.pickBiomeHint': 'The biome decides who is brought here. The bigger the species, the pricier the enclosures.',
+	'reserve.pickBiomeHint':
+		'The biome decides who is brought here. The bigger the species, the pricier the enclosures.',
 	'reserve.speciesHere': 'species',
 	'reserve.fromPrice': 'enclosure from',
 	'reserve.map': 'Map',
@@ -103,5 +105,12 @@ export const reserve = {
 	'reserve.goal.keeper': 'Hire a keeper',
 	'reserve.goal.take': 'Take in the first animal',
 	'reserve.goal.heal': 'Nurse an animal back to health',
-	'reserve.goal.release': 'Return an animal to the wild'
+	'reserve.goal.release': 'Return an animal to the wild',
+
+	'reserve.reject.campaign-done': 'There has already been a campaign today.',
+	'reserve.campaign': 'Social media campaign',
+	'reserve.campaignHint':
+		'Tell people about the reserve. Nothing for nature, a plus for reputation.',
+	'reserve.victory': 'Goal reached! The reserve has changed the planet.',
+	'reserve.toWin': 'To victory'
 } as const;

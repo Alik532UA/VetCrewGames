@@ -73,6 +73,10 @@ export interface ReserveState {
 	 */
 	collapseDays: number;
 	gameOver: boolean;
+	/** Партія виграна: набрано поріг «Користі планеті». Час зупиняється так само. */
+	victory: boolean;
+	/** Якого дня востаннє була кампанія. −1 — жодної. Тримає межу «раз на день». */
+	lastCampaignDay: number;
 	/**
 	 * Режим антикризової субсидії: бюджет у мінусі. Годування й ліки тривають,
 	 * розширення заблоковане. Це НЕ програш — програш лише за «Користю планеті».
@@ -94,7 +98,8 @@ export type ReserveCommand =
 	| { type: 'acquire'; origin: AnimalOrigin; speciesId: string; enclosureId: number }
 	| { type: 'release'; animalId: number }
 	| { type: 'hire'; role: StaffRole }
-	| { type: 'dismiss'; role: StaffRole };
+	| { type: 'dismiss'; role: StaffRole }
+	| { type: 'campaign' };
 
 /** Чому хід не пройшов. Інтерфейсу цього досить, щоб пояснити людині. */
 export type RejectReason =
@@ -115,6 +120,7 @@ export type RejectReason =
 	/** Вид не живе в цьому біомі — і саме це гра пояснює, а не обходить. */
 	| 'wrong-biome'
 	| 'already-sound'
-	| 'not-an-upgrade';
+	| 'not-an-upgrade'
+	| 'campaign-done';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };

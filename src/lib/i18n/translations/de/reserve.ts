@@ -71,7 +71,8 @@ export const reserve = {
 	'reserve.reputation': 'Ruf',
 	'reserve.inReserve': 'Im Reservat',
 	'reserve.inWild': 'In Freiheit',
-	'reserve.noVetWarning': 'Es gibt keinen Tierarzt: Das Tier wird aufgenommen, aber der Fonds wird dafür kritisiert.',
+	'reserve.noVetWarning':
+		'Es gibt keinen Tierarzt: Das Tier wird aufgenommen, aber der Fonds wird dafür kritisiert.',
 	'reserve.reject.no-such-species': 'Diese Art nimmt das Reservat nicht auf.',
 	'reserve.reject.no-such-enclosure': 'Baue zuerst ein Gehege.',
 	'reserve.reject.enclosure-taken': 'Dieses Gehege ist bereits belegt.',
@@ -79,7 +80,8 @@ export const reserve = {
 	'reserve.reject.bad-size': 'Ein Gehege dieser Größe gibt es nicht.',
 
 	'reserve.pickBiome': 'Wo das Reservat stehen wird',
-	'reserve.pickBiomeHint': 'Das Biom entscheidet, wer hierher gebracht wird. Je größer die Arten, desto teurer die Gehege.',
+	'reserve.pickBiomeHint':
+		'Das Biom entscheidet, wer hierher gebracht wird. Je größer die Arten, desto teurer die Gehege.',
 	'reserve.speciesHere': 'Arten',
 	'reserve.fromPrice': 'Gehege ab',
 	'reserve.map': 'Karte',
@@ -105,5 +107,11 @@ export const reserve = {
 	'reserve.goal.keeper': 'Einen Tierpfleger einstellen',
 	'reserve.goal.take': 'Das erste Tier aufnehmen',
 	'reserve.goal.heal': 'Ein Tier gesund pflegen',
-	'reserve.goal.release': 'Ein Tier in die Wildnis zurückbringen'
+	'reserve.goal.release': 'Ein Tier in die Wildnis zurückbringen',
+
+	'reserve.reject.campaign-done': 'Heute gab es bereits eine Kampagne.',
+	'reserve.campaign': 'Social-Media-Kampagne',
+	'reserve.campaignHint': 'Vom Reservat erzählen. Für die Natur nichts, für den Ruf ein Plus.',
+	'reserve.victory': 'Ziel erreicht! Das Reservat hat den Planeten verändert.',
+	'reserve.toWin': 'Bis zum Sieg'
 } as const;

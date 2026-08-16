@@ -32,7 +32,8 @@ export const myths = {
 	'myth.elephant-trunk.statement': 'Elefanten trinken direkt durch den Rüssel',
 	'myth.elephant-trunk.explanation':
 		'Mythos. Der Rüssel ist nur die Pumpe: Sie ziehen Wasser auf und spritzen es sich ins Maul.',
-	'myth.elephant-jump.statement': 'Elefanten sind die einzigen Säugetiere, die nicht springen können',
+	'myth.elephant-jump.statement':
+		'Elefanten sind die einzigen Säugetiere, die nicht springen können',
 	'myth.elephant-jump.explanation':
 		'Fakt. Ihr gewaltiges Gewicht und der Bau ihrer Beine lassen keinen Sprung zu.',
 	'myth.ant-sleep.statement': 'Ameisen schlafen nie',
@@ -155,7 +156,8 @@ export const myths = {
 	'myth.panther-species.statement': 'Panther sind eine eigene Großkatzenart',
 	'myth.panther-species.explanation':
 		'Mythos. Ein „schwarzer Panther“ ist schlicht ein Leopard oder Jaguar mit Melanismus, einer erblichen Dunkelfärbung.',
-	'myth.panther-melanism.statement': 'Im hellen Sonnenlicht sind die Flecken eines Panthers zu sehen',
+	'myth.panther-melanism.statement':
+		'Im hellen Sonnenlicht sind die Flecken eines Panthers zu sehen',
 	'myth.panther-melanism.explanation':
 		'Fakt. Da es melanistische Leoparden oder Jaguare sind, zeichnen sich ihre Rosetten bei starkem Licht weiterhin ab.',
 	'myth.peacock-fly.statement': 'Pfauen können wegen ihres langen Schwanzes gar nicht fliegen',
@@ -177,8 +179,7 @@ export const myths = {
 	'myth.spider-arachnid.explanation':
 		'Fakt. Spinnen sind Spinnentiere: acht Beine und zwei Körperabschnitte, Insekten haben sechs Beine und drei.',
 	'myth.blue_whale-heart.statement': 'Das Herz eines Blauwals ist etwa so groß wie ein Auto',
-	'myth.blue_whale-heart.explanation':
-		'Fakt. Das Herz eines Blauwals wiegt bis zu 180 Kilogramm.',
+	'myth.blue_whale-heart.explanation': 'Fakt. Das Herz eines Blauwals wiegt bis zu 180 Kilogramm.',
 	'myth.blue_whale-swallow.statement': 'Ein Blauwal könnte mühelos ein kleines Auto verschlucken',
 	'myth.blue_whale-swallow.explanation':
 		'Mythos. Trotz der gewaltigen Größe ist seine Speiseröhre nur etwa so weit wie eine Grapefruit.',
@@ -230,7 +231,8 @@ export const myths = {
 	'myth.owl-blind.statement': 'Eulen sind tagsüber völlig blind',
 	'myth.owl-blind.explanation':
 		'Mythos. Eulen sehen auch am Tag gut, ihre Augen sind nur besonders auf das Sehen bei Nacht ausgelegt.',
-	'myth.seal-whiskers.statement': 'Robben spüren ihre Beute im dunklen Wasser mit den Barthaaren auf',
+	'myth.seal-whiskers.statement':
+		'Robben spüren ihre Beute im dunklen Wasser mit den Barthaaren auf',
 	'myth.seal-whiskers.explanation':
 		'Fakt. Die Barthaare sind unglaublich empfindlich und nehmen die Wasserwirbel wahr, die ein Fisch hinterlässt.',
 	'myth.seal-lion.statement': 'Seehunde und Seelöwen sind genau dasselbe',
@@ -249,7 +251,8 @@ export const myths = {
 	'myth.turtle-shell.statement': 'Schildkröten können ganz aus ihrem Panzer herauskriechen',
 	'myth.turtle-shell.explanation':
 		'Mythos. Der Panzer gehört zum Skelett und wächst mit Wirbelsäule und Rippen zusammen.',
-	'myth.antelope-horns.statement': 'Antilopenhörner bleiben ein Leben lang und werden nicht abgeworfen',
+	'myth.antelope-horns.statement':
+		'Antilopenhörner bleiben ein Leben lang und werden nicht abgeworfen',
 	'myth.antelope-horns.explanation':
 		'Fakt. Anders als Hirsche tragen echte Antilopen unverzweigte Hörner, die nicht jährlich abfallen.',
 	'myth.antelope-diet.statement': 'Antilopen jagen häufig kleine Tiere',
@@ -279,7 +282,8 @@ export const myths = {
 	'myth.bear-winter.statement': 'Bären fressen und trinken während der Winterruhe nicht',
 	'myth.bear-winter.explanation':
 		'Fakt. Im tiefen Schlaf verwertet ihr Körper die eigenen Abfallstoffe — monatelang ohne Fressen, Trinken und Kotabsatz.',
-	'myth.beaver-tail.statement': 'Biber schlagen mit dem Schwanz aufs Wasser, um vor Gefahr zu warnen',
+	'myth.beaver-tail.statement':
+		'Biber schlagen mit dem Schwanz aufs Wasser, um vor Gefahr zu warnen',
 	'myth.beaver-tail.explanation':
 		'Fakt. Der laute Schlag auf die Wasseroberfläche ist das Alarmsignal für die anderen Biber.',
 	'myth.beaver-fish.statement': 'Biber sind ausgezeichnete Fischjäger',
@@ -464,7 +468,8 @@ export const myths = {
 	'myth.red_panda-stand.explanation':
 		'Fakt. Erschrocken richten sie sich auf und breiten die Arme aus, um bedrohlicher auszusehen.',
 	'myth.shark-cancer.statement': 'Haie bekommen niemals Krebs',
-	'myth.shark-cancer.explanation': 'Mythos. Selten, aber es kommt vor: Haie bekommen Tumore und Krebs.',
+	'myth.shark-cancer.explanation':
+		'Mythos. Selten, aber es kommt vor: Haie bekommen Tumore und Krebs.',
 	'myth.shark-sleep.statement': 'Manche Haie müssen ununterbrochen schwimmen, um zu überleben',
 	'myth.shark-sleep.explanation':
 		'Fakt. Arten wie der Weiße Hai müssen in Bewegung bleiben, damit sauerstoffreiches Wasser über ihre Kiemen strömt.',
@@ -519,7 +524,8 @@ export const myths = {
 	'myth.yak-altitude.statement': 'Yaks gedeihen in warmen tropischen Gegenden',
 	'myth.yak-altitude.explanation':
 		'Mythos. Yaks sind an extreme Kälte und große Höhen angepasst; in tieferen, wärmeren Lagen leiden sie unter Hitze.',
-	'myth.yak-sweat.statement': 'Yaks sondern einen besonderen Schweiß ab, der wie eine Dämmung wirkt',
+	'myth.yak-sweat.statement':
+		'Yaks sondern einen besonderen Schweiß ab, der wie eine Dämmung wirkt',
 	'myth.yak-sweat.explanation':
 		'Fakt. Der Schweiß verfilzt ihr Unterhaar und schützt sie zusätzlich gegen strenge Kälte.',
 	'myth.zebra-black.statement': 'Zebras sind eigentlich schwarz mit weißen Streifen',

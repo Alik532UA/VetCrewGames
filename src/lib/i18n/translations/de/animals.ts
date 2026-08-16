@@ -43,8 +43,7 @@ export const animals = {
 		'Die Streifen eines Tigers sind einmalig wie ein Fingerabdruck — keine zwei sind gleich.',
 	'fact.penguin':
 		'Kaiserpinguine tauchen bis in 500 Meter Tiefe und halten dabei 20 Minuten die Luft an.',
-	'fact.bee':
-		'Eine Biene erzeugt in ihrem ganzen Leben nur ein Zwölftel Teelöffel Honig.',
+	'fact.bee': 'Eine Biene erzeugt in ihrem ganzen Leben nur ein Zwölftel Teelöffel Honig.',
 	'fact.panda': 'Pandas fressen bis zu 14 Stunden am Tag Bambus — bis zu 38 Kilogramm täglich.',
 	'fact.wolf':
 		'Wölfe laufen bis zu 60 km/h und legen auf Nahrungssuche 30 Kilometer in einer Nacht zurück.',
@@ -94,8 +93,7 @@ export const animals = {
 	'fact.lizard':
 		'Viele Eidechsen werfen ihren Schwanz ab, um Feinden zu entkommen — er wächst später wieder nach.',
 	'fact.ostrich': 'Das Auge eines Straußes ist größer als sein ganzes Gehirn.',
-	'fact.owl':
-		'Eulen drehen den Kopf bis zu 270 Grad, weil sie zusätzliche Halswirbel haben.',
+	'fact.owl': 'Eulen drehen den Kopf bis zu 270 Grad, weil sie zusätzliche Halswirbel haben.',
 	'fact.seal':
 		'Manche Robben schlafen unter Wasser und wachen nur kurz zum Luftholen auf, ohne richtig wach zu werden.',
 	'fact.stork':
@@ -177,8 +175,7 @@ export const animals = {
 	'fact.honey_badger':
 		'Honigdachse haben eine bemerkenswert dicke Haut, die Machetenhieben und Bienenstichen standhält.',
 	'fact.horse': 'Pferde schlafen im Stehen wie im Liegen.',
-	'fact.koala':
-		'Koalas haben Fingerabdrücke, die von menschlichen kaum zu unterscheiden sind.',
+	'fact.koala': 'Koalas haben Fingerabdrücke, die von menschlichen kaum zu unterscheiden sind.',
 	'fact.mammoth':
 		'Mammuts starben vor etwa 4000 Jahren aus — sie lebten also noch, als die Große Pyramide von Gizeh gebaut wurde.',
 	'fact.manta_ray':
@@ -199,19 +196,14 @@ export const animals = {
 	'fact.shark': 'Haie haben keine Knochen; ihr Skelett besteht aus Knorpel.',
 	'fact.sheep':
 		'Schafe haben rechteckige Pupillen und sehen damit in einem Winkel von 320 bis 360 Grad.',
-	'fact.sifaka':
-		'Sifakas überqueren offenes Gelände aufrecht — in einer Art seitlichem Tanz.',
+	'fact.sifaka': 'Sifakas überqueren offenes Gelände aufrecht — in einer Art seitlichem Tanz.',
 	'fact.sloth': 'Faultiere bewegen sich so langsam, dass auf ihrem Fell Algen wachsen.',
-	'fact.snake':
-		'Schlangen riechen mit der Zunge, über ein besonderes Organ am Gaumen.',
+	'fact.snake': 'Schlangen riechen mit der Zunge, über ein besonderes Organ am Gaumen.',
 	'fact.squirrel':
 		'Eichhörnchen pflanzen jedes Jahr Tausende Bäume, weil sie vergessen, wo sie ihre Nüsse versteckt haben.',
-	'fact.toucan':
-		'Der Schnabel eines Tukans kann bis zur Hälfte seiner Körperoberfläche ausmachen.',
-	'fact.walrus':
-		'Walrosse ziehen sich mit ihren langen Stoßzähnen aus dem Wasser aufs Eis.',
-	'fact.weasel':
-		'Wiesel führen einen hypnotischen „Kriegstanz“ auf, um ihre Beute zu verwirren.',
+	'fact.toucan': 'Der Schnabel eines Tukans kann bis zur Hälfte seiner Körperoberfläche ausmachen.',
+	'fact.walrus': 'Walrosse ziehen sich mit ihren langen Stoßzähnen aus dem Wasser aufs Eis.',
+	'fact.weasel': 'Wiesel führen einen hypnotischen „Kriegstanz“ auf, um ihre Beute zu verwirren.',
 	'fact.yak':
 		'Yaks haben außergewöhnlich große Lungen, um in großer Höhe genug Sauerstoff aufzunehmen.',
 	'fact.zebra': 'Jedes Zebra hat ein einmaliges Streifenmuster, wie ein Fingerabdruck.'

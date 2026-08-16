@@ -43,7 +43,8 @@ export const ui = {
 	'memory.you': 'Du',
 	'memory.rival': 'Gegner',
 	'memory.moves': 'Züge',
-	'memory.resized': 'Die Bildschirmgröße hat sich geändert. Die Auslage blieb so, wie die Partie begann.',
+	'memory.resized':
+		'Die Bildschirmgröße hat sich geändert. Die Auslage blieb so, wie die Partie begann.',
 	'memory.relayout': 'Neu austeilen',
 	'memory.found': 'Gefunden',
 	'memory.turn': 'Am Zug',

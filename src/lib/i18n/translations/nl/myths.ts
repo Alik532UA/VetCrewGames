@@ -21,8 +21,7 @@ export const myths = {
 	'myth.cat-vision.explanation':
 		'Mythe. Katten hebben op zijn minst een beetje licht nodig. Hun ogen weerkaatsen het, maar in volstrekt donker zien ook zij niets.',
 	'myth.cat-sleep.statement': 'Katten verslapen 70 % van hun leven',
-	'myth.cat-sleep.explanation':
-		'Feit. Katten slapen 13 tot 16 uur per dag om energie te sparen.',
+	'myth.cat-sleep.explanation': 'Feit. Katten slapen 13 tot 16 uur per dag om energie te sparen.',
 	'myth.dog-bw.statement': 'Honden zien de wereld alleen in zwart-wit',
 	'myth.dog-bw.explanation':
 		'Mythe. Honden zien kleuren, alleen anders dan wij — vooral geel- en blauwtinten.',
@@ -66,8 +65,7 @@ export const myths = {
 	'myth.dolphin-fish.statement': 'Dolfijnen zijn een soort vis',
 	'myth.dolphin-fish.explanation':
 		'Mythe. Dolfijnen zijn zeezoogdieren: ze krijgen levende jongen en ademen lucht.',
-	'myth.parrot-mimic.statement':
-		'Papegaaien praten alleen na en begrijpen niet wat ze zeggen',
+	'myth.parrot-mimic.statement': 'Papegaaien praten alleen na en begrijpen niet wat ze zeggen',
 	'myth.parrot-mimic.explanation':
 		'Mythe. Veel papegaaien koppelen woorden aan betekenissen, benoemen dingen, tellen en beantwoorden zelfs ingewikkelde vragen.',
 	'myth.parrot-age.statement': 'Sommige papegaaien worden ouder dan 80 jaar',
@@ -109,8 +107,7 @@ export const myths = {
 	'myth.alligator-teeth.statement': 'Alligators vervangen hun tanden voortdurend',
 	'myth.alligator-teeth.explanation':
 		'Feit. Een alligator verslijt in zijn leven tot 3000 tanden en vervangt ze allemaal.',
-	'myth.chameleon-color.statement':
-		'Kameleons verkleuren vooral om op te gaan in hun omgeving',
+	'myth.chameleon-color.statement': 'Kameleons verkleuren vooral om op te gaan in hun omgeving',
 	'myth.chameleon-color.explanation':
 		'Mythe. Meestal gaat het om hun lichaamstemperatuur of om andere kameleons te laten zien hoe ze zich voelen.',
 	'myth.chameleon-eyes.statement': 'Kameleons bewegen hun ogen los van elkaar',
@@ -176,10 +173,11 @@ export const myths = {
 	'myth.spider-arachnid.statement': 'Spinnen zijn geen insecten',
 	'myth.spider-arachnid.explanation':
 		'Feit. Spinnen zijn spinachtigen: acht poten en twee lichaamsdelen, terwijl insecten zes poten en drie delen hebben.',
-	'myth.blue_whale-heart.statement': 'Het hart van een blauwe vinvis is ongeveer zo groot als een auto',
-	'myth.blue_whale-heart.explanation':
-		'Feit. Het hart van een blauwe vinvis weegt tot 180 kilo.',
-	'myth.blue_whale-swallow.statement': 'Een blauwe vinvis kan makkelijk een kleine auto doorslikken',
+	'myth.blue_whale-heart.statement':
+		'Het hart van een blauwe vinvis is ongeveer zo groot als een auto',
+	'myth.blue_whale-heart.explanation': 'Feit. Het hart van een blauwe vinvis weegt tot 180 kilo.',
+	'myth.blue_whale-swallow.statement':
+		'Een blauwe vinvis kan makkelijk een kleine auto doorslikken',
 	'myth.blue_whale-swallow.explanation':
 		'Mythe. Ondanks zijn formaat is zijn keel ongeveer zo wijd als een grapefruit.',
 	'myth.deer-speed.statement': 'Herten sprinten tot 65 km/u',
@@ -215,12 +213,12 @@ export const myths = {
 	'myth.lizard-blood.statement': 'Sommige hagedissen spuiten bloed uit hun ogen',
 	'myth.lizard-blood.explanation':
 		'Feit. De pad-hagedis schiet ter verdediging een straal bloed uit zijn ooghoeken.',
-	'myth.lizard-slimy.statement': 'Hagedissen hebben een slijmerige huid om tussen rotsen door te glijden',
+	'myth.lizard-slimy.statement':
+		'Hagedissen hebben een slijmerige huid om tussen rotsen door te glijden',
 	'myth.lizard-slimy.explanation':
 		'Mythe. Hagedissen zijn reptielen en hebben een droge, geschubde huid — anders dan amfibieën als kikkers.',
 	'myth.ostrich-speed.statement': 'Struisvogels zijn de snelste tweebenige dieren op aarde',
-	'myth.ostrich-speed.explanation':
-		'Feit. Ze houden 50 km/u lang vol en sprinten tot 70 km/u.',
+	'myth.ostrich-speed.explanation': 'Feit. Ze houden 50 km/u lang vol en sprinten tot 70 km/u.',
 	'myth.ostrich-hide.statement': 'Struisvogels steken bij gevaar hun kop in het zand',
 	'myth.ostrich-hide.explanation':
 		'Mythe. Ze steken hun kop nergens in. Ze gaan plat op de grond liggen om niet op te vallen.',
@@ -279,7 +277,8 @@ export const myths = {
 	'myth.bear-winter.statement': 'Beren eten en drinken niet tijdens hun winterrust',
 	'myth.bear-winter.explanation':
 		'Feit. In diepe slaap hergebruikt hun lichaam de eigen afvalstoffen — maandenlang zonder eten, drinken of ontlasting.',
-	'myth.beaver-tail.statement': 'Bevers slaan met hun staart op het water om voor gevaar te waarschuwen',
+	'myth.beaver-tail.statement':
+		'Bevers slaan met hun staart op het water om voor gevaar te waarschuwen',
 	'myth.beaver-tail.explanation':
 		'Feit. Die harde klap op het wateroppervlak is het alarmsignaal voor de andere bevers.',
 	'myth.beaver-fish.statement': 'Bevers zijn uitstekende visjagers',
@@ -417,12 +416,10 @@ export const myths = {
 	'myth.octopus-bones.statement': 'Octopussen hebben vanbinnen een kraakbeenskelet',
 	'myth.octopus-bones.explanation':
 		'Mythe. Octopussen zijn volledig weke dieren zonder botten — daarom passen ze door piepkleine spleten.',
-	'myth.passenger_pigeon-number.statement':
-		'Zwermen trekduiven verduisterden dagenlang de zon',
+	'myth.passenger_pigeon-number.statement': 'Zwermen trekduiven verduisterden dagenlang de zon',
 	'myth.passenger_pigeon-number.explanation':
 		'Feit. Ooggetuigen beschreven zwermen van miljoenen vogels die uren of dagen nodig hadden om over te trekken.',
-	'myth.passenger_pigeon-disease.statement':
-		'De trekduif stierf uit door een raadselachtig virus',
+	'myth.passenger_pigeon-disease.statement': 'De trekduif stierf uit door een raadselachtig virus',
 	'myth.passenger_pigeon-disease.explanation':
 		'Mythe. Het uitsterven kwam volledig door de mens: mateloze jacht en vernietiging van het leefgebied.',
 	'myth.pelican-food.statement': 'Pelikanen bewaren voedsel dagenlang in hun keelzak',
@@ -464,7 +461,8 @@ export const myths = {
 	'myth.red_panda-stand.explanation':
 		'Feit. Geschrokken richten ze zich op en spreiden hun armen om dreigender over te komen.',
 	'myth.shark-cancer.statement': 'Haaien krijgen nooit kanker',
-	'myth.shark-cancer.explanation': 'Mythe. Zeldzaam, maar het komt voor: haaien krijgen tumoren en kanker.',
+	'myth.shark-cancer.explanation':
+		'Mythe. Zeldzaam, maar het komt voor: haaien krijgen tumoren en kanker.',
 	'myth.shark-sleep.statement': 'Sommige haaien moeten onophoudelijk zwemmen om te blijven leven',
 	'myth.shark-sleep.explanation':
 		'Feit. Soorten als de witte haai moeten in beweging blijven, zodat er zuurstofrijk water over hun kieuwen stroomt.',

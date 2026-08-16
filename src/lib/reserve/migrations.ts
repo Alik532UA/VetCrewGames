@@ -83,6 +83,19 @@ export function migrateV1toV2(raw: unknown): unknown {
  * лишаються — вони перевіряють драбину, а не її вміст.
  */
 
+/**
+ * Версія 2 → 3: зʼявилися перемога й кампанія в соцмережах.
+ *
+ * Обидва поля нові й обидва мають безпечні початкові значення: партія триває
+ * (перемоги ще немає), кампанії ще не було. Нічого вигадувати не доводиться —
+ * рідкісний випадок, коли міграція чесно тривіальна.
+ */
+export function migrateV2toV3(raw: unknown): unknown {
+	if (!isObject(raw)) return raw;
+	return { ...raw, victory: false, lastCampaignDay: -1 };
+}
+
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
-	1: migrateV1toV2
+	1: migrateV1toV2,
+	2: migrateV2toV3
 };

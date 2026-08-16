@@ -35,8 +35,7 @@ export const animals = {
 	'fact.cat': 'Katten verslapen 70 % van hun leven — zo’n 13 tot 16 uur per dag.',
 	'fact.rat': 'Ratten lachen als je ze kietelt en uiten plezier met ultrageluid.',
 	'fact.sparrow': 'Mussen leven al meer dan 10.000 jaar naast de mens.',
-	'fact.ant':
-		'Alle mieren op aarde wegen samen ongeveer evenveel als alle mensen bij elkaar.',
+	'fact.ant': 'Alle mieren op aarde wegen samen ongeveer evenveel als alle mensen bij elkaar.',
 	'fact.elephant':
 		'Olifanten zijn de enige dieren die niet kunnen springen — zwemmen doen ze wel, over grote afstanden.',
 	'fact.tiger':
@@ -45,8 +44,7 @@ export const animals = {
 		'Keizerspinguïns duiken tot 500 meter diep en houden daarbij 20 minuten hun adem in.',
 	'fact.bee': 'Eén bij maakt haar hele leven maar een twaalfde theelepel honing.',
 	'fact.panda': 'Panda’s eten tot 14 uur per dag bamboe — tot 38 kilo per dag.',
-	'fact.wolf':
-		'Wolven halen 60 km/u en leggen op zoek naar voedsel 30 kilometer per nacht af.',
+	'fact.wolf': 'Wolven halen 60 km/u en leggen op zoek naar voedsel 30 kilometer per nacht af.',
 	'fact.dolphin':
 		'Dolfijnen slapen met één oog open: de ene hersenhelft slaapt, de andere houdt de wacht.',
 	'fact.parrot': 'Sommige papegaaien worden ouder dan 80 jaar en leren meer dan 100 woorden.',
@@ -191,8 +189,7 @@ export const animals = {
 	'fact.pig': 'Varkens zijn heel slim en leren zelfs videospelletjes spelen.',
 	'fact.platypus': 'Het vogelbekdier is een zoogdier dat eieren legt en melk uitzweet.',
 	'fact.porcupine': 'Een stekelvarken draagt ongeveer 30.000 stekels.',
-	'fact.raccoon':
-		'Wasberen hebben uiterst gevoelige voorpoten die werken als mensenhanden.',
+	'fact.raccoon': 'Wasberen hebben uiterst gevoelige voorpoten die werken als mensenhanden.',
 	'fact.red_panda': 'Rode panda’s gebruiken hun pluimstaart in de kou als deken.',
 	'fact.shark': 'Haaien hebben geen botten; hun skelet bestaat uit kraakbeen.',
 	'fact.sheep':
@@ -202,8 +199,7 @@ export const animals = {
 	'fact.snake': 'Slangen ruiken met hun tong, via een apart orgaan in hun gehemelte.',
 	'fact.squirrel':
 		'Eekhoorns planten elk jaar duizenden bomen doordat ze vergeten waar ze hun noten verstopt hebben.',
-	'fact.toucan':
-		'De snavel van een toekan kan tot de helft van zijn lichaamsoppervlak beslaan.',
+	'fact.toucan': 'De snavel van een toekan kan tot de helft van zijn lichaamsoppervlak beslaan.',
 	'fact.walrus': 'Walrussen trekken zich met hun lange slagtanden het water uit, het ijs op.',
 	'fact.weasel':
 		'Wezels voeren een hypnotiserende „oorlogsdans” op om hun prooi in verwarring te brengen.',

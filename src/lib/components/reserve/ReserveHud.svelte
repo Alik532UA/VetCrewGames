@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
+	import { IMPACT_TO_WIN } from '$lib/reserve/constants';
 	import { SPEEDS, type Speed } from '$lib/controllers/reserve.svelte';
 
 	/**
@@ -41,7 +42,13 @@
 			value: budget.toLocaleString(settings.locale),
 			bad: budget < 0
 		},
-		{ id: 'impact', label: t('reserve.impact'), value: String(impact), bad: impact < 0 },
+		{
+			id: 'impact',
+			label: t('reserve.impact'),
+			// Показник і мета поруч: інакше «34» нічого не каже про те, чи це багато.
+			value: `${impact} / ${IMPACT_TO_WIN.toLocaleString(settings.locale)}`,
+			bad: impact < 0
+		},
 		{ id: 'reputation', label: t('reserve.reputation'), value: String(reputation), bad: false },
 		{ id: 'inreserve', label: t('reserve.inReserve'), value: String(inReserve), bad: false },
 		{ id: 'inwild', label: t('reserve.inWild'), value: String(inWild), bad: false }
