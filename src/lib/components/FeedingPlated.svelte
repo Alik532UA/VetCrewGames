@@ -60,10 +60,18 @@
 </button>
 
 <style>
-	/* Картка — це рамка завтовшки 2px навколо зображення, і більше нічого. */
+	/*
+	 * Пропорція задана САМІЙ коробці, а не лише зображенню.
+	 *
+	 * Доти 3:4 було на зображенні, а рамка додавалася зверху — і коробка виходила
+	 * 48×61, тобто 0.78. Різниця мала, але саме коробку й видно: у неї фон, рамка
+	 * й скруглення.
+	 */
 	.plated {
 		display: block;
+		box-sizing: border-box;
 		width: 48px;
+		aspect-ratio: 3 / 4;
 		min-width: 0;
 		padding: 2px;
 		border: 2px solid transparent;
@@ -89,12 +97,10 @@
 		cursor: default;
 	}
 
-	/* 3 / 4 — рівно пропорція файлів (390×520). */
 	.plated__image {
 		width: 100%;
-		aspect-ratio: 3 / 4;
-		height: auto;
-		object-fit: contain;
+		height: 100%;
+		object-fit: cover;
 		border-radius: calc(var(--radius-sm) - 2px);
 	}
 
