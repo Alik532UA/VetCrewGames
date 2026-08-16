@@ -6,21 +6,50 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
+	import ErrorFallback from '$lib/components/ErrorFallback.svelte';
 	import { onMount } from 'svelte';
-	import { base } from '$app/paths';
+	import { asset } from '$app/paths';
 	import { page } from '$app/state';
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { trackPageView } from '$lib/services/analytics';
 	import { fly } from 'svelte/transition';
+	import {
+		INDEXED_LANGUAGES,
+		SITE_BASE,
+		SITE_ORIGIN,
+		DEFAULT_LANGUAGE,
+		langPath,
+		langUrl,
+		languageFromParam,
+		routeRestFromId
+	} from '$lib/i18n/routing';
 
 	let { children } = $props();
 
-	// Spelled out rather than taken from page.url / $app/paths: these tags are
-	// read out of the prerendered HTML, where page.url.origin is SvelteKit's
-	// "sveltekit-prerender" placeholder and `base` is a relative "." that cannot
-	// be glued onto an absolute origin.
-	const SITE_ORIGIN = 'https://alik532ua.github.io';
-	const SITE_BASE = '/VetCrewGames';
+	/**
+	 * Мова сторінки береться з АДРЕСИ, і присвоюється тут — у layout, ДО рендеру
+	 * дітей (SVELTE-CORE-v8 § 5.1, I18N-v8 § 5.1).
+	 *
+	 * Це не перестраховка: prerender генерує сторінки послідовно в одному
+	 * процесі, а `settings` — модульний синглтон. Присвоєння в компоненті
+	 * СТОРІНКИ спрацювало б на один рендер пізніше, ніж читає layout, і в
+	 * `build/` мова з'їхала б на одну сторінку: `/en/` українською.
+	 *
+	 * Виклик стоїть у тілі `<script>`, а не в ефекті: на сервері ефекти не
+	 * виконуються взагалі, а саме серверний рендер і потрапляє у файл.
+	 */
+	const routeLanguage = $derived(languageFromParam(page.params.lang));
+	settings.applyRouteLocale(languageFromParam(page.params.lang));
+
+	// Клієнтська навігація: layout не перемонтовується, тож тіло `<script>`
+	// вдруге не виконається. `$effect.pre` — щоб мова змінилася ДО того, як
+	// оновиться розмітка, інакше один кадр показує попередню.
+	$effect.pre(() => {
+		settings.applyRouteLocale(routeLanguage);
+	});
+
+	/** «Хвіст» адреси без мови — спільний для всіх мовних версій цієї сторінки. */
+	const routeRest = $derived(routeRestFromId(page.route.id));
 
 	// Deliberately not formatPlain: that swaps Cyrillic і for Latin i to work
 	// around a font missing the glyph. Fine for text on screen, wrong for
@@ -29,7 +58,9 @@
 	// system font too, so it does not want the substitution either.
 	let pageTitle = $derived(t('app.title'));
 	let seoDescription = $derived(t('app.description'));
-	let canonical = $derived(`${SITE_ORIGIN}${page.url.pathname}`);
+	// Абсолютні адреси — з явних констант, а не з `page.url`: під час prerender
+	// origin дорівнює `sveltekit-prerender` (SEO-v8 § 1.2).
+	let canonical = $derived(langUrl(routeLanguage, routeRest));
 	let ogImage = $derived(`${SITE_ORIGIN}${SITE_BASE}/images/VetCrewGames_logo_v1.png`);
 
 	// Fires on the initial load too, so this covers the first view and each
@@ -50,10 +81,14 @@
 	let transitionDirection = $state(1);
 	let lastPath = page.url.pathname;
 
+	/**
+	 * Головна — це шлях без нічого, крім (можливого) мовного сегмента. Порівняння
+	 * з голим `base` тут уже не годиться: `/VetCrewGames/en/` теж головна.
+	 */
 	function isHome(path: string) {
-		const p = path.replace(/\/$/, '') || '/';
-		const b = base.replace(/\/$/, '') || '/';
-		return p === b || p === '/';
+		// Головна — це шлях, у якому після (можливого) мовного сегмента вже нічого
+		// немає. Порівняння з голим `base` тут не годиться: `…/en/` теж головна.
+		return !/\/(game-[a-z-]+)\/?$/.test(path);
 	}
 
 	$effect.pre(() => {
@@ -82,6 +117,26 @@
 		// return нижче (SVELTE-CORE-v8 § 2.6).
 		const stopThemeSync = settings.init();
 
+		/*
+		 * Пріоритет вибору мови: АДРЕСА → збережений вибір → типова
+		 * (I18N-v8 § 3.3). Голий шлях означає «вибору в адресі не зроблено»,
+		 * тож саме там — і ТІЛЬКИ там — застосовується збережений.
+		 *
+		 * `replaceState`, щоб «назад» не впиралося в нескінченний редирект, і
+		 * `noScroll`, щоб сторінка не сіпнулася вгору. На мовній адресі не
+		 * робиться нічого: інакше збережений вибір викидав би відвідувача зі
+		 * сторінки, яку він щойно відкрив за посиланням.
+		 */
+		if (!page.params.lang) {
+			const saved = settings.savedLocale();
+			if (saved && saved !== DEFAULT_LANGUAGE) {
+				goto(langPath(saved, routeRestFromId(page.route.id)), {
+					replaceState: true,
+					noScroll: true
+				});
+			}
+		}
+
 		// Глобальна сітка безпеки для unhandled promise rejections
 		const onRejection = (event: PromiseRejectionEvent) => {
 			logService.error('app', 'Unhandled promise rejection', { reason: String(event.reason) });
@@ -104,10 +159,20 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href="{base}/favicon.svg" />
+	<link rel="icon" href={asset('/favicon.svg')} />
 	<title>{pageTitle}</title>
 	<meta name="description" content={seoDescription} />
 	<link rel="canonical" href={canonical} />
+
+	<!--
+		hreflang: набір однаковий на всіх мовних версіях і взаємний, плюс
+		`x-default` на типову мову (SEO-v8 § 2.2). Без цього дві мовні версії
+		того самого вмісту конкурують одна з одною в індексі.
+	-->
+	{#each INDEXED_LANGUAGES as lang (lang)}
+		<link rel="alternate" hreflang={lang} href={langUrl(lang, routeRest)} />
+	{/each}
+	<link rel="alternate" hreflang="x-default" href={langUrl(DEFAULT_LANGUAGE, routeRest)} />
 
 	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />
@@ -115,6 +180,7 @@
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={seoDescription} />
 	<meta property="og:image" content={ogImage} />
+	<meta property="og:locale" content={routeLanguage === 'uk' ? 'uk_UA' : 'en_US'} />
 
 	<!-- Twitter -->
 	<meta property="twitter:card" content="summary_large_image" />
@@ -144,14 +210,7 @@
 					{@render children()}
 
 					{#snippet failed(_, reset)}
-						<div class="error-fallback" role="alert" aria-live="assertive">
-							<h2>{formatPlain(t('error.title'))}</h2>
-							<p>{formatPlain(t('error.message'))}</p>
-							<div class="error-fallback__actions">
-								<button type="button" onclick={reset}>{formatPlain(t('error.retry'))}</button>
-								<a href="{base}/">{formatPlain(t('error.goHome'))}</a>
-							</div>
-						</div>
+						<ErrorFallback lang={routeLanguage} onretry={reset} />
 					{/snippet}
 				</svelte:boundary>
 			</div>
@@ -209,36 +268,5 @@
 		opacity: 0.5;
 		pointer-events: none;
 		z-index: 1000;
-	}
-
-	.error-fallback {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-md);
-		padding: var(--space-xl);
-		text-align: center;
-		max-width: 600px;
-		margin: var(--space-xl) auto;
-	}
-
-	.error-fallback__actions {
-		display: flex;
-		gap: var(--space-md);
-		flex-wrap: wrap;
-		justify-content: center;
-	}
-
-	.error-fallback button,
-	.error-fallback a {
-		padding: var(--space-sm) var(--space-lg);
-		border: 2px solid currentColor;
-		border-radius: var(--radius-md);
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-		text-decoration: none;
 	}
 </style>

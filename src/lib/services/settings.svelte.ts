@@ -63,8 +63,10 @@ class Settings {
 		}
 		this.#applyTheme();
 
-		const savedLocale = storage.get('locale');
-		if (isLocale(savedLocale)) this.locale = savedLocale;
+		// Мову тут НЕ читаємо зі сховища: її диктує адреса, і виставляє її
+		// кореневий layout через `applyRouteLocale()` ще до рендеру дітей.
+		// Збережений вибір застосовується лише на голому шляху — і не тут, а
+		// навігацією, бо змінити треба адресу, а не тільки текст (I18N-v8 § 3.3).
 		this.#applyLocale();
 
 		const savedFont = storage.get('font');
@@ -135,10 +137,33 @@ class Settings {
 		this.setTheme(THEMES[next]);
 	}
 
-	setLocale(locale: Locale): void {
-		this.locale = locale;
-		this.#applyLocale();
+	/**
+	 * Мова, яку диктує АДРЕСА. У сховище не пишеться: сегмент шляху — це запит
+	 * на конкретну сторінку, а не вибір користувача (I18N-v8 § 3.3, порядок
+	 * «адреса → збережений вибір → типова»).
+	 *
+	 * Викликається з кореневого layout ДО рендеру дітей: під час prerender
+	 * сторінки генеруються послідовно в одному процесі, і модульний синглтон
+	 * переносить значення з попередньої сторінки на наступну. Ознака помилки —
+	 * `/en/` українською (SVELTE-CORE-v8 § 5.1).
+	 */
+	applyRouteLocale(locale: Locale): void {
+		if (this.locale !== locale) this.locale = locale;
+		if (browser) this.#applyLocale();
+	}
+
+	/**
+	 * Вибір користувача. Мову міняє навігація на мовну адресу, а це — тільки
+	 * запам'ятовування, щоб наступний захід на голий шлях відкрився нею ж.
+	 */
+	rememberLocale(locale: Locale): void {
 		storage.set('locale', locale);
+	}
+
+	/** Збережений вибір або `null`, якщо його не робили. */
+	savedLocale(): Locale | null {
+		const saved = storage.get('locale');
+		return isLocale(saved) ? saved : null;
 	}
 
 	setFont(font: Font): void {

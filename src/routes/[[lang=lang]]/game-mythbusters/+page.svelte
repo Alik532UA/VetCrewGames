@@ -6,7 +6,8 @@
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { MythGameController } from '$lib/controllers/mythGame.svelte';
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
-	import { base } from '$app/paths';
+	import { page } from '$app/state';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 
 	// Компонент лише СТВОРЮЄ контролер і малює його стан (SVELTE-CORE-v8 § 3.1).
@@ -63,7 +64,7 @@
 					<RotateCcw size={24} />
 					{@html formatFont(t('common.playAgain'))}
 				</button>
-				<a href="{base}/" class="btn-menu">
+				<a href={langPath(languageFromParam(page.params.lang))} class="btn-menu">
 					<Home size={24} />
 					{@html formatFont(t('common.mainMenu'))}
 				</a>

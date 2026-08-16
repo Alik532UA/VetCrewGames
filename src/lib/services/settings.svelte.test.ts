@@ -118,13 +118,34 @@ describe('settings', () => {
 		expect(seen[4], 'після четвертого перемикання цикл замикається').toBe(seen[0]);
 	});
 
-	it('мова пишеться і в сховище, і в атрибут lang', async () => {
+	/**
+	 * Мову диктує АДРЕСА, і `applyRouteLocale()` навмисно НЕ пише у сховище:
+	 * сегмент шляху — це запит на конкретну сторінку, а не вибір користувача
+	 * (I18N-v8 § 3.3). Запам'ятовує вибір окремий `rememberLocale()`, який
+	 * кличе перемикач у шапці.
+	 */
+	it('мова з адреси змінює атрибут lang і не чіпає сховища', async () => {
 		const { settings, raw } = await load();
 
-		settings.setLocale('en');
+		settings.applyRouteLocale('en');
+
+		expect(document.documentElement.getAttribute('lang')).toBe('en');
+		expect(raw.getItem('vetcrewgames_locale'), 'адреса — не вибір').toBeNull();
+	});
+
+	it('rememberLocale() зберігає вибір, savedLocale() його повертає', async () => {
+		const { settings, raw } = await load();
+		expect(settings.savedLocale()).toBeNull();
+
+		settings.rememberLocale('en');
 
 		expect(raw.getItem('vetcrewgames_locale')).toBe('en');
-		expect(document.documentElement.getAttribute('lang')).toBe('en');
+		expect(settings.savedLocale()).toBe('en');
+	});
+
+	it('зіпсована мова у сховищі не приймається за вибір', async () => {
+		const { settings } = await load({ vetcrewgames_locale: 'de' });
+		expect(settings.savedLocale()).toBeNull();
 	});
 
 	it('зіпсований рахунок не перетворює його на NaN', async () => {

@@ -109,12 +109,11 @@ export default ts.config(
 				}
 			],
 
-			// --- Борг ---
-			// SEO-v8 § 1.5. 6 місць. resolve() типізований проти списку реальних
-			// маршрутів, тож помилка в адресі стає помилкою компіляції — але сама
-			// заміна міняє навігацію, а перевірити її можна лише руками. Тому warn
-			// із числом, а не тихе `off`: число має лише зменшуватися.
-			'svelte/no-navigation-without-resolve': 'warn'
+			// --- SEO-v8 § 1.5. Було 6 місць у `warn`; усі шість тепер ідуть через
+			// типізований `resolve()`, тож правило підняте до `error` і назад воно
+			// вже не опуститься: наступне склеювання `${base} + рядок` дасть червону
+			// збірку, а не попередження, яке проґавлять.
+			'svelte/no-navigation-without-resolve': 'error'
 		}
 	},
 	{
@@ -130,15 +129,52 @@ export default ts.config(
 		 * Виняток файловий, а не глобальний: у решті компонентів новий {@html}
 		 * тепер валить збірку.
 		 */
+		/*
+		 * Шаблони глоб-безпечні: квадратні дужки в них означають КЛАС СИМВОЛІВ,
+		 * тож буквальний `src/routes/[[lang=lang]]/+page.svelte` не збігається
+		 * ні з чим — і тоді вимкнення мовчки не діє на жоден файл. Знайдено
+		 * одразу після переїзду маршрутів у мовну групу: lint дав 31 помилку
+		 * там, де виняток мав бути.
+		 */
 		files: [
 			'src/lib/components/GameHeader.svelte',
+			'src/lib/components/ErrorFallback.svelte',
 			'src/routes/+error.svelte',
-			'src/routes/+page.svelte',
-			'src/routes/game-mythbusters/+page.svelte',
-			'src/routes/game-population/+page.svelte'
+			'src/routes/+layout.svelte',
+			'src/routes/**/+page.svelte'
 		],
 		rules: {
 			'svelte/no-at-html-tags': 'off'
+		}
+	},
+	{
+		/**
+		 * SEO-v8 § 1.5 дозволяє виносити в окремий блок файли, де посилання не
+		 * можуть бути статичними, — «а не глушити поодинці».
+		 *
+		 * Тут причина інша й сильніша: усі ці посилання ВЖЕ проходять через
+		 * `resolve()`, просто не на місці виклику, а всередині `langPath()` з
+		 * `$lib/i18n/routing`. Правило синтаксичне й крізь функцію не бачить.
+		 *
+		 * Централізація тут не поступка, а вимога I18N-v8 § 3.1: політика
+		 * мовних адрес живе в ОДНОМУ модулі, бо її читають матчер, layout,
+		 * перемикач мови й генератор sitemap. Розсипати `resolve()` по шести
+		 * місцях означало б завести шість копій цієї політики.
+		 *
+		 * Захист від справжньої помилки — склеювання шляху з `base` вручну —
+		 * при цьому не втрачений: його тримає інваріант у `src/structure.test.ts`,
+		 * який дивиться на ВСІ джерела, зокрема й на ці файли.
+		 */
+		files: [
+			'src/lib/components/GameHeader.svelte',
+			'src/lib/components/ErrorFallback.svelte',
+			'src/lib/i18n/routing.ts',
+			'src/routes/+error.svelte',
+			'src/routes/+layout.svelte',
+			'src/routes/**/+page.svelte'
+		],
+		rules: {
+			'svelte/no-navigation-without-resolve': 'off'
 		}
 	},
 	{

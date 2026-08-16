@@ -43,11 +43,11 @@ const read = (f: string) => readFileSync(f, 'utf8');
 const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// Три екрани, у яких логіка живе просто в маршруті. Розбирати їх треба
 	// винесенням стану в контролери `.svelte.ts` — це окрема робота, не правка.
-	'src/routes/game-population/+page.svelte': 1149,
-	// 520 → 437 після винесення логіки партії в `controllers/mythGame.svelte.ts`.
+	'src/routes/[[lang=lang]]/game-population/+page.svelte': 1148,
+	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`.
 	// Далі число має лише спадати.
-	'src/routes/game-mythbusters/+page.svelte': 437,
-	'src/lib/components/GameHeader.svelte': 396
+	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 438,
+	'src/lib/components/GameHeader.svelte': 411
 };
 
 /**
@@ -98,6 +98,34 @@ describe('структура проєкту', () => {
 			}
 		}
 		expect(bad, `розбіжність псевдоніма й файлу:\n${bad.join('\n')}`).toEqual([]);
+	});
+
+	/**
+	 * Шлях не склеюється з `base` вручну (SEO-v8 § 1.5).
+	 *
+	 * Це не стилістика: під час prerender `base` **відносний**, тож
+	 * `${base}/en/` на сторінці `/game-population/` дає
+	 * `/VetCrewGames/game-population/en/`. Саме на цьому тут упала перша спроба
+	 * мовних маршрутів — і впала на збірці, а не в редакторі.
+	 *
+	 * Правило `svelte/no-navigation-without-resolve` цього не покриває: у шести
+	 * файлах воно вимкнене, бо не бачить `resolve()` крізь `langPath()`. Ця
+	 * перевірка дивиться на ВСІ джерела, зокрема на ті шість.
+	 */
+	it('шлях не склеюється з `base` вручну (§ SEO 1.5)', () => {
+		const bad: string[] = [];
+		for (const file of sources) {
+			if (isTest(file) || file.includes('/mocks/')) continue;
+			const text = read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+			// `${base}` у шаблонному рядку та `{base}` у атрибуті розмітки.
+			for (const m of text.matchAll(/\$\{base\}|href="\{base\}/g)) {
+				bad.push(`${file}: ${m[0]}`);
+			}
+		}
+		expect(
+			bad,
+			`шлях зібраний руками — брати з resolve()/asset()/langPath():\n${bad.join('\n')}`
+		).toEqual([]);
 	});
 
 	// Правило «E2E не змішані з вихідним кодом» тут навмисно НЕ дублюється:

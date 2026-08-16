@@ -8,7 +8,14 @@
 	// покруч. Той самий висновок уже записаний у +layout.svelte для <title>.
 	import { t, formatFont } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
-	import { base } from '$app/paths';
+	import { page } from '$app/state';
+	import {
+		DEFAULT_LANGUAGE,
+		LANGUAGES,
+		langPath,
+		languageFromParam,
+		routeRestFromId
+	} from '$lib/i18n/routing';
 	import { onMount, untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
 
@@ -49,9 +56,16 @@
 		return () => clearTimeout(timeoutId);
 	});
 
-	function toggleLocale() {
-		settings.setLocale(settings.locale === 'uk' ? 'en' : 'uk');
-	}
+	/**
+	 * Перемикач мови — ПОСИЛАННЯ, а не кнопка з `goto()` (I18N-v8 § 5.3):
+	 * працює без JS, читається пошуковиком і лишає користувача на ТІЙ САМІЙ
+	 * сторінці — змінюється лише мовний сегмент адреси.
+	 */
+	const currentLanguage = $derived(languageFromParam(page.params.lang));
+	const otherLanguage = $derived(
+		LANGUAGES.find((lang) => lang !== currentLanguage) ?? DEFAULT_LANGUAGE
+	);
+	const otherLanguageHref = $derived(langPath(otherLanguage, routeRestFromId(page.route.id)));
 interface FullscreenDocument extends Document {
 	webkitFullscreenElement?: Element;
 	webkitExitFullscreen?: () => Promise<void>;
@@ -119,7 +133,7 @@ function toggleFullscreen() {
 			{#if showBack && activeTitleKey !== 'app.title'}
 				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
 					<a
-						href="{base}/"
+						href={langPath(currentLanguage)}
 						class="header-btn"
 						aria-label={t('common.back')}
 						data-testid="header-back-link"
@@ -190,15 +204,16 @@ function toggleFullscreen() {
 				{/if}
 			</button>
 
-			<button
-				type="button"
+			<a
 				class="header-btn lang-btn"
-				onclick={toggleLocale}
+				href={otherLanguageHref}
+				hreflang={otherLanguage}
 				aria-label={t('header.toggleLocale')}
-				data-testid="header-locale-btn"
+				data-testid="header-locale-link"
+				onclick={() => settings.rememberLocale(otherLanguage)}
 			>
-				<span class="lang-text">{settings.locale.toUpperCase()}</span>
-			</button>
+				<span class="lang-text">{otherLanguage.toUpperCase()}</span>
+			</a>
 
 			<button
 				type="button"

@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
 	import { Home, RotateCcw } from 'lucide-svelte';
-	import { base } from '$app/paths';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import '$lib/styles/global.css';
 </script>
 
@@ -17,7 +17,7 @@
 				<RotateCcw size={20} />
 				{@html formatFont(t('error.retry'))}
 			</button>
-			<a href="{base}/" class="btn-home">
+			<a href={langPath(languageFromParam(page.params.lang))} class="btn-home">
 				<Home size={20} />
 				{@html formatFont(t('error.goHome'))}
 			</a>

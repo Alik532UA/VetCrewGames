@@ -16,6 +16,22 @@ import { join } from 'node:path';
 
 const BUILD = 'build';
 const SITE_ORIGIN = 'https://alik532ua.github.io';
+const SITE_BASE = '/VetCrewGames';
+
+/**
+ * Мовні версії, які МУСЯТЬ існувати як справжні сторінки. Без цього переліку
+ * зникнення `entries()` дало б SPA-фолбек: адреса відкривається, але до
+ * виконання JavaScript показує типовий вміст — і саме його бачить пошуковик
+ * (SVELTEKIT-DATA-v8 § 2.3, § 6.1).
+ */
+const EXPECTED_PAGES = [
+	['index.html', 'uk'],
+	['game-mythbusters/index.html', 'uk'],
+	['game-population/index.html', 'uk'],
+	['en/index.html', 'en'],
+	['en/game-mythbusters/index.html', 'en'],
+	['en/game-population/index.html', 'en']
+];
 
 /** PERFORMANCE-v8 § 1: бюджет initial JS на маршрут. */
 const ENTRY_JS_BUDGET_KB = 150;
@@ -118,6 +134,54 @@ for (const file of htmlFiles) {
 	const firstInlineAt = html.indexOf('<script>');
 	if (firstInlineAt !== -1 && firstInlineAt < metaAt)
 		fail(`${where}: інлайн-скрипт стоїть ВИЩЕ мета-політики — вона його не покриває`);
+}
+
+// --- Мовні версії існують і не з'їхали (I18N-v8 § 5.1, SEO-v8 § 1.4) --------
+for (const [relative, expectedLang] of EXPECTED_PAGES) {
+	const file = `${BUILD}/${relative}`;
+	if (!allFiles.includes(file)) {
+		fail(`${relative}: сторінки немає — зник entries() або матчер мовного сегмента`);
+		continue;
+	}
+
+	const html = readFileSync(file, 'utf8');
+
+	// Prerender рендерить сторінки ПОСЛІДОВНО в одному процесі, а мова живе в
+	// модульному синглтоні. Класична ознака помилки — значення, зсунуте на одну
+	// сторінку: `/en/` українською.
+	const lang = html.match(/<html lang="([^"]*)"/)?.[1];
+	if (lang !== expectedLang) fail(`${relative}: <html lang="${lang}">, а має бути "${expectedLang}"`);
+	if (html.includes('%lang%')) fail(`${relative}: плейсхолдер %lang% не підставлено`);
+
+	const expectedCanonical = `${SITE_ORIGIN}${SITE_BASE}/${relative.replace(/index\.html$/, '')}`;
+	if (!html.includes(`rel="canonical" href="${expectedCanonical}"`))
+		fail(`${relative}: canonical не дорівнює ${expectedCanonical}`);
+
+	// Набір hreflang однаковий на всіх мовних версіях і взаємний (SEO-v8 § 2.2).
+	for (const hreflang of ['uk', 'en', 'x-default']) {
+		if (!new RegExp(`rel="alternate"[^>]+hreflang="${hreflang}"`).test(html))
+			fail(`${relative}: немає hreflang="${hreflang}"`);
+	}
+}
+
+// --- sitemap збігається зі згенерованими сторінками (SEO-v8 § 5) ------------
+const sitemapPath = `${BUILD}/sitemap.xml`;
+if (!allFiles.includes(sitemapPath)) {
+	fail('sitemap.xml не згенеровано');
+} else {
+	const sitemap = readFileSync(sitemapPath, 'utf8');
+	const listed = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).sort();
+	const expected = EXPECTED_PAGES.map(
+		([relative]) => `${SITE_ORIGIN}${SITE_BASE}/${relative.replace(/index\.html$/, '')}`
+	).sort();
+
+	const missing = expected.filter((url) => !listed.includes(url));
+	const extra = listed.filter((url) => !expected.includes(url));
+	if (missing.length) fail(`sitemap не містить: ${missing.join(', ')}`);
+	if (extra.length) fail(`у sitemap зайві адреси: ${extra.join(', ')}`);
+	// Кожен рядок без кінцевого слеша при `trailingSlash: 'always'` — редирект.
+	const noSlash = listed.filter((url) => !url.endsWith('/'));
+	if (noSlash.length) fail(`sitemap: адреси без кінцевого слеша — це редирект: ${noSlash.join(', ')}`);
 }
 
 // --- Source maps не публікуються (OBSERVABILITY-v8 § 1.2) --------------------

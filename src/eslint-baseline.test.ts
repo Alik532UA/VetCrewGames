@@ -40,7 +40,7 @@ const BASELINE = [
  * overrides-блоці для цього розширення, і на `.ts` їх у зібраному конфігу немає.
  * Файли зі списку винятків для `svelte/no-at-html-tags` для зразка не годяться.
  */
-const SAMPLE = 'src/routes/+layout.svelte';
+const SAMPLE = 'src/lib/components/RoundIndicator.svelte';
 
 function levelOf(entry: unknown): string | number | undefined {
 	return Array.isArray(entry) ? (entry[0] as string | number) : (entry as string | number);

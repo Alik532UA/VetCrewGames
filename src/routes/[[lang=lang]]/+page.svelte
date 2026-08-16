@@ -1,14 +1,37 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
-	import { base } from '$app/paths';
+	import { page } from '$app/state';
+	import { langPath, languageFromParam, type RouteRest } from '$lib/i18n/routing';
+	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
-	const games = [
-		{ key: 'menu.game.mythbusters' as const, href: `${base}/game-mythbusters`, disabled: false },
-		{ key: 'menu.game.population' as const, href: `${base}/game-population`, disabled: false },
-		{ key: 'menu.game.habitat' as const, href: `${base}/game-habitat`, disabled: true },
-		{ key: 'menu.game.family' as const, href: `${base}/game-family`, disabled: true },
-		{ key: 'menu.game.feeding' as const, href: `${base}/game-feeding`, disabled: true }
+	/**
+	 * Пункт меню або веде на маршрут, або не веде нікуди — третього стану немає.
+	 *
+	 * Доти в трьох вимкнених пунктів був `href` на `game-habitat`,
+	 * `game-family` і `game-feeding` — маршрутів, яких у проєкті не існує.
+	 * Кнопка `disabled`, тож посилання не спрацьовувало ніколи, і помітити це
+	 * було нічим. Побачив це типізований `resolve()` з першої ж збірки: він
+	 * звіряє шлях зі справжнім переліком маршрутів (SEO-v8 § 1.5).
+	 */
+	type MenuGame = { key: TranslationKey } & ({ route: RouteRest } | { route: null });
+
+	const GAMES: MenuGame[] = [
+		{ key: 'menu.game.mythbusters', route: 'game-mythbusters' },
+		{ key: 'menu.game.population', route: 'game-population' },
+		{ key: 'menu.game.habitat', route: null },
+		{ key: 'menu.game.family', route: null },
+		{ key: 'menu.game.feeding', route: null }
 	];
+
+	// Мова береться з адреси: перехід у гру має лишати її, а не скидати на
+	// типову (I18N-v8 § 3.1).
+	const lang = $derived(languageFromParam(page.params.lang));
+	const games = $derived(
+		GAMES.map((game) => ({
+			...game,
+			href: game.route === null ? null : langPath(lang, game.route)
+		}))
+	);
 
 	const links = [
 		{
@@ -25,7 +48,7 @@
 <div class="menu-page">
 	<nav class="menu-grid">
 		{#each games as game, i (game.key)}
-			{#if game.disabled}
+			{#if game.href === null}
 				<button
 					type="button"
 					class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}"
