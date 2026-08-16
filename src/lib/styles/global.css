@@ -174,6 +174,47 @@ html {
 	height: 100%;
 	background-color: var(--color-bg);
 	transition: background-color 1s ease;
+
+	/*
+	 * Нативна смуга під тему — рівно те, що SCROLLBAR-v8 § 1 радить проєктам,
+	 * які власної смуги НЕ роблять. Чому не роблять — у PROJECT-CONTEXT.md.
+	 *
+	 * Оголошення на `html` — і воно тут не «про всяк випадок»: сторінка не
+	 * прокручується взагалі. `html` і `body` заввишки рівно з вікно, а
+	 * прокручується `.page-transition-wrapper` усередині, тобто ВСІ смуги в
+	 * застосунку внутрішні. Успадкування накриває їх усі одним оголошенням.
+	 *
+	 * Кольори виведені з тем, а не задані окремо: чотири теми міняють
+	 * `--color-accent` і `--color-bg-surface`, і смуга йде за ними сама.
+	 */
+	--color-scrollbar-track: color-mix(in srgb, var(--color-bg-surface), transparent 45%);
+	--color-scrollbar-thumb: color-mix(in srgb, var(--color-accent), transparent 45%);
+
+	scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+	scrollbar-width: auto;
+}
+
+/*
+ * Те саме для Safari й Chromium, старіших за 121: стандартних властивостей
+ * вони не знають. Обидва механізми беруть ТІ САМІ два токени, тож розійтися
+ * їм нема на чому.
+ */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-scrollbar-thumb);
+	border-radius: 8px;
+	/* Прозора рамка з обрізанням фону робить повзунок тоншим за доріжку, не
+	   домальовуючи їй кольору: сама доріжка напівпрозора. */
+	border: 2px solid transparent;
+	background-clip: padding-box;
 }
 
 body {
