@@ -117,14 +117,32 @@
 		font-weight: var(--font-weight-bold);
 	}
 
+	/*
+	 * Меню міряється ЕКРАНОМ, а не сталими відступами.
+	 *
+	 * Дев'ять пунктів зі сталою висотою не влазять нікуди: заміряно 774px проти
+	 * 768 на телефоні 375×812 і 1131 проти 720 на ноутбуці 1280×720 — там текст
+	 * двох пунктів переходить у два рядки й кнопка виростає до 113px. Головне
+	 * меню, яке доводиться гортати, — це меню, у якому останніх ігор ніби й
+	 * немає.
+	 *
+	 * Тому кожна вертикальна величина — `clamp(мінімум, частка dvh, максимум)`:
+	 * на високому вікні лишається те, що було, на низькому все стискається
+	 * рівно настільки, наскільки бракує місця. `dvh`, а не `vh`: на мобільних
+	 * `vh` не враховує згортання панелі браузера.
+	 *
+	 * Дно — 44px на кнопку (ACCESSIBILITY-v8 § 8), і воно НЕ здається. Нижче за
+	 * нього меню чесно повертає прокрутку: пункт, у який не влучити пальцем,
+	 * гірший за пункт, до якого треба крутити.
+	 */
 	.menu-page {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		flex: 1;
-		padding: var(--space-xl);
-		gap: var(--space-2xl);
+		padding: clamp(var(--space-sm), 2dvh, var(--space-xl));
+		gap: clamp(var(--space-md), 3dvh, var(--space-2xl));
 		width: 100%;
 		max-width: 480px;
 		box-sizing: border-box;
@@ -133,7 +151,7 @@
 	.menu-grid {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-md);
+		gap: clamp(var(--space-xs), 1.2dvh, var(--space-md));
 		width: 100%;
 	}
 
@@ -142,8 +160,10 @@
 		align-items: center;
 		justify-content: center;
 		width: 100%;
-		padding: var(--space-md) var(--space-xl);
-		font-size: var(--font-size-lg);
+		/* Дно сенсорної цілі: стискається все, крім нього. */
+		min-height: 44px;
+		padding: clamp(var(--space-xs), 1.2dvh, var(--space-md)) var(--space-xl);
+		font-size: clamp(var(--font-size-sm), 2.1dvh, var(--font-size-lg));
 		font-weight: var(--font-weight-medium);
 		border-radius: var(--radius-md);
 		transition:
@@ -201,7 +221,7 @@
 	.menu-links {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-sm);
+		gap: clamp(var(--space-xs), 1dvh, var(--space-sm));
 		width: 100%;
 	}
 
