@@ -54,6 +54,14 @@ class Settings {
 	scrollbarMode = $state<ScrollbarMode>('custom');
 	score = $state<number>(0);
 	headerTitleKey = $state<TranslationKey | null>(null);
+	/**
+	 * Що робить кнопка «назад» у шапці, коли на сторінці є свій крок назад.
+	 *
+	 * `null` — звичайна поведінка, тобто перехід на головну. Ставить це сама
+	 * сторінка й сама ж прибирає у своєму cleanup: у «Де живем?» спершу треба
+	 * повернутися до вибору режиму, а вже звідти — з гри.
+	 */
+	headerBack = $state<(() => void) | null>(null);
 
 	/** `true`, доки користувач не обрав тему сам: тоді її диктує система. */
 	#themeFollowsSystem = true;
@@ -189,6 +197,10 @@ class Settings {
 		this.font = font;
 		this.#applyFont();
 		storage.set('font', font);
+	}
+
+	setHeaderBack(action: (() => void) | null): void {
+		this.headerBack = action;
 	}
 
 	setHeaderTitle(key: TranslationKey | null): void {

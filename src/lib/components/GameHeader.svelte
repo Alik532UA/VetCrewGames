@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Snowflake, Leaf } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
+	import { fullscreen } from '$lib/services/fullscreen.svelte';
 	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
 	// `formatPlain` міняє кириличну «і» на латинську «i», щоб літера була у
 	// шрифті inglobal, — це правильно для того, що МАЛЮЄТЬСЯ, і неправильно
@@ -33,10 +34,6 @@
 
 	let lastScore = $state(settings.score);
 	let isPulsing = $state(false);
-	let isFullscreen = $state(false);
-
-	const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-
 	// Ефект тут законний: він не обчислює похідне значення, а запускає ЗОВНІШНІЙ
 	// таймер у відповідь на подію (SVELTE-CORE-v8 § 2.1). `untrack` для читання
 	// `lastScore` обов'язковий: без нього запис у нього ж робить ефект залежним
@@ -66,65 +63,7 @@
 		LANGUAGES.find((lang) => lang !== currentLanguage) ?? DEFAULT_LANGUAGE
 	);
 	const otherLanguageHref = $derived(langPath(otherLanguage, routeRestFromId(page.route.id)));
-interface FullscreenDocument extends Document {
-	webkitFullscreenElement?: Element;
-	webkitExitFullscreen?: () => Promise<void>;
-}
-
-interface FullscreenHTMLElement extends HTMLElement {
-	webkitRequestFullscreen?: () => Promise<void>;
-}
-
-function toggleFullscreen() {
-	if (isIOS) {		// iOS Safari (especially iPhone) doesn't support Fullscreen API for elements.
-		// Force Fake Fullscreen instead.
-		const isFake = document.documentElement.hasAttribute('data-fake-fullscreen');
-		if (!isFake) {
-			document.documentElement.setAttribute('data-fake-fullscreen', 'true');
-			isFullscreen = true;
-		} else {
-			document.documentElement.removeAttribute('data-fake-fullscreen');
-			isFullscreen = false;
-		}
-		return;
-	}
-
-	const doc = document as FullscreenDocument;
-	const el = document.documentElement as FullscreenHTMLElement;
-		if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
-			const request = el.requestFullscreen || el.webkitRequestFullscreen;
-			if (request) {
-				request.call(el).catch(() => {
-					document.documentElement.setAttribute('data-fake-fullscreen', 'true');
-					isFullscreen = true;
-				});
-			} else {
-				document.documentElement.setAttribute('data-fake-fullscreen', 'true');
-				isFullscreen = true;
-			}
-		} else {
-			const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
-			if (exit) exit.call(doc);
-			document.documentElement.removeAttribute('data-fake-fullscreen');
-			isFullscreen = false;
-		}
-	}
-
-	onMount(() => {
-		const handler = () => {
-			const native = !!(
-				document.fullscreenElement || (document as FullscreenDocument).webkitFullscreenElement
-			);
-			const fake = document.documentElement.hasAttribute('data-fake-fullscreen');
-			isFullscreen = native || fake;
-		};
-		document.addEventListener('fullscreenchange', handler);
-		document.addEventListener('webkitfullscreenchange', handler);
-		return () => {
-			document.removeEventListener('fullscreenchange', handler);
-			document.removeEventListener('webkitfullscreenchange', handler);
-		};
-	});
+onMount(() => fullscreen.watch());
 </script>
 
 <header class="game-header">
@@ -132,11 +71,21 @@ function toggleFullscreen() {
 		<div class="game-header__left">
 			{#if showBack && activeTitleKey !== 'app.title'}
 				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
+					<!--
+						Лишається посиланням на головну, а не стає кнопкою: середній клік,
+						Ctrl-клік і робота без JS зберігаються. Сторінка з власним кроком
+						назад просто перехоплює звичайний клік.
+					-->
 					<a
 						href={langPath(currentLanguage)}
 						class="header-btn"
 						aria-label={t('common.back')}
 						data-testid="header-back-link"
+						onclick={(e) => {
+							if (!settings.headerBack) return;
+							e.preventDefault();
+							settings.headerBack();
+						}}
 					>
 						<ArrowLeft size={22} />
 					</a>
@@ -218,11 +167,11 @@ function toggleFullscreen() {
 			<button
 				type="button"
 				class="header-btn"
-				onclick={toggleFullscreen}
-				aria-label={t(isFullscreen ? 'header.exitFullscreen' : 'header.toggleFullscreen')}
+				onclick={() => fullscreen.toggle()}
+				aria-label={t(fullscreen.active ? 'header.exitFullscreen' : 'header.toggleFullscreen')}
 				data-testid="header-fullscreen-btn"
 			>
-				{#if isFullscreen}
+				{#if fullscreen.active}
 					<Minimize size={20} />
 				{:else}
 					<Maximize size={20} />

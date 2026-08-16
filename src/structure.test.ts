@@ -47,7 +47,7 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`.
 	// Далі число має лише спадати.
 	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 438,
-	'src/lib/components/GameHeader.svelte': 411
+	'src/lib/components/GameHeader.svelte': 360
 };
 
 /**

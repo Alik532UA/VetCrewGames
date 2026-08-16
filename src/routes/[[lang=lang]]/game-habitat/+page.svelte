@@ -24,7 +24,22 @@
 
 	onMount(() => {
 		settings.setHeaderTitle('habitat.title');
-		return () => settings.setHeaderTitle(null);
+		return () => {
+			settings.setHeaderTitle(null);
+			settings.setHeaderBack(null);
+		};
+	});
+
+	/**
+	 * Поки триває партія, «назад» веде до вибору режиму, а не з гри.
+	 *
+	 * Інакше вийти з режиму можна було б лише через головну: гравець, який
+	 * хотів перемкнути континенти на природні зони, опинявся в меню й заходив
+	 * у гру знову. `reset()` і є повернення на стартовий екран — саме там
+	 * режим і міняється.
+	 */
+	$effect(() => {
+		settings.setHeaderBack(game.mode === null ? null : () => game.reset());
 	});
 </script>
 
