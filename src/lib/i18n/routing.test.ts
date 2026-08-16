@@ -23,20 +23,25 @@ describe('мовні адреси', () => {
 	it('типова мова живе на голому шляху, решта — з сегментом', () => {
 		expect(languageSegment(DEFAULT_LANGUAGE), 'сегмента для типової бути не має').toBeUndefined();
 		expect(languageSegment('en')).toBe('en');
-		expect(PREFIXED_LANGUAGES).toEqual(['en']);
+		expect(PREFIXED_LANGUAGES).toEqual(LANGUAGES.filter((lang) => lang !== DEFAULT_LANGUAGE));
 		expect(PREFIXED_LANGUAGES).not.toContain(DEFAULT_LANGUAGE);
 	});
 
+	/**
+	 * Зразком «не нашої мови» тут стоїть `zz` — код, зарезервований ISO 639 під
+	 * приватне вживання, тож мовою сайту він не стане ніколи. Доти тут була
+	 * `de`, і коли німецьку ввімкнули насправді, тест почав перевіряти, що
+	 * справжня мова НЕ працює.
+	 */
 	it('невідоме значення сегмента дає типову мову, а не порожнечу', () => {
 		expect(languageFromParam(undefined)).toBe('uk');
 		expect(languageFromParam('en')).toBe('en');
-		expect(languageFromParam('de'), 'чужа мова не має ставати поточною').toBe('uk');
+		expect(languageFromParam('zz'), 'чужа мова не має ставати поточною').toBe('uk');
 	});
 
 	it('isLanguage відсіює все, що не мова', () => {
-		expect(isLanguage('uk')).toBe(true);
-		expect(isLanguage('en')).toBe(true);
-		expect(isLanguage('de')).toBe(false);
+		for (const lang of LANGUAGES) expect(isLanguage(lang), lang).toBe(true);
+		expect(isLanguage('zz')).toBe(false);
 		expect(isLanguage(undefined)).toBe(false);
 		expect(isLanguage(42)).toBe(false);
 	});

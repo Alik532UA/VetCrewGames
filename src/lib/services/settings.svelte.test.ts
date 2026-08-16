@@ -143,8 +143,11 @@ describe('settings', () => {
 		expect(settings.savedLocale()).toBe('en');
 	});
 
+	// `zz` — код, зарезервований ISO 639 під приватне вживання: мовою сайту він
+	// не стане ніколи. Доти тут стояла `de`, і з увімкненням німецької тест
+	// почав вимагати, щоб справжня мова не зберігалася.
 	it('зіпсована мова у сховищі не приймається за вибір', async () => {
-		const { settings } = await load({ vetcrewgames_locale: 'de' });
+		const { settings } = await load({ vetcrewgames_locale: 'zz' });
 		expect(settings.savedLocale()).toBeNull();
 	});
 

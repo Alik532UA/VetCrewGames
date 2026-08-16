@@ -1,12 +1,26 @@
 import { uk, type TranslationKey } from './translations/uk';
 import { en } from './translations/en';
+import { de } from './translations/de';
+import { nl } from './translations/nl';
 import { settings } from '$lib/services/settings.svelte';
 
+/**
+ * `Record<TranslationKey, string>` — це і є контракт повноти: словник, у якому
+ * бракує ключа, не збереться. Українська тут еталон, бо саме з неї писалося
+ * все інше.
+ *
+ * Ключі СПІВПАДАЮТЬ, а тексти ні — і перевіряти треба саме перше. Тому крім
+ * цього типу є `src/i18n-completeness.test.ts`: тип бачить лише те, що зібрано
+ * в об'єкт, а тест іде від оголошених мов до файлів на диску й ловить
+ * протилежне — мову, обіцяну в `LANGUAGES`, у якої словника немає.
+ */
 type Translations = Record<TranslationKey, string>;
 
 const translations: Record<string, Translations> = {
 	uk,
-	en
+	en,
+	de,
+	nl
 };
 
 export const t = (key: TranslationKey): string => {

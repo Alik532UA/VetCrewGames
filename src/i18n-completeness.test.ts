@@ -1,6 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { LANGUAGES, type Language } from '$lib/i18n/routing';
+
+/**
+ * Мова, якою «розмовляє» `td()`, береться з налаштувань. Тут вона просто
+ * змінна: перевірці потрібно проговорити всі мови поспіль, а не одну.
+ */
+const settingsMock = { locale: 'uk' as string };
+vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
 
 /**
  * Мова або є цілком, або її немає.
@@ -54,6 +61,35 @@ describe('повнота мов', () => {
 		}
 
 		expect(problems.slice(0, 20), problems.join('\n')).toEqual([]);
+	});
+
+	/**
+	 * Третій крок, якого доти не стерегло ніщо: словник треба ще й ПІДКЛЮЧИТИ.
+	 *
+	 * Перевірки вище дивляться на файли, і обидві були б зелені для мови, у якої
+	 * тека є, ключі повні — а в мапі `translations` усередині `i18n/index.ts`
+	 * рядка немає. `td()` тоді не знаходить словника й повертає сам ключ, тобто
+	 * на екрані стоїть `animal.cat`. TypeScript мовчить: `td()` бере рядок і
+	 * повертає рядок.
+	 *
+	 * Тому перевірка йде не по файлах, а через справжній `td()` — тим самим
+	 * шляхом, яким ходить сторінка.
+	 */
+	it('кожна оголошена мова підключена до перекладача', async () => {
+		const { td } = await import('$lib/i18n');
+		// Ключ навмисно з даних, а не з інтерфейсу: саме такі йдуть через `td()`.
+		const probe = 'animal.cat';
+
+		const unwired = LANGUAGES.filter((lang) => {
+			settingsMock.locale = lang;
+			return td(probe) === probe;
+		});
+		settingsMock.locale = 'uk';
+
+		expect(
+			unwired,
+			`словник є, а в мапі перекладів його немає — на екрані буде ключ: ${unwired.join(', ')}`
+		).toEqual([]);
 	});
 
 	it('у кожної мови є підпис, прапор і файл прапора', async () => {

@@ -23,6 +23,10 @@ const SITE_BASE = '/VetCrewGames';
  * зникнення `entries()` дало б SPA-фолбек: адреса відкривається, але до
  * виконання JavaScript показує типовий вміст — і саме його бачить пошуковик
  * (SVELTEKIT-DATA-v8 § 2.3, § 6.1).
+ *
+ * Перелік ЯВНИЙ, а не виведений із `LANGUAGES`: він для того й існує, щоб
+ * зловити випадок, коли `entries()` віддав менше, ніж мов оголошено. Вивести
+ * його з того самого джерела означало б звіряти джерело саме з собою.
  */
 const EXPECTED_PAGES = [
 	['index.html', 'uk'],
@@ -38,7 +42,21 @@ const EXPECTED_PAGES = [
 	['en/game-family/index.html', 'en'],
 	['en/game-habitat/index.html', 'en'],
 	['en/game-feeding/index.html', 'en'],
-	['en/game-memory/index.html', 'en']
+	['en/game-memory/index.html', 'en'],
+	['de/index.html', 'de'],
+	['de/game-mythbusters/index.html', 'de'],
+	['de/game-population/index.html', 'de'],
+	['de/game-family/index.html', 'de'],
+	['de/game-habitat/index.html', 'de'],
+	['de/game-feeding/index.html', 'de'],
+	['de/game-memory/index.html', 'de'],
+	['nl/index.html', 'nl'],
+	['nl/game-mythbusters/index.html', 'nl'],
+	['nl/game-population/index.html', 'nl'],
+	['nl/game-family/index.html', 'nl'],
+	['nl/game-habitat/index.html', 'nl'],
+	['nl/game-feeding/index.html', 'nl'],
+	['nl/game-memory/index.html', 'nl']
 ];
 
 /** PERFORMANCE-v8 § 1: бюджет initial JS на маршрут. */

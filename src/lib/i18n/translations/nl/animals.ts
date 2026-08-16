@@ -1,0 +1,213 @@
+export const animals = {
+	'animal.chicken': 'Kip',
+	'animal.cow': 'Koe',
+	'animal.dog': 'Hond',
+	'animal.cat': 'Kat',
+	'animal.rat': 'Rat',
+	'animal.sparrow': 'Mus',
+	'animal.ant': 'Mier',
+	'animal.elephant': 'Olifant',
+	'animal.tiger': 'Tijger',
+	'animal.penguin': 'Pinguïn',
+	'animal.bee': 'Bij',
+	'animal.panda': 'Panda',
+	'animal.wolf': 'Wolf',
+	'animal.dolphin': 'Dolfijn',
+	'animal.parrot': 'Papegaai',
+	'animal.alligator': 'Alligator',
+	'animal.chameleon': 'Kameleon',
+	'animal.giraffe': 'Giraf',
+	'animal.jellyfish': 'Kwal',
+	'animal.kangaroo': 'Kangoeroe',
+	'animal.lemur': 'Maki',
+	'animal.lion': 'Leeuw',
+	'animal.monkey': 'Aap',
+	'animal.panther': 'Panter',
+	'animal.peacock': 'Pauw',
+	'animal.rhino': 'Neushoorn',
+	'animal.spider': 'Spin',
+
+	'fact.chicken':
+		'Er lopen meer kippen op aarde rond dan alle andere vogels samen — ongeveer vier per mens.',
+	'fact.cow': 'Koeien hebben hartsvriendinnen en raken gestrest als je ze scheidt.',
+	'fact.dog':
+		'Honden begrijpen tot 250 woorden en gebaren; hun verstand wordt vergeleken met dat van een tweejarig kind.',
+	'fact.cat': 'Katten verslapen 70 % van hun leven — zo’n 13 tot 16 uur per dag.',
+	'fact.rat': 'Ratten lachen als je ze kietelt en uiten plezier met ultrageluid.',
+	'fact.sparrow': 'Mussen leven al meer dan 10.000 jaar naast de mens.',
+	'fact.ant':
+		'Alle mieren op aarde wegen samen ongeveer evenveel als alle mensen bij elkaar.',
+	'fact.elephant':
+		'Olifanten zijn de enige dieren die niet kunnen springen — zwemmen doen ze wel, over grote afstanden.',
+	'fact.tiger':
+		'De strepen van een tijger zijn uniek als een vingerafdruk — geen twee zijn hetzelfde.',
+	'fact.penguin':
+		'Keizerspinguïns duiken tot 500 meter diep en houden daarbij 20 minuten hun adem in.',
+	'fact.bee': 'Eén bij maakt haar hele leven maar een twaalfde theelepel honing.',
+	'fact.panda': 'Panda’s eten tot 14 uur per dag bamboe — tot 38 kilo per dag.',
+	'fact.wolf':
+		'Wolven halen 60 km/u en leggen op zoek naar voedsel 30 kilometer per nacht af.',
+	'fact.dolphin':
+		'Dolfijnen slapen met één oog open: de ene hersenhelft slaapt, de andere houdt de wacht.',
+	'fact.parrot': 'Sommige papegaaien worden ouder dan 80 jaar en leren meer dan 100 woorden.',
+	'fact.alligator':
+		'Alligators bestaan al ruim 150 miljoen jaar — ze hebben zelfs de dinosauriërs overleefd.',
+	'fact.chameleon':
+		'Kameleons verkleuren niet alleen om op te gaan in de omgeving, maar ook om hun temperatuur te regelen en hun stemming te tonen.',
+	'fact.giraffe': 'De tong van een giraf is blauw en wordt tot 50 centimeter lang.',
+	'fact.jellyfish':
+		'Kwallen bestaan voor 95 % uit water en hebben geen hersenen, geen hart en geen bloed.',
+	'fact.kangaroo': 'Kangoeroes kunnen niet achteruitlopen.',
+	'fact.lemur': 'Madagaskar is de enige plek ter wereld waar maki’s in het wild leven.',
+	'fact.lion': 'Het gebrul van een leeuw is tot acht kilometer ver te horen.',
+	'fact.monkey': 'Apen gebruiken gereedschap — stenen bijvoorbeeld, om noten te kraken.',
+	'fact.panther':
+		'Een zwarte panter is geen aparte soort, maar een luipaard of jaguar met melanisme.',
+	'fact.peacock': 'Alleen de mannetjes hebben het prachtige verenrad.',
+	'fact.rhino':
+		'De hoorn van een neushoorn bestaat uit keratine — hetzelfde eiwit als ons haar en onze nagels.',
+	'fact.spider': 'Een spinnendraad zo dik als een mensenhaar is sterker dan staal.',
+	'animal.blue_whale': 'Blauwe vinvis',
+	'animal.deer': 'Hert',
+	'animal.falcon': 'Valk',
+	'animal.frog': 'Kikker',
+	'animal.hippo': 'Nijlpaard',
+	'animal.leopard': 'Luipaard',
+	'animal.lizard': 'Hagedis',
+	'animal.ostrich': 'Struisvogel',
+	'animal.owl': 'Uil',
+	'animal.seal': 'Zeehond',
+	'animal.stork': 'Ooievaar',
+	'animal.turtle': 'Schildpad',
+	'fact.blue_whale':
+		'De blauwe vinvis is het grootste dier dat ooit geleefd heeft, en zijn tong weegt evenveel als een olifant.',
+	'fact.deer':
+		'Een gewei groeit elk jaar opnieuw aan en is een van de snelst groeiende weefsels in het dierenrijk.',
+	'fact.falcon':
+		'De slechtvalk is het snelste dier op aarde en haalt in duikvlucht meer dan 380 km/u.',
+	'fact.frog': 'Kikkers nemen water op door hun huid en hoeven dus niet te drinken.',
+	'fact.hippo':
+		'Nijlpaarden scheiden een roodachtige, olieachtige vloeistof af — soms „bloedzweet” genoemd — die als natuurlijke zonnebrand werkt.',
+	'fact.leopard':
+		'Luipaarden zijn ongelooflijk sterk en slepen prooien die veel zwaarder zijn dan zijzelf hoog de boom in.',
+	'fact.lizard':
+		'Veel hagedissen laten hun staart los om aan een vijand te ontkomen — later groeit die weer aan.',
+	'fact.ostrich': 'Het oog van een struisvogel is groter dan zijn hele brein.',
+	'fact.owl': 'Uilen draaien hun kop tot 270 graden, doordat ze extra nekwervels hebben.',
+	'fact.seal':
+		'Sommige zeehonden slapen onder water en worden alleen even wakker om adem te halen, zonder echt wakker te worden.',
+	'fact.stork':
+		'Ooievaars missen een stemorgaan en praten daarom vooral door met hun snavel te klepperen.',
+	'fact.turtle':
+		'Schildpadden zijn een van de oudste reptielengroepen ter wereld en bestaan al ruim 200 miljoen jaar.',
+	'animal.antelope': 'Antilope',
+	'animal.armadillo': 'Gordeldier',
+	'animal.axolotl': 'Axolotl',
+	'animal.bat': 'Vleermuis',
+	'animal.bear': 'Beer',
+	'animal.beaver': 'Bever',
+	'animal.bison': 'Bizon',
+	'animal.camel': 'Kameel',
+	'animal.capybara': 'Capibara',
+	'animal.crow': 'Kraai',
+	'animal.dodo': 'Dodo',
+	'animal.duck': 'Eend',
+	'animal.eagle': 'Arend',
+	'animal.flamingo': 'Flamingo',
+	'animal.fox': 'Vos',
+	'animal.giant_anteater': 'Reuzenmiereneter',
+	'animal.goose': 'Gans',
+	'animal.hamster': 'Hamster',
+	'animal.hawk': 'Havik',
+	'animal.hedgehog': 'Egel',
+	'animal.honey_badger': 'Honingdas',
+	'animal.horse': 'Paard',
+	'animal.koala': 'Koala',
+	'animal.mammoth': 'Mammoet',
+	'animal.manta_ray': 'Mantarog',
+	'animal.manul': 'Manoel (pallaskat)',
+	'animal.mole': 'Mol',
+	'animal.octopus': 'Octopus',
+	'animal.passenger_pigeon': 'Trekduif',
+	'animal.pelican': 'Pelikaan',
+	'animal.pig': 'Varken',
+	'animal.platypus': 'Vogelbekdier',
+	'animal.porcupine': 'Stekelvarken',
+	'animal.raccoon': 'Wasbeer',
+	'animal.red_panda': 'Rode panda',
+	'animal.shark': 'Haai',
+	'animal.sheep': 'Schaap',
+	'animal.sifaka': 'Sifaka',
+	'animal.sloth': 'Luiaard',
+	'animal.snake': 'Slang',
+	'animal.squirrel': 'Eekhoorn',
+	'animal.toucan': 'Toekan',
+	'animal.walrus': 'Walrus',
+	'animal.weasel': 'Wezel',
+	'animal.yak': 'Jak',
+	'animal.zebra': 'Zebra',
+	'fact.antelope': 'Sommige antilopen halen snelheden tot 95 km/u.',
+	'fact.armadillo': 'Gordeldieren zijn de enige zoogdieren met een schild van bot.',
+	'fact.axolotl':
+		'Axolotls laten hun poten, hun hart en zelfs delen van hun hersenen weer aangroeien.',
+	'fact.bat': 'Vleermuizen zijn de enige zoogdieren die echt en langdurig kunnen vliegen.',
+	'fact.bear': 'Beren ruiken uitstekend — nog beter dan honden.',
+	'fact.beaver': 'Bevers hebben oranje tanden doordat er ijzer in hun glazuur zit.',
+	'fact.bison': 'Bizons zijn de grootste nog levende landdieren van Noord-Amerika.',
+	'fact.camel': 'Kamelen slaan in hun bulten vet op, geen water.',
+	'fact.capybara': 'Capibara’s zijn de grootste levende knaagdieren ter wereld.',
+	'fact.crow': 'Kraaien onthouden mensengezichten en blijven het je nadragen.',
+	'fact.dodo':
+		'De dodo was een niet-vliegende vogel die alleen op Mauritius voorkwam en in de zeventiende eeuw uitstierf.',
+	'fact.duck': 'Eenden hebben waterdichte veren en blijven zelfs bij het duiken droog.',
+	'fact.eagle': 'Arenden zien tot acht keer scherper dan mensen.',
+	'fact.flamingo':
+		'Flamingo’s zijn roze door het bètacaroteen in hun voedsel van kreeftjes en algen.',
+	'fact.fox': 'Vossen gebruiken het aardmagnetisch veld als hulp bij de jacht.',
+	'fact.giant_anteater':
+		'Reuzenmiereneters hebben geen tanden en vangen met hun lange, kleverige tong tot 30.000 mieren per dag.',
+	'fact.goose':
+		'Ganzen roepen tijdens de vlucht in V-formatie om de voorsten aan te sporen het tempo vast te houden.',
+	'fact.hamster':
+		'Hamsters hebben rekbare wangzakken die bij het hamsteren tot aan hun schouders reiken.',
+	'fact.hawk': 'Haviken zien ultraviolet licht en sporen hun prooi daarmee makkelijker op.',
+	'fact.hedgehog': 'Een egel draagt tussen de 5000 en 7000 stekels op zijn rug.',
+	'fact.honey_badger':
+		'Honingdassen hebben een opmerkelijk dikke huid die machetehouwen en bijensteken doorstaat.',
+	'fact.horse': 'Paarden slapen zowel staand als liggend.',
+	'fact.koala':
+		'Koala’s hebben vingerafdrukken die nauwelijks van die van mensen te onderscheiden zijn.',
+	'fact.mammoth':
+		'Mammoeten stierven zo’n 4000 jaar geleden uit — ze leefden dus nog toen de piramide van Cheops werd gebouwd.',
+	'fact.manta_ray':
+		'Mantaroggen hebben van alle vissen de grootste verhouding tussen hersenen en lichaamsmassa.',
+	'fact.manul':
+		'Manoelen hebben de langste en dichtste vacht van alle katten en overleven daarmee koude bergen.',
+	'fact.mole': 'Mollen graven tot vijf meter gang per uur.',
+	'fact.octopus': 'Octopussen hebben drie harten en blauw bloed.',
+	'fact.passenger_pigeon':
+		'De trekduif was ooit de talrijkste vogel van Noord-Amerika — in 1914 stierf hij uit.',
+	'fact.pelican': 'In de keelzak van een pelikaan past meer dan elf liter water.',
+	'fact.pig': 'Varkens zijn heel slim en leren zelfs videospelletjes spelen.',
+	'fact.platypus': 'Het vogelbekdier is een zoogdier dat eieren legt en melk uitzweet.',
+	'fact.porcupine': 'Een stekelvarken draagt ongeveer 30.000 stekels.',
+	'fact.raccoon':
+		'Wasberen hebben uiterst gevoelige voorpoten die werken als mensenhanden.',
+	'fact.red_panda': 'Rode panda’s gebruiken hun pluimstaart in de kou als deken.',
+	'fact.shark': 'Haaien hebben geen botten; hun skelet bestaat uit kraakbeen.',
+	'fact.sheep':
+		'Schapen hebben rechthoekige pupillen en zien daarmee in een hoek van 320 tot 360 graden.',
+	'fact.sifaka': 'Sifaka’s steken open terrein rechtop over, in een soort zijwaartse dans.',
+	'fact.sloth': 'Luiaards bewegen zo traag dat er algen op hun vacht groeien.',
+	'fact.snake': 'Slangen ruiken met hun tong, via een apart orgaan in hun gehemelte.',
+	'fact.squirrel':
+		'Eekhoorns planten elk jaar duizenden bomen doordat ze vergeten waar ze hun noten verstopt hebben.',
+	'fact.toucan':
+		'De snavel van een toekan kan tot de helft van zijn lichaamsoppervlak beslaan.',
+	'fact.walrus': 'Walrussen trekken zich met hun lange slagtanden het water uit, het ijs op.',
+	'fact.weasel':
+		'Wezels voeren een hypnotiserende „oorlogsdans” op om hun prooi in verwarring te brengen.',
+	'fact.yak':
+		'Jakken hebben uitzonderlijk grote longen om op grote hoogte genoeg zuurstof op te nemen.',
+	'fact.zebra': 'Elke zebra heeft een uniek strepenpatroon, als een vingerafdruk.'
+} as const;

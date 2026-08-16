@@ -22,7 +22,7 @@ export type Language = 'uk' | 'en' | 'de' | 'nl';
  * Увімкнути мову — це дописати її сюди й покласти словник. Обидва кроки
  * стереже `src/i18n-completeness.test.ts`: він падає, якщо зроблено лише один.
  */
-export const LANGUAGES: readonly Language[] = ['uk', 'en'];
+export const LANGUAGES: readonly Language[] = ['uk', 'en', 'de', 'nl'];
 
 /** Мова, що живе на ГОЛОМУ шляху: `/`, а не `/uk/`. */
 export const DEFAULT_LANGUAGE: Language = 'uk';
