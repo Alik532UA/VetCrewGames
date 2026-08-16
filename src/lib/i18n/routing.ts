@@ -65,7 +65,16 @@ export const LANGUAGE_ROUTES = {
 	'game-habitat/continents': '/[[lang=lang]]/game-habitat/continents',
 	'game-habitat/biomes': '/[[lang=lang]]/game-habitat/biomes',
 	'game-feeding': '/[[lang=lang]]/game-feeding',
-	'game-memory': '/[[lang=lang]]/game-memory'
+	'game-memory': '/[[lang=lang]]/game-memory',
+	/*
+	 * Розділи меню. Адреси самих ігор НЕ змінилися — змінився лише шлях
+	 * кліками: доти шість кнопок лежали в головному меню, тепер вони за
+	 * «Вікториною». Кожен розділ має власну адресу, бо це окремий екран, яким
+	 * можна поділитися, і його бачить пошуковик.
+	 */
+	quiz: '/[[lang=lang]]/quiz',
+	'quiz/play': '/[[lang=lang]]/quiz/play',
+	pairs: '/[[lang=lang]]/pairs'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;

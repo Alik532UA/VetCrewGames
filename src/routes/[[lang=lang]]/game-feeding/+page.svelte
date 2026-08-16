@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
-	import { languageFromParam } from '$lib/i18n/routing';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
 	import { BIN } from '$lib/config/feeding-game';
@@ -51,7 +52,12 @@
 
 	onMount(() => {
 		game.start();
-		return settings.claimHeader('feeding.title');
+		/*
+		 * «Назад» веде в РОЗДІЛ, а не в головне меню. Після того, як ігри переїхали
+		 * під «Вікторину» й «Знайди пару», типовий крок на головну змушував би
+		 * спускатися двома рівнями заново.
+		 */
+		return settings.claimHeader('feeding.title', () => goto(langPath(lang, 'quiz/play')));
 	});
 </script>
 

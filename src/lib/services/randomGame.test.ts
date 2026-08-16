@@ -5,22 +5,35 @@ import { LANGUAGE_ROUTES } from '$lib/i18n/routing';
 describe('випадкова гра', () => {
 	/**
 	 * Перелік виводиться з маршрутів, а другий список розійшовся б із першим на
-	 * наступній грі. Перевірка стежить саме за тим, а не за вмістом.
+	 * наступній грі. Перевірка стежить саме за тим, а не за вмістом: вона знає
+	 * лише те, що виключено, і вимагає рівно решту.
 	 */
-	it('це всі маршрути, крім головної та вибору режиму', () => {
+	const MENUS = ['', 'quiz', 'quiz/play', 'pairs', 'game-habitat'];
+	const OWN_SECTION = ['game-memory'];
+
+	it('це всі маршрути, крім меню й розділів із власною грою', () => {
 		const games = Object.keys(LANGUAGE_ROUTES).filter(
-			(route) => route !== '' && route !== 'game-habitat'
+			(route) => !MENUS.includes(route) && !OWN_SECTION.includes(route)
 		);
 		expect([...PLAYABLE_ROUTES].sort()).toEqual(games.sort());
 	});
 
 	/**
-	 * Кнопка обіцяє ГРУ. Головна й вибір підрежиму — це меню: випасти вони не
-	 * мають, інакше «випадкова гра» приводить у ще один вибір.
+	 * Кнопка обіцяє ГРУ. Кожен пункт нижче — екран вибору: якби він випав,
+	 * «випадкова гра» привела б у ще одне меню.
 	 */
-	it('меню серед варіантів немає', () => {
-		expect(PLAYABLE_ROUTES).not.toContain('');
-		expect(PLAYABLE_ROUTES, 'це екран вибору, а не гра').not.toContain('game-habitat');
+	it('жодного меню серед варіантів', () => {
+		for (const menu of MENUS) {
+			expect(PLAYABLE_ROUTES, `${menu || '(головна)'} — це меню, а не гра`).not.toContain(menu);
+		}
+	});
+
+	/**
+	 * «Знайди пару» живе у власному розділі, а «Випадкова гра» — усередині
+	 * вікторини, тобто пропонує саме її п'ятірку.
+	 */
+	it('«Знайди пару» не випадає з вікторини', () => {
+		expect(PLAYABLE_ROUTES).not.toContain('game-memory');
 	});
 
 	/**

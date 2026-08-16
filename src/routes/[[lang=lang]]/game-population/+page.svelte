@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain, formatPopulation } from '$lib/i18n/index';
@@ -12,6 +15,8 @@
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
+
+	const lang = $derived(languageFromParam(page.params.lang));
 
 	/**
 	 * Правила гри — у контролері; тут лишається СПОСІБ ВВЕДЕННЯ: миша, палець,
@@ -266,7 +271,12 @@
 
 	onMount(() => {
 		game.startRound();
-		const releaseHeader = settings.claimHeader('population.title');
+		/*
+		 * «Назад» веде в РОЗДІЛ, а не в головне меню. Після того, як ігри переїхали
+		 * під «Вікторину» й «Знайди пару», типовий крок на головну змушував би
+		 * спускатися двома рівнями заново.
+		 */
+		const releaseHeader = settings.claimHeader('population.title', () => goto(langPath(lang, 'quiz/play')));
 		document.addEventListener('touchstart', handleTouchStart, { passive: false });
 		document.addEventListener('touchmove', handleTouchMove, { passive: false });
 		document.addEventListener('touchend', handleTouchEnd, { passive: false });

@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { languageFromParam } from '$lib/i18n/routing';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import HabitatModeSelect from '$lib/components/HabitatModeSelect.svelte';
@@ -20,7 +21,12 @@
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	onMount(() => {
-		return settings.claimHeader('habitat.title');
+		/*
+		 * «Назад» веде в РОЗДІЛ, а не в головне меню. Після того, як ігри переїхали
+		 * під «Вікторину» й «Знайди пару», типовий крок на головну змушував би
+		 * спускатися двома рівнями заново.
+		 */
+		return settings.claimHeader('habitat.title', () => goto(langPath(lang, 'quiz/play')));
 	});
 </script>
 

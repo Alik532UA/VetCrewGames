@@ -11,6 +11,15 @@ export const ui = {
 	'menu.game.feeding': 'Was fressen sie?',
 	'menu.game.memory': 'Finde das Paar',
 	'menu.game.random': 'Zufälliges Spiel',
+	'menu.reserve': 'Schutzgebiet',
+	'menu.quiz': 'Quiz',
+
+	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —
+	// nur das Ziel von „Spielen“ unterscheidet sich.
+	'menu.play': 'Spielen',
+	'menu.playWithFriends': 'Mit Freunden spielen',
+	'menu.playOnline': 'Online spielen',
+	'menu.comingSoon': 'Noch in Arbeit',
 	'menu.game.population': 'Wer ist häufiger?',
 	'menu.game.habitat': 'Wo leben sie?',
 	'menu.game.mythbusters': 'Fakt oder Mythos?',

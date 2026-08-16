@@ -11,6 +11,15 @@ export const ui = {
 	'menu.game.feeding': 'What do they eat?',
 	'menu.game.memory': 'Find a pair',
 	'menu.game.random': 'Random game',
+	'menu.reserve': 'Reserve',
+	'menu.quiz': 'Quiz',
+
+	// The three items are the same for the quiz and for "Find a pair" — only
+	// where "Play" leads differs.
+	'menu.play': 'Play',
+	'menu.playWithFriends': 'Play with friends',
+	'menu.playOnline': 'Play online',
+	'menu.comingSoon': 'Still in the works',
 	'menu.game.population': 'Who is more?',
 	'menu.game.habitat': 'Where do they live?',
 	'menu.game.mythbusters': 'Fact or Myth?',

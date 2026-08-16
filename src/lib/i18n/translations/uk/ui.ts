@@ -11,6 +11,15 @@ export const ui = {
 	'menu.game.feeding': 'Що їмо?',
 	'menu.game.memory': 'Знайди пару',
 	'menu.game.random': 'Випадкова гра',
+	'menu.reserve': 'Заповiдник',
+	'menu.quiz': 'Вiкторина',
+
+	// Підписи трьох пунктів, однакових для «Вікторини» й «Знайди пару»: різниця
+	// лише в тому, куди веде «Грати».
+	'menu.play': 'Грати',
+	'menu.playWithFriends': 'Грати з друзями',
+	'menu.playOnline': 'Грати онлайн',
+	'menu.comingSoon': 'Ще в розробцi',
 	'menu.game.population': 'Кого більше?',
 	'menu.game.habitat': 'Де живем?',
 	'menu.game.mythbusters': 'Правда чи міф?',

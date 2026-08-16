@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { flyAndSlide } from '$lib/utils/transitions';
@@ -12,6 +13,8 @@
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 
+	const lang = $derived(languageFromParam(page.params.lang));
+
 	// Компонент лише СТВОРЮЄ контролер і малює його стан (SVELTE-CORE-v8 § 3.1).
 	// Стан партії гине разом зі сторінкою — саме тому контролер тут `new`, а не
 	// module-level синглтон.
@@ -19,7 +22,12 @@
 
 	onMount(() => {
 		game.start();
-		return settings.claimHeader('myth.title');
+		/*
+		 * «Назад» веде в РОЗДІЛ, а не в головне меню. Після того, як ігри переїхали
+		 * під «Вікторину» й «Знайди пару», типовий крок на головну змушував би
+		 * спускатися двома рівнями заново.
+		 */
+		return settings.claimHeader('myth.title', () => goto(langPath(lang, 'quiz/play')));
 	});
 </script>
 

@@ -11,6 +11,15 @@ export const ui = {
 	'menu.game.feeding': 'Wat eten ze?',
 	'menu.game.memory': 'Zoek het paar',
 	'menu.game.random': 'Willekeurig spel',
+	'menu.reserve': 'Reservaat',
+	'menu.quiz': 'Quiz',
+
+	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen
+	// waar „Spelen” heen leidt verschilt.
+	'menu.play': 'Spelen',
+	'menu.playWithFriends': 'Met vrienden spelen',
+	'menu.playOnline': 'Online spelen',
+	'menu.comingSoon': 'Nog in ontwikkeling',
 	'menu.game.population': 'Wie komt vaker voor?',
 	'menu.game.habitat': 'Waar wonen ze?',
 	'menu.game.mythbusters': 'Feit of mythe?',

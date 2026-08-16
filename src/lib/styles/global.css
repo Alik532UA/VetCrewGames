@@ -425,6 +425,132 @@ img {
 }
 
 /*
+ * Кнопки меню. Клас глобальний, бо тих самих кнопок тепер ТРИ сторінки:
+ * головне меню, «Вікторина» й «Знайди пару». Scoped-блок однієї з них до
+ * решти не дістає — і компілятор про це не попереджає (SVELTE-UI-v8 § 3.5).
+ * Цей самий дефект тут уже траплявся з `.header-btn`.
+ */
+/*
+ * Меню міряється ЕКРАНОМ, а не сталими відступами.
+ *
+ * Дев'ять пунктів зі сталою висотою не влазять нікуди: заміряно 774px проти
+ * 768 на телефоні 375×812 і 1131 проти 720 на ноутбуці 1280×720 — там текст
+ * двох пунктів переходить у два рядки й кнопка виростає до 113px. Головне
+ * меню, яке доводиться гортати, — це меню, у якому останніх ігор ніби й
+ * немає.
+ *
+ * Тому кожна вертикальна величина — `clamp(мінімум, частка dvh, максимум)`:
+ * на високому вікні лишається те, що було, на низькому все стискається
+ * рівно настільки, наскільки бракує місця. `dvh`, а не `vh`: на мобільних
+ * `vh` не враховує згортання панелі браузера.
+ *
+ * Дно — 44px на кнопку (ACCESSIBILITY-v8 § 8), і воно НЕ здається. Нижче за
+ * нього меню чесно повертає прокрутку: пункт, у який не влучити пальцем,
+ * гірший за пункт, до якого треба крутити.
+ */
+.menu-page {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: clamp(var(--space-sm), 2dvh, var(--space-xl));
+	gap: clamp(var(--space-md), 3dvh, var(--space-2xl));
+	width: 100%;
+	max-width: 480px;
+	box-sizing: border-box;
+}
+
+.menu-grid {
+	display: flex;
+	flex-direction: column;
+	gap: clamp(var(--space-xs), 1.2dvh, var(--space-md));
+	width: 100%;
+}
+
+.menu-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	/* Дно сенсорної цілі: стискається все, крім нього. */
+	min-height: 44px;
+	padding: clamp(var(--space-xs), 1.2dvh, var(--space-md)) var(--space-xl);
+	font-size: clamp(var(--font-size-sm), 2.1dvh, var(--font-size-lg));
+	font-weight: var(--font-weight-medium);
+	border-radius: var(--radius-md);
+	transition:
+		transform var(--transition-fast),
+		box-shadow var(--transition-normal),
+		background-color var(--transition-normal);
+	text-align: center;
+	text-decoration: none;
+	animation:
+		card-enter 400ms ease both,
+		blur-in 3s ease 400ms both;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	user-select: none;
+}
+
+.menu-btn--game {
+	background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
+	backdrop-filter: var(--blur-glass);
+	color: var(--color-text-on-panel);
+	box-shadow: var(--shadow-card);
+}
+
+@media (hover: hover) {
+	.menu-btn--game:hover {
+		background-color: color-mix(in srgb, var(--color-bg-card-hover), transparent 15%);
+		box-shadow: var(--shadow-glow-primary);
+		transform: translateY(-2px);
+	}
+	.menu-btn--link:hover {
+		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 20%);
+		box-shadow: var(--shadow-glow-primary);
+		transform: translateY(-2px);
+	}
+}
+
+.menu-btn--game:active {
+	background-color: var(--color-bg-card-hover);
+	transform: scale(0.98);
+	box-shadow: none;
+}
+
+.menu-btn--disabled {
+	background-color: color-mix(in srgb, var(--color-disabled), transparent 50%);
+	backdrop-filter: var(--blur-glass);
+	color: var(--color-disabled-text);
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+.menu-btn--disabled:active {
+	transform: none;
+}
+
+.menu-links {
+	display: flex;
+	flex-direction: column;
+	gap: clamp(var(--space-xs), 1dvh, var(--space-sm));
+	width: 100%;
+}
+
+.menu-btn--link {
+	background-color: color-mix(in srgb, var(--color-primary), transparent 50%);
+	backdrop-filter: var(--blur-glass);
+	color: #ffffff;
+	box-shadow: none;
+}
+
+.menu-btn--link:active {
+	background-color: color-mix(in srgb, var(--color-bg-surface), transparent 30%);
+	transform: scale(0.98);
+}
+
+/*
  * Головна кнопка кроку — «Погодувати», «Далі». Клас глобальний, бо ту саму
  * кнопку малюють і сторінка гри, і дошка всередині неї: локальна копія в
  * кожній розійшлася б, а `:global()` через межу компонента приховав би, що

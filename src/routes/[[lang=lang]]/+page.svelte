@@ -1,50 +1,20 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
-	import { pickRandomRoute } from '$lib/services/randomGame';
-	import { langPath, languageFromParam, type RouteRest } from '$lib/i18n/routing';
-	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
+	import { toast } from '$lib/controllers/toast.svelte';
 
 	/**
-	 * Пункт меню або веде на маршрут, або не веде нікуди — третього стану немає.
+	 * Головне меню: три розділи замість переліку ігор.
 	 *
-	 * Доти в трьох вимкнених пунктів був `href` на `game-habitat`,
-	 * `game-family` і `game-feeding` — маршрутів, яких у проєкті не існує.
-	 * Кнопка `disabled`, тож посилання не спрацьовувало ніколи, і помітити це
-	 * було нічим. Побачив це типізований `resolve()` з першої ж збірки: він
-	 * звіряє шлях зі справжнім переліком маршрутів (SEO-v8 § 1.5).
+	 * Доти тут лежали всі шість ігор поспіль, і список ріс із кожною новою.
+	 * Тепер меню називає ВИДИ занять, а не їхню кількість: заповідник —
+	 * симулятор, вікторина — п'ять міні-ігор, «Знайди пару» — окрема гра зі
+	 * своєю спільною партією.
+	 *
+	 * Адреси самих ігор не змінилися: змінився шлях кліками, а не URL.
 	 */
-	type MenuGame = { key: TranslationKey } & ({ route: RouteRest } | { route: null });
-
-	const GAMES: MenuGame[] = [
-		{ key: 'menu.game.mythbusters', route: 'game-mythbusters' },
-		{ key: 'menu.game.population', route: 'game-population' },
-		{ key: 'menu.game.habitat', route: 'game-habitat' },
-		{ key: 'menu.game.family', route: 'game-family' },
-		{ key: 'menu.game.feeding', route: 'game-feeding' },
-		{ key: 'menu.game.memory', route: 'game-memory' }
-	];
-
-	// Мова береться з адреси: перехід у гру має лишати її, а не скидати на
-	// типову (I18N-v8 § 3.1).
 	const lang = $derived(languageFromParam(page.params.lang));
-	const games = $derived(
-		GAMES.map((game) => ({
-			...game,
-			href: game.route === null ? null : langPath(lang, game.route)
-		}))
-	);
-
-	/**
-	 * «Випадкова гра» — не посилання, бо ціль відома лише в момент кліку.
-	 *
-	 * Підрежими «Де живем?» тепер самі є адресами, тож вибирати їх окремо не
-	 * треба: вони просто лежать у переліку нарівні з рештою ігор.
-	 */
-	function playRandom() {
-		goto(langPath(lang, pickRandomRoute()));
-	}
 
 	const links = [
 		{
@@ -59,36 +29,37 @@
 </script>
 
 <div class="menu-page">
-	<button
-		type="button"
-		class="menu-btn menu-btn--random anim-stagger-1"
-		onclick={playRandom}
-		data-testid="menu-random-btn"
-	>
-		{@html formatFont(t('menu.game.random'))}
-	</button>
-
 	<nav class="menu-grid">
-		{#each games as game, i (game.key)}
-			{#if game.href === null}
-				<button
-					type="button"
-					class="menu-btn menu-btn--game menu-btn--disabled anim-stagger-{i + 1}"
-					disabled
-					data-testid="menu-{game.key.split('.').pop()}-btn"
-				>
-					{@html formatFont(t(game.key))}
-				</button>
-			{:else}
-				<a
-					href={game.href}
-					class="menu-btn menu-btn--game anim-stagger-{i + 1}"
-					data-testid="menu-{game.key.split('.').pop()}-link"
-				>
-					{@html formatFont(t(game.key))}
-				</a>
-			{/if}
-		{/each}
+		<!--
+			Заповідника ще немає, тож кнопка `aria-disabled`, а не `disabled`:
+			друга ковтала б клік, і людина лишалася б без пояснення, чому нічого
+			не сталося.
+		-->
+		<button
+			type="button"
+			class="menu-btn menu-btn--disabled anim-stagger-1"
+			aria-disabled="true"
+			onclick={() => toast.info('menu.comingSoon')}
+			data-testid="menu-reserve-btn"
+		>
+			{@html formatFont(t('menu.reserve'))}
+		</button>
+
+		<a
+			href={langPath(lang, 'quiz')}
+			class="menu-btn menu-btn--game anim-stagger-2"
+			data-testid="menu-quiz-link"
+		>
+			{@html formatFont(t('menu.quiz'))}
+		</a>
+
+		<a
+			href={langPath(lang, 'pairs')}
+			class="menu-btn menu-btn--game anim-stagger-3"
+			data-testid="menu-pairs-link"
+		>
+			{@html formatFont(t('menu.game.memory'))}
+		</a>
 	</nav>
 
 	<div class="menu-links">
@@ -99,138 +70,3 @@
 		{/each}
 	</div>
 </div>
-
-<style>
-	/*
-	 * Відступу тут НЕМАЄ, хоч «Випадкова гра» й мусить читатися окремо від
-	 * переліку: цю роботу вже робить `gap` самої сторінки — 48px проти 16px
-	 * усередині списку, утричі більше. Власні `margin-bottom: 24px` додавалися
-	 * до нього, і розрив ставав 72px — більший за будь-який інший на екрані, аж
-	 * до відчуття, що кнопка загубилася зверху сама по собі.
-	 */
-	.menu-btn--random {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font-weight: var(--font-weight-bold);
-	}
-
-	/*
-	 * Меню міряється ЕКРАНОМ, а не сталими відступами.
-	 *
-	 * Дев'ять пунктів зі сталою висотою не влазять нікуди: заміряно 774px проти
-	 * 768 на телефоні 375×812 і 1131 проти 720 на ноутбуці 1280×720 — там текст
-	 * двох пунктів переходить у два рядки й кнопка виростає до 113px. Головне
-	 * меню, яке доводиться гортати, — це меню, у якому останніх ігор ніби й
-	 * немає.
-	 *
-	 * Тому кожна вертикальна величина — `clamp(мінімум, частка dvh, максимум)`:
-	 * на високому вікні лишається те, що було, на низькому все стискається
-	 * рівно настільки, наскільки бракує місця. `dvh`, а не `vh`: на мобільних
-	 * `vh` не враховує згортання панелі браузера.
-	 *
-	 * Дно — 44px на кнопку (ACCESSIBILITY-v8 § 8), і воно НЕ здається. Нижче за
-	 * нього меню чесно повертає прокрутку: пункт, у який не влучити пальцем,
-	 * гірший за пункт, до якого треба крутити.
-	 */
-	.menu-page {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		flex: 1;
-		padding: clamp(var(--space-sm), 2dvh, var(--space-xl));
-		gap: clamp(var(--space-md), 3dvh, var(--space-2xl));
-		width: 100%;
-		max-width: 480px;
-		box-sizing: border-box;
-	}
-
-	.menu-grid {
-		display: flex;
-		flex-direction: column;
-		gap: clamp(var(--space-xs), 1.2dvh, var(--space-md));
-		width: 100%;
-	}
-
-	.menu-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 100%;
-		/* Дно сенсорної цілі: стискається все, крім нього. */
-		min-height: 44px;
-		padding: clamp(var(--space-xs), 1.2dvh, var(--space-md)) var(--space-xl);
-		font-size: clamp(var(--font-size-sm), 2.1dvh, var(--font-size-lg));
-		font-weight: var(--font-weight-medium);
-		border-radius: var(--radius-md);
-		transition:
-			transform var(--transition-fast),
-			box-shadow var(--transition-normal),
-			background-color var(--transition-normal);
-		text-align: center;
-		text-decoration: none;
-		animation:
-			card-enter 400ms ease both,
-			blur-in 3s ease 400ms both;
-		cursor: pointer;
-		-webkit-tap-highlight-color: transparent;
-		user-select: none;
-	}
-
-	.menu-btn--game {
-		background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
-		backdrop-filter: var(--blur-glass);
-		color: var(--color-text-on-panel);
-		box-shadow: var(--shadow-card);
-	}
-
-	@media (hover: hover) {
-		.menu-btn--game:hover {
-			background-color: color-mix(in srgb, var(--color-bg-card-hover), transparent 15%);
-			box-shadow: var(--shadow-glow-primary);
-			transform: translateY(-2px);
-		}
-		.menu-btn--link:hover {
-			background-color: color-mix(in srgb, var(--color-bg-surface), transparent 20%);
-			box-shadow: var(--shadow-glow-primary);
-			transform: translateY(-2px);
-		}
-	}
-
-	.menu-btn--game:active {
-		background-color: var(--color-bg-card-hover);
-		transform: scale(0.98);
-		box-shadow: none;
-	}
-
-	.menu-btn--disabled {
-		background-color: color-mix(in srgb, var(--color-disabled), transparent 50%);
-		backdrop-filter: var(--blur-glass);
-		color: var(--color-disabled-text);
-		cursor: not-allowed;
-		box-shadow: none;
-	}
-
-	.menu-btn--disabled:active {
-		transform: none;
-	}
-
-	.menu-links {
-		display: flex;
-		flex-direction: column;
-		gap: clamp(var(--space-xs), 1dvh, var(--space-sm));
-		width: 100%;
-	}
-
-	.menu-btn--link {
-		background-color: color-mix(in srgb, var(--color-primary), transparent 50%);
-		backdrop-filter: var(--blur-glass);
-		color: #ffffff;
-		box-shadow: none;
-	}
-
-	.menu-btn--link:active {
-		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 30%);
-		transform: scale(0.98);
-	}
-</style>

@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
-	import { languageFromParam } from '$lib/i18n/routing';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { MemoryGameController } from '$lib/controllers/memoryGame.svelte';
 	import { layoutForViewport } from '$lib/config/memory-game';
@@ -96,7 +97,12 @@
 
 	onMount(() => {
 		game.start(newParty());
-		const releaseHeader = settings.claimHeader('memory.title');
+		/*
+		 * «Назад» веде в РОЗДІЛ, а не в головне меню. Після того, як ігри переїхали
+		 * під «Вікторину» й «Знайди пару», типовий крок на головну змушував би
+		 * спускатися двома рівнями заново.
+		 */
+		const releaseHeader = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
 		window.addEventListener('resize', offerRelayout);
 		return () => {
