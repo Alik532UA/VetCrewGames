@@ -146,6 +146,18 @@ export class FeedingGameController {
 
 	feed(): void {
 		if (!this.canFeed) return;
+
+		/*
+		 * Те, що лишилося на столі, їде у смітник — по-справжньому, а не лише в
+		 * підрахунку. Рахувалося воно так і раніше (`?? BIN` у розборі), але на
+		 * екрані лишалося на столі, і гравець бачив стан, якого вже немає:
+		 * рішення прийнято, а страва наче ще в грі.
+		 *
+		 * Заразом це звільняє стіл, і в порожній контейнер стає кнопка «Далі».
+		 */
+		const leftovers = Object.fromEntries(this.unplaced.map((food) => [food.id, BIN]));
+		this.placements = { ...this.placements, ...leftovers };
+
 		this.fed = true;
 		this.picked = null;
 

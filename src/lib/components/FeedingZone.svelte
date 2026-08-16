@@ -254,11 +254,12 @@
 	.hint__image {
 		width: 100%;
 		/* Дрібніше за покладену страву: натяк не має важити стільки ж, скільки
-		   зроблений хід, — та й висоту зони він тоді з'їдає менше. */
+		   зроблений хід. 3 / 4 — пропорція самих файлів. */
 		max-width: 34px;
-		aspect-ratio: 1;
+		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: contain;
+		border-radius: var(--radius-sm);
 	}
 
 </style>

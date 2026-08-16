@@ -8,7 +8,6 @@ export const feeding = {
 	'feeding.feed': 'Погодувати',
 	'feeding.placeSomething': 'Розкладіть хоча б одну страву',
 	'feeding.leftoversToBin': 'Те, що лишиться на столі, піде у смітник',
-	'feeding.resultTitle': 'Розбір',
 	'feeding.correct': 'Правильно',
 	'feeding.incorrect': 'Неправильно',
 	'feeding.youGaveTo': 'Ви віддали:',

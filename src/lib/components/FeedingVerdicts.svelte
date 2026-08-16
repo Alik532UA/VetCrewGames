@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { AlertTriangle, Check, X } from 'lucide-svelte';
-	import { t, td, formatFont } from '$lib/i18n';
+	import { td, formatFont, t } from '$lib/i18n';
 	import { BIN, type Target } from '$lib/config/feeding-game';
 	import type { FeedingVerdict } from '$lib/controllers/feedingGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
@@ -12,14 +12,21 @@
 	 *
 	 * Саме тут і живе сенс гри: чому шоколад отруйний для собаки, чому хліб
 	 * шкодить качкам. Загальне «правильно / неправильно» цього не сказало б.
+	 *
+	 * Список показують ТРИЧІ на екран — по одному біля кожної тварини й один під
+	 * смітником, — тож спільного заголовка тут немає: три «Розбори» поспіль
+	 * нічого не пояснюють. Замість нього назва йде в `aria-label` групи.
 	 */
 	interface Props {
 		verdicts: FeedingVerdict[];
 		/** Тварини раунду — щоб назвати ціль словами, а не «bin»/«cow». */
 		animals: readonly Animal[];
+		/** Кому належить ця група — для читалок. */
+		label: string;
+		testId: string;
 	}
 
-	let { verdicts, animals }: Props = $props();
+	let { verdicts, animals, label, testId }: Props = $props();
 
 	/** Підпис цілі: імʼя тварини або «Смітник». */
 	function targetName(target: Target): string {
@@ -29,9 +36,7 @@
 	}
 </script>
 
-<div class="verdicts" data-testid="feeding-verdicts-list">
-	<h3 class="verdicts__title text-panel">{@html formatFont(t('feeding.resultTitle'))}</h3>
-
+<div class="verdicts" role="group" aria-label={label} data-testid={testId}>
 	{#each verdicts as verdict (verdict.food.id)}
 		<!--
 			Небезпечна страва — та, чиє місце в смітнику й у якої є пояснення шкоди.
@@ -87,12 +92,6 @@
 		width: 100%;
 	}
 
-	.verdicts__title {
-		margin: 0;
-		text-align: center;
-		font-size: var(--font-size-lg);
-		color: var(--color-text);
-	}
 
 	.verdict {
 		display: flex;

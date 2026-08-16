@@ -8,7 +8,6 @@ export const feeding = {
 	'feeding.feed': 'Feed',
 	'feeding.placeSomething': 'Place at least one dish',
 	'feeding.leftoversToBin': 'Anything left on the table goes in the bin',
-	'feeding.resultTitle': 'Breakdown',
 	'feeding.correct': 'Correct',
 	'feeding.incorrect': 'Wrong',
 	'feeding.youGaveTo': 'You gave it to:',

@@ -50,7 +50,7 @@
 	}}
 	data-testid={testId}
 >
-	<img src={food.image} alt="" class="plated__image" loading="lazy" width="300" height="400" />
+	<img src={food.image} alt="" class="plated__image" loading="lazy" width="390" height="520" />
 	<span class="plated__name">{@html formatFont(t(food.nameKey as TranslationKey))}</span>
 </button>
 
@@ -85,12 +85,15 @@
 		cursor: default;
 	}
 
+	/* 3 / 4 — рівно пропорція файлів (390×520). У квадраті страва лежала
+	   «підшита» з боків і здавалася дрібнішою, ніж є. */
 	.plated__image {
 		width: 100%;
 		max-width: 44px;
-		aspect-ratio: 1;
+		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: contain;
+		border-radius: var(--radius-sm);
 	}
 
 	.plated__name {

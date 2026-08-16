@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { slide } from 'svelte/transition';
 	import { page } from '$app/state';
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
@@ -27,11 +26,8 @@
 	 */
 
 	/**
-	 * Кнопки «кому віддати» стоять там, де на екрані стоять самі зони: тварини
-	 * ліворуч і праворуч від страви, смітник — по центру під нею.
-	 *
-	 * Смітник повернувся до трійки саме тому, що переїхав під страву: у ряд із
-	 * трьох він не вміщувався, а під нею місця стільки ж, скільки й було.
+	 * Кнопки «кому віддати» стоять довкола страви: тварини ліворуч і праворуч,
+	 * смітник — зверху. Усі три накладками, тож ширини страві вони не додають.
 	 */
 	const quickTargets = $derived<QuickTarget[]>(
 		game.round
@@ -48,10 +44,17 @@
 						image: game.round.animals[1].image,
 						place: 'right' as const
 					},
-					{ id: BIN, labelKey: 'feeding.bin' as TranslationKey, image: null, place: 'bottom' as const }
+					{ id: BIN, labelKey: 'feeding.bin' as TranslationKey, image: null, place: 'top' as const }
 				]
 			: []
 	);
+
+	/**
+	 * Розбір розкладається по тому, кому страва НАСПРАВДІ належить, а не куди її
+	 * поклали: пояснення стоїть біля тієї тварини, про яку воно й розповідає.
+	 * Тим-таки воно займає порожні боки замість того, щоб тягнути сторінку вниз.
+	 */
+	const verdictsFor = (target: string) => game.verdicts.filter((v) => v.correct === target);
 
 	/** Стіл — теж ціль: сюди повертають страву, яку передумали віддавати. */
 	function returnToTable() {
@@ -86,20 +89,30 @@
 		<p class="prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
 
 		<!-- Тварина ліворуч, стіл посередині, тварина праворуч; смітник — під ними. -->
-		<div class="board">
-			<FeedingZone
-				labelKey={game.round.animals[0].nameKey as TranslationKey}
-				image={game.round.animals[0].image}
-				foods={game.placedAt(game.round.animals[0].id)}
-				hints={game.unplaced}
-				onhint={(food) => game.moveTo(food, game.round!.animals[0].id)}
-				picked={game.picked}
-				disabled={game.fed}
-				onplace={() => game.place(game.round!.animals[0].id)}
-				onpickup={(food) => game.pick(food)}
-				ontakeback={(food) => game.takeBack(food)}
-				testId="feeding-zone-animal-0"
-			/>
+		<div class="board" class:board--fed={game.fed}>
+			<div class="board__column">
+				<FeedingZone
+					labelKey={game.round.animals[0].nameKey as TranslationKey}
+					image={game.round.animals[0].image}
+					foods={game.placedAt(game.round.animals[0].id)}
+					hints={game.unplaced}
+					onhint={(food) => game.moveTo(food, game.round!.animals[0].id)}
+					picked={game.picked}
+					disabled={game.fed}
+					onplace={() => game.place(game.round!.animals[0].id)}
+					onpickup={(food) => game.pick(food)}
+					ontakeback={(food) => game.takeBack(food)}
+					testId="feeding-zone-animal-0"
+				/>
+				{#if game.fed}
+					<FeedingVerdicts
+						verdicts={verdictsFor(game.round.animals[0].id)}
+						animals={game.round.animals}
+						label={formatPlain(td(game.round.animals[0].nameKey))}
+						testId="feeding-verdicts-animal-0-list"
+					/>
+				{/if}
+			</div>
 
 			<!--
 				Стіл поводиться як зона: та сама пара «клік або перетягування», той
@@ -139,26 +152,49 @@
 						onsend={(target) => game.moveTo(food, target)}
 					/>
 				{/each}
-				{#if game.unplaced.length === 0}
+				{#if game.fed}
+					<!--
+						Стіл після годування порожній завжди — залишки їдуть у смітник.
+						Кнопка стає сюди, щоб по неї не тягнутися вниз повз увесь розбір.
+					-->
+					<button
+						type="button"
+						class="btn-primary btn-primary--next"
+						onclick={() => game.nextRound()}
+						data-testid="feeding-next-btn"
+					>
+						{@html formatFont(t('common.next'))}
+					</button>
+				{:else if game.unplaced.length === 0}
 					<p class="table__empty">
 						{@html formatFont(t(game.picked ? 'feeding.hintReturn' : 'feeding.hintTap'))}
 					</p>
 				{/if}
 			</div>
 
-			<FeedingZone
-				labelKey={game.round.animals[1].nameKey as TranslationKey}
-				image={game.round.animals[1].image}
-				foods={game.placedAt(game.round.animals[1].id)}
-				hints={game.unplaced}
-				onhint={(food) => game.moveTo(food, game.round!.animals[1].id)}
-				picked={game.picked}
-				disabled={game.fed}
-				onplace={() => game.place(game.round!.animals[1].id)}
-				onpickup={(food) => game.pick(food)}
-				ontakeback={(food) => game.takeBack(food)}
-				testId="feeding-zone-animal-1"
-			/>
+			<div class="board__column">
+				<FeedingZone
+					labelKey={game.round.animals[1].nameKey as TranslationKey}
+					image={game.round.animals[1].image}
+					foods={game.placedAt(game.round.animals[1].id)}
+					hints={game.unplaced}
+					onhint={(food) => game.moveTo(food, game.round!.animals[1].id)}
+					picked={game.picked}
+					disabled={game.fed}
+					onplace={() => game.place(game.round!.animals[1].id)}
+					onpickup={(food) => game.pick(food)}
+					ontakeback={(food) => game.takeBack(food)}
+					testId="feeding-zone-animal-1"
+				/>
+				{#if game.fed}
+					<FeedingVerdicts
+						verdicts={verdictsFor(game.round.animals[1].id)}
+						animals={game.round.animals}
+						label={formatPlain(td(game.round.animals[1].nameKey))}
+						testId="feeding-verdicts-animal-1-list"
+					/>
+				{/if}
+			</div>
 		</div>
 
 		<FeedingZone
@@ -172,6 +208,15 @@
 			ontakeback={(food) => game.takeBack(food)}
 			testId="feeding-zone-bin"
 		/>
+
+		{#if game.fed}
+			<FeedingVerdicts
+				verdicts={verdictsFor(BIN)}
+				animals={game.round.animals}
+				label={formatPlain(t('feeding.bin'))}
+				testId="feeding-verdicts-bin-list"
+			/>
+		{/if}
 
 		{#if !game.fed}
 			<button
@@ -188,18 +233,6 @@
 					{@html formatFont(t('feeding.leftoversToBin'))}
 				</p>
 			{/if}
-		{:else}
-			<div class="result" transition:slide={{ duration: 300 }}>
-				<FeedingVerdicts verdicts={game.verdicts} animals={game.round.animals} />
-				<button
-					type="button"
-					class="btn-primary"
-					onclick={() => game.nextRound()}
-					data-testid="feeding-next-btn"
-				>
-					{@html formatFont(t('common.next'))}
-				</button>
-			</div>
 		{/if}
 	{/if}
 </div>
@@ -255,6 +288,34 @@
 		gap: var(--space-sm);
 		width: 100%;
 		align-items: stretch;
+	}
+
+	.board__column {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-sm);
+		min-width: 0;
+	}
+
+	/*
+	 * Після годування колонки несуть ще й розбір, а це суцільний текст. У 103px
+	 * (стільки дістається колонці на 320px) з нього виходить десять символів у
+	 * рядок, тож на вузькому екрані дошка на цей час стає стовпчиком.
+	 *
+	 * Поріг — 640px: саме там колонці лишається близько 200px, і пояснення
+	 * читається рядками, а не стовпчиком по слову. Виміряно на зібраній сторінці.
+	 */
+	@media (max-width: 639px) {
+		.board--fed {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	/* Кнопка в порожньому столі: він вужчий за неї, тож стелю знімаємо. */
+	.btn-primary--next {
+		max-width: none;
+		font-size: var(--font-size-md);
+		padding: var(--space-sm);
 	}
 
 	.table {
@@ -322,11 +383,4 @@
 		color: var(--color-text-muted);
 	}
 
-	.result {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-md);
-		width: 100%;
-	}
 </style>

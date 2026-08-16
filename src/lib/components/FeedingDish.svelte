@@ -11,7 +11,7 @@
 		/** Фото тварини; `null` — смітник, і тоді малюється іконка. */
 		image: string | null;
 		/** Де стоїть кнопка: біля відповідної зони на екрані. */
-		place: 'left' | 'right' | 'bottom';
+		place: 'left' | 'right' | 'top';
 	}
 
 	/**
@@ -22,10 +22,9 @@
 	 * з клавіатури й коли страву взяли — останнє потрібне сенсорному екрану,
 	 * де наведення не існує (ACCESSIBILITY-v8 § 2).
 	 *
-	 * Стоять вони там, де на екрані стоять самі зони: тварини по боках, смітник
-	 * під столом. Бокові — абсолютно, поза потоком: у потоці вони диктували б
-	 * ширину страві, а колонці столу її й так обмаль. Смітник навпаки в потоці,
-	 * і його висота зарезервована завжди — інакше ряд стрибав би під курсором.
+	 * Стоять вони довкола страви: тварини по боках, смітник зверху. Усі три —
+	 * накладки поза потоком, і кожна трохи налазить на картку: у потоці вони
+	 * диктували б їй розмір, а колонці столу місця й так обмаль.
 	 */
 	interface Props {
 		food: Food;
@@ -61,16 +60,17 @@
 			}}
 			data-testid="feeding-dish-btn-{food.id}"
 		>
-			<img src={food.image} alt="" class="dish__image" loading="lazy" width="300" height="400" />
+			<img src={food.image} alt="" class="dish__image" loading="lazy" width="390" height="520" />
 			<span class="dish__name">{@html formatFont(t(food.nameKey as TranslationKey))}</span>
 		</button>
 
-		{#each targets.filter((target) => target.place !== 'bottom') as target (target.id)}
+		{#each targets as target (target.id)}
 			<button
 				type="button"
 				class="quick"
 				class:quick--left={target.place === 'left'}
 				class:quick--right={target.place === 'right'}
+				class:quick--bin={target.place === 'top'}
 				{disabled}
 				onclick={(e) => {
 					e.stopPropagation();
@@ -79,26 +79,14 @@
 				aria-label={formatPlain(t(target.labelKey))}
 				data-testid="feeding-quick-btn-{food.id}-{target.id}"
 			>
-				<img src={target.image} alt="" class="quick__image" loading="lazy" width="60" height="80" />
+				{#if target.image}
+					<img src={target.image} alt="" class="quick__image" loading="lazy" width="60" height="80" />
+				{:else}
+					<Trash2 size={18} aria-hidden="true" />
+				{/if}
 			</button>
 		{/each}
 	</div>
-
-	{#each targets.filter((target) => target.place === 'bottom') as target (target.id)}
-		<button
-			type="button"
-			class="quick quick--bottom"
-			{disabled}
-			onclick={(e) => {
-				e.stopPropagation();
-				onsend(target.id);
-			}}
-			aria-label={formatPlain(t(target.labelKey))}
-			data-testid="feeding-quick-btn-{food.id}-{target.id}"
-		>
-			<Trash2 size={14} aria-hidden="true" />
-		</button>
-	{/each}
 </div>
 
 <style>
@@ -106,12 +94,19 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 4px;
 		min-width: 0;
 	}
 
-	/* Опора для бокових кнопок: вони центруються по СТРАВІ, не по слоту. */
+	/*
+	 * Опора для всіх трьох кнопок. Розмір кнопки — змінна, бо від нього залежать
+	 * три зсуви нижче: два числа, які мусять збігатися, розходяться при першій
+	 * же правці.
+	 */
 	.dish-slot__row {
+		--chip: 38px;
+		/* Наскільки кнопка налазить на картку. Решта її висить назовні. */
+		--chip-bite: 11px;
+
 		position: relative;
 		display: flex;
 	}
@@ -149,11 +144,17 @@
 		cursor: default;
 	}
 
+	/*
+	 * 3 / 4 — рівно пропорція самих файлів (390×520). У квадраті вони лежали
+	 * «підшиті» з боків: половина коробки йшла в порожнечу, і страва здавалася
+	 * дрібнішою, ніж є.
+	 */
 	.dish__image {
 		width: 48px;
-		aspect-ratio: 1;
+		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: contain;
+		border-radius: var(--radius-sm);
 	}
 
 	.dish__name {
@@ -163,30 +164,23 @@
 	}
 
 	/*
-	 * Суперeліпс, а не коло: у кола фото тварини обрізається сильніше за все,
-	 * і мордочка з нього випадає. `corner-shape` дає справжню форму там, де його
-	 * знають; де ні — лишається скруглений квадрат, і це теж читається.
+	 * Суперeліпс |2x-1|⁴ + |2y-1|⁴ = 1 — та сама форма, що в іконок iOS.
+	 * Двадцять вісім точок: крива вже гладка, а `clip-path` у відсотках
+	 * масштабується разом із кнопкою.
 	 *
-	 * Менші за 44px тут свідомо: це скорочення, а не єдиний шлях. Ту саму дію
-	 * робить кліком уся зона тварини, і вона на всю ширину (ACCESSIBILITY § 8).
+	 * Не `corner-shape`: властивість робить те саме одним рядком, але
+	 * `svelte-check` її ще не знає й дає попередження, а проєкт тримає нуль.
 	 */
 	.quick {
+		position: absolute;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 26px;
-		height: 26px;
+		width: var(--chip);
+		height: var(--chip);
 		padding: 0;
 		overflow: hidden;
 		border: none;
-		/*
-		 * Суперeліпс |2x-1|⁴ + |2y-1|⁴ = 1 — та сама форма, що в іконок iOS.
-		 * Двадцять вісім точок: на 26px крива вже гладка, а `clip-path` у
-		 * відсотках масштабується разом із кнопкою.
-		 *
-		 * Не `corner-shape`: властивість робить те саме одним рядком, але
-		 * `svelte-check` її ще не знає й дає попередження, а проєкт тримає нуль.
-		 */
 		clip-path: polygon(100.0% 50.0%, 99.4% 73.6%, 97.5% 82.9%, 94.2% 89.5%, 89.5% 94.2%, 82.9% 97.5%, 73.6% 99.4%, 50.0% 100.0%, 26.4% 99.4%, 17.1% 97.5%, 10.5% 94.2%, 5.8% 89.5%, 2.5% 82.9%, 0.6% 73.6%, 0.0% 50.0%, 0.6% 26.4%, 2.5% 17.1%, 5.8% 10.5%, 10.5% 5.8%, 17.1% 2.5%, 26.4% 0.6%, 50.0% 0.0%, 73.6% 0.6%, 82.9% 2.5%, 89.5% 5.8%, 94.2% 10.5%, 97.5% 17.1%, 99.4% 26.4%);
 		/* Обідок і підсвітка — фільтром, а не рамкою: рамку `clip-path` зрізав би
 		   саме в кутах, тобто там, де форма й потрібна. Фільтр іде по силуету. */
@@ -199,33 +193,31 @@
 		transition: all var(--transition-fast);
 	}
 
-	/* Тварини — по боках страви, там-таки, де їхні зони на екрані. */
+	/* Тварини — по боках страви, смітник — над нею: там-таки, де їхні зони. */
 	.quick--left,
 	.quick--right {
-		position: absolute;
 		top: 50%;
 		transform: translateY(-50%);
 	}
 
 	.quick--left {
-		left: -20px;
+		left: calc(var(--chip-bite) - var(--chip));
 	}
 
 	.quick--right {
-		right: -20px;
+		right: calc(var(--chip-bite) - var(--chip));
 	}
 
-	/* Смітник — у потоці під стравою: так він і резервує собі місце, і стоїть
-	   там, де сама зона смітника, тобто по центру внизу. */
-	.quick--bottom {
-		position: relative;
+	.quick--bin {
+		top: calc(var(--chip-bite) - var(--chip));
+		left: 50%;
+		transform: translateX(-50%);
 	}
 
 	/*
 	 * `:focus-within` тут і є доступ із клавіатури: `pointer-events: none` не
 	 * заважає табуляції, тож фокус доходить до прозорої кнопки й тим-таки
-	 * показує всі три. Задати `opacity` кнопці окремо не можна — вона й так на
-	 * ній, тож просто перемикаємо її для всієї трійки.
+	 * показує всі три.
 	 */
 	.dish-slot:hover .quick,
 	.dish-slot:focus-within .quick,
@@ -235,16 +227,16 @@
 	}
 
 	.quick:hover:not(:disabled) {
-		filter: drop-shadow(0 0 4px var(--color-accent));
+		filter: drop-shadow(0 0 5px var(--color-accent));
 	}
 
 	.quick--left:hover:not(:disabled),
 	.quick--right:hover:not(:disabled) {
-		transform: translateY(-50%) scale(1.15);
+		transform: translateY(-50%) scale(1.12);
 	}
 
-	.quick--bottom:hover:not(:disabled) {
-		transform: scale(1.15);
+	.quick--bin:hover:not(:disabled) {
+		transform: translateX(-50%) scale(1.12);
 	}
 
 	.quick__image {

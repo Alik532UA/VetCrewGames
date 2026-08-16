@@ -244,6 +244,12 @@ describe('FeedingGameController', () => {
 
 		game.feed();
 
+		expect(game.unplaced, 'стіл після годування порожній').toEqual([]);
+		expect(
+			game.placedAt(BIN).map((f) => f.id),
+			'залишки видно у смітнику, а не лише в підрахунку'
+		).toEqual(leftOnTable);
+
 		for (const id of leftOnTable) {
 			const verdict = game.verdicts.find((v) => v.food.id === id)!;
 			expect(verdict.chosen, `${id}: лишене на столі — це смітник`).toBe(BIN);
