@@ -101,6 +101,65 @@ describe('структура проєкту', () => {
 	});
 
 	/**
+	 * Клас, оголошений у `style` компонента, справді вживається в його розмітці
+	 * (SVELTE-UI-v8 § 3.4).
+	 *
+	 * Здавалося б, це вже робить компілятор — `Unused CSS selector`. Але він
+	 * мовчить принаймні у двох випадках, і обидва трапилися тут:
+	 *
+	 *  1. **Клас у групі.** `.btn-play-again, .btn-menu { … }` — перший
+	 *     використовується, і правило лишається «вжитим» цілком, хоч другого
+	 *     елемента в компоненті немає.
+	 *  2. **Клас, зіпсований підстановкою.** `class="slots-row"` перетворився на
+	 *     `class="game.slots-row"` під час рефакторингу — ряд утратив
+	 *     горизонтальну розкладку, а `svelte-check` дав 0 попереджень.
+	 *     Перевірено прямо: повернути дефект — і він мовчить.
+	 *
+	 * Другий випадок — це рівно той клас із § 3.5, про який компілятор не
+	 * попереджає в принципі: «розмітка є, правила немає» законне саме по собі.
+	 * Побачив це користувач на екрані, а не гейт.
+	 */
+	it('кожен клас зі style компонента вживається в його розмітці (§ 3.4)', () => {
+		const components = sources.filter((f) => f.endsWith('.svelte'));
+		expect(components.length, 'компонентів не знайдено — перевірка мертва').toBeGreaterThan(0);
+
+		const problems: string[] = [];
+		for (const file of components) {
+			const source = read(file);
+			const style = source.match(/<style[^>]*>([\s\S]*)<\/style>/)?.[1] ?? '';
+			if (!style) continue;
+
+			const markup = source
+				.slice(source.indexOf('</script>'))
+				.replace(/<style[\s\S]*<\/style>/, '');
+
+			// `:global(...)` цілиться в чужу розмітку за визначенням — не наша справа.
+			const declared = new Set(
+				[...style.replace(/:global\([^)]*\)/g, '').matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1])
+			);
+
+			const used = new Set<string>();
+			for (const m of markup.matchAll(/class="([^"]*)"/g)) {
+				// Інтерполяція всередині атрибута прибирається: `anim-stagger-{i}`
+				// дає токен `anim-stagger-`, і зіставляти його марно.
+				m[1].split(/\s+/).forEach((token) => token && used.add(token.replace(/\{[^}]*\}/g, '')));
+			}
+			for (const m of markup.matchAll(/class:([\w-]+)/g)) used.add(m[1]);
+			for (const m of markup.matchAll(/classList\.(?:add|remove|toggle)\('([\w-]+)'/g))
+				used.add(m[1]);
+
+			for (const cls of declared) {
+				if (!used.has(cls)) problems.push(`${file}: .${cls}`);
+			}
+		}
+
+		expect(
+			problems,
+			`клас оголошений, але в розмітці його немає — або мертве правило, або зіпсована назва:\n${problems.join('\n')}`
+		).toEqual([]);
+	});
+
+	/**
 	 * Шлях не склеюється з `base` вручну (SEO-v8 § 1.5).
 	 *
 	 * Це не стилістика: під час prerender `base` **відносний**, тож

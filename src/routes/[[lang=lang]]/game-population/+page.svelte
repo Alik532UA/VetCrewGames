@@ -410,7 +410,7 @@
 
 		<div class="sorting-panel">
 			<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
-			<div class="game.slots-row">
+			<div class="slots-row">
 				{#each game.slots as slotAnimal, i (i)}
 					<div
 						class="game-container"
@@ -723,16 +723,7 @@
 		line-height: 1;
 	}
 
-	.game-over-actions {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		width: 100%;
-		max-width: 300px;
-	}
-
-	.btn-play-again,
-	.btn-menu {
+	.btn-play-again {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -756,16 +747,6 @@
 		transform: translateY(-2px);
 		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
 		background: var(--color-accent-hover);
-	}
-
-	.btn-menu {
-		background: rgba(255, 255, 255, 0.1);
-		color: #ffffff;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-	}
-	.btn-menu:hover {
-		background: rgba(255, 255, 255, 0.2);
-		transform: translateY(-2px);
 	}
 
 	.sorting-panel {
@@ -869,13 +850,6 @@
 		opacity: 0 !important;
 		pointer-events: none;
 	}
-	.ghost-card {
-		opacity: 0.5 !important;
-		transform: scale(0.8) !important;
-		pointer-events: none;
-		z-index: 1;
-	}
-
 	.mini-ghost-grid {
 		grid-area: 1 / 1;
 		display: flex;
