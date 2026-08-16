@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
+	import { armHabitatMode, pickHabitatMode, pickRandomRoute } from '$lib/services/randomGame';
 	import { langPath, languageFromParam, type RouteRest } from '$lib/i18n/routing';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -34,6 +36,19 @@
 		}))
 	);
 
+	/**
+	 * «Випадкова гра» — не посилання, бо ціль відома лише в момент кліку.
+	 *
+	 * «Де живем?» тут відкривається одразу грою: питати про режим після
+	 * «випадкової» означало б не виконати обіцянку кнопки, тож режим теж
+	 * випадає — і намір передається окремо, не адресою (див. randomGame.ts).
+	 */
+	function playRandom() {
+		const route = pickRandomRoute();
+		if (route === 'game-habitat') armHabitatMode(pickHabitatMode());
+		goto(langPath(lang, route));
+	}
+
 	const links = [
 		{
 			key: 'menu.link.vetcrew' as const,
@@ -47,6 +62,15 @@
 </script>
 
 <div class="menu-page">
+	<button
+		type="button"
+		class="menu-btn menu-btn--random anim-stagger-1"
+		onclick={playRandom}
+		data-testid="menu-random-btn"
+	>
+		{@html formatFont(t('menu.game.random'))}
+	</button>
+
 	<nav class="menu-grid">
 		{#each games as game, i (game.key)}
 			{#if game.href === null}
@@ -80,6 +104,18 @@
 </div>
 
 <style>
+	/*
+	 * Відступ більший за проміжок у самому списку: інакше «Випадкова гра»
+	 * читається як перший пункт переліку, а вона не пункт — вона інший спосіб
+	 * почати.
+	 */
+	.menu-btn--random {
+		margin-bottom: var(--space-lg);
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
+		font-weight: var(--font-weight-bold);
+	}
+
 	.menu-page {
 		display: flex;
 		flex-direction: column;

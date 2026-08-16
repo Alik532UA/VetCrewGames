@@ -10,6 +10,7 @@ export const ui = {
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'What do they eat?',
 	'menu.game.memory': 'Find a pair',
+	'menu.game.random': 'Random game',
 	'menu.game.population': 'Who is more?',
 	'menu.game.habitat': 'Where do they live?',
 	'menu.game.mythbusters': 'Fact or Myth?',

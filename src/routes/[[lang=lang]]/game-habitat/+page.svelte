@@ -5,6 +5,7 @@
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
+	import { takeHabitatMode } from '$lib/services/randomGame';
 	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
@@ -23,6 +24,11 @@
 			: `habitat.biome.${option}`) as TranslationKey;
 
 	onMount(() => {
+		// Прийшли з «Випадкової гри» — режим уже обрано за гравця, і питати про
+		// нього не можна: кнопка обіцяла ГРУ, а не ще один вибір.
+		const forced = takeHabitatMode();
+		if (forced) game.chooseMode(forced);
+
 		settings.setHeaderTitle('habitat.title');
 		return () => {
 			settings.setHeaderTitle(null);

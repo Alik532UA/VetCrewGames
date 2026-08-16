@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatFont } from '$lib/i18n';
+	import { t, formatPlain } from '$lib/i18n';
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -9,6 +9,11 @@
 	 * Поводиться як картка в слоті гри про чисельність: її можна взяти назад,
 	 * перекласти в іншу зону одним рухом і перетягнути. Раніше клік по ній
 	 * повертав страву на стіл — і зміна рішення коштувала три кроки.
+	 *
+	 * Це саме ЗОБРАЖЕННЯ, без підпису й без коробки навколо. Підпис робив картку
+	 * втричі вищою за ширину — і вищою по-різному, бо «Fish» уміщався в рядок, а
+	 * «Avocado» ні. Назву й так видно на самій страві, а для читалок вона
+	 * лишилася в `aria-label`.
 	 */
 	interface Props {
 		food: Food;
@@ -48,20 +53,16 @@
 			e.dataTransfer.effectAllowed = 'move';
 		}
 	}}
+	aria-label={formatPlain(t(food.nameKey as TranslationKey))}
 	data-testid={testId}
 >
 	<img src={food.image} alt="" class="plated__image" loading="lazy" width="390" height="520" />
-	<span class="plated__name">{@html formatFont(t(food.nameKey as TranslationKey))}</span>
 </button>
 
 <style>
-	/* Ширина — рівно зображення: інакше картка розтягується на комірку й підпис
-	   тягне її вбік від фото. */
+	/* Картка — це рамка завтовшки 2px навколо зображення, і більше нічого. */
 	.plated {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 2px;
+		display: block;
 		width: 48px;
 		min-width: 0;
 		padding: 2px;
@@ -88,25 +89,13 @@
 		cursor: default;
 	}
 
-	/* 3 / 4 — рівно пропорція файлів (390×520). У квадраті страва лежала
-	   «підшита» з боків і здавалася дрібнішою, ніж є. */
+	/* 3 / 4 — рівно пропорція файлів (390×520). */
 	.plated__image {
 		width: 100%;
 		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: contain;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) - 2px);
 	}
 
-	/*
-	 * Два рядки під підпис завжди. «Fish» уміщається в один, «Avocado» — у два,
-	 * і через це картка міняла висоту разом із зоною: після відповіді смітник
-	 * підстрибував. Порожній рядок дешевший за рух.
-	 */
-	.plated__name {
-		font-size: var(--font-size-xs);
-		line-height: 1.25;
-		min-height: 2.5em;
-		overflow-wrap: anywhere;
-	}
 </style>
