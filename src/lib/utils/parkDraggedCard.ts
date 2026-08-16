@@ -26,15 +26,29 @@ export function parkDraggedCard(
 	el.style.setProperty('transition', 'none', 'important');
 	el.style.setProperty('transform', 'none', 'important');
 
-	// Точку хапання знає лише дотик: у миші її немає, і тоді картка стає
-	// серединою під курсором.
 	const rect = el.getBoundingClientRect();
-	const ox = offsetX ?? el.offsetWidth / 2;
-	const oy = offsetY ?? el.offsetHeight / 2;
+
+	/*
+	 * Сторінка гри може бути зменшена (`zoom`, див. `fitToViewport`), і тоді
+	 * пікселі бувають двох різних видів. `getBoundingClientRect()` і
+	 * координати вказівника — ЕКРАННІ; `offsetWidth` і те, що ми запишемо в
+	 * `translate3d`, — ВЛАСНІ пікселі елемента. Змішати їх означає промахнутися
+	 * рівно на коефіцієнт зуму: при 0.8 картка стрибне на чверть своєї ширини
+	 * убік від пальця.
+	 *
+	 * Тому спершу дізнаємося курс: скільки екранних пікселів в одному власному.
+	 */
+	const scale = el.offsetWidth > 0 ? rect.width / el.offsetWidth : 1;
+
+	// Точку хапання знає лише дотик — і знає її в ЕКРАННИХ пікселях
+	// (`touch.clientX - rect.left`). У миші її немає, і тоді картка стає
+	// серединою під курсором.
+	const ox = offsetX ?? rect.width / 2;
+	const oy = offsetY ?? rect.height / 2;
 
 	el.style.setProperty(
 		'transform',
-		`translate3d(${clientX - ox - rect.left}px, ${clientY - oy - rect.top}px, 0)`,
+		`translate3d(${(clientX - ox - rect.left) / scale}px, ${(clientY - oy - rect.top) / scale}px, 0)`,
 		'important'
 	);
 	el.style.setProperty('z-index', '9999', 'important');

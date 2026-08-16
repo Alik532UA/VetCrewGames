@@ -9,6 +9,7 @@
 	import { createCrossfade } from '$lib/utils/transitions';
 	import { parkDraggedCard } from '$lib/utils/parkDraggedCard';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 
@@ -279,7 +280,7 @@
 	});
 </script>
 
-<div class="game-page">
+<div class="game-page" use:fitToViewport>
 	{#if game.gameOver}
 		<div class="game-over-card" in:fade={{ duration: 400 }}>
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
@@ -982,4 +983,5 @@
 			padding: var(--space-md) 3rem;
 		}
 	}
+
 </style>

@@ -8,6 +8,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { FamilyGameController } from '$lib/controllers/familyGame.svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 
@@ -22,7 +23,7 @@
 	});
 </script>
 
-<div class="game-page">
+<div class="game-page" use:fitToViewport>
 	{#if game.gameOver}
 		<GameOverCard
 			score={game.sessionScore}

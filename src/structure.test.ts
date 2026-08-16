@@ -52,8 +52,9 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// винесенням стану в контролери `.svelte.ts` — це окрема робота, не правка.
 	// 1086 → 1016 після винесення `createCrossfade` у `utils/transitions.ts`,
 	// → 987 після винесення `parkDraggedCard`, → 986 після зняття обгортки без
-	// жодного правила (заміряно: кнопка має ту саму коробку й без неї).
-	'src/routes/[[lang=lang]]/game-population/+page.svelte': 986,
+	// жодного правила, +2 на підключення `fitToViewport` (число міряється ПІСЛЯ
+	// правки, заради якої борг гасили, — див. докблок вище).
+	'src/routes/[[lang=lang]]/game-population/+page.svelte': 988,
 	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`,
 	// 438 → 409 після винесення `flyAndSlide`, +1 на імпорт `revealScroll`.
 	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 410

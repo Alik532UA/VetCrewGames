@@ -9,6 +9,7 @@
 	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import HabitatOptions from '$lib/components/HabitatOptions.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
@@ -50,7 +51,7 @@
 	});
 </script>
 
-<div class="game-page">
+<div class="game-page" use:fitToViewport>
 	{#if game.mode === null}
 		<HabitatModeSelect onchoose={(mode) => game.chooseMode(mode)} />
 	{:else if game.gameOver}
@@ -187,6 +188,7 @@
 
 	.animal__image {
 		width: clamp(96px, 22dvh, 168px);
+		/* Низький екран забирає ще: див. блок `max-height` нижче. */
 		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: cover;
@@ -239,34 +241,6 @@
 	}
 
 
-	.btn-primary {
-		width: 100%;
-		max-width: 320px;
-		padding: var(--space-md);
-		border: none;
-		border-radius: var(--radius-md);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font: inherit;
-		font-weight: var(--font-weight-bold);
-		font-size: var(--font-size-lg);
-		cursor: pointer;
-		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
-		transition: all var(--transition-fast);
-	}
-
-	.btn-primary:disabled {
-		background: var(--color-disabled);
-		color: var(--color-disabled-text);
-		box-shadow: none;
-		cursor: not-allowed;
-	}
-
-	.btn-primary:not(:disabled):hover {
-		transform: translateY(-2px);
-		background: var(--color-accent-hover);
-	}
-
 	.result {
 		display: flex;
 		flex-direction: column;
@@ -310,4 +284,5 @@
 		border-radius: var(--radius-md);
 		border-left: 4px solid var(--color-accent);
 	}
+
 </style>
