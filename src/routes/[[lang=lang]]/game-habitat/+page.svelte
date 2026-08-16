@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
-	import { Check, X } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { languageFromParam } from '$lib/i18n/routing';
-	import { habitatImage } from '$lib/config/habitat-game';
 	import { settings } from '$lib/services/settings.svelte';
 	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
+	import HabitatOptions from '$lib/components/HabitatOptions.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import HabitatModeSelect from '$lib/components/HabitatModeSelect.svelte';
 
@@ -72,38 +71,14 @@
 			<p class="question__hint">{@html formatFont(t('habitat.hintMultiple'))}</p>
 		</div>
 
-		<div class="options">
-			{#each game.round.options as option (option)}
-				{@const isCorrect = game.round.correct.includes(option)}
-				{@const isSelected = game.selected.includes(option)}
-				<button
-					type="button"
-					class="option"
-					class:option--selected={!game.checked && isSelected}
-					class:option--hit={game.checked && isCorrect && isSelected}
-					class:option--missed={game.checked && isCorrect && !isSelected}
-					class:option--wrong={game.checked && !isCorrect && isSelected}
-					disabled={game.checked}
-					onclick={() => game.toggle(option)}
-					data-testid="habitat-option-btn-{option}"
-				>
-					{#if game.checked && isCorrect}
-						<Check size={16} aria-hidden="true" />
-					{:else if game.checked && isSelected}
-						<X size={16} aria-hidden="true" />
-					{/if}
-					<img
-						src={habitatImage(game.mode, option)}
-						alt=""
-						class="option__image"
-						loading="lazy"
-						width="540"
-						height="720"
-					/>
-					<span class="option__label">{@html formatFont(t(optionKey(option)))}</span>
-				</button>
-			{/each}
-		</div>
+		<HabitatOptions
+			options={game.round.options}
+			mode={game.mode}
+			selected={game.selected}
+			correct={game.round.correct}
+			checked={game.checked}
+			ontoggle={(option) => game.toggle(option)}
+		/>
 
 		{#if !game.checked}
 			<button
@@ -215,105 +190,32 @@
 		color: var(--color-text);
 	}
 
+	/*
+	 * Від 1000px варіанти стають одним рядом (див. HabitatOptions), і сторінка
+	 * ширшає під нього. Ширшає САМЕ вона: картка тварини, питання й розбір
+	 * лишаються вузькими — рядок тексту на 1100px не читається.
+	 *
+	 * SYNC: поріг той самий, що й у HabitatOptions. Медіазапит не вміє
+	 * посилатися на чужий, тож число неминуче у двох місцях.
+	 */
+	@media (min-width: 1000px) {
+		.game-page {
+			max-width: min(96%, 1100px);
+		}
+
+		.animal,
+		.question,
+		.result {
+			max-width: 460px;
+		}
+	}
+
 	.question__hint {
 		margin: 0;
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
 	}
 
-	/*
-	 * `min(160px, 100%)`, а не гола довжина: інакше 160px стають ПІДЛОГОЮ
-	 * ширини колонки, і на екрані 320px сітка розпирає сторінку
-	 * (FLUID-SIZING-v8 § 1.1).
-	 */
-	.options {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
-		gap: var(--space-sm);
-		width: 100%;
-	}
-
-	/*
-	 * Телефон: маленьке зображення ПЕРЕД текстом, рядком. Дев'ять природних зон
-	 * картками на всю ширину дали б екран заввишки в кілька прокруток, тож там
-	 * зображення лишається підказкою, а не головним.
-	 */
-	.option {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-xs);
-		/* 44px — власний стандарт проєкту для сенсорних цілей (ACCESSIBILITY § 8). */
-		min-height: 44px;
-		padding: var(--space-sm);
-		border: 2px solid var(--color-border);
-		border-radius: var(--radius-md);
-		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
-		backdrop-filter: var(--blur-glass);
-		color: var(--color-text);
-		font: inherit;
-		font-size: var(--font-size-sm);
-		cursor: pointer;
-		transition: all var(--transition-fast);
-	}
-
-	.option__image {
-		width: 26px;
-		aspect-ratio: 3 / 4;
-		height: auto;
-		object-fit: cover;
-		border-radius: var(--radius-sm);
-		flex-shrink: 0;
-	}
-
-	.option__label {
-		min-width: 0;
-	}
-
-	/*
-	 * Комп'ютер: зображення над текстом і на всю ширину кнопки.
-	 *
-	 * Поріг 700px — там сторінка вже впирається у свою стелю 560px, тобто далі
-	 * ширшати нема куди, і колонок стає чотири. Стеля на 84px потрібна, бо при
-	 * 3:4 зображення на всю колонку (170px) було б заввишки 227, і дев'ять
-	 * варіантів дали б три ряди по 280px.
-	 */
-	@media (min-width: 700px) {
-		.option {
-			flex-direction: column;
-			gap: 4px;
-			padding: var(--space-sm) var(--space-xs);
-		}
-
-		.option__image {
-			width: min(100%, 84px);
-		}
-	}
-
-	.option--selected {
-		border-color: var(--color-accent);
-		background: color-mix(in srgb, var(--color-accent), transparent 75%);
-	}
-
-	.option--hit {
-		border-color: var(--color-success);
-		background: color-mix(in srgb, var(--color-success), transparent 70%);
-	}
-
-	/* Пропущену правильну показуємо пунктиром: гравець її не обирав. */
-	.option--missed {
-		border-style: dashed;
-		border-color: var(--color-success);
-	}
-
-	.option--wrong {
-		border-color: var(--color-error);
-		background: color-mix(in srgb, var(--color-error), transparent 75%);
-	}
-
-	.option:disabled {
-		cursor: default;
-	}
 
 	.btn-primary {
 		width: 100%;
