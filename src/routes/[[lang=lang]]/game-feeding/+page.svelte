@@ -51,8 +51,7 @@
 
 	onMount(() => {
 		game.start();
-		settings.setHeaderTitle('feeding.title');
-		return () => settings.setHeaderTitle(null);
+		return settings.claimHeader('feeding.title');
 	});
 </script>
 

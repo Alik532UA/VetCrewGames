@@ -20,10 +20,7 @@
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	onMount(() => {
-		settings.setHeaderTitle('habitat.title');
-		// Знімає заголовок лише той, хто його поставив: сторінка режиму монтується
-		// раніше, ніж ця знищується, і беззастережне очищення стирало б її.
-		return () => settings.releaseHeader('habitat.title');
+		return settings.claimHeader('habitat.title');
 	});
 </script>
 

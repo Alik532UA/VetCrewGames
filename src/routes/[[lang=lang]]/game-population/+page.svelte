@@ -266,12 +266,12 @@
 
 	onMount(() => {
 		game.startRound();
-		settings.setHeaderTitle('population.title');
+		const releaseHeader = settings.claimHeader('population.title');
 		document.addEventListener('touchstart', handleTouchStart, { passive: false });
 		document.addEventListener('touchmove', handleTouchMove, { passive: false });
 		document.addEventListener('touchend', handleTouchEnd, { passive: false });
 		return () => {
-			settings.setHeaderTitle(null);
+			releaseHeader();
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchmove', handleTouchMove);
 			document.removeEventListener('touchend', handleTouchEnd);

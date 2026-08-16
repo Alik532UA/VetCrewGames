@@ -74,6 +74,9 @@ class Settings {
 	 */
 	headerBack = $state<(() => void) | null>(null);
 
+	/** Хто саме зараз володіє шапкою. Порівнюється тотожністю, а не значенням. */
+	#headerOwner: symbol | null = null;
+
 	/** `true`, доки користувач не обрав тему сам: тоді її диктує система. */
 	#themeFollowsSystem = true;
 
@@ -210,30 +213,36 @@ class Settings {
 		storage.set('font', font);
 	}
 
-	setHeaderBack(action: (() => void) | null): void {
-		this.headerBack = action;
-	}
-
-	setHeaderTitle(key: TranslationKey | null): void {
-		this.headerTitleKey = key;
-	}
-
 	/**
-	 * Прибрати заголовок, але ЛИШЕ якщо він досі свій.
+	 * Забрати шапку собі: заголовок і, за потреби, власний крок «назад».
 	 *
-	 * Під час переходу між сторінками нова монтується раніше, ніж стара
-	 * знищується. Стара при цьому чистила заголовок беззастережно — і стирала
-	 * той, що нова вже поставила. Видно це стало на «Де живем?», коли вибір
-	 * режиму й сама гра розʼїхалися на два маршрути: заголовок ставав `null`,
-	 * шапка поверталася до `app.title`, а разом із ним зникала кнопка «назад» —
-	 * її показують лише там, де заголовок СВІЙ.
+	 * Повертає функцію звільнення — і вона знає СВОГО власника поіменно. Це не
+	 * педантизм, а єдиний спосіб бути правильним: під час переходу нова
+	 * сторінка монтується раніше, ніж стара знищується, тож стара чистить уже
+	 * чужу шапку.
 	 *
-	 * Те саме стосується кроку назад: його теж знімає лише той, хто ставив.
+	 * Порівняння за ключем тут не рятує. «Де живем?» має три сторінки — вибір
+	 * режиму й дві гри — і ВСІ ТРИ ставлять `habitat.title`. Стара, знищуючись,
+	 * бачила свій ключ на місці (його щойно поставила нова) і чесно його
+	 * стирала: заголовок ставав `null`, шапка вважала сторінку головною й
+	 * ховала «назад». Прямий захід працював, перехід із меню — ні, і саме так
+	 * це й виглядало для гравця.
 	 */
-	releaseHeader(key: TranslationKey, back?: () => void): void {
-		if (this.headerTitleKey === key) this.headerTitleKey = null;
-		if (back && this.headerBack === back) this.headerBack = null;
+	claimHeader(key: TranslationKey, back: (() => void) | null = null): () => void {
+		const owner = Symbol(key);
+		this.#headerOwner = owner;
+		this.headerTitleKey = key;
+		this.headerBack = back;
+
+		return () => {
+			// Шапку вже забрав хтось інший — тоді нам тут нічого чистити.
+			if (this.#headerOwner !== owner) return;
+			this.#headerOwner = null;
+			this.headerTitleKey = null;
+			this.headerBack = null;
+		};
 	}
+
 }
 
 export const settings = new Settings();

@@ -44,7 +44,6 @@
 
 	onMount(() => {
 		game.chooseMode(mode);
-		settings.setHeaderTitle('habitat.title');
 
 		/*
 		 * «Назад» веде до вибору режиму, а не в головне меню: гравець, який хоче
@@ -54,10 +53,7 @@
 		 * Тепер це справжня адреса, тож перехід звичайний — і працює однаково
 		 * що з історії, що при прямому заході за посиланням.
 		 */
-		const back = () => goto(langPath(lang, 'game-habitat'));
-		settings.setHeaderBack(back);
-
-		return () => settings.releaseHeader('habitat.title', back);
+		return settings.claimHeader('habitat.title', () => goto(langPath(lang, 'game-habitat')));
 	});
 </script>
 

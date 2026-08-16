@@ -18,8 +18,7 @@
 
 	onMount(() => {
 		game.start();
-		settings.setHeaderTitle('family.title');
-		return () => settings.setHeaderTitle(null);
+		return settings.claimHeader('family.title');
 	});
 </script>
 

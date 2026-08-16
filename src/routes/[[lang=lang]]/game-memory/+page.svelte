@@ -96,12 +96,12 @@
 
 	onMount(() => {
 		game.start(newParty());
-		settings.setHeaderTitle('memory.title');
+		const releaseHeader = settings.claimHeader('memory.title');
 
 		window.addEventListener('resize', offerRelayout);
 		return () => {
 			window.removeEventListener('resize', offerRelayout);
-			settings.releaseHeader('memory.title');
+			releaseHeader();
 		};
 	});
 

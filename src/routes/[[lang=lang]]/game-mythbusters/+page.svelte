@@ -19,8 +19,7 @@
 
 	onMount(() => {
 		game.start();
-		settings.setHeaderTitle('myth.title');
-		return () => settings.setHeaderTitle(null);
+		return settings.claimHeader('myth.title');
 	});
 </script>
 
