@@ -48,7 +48,8 @@ export const LANGUAGE_ROUTES = {
 	'game-mythbusters': '/[[lang=lang]]/game-mythbusters',
 	'game-population': '/[[lang=lang]]/game-population',
 	'game-family': '/[[lang=lang]]/game-family',
-	'game-habitat': '/[[lang=lang]]/game-habitat'
+	'game-habitat': '/[[lang=lang]]/game-habitat',
+	'game-feeding': '/[[lang=lang]]/game-feeding'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;

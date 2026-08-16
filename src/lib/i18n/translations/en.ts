@@ -4,6 +4,7 @@ import { myths } from './en/myths';
 import { animals } from './en/animals';
 import { family } from './en/family';
 import { habitat } from './en/habitat';
+import { feeding } from './en/feeding';
 
 export const en = {
 	...ui,
@@ -11,5 +12,6 @@ export const en = {
 	...myths,
 	...animals,
 	...family,
-	...habitat
+	...habitat,
+	...feeding
 } as const;

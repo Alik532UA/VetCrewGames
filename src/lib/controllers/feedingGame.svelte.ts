@@ -1,0 +1,175 @@
+import {
+	BIN,
+	buildFeedingRound,
+	correctTarget,
+	getNextFeedingSet,
+	type FeedingRound,
+	type Food,
+	type Target
+} from '$lib/config/feeding-game';
+import { settings } from '$lib/services/settings.svelte';
+import type { RoundOutcome } from '$lib/types/game';
+
+/**
+ * Стан гри «Що їмо?» (концепція, гра 1).
+ *
+ * Дві тварини, три страви, смітник. Кожну страву треба покласти туди, куди
+ * вона підходить; те, що не підходить нікому, — викинути. Підтвердження —
+ * кнопкою «Погодувати», і лише після неї показується розбір КОЖНОЇ страви,
+ * а не загальне «правильно/неправильно»: пояснення, чому шоколад отруйний,
+ * тут цінніше за очко.
+ *
+ * Очко нараховується за кожну правильно покладену страву, а не за раунд
+ * цілком — так само, як у грі про чисельність.
+ */
+
+/** Куди гравець поклав кожну страву: ключ — `food.id`. */
+export type Placements = Record<string, Target>;
+
+export interface FeedingVerdict {
+	food: Food;
+	chosen: Target;
+	correct: Target;
+	isCorrect: boolean;
+}
+
+export class FeedingGameController {
+	readonly totalRounds: number;
+
+	round = $state<FeedingRound | null>(null);
+	roundNumber = $state(1);
+	roundResults = $state<RoundOutcome[]>([]);
+	sessionScore = $state(0);
+	gameOver = $state(false);
+
+	placements = $state<Placements>({});
+	fed = $state(false);
+
+	/** Страва, яку гравець узяв: наступний клік по зоні покладе її туди. */
+	picked = $state<Food | null>(null);
+
+	#used: string[] = [];
+
+	constructor(totalRounds = 10) {
+		this.totalRounds = totalRounds;
+	}
+
+	/** Скільки страв у раунді — стільки й максимум очок за нього. */
+	get foodsPerRound(): number {
+		return this.round?.foods.length ?? 3;
+	}
+
+	get maxScore(): number {
+		return this.totalRounds * 3;
+	}
+
+	/** Страви, які ще лежать «на столі». */
+	unplaced = $derived(this.round?.foods.filter((food) => !(food.id in this.placements)) ?? []);
+
+	canFeed = $derived(!this.fed && this.round !== null && this.unplaced.length === 0);
+
+	/** Розбір кожної страви. Порожній, доки не натиснуто «Погодувати». */
+	verdicts = $derived.by<FeedingVerdict[]>(() => {
+		if (!this.fed || !this.round) return [];
+		const animalIds = this.round.animals.map((animal) => animal.id);
+		return this.round.foods.map((food) => {
+			const chosen = this.placements[food.id] ?? BIN;
+			const correct = correctTarget(food, animalIds);
+			return { food, chosen, correct, isCorrect: chosen === correct };
+		});
+	});
+
+	start(): void {
+		this.#next();
+	}
+
+	/** Взяти страву зі столу або зняти вибір повторним кліком. */
+	pick(food: Food): void {
+		if (this.fed) return;
+		this.picked = this.picked?.id === food.id ? null : food;
+	}
+
+	/** Покласти взяту страву до тварини або в смітник. */
+	place(target: Target): void {
+		if (this.fed || !this.picked) return;
+		this.placements = { ...this.placements, [this.picked.id]: target };
+		this.picked = null;
+	}
+
+	/** Повернути страву зі столу назад — доки не погодували. */
+	takeBack(food: Food): void {
+		if (this.fed) return;
+		const { [food.id]: _removed, ...rest } = this.placements;
+		this.placements = rest;
+		this.picked = null;
+	}
+
+	/** Страви, покладені до конкретної цілі. Потрібне розмітці для зон. */
+	placedAt(target: Target): Food[] {
+		return (this.round?.foods ?? []).filter((food) => this.placements[food.id] === target);
+	}
+
+	feed(): void {
+		if (!this.canFeed) return;
+		this.fed = true;
+		this.picked = null;
+
+		const correct = this.verdicts.filter((verdict) => verdict.isCorrect).length;
+
+		let outcome: RoundOutcome = 'incorrect';
+		if (correct === this.foodsPerRound) outcome = 'correct';
+		else if (correct > 0) outcome = 'partial';
+		this.roundResults.push(outcome);
+
+		if (correct > 0) {
+			this.sessionScore += correct;
+			settings.addScore(correct);
+		}
+	}
+
+	nextRound(): void {
+		this.roundNumber++;
+		this.#next();
+	}
+
+	reset(): void {
+		this.roundNumber = 1;
+		this.roundResults = [];
+		this.sessionScore = 0;
+		this.gameOver = false;
+		this.#used = [];
+		this.#next();
+	}
+
+	#next(): void {
+		this.placements = {};
+		this.picked = null;
+		this.fed = false;
+
+		if (this.roundNumber > this.totalRounds) {
+			this.round = null;
+			this.gameOver = true;
+			return;
+		}
+
+		const set = getNextFeedingSet(this.#used);
+		if (!set) {
+			// Наборів менше, ніж раундів: партія завершується достроково, а не
+			// показує той самий стіл удруге.
+			this.round = null;
+			this.gameOver = true;
+			return;
+		}
+
+		this.#used.push(set.id);
+
+		const round = buildFeedingRound(set);
+		if (!round) {
+			// Набір посилається на тварину або страву, якої немає в каталозі.
+			this.#next();
+			return;
+		}
+
+		this.round = round;
+	}
+}
