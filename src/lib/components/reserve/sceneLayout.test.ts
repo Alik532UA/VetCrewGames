@@ -6,11 +6,14 @@ import type { Animal } from '$lib/reserve/types';
 
 const animal = (id: number, stage: Animal['stage'] = 'recovering'): Animal => ({
 	id,
+	speciesId: 'lion',
 	origin: 'rescue',
 	stage,
+	enclosureId: id,
 	recovery: 0,
 	stress: 0,
-	releasable: true
+	releasable: true,
+	releasedOnDay: stage === 'released' ? 1 : null
 });
 
 describe('розкладка заповідника', () => {

@@ -1,4 +1,5 @@
-import type { AnimalOrigin, StaffRole } from './constants';
+import type { AnimalOrigin, Quality, StaffRole } from './constants';
+import type { ReserveBiome } from './species';
 
 /**
  * Стан заповідника й ходи, якими його змінюють.
@@ -10,10 +11,27 @@ import type { AnimalOrigin, StaffRole } from './constants';
 
 export type AnimalStage = 'recovering' | 'healthy' | 'released';
 
+export interface Enclosure {
+	id: number;
+	/** 1–10. Від нього залежить і ціна, і кого сюди можна поселити. */
+	size: number;
+	/** 1–3. Розмір вирішує ХТО поміститься, якість — наскільки йому тут добре. */
+	quality: Quality;
+	/** 1 — щойно збудований, 0 — руїна. Спадає щодня, підіймається ремонтом. */
+	durability: number;
+}
+
 export interface Animal {
 	id: number;
+	/** Вид із `species.ts`. Вирішує, який вольєр підходить. */
+	speciesId: string;
 	origin: AnimalOrigin;
 	stage: AnimalStage;
+	/**
+	 * Де живе. Вольєр займається на весь час перебування й звільняється лише
+	 * випуском — тварина не «стоїть у черзі», вона або має місце, або її немає.
+	 */
+	enclosureId: number;
 	/** 0 → 1. Дійшовши до одиниці, тварина стає здоровою. */
 	recovery: number;
 	/** 0 → 1. Вище за поріг випуск блокується. */
@@ -24,14 +42,29 @@ export interface Animal {
 	 * однаково в усіх учасників.
 	 */
 	releasable: boolean;
+	/** Якого дня випустили. `null`, доки тварина в заповіднику. */
+	releasedOnDay: number | null;
 }
 
 export interface ReserveState {
+	/**
+	 * Біом заповідника. Обирається ОДИН раз, на початку партії, і далі не
+	 * міняється: він вирішує, які види сюди взагалі приїжджають, а отже — які
+	 * вольєри мають сенс. Змінити його посеред гри означало б викинути все
+	 * збудоване.
+	 */
+	biome: ReserveBiome;
 	/** Логічний час. Єдине джерело «коли»: годинника симуляція не знає. */
 	ticks: number;
 	budget: number;
 	impact: number;
+	/**
+	 * Публічне ім'я фонду, 0–100. Керує пожертвами. Окрема від `impact`, бо
+	 * розходиться з ним там, де це щось означає, — див. докблок у `constants`.
+	 */
+	reputation: number;
 	animals: Animal[];
+	enclosures: Enclosure[];
 	staff: Record<StaffRole, number>;
 	/**
 	 * Скільки днів поспіль «Користь планеті» в мінусі. Скидається на нуль,
@@ -48,12 +81,17 @@ export interface ReserveState {
 	/** Стан генератора. Зберігається зі станом, інакше сейв не відтворюється. */
 	seed: number;
 	rolls: number;
-	/** Наступний вільний `id` тварини. */
+	/** Наступні вільні `id`. */
 	nextAnimalId: number;
+	nextEnclosureId: number;
 }
 
 export type ReserveCommand =
-	| { type: 'acquire'; origin: AnimalOrigin }
+	| { type: 'build'; size: number; quality: Quality }
+	| { type: 'demolish'; enclosureId: number }
+	| { type: 'repair'; enclosureId: number }
+	| { type: 'upgrade'; enclosureId: number; quality: Quality }
+	| { type: 'acquire'; origin: AnimalOrigin; speciesId: string; enclosureId: number }
 	| { type: 'release'; animalId: number }
 	| { type: 'hire'; role: StaffRole }
 	| { type: 'dismiss'; role: StaffRole };
@@ -67,6 +105,16 @@ export type RejectReason =
 	| 'not-healthy'
 	| 'too-stressed'
 	| 'not-releasable'
-	| 'nobody-to-dismiss';
+	| 'nobody-to-dismiss'
+	| 'no-such-species'
+	| 'no-such-enclosure'
+	| 'enclosure-taken'
+	| 'enclosure-too-small'
+	| 'bad-size'
+	| 'bad-quality'
+	/** Вид не живе в цьому біомі — і саме це гра пояснює, а не обходить. */
+	| 'wrong-biome'
+	| 'already-sound'
+	| 'not-an-upgrade';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };

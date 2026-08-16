@@ -29,8 +29,9 @@ function makeStorage(seed: Record<string, string> = {}): Storage {
 const KEY = 'vetcrewgames_reserve';
 
 function played() {
-	const state = createReserve(42);
-	execute(state, { type: 'acquire', origin: 'rescue' });
+	const state = createReserve(42, 'savanna');
+	execute(state, { type: 'build', size: 4, quality: 2 });
+	execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 	tick(state, 900);
 	return state;
 }

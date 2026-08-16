@@ -165,10 +165,18 @@ describe('партія і сховище', () => {
 
 	it('відхилений хід нічого не зберігає', () => {
 		const controller = fresh();
+		// Вольєр є, тож відмова буде саме через гроші, а не через відсутнє місце.
+		controller.run({ type: 'build', size: 4, quality: 2 });
 		controller.state.budget = 0;
 		const before = store.getItem(KEY);
 
-		expect(controller.run({ type: 'acquire', origin: 'official' }).ok).toBe(false);
+		const result = controller.run({
+			type: 'acquire',
+			origin: 'official',
+			speciesId: 'wolf',
+			enclosureId: 1
+		});
+		expect(result).toEqual({ ok: false, reason: 'no-money' });
 		expect(store.getItem(KEY)).toBe(before);
 	});
 
@@ -220,7 +228,8 @@ describe('партія і сховище', () => {
 describe('вибрана тварина', () => {
 	it('картка йде за тваринкою, а не за копією її стану', () => {
 		const controller = fresh();
-		controller.run({ type: 'acquire', origin: 'rescue' });
+		controller.run({ type: 'build', size: 4, quality: 2 });
+		controller.run({ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 });
 		controller.selectedId = 1;
 
 		expect(controller.selected?.stage).toBe('recovering');

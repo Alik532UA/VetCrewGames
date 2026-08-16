@@ -1,20 +1,21 @@
 import { seededRandom } from '$lib/utils/seededRandom';
 import {
-	ANIMALS_PER_KEEPER,
-	COLLAPSE_DAYS,
-	DONATION_PER_IMPACT,
+	BLACK_MARKET_REPUTATION,
+	NO_VET_REPUTATION,
 	ORIGINS,
-	RECOVERY_PER_VET_DAY,
 	RELEASE_IMPACT,
+	RELEASE_REPUTATION,
+	REPUTATION_MAX,
+	REPUTATION_MIN,
 	STARTING_BUDGET,
+	STARTING_REPUTATION,
 	STRESS_BLOCKS_RELEASE,
-	STRESS_PER_DAY,
-	STRESS_RELIEF_PER_DAY,
-	TICKS_PER_DAY,
-	UPKEEP_PER_ANIMAL,
-	WAGES
+	TICKS_PER_DAY
 } from './constants';
-import type { CommandResult, ReserveCommand, ReserveState } from './types';
+import { buildings } from './buildings';
+import { speciesById, type ReserveBiome } from './species';
+import { endOfDay } from './day';
+import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
 
 /**
  * Ядро симуляції заповідника.
@@ -35,19 +36,23 @@ import type { CommandResult, ReserveCommand, ReserveState } from './types';
  *  3. **Єдиний шлях зміни — `execute()`.** Хід виражений даними, тож той самий
  *     обʼєкт може прийти й з мережі.
  */
-export function createReserve(seed: number): ReserveState {
+export function createReserve(seed: number, biome: ReserveBiome = 'forest'): ReserveState {
 	return {
+		biome,
 		ticks: 0,
 		budget: STARTING_BUDGET,
 		impact: 0,
+		reputation: STARTING_REPUTATION,
 		animals: [],
+		enclosures: [],
 		staff: { vet: 0, keeper: 0 },
 		collapseDays: 0,
 		gameOver: false,
 		subsidy: false,
 		seed,
 		rolls: 0,
-		nextAnimalId: 1
+		nextAnimalId: 1,
+		nextEnclosureId: 1
 	};
 }
 
@@ -66,8 +71,21 @@ function roll(state: ReserveState): number {
 	return random();
 }
 
+/** Репутація живе в межах 0–100: поза ними вона перестала б щось означати. */
+function addReputation(state: ReserveState, delta: number): void {
+	state.reputation = Math.min(REPUTATION_MAX, Math.max(REPUTATION_MIN, state.reputation + delta));
+}
+
 /** Ходи, які розширюють заповідник. Саме їх глушить антикризовий режим. */
-const EXPANDS = new Set<ReserveCommand['type']>(['acquire', 'hire']);
+const EXPANDS = new Set<ReserveCommand['type']>(['acquire', 'hire', 'build']);
+
+/** Тварини, які ще в заповіднику: випущені не їдять і не займають місця. */
+const present = (state: ReserveState): Animal[] =>
+	state.animals.filter((a) => a.stage !== 'released');
+
+/** Чи хтось уже живе в цьому вольєрі. */
+const occupant = (state: ReserveState, enclosureId: number) =>
+	present(state).find((a) => a.enclosureId === enclosureId);
 
 export function execute(state: ReserveState, command: ReserveCommand): CommandResult {
 	if (state.gameOver) return { ok: false, reason: 'game-over' };
@@ -80,22 +98,60 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 	if (state.subsidy && EXPANDS.has(command.type)) return { ok: false, reason: 'subsidy-mode' };
 
 	switch (command.type) {
+		case 'build':
+		case 'repair':
+		case 'upgrade':
+		case 'demolish':
+			return buildings(state, command, occupant);
+
 		case 'acquire': {
+			const species = speciesById(command.speciesId);
+			if (!species) return { ok: false, reason: 'no-such-species' };
+			/*
+			 * Вид, який тут не живе, не приймають — і це не обмеження заради
+			 * складності. Заповідник у тундрі, куди привезли лева, навчав би
+			 * рівно протилежного тому, заради чого гра робиться.
+			 */
+			if (!species.biomes.includes(state.biome)) return { ok: false, reason: 'wrong-biome' };
+
+			const enclosure = state.enclosures.find((e) => e.id === command.enclosureId);
+			if (!enclosure) return { ok: false, reason: 'no-such-enclosure' };
+			if (occupant(state, enclosure.id)) return { ok: false, reason: 'enclosure-taken' };
+			/*
+			 * Замалий вольєр — ВІДМОВА, а не штраф. Лев у їжачій клітці не
+			 * «повільніше одужує»: він там не живе. Саме тому це найголовніша
+			 * причина, чому тварину не вдається взяти, і саме тому вольєри
+			 * будуються заздалегідь, а не з'являються під тварину.
+			 */
+			if (enclosure.size < species.minSize) return { ok: false, reason: 'enclosure-too-small' };
+
 			const terms = ORIGINS[command.origin];
 			const cost = terms.price + terms.logistics;
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };
 
 			state.budget -= cost;
 			state.impact += terms.impact;
+			if (command.origin === 'black-market') addReputation(state, BLACK_MARKET_REPUTATION);
+
+			/*
+			 * Узяти хвору тварину, не маючи ветеринара, гра ДОЗВОЛЯЄ: забрати її
+			 * з біди краще, ніж лишити там. Але це те, за що фонд критикують, —
+			 * звідси мінус репутації, а не заборона.
+			 */
+			if (state.staff.vet === 0) addReputation(state, NO_VET_REPUTATION);
+
 			state.animals.push({
 				id: state.nextAnimalId++,
+				speciesId: species.id,
 				origin: command.origin,
 				stage: 'recovering',
+				enclosureId: enclosure.id,
 				recovery: 0,
 				stress: 0,
 				// Кидок робиться ОДИН раз, при надходженні: доля особини не має
 				// перерішуватися щоразу, коли на неї подивилися.
-				releasable: roll(state) < terms.releaseChance
+				releasable: roll(state) < terms.releaseChance,
+				releasedOnDay: null
 			});
 			return { ok: true };
 		}
@@ -108,7 +164,11 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 			if (animal.stress > STRESS_BLOCKS_RELEASE) return { ok: false, reason: 'too-stressed' };
 
 			animal.stage = 'released';
+			animal.releasedOnDay = dayOf(state);
 			state.impact += RELEASE_IMPACT;
+			// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
+			// суто оборонною — плюс до умови програшу й жодної копійки.
+			addReputation(state, RELEASE_REPUTATION);
 			return { ok: true };
 		}
 
@@ -121,50 +181,6 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 			state.staff[command.role] -= 1;
 			return { ok: true };
 	}
-}
-
-/** Тварини, які ще в заповіднику: випущені не їдять і не хворіють. */
-const present = (state: ReserveState) => state.animals.filter((a) => a.stage !== 'released');
-
-/**
- * Один ігровий день: гроші, одужання, стрес, підсумок.
- *
- * Викликається лише з `tick()` на межі доби — і саме тому кількість тіків за
- * виклик не впливає на результат.
- */
-function endOfDay(state: ReserveState): void {
-	const here = present(state);
-
-	// Пожертви йдуть за репутацією; у мінусі не дають нічого, а не забирають.
-	state.budget += Math.max(0, state.impact) * DONATION_PER_IMPACT;
-	state.budget -= here.length * UPKEEP_PER_ANIMAL;
-	state.budget -= state.staff.vet * WAGES.vet + state.staff.keeper * WAGES.keeper;
-	state.subsidy = state.budget < 0;
-
-	const recovering = here.filter((a) => a.stage === 'recovering');
-	if (recovering.length > 0) {
-		// Зусилля ветеринарів ділиться порівну: черги в MVP немає.
-		const perAnimal = (state.staff.vet * RECOVERY_PER_VET_DAY) / recovering.length;
-		for (const animal of recovering) {
-			// Стрес не спиняє одужання, а гальмує його: повний стрес — удвічі повільніше.
-			animal.recovery = Math.min(1, animal.recovery + perAnimal * (1 - animal.stress / 2));
-			if (animal.recovery >= 1) animal.stage = 'healthy';
-		}
-	}
-
-	const cared = state.staff.keeper * ANIMALS_PER_KEEPER;
-	for (const [index, animal] of here.entries()) {
-		const change = index < cared ? -STRESS_RELIEF_PER_DAY : STRESS_PER_DAY;
-		animal.stress = Math.min(1, Math.max(0, animal.stress + change));
-	}
-
-	/*
-	 * Програш — лише за «Користю планеті», і лише за ПОСПІЛЬ прожиті дні в
-	 * мінусі. Вихід у нуль обнуляє лічильник: тридцять днів із перервою не
-	 * означають, що фонд шкодить постійно.
-	 */
-	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
-	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;
 }
 
 /**
@@ -183,5 +199,18 @@ export function tick(state: ReserveState, count = 1): void {
 	}
 }
 
+export { effectiveQuality } from './day';
+
 /** Скільки повних ігрових днів минуло. */
 export const dayOf = (state: ReserveState): number => Math.floor(state.ticks / TICKS_PER_DAY);
+
+/** Мешканці заповідника — без випущених. Це те, що показує меню «Мешканці». */
+export const residents = present;
+
+/** Ті, кого вже повернули в природу. Окремий список, окрема кнопка. */
+export const released = (state: ReserveState): Animal[] =>
+	state.animals.filter((a) => a.stage === 'released');
+
+/** Вольєри, у яких зараз нікого немає, — саме туди можна прийняти тварину. */
+export const freeEnclosures = (state: ReserveState) =>
+	state.enclosures.filter((e) => !occupant(state, e.id));

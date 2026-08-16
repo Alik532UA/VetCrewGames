@@ -4,43 +4,58 @@
 	import { SPEEDS, type Speed } from '$lib/controllers/reserve.svelte';
 
 	/**
-	 * Три числа партії й керування часом.
+	 * Показники партії й керування часом.
 	 *
 	 * Числа саме тут, а не в шапці сайту: шапка належить усьому застосунку, а
-	 * бюджет із «Користю планеті» — цій партії. Змішавши їх, довелося б чистити
-	 * шапку при кожному виході зі сторінки.
+	 * бюджет із репутацією — цій партії. Змішавши їх, довелося б чистити шапку
+	 * при кожному виході зі сторінки.
+	 *
+	 * Дві шкали стоять поруч навмисно. «Користь планеті» — це те, що фонд
+	 * НАСПРАВДІ зробив, і єдина умова програшу; репутація — те, що про нього
+	 * знають, і саме вона приносить гроші. Розходяться вони там, де це щось
+	 * означає: узяв хвору тварину без ветеринара — репутація впала, а планеті
+	 * ти таки допоміг.
 	 */
 	interface Props {
 		day: number;
 		budget: number;
 		impact: number;
+		reputation: number;
+		inReserve: number;
+		inWild: number;
 		speed: Speed;
 		onSpeed: (speed: Speed) => void;
 	}
 
-	let { day, budget, impact, speed, onSpeed }: Props = $props();
+	let { day, budget, impact, reputation, inReserve, inWild, speed, onSpeed }: Props = $props();
 
 	/** Підпис для читалки: пауза називається дією, а не значком. */
 	const speedLabel = (value: Speed) =>
 		value === 0 ? t('reserve.speed.pause') : t(`reserve.speed.x${value}` as const);
+
+	const stats = $derived([
+		{ id: 'day', label: t('reserve.day'), value: String(day), bad: false },
+		{
+			id: 'budget',
+			label: t('reserve.budget'),
+			value: budget.toLocaleString(settings.locale),
+			bad: budget < 0
+		},
+		{ id: 'impact', label: t('reserve.impact'), value: String(impact), bad: impact < 0 },
+		{ id: 'reputation', label: t('reserve.reputation'), value: String(reputation), bad: false },
+		{ id: 'inreserve', label: t('reserve.inReserve'), value: String(inReserve), bad: false },
+		{ id: 'inwild', label: t('reserve.inWild'), value: String(inWild), bad: false }
+	]);
 </script>
 
 <header class="hud" data-testid="reserve-hud-header">
 	<dl class="hud__stats">
-		<div class="hud__stat">
-			<dt>{t('reserve.day')}</dt>
-			<dd data-testid="reserve-day-value">{day}</dd>
-		</div>
-		<div class="hud__stat">
-			<dt>{t('reserve.budget')}</dt>
-			<dd class:hud__value--bad={budget < 0} data-testid="reserve-budget-value">
-				{budget.toLocaleString(settings.locale)}
-			</dd>
-		</div>
-		<div class="hud__stat">
-			<dt>{t('reserve.impact')}</dt>
-			<dd class:hud__value--bad={impact < 0} data-testid="reserve-impact-value">{impact}</dd>
-		</div>
+		{#each stats as stat (stat.id)}
+			<div class="hud__stat">
+				<dt>{stat.label}</dt>
+				<dd class:hud__value--bad={stat.bad} data-testid="reserve-{stat.id}-value">{stat.value}</dd>
+			</div>
+		{/each}
 	</dl>
 
 	<div class="hud__speeds" role="group" aria-label={t('reserve.speed.x1')}>
@@ -73,9 +88,16 @@
 		background: var(--color-bg-panel);
 	}
 
+	/*
+	 * Шість показників на 320px не вміщаються в рядок, і стискати їх не можна:
+	 * бюджет у шість цифр має лишатися читабельним. Тому сітка з автозаповненням
+	 * — вона сама вирішує, скільки колонок влізло.
+	 */
 	.hud__stats {
-		display: flex;
-		gap: var(--space-md);
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+		gap: var(--space-sm) var(--space-md);
+		flex: 1 1 14rem;
 		margin: 0;
 	}
 
@@ -111,7 +133,7 @@
 		min-width: 44px;
 		min-height: 44px;
 		border-radius: var(--radius-sm);
-		background: var(--color-bg);
+		background: var(--color-bg-card);
 		color: inherit;
 		font: inherit;
 		font-variant-numeric: tabular-nums;

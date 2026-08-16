@@ -155,17 +155,20 @@ export default ts.config(
 		 * при цьому не втрачений: його тримає інваріант у `src/structure.test.ts`,
 		 * який дивиться на ВСІ джерела, зокрема й на ці файли.
 		 */
-		files: [
-			'src/lib/components/**/*.svelte',
-			'src/lib/i18n/routing.ts',
-			'src/routes/**/*.svelte'
-		],
+		files: ['src/lib/components/**/*.svelte', 'src/lib/i18n/routing.ts', 'src/routes/**/*.svelte'],
 		rules: {
 			'svelte/no-navigation-without-resolve': 'off'
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/']
+		/*
+		 * `.claude/` — не вихідний код, а робочі копії інструментів. Паралельна
+		 * сесія кладе туди git-worktree з ПОВНОЮ копією проєкту, разом із
+		 * `tsconfig.json`; без цього рядка eslint бачить два корені конфігурації
+		 * й відмовляється розбирати будь-що взагалі — 378 помилок на рівному
+		 * місці, жодна з яких не стосується коду.
+		 */
+		ignores: ['build/', '.svelte-kit/', 'dist/', '.claude/']
 	},
 
 	/**
@@ -188,8 +191,16 @@ export default ts.config(
 			],
 			'no-restricted-properties': [
 				'error',
-				{ object: 'window', property: 'localStorage', message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.' },
-				{ object: 'window', property: 'sessionStorage', message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.' }
+				{
+					object: 'window',
+					property: 'localStorage',
+					message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.'
+				},
+				{
+					object: 'window',
+					property: 'sessionStorage',
+					message: 'STORAGE-NAMESPACE-v8: лише через фасад storage.'
+				}
 			]
 		}
 	},

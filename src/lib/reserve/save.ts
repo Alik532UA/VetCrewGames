@@ -1,4 +1,9 @@
-import { ORIGINS, WAGES } from './constants';
+import { ORIGINS, QUALITIES, REPUTATION_MAX, REPUTATION_MIN, WAGES } from './constants';
+import { MIGRATIONS } from './migrations';
+
+// Реекспорт: для решти коду формат збереження — одні двері, а не дві.
+export { MIGRATIONS };
+import { ENCLOSURE_SIZES, RESERVE_BIOMES, speciesById } from './species';
 import type { ReserveState } from './types';
 
 /**
@@ -22,7 +27,7 @@ import type { ReserveState } from './types';
  * читається неправильно. **Разом із номером додається сходинка в `MIGRATIONS`** —
  * без неї підйом версії просто викидає чужу партію.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export interface SaveFile {
 	version: number;
@@ -41,16 +46,6 @@ export type RestoreFailure =
 	| { ok: false; reason: 'no-migration'; version: number };
 
 export type RestoreResult = { ok: true; state: ReserveState } | RestoreFailure;
-
-/**
- * Сходинки міграції: `MIGRATIONS[n]` піднімає сейв версії `n` до `n + 1`.
- *
- * Порожній, бо схема ще жодного разу не мінялася. Порожнім він і має бути:
- * вигадана «сходинка з версії 0» перевіряла б неіснуючу історію. Механізм
- * сходами при цьому перевірений — тестом на підставних міграціях, бо інакше
- * перша ж СПРАВЖНЯ міграція була б і першим запуском самого механізму.
- */
-export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {};
 
 export function serialize(state: ReserveState): SaveFile {
 	return { version: SCHEMA_VERSION, state };
@@ -76,11 +71,30 @@ function checkAnimal(value: unknown, index: number): string | null {
 	if (!isNumber(value.id)) return `animals[${index}].id`;
 	if (typeof value.origin !== 'string' || !(value.origin in ORIGINS))
 		return `animals[${index}].origin = ${String(value.origin)}`;
+	if (typeof value.speciesId !== 'string' || !speciesById(value.speciesId))
+		return `animals[${index}].speciesId = ${String(value.speciesId)}`;
 	if (typeof value.stage !== 'string' || !STAGES.includes(value.stage))
 		return `animals[${index}].stage = ${String(value.stage)}`;
+	if (!isNumber(value.enclosureId)) return `animals[${index}].enclosureId`;
 	if (!isNumber(value.recovery)) return `animals[${index}].recovery`;
 	if (!isNumber(value.stress)) return `animals[${index}].stress`;
 	if (typeof value.releasable !== 'boolean') return `animals[${index}].releasable`;
+	// `null` тут законний і означає «ще в заповіднику» — або «день невідомий»,
+	// якщо партія приїхала з версії 1, де цього поля не існувало.
+	if (value.releasedOnDay !== null && !isNumber(value.releasedOnDay))
+		return `animals[${index}].releasedOnDay`;
+	return null;
+}
+
+function checkEnclosure(value: unknown, index: number): string | null {
+	if (!isObject(value)) return `enclosures[${index}] не обʼєкт`;
+	if (!isNumber(value.id)) return `enclosures[${index}].id`;
+	if (!isNumber(value.size) || !ENCLOSURE_SIZES.includes(value.size as never))
+		return `enclosures[${index}].size = ${String(value.size)}`;
+	if (!isNumber(value.quality) || !QUALITIES.includes(value.quality as never))
+		return `enclosures[${index}].quality = ${String(value.quality)}`;
+	if (!isNumber(value.durability) || value.durability < 0 || value.durability > 1)
+		return `enclosures[${index}].durability = ${String(value.durability)}`;
 	return null;
 }
 
@@ -94,21 +108,40 @@ function checkAnimal(value: unknown, index: number): string | null {
 function checkState(value: unknown): string | null {
 	if (!isObject(value)) return 'стан не обʼєкт';
 
+	// Біом вирішує, які види тут узагалі бувають: чужа назва зробила б
+	// заповідник таким, куди не приймають нікого.
+	if (typeof value.biome !== 'string' || !RESERVE_BIOMES.includes(value.biome as never))
+		return `biome = ${String(value.biome)}`;
+
 	for (const field of [
 		'ticks',
 		'budget',
 		'impact',
+		'reputation',
 		'collapseDays',
 		'seed',
 		'rolls',
-		'nextAnimalId'
+		'nextAnimalId',
+		'nextEnclosureId'
 	])
 		if (!isNumber(value[field])) return field;
+
+	// Репутація поза 0–100 нічого не означала б, а пожертви від неї рахуються
+	// прямо: значення 10 000 зробило б гроші нескінченними й тихо.
+	const reputation = value.reputation as number;
+	if (reputation < REPUTATION_MIN || reputation > REPUTATION_MAX)
+		return `reputation = ${String(reputation)}`;
 
 	for (const field of ['gameOver', 'subsidy']) if (typeof value[field] !== 'boolean') return field;
 
 	if (!isObject(value.staff)) return 'staff';
 	for (const role of Object.keys(WAGES)) if (!isNumber(value.staff[role])) return `staff.${role}`;
+
+	if (!Array.isArray(value.enclosures)) return 'enclosures';
+	for (const [index, enclosure] of value.enclosures.entries()) {
+		const problem = checkEnclosure(enclosure, index);
+		if (problem) return problem;
+	}
 
 	if (!Array.isArray(value.animals)) return 'animals';
 	for (const [index, animal] of value.animals.entries()) {

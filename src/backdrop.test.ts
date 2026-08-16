@@ -38,7 +38,15 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	'src/lib/components/RoundIndicator.svelte': 'лічильник раундів — усередині шапки гри',
 	'src/lib/components/FeedingVerdicts.svelte': 'кожен присуд має власну картку .verdict',
 	'src/lib/components/GameOverCard.svelte': 'уся розмітка лежить у картці .game-over-card',
-	'src/lib/components/ErrorFallback.svelte': 'екран помилки — суцільна картка'
+	'src/lib/components/ErrorFallback.svelte': 'екран помилки — суцільна картка',
+	// Панелі заповідника малюються ЛИШЕ всередині `BottomSheet`, і фон дає він.
+	// Свій фон тут був би панеллю на панелі — двома шарами того самого кольору
+	// з видимим швом на межі.
+	'src/lib/components/reserve/AnimalsPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
+	'src/lib/components/reserve/AcquireTab.svelte': 'вміст висувної панелі, фон дає BottomSheet',
+	'src/lib/components/reserve/EnclosurePanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
+	'src/lib/components/reserve/StaffPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
+	'src/lib/components/reserve/TasksPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet'
 };
 
 /** Глобальний клас підкладки з `lib/styles/global.css`. */
@@ -60,8 +68,20 @@ function classesWithBackground(style: string): Set<string> {
 }
 
 const VOID_TAGS = new Set([
-	'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-	'link', 'meta', 'param', 'source', 'track', 'wbr'
+	'area',
+	'base',
+	'br',
+	'col',
+	'embed',
+	'hr',
+	'img',
+	'input',
+	'link',
+	'meta',
+	'param',
+	'source',
+	'track',
+	'wbr'
 ]);
 
 /**
@@ -76,7 +96,10 @@ function isVisibleText(chunk: string): boolean {
 	for (let i = 0; i < chunk.length; i++) {
 		const rest = chunk.slice(i);
 		const control = rest.match(/^\{(?:[#/:]|@(?:const|debug)\b)/);
-		if (!control) { out += chunk[i]; continue; }
+		if (!control) {
+			out += chunk[i];
+			continue;
+		}
 		let depth = 0;
 		let j = i;
 		for (; j < chunk.length; j++) {
@@ -140,7 +163,10 @@ function nakedTexts(file: string, source: string, globalBacked: Set<string>): Na
 		if (lt === -1) break;
 		const head = markup.slice(lt + 1, lt + 40);
 		const nameMatch = head.match(/^(\/?)([A-Za-z][\w:.-]*)/);
-		if (!nameMatch) { i = lt + 1; continue; }
+		if (!nameMatch) {
+			i = lt + 1;
+			continue;
+		}
 
 		const [, closing, tag] = nameMatch;
 		const gt = endOfTag(markup, lt + 1);
@@ -174,7 +200,10 @@ function nakedTexts(file: string, source: string, globalBacked: Set<string>): Na
 		if (tag.includes(':') || /^[A-Z]/.test(tag)) {
 			if (tag === 'svelte:head') {
 				const close = markup.indexOf('</svelte:head>', i);
-				if (close !== -1) { i = close + '</svelte:head>'.length; cursor = i; }
+				if (close !== -1) {
+					i = close + '</svelte:head>'.length;
+					cursor = i;
+				}
 			}
 			continue;
 		}

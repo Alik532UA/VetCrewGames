@@ -2,6 +2,7 @@ import { createReserve, dayOf, execute, tick } from '$lib/reserve/simulation';
 import type { CommandResult, ReserveCommand, ReserveState } from '$lib/reserve/types';
 import { loadReserve, saveReserve } from '$lib/services/reserveSave';
 import type { RestoreFailure } from '$lib/reserve/save';
+import type { ReserveBiome } from '$lib/reserve/species';
 
 /**
  * Партія заповідника в рунах: місток між чистою симуляцією й екраном.
@@ -43,6 +44,16 @@ export class ReserveController {
 	restoreProblem = $state<RestoreFailure | null>(null);
 
 	day = $derived(dayOf(this.state));
+	/**
+	 * Партія, у якій ще нічого не сталося.
+	 *
+	 * Саме за цим екран вирішує, питати біом чи ні. Не за наявністю сейва:
+	 * контролер зберігається одразу при створенні, тож сейв є завжди — уже
+	 * через мілісекунду після першого заходу.
+	 */
+	isFresh = $derived(
+		this.state.ticks === 0 && this.state.animals.length === 0 && this.state.enclosures.length === 0
+	);
 	selected = $derived(this.state.animals.find((a) => a.id === this.selectedId) ?? null);
 
 	/** Недокручені мілісекунди: те, що не дотягнуло до цілого тіку. */
@@ -71,8 +82,8 @@ export class ReserveController {
 		}
 	}
 
-	reset(seed = Date.now() >>> 0): void {
-		this.state = createReserve(seed);
+	reset(seed = Date.now() >>> 0, biome: ReserveBiome = this.state.biome): void {
+		this.state = createReserve(seed, biome);
 		this.selectedId = null;
 		this.#carry = 0;
 		this.#savedDay = 0;
