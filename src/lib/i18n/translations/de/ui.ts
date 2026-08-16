@@ -55,6 +55,14 @@ export const ui = {
 	'header.exitFullscreen': 'Vollbild beenden',
 	'header.score': 'Gesamtpunktzahl',
 
+	// Die Namen der Designs stehen als Text auf dem Bildschirm, nicht als
+	// Vorlesetext: Sie sind die Einträge einer Liste. Benannt nach dem, was man
+	// sieht — „orange-purple“ sagt niemandem etwas, „Herbst“ sagt alles.
+	'theme.dark': 'Dunkel',
+	'theme.light-green': 'Hellgrün',
+	'theme.winter': 'Winter',
+	'theme.orange-purple': 'Herbst',
+
 	// Schaltfläche für den Protokollbericht, im Betrieb per Debug-Modus aktiv.
 	'debug.copyLogs': 'Protokollbericht kopieren',
 

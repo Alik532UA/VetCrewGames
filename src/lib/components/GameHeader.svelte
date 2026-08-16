@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Snowflake, Leaf } from 'lucide-svelte';
+	import { ArrowLeft, Maximize, Minimize } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
-	import LanguageMenu from './LanguageMenu.svelte';
+	import HeaderControls from './HeaderControls.svelte';
 	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
 	// `formatPlain` міняє кириличну «і» на латинську «i», щоб літера була у
 	// шрифті inglobal, — це правильно для того, що МАЛЮЄТЬСЯ, і неправильно
@@ -126,25 +126,7 @@ onMount(() => fullscreen.watch());
 		</div>
 
 		<div class="game-header__right">
-			<button
-				type="button"
-				class="header-btn"
-				onclick={() => settings.toggleTheme()}
-				aria-label={t('header.toggleTheme')}
-				data-testid="header-theme-btn"
-			>
-				{#if settings.theme === 'dark'}
-					<Moon size={20} />
-				{:else if settings.theme === 'light-green'}
-					<Sun size={20} />
-				{:else if settings.theme === 'winter'}
-					<Snowflake size={20} />
-				{:else if settings.theme === 'orange-purple'}
-					<Leaf size={20} />
-				{/if}
-			</button>
-
-			<LanguageMenu />
+			<HeaderControls />
 
 			<button
 				type="button"

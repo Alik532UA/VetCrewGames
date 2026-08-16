@@ -56,9 +56,7 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	'src/routes/[[lang=lang]]/game-population/+page.svelte': 986,
 	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`,
 	// 438 → 409 після винесення `flyAndSlide`, +1 на імпорт `revealScroll`.
-	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 410,
-	// 360 → 305 після переїзду `.header-btn` у `global.css`.
-	'src/lib/components/GameHeader.svelte': 305
+	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 410
 };
 
 /**

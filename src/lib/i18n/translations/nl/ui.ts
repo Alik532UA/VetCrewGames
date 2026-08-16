@@ -54,6 +54,14 @@ export const ui = {
 	'header.exitFullscreen': 'Volledig scherm uit',
 	'header.score': 'Totaalscore',
 
+	// De namen van de thema's staan als tekst op het scherm, niet als
+	// voorleestekst: het zijn de items van een lijst. Genoemd naar wat je ziet
+	// — „orange-purple” zegt niemand iets, „Herfst” zegt alles.
+	'theme.dark': 'Donker',
+	'theme.light-green': 'Lichtgroen',
+	'theme.winter': 'Winter',
+	'theme.orange-purple': 'Herfst',
+
 	// Knop voor het lograpport, in productie aan via de debugmodus.
 	'debug.copyLogs': 'Lograpport kopiëren',
 

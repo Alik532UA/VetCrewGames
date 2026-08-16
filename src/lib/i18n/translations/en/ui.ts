@@ -52,6 +52,14 @@ export const ui = {
 	'header.exitFullscreen': 'Exit fullscreen',
 	'header.score': 'Total score',
 
+	// Theme names are text on screen, not screen-reader labels: they are the
+	// items of a list. Named by what you see rather than by the stored value —
+	// "orange-purple" tells nobody anything, "Autumn" tells them everything.
+	'theme.dark': 'Dark',
+	'theme.light-green': 'Light green',
+	'theme.winter': 'Winter',
+	'theme.orange-purple': 'Autumn',
+
 	// Log report button, enabled in production by debug mode.
 	'debug.copyLogs': 'Copy log report',
 

@@ -4,7 +4,10 @@ import { storage } from '$lib/services/storage';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
 import { LANGUAGES, type Language } from '$lib/i18n/routing';
 
-export type Theme = 'dark' | 'light-green' | 'winter' | 'orange-purple';
+import { THEMES, type Theme } from '$lib/config/themes';
+
+// Тип і перелік тем живуть у конфігу: там же, де пункти меню, — див. themes.ts.
+export type { Theme };
 /**
  * Мова інтерфейсу — це та сама мова, що й в адресі, тож тип береться з
  * `routing.ts`, а не оголошується вдруге. Доти тут стояв власний union із двох
@@ -17,7 +20,7 @@ export type Font = 'inglobal' | 'e-ukraine';
 /** Яку смугу прокрутки малювати: системну чи власну (SCROLLBAR-v8 § 2.2). */
 export type ScrollbarMode = 'standard' | 'custom';
 
-const THEMES: readonly Theme[] = ['dark', 'light-green', 'winter', 'orange-purple'];
+
 const LOCALES: readonly Locale[] = LANGUAGES;
 const FONTS: readonly Font[] = ['inglobal', 'e-ukraine'];
 const SCROLLBAR_MODES: readonly ScrollbarMode[] = ['standard', 'custom'];
