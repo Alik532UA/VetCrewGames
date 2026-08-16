@@ -2,23 +2,28 @@
 	import { T, useThrelte } from '@threlte/core';
 	import { OrthographicCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
 	import { isoControls } from './isoCamera';
-	import { placeAnimals } from './sceneLayout';
-	import type { Animal } from '$lib/reserve/types';
+	import { placeEnclosures } from './sceneLayout';
+	import { nearWater, terrainOf } from '$lib/reserve/terrain';
+	import type { ReserveBiome } from '$lib/reserve/species';
+	import type { Animal, Enclosure } from '$lib/reserve/types';
 
 	/**
-	 * Вміст сцени: земля, вольєри, світло — і жодної моделі тварини.
+	 * Вміст сцени: земля біома, рельєф, вольєри — і жодної моделі тварини.
 	 *
 	 * Фігури тут ПРИМІТИВИ навмисно, і це не заглушка з ліні: проєкт забороняє
 	 * агентові вигадувати зображення тварин. Куб-вольєр і капсула на ньому чесно
 	 * кажуть «тут живе мешканець», нічого не вдаючи з себе.
 	 */
 	interface Props {
+		biome: ReserveBiome;
+		seed: number;
+		enclosures: Enclosure[];
 		animals: Animal[];
 		selectedId: number | null;
 		onSelect: (id: number) => void;
 	}
 
-	let { animals, selectedId, onSelect }: Props = $props();
+	let { biome, seed, enclosures, animals, selectedId, onSelect }: Props = $props();
 
 	const { invalidate, renderer, scene } = useThrelte();
 
@@ -39,8 +44,7 @@
 	 *
 	 * Причин дві, і перша важливіша. Плагін не відрізняє тап від перетягування:
 	 * кожне панорамування закінчувалося б вибором тварини, над якою випадково
-	 * відпустили палець. Це рівно та поведінка, яка на телефоні відчувається як
-	 * «гра сама щось натискає». Друга — ще один пакет заради двадцяти рядків.
+	 * відпустили палець. Друга — ще один пакет заради двадцяти рядків.
 	 */
 	const raycaster = new Raycaster();
 	const pointer = new Vector2();
@@ -71,13 +75,11 @@
 	}
 
 	/**
-	 * Керування чіпляється в `$effect`, а не в `onMount`.
-	 *
-	 * `<Canvas>` створює свої обʼєкти не одночасно з монтуванням розмітки, тож
-	 * на момент `onMount` камери ще може не бути. Раніше тут стояло
-	 * `if (!camera) return` — і це найгірший різновид помилки: сцена малюється,
-	 * жодного повідомлення немає, просто нічого не рухається й не натискається.
-	 * Ефект чекає, доки камера зʼявиться, скільки б це не зайняло.
+	 * Керування чіпляється в `$effect`, а не в `onMount`: `<Canvas>` створює свої
+	 * обʼєкти не одночасно з монтуванням розмітки, тож на момент `onMount` камери
+	 * ще може не бути. Раніше тут стояло `if (!camera) return` — і це найгірший
+	 * різновид помилки: сцена малюється, повідомлень немає, просто нічого не
+	 * рухається й не натискається.
 	 */
 	$effect(() => {
 		if (!camera) return;
@@ -85,9 +87,25 @@
 		return () => controls.destroy();
 	});
 
-	const placed = $derived(placeAnimals(animals));
+	const placed = $derived(placeEnclosures(enclosures, animals));
+	const terrain = $derived(terrainOf(biome, seed));
 
-	/** Колір каже про стан: одужує — теплий, здорова — зелена. */
+	/** Колір ґрунту біома. Тундра сіра, тропіки темно-зелені. */
+	const GROUND: Record<ReserveBiome, string> = {
+		forest: '#6f8f5a',
+		tundra: '#9aa7a8',
+		savanna: '#c2a95f',
+		rainforest: '#4c7a43'
+	};
+
+	const PLANT: Record<ReserveBiome, string> = {
+		forest: '#3f6b34',
+		tundra: '#6b7a5a',
+		savanna: '#7d8a45',
+		rainforest: '#2f5c2a'
+	};
+
+	/** Колір мешканця каже про стан: одужує — теплий, здорова — зелена. */
 	const colorOf = (animal: Animal) => (animal.stage === 'healthy' ? '#4caf50' : '#c98a3c');
 </script>
 
@@ -101,21 +119,63 @@
 	заповідник виглядав би наліпкою, а не місцем.
 -->
 <T.Mesh position={[0, -0.55, 0]}>
-	<T.BoxGeometry args={[60, 1, 60]} />
-	<T.MeshStandardMaterial color="#6f8f5a" />
+	<T.BoxGeometry args={[80, 1, 80]} />
+	<T.MeshStandardMaterial color={GROUND[biome]} />
 </T.Mesh>
 
-{#each placed as { animal, x, z } (animal.id)}
-	<T.Group position={[x, 0, z]} userData={{ animalId: animal.id }}>
+<!-- Рельєф біома. Детермінований: та сама партія — той самий краєвид. -->
+{#each terrain as item, index (`${item.kind}-${index}`)}
+	{#if item.kind === 'water'}
+		<T.Mesh position={[item.x, -0.08, item.z]}>
+			<T.CylinderGeometry args={[1.5 * item.scale, 1.5 * item.scale, 0.12, 12]} />
+			<T.MeshStandardMaterial color="#3f7fa8" />
+		</T.Mesh>
+	{:else if item.kind === 'plant'}
+		<T.Group position={[item.x, 0, item.z]}>
+			<T.Mesh position={[0, 0.3 * item.scale, 0]}>
+				<T.CylinderGeometry args={[0.07, 0.1, 0.6 * item.scale, 5]} />
+				<T.MeshStandardMaterial color="#6b4a2f" />
+			</T.Mesh>
+			<T.Mesh position={[0, 0.85 * item.scale, 0]}>
+				<T.ConeGeometry args={[0.55 * item.scale, 1.1 * item.scale, 7]} />
+				<T.MeshStandardMaterial color={PLANT[biome]} />
+			</T.Mesh>
+		</T.Group>
+	{:else}
+		<T.Mesh position={[item.x, 0.05, item.z]}>
+			<T.DodecahedronGeometry args={[0.4 * item.scale, 0]} />
+			<T.MeshStandardMaterial color="#8b8b86" />
+		</T.Mesh>
+	{/if}
+{/each}
+
+{#each placed as { enclosure, animal, x, z } (enclosure.id)}
+	{@const side = 0.6 + enclosure.size * 0.16}
+	<T.Group position={[x, 0, z]} userData={{ animalId: animal?.id }}>
+		<!-- Підлога вольєра: що більший розмір, то ширша. -->
 		<T.Mesh position={[0, 0.1, 0]}>
-			<T.BoxGeometry args={[1.8, 0.2, 1.8]} />
-			<T.MeshStandardMaterial color={animal.id === selectedId ? '#ffd54f' : '#9a7b4f'} />
+			<T.BoxGeometry args={[side, 0.2, side]} />
+			<T.MeshStandardMaterial color={animal && animal.id === selectedId ? '#ffd54f' : '#9a7b4f'} />
 		</T.Mesh>
 
-		<!-- Мешканець: капсула, а не модель. Див. докблок файлу. -->
-		<T.Mesh position={[0, 0.65, 0]}>
-			<T.CapsuleGeometry args={[0.28, 0.5, 4, 8]} />
-			<T.MeshStandardMaterial color={colorOf(animal)} />
-		</T.Mesh>
+		<!--
+			Штучна водойма. Ставиться лише тоді, коли поруч НЕМАЄ природної: у цьому
+			й сенс того, що рельєф не декорація — місце під вольєр не байдуже, і
+			видно це просто на карті.
+		-->
+		{#if !nearWater(terrain, x, z)}
+			<T.Mesh position={[side * 0.28, 0.21, side * 0.28]}>
+				<T.CylinderGeometry args={[side * 0.16, side * 0.16, 0.06, 10]} />
+				<T.MeshStandardMaterial color="#4a9ec4" />
+			</T.Mesh>
+		{/if}
+
+		{#if animal}
+			<!-- Мешканець: капсула, а не модель. Див. докблок файлу. -->
+			<T.Mesh position={[0, 0.65, 0]}>
+				<T.CapsuleGeometry args={[0.28, 0.5, 4, 8]} />
+				<T.MeshStandardMaterial color={colorOf(animal)} />
+			</T.Mesh>
+		{/if}
 	</T.Group>
 {/each}

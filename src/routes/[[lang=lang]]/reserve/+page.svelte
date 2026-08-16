@@ -180,6 +180,9 @@
 			<div class="reserve-map">
 				{#if Scene}
 					<Scene
+						biome={game.state.biome}
+						seed={game.state.seed}
+						enclosures={game.state.enclosures}
 						animals={here}
 						selectedId={game.selectedId}
 						onSelect={(id: number) => (game.selectedId = id)}

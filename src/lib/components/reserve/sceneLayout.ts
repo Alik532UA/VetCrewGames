@@ -1,56 +1,29 @@
-import type { Animal } from '$lib/reserve/types';
+import { CELL_WORLD, placeOf } from '$lib/reserve/grid';
+import type { Animal, Enclosure } from '$lib/reserve/types';
 
 /**
- * Де в заповіднику стоїть кожен вольєр.
+ * Де на сцені стоїть кожен вольєр і хто в ньому живе.
  *
- * Розкладка — чиста функція від `id`, а не від порядку в масиві. Це не
- * дрібниця: коли тварину випускають і вона зникає зі сцени, сусіди НЕ мають
- * зсуватися на її місце. Заповідник, у якому будівлі перестрибують після
- * кожної події, читається як збій, а не як гра.
- *
- * Спіраль, а не рядки: заповідник росте від центру навсібіч, і камера, наведена
- * на початок координат, лишається наведеною на нього й на двадцятому мешканці.
+ * Місце визначає `id` ВОЛЬЄРА, а не позиція тварини в масиві: будівля стоїть
+ * там, де її поставили, і випуск мешканця її не рухає. Сама сітка живе в
+ * `reserve/grid`, бо на неї спирається ще й рельєф — він мусить знати, які
+ * клітинки лишити вільними під забудову.
  */
 
-/** Крок сітки у світових одиницях. Вольєр — одиничний куб. */
-export const CELL = 2.2;
+export const CELL = CELL_WORLD;
 
 export interface Placed {
-	animal: Animal;
+	enclosure: Enclosure;
+	/** Хто тут живе; `null` — вольєр порожній. */
+	animal: Animal | null;
 	x: number;
 	z: number;
 }
 
-/**
- * Клітинка спіралі за порядковим номером: 0 — центр, далі кільцями.
- *
- * Рахується щоразу, бо мешканців одиниці, а кеш при змінному `id` довелося б
- * інвалідовувати — і саме на цьому такі кеші зазвичай і ламаються.
- */
-export function spiralCell(index: number): { x: number; z: number } {
-	let x = 0;
-	let z = 0;
-	let dx = 0;
-	let dz = -1;
-
-	for (let i = 0; i < index; i++) {
-		// Кут кільця: там напрямок повертає на 90°.
-		if (x === z || (x < 0 && x === -z) || (x > 0 && x === 1 - z)) {
-			[dx, dz] = [-dz, dx];
-		}
-		x += dx;
-		z += dz;
-	}
-	return { x, z };
-}
-
-/** Ті, кого видно на сцені: випущені живуть у природі, а не у вольєрі. */
-export function placeAnimals(animals: Animal[]): Placed[] {
-	return animals
-		.filter((animal) => animal.stage !== 'released')
-		.map((animal) => {
-			// Місце визначає `id`, а не позиція в масиві — див. докблок файлу.
-			const { x, z } = spiralCell(animal.id - 1);
-			return { animal, x: x * CELL, z: z * CELL };
-		});
+export function placeEnclosures(enclosures: Enclosure[], animals: Animal[]): Placed[] {
+	return enclosures.map((enclosure) => ({
+		enclosure,
+		animal: animals.find((a) => a.enclosureId === enclosure.id && a.stage !== 'released') ?? null,
+		...placeOf(enclosure.id)
+	}));
 }

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Canvas } from '@threlte/core';
 	import SceneBody from './SceneBody.svelte';
-	import type { Animal } from '$lib/reserve/types';
+	import type { ReserveBiome } from '$lib/reserve/species';
+	import type { Animal, Enclosure } from '$lib/reserve/types';
 
 	/**
 	 * Обгортка сцени: полотно й розмір, більше нічого.
@@ -13,17 +14,21 @@
 	 * сторінки зруйнував би розділення мовчки.
 	 */
 	interface Props {
+		biome: ReserveBiome;
+		/** Зерно партії: краєвид детермінований, як і все інше. */
+		seed: number;
+		enclosures: Enclosure[];
 		animals: Animal[];
 		selectedId: number | null;
 		onSelect: (id: number) => void;
 	}
 
-	let { animals, selectedId, onSelect }: Props = $props();
+	let { biome, seed, enclosures, animals, selectedId, onSelect }: Props = $props();
 </script>
 
 <div class="scene" data-testid="reserve-scene-panel">
 	<Canvas>
-		<SceneBody {animals} {selectedId} {onSelect} />
+		<SceneBody {biome} {seed} {enclosures} {animals} {selectedId} {onSelect} />
 	</Canvas>
 </div>
 
