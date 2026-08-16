@@ -490,7 +490,7 @@
 			</div>
 		</div>
 
-		<div class="action-zone">
+		<div>
 			{#if !game.checked}
 				<button class="btn-check" disabled={!game.allSlotsFilled} onclick={() => game.check()} data-testid="population-check-btn"
 					>{@html formatFont(t('population.check'))}</button

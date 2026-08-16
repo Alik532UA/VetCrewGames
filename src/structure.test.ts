@@ -167,6 +167,77 @@ describe('структура проєкту', () => {
 	});
 
 	/**
+	 * Дзеркальна перевірка: клас у розмітці має правила ХОЧ ДЕСЬ.
+	 *
+	 * Попередній тест іде від CSS до розмітки й ловить мертві правила. Цей іде
+	 * назустріч і ловить протилежне — розмітку, яка розраховує на стиль, якого
+	 * немає. Пропуску не видно взагалі нічим: компілятор не знає, що рядок у
+	 * `class=` мав щось означати, а `svelte-check` тим паче.
+	 *
+	 * Реальний випадок: `.header-btn` була оголошена у `<style>` компонента
+	 * `GameHeader`, а вживав її ще й `LanguageMenu` — окремий компонент у тій
+	 * самій шапці. Svelte ЗАКРИВАЄ такий блок у межах компонента, тож перемикач
+	 * мови стояв голою кнопкою браузера: 31×22 замість 36×36, рельєфна біла
+	 * рамка, нуль заокруглення — і заразом стиснуті сусіди. Усі гейти були
+	 * зелені; побачив користувач.
+	 *
+	 * Правила можуть лежати у трьох законних місцях, і всі три тут враховані:
+	 * власний `<style>` компонента, глобальні файли стилів, `:global(...)`
+	 * будь-якого компонента (так батько навмисно стилізує дитину).
+	 */
+	it('кожен клас із розмітки має правила — свої, глобальні або :global (§ 3.5)', () => {
+		const styleFiles = all.filter((f) => f.endsWith('.css'));
+		expect(styleFiles.length, 'файлів стилів не знайдено — перевірка мертва').toBeGreaterThan(0);
+
+		const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+		const classesIn = (css: string) =>
+			[...stripComments(css).matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]);
+
+		// Словник, спільний для всіх: глобальні файли плюс усе, на що компоненти
+		// ціляться через `:global()`.
+		const globalVocabulary = new Set(styleFiles.flatMap((f) => classesIn(read(f))));
+		const components = sources.filter((f) => f.endsWith('.svelte'));
+		for (const file of components) {
+			const style = read(file).match(/<style[^>]*>([\s\S]*)<\/style>/)?.[1] ?? '';
+			for (const m of stripComments(style).matchAll(/:global\(([^)]*)\)/g))
+				classesIn(m[1]).forEach((cls) => globalVocabulary.add(cls));
+		}
+
+		const problems: string[] = [];
+		for (const file of components) {
+			const source = read(file);
+			const style = source.match(/<style[^>]*>([\s\S]*)<\/style>/)?.[1] ?? '';
+			const own = new Set(classesIn(style));
+			const markup = source
+				.slice(source.indexOf('</script>'))
+				.replace(/<style[\s\S]*<\/style>/, '');
+
+			for (const m of markup.matchAll(/class="([^"]*)"/g)) {
+				// Інтерполяція прибирається ДО розбиття на токени, а не після:
+				// `anim-stagger-{i + 1}` містить пробіли, і розбиття першим кроком
+				// розсипає його на `anim-stagger-{i`, `+` та `1}` — три вигадані
+				// класи, яких у розмітці немає.
+				for (const cls of m[1].replace(/\{[^}]*\}/g, '').split(/\s+/)) {
+					if (!cls || cls.endsWith('-') || own.has(cls) || globalVocabulary.has(cls)) continue;
+					// База BEM, у якої оголошено модифікатор, — не безпритульний клас:
+					// `.scoreboard__player--turn` існує саме як «те саме, але інакше»,
+					// а базу тримає розкладка предка.
+					const hasModifier = [...own, ...globalVocabulary].some((known) =>
+						known.startsWith(`${cls}--`)
+					);
+					if (hasModifier) continue;
+					problems.push(`${file}: class="${cls}"`);
+				}
+			}
+		}
+
+		expect(
+			problems,
+			`клас у розмітці є, а правил для нього немає ніде — елемент малюється типовими стилями браузера:\n${problems.join('\n')}`
+		).toEqual([]);
+	});
+
+	/**
 	 * Шлях не склеюється з `base` вручну (SEO-v8 § 1.5).
 	 *
 	 * Це не стилістика: під час prerender `base` **відносний**, тож

@@ -105,12 +105,13 @@
 
 <style>
 	/*
-	 * Відступ більший за проміжок у самому списку: інакше «Випадкова гра»
-	 * читається як перший пункт переліку, а вона не пункт — вона інший спосіб
-	 * почати.
+	 * Відступу тут НЕМАЄ, хоч «Випадкова гра» й мусить читатися окремо від
+	 * переліку: цю роботу вже робить `gap` самої сторінки — 48px проти 16px
+	 * усередині списку, утричі більше. Власні `margin-bottom: 24px` додавалися
+	 * до нього, і розрив ставав 72px — більший за будь-який інший на екрані, аж
+	 * до відчуття, що кнопка загубилася зверху сама по собі.
 	 */
 	.menu-btn--random {
-		margin-bottom: var(--space-lg);
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
 		font-weight: var(--font-weight-bold);
@@ -164,7 +165,6 @@
 		backdrop-filter: var(--blur-glass);
 		color: var(--color-text-on-panel);
 		box-shadow: var(--shadow-card);
-		border: none;
 	}
 
 	@media (hover: hover) {
@@ -192,7 +192,6 @@
 		color: var(--color-disabled-text);
 		cursor: not-allowed;
 		box-shadow: none;
-		border: none;
 	}
 
 	.menu-btn--disabled:active {
@@ -210,7 +209,6 @@
 		background-color: color-mix(in srgb, var(--color-primary), transparent 50%);
 		backdrop-filter: var(--blur-glass);
 		color: #ffffff;
-		border: none;
 		box-shadow: none;
 	}
 

@@ -255,8 +255,75 @@ p {
 	margin: 0;
 }
 
+/*
+ * Кнопка не приносить із собою хрому браузера.
+ *
+ * `<button>` без власного `border` малюється типовою рамкою `2px outset` —
+ * білою рельєфною коробкою з дев'яностих. Помітити її нічим: `svelte-check`
+ * мовчить, бо правило законне, а на екрані вона схожа на навмисну обводку.
+ * Обидва місця, де вона тут вилізла, були помилками, і знайшов їх користувач:
+ * перемикач мови в шапці й «Випадкова гра» в меню. Решта кнопок писала
+ * `border: none` кожна в себе — тобто чотири копії одного скидання, з яких
+ * дві забули.
+ *
+ * `background` теж скидається: типовий `ButtonFace` — сірий, і на тлі-фотографії
+ * він виглядає як недомальований елемент. Будь-яке правило з класом сильніше за
+ * цей селектор (0-1-0 проти 0-0-1), тож кнопки з власним тлом не зачеплені.
+ */
 button {
 	font-family: inherit;
+	border: none;
+	background: none;
+}
+
+/*
+ * Кругла кнопка шапки: «назад», тема, мова, повний екран.
+ *
+ * Клас глобальний, бо ту саму кнопку малює і `GameHeader`, і `LanguageMenu`
+ * — окремий компонент, який стоїть у тій-таки шапці. Доти правила лежали в
+ * `<style>` самого `GameHeader`, а Svelte такий блок ЗАКРИВАЄ в межах
+ * компонента: `LanguageMenu` писав `class="header-btn"` і не отримував нічого.
+ * Перемикач мови стояв у шапці типовою кнопкою браузера — 31×22, з рельєфною
+ * рамкою й без заокруглень, — і заразом стискав сусідів із 36px до 28px.
+ *
+ * Ні компілятор, ні `svelte-check` про це не кажуть: клас у чужій розмітці для
+ * них просто невідомий рядок. Тепер це ловить інваріант у `structure.test.ts`.
+ */
+.header-btn {
+	width: 36px;
+	height: 36px;
+	/* Без цього ряд шапки стискає кнопки: вони flex-елементи, а 36px — не підлога. */
+	flex-shrink: 0;
+	border-radius: var(--radius-md);
+	background-color: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: #ffffff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	text-decoration: none;
+	padding: 0;
+}
+
+/* Порожнє місце під кнопку «назад»: тримає заголовок по центру, поки її немає. */
+.header-btn.placeholder {
+	background: transparent;
+	border-color: transparent;
+	cursor: default;
+	pointer-events: none;
+}
+
+@media (hover: hover) {
+	.header-btn:hover {
+		background-color: rgba(255, 255, 255, 0.2);
+		transform: scale(1.05);
+	}
+}
+
+.header-btn:active {
+	transform: scale(0.95);
 }
 
 /*

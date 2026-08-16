@@ -35,7 +35,7 @@
 <div class="lang">
 	<button
 		type="button"
-		class="header-btn lang__trigger"
+		class="header-btn"
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-label={formatPlain(t('header.toggleLocale'))}

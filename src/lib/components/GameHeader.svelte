@@ -282,41 +282,13 @@ onMount(() => fullscreen.watch());
 		z-index: 1;
 	}
 
-	.header-btn {
-		width: 36px;
-		height: 36px;
-		border-radius: var(--radius-md);
-		background-color: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		color: #ffffff;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		transition: all var(--transition-fast);
-		text-decoration: none;
-		padding: 0;
-	}
-
-	.header-btn.placeholder {
-		background: transparent;
-		border-color: transparent;
-		cursor: default;
-		pointer-events: none;
-	}
-
-	@media (hover: hover) {
-		.header-btn:hover {
-			background-color: rgba(255, 255, 255, 0.2);
-			transform: scale(1.05);
-		}
-	}
-
-	.header-btn:active {
-		transform: scale(0.95);
-	}
-
-
+	/*
+	 * `.header-btn` тут НЕМАЄ навмисно — вона в `global.css`.
+	 *
+	 * Ту саму кнопку малює й `LanguageMenu`, окремий компонент; зі `<style>`
+	 * цього файлу вона до нього не доходила, і перемикач мови стояв у шапці
+	 * голою кнопкою браузера.
+	 */
 
 	@media (max-width: 768px) {
 		.game-title {
