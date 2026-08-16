@@ -24,6 +24,21 @@
 	const game = new ReserveController();
 	const lang = $derived(languageFromParam(page.params.lang));
 
+	/**
+	 * Сцена приходить `import()`-ом, і саме тому вона не в цьому файлі.
+	 *
+	 * `three` важить більше, ніж увесь інший JS сайту разом. Статичний імпорт
+	 * поклав би його в чанк маршруту, а звідти — у граф, який рахує `check-build`
+	 * як вагу сторінки. Динамічний лишає його окремим файлом, який завантажує
+	 * лише той, хто в заповідник справді зайшов.
+	 *
+	 * Тип — `typeof ReserveScene` через `import type`: він зникає при збірці й
+	 * розділення чанків не зачіпає, зате `svelte-check` бачить пропси.
+	 */
+	let Scene = $state<typeof import('$lib/components/reserve/ReserveScene.svelte').default | null>(
+		null
+	);
+
 	onMount(() => {
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, '')));
 		game.start();
@@ -37,6 +52,12 @@
 					: 'reserve.saveBroken'
 			);
 		}
+
+		// Сцена не блокує гру: якщо рушій не завантажиться, лишається список
+		// мешканців, і заповідником усе одно можна керувати.
+		import('$lib/components/reserve/ReserveScene.svelte').then((module) => {
+			Scene = module.default;
+		});
 
 		const stop = game.startClock();
 		return () => {
@@ -104,6 +125,14 @@
 			<p class="reserve-warning" role="status" data-testid="reserve-subsidy-status">
 				{t('reserve.subsidy')}
 			</p>
+		{/if}
+
+		{#if Scene}
+			<Scene
+				animals={game.state.animals}
+				selectedId={game.selectedId}
+				onSelect={(id) => (game.selectedId = id)}
+			/>
 		{/if}
 
 		<ReserveActions staff={game.state.staff} subsidy={game.state.subsidy} onCommand={command} />
