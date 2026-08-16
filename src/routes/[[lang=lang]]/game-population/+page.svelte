@@ -8,6 +8,7 @@
 	import type { Animal } from '$lib/config/population-game';
 	import { Check, X, RotateCcw } from 'lucide-svelte';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
+	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 
 	/**
 	 * Правила гри — у контролері; тут лишається СПОСІБ ВВЕДЕННЯ: миша, палець,
@@ -404,6 +405,10 @@
 				{#each game.slots as slotAnimal, i (i)}
 					<div
 						class="game-container"
+						class:container--filled={!!slotAnimal}
+						class:container--picked={!!slotAnimal &&
+							game.picked?.id === slotAnimal.id &&
+							!isActuallyDragging}
 						class:container--touch-over={dragOverId === `slot-${i}`}
 						data-slot-index={i}
 						ondragover={(e) => handleDragOver(e, `slot-${i}`)}
@@ -473,31 +478,11 @@
 								{/if}
 							</span>
 							{#if !isActuallyDragging && hoverSlotIndex === i}
-								<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
-									{#each game.availableAnimals as animal (animal.id)}
-										<button
-											class="mini-ghost-card"
-											class:mini-ghost-card--selected={game.picked?.id === animal.id}
-											onclick={(e) => {
-												e.stopPropagation();
-												game.moveTo(animal, 'slot', i);
-											}}
-											onkeydown={(e) =>
-												(e.key === 'Enter' || e.key === ' ') &&
-												game.moveTo(animal, 'slot', i)}
-											aria-label={formatPlain(td(animal.nameKey))}
-										>
-											<img
-												src={animal.image}
-												alt=""
-												class="mini-ghost-card__img"
-												loading="lazy"
-												width="60"
-												height="80"
-											/>
-										</button>
-									{/each}
-								</div>
+								<MiniGhostGrid
+									animals={game.availableAnimals}
+									pickedId={game.picked?.id}
+									onpick={(animal) => game.moveTo(animal, 'slot', i)}
+								/>
 							{/if}
 						{/if}
 					</div>
@@ -530,6 +515,10 @@
 							{#each game.sourceAnimals as srcAnimal, i (i)}
 								<div
 									class="game-container"
+									class:container--filled={!!srcAnimal}
+									class:container--picked={!!srcAnimal &&
+										game.picked?.id === srcAnimal.id &&
+										!isActuallyDragging}
 									class:container--touch-over={dragOverId === `source-${i}`}
 									data-source-index={i}
 									ondragover={(e) => handleDragOver(e, `source-${i}`)}
@@ -581,31 +570,11 @@
 										</div>
 									{/each}
 									{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
-										<div class="mini-ghost-grid" transition:fade={{ duration: 150 }}>
-											{#each game.availableAnimals as animal (animal.id)}
-												<button
-													class="mini-ghost-card"
-													class:mini-ghost-card--selected={game.picked?.id === animal.id}
-													onclick={(e) => {
-														e.stopPropagation();
-														game.moveTo(animal, 'source', i);
-													}}
-													onkeydown={(e) =>
-														(e.key === 'Enter' || e.key === ' ') &&
-														game.moveTo(animal, 'source', i)}
-													aria-label={formatPlain(td(animal.nameKey))}
-												>
-													<img
-														src={animal.image}
-														alt=""
-														class="mini-ghost-card__img"
-														loading="lazy"
-														width="60"
-														height="80"
-													/>
-												</button>
-											{/each}
-										</div>
+										<MiniGhostGrid
+											animals={game.availableAnimals}
+											pickedId={game.picked?.id}
+											onpick={(animal) => game.moveTo(animal, 'source', i)}
+										/>
 									{/if}
 								</div>
 							{/each}
@@ -788,6 +757,37 @@
 		min-width: 0;
 		position: relative;
 	}
+
+	/*
+	 * Увесь рух і вся об'ємність живуть ТУТ, а не на картці.
+	 *
+	 * Картка заповнює слот рівно, тож підйом, `scale` і тверда тінь виносили
+	 * її кут (14px) за скруглення слота (16px) — і назовні визирала смужка з
+	 * чужим радіусом. Обрізанням не лікується: картка літає між слотами через
+	 * `crossfade`, і кліп різав би її в польоті. Слот же крайній у своєму
+	 * ряду — йому вилазити нема з-під чого.
+	 */
+	.container--filled {
+		box-shadow:
+			0 4px 0 var(--color-bg-panel-dark),
+			var(--shadow-card);
+	}
+	.container--filled:hover {
+		transform: translateY(-2px);
+		box-shadow:
+			0 6px 0 var(--color-bg-panel-dark),
+			var(--shadow-card-hover);
+	}
+	.container--picked {
+		border-style: solid;
+		border-color: var(--color-accent);
+		transform: scale(1.05) translateY(-2px);
+		box-shadow:
+			0 0 15px var(--color-accent),
+			0 4px 0 var(--color-bg-panel-dark);
+		/* Піднятий слот мусить лягати поверх сусідів, а не під наступний. */
+		z-index: 3;
+	}
 	.container--touch-over {
 		border-color: var(--color-accent) !important;
 		background-color: var(--color-accent-shadow) !important;
@@ -815,95 +815,42 @@
 		padding: var(--space-sm);
 		background-color: var(--color-bg-card);
 		/*
-		 * Концентричне скруглення: внутрішній радіус = зовнішній МІНУС відступ.
+		 * Концентричне скруглення: внутрішній радіус = зовнішній МІНУС рамка.
+		 * З однаковим радіусом у 16px кут картки «з'їдається» сильніше за кут
+		 * слота, і той визирає з-під неї крескою: на прямих краях рамка 2px, у
+		 * кутах розростається до шести.
 		 *
-		 * Картка лежить усередині `.game-container` і зсунута на товщину його
-		 * рамки. З однаковим радіусом у 16px її кут «з'їдається» сильніше за
-		 * кут контейнера, і той визирає з-під неї крескою — уздовж прямих
-		 * країв рамка була 2px, а в кутах розросталася до шести. Виміряно
-		 * картою пікселів кута в браузері, оком це читається як «кути
-		 * випирають».
-		 *
-		 * Запасні 2px — для клона, який їздить за пальцем: він живе в <body>,
-		 * поза контейнером, і успадкувати `--slot-border` йому нема від кого.
+		 * Запасні 2px — для клона під пальцем: він живе в <body>, і
+		 * успадкувати `--slot-border` йому нема від кого.
 		 */
 		border-radius: calc(var(--radius-md) - var(--slot-border, 2px));
-		box-shadow:
-			0 4px 0 var(--color-bg-panel-dark),
-			var(--shadow-card);
+		/*
+		 * Ні `transform`, ні зовнішньої тіні — усе це на `.container--filled`.
+		 * Стереже інваріант «картка не рухається за межі свого слота».
+		 */
 		cursor: grab;
 		user-select: none;
 		position: relative;
 		transition:
-			transform var(--transition-fast),
+			background-color var(--transition-fast),
 			box-shadow var(--transition-fast),
 			opacity var(--transition-fast);
 		z-index: 2;
 		touch-action: none;
 	}
 	.game-card:hover {
-		transform: translateY(-2px);
 		background-color: var(--color-bg-card-hover);
-		box-shadow:
-			0 6px 0 var(--color-bg-panel-dark),
-			var(--shadow-card-hover);
 	}
 	.game-card:active {
 		cursor: grabbing;
 	}
+	/* Обводка всередину: назовні вибір показує слот (`.container--picked`). */
 	.card--selected {
-		box-shadow: 0 0 15px var(--color-accent) !important;
-		border: 2px solid var(--color-accent) !important;
-		transform: scale(1.05) translateY(-2px) !important;
+		box-shadow: inset 0 0 0 3px var(--color-accent) !important;
 	}
 	.card--dragging-orig {
 		opacity: 0 !important;
 		pointer-events: none;
-	}
-	.mini-ghost-grid {
-		grid-area: 1 / 1;
-		display: flex;
-		flex-direction: row;
-		gap: 4px;
-		padding: 6px;
-		justify-content: center;
-		align-items: flex-end;
-		width: 100%;
-		height: 100%;
-		z-index: 10;
-	}
-	.mini-ghost-card {
-		flex: 1;
-		max-width: 28%;
-		aspect-ratio: 3 / 4;
-		border-radius: 4px;
-		overflow: hidden;
-		background-color: var(--color-bg-card);
-		opacity: 0.9;
-		border: 1px solid rgba(255, 255, 255, 0.4);
-		transition: all var(--transition-fast);
-		display: flex;
-		flex-direction: column;
-		cursor: pointer;
-		padding: 0;
-		margin-bottom: 4px;
-	}
-	.mini-ghost-card:hover {
-		transform: scale(1.1);
-		z-index: 2;
-		border-color: var(--color-accent);
-	}
-	.mini-ghost-card__img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
-	.mini-ghost-card--selected {
-		opacity: 1;
-		border-color: var(--color-accent);
-		box-shadow: 0 0 8px var(--color-accent);
-		transform: scale(1.1);
-		z-index: 2;
 	}
 
 	.game-card__img-container {
@@ -1117,6 +1064,9 @@
 		top: 0;
 		left: 0;
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+		/* Тінь тут своя: картка її не має, а клон летить у <body>, де нема
+		   контейнера, з-під якого можна вилізти. */
+		box-shadow: 0 4px 0 var(--color-bg-panel-dark) !important;
 		/*
 		 * Скруглення тут НЕ задається: клон — це `cloneNode` картки, він несе
 		 * її ж клас і її ж радіус. Власне значення тільки розійшлося б із

@@ -43,7 +43,7 @@ const read = (f: string) => readFileSync(f, 'utf8');
 const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// Три екрани, у яких логіка живе просто в маршруті. Розбирати їх треба
 	// винесенням стану в контролери `.svelte.ts` — це окрема робота, не правка.
-	'src/routes/[[lang=lang]]/game-population/+page.svelte': 1148,
+	'src/routes/[[lang=lang]]/game-population/+page.svelte': 1086,
 	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`.
 	// Далі число має лише спадати.
 	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 438,
@@ -134,8 +134,15 @@ describe('структура проєкту', () => {
 				.replace(/<style[\s\S]*<\/style>/, '');
 
 			// `:global(...)` цілиться в чужу розмітку за визначенням — не наша справа.
+			// Коментарі теж геть: назва файлу `structure.test.ts` у поясненні
+			// інакше читається як два селектори, `.test` і `.ts`.
 			const declared = new Set(
-				[...style.replace(/:global\([^)]*\)/g, '').matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1])
+				[
+					...style
+						.replace(/\/\*[\s\S]*?\*\//g, '')
+						.replace(/:global\([^)]*\)/g, '')
+						.matchAll(/\.([a-zA-Z][\w-]*)/g)
+				].map((m) => m[1])
 			);
 
 			const used = new Set<string>();
@@ -184,6 +191,56 @@ describe('структура проєкту', () => {
 		expect(
 			bad,
 			`шлях зібраний руками — брати з resolve()/asset()/langPath():\n${bad.join('\n')}`
+		).toEqual([]);
+	});
+
+	/**
+	 * Дитина, що заповнює скругленого батька РІВНО, не сміє рухатися назовні.
+	 *
+	 * `.game-card` збігається межами з внутрішнім краєм рамки `.game-container`.
+	 * Через це підйом на наведенні, `scale` на виборі й тверда тінь «об'ємної
+	 * кнопки» виносять кут картки (радіус 14px) за скруглення слота (16px) —
+	 * і назовні визирає смужка з ЧУЖИМ радіусом. Помилку двічі повертали
+	 * різні правки, обидва рази її знаходили тільки виміром у браузері:
+	 * `svelte-check`, eslint і око на скріншоті її не бачать.
+	 *
+	 * Обрізанням (`overflow: clip`) це НЕ лікується: картка літає між слотами
+	 * через `crossfade`, і кліп різав би її в польоті. Тому все, що виходить
+	 * за межі, робить БАТЬКО — див. `.container--filled` у грі.
+	 *
+	 * Виняток — `.touch-drag-clone`: клон летить у <body>, батька зі
+	 * скругленням під ним немає, і власна тінь йому потрібна.
+	 */
+	it('картка не рухається за межі свого слота (game-population)', () => {
+		const file = 'src/routes/[[lang=lang]]/game-population/+page.svelte';
+		const style = read(file)
+			.match(/<style>([\s\S]*)<\/style>/)?.[1]
+			// Коментар перед правилом інакше приклеюється до селектора у звіті.
+			.replace(/\/\*[\s\S]*?\*\//g, '');
+		expect(style, `${file}: не знайдено блок стилів — перевірка осліпла`).toBeTruthy();
+
+		const problems: string[] = [];
+		// Сама картка і її стани — але не `.game-card__*`: діти всередині
+		// картки позиціонуються окремо (значок відповіді свідомо звисає
+		// круглим боком під нижній край, `bottom: -12px`).
+		const isCardItself = /\.game-card(?![\w-])|\.card--[\w-]+/;
+		for (const [, selector, body] of (style as string).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+			if (!isCardItself.test(selector)) continue;
+			if (selector.includes('touch-drag-clone')) continue;
+
+			if (/(^|[\s;])transform\s*:/.test(body))
+				problems.push(`${selector.trim()}: transform виносить кут за скруглення слота`);
+
+			const shadow = body.match(/(^|[\s;])box-shadow\s*:([^;]*)/)?.[2] ?? '';
+			for (const layer of shadow.split(/,(?![^()]*\))/)) {
+				if (!layer.trim() || layer.includes('inset')) continue;
+				problems.push(`${selector.trim()}: зовнішня тінь "${layer.trim()}" вилазить із слота`);
+			}
+		}
+
+		expect(
+			problems,
+			`ці ефекти належать слоту .game-container, а не картці:\n${problems.join('\n')}`
 		).toEqual([]);
 	});
 
