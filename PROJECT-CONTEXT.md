@@ -120,34 +120,19 @@
 | `git diff --exit-code` | CI, після збірки | збірка не міняє відстежуваних файлів |
 | `npm audit --audit-level=high` | CI | вразливості. Поріг `high` свідомий: на `moderate` npm пропонує відкати на кілька мажорів назад. Станом на 2026-08-16 лишаються 4 `low` |
 
-## Зображення, яких ще немає
+## Зображення
 
-Гра «Що їмо?» показує страви спільною заглушкою
-`static/images/placeholder.svg`. Це свідоме рішення: справжні зображення
-малює автор, і дорожня карта прямо забороняє агенту їх генерувати.
+Страви намальовані — п'ятнадцять файлів у `static/images/food/`, імена
+збігаються з `id` страви. Тварини — 85 фото в `static/images/animals/`.
 
-Коли вони зʼявляться, у коді міняється **один рядок** — `foodImage()` у
-`src/lib/config/feeding-game.ts`. Імена файлів мають збігатися з `id` страви:
+Спільної заглушки більше немає: вона існувала рівно доти, доки не було страв,
+і лишати її означало тримати запасний шлях, яким уже ніхто не піде.
 
-| Файл | Страва |
-|---|---|
-| `static/images/food/hay.webp` | Сіно |
-| `static/images/food/bamboo.webp` | Бамбук |
-| `static/images/food/fish.webp` | Риба |
-| `static/images/food/meat.webp` | М'ясо |
-| `static/images/food/eucalyptus.webp` | Евкаліпт |
-| `static/images/food/nuts.webp` | Горіхи |
-| `static/images/food/fruit.webp` | Фрукти |
-| `static/images/food/insects.webp` | Комахи |
-| `static/images/food/grain.webp` | Зерно |
-| `static/images/food/krill.webp` | Криль |
-| `static/images/food/chocolate.webp` | Шоколад |
-| `static/images/food/onion.webp` | Цибуля |
-| `static/images/food/bread.webp` | Хліб |
-| `static/images/food/milk.webp` | Молоко |
-| `static/images/food/avocado.webp` | Авокадо |
-
-Тварини нових зображень не потребують — беруться з наявних 85 фото.
+Наявність файлу для КОЖНОЇ страви звіряє інваріант у
+`feedingGame.svelte.test.ts`. Це не формальність: `asset()` шляхів не
+перевіряє, тож страва без файлу дає порожню картку, яка не падає ніде — ні в
+збірці, ні в тестах, — і видно її лише оком, і то якщо ця страва випала в
+раунді.
 
 ### Континенти й природні зони: місця в коді ще немає
 

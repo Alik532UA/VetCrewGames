@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { animals } from '$lib/config/population-game';
 import { BIN, correctTarget, feedingSets, foods } from '$lib/config/feeding-game';
@@ -72,6 +73,20 @@ describe('дані «Що їмо?»', () => {
 		) as string[];
 		const missing = keys.filter((key) => !(key in uk));
 		expect(missing, `ключів немає в перекладах: ${missing.join(', ')}`).toEqual([]);
+	});
+
+	/**
+	 * Файл із зображенням існує для КОЖНОЇ страви.
+	 *
+	 * `asset()` шляхи не перевіряє: страва без файлу дає порожню картку, яка не
+	 * падає ніде — ні в збірці, ні в тестах. Видно її лише оком на зібраному
+	 * сайті, і то якщо саме ця страва випала в раунді.
+	 */
+	it('у кожної страви є файл зображення', () => {
+		const missing = foods
+			.map((food) => `static/images/food/${food.id}.webp`)
+			.filter((path) => !existsSync(path));
+		expect(missing, `немає файлів: ${missing.join(', ')}`).toEqual([]);
 	});
 
 	it('id наборів і страв унікальні', () => {
