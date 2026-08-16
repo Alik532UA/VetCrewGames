@@ -55,7 +55,7 @@
 	});
 </script>
 
-<div class="game-page" class:game-page--fed={game.fed}>
+<div class="game-page">
 	{#if game.gameOver}
 		<GameOverCard
 			score={game.sessionScore}
@@ -115,18 +115,6 @@
 		display: flex;
 		justify-content: center;
 		width: 100%;
-	}
-
-	/*
-	 * На час розбору сторінка ширшає: пояснення переїжджають ЗБОКУ від тварин, у
-	 * поля, які доти простоювали. Поріг той самий, що й у дошки — 900px, і
-	 * тримати його в одному місці не вийшло: там він перемикає сітку, тут ширину
-	 * контейнера, а медіазапит не вміє посилатися на чужий.
-	 */
-	@media (min-width: 900px) {
-		.game-page--fed {
-			max-width: min(96%, 1100px);
-		}
 	}
 
 	.prompt {

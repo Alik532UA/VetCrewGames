@@ -55,11 +55,14 @@
 </button>
 
 <style>
+	/* Ширина — рівно зображення: інакше картка розтягується на комірку й підпис
+	   тягне її вбік від фото. */
 	.plated {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 2px;
+		width: 48px;
 		min-width: 0;
 		padding: 2px;
 		border: 2px solid transparent;
@@ -89,15 +92,21 @@
 	   «підшита» з боків і здавалася дрібнішою, ніж є. */
 	.plated__image {
 		width: 100%;
-		max-width: 44px;
 		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: contain;
 		border-radius: var(--radius-sm);
 	}
 
+	/*
+	 * Два рядки під підпис завжди. «Fish» уміщається в один, «Avocado» — у два,
+	 * і через це картка міняла висоту разом із зоною: після відповіді смітник
+	 * підстрибував. Порожній рядок дешевший за рух.
+	 */
 	.plated__name {
 		font-size: var(--font-size-xs);
+		line-height: 1.25;
+		min-height: 2.5em;
 		overflow-wrap: anywhere;
 	}
 </style>

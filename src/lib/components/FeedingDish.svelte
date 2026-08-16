@@ -31,14 +31,16 @@
 		picked: boolean;
 		disabled: boolean;
 		targets: QuickTarget[];
+		/** У роботі інша страва — цю треба приглушити. */
+		dimmed: boolean;
 		onpick: () => void;
 		onsend: (target: Target) => void;
 	}
 
-	let { food, picked, disabled, targets, onpick, onsend }: Props = $props();
+	let { food, picked, disabled, dimmed, targets, onpick, onsend }: Props = $props();
 </script>
 
-<div class="dish-slot" class:dish-slot--picked={picked}>
+<div class="dish-slot" class:dish-slot--picked={picked} class:dish-slot--dimmed={dimmed}>
 	<div class="dish-slot__row">
 		<button
 			type="button"
@@ -95,6 +97,15 @@
 		flex-direction: column;
 		align-items: center;
 		min-width: 0;
+		transition: opacity var(--transition-fast);
+	}
+
+	/*
+	 * Решта страв блякне, коли одна в роботі — і на дотику теж, бо там це єдина
+	 * ознака вибору: швидких кнопок на сенсорному немає.
+	 */
+	.dish-slot--dimmed {
+		opacity: 0.5;
 	}
 
 	/*
@@ -103,7 +114,10 @@
 	 * же правці.
 	 */
 	.dish-slot__row {
-		--chip: 38px;
+		--chip: 34px;
+		/* 3:4 — та сама пропорція, що в самих файлів: у квадраті морда тварини
+		   обрізалася з боків, і кнопка читалася гірше за саму зону. */
+		--chip-h: calc(var(--chip) / 3 * 4);
 		/* Наскільки кнопка налазить на картку. Решта її висить назовні. */
 		--chip-bite: 11px;
 
@@ -177,7 +191,7 @@
 		align-items: center;
 		justify-content: center;
 		width: var(--chip);
-		height: var(--chip);
+		height: var(--chip-h);
 		padding: 0;
 		overflow: hidden;
 		border: none;
@@ -209,21 +223,29 @@
 	}
 
 	.quick--bin {
-		top: calc(var(--chip-bite) - var(--chip));
+		top: calc(var(--chip-bite) - var(--chip-h));
 		left: 50%;
 		transform: translateX(-50%);
 	}
 
 	/*
+	 * Швидкі кнопки — лише там, де є справжній курсор.
+	 *
+	 * `hover: hover` замість ширини екрана: питання не в тому, скільки пікселів,
+	 * а в тому, чи є чим наводити. На сенсорному вони або не з'являлися б ніколи,
+	 * або з'являлися б на дотик — і перекривали б саму страву, по якій щойно
+	 * тицьнули.
+	 *
 	 * `:focus-within` тут і є доступ із клавіатури: `pointer-events: none` не
 	 * заважає табуляції, тож фокус доходить до прозорої кнопки й тим-таки
 	 * показує всі три.
 	 */
-	.dish-slot:hover .quick,
-	.dish-slot:focus-within .quick,
-	.dish-slot--picked .quick {
-		opacity: 1;
-		pointer-events: auto;
+	@media (hover: hover) and (pointer: fine) {
+		.dish-slot:hover .quick,
+		.dish-slot:focus-within .quick {
+			opacity: 1;
+			pointer-events: auto;
+		}
 	}
 
 	.quick:hover:not(:disabled) {
