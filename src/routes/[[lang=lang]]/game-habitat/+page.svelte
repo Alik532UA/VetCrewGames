@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { languageFromParam } from '$lib/i18n/routing';
+	import { habitatImage } from '$lib/config/habitat-game';
 	import { settings } from '$lib/services/settings.svelte';
 	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
@@ -91,7 +92,15 @@
 					{:else if game.checked && isSelected}
 						<X size={16} aria-hidden="true" />
 					{/if}
-					{@html formatFont(t(optionKey(option)))}
+					<img
+						src={habitatImage(game.mode, option)}
+						alt=""
+						class="option__image"
+						loading="lazy"
+						width="540"
+						height="720"
+					/>
+					<span class="option__label">{@html formatFont(t(optionKey(option)))}</span>
 				</button>
 			{/each}
 		</div>
@@ -224,6 +233,11 @@
 		width: 100%;
 	}
 
+	/*
+	 * Телефон: маленьке зображення ПЕРЕД текстом, рядком. Дев'ять природних зон
+	 * картками на всю ширину дали б екран заввишки в кілька прокруток, тож там
+	 * зображення лишається підказкою, а не головним.
+	 */
 	.option {
 		display: flex;
 		align-items: center;
@@ -241,6 +255,39 @@
 		font-size: var(--font-size-sm);
 		cursor: pointer;
 		transition: all var(--transition-fast);
+	}
+
+	.option__image {
+		width: 26px;
+		aspect-ratio: 3 / 4;
+		height: auto;
+		object-fit: cover;
+		border-radius: var(--radius-sm);
+		flex-shrink: 0;
+	}
+
+	.option__label {
+		min-width: 0;
+	}
+
+	/*
+	 * Комп'ютер: зображення над текстом і на всю ширину кнопки.
+	 *
+	 * Поріг 700px — там сторінка вже впирається у свою стелю 560px, тобто далі
+	 * ширшати нема куди, і колонок стає чотири. Стеля на 84px потрібна, бо при
+	 * 3:4 зображення на всю колонку (170px) було б заввишки 227, і дев'ять
+	 * варіантів дали б три ряди по 280px.
+	 */
+	@media (min-width: 700px) {
+		.option {
+			flex-direction: column;
+			gap: 4px;
+			padding: var(--space-sm) var(--space-xs);
+		}
+
+		.option__image {
+			width: min(100%, 84px);
+		}
 	}
 
 	.option--selected {

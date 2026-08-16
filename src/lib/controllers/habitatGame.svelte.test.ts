@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { animals } from '$lib/config/population-game';
 import {
@@ -15,6 +16,22 @@ const { HabitatGameController } = await import('./habitatGame.svelte');
 
 describe('дані «Де живем?»', () => {
 	const ids = new Set(animals.map((animal) => animal.id));
+
+	/**
+	 * Файл існує для КОЖНОГО континента й КОЖНОЇ зони.
+	 *
+	 * `asset()` шляхів не перевіряє, тож варіант без файлу дає порожню кнопку,
+	 * яка не падає ніде — ні в збірці, ні в тестах. Тут це ще дошкульніше, ніж
+	 * зі стравами: варіантів дев'ять на екран, і одна дірка серед них читається
+	 * як «щось не завантажилося», а не як дефект.
+	 */
+	it('у кожного континента й кожної зони є файл зображення', () => {
+		const missing = [
+			...CONTINENTS.map((id) => `static/images/continents/${id}.webp`),
+			...BIOMES.map((id) => `static/images/biomes/${id}.webp`)
+		].filter((path) => !existsSync(path));
+		expect(missing, `немає файлів: ${missing.join(', ')}`).toEqual([]);
+	});
 
 	it('перевірка жива: записи знайдено', () => {
 		expect(habitatEntries.length).toBeGreaterThan(5);

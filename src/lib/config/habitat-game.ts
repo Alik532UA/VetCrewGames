@@ -1,3 +1,4 @@
+import { asset } from '$app/paths';
 import { animals, type Animal } from './population-game';
 
 /**
@@ -34,6 +35,17 @@ export const BIOMES = [
 	'ocean',
 	'freshwater'
 ] as const;
+
+/**
+ * Зображення варіанта. Ім'я файлу збігається з ключем, каталог — із режимом.
+ *
+ * Каталог `continents` — ЛАТИНОЮ. Спочатку він приїхав із кириличною «с»
+ * (U+0441): на вигляд той самий рядок, а шлях латиною давав би 404 на
+ * GitHub Pages, і знайти це оком неможливо. Стереже інваріант «у `static/`
+ * немає не-ASCII в іменах».
+ */
+export const habitatImage = (mode: HabitatMode, option: string): string =>
+	asset(`/images/${mode === 'continents' ? 'continents' : 'biomes'}/${option}.webp`);
 
 export type Continent = (typeof CONTINENTS)[number];
 export type Biome = (typeof BIOMES)[number];
