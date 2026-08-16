@@ -27,6 +27,7 @@ export const ui = {
 	'scrollbar.standard': 'Стандартна',
 	'scrollbar.custom': 'Авторська',
 	'memory.title': 'Знайди пару',
+	'memory.card': 'Картка',
 	'memory.prompt': 'Перевертай по дві картки. Однакові лишаються відкритими.',
 	'memory.you': 'Ти',
 	'memory.rival': 'Суперник',

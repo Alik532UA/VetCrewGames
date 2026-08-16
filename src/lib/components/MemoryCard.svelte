@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { PawPrint } from 'lucide-svelte';
-	import { td, formatFont, formatPlain } from '$lib/i18n';
+	import { t, td, formatPlain } from '$lib/i18n';
 	import type { MemorySlot } from '$lib/controllers/memoryGame.svelte';
 
 	/**
@@ -9,18 +9,31 @@
 	 * Переворот — справжній, через `rotateY` на двох боках. Тому обидва боки в
 	 * розмітці ЗАВЖДИ: підміна вмісту в момент кліку виглядала б як блимання,
 	 * а не як переворот, і ніякий перехід її не врятував би.
+	 *
+	 * Підпису під зображенням немає навмисно: гра про те, щоб ЗАПАМ'ЯТАТИ, де
+	 * що лежить, а назва під картинкою перетворює її на читання.
 	 */
 	interface Props {
 		slot: MemorySlot;
 		/** Партія триває, а картку чіпати не можна: лежать уже дві. */
 		disabled: boolean;
+		/** Номер у колоді — ним називається закрита картка для читалок. */
+		position: number;
 		onflip: () => void;
 		testId: string;
 	}
 
-	let { slot, disabled, onflip, testId }: Props = $props();
+	let { slot, disabled, position, onflip, testId }: Props = $props();
 
 	const open = $derived(slot.faceUp || slot.takenBy !== null);
+
+	/*
+	 * Закрита картка називається номером, а не твариною: інакше читалка
+	 * проговорювала б відповідь, і гра для неї зникала б як гра.
+	 */
+	const label = $derived(
+		open ? formatPlain(td(slot.card.nameKey)) : `${formatPlain(t('memory.card'))} ${position}`
+	);
 </script>
 
 <button
@@ -29,7 +42,7 @@
 	class:card--open={open}
 	class:card--taken={slot.takenBy !== null}
 	disabled={disabled || open}
-	aria-label={open ? formatPlain(td(slot.card.nameKey)) : undefined}
+	aria-label={label}
 	onclick={onflip}
 	data-testid={testId}
 >
@@ -39,7 +52,6 @@
 		</span>
 		<span class="card__face card__face--front">
 			<img src={slot.card.image} alt="" class="card__image" loading="lazy" width="499" height="665" />
-			<span class="card__name">{@html formatFont(td(slot.card.nameKey))}</span>
 		</span>
 	</span>
 </button>
@@ -59,6 +71,15 @@
 
 	.card:disabled {
 		cursor: default;
+	}
+
+	/*
+	 * Зібрана пара блякне й перестає змагатися за увагу з тим, що ще закрите.
+	 * Не зникає: її місце на дошці — частина того, що гравець запам'ятовує.
+	 */
+	.card--taken {
+		opacity: 0.25;
+		transition: opacity var(--transition-normal);
 	}
 
 	.card__inner {
@@ -107,19 +128,10 @@
 		border-color: var(--color-success);
 	}
 
+	/* Зображення на всю картку: 3:4 у файлів і 3:4 у самої картки. */
 	.card__image {
 		width: 100%;
-		flex: 1;
-		min-height: 0;
+		height: 100%;
 		object-fit: cover;
-	}
-
-	.card__name {
-		width: 100%;
-		padding: 2px;
-		font-size: var(--font-size-xs);
-		text-align: center;
-		color: var(--color-text);
-		overflow-wrap: anywhere;
 	}
 </style>

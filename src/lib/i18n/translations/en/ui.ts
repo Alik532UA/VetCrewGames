@@ -27,6 +27,7 @@ export const ui = {
 	'scrollbar.standard': 'Standard',
 	'scrollbar.custom': 'Author’s',
 	'memory.title': 'Find a pair',
+	'memory.card': 'Card',
 	'memory.prompt': 'Flip two cards at a time. Matching ones stay face up.',
 	'memory.you': 'You',
 	'memory.rival': 'Rival',
