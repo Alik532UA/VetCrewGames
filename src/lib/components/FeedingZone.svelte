@@ -3,6 +3,7 @@
 	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import FeedingPlated from './FeedingPlated.svelte';
 
 	/**
 	 * Ціль, куди кладуть страву: тварина або смітник (концепція, гра 1).
@@ -16,6 +17,12 @@
 		/** Фото тварини; `null` — це смітник, і тоді малюється іконка. */
 		image?: string | null;
 		foods: Food[];
+		/**
+		 * Страви, які ще на столі. Показуються як натяк, поки зона порожня:
+		 * без нього порожня зона нічого про себе не каже, і гравець не бачить,
+		 * що сюди взагалі щось кладуть.
+		 */
+		hints?: Food[];
 		/** Страва в руках гравця: зону підсвітити, її картку показати взятою. */
 		picked: Food | null;
 		disabled: boolean;
@@ -23,6 +30,8 @@
 		onplace: () => void;
 		/** Узяти звідси — щоб перекласти в іншу зону одним рухом. */
 		onpickup: (food: Food) => void;
+		/** Покласти сюди конкретну страву просто з натяку. */
+		onhint?: (food: Food) => void;
 		/** Повернути на стіл (подвійний клік). */
 		ontakeback: (food: Food) => void;
 		testId: string;
@@ -32,10 +41,12 @@
 		labelKey,
 		image = null,
 		foods,
+		hints = [],
 		picked,
 		disabled,
 		onplace,
 		onpickup,
+		onhint,
 		ontakeback,
 		testId
 	}: Props = $props();
@@ -100,34 +111,32 @@
 	</div>
 
 	<div class="zone__plate">
+		{#if foods.length === 0 && hints.length > 0 && !disabled}
+			{#each hints as hint (hint.id)}
+				<button
+					type="button"
+					class="hint"
+					onclick={(e) => {
+						e.stopPropagation();
+						onhint?.(hint);
+					}}
+					aria-label={formatPlain(t(hint.nameKey as TranslationKey))}
+					data-testid="{testId}-hint-btn-{hint.id}"
+				>
+					<img src={hint.image} alt="" class="hint__image" loading="lazy" width="300" height="400" />
+				</button>
+			{/each}
+		{/if}
 		{#each foods as food (food.id)}
-			<button
-				type="button"
-				class="plated"
-				class:plated--picked={picked?.id === food.id}
+			<FeedingPlated
+				{food}
 				{disabled}
-				draggable={!disabled}
-				onclick={(e) => {
-					e.stopPropagation();
-					tapPlated(food);
-				}}
-				ondblclick={(e) => {
-					e.stopPropagation();
-					if (!disabled) ontakeback(food);
-				}}
-				ondragstart={(e) => {
-					if (disabled) return;
-					onpickup(food);
-					if (e.dataTransfer) {
-						e.dataTransfer.setData('text/plain', food.id);
-						e.dataTransfer.effectAllowed = 'move';
-					}
-				}}
-				data-testid="{testId}-plated-btn-{food.id}"
-			>
-				<img src={food.image} alt="" class="plated__image" loading="lazy" width="300" height="400" />
-				<span class="plated__name">{@html formatFont(t(food.nameKey as TranslationKey))}</span>
-			</button>
+				picked={picked?.id === food.id}
+				ontap={() => tapPlated(food)}
+				ontakeback={() => ontakeback(food)}
+				onpickup={() => onpickup(food)}
+				testId="{testId}-plated-btn-{food.id}"
+			/>
 		{/each}
 	</div>
 </div>
@@ -172,12 +181,15 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 2px;
-		width: 72px;
+		/* Фото — головне в зоні, тож воно бере всю ширину колонки. Стеля потрібна
+		   лише для смітника: він на всю ширину сторінки, і без неї іконка
+		   роздулася б на пів екрана. */
+		width: min(100%, 112px);
 		flex-shrink: 0;
 	}
 
 	.zone__image {
-		width: 56px;
+		width: 100%;
 		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: cover;
@@ -214,46 +226,39 @@
 		min-width: 0;
 	}
 
-	.plated {
+	/*
+	 * Натяк — та сама картка, лише напівпрозора: 25% у спокої, 75% під курсором.
+	 * Клік кладе страву сюди одразу, тобто натяк ще й найкоротший шлях.
+	 */
+	.hint {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		gap: 2px;
+		justify-content: center;
 		min-width: 0;
 		padding: 2px;
-		border: 2px solid transparent;
+		border: 1px dashed color-mix(in srgb, var(--color-accent), transparent 50%);
 		border-radius: var(--radius-sm);
 		background: transparent;
-		color: var(--color-text);
-		font: inherit;
-		cursor: grab;
+		opacity: 0.25;
+		cursor: pointer;
 		transition: all var(--transition-fast);
 	}
 
-	.plated:hover:not(:disabled) {
-		border-color: color-mix(in srgb, var(--color-accent), transparent 50%);
-		background: color-mix(in srgb, var(--color-bg-surface), transparent 40%);
-	}
-
-	.plated--picked {
+	.hint:hover,
+	.hint:focus-visible {
+		opacity: 0.75;
+		border-style: solid;
 		border-color: var(--color-accent);
-		background: color-mix(in srgb, var(--color-accent), transparent 80%);
 	}
 
-	.plated:disabled {
-		cursor: default;
-	}
-
-	.plated__image {
+	.hint__image {
 		width: 100%;
-		max-width: 44px;
+		/* Дрібніше за покладену страву: натяк не має важити стільки ж, скільки
+		   зроблений хід, — та й висоту зони він тоді з'їдає менше. */
+		max-width: 34px;
 		aspect-ratio: 1;
 		height: auto;
 		object-fit: contain;
 	}
 
-	.plated__name {
-		font-size: var(--font-size-xs);
-		overflow-wrap: anywhere;
-	}
 </style>

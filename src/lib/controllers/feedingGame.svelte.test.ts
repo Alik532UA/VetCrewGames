@@ -197,19 +197,52 @@ describe('FeedingGameController', () => {
 		expect(game.unplaced.map((f) => f.id)).toContain(food.id);
 	});
 
-	it('кнопка «Погодувати» вмикається лише коли розкладено все', () => {
+	/**
+	 * Страву, що лишилася на столі, і так рахують як викинуту. Вимагати, щоб її
+	 * фізично поклали у смітник, означало зайвий рух після вже прийнятого
+	 * рішення — саме на це й скаржилися.
+	 */
+	it('годувати можна, щойно зроблено бодай один хід', () => {
 		const game = started();
-		const [first, second, third] = game.round!.foods;
+		expect(game.canFeed, 'нічого не розкладено — годувати нема чим').toBe(false);
 
+		const [first] = game.round!.foods;
 		game.pick(first);
-		game.place(BIN);
-		game.pick(second);
-		game.place(BIN);
-		expect(game.canFeed).toBe(false);
+		game.place(game.round!.animals[0].id);
 
-		game.pick(third);
-		game.place(BIN);
+		expect(game.canFeed, 'один хід зроблено — цього досить').toBe(true);
+		expect(game.unplaced, 'решта лишається на столі').toHaveLength(2);
+	});
+
+	it('залишене на столі рахується так само, як викинуте', () => {
+		const game = started();
+		const ids = game.round!.animals.map((a) => a.id);
+		// Кладемо лише те, що комусь підходить; зайве не чіпаємо взагалі.
+		for (const food of game.round!.foods) {
+			const correct = correctTarget(food, ids);
+			if (correct === BIN) continue;
+			game.pick(food);
+			game.place(correct);
+		}
+		const leftOnTable = game.unplaced.map((f) => f.id);
+		expect(leftOnTable.length, 'у наборі є що викинути').toBeGreaterThan(0);
+
+		game.feed();
+
+		for (const id of leftOnTable) {
+			const verdict = game.verdicts.find((v) => v.food.id === id)!;
+			expect(verdict.chosen, `${id}: лишене на столі — це смітник`).toBe(BIN);
+			expect(verdict.isCorrect, `${id}: і зараховане правильно`).toBe(true);
+		}
+		expect(game.roundResults.at(-1)).toBe('correct');
+	});
+
+	it('після годування кнопка гасне', () => {
+		const game = started();
+		solve(game);
 		expect(game.canFeed).toBe(true);
+		game.feed();
+		expect(game.canFeed, 'двічі за раунд не годують').toBe(false);
 	});
 
 	it('повністю правильний раунд дає очко за кожну страву', () => {

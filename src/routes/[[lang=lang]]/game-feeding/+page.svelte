@@ -27,20 +27,29 @@
 	 */
 
 	/**
-	 * Кнопки «кому віддати» — рівно дві тварини, ліворуч і праворуч так само,
-	 * як стоять їхні зони.
+	 * Кнопки «кому віддати» стоять там, де на екрані стоять самі зони: тварини
+	 * ліворуч і праворуч від страви, смітник — по центру під нею.
 	 *
-	 * Смітника серед них немає навмисно: він і так на всю ширину під столом,
-	 * тобто вже в один клік. А третя кнопка не вміщується — страві дістається
-	 * близько 59px, і ряд із трьох (72px) наліз би на сусідів.
+	 * Смітник повернувся до трійки саме тому, що переїхав під страву: у ряд із
+	 * трьох він не вміщувався, а під нею місця стільки ж, скільки й було.
 	 */
 	const quickTargets = $derived<QuickTarget[]>(
 		game.round
-			? game.round.animals.map((animal) => ({
-					id: animal.id,
-					labelKey: animal.nameKey as TranslationKey,
-					image: animal.image
-				}))
+			? [
+					{
+						id: game.round.animals[0].id,
+						labelKey: game.round.animals[0].nameKey as TranslationKey,
+						image: game.round.animals[0].image,
+						place: 'left' as const
+					},
+					{
+						id: game.round.animals[1].id,
+						labelKey: game.round.animals[1].nameKey as TranslationKey,
+						image: game.round.animals[1].image,
+						place: 'right' as const
+					},
+					{ id: BIN, labelKey: 'feeding.bin' as TranslationKey, image: null, place: 'bottom' as const }
+				]
 			: []
 	);
 
@@ -82,6 +91,8 @@
 				labelKey={game.round.animals[0].nameKey as TranslationKey}
 				image={game.round.animals[0].image}
 				foods={game.placedAt(game.round.animals[0].id)}
+				hints={game.unplaced}
+				onhint={(food) => game.moveTo(food, game.round!.animals[0].id)}
 				picked={game.picked}
 				disabled={game.fed}
 				onplace={() => game.place(game.round!.animals[0].id)}
@@ -139,6 +150,8 @@
 				labelKey={game.round.animals[1].nameKey as TranslationKey}
 				image={game.round.animals[1].image}
 				foods={game.placedAt(game.round.animals[1].id)}
+				hints={game.unplaced}
+				onhint={(food) => game.moveTo(food, game.round!.animals[1].id)}
 				picked={game.picked}
 				disabled={game.fed}
 				onplace={() => game.place(game.round!.animals[1].id)}
@@ -168,8 +181,13 @@
 				onclick={() => game.feed()}
 				data-testid="feeding-feed-btn"
 			>
-				{@html formatFont(t(game.canFeed ? 'feeding.feed' : 'feeding.allPlaced'))}
+				{@html formatFont(t(game.canFeed ? 'feeding.feed' : 'feeding.placeSomething'))}
 			</button>
+			{#if game.canFeed && game.unplaced.length > 0}
+				<p class="leftovers text-panel text-panel--tight">
+					{@html formatFont(t('feeding.leftoversToBin'))}
+				</p>
+			{/if}
 		{:else}
 			<div class="result" transition:slide={{ duration: 300 }}>
 				<FeedingVerdicts verdicts={game.verdicts} animals={game.round.animals} />
@@ -293,6 +311,15 @@
 	.btn-primary:not(:disabled):hover {
 		transform: translateY(-2px);
 		background: var(--color-accent-hover);
+	}
+
+	/* Підказка з'являється лише коли на столі щось лишилося, тож місця під неї
+	   не резервуємо: поява внизу сторінки нічого не зсуває. */
+	.leftovers {
+		margin: 0;
+		text-align: center;
+		font-size: var(--font-size-xs);
+		color: var(--color-text-muted);
 	}
 
 	.result {
