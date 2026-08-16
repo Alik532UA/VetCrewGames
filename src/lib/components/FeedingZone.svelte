@@ -4,6 +4,7 @@
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import FeedingPlated from './FeedingPlated.svelte';
+	import FeedingHints from './FeedingHints.svelte';
 
 	/**
 	 * Ціль, куди кладуть страву: тварина або смітник (концепція, гра 1).
@@ -21,6 +22,8 @@
 		 * Страви, які ще на столі. Показуються як натяк, поки зона порожня:
 		 * без нього порожня зона нічого про себе не каже, і гравець не бачить,
 		 * що сюди взагалі щось кладуть.
+		 *
+		 * Зникають, щойно страва опиняється в руках, — див. `showHints`.
 		 */
 		hints?: Food[];
 		/** Страва в руках гравця: зону підсвітити, її картку показати взятою. */
@@ -50,6 +53,25 @@
 		ontakeback,
 		testId
 	}: Props = $props();
+
+	/**
+	 * Натяки зникають, щойно страва в руках.
+	 *
+	 * Доти вони лишалися, і зона мала ДВА значення водночас: «поклади сюди те,
+	 * що тримаєш» на всій площі — і «поклади оцю» на 12.8% площі, зайнятих
+	 * мініатюрами. Заміряно на телефоні 390×844: тримаєш «Горіхи», влучаєш у
+	 * мініатюру «Риба» — лягає риба, а горіхи мовчки випадають із рук. Дві
+	 * помилки одним дотиком, і жодна не пояснена.
+	 *
+	 * Мініатюра має сенс лише з порожніми руками: тоді вона робить рівно те, що
+	 * намальовано. З повними руками вибір уже зроблено, і пропонувати інший —
+	 * значить питати вдруге про те саме.
+	 *
+	 * Висота зони від цього не змінюється: тарілка тримає 64px, а ряд натяків
+	 * нижчий і НЕ переноситься — див. FeedingHints, де це й доводиться. Доти
+	 * переносився, і зона сіпалася на 31px щоразу, коли натяки зникали.
+	 */
+	const showHints = $derived(foods.length === 0 && hints.length > 0 && !disabled && !picked);
 
 	/**
 	 * Клік по вже покладеній страві означає різне залежно від того, чи щось у
@@ -111,21 +133,8 @@
 	</div>
 
 	<div class="zone__plate">
-		{#if foods.length === 0 && hints.length > 0 && !disabled}
-			{#each hints as hint (hint.id)}
-				<button
-					type="button"
-					class="hint"
-					onclick={(e) => {
-						e.stopPropagation();
-						onhint?.(hint);
-					}}
-					aria-label={formatPlain(t(hint.nameKey as TranslationKey))}
-					data-testid="{testId}-hint-btn-{hint.id}"
-				>
-					<img src={hint.image} alt="" class="hint__image" loading="lazy" width="300" height="400" />
-				</button>
-			{/each}
+		{#if showHints}
+			<FeedingHints foods={hints} onpick={(food) => onhint?.(food)} zoneTestId={testId} />
 		{/if}
 		{#each foods as food (food.id)}
 			<FeedingPlated
@@ -254,43 +263,6 @@
 		 * місце тут дешевше за рух.
 		 */
 		min-height: 64px;
-	}
-
-	/*
-	 * Натяк — та сама картка, лише напівпрозора: 25% у спокої, 75% під курсором.
-	 * Клік кладе страву сюди одразу, тобто натяк ще й найкоротший шлях.
-	 */
-	.hint {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-sizing: border-box;
-		width: 34px;
-		aspect-ratio: 3 / 4;
-		min-width: 0;
-		padding: 2px;
-		border: 1px dashed color-mix(in srgb, var(--color-accent), transparent 50%);
-		border-radius: var(--radius-sm);
-		background: transparent;
-		opacity: 0.25;
-		cursor: pointer;
-		transition: all var(--transition-fast);
-	}
-
-	.hint:hover,
-	.hint:focus-visible {
-		opacity: 0.75;
-		border-style: solid;
-		border-color: var(--color-accent);
-	}
-
-	/* Дрібніше за покладену страву: натяк не має важити стільки ж, скільки
-	   зроблений хід. Пропорція — на коробці, зображення просто її заповнює. */
-	.hint__image {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		border-radius: calc(var(--radius-sm) - 2px);
 	}
 
 </style>
