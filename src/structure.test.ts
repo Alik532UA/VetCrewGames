@@ -277,7 +277,9 @@ describe('структура проєкту', () => {
 		const bad: string[] = [];
 		for (const file of sources) {
 			if (isTest(file) || file.includes('/mocks/')) continue;
-			const text = read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+			const text = read(file)
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.replace(/^\s*\/\/.*$/gm, '');
 			// `${base}` у шаблонному рядку та `{base}` у атрибуті розмітки.
 			for (const m of text.matchAll(/\$\{base\}|href="\{base\}/g)) {
 				bad.push(`${file}: ${m[0]}`);
@@ -364,6 +366,62 @@ describe('структура проєкту', () => {
 		).toEqual([]);
 	});
 
+	/**
+	 * Ядро заповідника не знає ні про браузер, ні про справжній час.
+	 *
+	 * Симуляція мусить бути ЧИСТОЮ функцією від зерна й послідовності ходів:
+	 * той самий вхід — той самий світ. Один `Date.now()` десь усередині — і два
+	 * браузери в спільній партії розійдуться вже на першій хвилині. Найгірше,
+	 * що розійдуться вони тихо: обидва працюють, обидва показують правдоподібну
+	 * картину, і побачити розлад можна аж тоді, коли гравці почнуть сперечатися,
+	 * що в них на екрані.
+	 *
+	 * Це не ловиться ні `svelte-check`, ні eslint, ні тестом самої симуляції:
+	 * тест із фіксованим зерном пройде і на `Math.random()`, якщо той стоїть у
+	 * гілці, куди тест не заглянув. Тому перевірка йде по ДЖЕРЕЛАХ.
+	 *
+	 * Коментарі відрізаються навмисно: докблоки в цій самій теці пояснюють,
+	 * чому тут немає `Date.now()`, і без вирізання перевірка ловила б сама себе.
+	 */
+	it('ядро симуляції не залежить від браузера й годинника', () => {
+		const core = sources.filter((f) => f.startsWith('src/lib/reserve/'));
+		expect(core.length, 'теки src/lib/reserve/ немає — перевірка осліпла').toBeGreaterThan(0);
+
+		// Кожен — те, що робить два запуски з однакового зерна різними.
+		const FORBIDDEN = [
+			/\bMath\.random\b/,
+			/\bDate\.now\b/,
+			/\bnew Date\b/,
+			/\bperformance\.now\b/,
+			/\bcrypto\.randomUUID\b/,
+			/\b(?:window|document|localStorage|navigator)\b/
+		];
+		// Симуляція не має знати ні про UI, ні про фреймворк.
+		const FORBIDDEN_IMPORT =
+			/from\s*['"](svelte(?:\/|['"])|\$app\/|\$lib\/(?:components|services|controllers)\/)/;
+
+		const problems: string[] = [];
+		for (const file of core) {
+			const text = read(file)
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.replace(/^\s*\/\/.*$/gm, '');
+
+			for (const pattern of FORBIDDEN) {
+				const found = text.match(pattern);
+				if (found) problems.push(`${file}: ${found[0]}`);
+			}
+			// Раннер у тестах — законний виняток: він не потрапляє у збірку.
+			const imports = isTest(file) ? '' : text;
+			const badImport = imports.match(FORBIDDEN_IMPORT);
+			if (badImport) problems.push(`${file}: імпорт ${badImport[1]}`);
+		}
+
+		expect(
+			problems,
+			`через це та сама партія розгорнеться в різні світи:\n${problems.join('\n')}`
+		).toEqual([]);
+	});
+
 	// Правило «E2E не змішані з вихідним кодом» тут навмисно НЕ дублюється:
 	// `src/test-runners.test.ts` уже перевіряє сильнішу властивість — що кожен
 	// файл перевірки належить раннеру, який у проєкті справді є. Друга,
@@ -396,7 +454,9 @@ describe('структура проєкту', () => {
 
 		it('список перевищень тільки скорочується', () => {
 			const grown = measured
-				.filter(({ file, lines }) => file in OVERSIZED_ALLOWLIST && lines > OVERSIZED_ALLOWLIST[file])
+				.filter(
+					({ file, lines }) => file in OVERSIZED_ALLOWLIST && lines > OVERSIZED_ALLOWLIST[file]
+				)
 				.map(({ file, lines }) => `${file}: ${lines} > ${OVERSIZED_ALLOWLIST[file]}`);
 			expect(grown, `борг зростає, а мав лише спадати:\n${grown.join('\n')}`).toEqual([]);
 		});
