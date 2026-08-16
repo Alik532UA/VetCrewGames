@@ -133,7 +133,9 @@
 
 	.quick {
 		display: flex;
+		justify-content: center;
 		gap: 3px;
+		width: 100%;
 		opacity: 0;
 		pointer-events: none;
 		transition: opacity var(--transition-fast);
@@ -152,12 +154,21 @@
 		pointer-events: auto;
 	}
 
+	/*
+	 * Кнопки стискаються разом зі стравою й ніколи не ширші за неї. Інакше
+	 * ряд диктував би ширину страви, а в трьох колонках її й так обмаль — і
+	 * ряди сусідніх страв налазили б один на одний.
+	 *
+	 * Менші за 44px тут свідомо: це скорочення, а не єдиний шлях. Ту саму дію
+	 * робить кліком уся зона тварини, і вона на всю ширину (ACCESSIBILITY § 8).
+	 */
 	.quick__btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 22px;
-		height: 22px;
+		flex: 0 1 22px;
+		min-width: 18px;
+		aspect-ratio: 1;
 		padding: 0;
 		overflow: hidden;
 		border: 1px solid color-mix(in srgb, var(--color-accent), transparent 40%);

@@ -27,12 +27,12 @@
 	 */
 
 	/**
-	 * Кнопки «кому віддати» — рівно дві тварини, у тому ж порядку, в якому їхні
-	 * зони стоять на екрані.
+	 * Кнопки «кому віддати» — рівно дві тварини, ліворуч і праворуч так само,
+	 * як стоять їхні зони.
 	 *
-	 * Смітника серед них немає навмисно: він і так стоїть упритул до столу,
-	 * тобто вже в один клік. А третя кнопка не вміщується — на 320px страві
-	 * дістається 52px, і ряд із трьох (72px) наліз би на сусідні страви.
+	 * Смітника серед них немає навмисно: він і так на всю ширину під столом,
+	 * тобто вже в один клік. А третя кнопка не вміщується — страві дістається
+	 * від 43 до 59px залежно від розкладки, і ряд із трьох там не живе.
 	 */
 	const quickTargets = $derived<QuickTarget[]>(
 		game.round
@@ -76,20 +76,23 @@
 
 		<p class="prompt">{@html formatFont(t('feeding.prompt'))}</p>
 
-		<FeedingZone
-			labelKey={game.round.animals[0].nameKey as TranslationKey}
-			image={game.round.animals[0].image}
-			foods={game.placedAt(game.round.animals[0].id)}
-			picked={game.picked}
-			disabled={game.fed}
-			onplace={() => game.place(game.round!.animals[0].id)}
-			onpickup={(food) => game.pick(food)}
-			ontakeback={(food) => game.takeBack(food)}
-			testId="feeding-zone-top"
-		/>
+		<!--
+			Тварини по боках столу, смітник під ним. Три колонки вимагають місця,
+			тому на вузькому екрані той самий порядок стає стовпчиком — див. `.board`.
+		-->
+		<div class="board">
+			<FeedingZone
+				labelKey={game.round.animals[0].nameKey as TranslationKey}
+				image={game.round.animals[0].image}
+				foods={game.placedAt(game.round.animals[0].id)}
+				picked={game.picked}
+				disabled={game.fed}
+				onplace={() => game.place(game.round!.animals[0].id)}
+				onpickup={(food) => game.pick(food)}
+				ontakeback={(food) => game.takeBack(food)}
+				testId="feeding-zone-animal-0"
+			/>
 
-		<!-- Стіл зі стравами й смітник поруч — розкладка з концепції. -->
-		<div class="table-row">
 			<!--
 				Стіл поводиться як зона: та сама пара «клік або перетягування», той
 				самий `role="button"` поверх дітей-кнопок — див. FeedingZone.
@@ -136,28 +139,28 @@
 			</div>
 
 			<FeedingZone
-				labelKey="feeding.bin"
-				image={null}
-				foods={game.placedAt(BIN)}
+				labelKey={game.round.animals[1].nameKey as TranslationKey}
+				image={game.round.animals[1].image}
+				foods={game.placedAt(game.round.animals[1].id)}
 				picked={game.picked}
 				disabled={game.fed}
-				onplace={() => game.place(BIN)}
+				onplace={() => game.place(game.round!.animals[1].id)}
 				onpickup={(food) => game.pick(food)}
 				ontakeback={(food) => game.takeBack(food)}
-				testId="feeding-zone-bin"
+				testId="feeding-zone-animal-1"
 			/>
 		</div>
 
 		<FeedingZone
-			labelKey={game.round.animals[1].nameKey as TranslationKey}
-			image={game.round.animals[1].image}
-			foods={game.placedAt(game.round.animals[1].id)}
+			labelKey="feeding.bin"
+			image={null}
+			foods={game.placedAt(BIN)}
 			picked={game.picked}
 			disabled={game.fed}
-			onplace={() => game.place(game.round!.animals[1].id)}
+			onplace={() => game.place(BIN)}
 			onpickup={(food) => game.pick(food)}
 			ontakeback={(food) => game.takeBack(food)}
-			testId="feeding-zone-bottom"
+			testId="feeding-zone-bin"
 		/>
 
 		{#if !game.fed}
@@ -218,16 +221,33 @@
 	}
 
 	/*
-	 * Стіл і смітник в один ряд. `minmax(0, …)` на столі обовʼязковий: без
-	 * нього три страви не дають колонці стиснутися, і на вузькому екрані ряд
-	 * розпирає сторінку (FLUID-SIZING-v8 § 1).
+	 * Тварини по боках столу.
+	 *
+	 * Колонки часткові, а НЕ `auto`: зона росте разом зі стравами на тарілці,
+	 * і з трьома стравами в однієї тварини `auto` роздував її до 251px, а стіл
+	 * схлопувався до 24px. Частки тримають пропорцію незалежно від вмісту,
+	 * а нижня межа 92px — це фото плюс відступи, менше зона не має сенсу.
+	 *
+	 * Поріг 410px не з голови: саме на ньому страві лишається рівно 44px —
+	 * власний стандарт сенсорної цілі. Виміряно на зібраній сторінці: 400px
+	 * дає 43.3, 412px дає 45.0. Нижче порогу той самий порядок стає
+	 * стовпчиком — тварина, стіл, тварина, смітник.
+	 *
+	 * Це єдине місце з числом: форму самої зони перемикає не медіазапит, а
+	 * перенесення рядка всередині неї (див. `.zone__plate` у FeedingZone).
 	 */
-	.table-row {
+	.board {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--space-sm);
 		width: 100%;
 		align-items: stretch;
+	}
+
+	@media (min-width: 410px) {
+		.board {
+			grid-template-columns: minmax(92px, 1fr) minmax(0, 1.6fr) minmax(92px, 1fr);
+		}
 	}
 
 	.table {
