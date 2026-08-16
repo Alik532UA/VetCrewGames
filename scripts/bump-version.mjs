@@ -15,12 +15,22 @@ const appVersionPath = resolve(process.cwd(), 'static/app-version.json');
 
 const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 
+/**
+ * `--sync-only` — версію вже підняли руками через `npm version minor|major`.
+ *
+ * Без цього прапорця гачок додав би patch зверху, і 0.1.0 у тому самому коміті
+ * стало б 0.1.1: піднімати версію свідомо було б неможливо (§ 1.1).
+ */
+const syncOnly = process.argv.includes('--sync-only');
+
 const [major, minor, patch] = pkg.version.split('.');
 const previousVersion = pkg.version;
-const newVersion = [major, minor, String(Number(patch) + 1)].join('.');
+const newVersion = syncOnly ? pkg.version : [major, minor, String(Number(patch) + 1)].join('.');
 
-pkg.version = newVersion;
-writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, '\t')}\n`);
+if (!syncOnly) {
+	pkg.version = newVersion;
+	writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, '\t')}\n`);
+}
 
 /**
  * У файл іде РІВНО версія. `buildDate` тут був артефактом моменту збірки:
@@ -33,4 +43,8 @@ writeFileSync(appVersionPath, `${JSON.stringify({ version: `v${newVersion}` }, n
 
 // Раніше тут друкувалося `versionParts.join('.')` як «стара» версія — а масив
 // на той момент був уже змінений, тож рядок звітував «from 0.0.61 to 0.0.61».
-console.log(`[Version Bump] ${previousVersion} → ${newVersion}`);
+console.log(
+	syncOnly
+		? `[Version Bump] ${newVersion} — піднято вручну, лише синхронізую app-version.json`
+		: `[Version Bump] ${previousVersion} → ${newVersion}`
+);

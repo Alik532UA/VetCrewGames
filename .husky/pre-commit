@@ -1,2 +1,18 @@
-npm run bump
+# Підняття версії перед комітом (VERSIONING-v8 § 1.1).
+#
+# Модель — «бамп на коміт», записана в PROJECT-CONTEXT.md: один автор, деплой на
+# кожен push, номер потрібен лише щоб відрізнити свіже від несвіжого.
+#
+# Але якщо версію вже підняли руками через `npm version minor|major`, patch
+# зверху перетворив би 0.1.0 на 0.1.1 у тому самому коміті. Тому спершу
+# питаємо: чи відрізняється версія у staged `package.json` від тієї, що в HEAD.
+STAGED=$(git show :package.json 2>/dev/null | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version' 2>/dev/null || echo '')
+HEAD_V=$(git show HEAD:package.json 2>/dev/null | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version' 2>/dev/null || echo '')
+
+if [ "$STAGED" = "$HEAD_V" ]; then
+	node scripts/bump-version.mjs
+else
+	node scripts/bump-version.mjs --sync-only
+fi
+
 git add package.json static/app-version.json
