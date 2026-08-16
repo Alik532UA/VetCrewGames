@@ -46,7 +46,8 @@ export const SITE_BASE = '/VetCrewGames';
 export const LANGUAGE_ROUTES = {
 	'': '/[[lang=lang]]',
 	'game-mythbusters': '/[[lang=lang]]/game-mythbusters',
-	'game-population': '/[[lang=lang]]/game-population'
+	'game-population': '/[[lang=lang]]/game-population',
+	'game-family': '/[[lang=lang]]/game-family'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;

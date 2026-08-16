@@ -121,28 +121,18 @@ export default ts.config(
 		 * SECURITY-v8 § 5.3 — {@html} без санітизації дозволений, коли джерело не
 		 * може бути введенням відвідувача.
 		 *
-		 * Тут джерело одне: `formatFont(t(key))` і `formatFont(td(key))` — розмітка
-		 * зі статичних словників `src/lib/i18n/translations/{uk,en}.ts`. Зовнішнього
-		 * вводу в проєкті немає взагалі: жодного `<input>` для тексту, жодного
-		 * `URLSearchParams`, жодного `fetch()` — перевірено grep-ом по `src/`.
+		 * Тут воно неминуче: `formatFont()` повертає розмітку зі `<span>`, бо
+		 * шрифт inglobal не має українських «ї», «є» і «ґ». Тобто майже кожен
+		 * компонент, який показує текст зі словника, змушений його вживати.
 		 *
-		 * Виняток файловий, а не глобальний: у решті компонентів новий {@html}
-		 * тепер валить збірку.
+		 * Доти тут стояв перелік файлів. Він поганий двома речами: росте на
+		 * кожен новий компонент (і його забувають поповнити — так і сталося з
+		 * `GameOverCard`), а в дозволеному файлі дозволяє БУДЬ-ЯКИЙ `{@html}`.
+		 * Замість переліку — інваріант `src/security.test.ts`, який перевіряє не
+		 * файл, а ВИРАЗ: у `{@html}` може потрапити лише результат форматера
+		 * словника. Це строгіше за все, що вміє це правило.
 		 */
-		/*
-		 * Шаблони глоб-безпечні: квадратні дужки в них означають КЛАС СИМВОЛІВ,
-		 * тож буквальний `src/routes/[[lang=lang]]/+page.svelte` не збігається
-		 * ні з чим — і тоді вимкнення мовчки не діє на жоден файл. Знайдено
-		 * одразу після переїзду маршрутів у мовну групу: lint дав 31 помилку
-		 * там, де виняток мав бути.
-		 */
-		files: [
-			'src/lib/components/GameHeader.svelte',
-			'src/lib/components/ErrorFallback.svelte',
-			'src/routes/+error.svelte',
-			'src/routes/+layout.svelte',
-			'src/routes/**/+page.svelte'
-		],
+		files: ['src/lib/components/**/*.svelte', 'src/routes/**/*.svelte'],
 		rules: {
 			'svelte/no-at-html-tags': 'off'
 		}
@@ -166,12 +156,9 @@ export default ts.config(
 		 * який дивиться на ВСІ джерела, зокрема й на ці файли.
 		 */
 		files: [
-			'src/lib/components/GameHeader.svelte',
-			'src/lib/components/ErrorFallback.svelte',
+			'src/lib/components/**/*.svelte',
 			'src/lib/i18n/routing.ts',
-			'src/routes/+error.svelte',
-			'src/routes/+layout.svelte',
-			'src/routes/**/+page.svelte'
+			'src/routes/**/*.svelte'
 		],
 		rules: {
 			'svelte/no-navigation-without-resolve': 'off'

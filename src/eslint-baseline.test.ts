@@ -1,4 +1,5 @@
 import { ESLint } from 'eslint';
+import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -28,17 +29,36 @@ const BASELINE = [
 	'@typescript-eslint/no-explicit-any',
 	'@typescript-eslint/no-unused-vars',
 	'@typescript-eslint/ban-ts-comment',
-	'svelte/no-at-html-tags',
 	'svelte/require-each-key',
 	'svelte/valid-compile',
-	'svelte/prefer-svelte-reactivity',
-	'svelte/no-navigation-without-resolve'
+	'svelte/prefer-svelte-reactivity'
+] as const;
+
+/**
+ * Два правила свідомо ВИМКНЕНІ для шару UI, і тому їх немає у списку вище.
+ * Це не борг і не недогляд — у кожного є заміна, СТРОГІША за саме правило.
+ * Список тут, щоб «його просто прибрали зі списку» не стало тихим способом
+ * зняти гейт: наступна перевірка вимагає, щоб заміна існувала й працювала.
+ */
+const REPLACED_BY_INVARIANT = [
+	{
+		rule: 'svelte/no-at-html-tags',
+		// Правило дивиться на ФАЙЛ; інваріант — на ВИРАЗ усередині `{@html}`.
+		invariant: 'src/security.test.ts',
+		proof: 'SAFE_HTML_SOURCES'
+	},
+	{
+		rule: 'svelte/no-navigation-without-resolve',
+		// Правило не бачить `resolve()` крізь `langPath()`; інваріант ловить
+		// справжню помилку — склеювання шляху з `base` вручну.
+		invariant: 'src/structure.test.ts',
+		proof: 'base` вручну'
+	}
 ] as const;
 
 /**
  * Файл-зразок мусить бути `.svelte`: частина правил (`svelte/*`) живе лише в
  * overrides-блоці для цього розширення, і на `.ts` їх у зібраному конфігу немає.
- * Файли зі списку винятків для `svelte/no-at-html-tags` для зразка не годяться.
  */
 const SAMPLE = 'src/lib/components/RoundIndicator.svelte';
 
@@ -62,6 +82,24 @@ describe('базовий набір ESLint (CODE-QUALITY-v8 § 6.4.1)', () => {
 		// паралельним прогоном у CI типового ліміту не вистачає — файл падав
 		// з 14 пропущеними перевірками, тобто гейт червонів без порушення.
 	}, 30_000);
+
+	it.each(REPLACED_BY_INVARIANT)(
+		'$rule вимкнене — але заміна на місці й справді щось перевіряє',
+		({ rule, invariant, proof }) => {
+			// Зібраний конфіг віддає рівень числом `0`, а не рядком `'off'` — обидві
+			// форми означають те саме, і покладатися лише на одну крихко.
+			expect(
+				levelOf(rules[rule]),
+				'правило мало б бути вимкненим для шару UI'
+			).toSatisfy((level) => level === 'off' || level === 0);
+
+			// Заміна перевіряється не за фактом існування файлу, а за тим, що в
+			// ньому є та сама сутність, заради якої правило й знімали. Інакше
+			// «інваріант є» перетворилося б на порожню обіцянку.
+			const source = readFileSync(invariant, 'utf8');
+			expect(source, `${invariant} не містить «${proof}»`).toContain(proof);
+		}
+	);
 
 	it.each(BASELINE)('%s не вимкнене', (rule) => {
 		const level = levelOf(rules[rule]);

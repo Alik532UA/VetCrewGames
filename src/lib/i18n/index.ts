@@ -71,6 +71,26 @@ export const formatFont = (text: string): string => {
 	return `<span style="display: inline;">${res}</span>`;
 };
 
+/**
+ * Чисельність популяції словами: «~33 млрд», «~1,2 млн».
+ *
+ * Живе тут, а не в сторінці гри, з двох причин. Перша: це форматування ЧИСЛА
+ * під поточну мову — рівно те, чим займається i18n, і `toLocaleString` тут
+ * отримує локаль явно (I18N-v8 § 4.3). Друга: результат іде в `{@html}`, а
+ * інваріант у `src/security.test.ts` вимагає, щоб туди потрапляв лише
+ * результат форматерів словника — page-локальна функція під це не підпадала
+ * і робила перевірку слабшою.
+ */
+export const formatPopulation = (value: number): string => {
+	const locale = settings.locale;
+	if (value >= 1_000_000_000_000)
+		return formatFont(`~${value / 1_000_000_000_000} ${t('unit.trillion')}`);
+	if (value >= 1_000_000_000) return formatFont(`~${value / 1_000_000_000} ${t('unit.billion')}`);
+	if (value >= 1_000_000) return formatFont(`~${value / 1_000_000} ${t('unit.million')}`);
+	if (value >= 1_000) return formatFont(`~${value / 1_000} ${t('unit.thousand')}`);
+	return formatFont(`~${value.toLocaleString(locale)}`);
+};
+
 export const formatPlain = (text: string): string => {
 	if (settings.font !== 'inglobal') return text;
 	return text.replace(/і/g, 'i').replace(/І/g, 'I');

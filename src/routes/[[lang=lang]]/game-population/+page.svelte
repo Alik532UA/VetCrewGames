@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { fade, slide } from 'svelte/transition';
-	import { t, td, formatFont, formatPlain } from '$lib/i18n/index';
+	import { t, td, formatFont, formatPlain, formatPopulation } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
 	import { PopulationGameController, type Place } from '$lib/controllers/populationGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
@@ -112,16 +112,6 @@
 	}
 
 	const [send, receive] = createCrossfade();
-
-	function formatPopulationHtml(num: number): string {
-		const locale = settings.locale;
-		if (num >= 1_000_000_000_000)
-			return formatFont(`~${num / 1_000_000_000_000} ${t('unit.trillion')}`);
-		if (num >= 1_000_000_000) return formatFont(`~${num / 1_000_000_000} ${t('unit.billion')}`);
-		if (num >= 1_000_000) return formatFont(`~${num / 1_000_000} ${t('unit.million')}`);
-		if (num >= 1_000) return formatFont(`~${num / 1_000} ${t('unit.thousand')}`);
-		return formatFont(`~${num.toLocaleString(locale)}`);
-	}
 
 	/** Хід зроблено — візуальний стан перетягування знімається тут, не в правилах. */
 	function afterDrop(moved: boolean) {
@@ -460,7 +450,7 @@
 										height="400"
 									/>
 									{#if game.checked}<div class="game-card__pop-overlay">
-											{@html formatPopulationHtml(animal.population)}
+											{@html formatPopulation(animal.population)}
 										</div>{/if}
 								</div>
 								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
@@ -644,7 +634,7 @@
 										<span class="result-card__name-bold"
 											>{@html formatFont(td(animal.nameKey))}</span
 										><span class="result-card__stat"
-											>{@html formatPopulationHtml(animal.population)}</span
+											>{@html formatPopulation(animal.population)}</span
 										>
 									</div>
 									<div class="result-card__divider"></div>

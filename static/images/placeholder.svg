@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" role="img" aria-hidden="true">
+	<!--
+		Спільна заглушка для зображень, яких ще немає. Справжні картинки
+		додаються автором окремо; перелік того, що саме треба намалювати, —
+		у PROJECT-CONTEXT.md, розділ «Зображення, яких ще немає».
+
+		Без кольорів теми: заглушка має бути видно однаково в усіх чотирьох, а
+		`currentColor` тут ні до чого — це `<img>`, а не інлайновий SVG.
+	-->
+	<rect width="300" height="400" rx="16" fill="#8a8a8a" fill-opacity="0.25" />
+	<rect
+		x="8"
+		y="8"
+		width="284"
+		height="384"
+		rx="12"
+		fill="none"
+		stroke="#8a8a8a"
+		stroke-width="3"
+		stroke-dasharray="12 10"
+		stroke-opacity="0.7"
+	/>
+	<g fill="none" stroke="#8a8a8a" stroke-opacity="0.8" stroke-width="10" stroke-linecap="round">
+		<circle cx="150" cy="168" r="42" />
+		<path d="M150 232v34" />
+	</g>
+	<circle cx="150" cy="168" r="8" fill="#8a8a8a" fill-opacity="0.8" />
+</svg>
