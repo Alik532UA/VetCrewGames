@@ -6,16 +6,21 @@ import type { TranslationKey } from '$lib/i18n/translations/uk';
 export type Theme = 'dark' | 'light-green' | 'winter' | 'orange-purple';
 export type Locale = 'uk' | 'en';
 export type Font = 'inglobal' | 'e-ukraine';
+/** Яку смугу прокрутки малювати: системну чи власну (SCROLLBAR-v8 § 2.2). */
+export type ScrollbarMode = 'standard' | 'custom';
 
 const THEMES: readonly Theme[] = ['dark', 'light-green', 'winter', 'orange-purple'];
 const LOCALES: readonly Locale[] = ['uk', 'en'];
 const FONTS: readonly Font[] = ['inglobal', 'e-ukraine'];
+const SCROLLBAR_MODES: readonly ScrollbarMode[] = ['standard', 'custom'];
 
 const DARK_SCHEME_THEMES: readonly Theme[] = ['dark', 'orange-purple'];
 
 const isTheme = (value: string | null): value is Theme => THEMES.includes(value as Theme);
 const isLocale = (value: string | null): value is Locale => LOCALES.includes(value as Locale);
 const isFont = (value: string | null): value is Font => FONTS.includes(value as Font);
+const isScrollbarMode = (value: string | null): value is ScrollbarMode =>
+	SCROLLBAR_MODES.includes(value as ScrollbarMode);
 
 /**
  * Налаштування застосунку: тема, мова, шрифт, наскрізний рахунок.
@@ -41,6 +46,12 @@ class Settings {
 	theme = $state<Theme>('dark');
 	locale = $state<Locale>('uk');
 	font = $state<Font>('inglobal');
+	/*
+	 * SYNC: значення за замовчуванням і ключ сховища продубльовані в інлайн-скрипті
+	 * `src/app.html`. Розходження видно як зміну вигляду смуги під час гідрації —
+	 * тобто рівно те мигання, заради якого той скрипт і існує (SCROLLBAR-v8 § 2.2).
+	 */
+	scrollbarMode = $state<ScrollbarMode>('custom');
 	score = $state<number>(0);
 	headerTitleKey = $state<TranslationKey | null>(null);
 
@@ -68,6 +79,9 @@ class Settings {
 		// Збережений вибір застосовується лише на голому шляху — і не тут, а
 		// навігацією, бо змінити треба адресу, а не тільки текст (I18N-v8 § 3.3).
 		this.#applyLocale();
+
+		const savedScrollbar = storage.get('scrollbarMode');
+		if (isScrollbarMode(savedScrollbar)) this.scrollbarMode = savedScrollbar;
 
 		const savedFont = storage.get('font');
 		if (isFont(savedFont)) this.font = savedFont;
@@ -164,6 +178,11 @@ class Settings {
 	savedLocale(): Locale | null {
 		const saved = storage.get('locale');
 		return isLocale(saved) ? saved : null;
+	}
+
+	setScrollbarMode(mode: ScrollbarMode): void {
+		this.scrollbarMode = mode;
+		storage.set('scrollbarMode', mode);
 	}
 
 	setFont(font: Font): void {

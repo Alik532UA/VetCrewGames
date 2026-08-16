@@ -135,6 +135,21 @@ for (const file of htmlFiles) {
 			fail(`${where}: інлайн-скрипт не покритий політикою — бракує '${hash}'`);
 	}
 
+	/*
+	 * SCROLLBAR-v8 § 8.3: правило приховування нативної смуги мусить стояти в
+	 * САМОМУ <head>, а не у файлі, на який <head> посилається.
+	 *
+	 * Клас на першому кадрі без правила на першому кадрі не робить нічого. У
+	 * продакшн-збірці CSS приходить блокувальним <link> і встигає, а на
+	 * dev-сервері бандл інжектиться через JavaScript — і системна смуга блимає
+	 * й зникає. Симптом виглядає так, ніби не спрацював скрипт; скрипт справний.
+	 */
+	if (!isFallback) {
+		const head = html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? '';
+		if (!/<style>[\s\S]*has-custom-scrollbar[\s\S]*?<\/style>/.test(head))
+			fail(`${where}: правила has-custom-scrollbar немає в самому <head> — воно запізниться`);
+	}
+
 	// SECURITY-v8 § 6.3: мета-політика діє лише на те, що йде ПІСЛЯ неї.
 	const metaAt = html.indexOf(cspMeta[0]);
 	const firstInlineAt = html.indexOf('<script>');

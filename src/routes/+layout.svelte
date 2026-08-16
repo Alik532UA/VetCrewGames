@@ -4,6 +4,9 @@
 	import { t, formatPlain } from '$lib/i18n/index';
 	import { logService } from '$lib/services/logService.svelte';
 	import { settings } from '$lib/services/settings.svelte';
+	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
+	import PageScrollbar from '$lib/components/PageScrollbar.svelte';
+	import ScrollbarContextMenu from '$lib/components/ScrollbarContextMenu.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import ErrorFallback from '$lib/components/ErrorFallback.svelte';
@@ -110,6 +113,20 @@
 		}
 	});
 
+	/**
+	 * Клас, що ховає нативну смугу, має рівно ОДНОГО власника — цей ефект.
+	 *
+	 * Якби його ставили й знімали самі малювальники, перемикання режиму давало б
+	 * гонку: новий компонент клас додає, а прибиральник старого спрацьовує після
+	 * нього й одразу знімає. На екрані видно дві смуги (SCROLLBAR-v8 § 2.3).
+	 *
+	 * SYNC: ті самі умови продубльовані в інлайн-скрипті `src/app.html` — інакше
+	 * ніяк, скрипт першого кадру не може імпортувати контролер.
+	 */
+	$effect(() => {
+		document.documentElement.classList.toggle('has-custom-scrollbar', scrollbar.hidesNative);
+	});
+
 	onMount(() => {
 		// Підписка на системну тему. `settings` — module-level singleton, тож
 		// $effect у ньому недоступний (effect_orphan), і життєвий цикл підписки
@@ -200,6 +217,7 @@
 		{#key page.url.pathname}
 			<div
 				class="page-transition-wrapper"
+				use:scrollbar.register
 				in:fly={{ x: 300 * transitionDirection, duration: 400, delay: 400 }}
 				out:fly={{ x: -300 * transitionDirection, duration: 400 }}
 			>
@@ -219,6 +237,12 @@
 </div>
 
 <div class="app-version text-panel text-panel--tight" data-testid="app-version-value">{appVersion}</div>
+
+<PageScrollbar />
+
+<!-- Меню в корені: після перемикання на системну смуга зникає — разом із меню,
+     якби воно було всередині неї. -->
+<ScrollbarContextMenu />
 
 <LogCopyButton />
 

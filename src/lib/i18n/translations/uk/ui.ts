@@ -19,6 +19,11 @@ export const ui = {
 	// Common
 	'common.skipLink': 'Перейти до основного вмісту',
 	'common.check': 'Перевірити',
+	// Підписи задано SCROLLBAR-v8 § 2.2.1, щоб два сайти на цьому пакеті
+	// називали одне й те саме однаково.
+	'scrollbar.title': 'Смуга прокрутки',
+	'scrollbar.standard': 'Стандартна',
+	'scrollbar.custom': 'Авторська',
 	'common.playAgain': 'Грати знову',
 	'common.next': 'Далі',
 	'common.back': 'Назад',

@@ -26,6 +26,24 @@
 			rel="stylesheet"
 		/>
 		<meta name="color-scheme" content="light dark" />
+		<!--
+			Правило приховування стоїть ТУТ, а не в загальному файлі стилів.
+			Клас на першому кадрі без правила на першому кадрі не робить нічого, а
+			на dev-сервері бандл приходить через JavaScript і запізнюється — системна
+			смуга встигає блимнути й зникнути (SCROLLBAR-v8 § 8.3).
+
+			Ховається смуга ПРОКРУТНИКА, а не документа: сторінка тут не
+			прокручується, прокручується `.page-transition-wrapper` усередині.
+		-->
+		<style>
+			html.has-custom-scrollbar .page-transition-wrapper {
+				scrollbar-width: none;
+			}
+
+			html.has-custom-scrollbar .page-transition-wrapper::-webkit-scrollbar {
+				display: none;
+			}
+		</style>
 		%sveltekit.head%
 		<!--
 			Скрипт стоїть ПІСЛЯ %sveltekit.head% навмисно (SECURITY-v8 § 6.3).
@@ -58,6 +76,18 @@
 				let meta = document.querySelector('meta[name="color-scheme"]');
 				const isDark = theme === 'dark' || theme === 'orange-purple';
 				if (meta) meta.setAttribute('content', isDark ? 'dark' : 'light dark');
+			} catch (e) {}
+			// SYNC: умови мусять збігатися з `controllers/scrollbar.svelte.ts` і
+			// значенням за замовчуванням у `services/settings.svelte.ts`. Скрипт
+			// першого кадру не може імпортувати їх, тож логіка неминуче існує у двох
+			// місцях; розійдуться вони мовчки — як стрибок вигляду смуги після
+			// гідрації (SCROLLBAR-v8 § 8.2). Звіряє їх `src/scrollbar.test.ts`.
+			try {
+				const mode = localStorage.getItem('vetcrewgames_scrollbarMode') || 'custom';
+				const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+				if (fine && mode === 'custom') {
+					document.documentElement.classList.add('has-custom-scrollbar');
+				}
 			} catch (e) {}
 		</script>
 	</head>
