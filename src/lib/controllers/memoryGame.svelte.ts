@@ -15,6 +15,9 @@ import type { TranslationKey } from '$lib/i18n/translations/uk';
  *    самий виклик може прийти й з мережі;
  *  * колода будується із ЗЕРНА, тож усім учасникам досить надіслати одне
  *    число замість усієї розкладки;
+ *  * партію описує ОДИН обʼєкт — зерно, гравці, кількість пар. Це рівно те, що
+ *    колись надішле кімната; розмір колоди вирішує партія, а не пристрій, бо
+ *    інакше двоє учасників розклали б різні колоди з того самого зерна;
  *  * приховування невдалої пари — окремий перехід (`resolvePeek()`), а не
  *    таймер усередині. Хто його викличе — інтерфейс чи сервер, — правилам
  *    байдуже, а тести обходяться без підробленого часу.
@@ -41,10 +44,25 @@ export interface MemorySlot {
 	takenBy: string | null;
 }
 
+/** Опис партії: усе, про що учасники мусять домовитися перед роздачею. */
+export interface MemoryParty {
+	/** Зерно колоди. Однакове в усіх — однакова розкладка. */
+	seed: number;
+	/** Скільки пар роздати. За замовчуванням — те, з чим створили контролер. */
+	pairs?: number;
+	/** Хто грає. Соло — це список із одного. */
+	players?: MemoryPlayer[];
+}
+
 const SOLO_PLAYER: MemoryPlayer = { id: 'you', nameKey: 'memory.you', score: 0, local: true };
 
 export class MemoryGameController {
-	readonly pairs: number;
+	/**
+	 * Не `readonly`: розмір колоди задає партія, і на телефоні він менший, ніж
+	 * на комп'ютері. Вирішується один раз, у `start()`, — під час гри мінятися
+	 * не може, інакше поворот екрана перероздав би колоду посеред ходу.
+	 */
+	pairs = $state(MEMORY_PAIRS);
 
 	slots = $state<MemorySlot[]>([]);
 	players = $state<MemoryPlayer[]>([]);
@@ -55,10 +73,6 @@ export class MemoryGameController {
 
 	/** Індекси відкритих зараз карток: нуль, один або два. */
 	#peek: number[] = $state([]);
-
-	constructor(pairs: number = MEMORY_PAIRS) {
-		this.pairs = pairs;
-	}
 
 	get current(): MemoryPlayer {
 		return this.players[this.currentPlayerIndex];
@@ -74,11 +88,12 @@ export class MemoryGameController {
 	localScore = $derived(this.players.find((player) => player.local)?.score ?? 0);
 
 	/**
-	 * Почати партію. `seed` задають ззовні, коли партія спільна: тоді в усіх
-	 * учасників однакова розкладка.
+	 * Почати партію за її описом. Один обʼєкт, а не три аргументи: це те саме,
+	 * що колись прийде з мережі одним повідомленням.
 	 */
-	start(seed: number, players: MemoryPlayer[] = [{ ...SOLO_PLAYER }]): void {
-		this.slots = buildDeck(seed, this.pairs).map((card) => ({
+	start({ seed, pairs = this.pairs, players = [{ ...SOLO_PLAYER }] }: MemoryParty): void {
+		this.pairs = pairs;
+		this.slots = buildDeck(seed, pairs).map((card) => ({
 			card,
 			faceUp: false,
 			takenBy: null

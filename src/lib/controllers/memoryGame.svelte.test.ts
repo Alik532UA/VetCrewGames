@@ -1,6 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { animals } from '$lib/config/population-game';
-import { buildDeck, MEMORY_PAIRS } from '$lib/config/memory-game';
+import {
+	buildDeck,
+	MEMORY_PAIRS,
+	MEMORY_PAIRS_COMPACT,
+	pairsForViewport
+} from '$lib/config/memory-game';
 
 const settingsMock = { addScore: vi.fn() };
 vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
@@ -38,6 +43,26 @@ describe('колода «Знайди пару»', () => {
 		expect(ids(42)).not.toBe(ids(43));
 	});
 
+	/**
+	 * Не тавтологія: перевіряється саме ВІДПОВІДНІСТЬ порогу й розміру колоди.
+	 * Розійшовшись, вони дають сітку в чотири колонки з чотирнадцятьма парами —
+	 * сім рядів, під які місця не рахували, і партію доводиться гортати.
+	 */
+	it('вузький екран дає меншу колоду, широкий — повну', () => {
+		const stub = (matches: boolean) =>
+			vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query }));
+
+		stub(true);
+		expect(pairsForViewport()).toBe(MEMORY_PAIRS_COMPACT);
+		stub(false);
+		expect(pairsForViewport()).toBe(MEMORY_PAIRS);
+	});
+
+	it('менша колода лягає повними рядами по чотири', () => {
+		expect(MEMORY_PAIRS_COMPACT * 2, 'інакше останній ряд недомальований').toBe(20);
+		expect((MEMORY_PAIRS_COMPACT * 2) % 4).toBe(0);
+	});
+
 	it('колода перемішана, а не зібрана парами поспіль', () => {
 		// Без тасування сусідні картки були б однією парою. Перевіряємо саме це,
 		// а не «випадковість»: її тест довести не може.
@@ -49,12 +74,16 @@ describe('колода «Знайди пару»', () => {
 	});
 });
 
+// `matchMedia` підмінює лише перевірка порогу — решті він не потрібен, і
+// лишати підміну після неї означало б, що наступний тест бачить чужий екран.
+afterEach(() => vi.unstubAllGlobals());
+
 describe('MemoryGameController', () => {
 	beforeEach(() => settingsMock.addScore.mockReset());
 
 	const started = (seed = 1) => {
 		const game = new MemoryGameController();
-		game.start(seed);
+		game.start({ seed });
 		return game;
 	};
 
@@ -78,6 +107,33 @@ describe('MemoryGameController', () => {
 		expect(game.takenPairs).toBe(0);
 		expect(game.moves).toBe(0);
 		expect(game.gameOver).toBe(false);
+	});
+
+	/**
+	 * Розмір колоди належить ПАРТІЇ, а не пристрою. На телефоні він менший, і
+	 * без цього двоє учасників розклали б із того самого зерна різні колоди —
+	 * тобто спільна гра розсипалася б там, де вона й задумана: у синхронності.
+	 */
+	it('кількість пар задає партія', () => {
+		const game = new MemoryGameController();
+		game.start({ seed: 1, pairs: 10 });
+
+		expect(game.pairs).toBe(10);
+		expect(game.slots).toHaveLength(20);
+		expect(new Set(game.slots.map((slot) => slot.card.pairKey)).size).toBe(10);
+	});
+
+	it('менша колода закінчується на своїй кількості пар, а не на типовій', () => {
+		const game = new MemoryGameController();
+		game.start({ seed: 2, pairs: 10 });
+
+		for (const key of [...new Set(game.slots.map((slot) => slot.card.pairKey))]) {
+			const [a, b] = game.slots.flatMap((slot, i) => (slot.card.pairKey === key ? [i] : []));
+			game.flip(a);
+			game.flip(b);
+		}
+		expect(game.takenPairs).toBe(10);
+		expect(game.gameOver, 'партія на десять пар мусить завершитися на десятій').toBe(true);
 	});
 
 	it('соло-партія — це список із одного гравця', () => {
@@ -150,10 +206,13 @@ describe('MemoryGameController', () => {
 
 	it('пара, зібрана третім кліком, зараховується тому, чий тепер хід', () => {
 		const game = new MemoryGameController();
-		game.start(11, [
-			{ id: 'a', nameKey: 'memory.you', score: 0, local: true },
-			{ id: 'b', nameKey: 'memory.rival', score: 0, local: false }
-		]);
+		game.start({
+			seed: 11,
+			players: [
+				{ id: 'a', nameKey: 'memory.you', score: 0, local: true },
+				{ id: 'b', nameKey: 'memory.rival', score: 0, local: false }
+			]
+		});
 
 		const [x, y] = mismatchIndexes(game);
 		game.flip(x);
@@ -191,10 +250,13 @@ describe('MemoryGameController', () => {
 	 */
 	it('у спільній партії промах передає хід, а збіг — ні', () => {
 		const game = new MemoryGameController();
-		game.start(3, [
-			{ id: 'a', nameKey: 'memory.you', score: 0, local: true },
-			{ id: 'b', nameKey: 'memory.rival', score: 0, local: false }
-		]);
+		game.start({
+			seed: 3,
+			players: [
+				{ id: 'a', nameKey: 'memory.you', score: 0, local: true },
+				{ id: 'b', nameKey: 'memory.rival', score: 0, local: false }
+			]
+		});
 
 		const [x, y] = mismatchIndexes(game);
 		game.flip(x);

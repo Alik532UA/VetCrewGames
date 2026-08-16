@@ -5,6 +5,7 @@
 	import { languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { MemoryGameController } from '$lib/controllers/memoryGame.svelte';
+	import { pairsForViewport } from '$lib/config/memory-game';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
 
@@ -25,6 +26,15 @@
 
 	/** Зерно колоди. Для соло воно випадкове; спільній партії його дасть кімната. */
 	const freshSeed = () => Math.floor(Math.random() * 2 ** 31);
+
+	/**
+	 * Нова партія: зерно випадкове, розмір колоди — за екраном.
+	 *
+	 * Розмір питається САМЕ тут, а не при створенні контролера: контролер
+	 * створюється й під час prerender, де `matchMedia` не існує. І питається
+	 * один раз на партію — поворот екрана посеред гри колоду не перероздає.
+	 */
+	const newParty = () => ({ seed: freshSeed(), pairs: pairsForViewport() });
 
 	function flip(index: number) {
 		if (!game.flip(index)) return;
@@ -52,11 +62,11 @@
 	function playAgain() {
 		if (hideTimer) clearTimeout(hideTimer);
 		hideTimer = null;
-		game.start(freshSeed());
+		game.start(newParty());
 	}
 
 	onMount(() => {
-		game.start(freshSeed());
+		game.start(newParty());
 		settings.setHeaderTitle('memory.title');
 		return () => settings.setHeaderTitle(null);
 	});
@@ -188,14 +198,27 @@
 	}
 
 	/*
-	 * Нижче 560px сім колонок дають картку в 50px: сенсорну ціль вона ще
-	 * проходить, а от упізнати на ній тварину вже не виходить — а гра саме про
-	 * це. Чотири колонки й сім рядів, зате картка вдвічі більша.
+	 * Телефон: чотири колонки й п'ять рядів.
+	 *
+	 * Сім колонок тут дали б картку в 50px — сенсорну ціль вона ще проходить, а
+	 * от упізнати на ній тварину вже ні, і гра саме про це. Але й чотирнадцять
+	 * пар у чотири колонки не годяться: це сім рядів, заміряно 815px колоди при
+	 * 610 доступних, тобто партію доводиться гортати. Тому на телефоні колода
+	 * менша — десять пар (див. `MEMORY_PAIRS_COMPACT`), і вони лягають рівно в
+	 * 4×5.
+	 *
+	 * `width` тут НЕ перекривається: працює та сама формула з `min()`, що й на
+	 * широкому екрані. На 390×844 вирішує ширина (351px, картка 85×113), на
+	 * низькому 375×667 — висота (270px, картка 64×85). Тобто на короткому екрані
+	 * картки меншають самі, замість того щоб виїхати за край.
+	 *
+	 * SYNC: 559px — той самий поріг, що й у `pairsForViewport()`. Медіазапит не
+	 * вміє спитати JS, тож число неминуче у двох місцях.
 	 */
 	@media (max-width: 559px) {
 		.deck {
 			--cols: 4;
-			width: 90vw;
+			--rows: 5;
 		}
 	}
 
