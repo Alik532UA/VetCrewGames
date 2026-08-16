@@ -91,7 +91,15 @@
 	.option {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		/*
+		 * Вміст притиснутий ЛІВОРУЧ, а не по центру кнопки.
+		 *
+		 * Підписи різної довжини — «Гори» й «Ліс помірної зони» — по центру
+		 * лишають зображення в різних місцях кожного рядка, і око щоразу шукає
+		 * його наново. Спільний лівий край дає стовпчик значків, уздовж якого
+		 * погляд просто йде вниз.
+		 */
+		justify-content: flex-start;
 		gap: var(--space-xs);
 		/* 44px — власний стандарт проєкту для сенсорних цілей (ACCESSIBILITY § 8). */
 		min-height: 44px;
@@ -118,6 +126,8 @@
 
 	.option__label {
 		min-width: 0;
+		/* Довгий підпис переноситься — і другий рядок теж починається зліва. */
+		text-align: left;
 	}
 
 	/*
@@ -131,8 +141,18 @@
 	@media (min-width: 700px) {
 		.option {
 			flex-direction: column;
+			/*
+				Тут зображення стоїть НАД текстом, тобто ряду, уздовж якого йде
+				погляд, більше немає — і центр знову доречний. `justify-content`
+				у стовпчику керує вже вертикаллю.
+			*/
+			justify-content: center;
 			gap: 4px;
 			padding: var(--space-sm) var(--space-xs);
+		}
+
+		.option__label {
+			text-align: center;
 		}
 
 		.option__image {
