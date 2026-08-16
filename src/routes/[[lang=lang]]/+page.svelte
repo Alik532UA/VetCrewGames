@@ -20,7 +20,8 @@
 		{ key: 'menu.game.population', route: 'game-population' },
 		{ key: 'menu.game.habitat', route: 'game-habitat' },
 		{ key: 'menu.game.family', route: 'game-family' },
-		{ key: 'menu.game.feeding', route: 'game-feeding' }
+		{ key: 'menu.game.feeding', route: 'game-feeding' },
+		{ key: 'menu.game.memory', route: 'game-memory' }
 	];
 
 	// Мова береться з адреси: перехід у гру має лишати її, а не скидати на

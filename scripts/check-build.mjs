@@ -31,12 +31,14 @@ const EXPECTED_PAGES = [
 	['game-family/index.html', 'uk'],
 	['game-habitat/index.html', 'uk'],
 	['game-feeding/index.html', 'uk'],
+	['game-memory/index.html', 'uk'],
 	['en/index.html', 'en'],
 	['en/game-mythbusters/index.html', 'en'],
 	['en/game-population/index.html', 'en'],
 	['en/game-family/index.html', 'en'],
 	['en/game-habitat/index.html', 'en'],
-	['en/game-feeding/index.html', 'en']
+	['en/game-feeding/index.html', 'en'],
+	['en/game-memory/index.html', 'en']
 ];
 
 /** PERFORMANCE-v8 § 1: бюджет initial JS на маршрут. */
