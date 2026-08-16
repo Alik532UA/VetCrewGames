@@ -18,7 +18,7 @@
 	const GAMES: MenuGame[] = [
 		{ key: 'menu.game.mythbusters', route: 'game-mythbusters' },
 		{ key: 'menu.game.population', route: 'game-population' },
-		{ key: 'menu.game.habitat', route: null },
+		{ key: 'menu.game.habitat', route: 'game-habitat' },
 		{ key: 'menu.game.family', route: 'game-family' },
 		{ key: 'menu.game.feeding', route: null }
 	];
