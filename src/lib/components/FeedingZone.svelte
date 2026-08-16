@@ -94,6 +94,7 @@
 	class="zone"
 	class:zone--active={picked !== null && !disabled}
 	class:zone--bin={image === null}
+	class:zone--done={disabled}
 	role="button"
 	tabindex="0"
 	aria-label={formatPlain(t(labelKey))}
@@ -215,6 +216,22 @@
 		object-fit: cover;
 		border-radius: var(--radius-sm);
 		border: 2px solid var(--color-bg-panel-dark);
+	}
+
+	/*
+	 * Телефон, стан розбору: фото меншає до 100px.
+	 *
+	 * Після відповіді фото вже нічого не вирішує — воно лише нагадує, про кого
+	 * мова, і поруч із ним стоїть розбір, заради якого все й затівалося. У повний
+	 * зріст воно давало зону на 379px, тобто пів екрана під одну картинку;
+	 * зі стелею в 100px рядок «тварина + розбір» стає вдвічі нижчим.
+	 *
+	 * `disabled` тут і означає «раунд зіграно»: зони вимикають саме тоді.
+	 */
+	@media (max-width: 639px) {
+		.zone--done .zone__image {
+			width: min(100%, 100px);
+		}
 	}
 
 	.zone__icon {

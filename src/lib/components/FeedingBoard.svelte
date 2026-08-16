@@ -99,29 +99,35 @@
 		{/if}
 	</div>
 
-	<FeedingZone
-		labelKey="feeding.bin"
-		image={null}
-		foods={game.placedAt(BIN)}
-		hints={game.unplaced}
-		onhint={(food) => game.moveTo(food, BIN)}
-		picked={game.picked}
-		disabled={game.fed}
-		onplace={() => game.place(BIN)}
-		onpickup={(food) => game.pick(food)}
-		ontakeback={(food) => game.takeBack(food)}
-		testId="feeding-zone-bin"
-	/>
-
-	{#if game.fed}
-		<FeedingVerdicts
-			verdicts={verdictsFor(BIN)}
-			animals={round.animals}
-			label={formatPlain(t('feeding.bin'))}
-			reveal
-			testId="feeding-verdicts-bin-list"
+	<!--
+		Смітник і його розбір — одна пара, тож і обгортка в них спільна: на
+		телефоні вони стають рядом, як тварина з розбором вище.
+	-->
+	<div class="bin-row" class:bin-row--fed={game.fed}>
+		<FeedingZone
+			labelKey="feeding.bin"
+			image={null}
+			foods={game.placedAt(BIN)}
+			hints={game.unplaced}
+			onhint={(food) => game.moveTo(food, BIN)}
+			picked={game.picked}
+			disabled={game.fed}
+			onplace={() => game.place(BIN)}
+			onpickup={(food) => game.pick(food)}
+			ontakeback={(food) => game.takeBack(food)}
+			testId="feeding-zone-bin"
 		/>
-	{/if}
+
+		{#if game.fed}
+			<FeedingVerdicts
+				verdicts={verdictsFor(BIN)}
+				animals={round.animals}
+				label={formatPlain(t('feeding.bin'))}
+				reveal
+				testId="feeding-verdicts-bin-list"
+			/>
+		{/if}
+	</div>
 
 <style>
 	.board {
@@ -210,13 +216,52 @@
 	}
 
 	/*
-	 * Нижче 640px колонці лишається менше за 200px, і пояснення в ній стає
-	 * стовпчиком по слову — тому на час розбору дошка стає стовпчиком.
+	 * Смітник із розбором: один стовпець, тобто те саме, що й раніше давав
+	 * `gap` сторінки. Обгортка потрібна лише щоб на телефоні зробити з них ряд.
+	 */
+	.bin-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-sm);
+		width: 100%;
+	}
+
+	/*
+	 * Телефон, стан розбору: тварина ЛІВОРУЧ, її розбір ПРАВОРУЧ.
+	 *
+	 * Стовпчиком це давало 1538px при 800 видимих — майже два екрани, з яких
+	 * половина порожнього поля обабіч вузьких карток. Причина була в тому, що
+	 * пара «тварина — її розбір» розривалася по вертикалі, хоча читають її
+	 * разом.
+	 *
+	 * Кнопка «Далі» піднялася в перший рядок. У столі вона опинилася тому, що
+	 * після годування стіл порожній, — але на телефоні стіл стояв ОСТАННІМ, і
+	 * по кнопку доводилося крутити повз увесь розбір. Тепер вона там, де на неї
+	 * дивляться: зверху.
+	 *
+	 * 2fr/3fr, а не половина на половину: ліворуч фото зі стелею в 100px, а
+	 * праворуч текст, якому ширина потрібніша.
 	 */
 	@media (max-width: 639px) {
 		.board--fed {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-areas: 'zone0' 'verdict0' 'zone1' 'verdict1' 'table';
+			grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+			grid-template-areas:
+				'table table'
+				'zone0 verdict0'
+				'zone1 verdict1';
+		}
+
+		.bin-row--fed {
+			grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+		}
+
+		/*
+		 * Порожній стіл більше не тримає 92px. Ця висота резервувалася під
+		 * страви, щоб дошка не змінювала розмір під час гри, — але після
+		 * годування страв там немає й не буде, лишається сама кнопка.
+		 */
+		.board--fed > :global(.table) {
+			min-height: 0;
 		}
 	}
 

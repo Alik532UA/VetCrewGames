@@ -124,10 +124,6 @@
 		color: var(--color-text);
 	}
 
-	.game-page > :global(.zone) {
-		width: 100%;
-	}
-
 	.leftovers {
 		margin: 0;
 		text-align: center;
