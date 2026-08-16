@@ -67,8 +67,27 @@ const EXPECTED_PAGES = [
 	['nl/game-memory/index.html', 'nl']
 ];
 
-/** PERFORMANCE-v8 § 1: бюджет initial JS на маршрут. */
+/**
+ * Два бюджети, а не один (PERFORMANCE-v8 § 1).
+ *
+ * `ENTRY` — те, що завантажує КОЖЕН відвідувач, хоч би куди він зайшов. Це
+ * число має лишатися малим завжди.
+ *
+ * `LAYOUT` — кореневий layout. Його теж вантажать усі, тож ховати його всередині
+ * «entry» було б самообманом: саме там сидить Sentry на 84 КБ.
+ *
+ * `ROUTE` — те, що додає найважчий ОКРЕМИЙ маршрут понад ці два. Воно існує
+ * тому, що заповідник тягне 3D-рушій: одним числом ці речі не виміряти, і
+ * спроба це зробити або заблокує 3D назавжди, або зробить стелю для решти
+ * сайту безглуздо високою.
+ *
+ * Жодна чинна стеля тут не послаблена. Змінилося тільки те, ЩО міряється:
+ * доти рахувалися самі файли `entry/`, без чанків, які вони тягнуть, — 89 КБ
+ * замість справжніх 121. Тобто число просто не означало того, що обіцяло.
+ */
 const ENTRY_JS_BUDGET_KB = 150;
+const LAYOUT_JS_BUDGET_KB = 120;
+const ROUTE_JS_BUDGET_KB = 300;
 
 /**
  * Домени, які сторінка справді відкриває, і директива, без якої браузер
@@ -241,17 +260,103 @@ if (maps.length)
 			`(перший: ${maps[0]})`
 	);
 
-// --- Бюджет initial JS (PERFORMANCE-v8 § 10.1) ------------------------------
-const entryDir = `${BUILD}/_app/immutable/entry`;
-const entryFiles = allFiles.filter((f) => f.startsWith(`${entryDir}/`) && f.endsWith('.js'));
-if (!entryFiles.length) {
-	fail(`${entryDir}: жодного .js — шлях змінився, і бюджет більше не перевіряється`);
+// --- Бюджети JS: entry і маршрути окремо (PERFORMANCE-v8 § 10.1) -------------
+
+/**
+ * Вага маршруту — це не його власний файл, а ВСЕ, що він тягне.
+ *
+ * Збирач виносить спільний код у `chunks/`, і файл маршруту лишається
+ * крихітним: найбільший тут важить 10 КБ. Порахувати самі `nodes/*.js`
+ * означало б не побачити 3D-рушій узагалі — він осяде в чанку, на який
+ * посилається лише заповідник, і бюджет мовчки нічого не міряв би.
+ *
+ * Тому обхід іде за імпортами. Динамічні (`import(...)`) рахуються нарівні зі
+ * статичними навмисно: на сторінці заповідника сцена вантажиться одразу, тож
+ * для відвідувача це той самий трафік. Недооцінити тут гірше, ніж переоцінити:
+ * завищене число видно в тому ж рядку звіту, а занижене не видно ніколи.
+ */
+const IMPORT_RE = /(?:from\s*|import\s*\()\s*["']([^"']+)["']/g;
+
+/** Усі файли, досяжні за імпортами із заданих. Шляхи — від кореня збірки. */
+function closure(startFiles) {
+	const seen = new Set();
+	const queue = [...startFiles];
+
+	while (queue.length) {
+		const file = queue.pop();
+		if (seen.has(file) || !allFiles.includes(file)) continue;
+		seen.add(file);
+
+		const dir = file.slice(0, file.lastIndexOf('/'));
+		for (const [, spec] of readFileSync(file, 'utf8').matchAll(IMPORT_RE)) {
+			if (!spec.startsWith('.')) continue; // зовнішнє — у збірці його немає
+			// Своя нормалізація, а не `path.resolve`: шляхи тут завжди зі скісною
+			// рискою вперед, а `resolve` на Windows підмішав би зворотні.
+			const parts = `${dir}/${spec}`.split('/');
+			const out = [];
+			for (const part of parts) {
+				if (part === '.' || part === '') continue;
+				if (part === '..') out.pop();
+				else out.push(part);
+			}
+			queue.push(out.join('/'));
+		}
+	}
+	return seen;
+}
+
+const weigh = (files) =>
+	Math.round([...files].reduce((sum, f) => sum + gzipSync(readFileSync(f)).length, 0) / 1024);
+
+const immutable = `${BUILD}/_app/immutable`;
+const entryFiles = allFiles.filter((f) => f.startsWith(`${immutable}/entry/`) && f.endsWith('.js'));
+const nodeFiles = allFiles.filter((f) => f.startsWith(`${immutable}/nodes/`) && f.endsWith('.js'));
+
+if (!entryFiles.length || !nodeFiles.length) {
+	fail(`${immutable}: не знайдено entry або nodes — шлях змінився, і бюджети більше не міряються`);
 } else {
-	const kb = Math.round(
-		entryFiles.reduce((sum, f) => sum + gzipSync(readFileSync(f)).length, 0) / 1024
+	const entryClosure = closure(entryFiles);
+	const entryKb = weigh(entryClosure);
+	console.log(`check-build: entry JS ${entryKb} КБ gzip (бюджет ${ENTRY_JS_BUDGET_KB})`);
+	if (entryKb > ENTRY_JS_BUDGET_KB) {
+		fail(`бюджет entry перевищено: ${entryKb} КБ > ${ENTRY_JS_BUDGET_KB}`);
+	}
+
+	/*
+	 * Кореневий layout — це `nodes/0.*`: SvelteKit нумерує вузли з layout'ів, і
+	 * нульовий завжди кореневий. Якщо це колись зміниться, перевірка не почне
+	 * мовчки міряти не те — вона не знайде файла й скаже про це.
+	 */
+	const layoutFile = nodeFiles.find((f) => /\/nodes\/0\./.test(f));
+	if (!layoutFile) {
+		fail(`${immutable}/nodes: немає вузла 0 — кореневий layout більше не міряється`);
+	}
+
+	const shared = new Set([...entryClosure, ...closure([layoutFile])]);
+	const layoutKb = weigh([...shared].filter((f) => !entryClosure.has(f)));
+	console.log(
+		`check-build: кореневий layout ${layoutKb} КБ gzip понад entry ` +
+			`(бюджет ${LAYOUT_JS_BUDGET_KB}); разом на кожного відвідувача ${entryKb + layoutKb} КБ`
 	);
-	console.log(`check-build: entry JS ${kb} КБ gzip (бюджет ${ENTRY_JS_BUDGET_KB})`);
-	if (kb > ENTRY_JS_BUDGET_KB) fail(`бюджет initial JS перевищено: ${kb} КБ > ${ENTRY_JS_BUDGET_KB}`);
+	if (layoutKb > LAYOUT_JS_BUDGET_KB) {
+		fail(`бюджет кореневого layout перевищено: ${layoutKb} КБ > ${LAYOUT_JS_BUDGET_KB}`);
+	}
+
+	// Найважчий маршрут — понад те, що вже дали entry й layout.
+	let worst = { file: '(жодного)', kb: 0 };
+	for (const node of nodeFiles) {
+		if (node === layoutFile) continue;
+		const kb = weigh([...closure([node])].filter((f) => !shared.has(f)));
+		if (kb > worst.kb) worst = { file: node.slice(immutable.length + 1), kb };
+	}
+
+	console.log(
+		`check-build: найважчий маршрут ${worst.file} — ${worst.kb} КБ gzip понад спільне ` +
+			`(бюджет ${ROUTE_JS_BUDGET_KB})`
+	);
+	if (worst.kb > ROUTE_JS_BUDGET_KB) {
+		fail(`бюджет маршруту перевищено: ${worst.file} важить ${worst.kb} КБ > ${ROUTE_JS_BUDGET_KB}`);
+	}
 }
 
 // --- Секретів у бандлі немає (SECURITY-v8 § 16) -----------------------------
