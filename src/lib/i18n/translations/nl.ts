@@ -5,6 +5,7 @@ import { animals } from './nl/animals';
 import { family } from './nl/family';
 import { habitat } from './nl/habitat';
 import { feeding } from './nl/feeding';
+import { reserve } from './nl/reserve';
 
 export const nl = {
 	...ui,
@@ -13,5 +14,6 @@ export const nl = {
 	...animals,
 	...family,
 	...habitat,
-	...feeding
+	...feeding,
+	...reserve
 } as const;

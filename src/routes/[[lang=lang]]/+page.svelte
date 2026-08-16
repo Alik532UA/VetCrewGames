@@ -2,7 +2,6 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
-	import { toast } from '$lib/controllers/toast.svelte';
 
 	/**
 	 * Головне меню: три розділи замість переліку ігор.
@@ -30,20 +29,13 @@
 
 <div class="menu-page">
 	<nav class="menu-grid">
-		<!--
-			Заповідника ще немає, тож кнопка `aria-disabled`, а не `disabled`:
-			друга ковтала б клік, і людина лишалася б без пояснення, чому нічого
-			не сталося.
-		-->
-		<button
-			type="button"
-			class="menu-btn menu-btn--disabled anim-stagger-1"
-			aria-disabled="true"
-			onclick={() => toast.info('menu.comingSoon')}
-			data-testid="menu-reserve-btn"
+		<a
+			href={langPath(lang, 'reserve')}
+			class="menu-btn menu-btn--game anim-stagger-1"
+			data-testid="menu-reserve-link"
 		>
 			{@html formatFont(t('menu.reserve'))}
-		</button>
+		</a>
 
 		<a
 			href={langPath(lang, 'quiz')}

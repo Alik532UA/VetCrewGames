@@ -33,6 +33,7 @@ const EXPECTED_PAGES = [
 	['quiz/index.html', 'uk'],
 	['quiz/play/index.html', 'uk'],
 	['pairs/index.html', 'uk'],
+	['reserve/index.html', 'uk'],
 	['game-mythbusters/index.html', 'uk'],
 	['game-population/index.html', 'uk'],
 	['game-family/index.html', 'uk'],
@@ -45,6 +46,7 @@ const EXPECTED_PAGES = [
 	['en/quiz/index.html', 'en'],
 	['en/quiz/play/index.html', 'en'],
 	['en/pairs/index.html', 'en'],
+	['en/reserve/index.html', 'en'],
 	['en/game-mythbusters/index.html', 'en'],
 	['en/game-population/index.html', 'en'],
 	['en/game-family/index.html', 'en'],
@@ -57,6 +59,7 @@ const EXPECTED_PAGES = [
 	['de/quiz/index.html', 'de'],
 	['de/quiz/play/index.html', 'de'],
 	['de/pairs/index.html', 'de'],
+	['de/reserve/index.html', 'de'],
 	['de/game-mythbusters/index.html', 'de'],
 	['de/game-population/index.html', 'de'],
 	['de/game-family/index.html', 'de'],
@@ -69,6 +72,7 @@ const EXPECTED_PAGES = [
 	['nl/quiz/index.html', 'nl'],
 	['nl/quiz/play/index.html', 'nl'],
 	['nl/pairs/index.html', 'nl'],
+	['nl/reserve/index.html', 'nl'],
 	['nl/game-mythbusters/index.html', 'nl'],
 	['nl/game-population/index.html', 'nl'],
 	['nl/game-family/index.html', 'nl'],
@@ -166,7 +170,8 @@ for (const file of htmlFiles) {
 		else if (!canonicals[0].includes(`href="${SITE_ORIGIN}`))
 			fail(`${where}: canonical не абсолютна або веде на чужий origin — ${canonicals[0]}`);
 
-		if (!/<title>[^<]{5,}<\/title>/.test(html)) fail(`${where}: title відсутній або надто короткий`);
+		if (!/<title>[^<]{5,}<\/title>/.test(html))
+			fail(`${where}: title відсутній або надто короткий`);
 	}
 
 	// --- CSP (SECURITY-v8 § 6) ------------------------------------------------
@@ -230,7 +235,8 @@ for (const [relative, expectedLang] of EXPECTED_PAGES) {
 	// модульному синглтоні. Класична ознака помилки — значення, зсунуте на одну
 	// сторінку: `/en/` українською.
 	const lang = html.match(/<html lang="([^"]*)"/)?.[1];
-	if (lang !== expectedLang) fail(`${relative}: <html lang="${lang}">, а має бути "${expectedLang}"`);
+	if (lang !== expectedLang)
+		fail(`${relative}: <html lang="${lang}">, а має бути "${expectedLang}"`);
 	if (html.includes('%lang%')) fail(`${relative}: плейсхолдер %lang% не підставлено`);
 
 	const expectedCanonical = `${SITE_ORIGIN}${SITE_BASE}/${relative.replace(/index\.html$/, '')}`;
@@ -261,7 +267,8 @@ if (!allFiles.includes(sitemapPath)) {
 	if (extra.length) fail(`у sitemap зайві адреси: ${extra.join(', ')}`);
 	// Кожен рядок без кінцевого слеша при `trailingSlash: 'always'` — редирект.
 	const noSlash = listed.filter((url) => !url.endsWith('/'));
-	if (noSlash.length) fail(`sitemap: адреси без кінцевого слеша — це редирект: ${noSlash.join(', ')}`);
+	if (noSlash.length)
+		fail(`sitemap: адреси без кінцевого слеша — це редирект: ${noSlash.join(', ')}`);
 }
 
 // --- Source maps не публікуються (OBSERVABILITY-v8 § 1.2) --------------------

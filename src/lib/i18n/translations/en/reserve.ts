@@ -1,0 +1,51 @@
+export const reserve = {
+	'reserve.title': 'Reserve',
+	'reserve.day': 'Day',
+	'reserve.budget': 'Budget',
+	'reserve.impact': 'Good for the planet',
+
+	'reserve.speed.pause': 'Stop time',
+	'reserve.speed.x1': 'Normal speed',
+	'reserve.speed.x2': 'Double speed',
+	'reserve.speed.x5': 'Five times speed',
+
+	'reserve.acquire': 'Take in an animal',
+	'reserve.origin.official': 'Buy legally',
+	'reserve.origin.black-market': 'Black market',
+	'reserve.origin.rescue': 'Rescue',
+	'reserve.origin.official.hint': 'Expensive and legal. This one can never go back to the wild.',
+	'reserve.origin.black-market.hint': 'Cheap — because somebody took it from the wild for you.',
+	'reserve.origin.rescue.hint': 'The animal costs nothing; you pay for the journey.',
+
+	'reserve.staff': 'Staff',
+	'reserve.staff.vet': 'Vets',
+	'reserve.staff.keeper': 'Keepers',
+	'reserve.hire': 'Hire',
+	'reserve.dismiss': 'Let go',
+
+	'reserve.animals': 'Residents',
+	'reserve.empty': 'The reserve is still empty.',
+	'reserve.stage.recovering': 'Recovering',
+	'reserve.stage.healthy': 'Healthy',
+	'reserve.stage.released': 'In the wild',
+	'reserve.recovery': 'Recovery',
+	'reserve.stress': 'Stress',
+	'reserve.captiveBorn': 'Born in captivity',
+	'reserve.release': 'Release into the wild',
+
+	'reserve.subsidy': 'Subsidy: food and medicine continue, expansion is blocked.',
+	'reserve.gameOver': 'The reserve harms more than it helps. The game is over.',
+	'reserve.newGame': 'Start over',
+	'reserve.saveBroken': 'The save could not be read — a new game has started.',
+	'reserve.saveFuture': 'This save comes from a newer version of the game. Reload the page.',
+	'reserve.saveFailed': 'The game is not being saved: the browser blocks storage.',
+
+	'reserve.reject.no-money': 'Not enough money.',
+	'reserve.reject.subsidy-mode': 'No expanding while the budget is in the red.',
+	'reserve.reject.not-healthy': 'This animal has not recovered yet.',
+	'reserve.reject.not-releasable': 'Born in captivity — it would not survive in the wild.',
+	'reserve.reject.too-stressed': 'This animal is too frightened to be released.',
+	'reserve.reject.nobody-to-dismiss': 'Nobody to let go.',
+	'reserve.reject.no-such-animal': 'That animal is already gone.',
+	'reserve.reject.game-over': 'The game is over.'
+} as const;

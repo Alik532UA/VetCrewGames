@@ -25,7 +25,11 @@ function extractKeys(filePath: string): string[] {
 		const content = readFileSync(filePath, 'utf-8');
 		const keys: string[] = [];
 		// Match 'some.key': or "some.key":
-		const regex = /['"]([\w.]+)['"]\s*:/g;
+		// Дефіс у класі не для краси: ключі відмов збираються інтерполяцією з
+		// причини (`reserve.reject.no-money`), і без нього ціла родина ключів
+		// просто не потрапляла б у порівняння — перевірка мовчала б саме там,
+		// де переклад найлегше забути.
+		const regex = /['"]([\w.-]+)['"]\s*:/g;
 		let match;
 		while ((match = regex.exec(content)) !== null) {
 			keys.push(match[1]);

@@ -74,7 +74,9 @@ export const LANGUAGE_ROUTES = {
 	 */
 	quiz: '/[[lang=lang]]/quiz',
 	'quiz/play': '/[[lang=lang]]/quiz/play',
-	pairs: '/[[lang=lang]]/pairs'
+	pairs: '/[[lang=lang]]/pairs',
+	/** Заповідник — не раунд, а партія, що триває; звідси й окремий розділ. */
+	reserve: '/[[lang=lang]]/reserve'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;
