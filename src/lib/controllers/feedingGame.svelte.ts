@@ -26,6 +26,9 @@ import type { RoundOutcome } from '$lib/types/game';
 /** Куди гравець поклав кожну страву: ключ — `food.id`. */
 export type Placements = Record<string, Target>;
 
+/** Місце страви: тварина, смітник — або `null`, тобто назад на стіл. */
+export type Spot = Target | null;
+
 export interface FeedingVerdict {
 	food: Food;
 	chosen: Target;
@@ -83,25 +86,43 @@ export class FeedingGameController {
 		this.#next();
 	}
 
-	/** Взяти страву зі столу або зняти вибір повторним кліком. */
+	/**
+	 * Взяти страву або зняти вибір повторним кліком.
+	 *
+	 * Брати можна і те, що вже лежить у зоні: рішення міняється одним рухом —
+	 * взяв і поклав деінде, — а не «поверни на стіл, потім клади заново».
+	 */
 	pick(food: Food): void {
 		if (this.fed) return;
 		this.picked = this.picked?.id === food.id ? null : food;
 	}
 
-	/** Покласти взяту страву до тварини або в смітник. */
-	place(target: Target): void {
-		if (this.fed || !this.picked) return;
-		this.placements = { ...this.placements, [this.picked.id]: target };
+	/**
+	 * Перекласти страву, хоч би де вона зараз лежала. `null` — назад на стіл.
+	 *
+	 * Єдиний шлях запису до `placements`: `place()` і `takeBack()` — це він
+	 * же, просто з іншого боку. Три окремі присвоєння розійшлися б, щойно
+	 * додасться четверте місце.
+	 */
+	moveTo(food: Food, spot: Spot): void {
+		if (this.fed) return;
+		if (spot === null) {
+			const { [food.id]: _removed, ...rest } = this.placements;
+			this.placements = rest;
+		} else {
+			this.placements = { ...this.placements, [food.id]: spot };
+		}
 		this.picked = null;
 	}
 
-	/** Повернути страву зі столу назад — доки не погодували. */
+	/** Покласти взяту страву до тварини або в смітник. */
+	place(target: Target): void {
+		if (this.picked) this.moveTo(this.picked, target);
+	}
+
+	/** Повернути страву на стіл — доки не погодували. */
 	takeBack(food: Food): void {
-		if (this.fed) return;
-		const { [food.id]: _removed, ...rest } = this.placements;
-		this.placements = rest;
-		this.picked = null;
+		this.moveTo(food, null);
 	}
 
 	/** Страви, покладені до конкретної цілі. Потрібне розмітці для зон. */

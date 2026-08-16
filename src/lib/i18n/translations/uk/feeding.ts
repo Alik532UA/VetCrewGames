@@ -2,6 +2,8 @@ export const feeding = {
 	'feeding.title': 'Що їмо?',
 	'feeding.prompt': 'Роздай страви тваринам. Те, що не підходить жодній, — у смітник.',
 	'feeding.hintTap': 'Торкніться страви, потім — того, кому її віддати',
+	'feeding.table': 'Стіл',
+	'feeding.hintReturn': 'Перетягніть сюди, щоб повернути страву на стіл',
 	'feeding.bin': 'Смітник',
 	'feeding.feed': 'Погодувати',
 	'feeding.allPlaced': 'Розкладіть усі три страви',

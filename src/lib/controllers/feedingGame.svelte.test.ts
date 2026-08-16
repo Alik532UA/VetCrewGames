@@ -129,6 +129,62 @@ describe('FeedingGameController', () => {
 		expect(game.picked).toBeNull();
 	});
 
+	/**
+	 * Рішення міняється одним рухом. Раніше страву, яку вже поклали, не можна
+	 * було взяти знову — доводилося повертати її на стіл і класти заново, і
+	 * саме це читалося як «вибрав — і все».
+	 */
+	it('покладену страву можна взяти й перекласти до іншої тварини', () => {
+		const game = started();
+		const [first, second] = game.round!.animals;
+		const food = game.round!.foods[0];
+
+		game.pick(food);
+		game.place(first.id);
+		expect(game.placements[food.id]).toBe(first.id);
+
+		game.pick(food);
+		expect(game.picked?.id, 'узяти можна й те, що вже лежить у зоні').toBe(food.id);
+		expect(game.placements[food.id], 'поки не поклали — страва лишається на місці').toBe(first.id);
+
+		game.place(second.id);
+		expect(game.placements[food.id]).toBe(second.id);
+		expect(game.placedAt(first.id), 'у першої тварини вона більше не лежить').toEqual([]);
+	});
+
+	it('moveTo() кладе страву, хоч би що було в руках', () => {
+		const game = started();
+		const [first, second] = game.round!.animals;
+		const [food, other] = game.round!.foods;
+
+		game.pick(other);
+		game.moveTo(food, first.id);
+
+		expect(game.placements[food.id], 'кнопка «кому віддати» не залежить від вибору').toBe(first.id);
+		expect(game.picked, 'після прямого ходу руки порожні').toBeNull();
+
+		game.moveTo(food, second.id);
+		expect(game.placements[food.id]).toBe(second.id);
+
+		game.moveTo(food, null);
+		expect(game.placements[food.id], 'null — це назад на стіл').toBeUndefined();
+		expect(game.unplaced.map((f) => f.id)).toContain(food.id);
+	});
+
+	it('після годування стіл не приймає ні moveTo, ні pick', () => {
+		const game = started();
+		solve(game);
+		game.feed();
+		const [food] = game.round!.foods;
+		const before = { ...game.placements };
+
+		game.moveTo(food, BIN);
+		game.pick(food);
+
+		expect(game.placements).toEqual(before);
+		expect(game.picked).toBeNull();
+	});
+
 	it('страву можна забрати зі столу назад, доки не погодували', () => {
 		const game = started();
 		const food = game.round!.foods[0];

@@ -16,16 +16,40 @@
 		/** Фото тварини; `null` — це смітник, і тоді малюється іконка. */
 		image?: string | null;
 		foods: Food[];
-		/** Гравець тримає страву — зону треба підсвітити як доступну. */
-		active: boolean;
+		/** Страва в руках гравця: зону підсвітити, її картку показати взятою. */
+		picked: Food | null;
 		disabled: boolean;
+		/** Покласти сюди те, що в руках. */
 		onplace: () => void;
+		/** Узяти звідси — щоб перекласти в іншу зону одним рухом. */
+		onpickup: (food: Food) => void;
+		/** Повернути на стіл (подвійний клік). */
 		ontakeback: (food: Food) => void;
 		testId: string;
 	}
 
-	let { labelKey, image = null, foods, active, disabled, onplace, ontakeback, testId }: Props =
-		$props();
+	let {
+		labelKey,
+		image = null,
+		foods,
+		picked,
+		disabled,
+		onplace,
+		onpickup,
+		ontakeback,
+		testId
+	}: Props = $props();
+
+	/**
+	 * Клік по вже покладеній страві означає різне залежно від того, чи щось у
+	 * руках: із стравою в руках будь-яке місце зони — це «поклади сюди», без
+	 * неї — «візьми оцю». Так само, як зі слотами в грі про чисельність.
+	 */
+	function tapPlated(food: Food) {
+		if (disabled) return;
+		if (picked) onplace();
+		else onpickup(food);
+	}
 </script>
 
 <!--
@@ -35,7 +59,7 @@
 -->
 <div
 	class="zone"
-	class:zone--active={active && !disabled}
+	class:zone--active={picked !== null && !disabled}
 	class:zone--bin={image === null}
 	role="button"
 	tabindex="0"
@@ -80,10 +104,24 @@
 			<button
 				type="button"
 				class="plated"
+				class:plated--picked={picked?.id === food.id}
 				{disabled}
+				draggable={!disabled}
 				onclick={(e) => {
 					e.stopPropagation();
-					ontakeback(food);
+					tapPlated(food);
+				}}
+				ondblclick={(e) => {
+					e.stopPropagation();
+					if (!disabled) ontakeback(food);
+				}}
+				ondragstart={(e) => {
+					if (disabled) return;
+					onpickup(food);
+					if (e.dataTransfer) {
+						e.dataTransfer.setData('text/plain', food.id);
+						e.dataTransfer.effectAllowed = 'move';
+					}
 				}}
 				data-testid="{testId}-plated-btn-{food.id}"
 			>
@@ -172,12 +210,23 @@
 		gap: 2px;
 		min-width: 0;
 		padding: 2px;
-		border: none;
+		border: 2px solid transparent;
 		border-radius: var(--radius-sm);
 		background: transparent;
 		color: var(--color-text);
 		font: inherit;
-		cursor: pointer;
+		cursor: grab;
+		transition: all var(--transition-fast);
+	}
+
+	.plated:hover:not(:disabled) {
+		border-color: color-mix(in srgb, var(--color-accent), transparent 50%);
+		background: color-mix(in srgb, var(--color-bg-surface), transparent 40%);
+	}
+
+	.plated--picked {
+		border-color: var(--color-accent);
+		background: color-mix(in srgb, var(--color-accent), transparent 80%);
 	}
 
 	.plated:disabled {

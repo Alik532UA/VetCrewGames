@@ -2,15 +2,16 @@
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { page } from '$app/state';
-	import { t, formatFont } from '$lib/i18n';
+	import { t, formatFont, formatPlain } from '$lib/i18n';
 	import { languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
-	import { BIN, type Food } from '$lib/config/feeding-game';
+	import { BIN } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import FeedingZone from '$lib/components/FeedingZone.svelte';
+	import FeedingDish, { type QuickTarget } from '$lib/components/FeedingDish.svelte';
 	import FeedingVerdicts from '$lib/components/FeedingVerdicts.svelte';
 
 	// Правила — у контролері; тут показ і введення (SVELTE-CORE-v8 § 3.1).
@@ -24,13 +25,28 @@
 	 * (ACCESSIBILITY-v8 § 2). Через це гра свідомо не повторює клон-під-пальцем
 	 * із гри про чисельність: там перетягування — сама механіка, тут — зручність.
 	 */
-	function startDrag(event: DragEvent, food: Food) {
-		if (game.fed) return;
-		game.pick(food);
-		if (event.dataTransfer) {
-			event.dataTransfer.setData('text/plain', food.id);
-			event.dataTransfer.effectAllowed = 'move';
-		}
+
+	/**
+	 * Кнопки «кому віддати» — рівно дві тварини, у тому ж порядку, в якому їхні
+	 * зони стоять на екрані.
+	 *
+	 * Смітника серед них немає навмисно: він і так стоїть упритул до столу,
+	 * тобто вже в один клік. А третя кнопка не вміщується — на 320px страві
+	 * дістається 52px, і ряд із трьох (72px) наліз би на сусідні страви.
+	 */
+	const quickTargets = $derived<QuickTarget[]>(
+		game.round
+			? game.round.animals.map((animal) => ({
+					id: animal.id,
+					labelKey: animal.nameKey as TranslationKey,
+					image: animal.image
+				}))
+			: []
+	);
+
+	/** Стіл — теж ціль: сюди повертають страву, яку передумали віддавати. */
+	function returnToTable() {
+		if (game.picked) game.takeBack(game.picked);
 	}
 
 	onMount(() => {
@@ -64,40 +80,58 @@
 			labelKey={game.round.animals[0].nameKey as TranslationKey}
 			image={game.round.animals[0].image}
 			foods={game.placedAt(game.round.animals[0].id)}
-			active={game.picked !== null}
+			picked={game.picked}
 			disabled={game.fed}
 			onplace={() => game.place(game.round!.animals[0].id)}
+			onpickup={(food) => game.pick(food)}
 			ontakeback={(food) => game.takeBack(food)}
 			testId="feeding-zone-top"
 		/>
 
 		<!-- Стіл зі стравами й смітник поруч — розкладка з концепції. -->
 		<div class="table-row">
-			<div class="table" data-testid="feeding-table-container">
+			<!--
+				Стіл поводиться як зона: та сама пара «клік або перетягування», той
+				самий `role="button"` поверх дітей-кнопок — див. FeedingZone.
+			-->
+			<div
+				class="table"
+				class:table--active={game.picked !== null && !game.fed}
+				role="button"
+				tabindex="0"
+				aria-label={formatPlain(t('feeding.table'))}
+				data-testid="feeding-table-container"
+				onclick={returnToTable}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						returnToTable();
+					}
+				}}
+				ondragover={(e) => {
+					if (game.fed) return;
+					e.preventDefault();
+					if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+				}}
+				ondrop={(e) => {
+					e.preventDefault();
+					returnToTable();
+				}}
+			>
 				{#each game.unplaced as food (food.id)}
-					<button
-						type="button"
-						class="dish"
-						class:dish--picked={game.picked?.id === food.id}
-						draggable={!game.fed}
+					<FeedingDish
+						{food}
+						picked={game.picked?.id === food.id}
 						disabled={game.fed}
-						onclick={() => game.pick(food)}
-						ondragstart={(e) => startDrag(e, food)}
-						data-testid="feeding-dish-btn-{food.id}"
-					>
-						<img
-							src={food.image}
-							alt=""
-							class="dish__image"
-							loading="lazy"
-							width="300"
-							height="400"
-						/>
-						<span class="dish__name">{@html formatFont(t(food.nameKey as TranslationKey))}</span>
-					</button>
+						targets={quickTargets}
+						onpick={() => game.pick(food)}
+						onsend={(target) => game.moveTo(food, target)}
+					/>
 				{/each}
 				{#if game.unplaced.length === 0}
-					<p class="table__empty">{@html formatFont(t('feeding.hintTap'))}</p>
+					<p class="table__empty">
+						{@html formatFont(t(game.picked ? 'feeding.hintReturn' : 'feeding.hintTap'))}
+					</p>
 				{/if}
 			</div>
 
@@ -105,9 +139,10 @@
 				labelKey="feeding.bin"
 				image={null}
 				foods={game.placedAt(BIN)}
-				active={game.picked !== null}
+				picked={game.picked}
 				disabled={game.fed}
 				onplace={() => game.place(BIN)}
+				onpickup={(food) => game.pick(food)}
 				ontakeback={(food) => game.takeBack(food)}
 				testId="feeding-zone-bin"
 			/>
@@ -117,9 +152,10 @@
 			labelKey={game.round.animals[1].nameKey as TranslationKey}
 			image={game.round.animals[1].image}
 			foods={game.placedAt(game.round.animals[1].id)}
-			active={game.picked !== null}
+			picked={game.picked}
 			disabled={game.fed}
 			onplace={() => game.place(game.round!.animals[1].id)}
+			onpickup={(food) => game.pick(food)}
 			ontakeback={(food) => game.takeBack(food)}
 			testId="feeding-zone-bottom"
 		/>
@@ -208,54 +244,17 @@
 		box-shadow: var(--shadow-card);
 	}
 
+	.table--active {
+		outline: 2px dashed color-mix(in srgb, var(--color-accent), transparent 40%);
+		outline-offset: -4px;
+	}
+
 	.table__empty {
 		margin: 0;
 		font-size: var(--font-size-xs);
 		text-align: center;
 		color: var(--color-text-on-panel);
 		opacity: 0.8;
-	}
-
-	.dish {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 2px;
-		min-width: 0;
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-width: 44px;
-		min-height: 44px;
-		padding: var(--space-xs);
-		border: 2px solid transparent;
-		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-bg-surface), transparent 20%);
-		color: var(--color-text);
-		font: inherit;
-		cursor: grab;
-		transition: all var(--transition-fast);
-	}
-
-	.dish--picked {
-		border-color: var(--color-accent);
-		transform: translateY(-3px);
-		box-shadow: var(--shadow-glow-accent);
-	}
-
-	.dish:disabled {
-		cursor: default;
-	}
-
-	.dish__image {
-		width: 48px;
-		aspect-ratio: 1;
-		height: auto;
-		object-fit: contain;
-	}
-
-	.dish__name {
-		font-size: var(--font-size-xs);
-		text-align: center;
-		overflow-wrap: anywhere;
 	}
 
 	.btn-primary {

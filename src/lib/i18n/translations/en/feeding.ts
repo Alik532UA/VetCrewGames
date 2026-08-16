@@ -2,6 +2,8 @@ export const feeding = {
 	'feeding.title': 'What do they eat?',
 	'feeding.prompt': 'Hand out the food. Anything that suits neither animal goes in the bin.',
 	'feeding.hintTap': 'Tap a dish, then tap who gets it',
+	'feeding.table': 'Table',
+	'feeding.hintReturn': 'Drop a dish here to put it back on the table',
 	'feeding.bin': 'Bin',
 	'feeding.feed': 'Feed',
 	'feeding.allPlaced': 'Place all three dishes',
