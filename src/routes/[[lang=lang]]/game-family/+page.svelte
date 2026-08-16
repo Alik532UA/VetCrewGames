@@ -39,7 +39,7 @@
 			/>
 		</div>
 
-		<p class="prompt" data-testid="family-prompt-text">{@html formatFont(t('family.prompt'))}</p>
+		<p class="prompt text-panel" data-testid="family-prompt-text">{@html formatFont(t('family.prompt'))}</p>
 
 		{#key game.round.id}
 			<div class="cards-grid" in:fade={{ duration: 300 }}>
@@ -155,10 +155,6 @@
 		text-align: center;
 		font-size: var(--font-size-md);
 		color: var(--color-text);
-		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
-		backdrop-filter: var(--blur-glass);
-		border-radius: var(--radius-md);
-		padding: var(--space-sm) var(--space-md);
 	}
 
 	/*

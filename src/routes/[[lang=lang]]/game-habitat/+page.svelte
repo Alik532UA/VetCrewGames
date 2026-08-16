@@ -48,7 +48,7 @@
 			/>
 		</div>
 
-		<div class="animal">
+		<div class="animal text-panel">
 			<img
 				src={game.round.animal.image}
 				alt={formatPlain(td(game.round.animal.nameKey))}
@@ -62,7 +62,7 @@
 			</span>
 		</div>
 
-		<div class="question">
+		<div class="question text-panel">
 			<p class="question__prompt">
 				{@html formatFont(
 					t(game.mode === 'continents' ? 'habitat.prompt.continents' : 'habitat.prompt.biomes')

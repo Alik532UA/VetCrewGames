@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, X } from 'lucide-svelte';
+	import { AlertTriangle, Check, X } from 'lucide-svelte';
 	import { t, td, formatFont } from '$lib/i18n';
 	import { BIN, type Target } from '$lib/config/feeding-game';
 	import type { FeedingVerdict } from '$lib/controllers/feedingGame.svelte';
@@ -30,9 +30,15 @@
 </script>
 
 <div class="verdicts" data-testid="feeding-verdicts-list">
-	<h3 class="verdicts__title">{@html formatFont(t('feeding.resultTitle'))}</h3>
+	<h3 class="verdicts__title text-panel">{@html formatFont(t('feeding.resultTitle'))}</h3>
 
 	{#each verdicts as verdict (verdict.food.id)}
+		<!--
+			Небезпечна страва — та, чиє місце в смітнику й у якої є пояснення шкоди.
+			Умова спільна для значка й для тексту навмисно: інакше вони розійшлися б
+			і трикутник стояв би над поясненням про користь.
+		-->
+		{@const isHazard = verdict.correct === BIN && !!verdict.food.hazardKey}
 		<div
 			class="verdict"
 			class:verdict--correct={verdict.isCorrect}
@@ -40,10 +46,15 @@
 		>
 			<div class="verdict__head">
 				<span class="verdict__mark">
-					{#if verdict.isCorrect}
-						<Check size={18} aria-hidden="true" />
-					{:else}
+					{#if !verdict.isCorrect}
 						<X size={18} aria-hidden="true" />
+					{:else if isHazard}
+						<!-- Вгадав — але вгадав НЕБЕЗПЕКУ. Галочка тут гасила б саме те,
+						     заради чого гра й існує. Колір лишається зеленим: відповідь
+						     правильна, попереджає знак, а не помилку. -->
+						<AlertTriangle size={18} aria-hidden="true" />
+					{:else}
+						<Check size={18} aria-hidden="true" />
 					{/if}
 				</span>
 				<strong>{@html formatFont(t(verdict.food.nameKey as TranslationKey))}</strong>
@@ -58,7 +69,7 @@
 			{/if}
 
 			<p class="verdict__explanation">
-				{#if verdict.correct === BIN && verdict.food.hazardKey}
+				{#if isHazard}
 					{@html formatFont(t(verdict.food.hazardKey as TranslationKey))}
 				{:else}
 					{@html formatFont(t(verdict.food.goodKey as TranslationKey))}

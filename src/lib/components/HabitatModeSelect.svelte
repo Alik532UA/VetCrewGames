@@ -21,7 +21,7 @@
 </script>
 
 <div class="mode-picker" in:fade={{ duration: 300 }}>
-	<h2 class="mode-picker__title">{@html formatFont(t('habitat.chooseMode'))}</h2>
+	<h2 class="mode-picker__title text-panel">{@html formatFont(t('habitat.chooseMode'))}</h2>
 
 	<button
 		type="button"

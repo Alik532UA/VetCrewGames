@@ -218,7 +218,7 @@
 	</main>
 </div>
 
-<div class="app-version" data-testid="app-version-value">{appVersion}</div>
+<div class="app-version text-panel text-panel--tight" data-testid="app-version-value">{appVersion}</div>
 
 <LogCopyButton />
 
