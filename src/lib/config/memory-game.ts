@@ -1,4 +1,5 @@
 import { animals, type Animal } from './population-game';
+import { seededRandom, shuffle } from '$lib/utils/seededRandom';
 
 /**
  * Дані гри «Знайди пару»: колода з парних карток тварин.
@@ -62,31 +63,6 @@ export function layoutForViewport(): MemoryLayout {
 	return window.matchMedia('(max-width: 559px)').matches
 		? { pairs: MEMORY_PAIRS_COMPACT, cols: 4 }
 		: { pairs: MEMORY_PAIRS, cols: 7 };
-}
-
-/**
- * Генератор mulberry32: тридцять два біти стану, одна функція, жодних
- * залежностей. Потрібен саме передбачуваний — див. докблок файлу.
- */
-function seededRandom(seed: number): () => number {
-	let state = seed >>> 0;
-	return () => {
-		state = (state + 0x6d2b79f5) >>> 0;
-		let t = state;
-		t = Math.imul(t ^ (t >>> 15), t | 1);
-		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
-}
-
-/** Тасування Фішера — Йетса на тому ж зерні. */
-function shuffle<T>(items: T[], random: () => number): T[] {
-	const out = [...items];
-	for (let i = out.length - 1; i > 0; i--) {
-		const j = Math.floor(random() * (i + 1));
-		[out[i], out[j]] = [out[j], out[i]];
-	}
-	return out;
 }
 
 /**
