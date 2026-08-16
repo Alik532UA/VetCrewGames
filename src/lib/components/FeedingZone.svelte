@@ -169,8 +169,24 @@
 		background: color-mix(in srgb, var(--color-accent), transparent 85%);
 	}
 
+	/*
+	 * Смітник — рядок, а не стовпчик: він на всю ширину сторінки, і викинуте під
+	 * іконкою лишало б порожнім увесь правий бік. Зонам тварин рядок не годиться
+	 * з протилежної причини — вони вузькі колонки.
+	 */
 	.zone--bin {
+		flex-direction: row;
+		align-items: center;
 		border-color: var(--color-text-muted);
+	}
+
+	.zone--bin .zone__head {
+		width: auto;
+		min-width: 88px;
+	}
+
+	.zone--bin .zone__plate {
+		flex: 1;
 	}
 
 	.zone__head {
