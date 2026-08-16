@@ -201,6 +201,8 @@
 			labelKey="feeding.bin"
 			image={null}
 			foods={game.placedAt(BIN)}
+			hints={game.unplaced}
+			onhint={(food) => game.moveTo(food, BIN)}
 			picked={game.picked}
 			disabled={game.fed}
 			onplace={() => game.place(BIN)}
