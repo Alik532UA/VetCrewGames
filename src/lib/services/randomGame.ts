@@ -1,5 +1,4 @@
 import { LANGUAGE_ROUTES, type RouteRest } from '$lib/i18n/routing';
-import type { HabitatMode } from '$lib/config/habitat-game';
 
 /**
  * Випадкова гра з головного меню.
@@ -10,39 +9,23 @@ import type { HabitatMode } from '$lib/config/habitat-game';
  * одразу може випасти.
  */
 
-/** Усе, що є грою: у мапі маршрутів є ще головна, і вона порожній ключ. */
+/**
+ * Усе, що є ГРОЮ.
+ *
+ * Викидаються двоє: порожній ключ — це головна, а `game-habitat` — вибір
+ * підрежиму, тобто ще одне меню. Кнопка обіцяє гру, тож випадати мають самі
+ * підрежими, і вони в переліку є окремими адресами.
+ *
+ * Доти режим доводилося передавати модульною змінною повз адресу: «Де живем?»
+ * була одним URL на три екрани, і сказати «відкрий одразу континенти» не було
+ * чим. Той обхідний шлях зник разом із причиною.
+ */
+const NOT_A_GAME = new Set<RouteRest>(['', 'game-habitat']);
+
 export const PLAYABLE_ROUTES = (Object.keys(LANGUAGE_ROUTES) as RouteRest[]).filter(
-	(route): route is Exclude<RouteRest, ''> => route !== ''
+	(route): route is Exclude<RouteRest, ''> => !NOT_A_GAME.has(route)
 );
 
 export function pickRandomRoute(random: () => number = Math.random): Exclude<RouteRest, ''> {
 	return PLAYABLE_ROUTES[Math.floor(random() * PLAYABLE_ROUTES.length)];
-}
-
-/**
- * Підрежим, обраний за гравця.
- *
- * «Де живем?» починається з вибору режиму, а випадкова гра має відкриватися
- * ГРОЮ — питати після «випадкової» означало б не виконати обіцянку кнопки.
- *
- * Передається модульною змінною, а не адресою: параметр у query ламав би
- * prerender (`page.url.searchParams` на prerender-сторінці кидає виняток), а
- * у сховищі він пережив би сесію й спрацював би там, де його не просили.
- * Одноразовість тут головна властивість — звідси `take`, а не `get`.
- */
-let pendingHabitatMode: HabitatMode | null = null;
-
-export function armHabitatMode(mode: HabitatMode): void {
-	pendingHabitatMode = mode;
-}
-
-/** Забрати намір і одразу його погасити: другий виклик поверне `null`. */
-export function takeHabitatMode(): HabitatMode | null {
-	const mode = pendingHabitatMode;
-	pendingHabitatMode = null;
-	return mode;
-}
-
-export function pickHabitatMode(random: () => number = Math.random): HabitatMode {
-	return random() < 0.5 ? 'continents' : 'biomes';
 }

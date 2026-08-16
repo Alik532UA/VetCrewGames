@@ -2,7 +2,7 @@
 	import { Globe2, Trees } from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { t, formatFont } from '$lib/i18n';
-	import type { HabitatMode } from '$lib/config/habitat-game';
+	import { langPath, type Language } from '$lib/i18n/routing';
 
 	/**
 	 * Стартовий екран гри «Де живем?»: вибір підрежиму (концепція, гра 3).
@@ -12,42 +12,44 @@
 	 * тварини, ні варіантів, ні кнопки перевірки. Стилі переїхали разом із
 	 * розміткою: scoped-правила батька до дочірньої розмітки не дістають, і
 	 * компілятор про це не попереджає (SVELTE-UI-v8 § 3.5).
+	 *
+	 * Пункти — ПОСИЛАННЯ, а не кнопки: кожен режим тепер має власну адресу, і
+	 * її має бути видно. Середній клік відкриє в новій вкладці, а посилання
+	 * можна просто надіслати.
 	 */
 	interface Props {
-		onchoose: (mode: HabitatMode) => void;
+		lang: Language;
 	}
 
-	let { onchoose }: Props = $props();
+	let { lang }: Props = $props();
 </script>
 
 <div class="mode-picker" in:fade={{ duration: 300 }}>
 	<h2 class="mode-picker__title text-panel">{@html formatFont(t('habitat.chooseMode'))}</h2>
 
-	<button
-		type="button"
+	<a
 		class="mode-btn"
-		onclick={() => onchoose('continents')}
-		data-testid="habitat-mode-continents-btn"
+		href={langPath(lang, 'game-habitat/continents')}
+		data-testid="habitat-mode-continents-link"
 	>
 		<Globe2 size={28} aria-hidden="true" />
 		<span class="mode-btn__text">
 			<strong>{@html formatFont(t('habitat.mode.continents'))}</strong>
 			<small>{@html formatFont(t('habitat.mode.continents.hint'))}</small>
 		</span>
-	</button>
+	</a>
 
-	<button
-		type="button"
+	<a
 		class="mode-btn"
-		onclick={() => onchoose('biomes')}
-		data-testid="habitat-mode-biomes-btn"
+		href={langPath(lang, 'game-habitat/biomes')}
+		data-testid="habitat-mode-biomes-link"
 	>
 		<Trees size={28} aria-hidden="true" />
 		<span class="mode-btn__text">
 			<strong>{@html formatFont(t('habitat.mode.biomes'))}</strong>
 			<small>{@html formatFont(t('habitat.mode.biomes.hint'))}</small>
 		</span>
-	</button>
+	</a>
 </div>
 
 <style>
@@ -89,6 +91,7 @@
 		border: none;
 		border-radius: var(--radius-md);
 		background: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
+		text-decoration: none;
 		backdrop-filter: var(--blur-glass);
 		color: var(--color-text-on-panel);
 		box-shadow: var(--shadow-card);

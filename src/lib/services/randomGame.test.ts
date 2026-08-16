@@ -1,41 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { PLAYABLE_ROUTES, pickRandomRoute, pickHabitatMode, armHabitatMode, takeHabitatMode } from './randomGame';
+import { PLAYABLE_ROUTES, pickRandomRoute } from './randomGame';
 import { LANGUAGE_ROUTES } from '$lib/i18n/routing';
 
 describe('випадкова гра', () => {
 	/**
-	 * Перелік виводиться з маршрутів — другий список розійшовся б із першим на
-	 * наступній грі. Перевірка стежить саме за цим, а не за кількістю.
+	 * Перелік виводиться з маршрутів, а другий список розійшовся б із першим на
+	 * наступній грі. Перевірка стежить саме за тим, а не за вмістом.
 	 */
-	it('до переліку входить кожен ігровий маршрут і жодного зайвого', () => {
-		const routes = Object.keys(LANGUAGE_ROUTES).filter((route) => route !== '');
-		expect([...PLAYABLE_ROUTES].sort()).toEqual(routes.sort());
-		expect(PLAYABLE_ROUTES, 'головна — не гра').not.toContain('');
+	it('це всі маршрути, крім головної та вибору режиму', () => {
+		const games = Object.keys(LANGUAGE_ROUTES).filter(
+			(route) => route !== '' && route !== 'game-habitat'
+		);
+		expect([...PLAYABLE_ROUTES].sort()).toEqual(games.sort());
 	});
 
-	it('випадає лише те, що є в переліку', () => {
+	/**
+	 * Кнопка обіцяє ГРУ. Головна й вибір підрежиму — це меню: випасти вони не
+	 * мають, інакше «випадкова гра» приводить у ще один вибір.
+	 */
+	it('меню серед варіантів немає', () => {
+		expect(PLAYABLE_ROUTES).not.toContain('');
+		expect(PLAYABLE_ROUTES, 'це екран вибору, а не гра').not.toContain('game-habitat');
+	});
+
+	/**
+	 * Підрежими «Де живем?» тепер повноцінні адреси, тож випадають нарівні з
+	 * рештою — і жодного окремого механізму для них більше не треба. Доти режим
+	 * передавався модульною змінною повз адресу саме тому, що адреси не було.
+	 */
+	it('підрежими «Де живем?» випадають нарівні з іншими іграми', () => {
+		expect(PLAYABLE_ROUTES).toContain('game-habitat/continents');
+		expect(PLAYABLE_ROUTES).toContain('game-habitat/biomes');
+	});
+
+	it('вибрана гра — та, що є в переліку', () => {
 		for (const value of [0, 0.5, 0.999]) {
 			expect(PLAYABLE_ROUTES).toContain(pickRandomRoute(() => value));
 		}
 	});
 
-	it('кожен маршрут досяжний', () => {
+	it('кожна досяжна принаймні раз', () => {
 		const seen = new Set(
 			PLAYABLE_ROUTES.map((_, i) => pickRandomRoute(() => i / PLAYABLE_ROUTES.length))
 		);
 		expect(seen.size).toBe(PLAYABLE_ROUTES.length);
-	});
-
-	it('обидва підрежими «Де живем?» випадають', () => {
-		expect(pickHabitatMode(() => 0.1)).toBe('continents');
-		expect(pickHabitatMode(() => 0.9)).toBe('biomes');
-	});
-
-	/** Одноразовість — головна властивість: інакше режим нав'язався б і вдруге. */
-	it('намір щодо режиму спрацьовує рівно один раз', () => {
-		expect(takeHabitatMode(), 'без наміру — нічого').toBeNull();
-		armHabitatMode('biomes');
-		expect(takeHabitatMode()).toBe('biomes');
-		expect(takeHabitatMode(), 'другий раз уже порожньо').toBeNull();
 	});
 });

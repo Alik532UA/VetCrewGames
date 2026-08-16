@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
-	import { armHabitatMode, pickHabitatMode, pickRandomRoute } from '$lib/services/randomGame';
+	import { pickRandomRoute } from '$lib/services/randomGame';
 	import { langPath, languageFromParam, type RouteRest } from '$lib/i18n/routing';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -39,14 +39,11 @@
 	/**
 	 * «Випадкова гра» — не посилання, бо ціль відома лише в момент кліку.
 	 *
-	 * «Де живем?» тут відкривається одразу грою: питати про режим після
-	 * «випадкової» означало б не виконати обіцянку кнопки, тож режим теж
-	 * випадає — і намір передається окремо, не адресою (див. randomGame.ts).
+	 * Підрежими «Де живем?» тепер самі є адресами, тож вибирати їх окремо не
+	 * треба: вони просто лежать у переліку нарівні з рештою ігор.
 	 */
 	function playRandom() {
-		const route = pickRandomRoute();
-		if (route === 'game-habitat') armHabitatMode(pickHabitatMode());
-		goto(langPath(lang, route));
+		goto(langPath(lang, pickRandomRoute()));
 	}
 
 	const links = [

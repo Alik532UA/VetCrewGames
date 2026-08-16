@@ -60,6 +60,10 @@ export const LANGUAGE_ROUTES = {
 	'game-population': '/[[lang=lang]]/game-population',
 	'game-family': '/[[lang=lang]]/game-family',
 	'game-habitat': '/[[lang=lang]]/game-habitat',
+	// Підрежими «Де живем?» — окремі сторінки, а не стан: посиланням на них
+	// можна поділитися, і кожна потрапляє в sitemap та hreflang окремо.
+	'game-habitat/continents': '/[[lang=lang]]/game-habitat/continents',
+	'game-habitat/biomes': '/[[lang=lang]]/game-habitat/biomes',
 	'game-feeding': '/[[lang=lang]]/game-feeding',
 	'game-memory': '/[[lang=lang]]/game-memory'
 } as const;
