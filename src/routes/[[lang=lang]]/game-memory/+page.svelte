@@ -28,11 +28,21 @@
 
 	function flip(index: number) {
 		if (!game.flip(index)) return;
+
+		/*
+		 * Успішний хід гасить попередній таймер завжди.
+		 *
+		 * Правила самі перегортають невдалу пару, щойно гравець торкнувся
+		 * третьої картки, тож старий таймер уже нічого не стереже — але, якщо
+		 * його лишити, він спрацює посеред НАСТУПНОГО ходу й закриє пару,
+		 * якої гравець ще не бачив.
+		 */
+		if (hideTimer) {
+			clearTimeout(hideTimer);
+			hideTimer = null;
+		}
 		if (!game.awaitingPeek) return;
 
-		// Таймер один: другий, накладений на перший, закрив би пару, яку гравець
-		// щойно відкрив наступним ходом.
-		if (hideTimer) clearTimeout(hideTimer);
 		hideTimer = setTimeout(() => {
 			hideTimer = null;
 			game.resolvePeek();
@@ -94,7 +104,7 @@
 				<MemoryCard
 					{slot}
 					position={index + 1}
-					disabled={game.awaitingPeek}
+					disabled={game.gameOver}
 					onflip={() => flip(index)}
 					testId="memory-card-btn-{slot.card.id}"
 				/>

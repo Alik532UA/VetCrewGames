@@ -94,13 +94,24 @@ export class MemoryGameController {
 	 * Відкрити картку. Єдиний хід у грі — і єдине, що колись прийде з мережі.
 	 *
 	 * Повертає `true`, якщо хід зараховано: інтерфейсу цього досить, щоб знати,
-	 * чи запускати таймер приховування.
+	 * чи перезапускати таймер приховування.
 	 */
 	flip(index: number): boolean {
-		if (this.gameOver || this.awaitingPeek) return false;
+		if (this.gameOver) return false;
 
 		const slot = this.slots[index];
 		if (!slot || slot.takenBy !== null || slot.faceUp) return false;
+
+		/*
+		 * Дві невдалі картки не блокують дошку: клік по третій гортає їх ОДРАЗУ
+		 * й починає новий хід. Пауза лишається для тих, хто хоче роздивитися, і
+		 * зникає для тих, хто вже все запам'ятав, — гра йде в темпі гравця, а не
+		 * таймера.
+		 *
+		 * Перевірка самої картки стоїть ВИЩЕ навмисно: клік по вже відкритій
+		 * нічого не гортає, інакше промах по власній парі закривав би її сам.
+		 */
+		if (this.awaitingPeek) this.resolvePeek();
 
 		slot.faceUp = true;
 		this.#peek = [...this.#peek, index];

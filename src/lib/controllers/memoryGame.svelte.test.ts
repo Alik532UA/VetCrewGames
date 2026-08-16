@@ -118,15 +118,55 @@ describe('MemoryGameController', () => {
 		expect(game.awaitingPeek).toBe(false);
 	});
 
-	it('третю картку не відкрити, доки лежать дві', () => {
+	/**
+	 * Дошка не блокується на час паузи: гравець, який уже все запам'ятав, не
+	 * мусить чекати таймера. Пауза лишається тим, хто хоче роздивитися.
+	 */
+	it('третя картка гортає невдалу пару одразу й починає новий хід', () => {
+		const game = started();
+		const [a, b] = mismatchIndexes(game);
+		game.flip(a);
+		game.flip(b);
+		expect(game.awaitingPeek).toBe(true);
+
+		const third = game.slots.findIndex((slot, i) => i !== a && i !== b && !slot.faceUp);
+		expect(game.flip(third), 'хід прийнято, а не відхилено').toBe(true);
+
+		expect(game.slots[a].faceUp || game.slots[b].faceUp, 'попередні закрилися').toBe(false);
+		expect(game.slots[third].faceUp, 'нова відкрилася').toBe(true);
+		expect(game.awaitingPeek, 'лежить одна, а не дві').toBe(false);
+	});
+
+	it('клік по вже відкритій картці нічого не гортає', () => {
 		const game = started();
 		const [a, b] = mismatchIndexes(game);
 		game.flip(a);
 		game.flip(b);
 
-		const third = game.slots.findIndex((slot, i) => i !== a && i !== b && !slot.faceUp);
-		expect(game.flip(third), 'хід відхилено').toBe(false);
-		expect(game.slots[third].faceUp).toBe(false);
+		expect(game.flip(a), 'по собі ж — не хід').toBe(false);
+		expect(game.slots[a].faceUp && game.slots[b].faceUp, 'обидві лишилися видимі').toBe(true);
+		expect(game.awaitingPeek).toBe(true);
+	});
+
+	it('пара, зібрана третім кліком, зараховується тому, чий тепер хід', () => {
+		const game = new MemoryGameController();
+		game.start(11, [
+			{ id: 'a', nameKey: 'memory.you', score: 0, local: true },
+			{ id: 'b', nameKey: 'memory.rival', score: 0, local: false }
+		]);
+
+		const [x, y] = mismatchIndexes(game);
+		game.flip(x);
+		game.flip(y);
+
+		// Третій клік гортає промах — і хід переходить ДО того, як карту відкрито.
+		const [p, q] = pairIndexes(game, 2);
+		game.flip(p);
+		game.flip(q);
+
+		expect(game.currentPlayerIndex).toBe(1);
+		expect(game.players[1].score, 'пара дісталася другому гравцеві').toBe(1);
+		expect(game.players[0].score).toBe(0);
 	});
 
 	it('та сама картка двічі — це не хід', () => {
