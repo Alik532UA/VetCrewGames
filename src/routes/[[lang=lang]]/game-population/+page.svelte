@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { cubicOut } from 'svelte/easing';
 	import { fade, slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPlain, formatPopulation } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
 	import { PopulationGameController, type Place } from '$lib/controllers/populationGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
 	import { Check, X, RotateCcw } from 'lucide-svelte';
+	import { createCrossfade } from '$lib/utils/transitions';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 
@@ -42,77 +42,7 @@
 	let touchDragStarted = false;
 	const TOUCH_DRAG_THRESHOLD = 8;
 
-	function createCrossfade() {
-		const to_receive = new Map<string | number, HTMLElement>();
-		const to_send = new Map<string | number, HTMLElement>();
-
-		function doCrossfade(from_node: HTMLElement, node: HTMLElement, isSend: boolean) {
-			const from = from_node.getBoundingClientRect();
-			const to = node.getBoundingClientRect();
-			const dx = from.left - to.left;
-			const dy = from.top - to.top;
-			const style = getComputedStyle(node);
-			const transform = style.transform === 'none' ? '' : style.transform;
-			const opacity = +style.opacity;
-
-			let arcX = 0;
-			let arcY = 0;
-			if (isSwapping) {
-				const horizontal = Math.abs(dx) >= Math.abs(dy);
-				const sign = isSend ? 1 : -1;
-				if (horizontal) {
-					arcY = sign * -30;
-				} else {
-					arcX = sign * 30;
-				}
-			}
-
-			return {
-				duration: 300,
-				easing: cubicOut,
-				css: (t: number, u: number) => {
-					const sine = Math.sin(Math.PI * t);
-					return `
-						opacity: ${t * opacity};
-						transform-origin: top left;
-						transform: ${transform} translate(${u * dx + arcX * sine}px, ${u * dy + arcY * sine}px);
-					`;
-				}
-			};
-		}
-
-		function transition(
-			items: Map<string | number, HTMLElement>,
-			counterparts: Map<string | number, HTMLElement>,
-			isSend: boolean
-		) {
-			return (node: HTMLElement, params: { key: string | number }) => {
-				items.set(params.key, node);
-				return () => {
-					if (counterparts.has(params.key)) {
-						const other = counterparts.get(params.key)!;
-						counterparts.delete(params.key);
-						return doCrossfade(other, node, isSend);
-					}
-					items.delete(params.key);
-					const style = getComputedStyle(node);
-					const tfm = style.transform === 'none' ? '' : style.transform;
-					return {
-						duration: 300,
-						easing: cubicOut,
-						css: (t: number) => `
-							transform: ${tfm} scale(${t});
-							opacity: ${t}
-						`
-					};
-				};
-			};
-		}
-
-		return [transition(to_send, to_receive, true), transition(to_receive, to_send, false)];
-	}
-
-	const [send, receive] = createCrossfade();
+	const [send, receive] = createCrossfade(() => isSwapping);
 
 	/** Хід зроблено — візуальний стан перетягування знімається тут, не в правилах. */
 	function afterDrop(moved: boolean) {

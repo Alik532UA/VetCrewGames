@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fade, slide, fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
+	import { flyAndSlide } from '$lib/utils/transitions';
 	import { settings } from '$lib/services/settings.svelte';
 	import { t, td, formatFont, formatPlain } from '$lib/i18n';
 	import { MythGameController } from '$lib/controllers/mythGame.svelte';
@@ -14,35 +14,6 @@
 	// Стан партії гине разом зі сторінкою — саме тому контролер тут `new`, а не
 	// module-level синглтон.
 	const game = new MythGameController();
-
-	function flyAndSlide(
-		node: HTMLElement,
-		{ delay = 0, duration = 400, easing = cubicOut, y = 0 } = {}
-	) {
-		const style = getComputedStyle(node);
-		const target_opacity = +style.opacity;
-		const transform = style.transform === 'none' ? '' : style.transform;
-		const height = parseFloat(style.height);
-		const padding_top = parseFloat(style.paddingTop);
-		const padding_bottom = parseFloat(style.paddingBottom);
-
-		return {
-			delay,
-			duration,
-			easing,
-			css: (t: number) => {
-				const y_val = y * (1 - t);
-				return `
-					transform: ${transform} translateY(${y_val}px);
-					opacity: ${target_opacity * t};
-					height: ${t * height}px;
-					padding-top: ${t * padding_top}px;
-					padding-bottom: ${t * padding_bottom}px;
-					overflow: hidden;
-				`;
-			}
-		};
-	}
 
 	onMount(() => {
 		game.start();
