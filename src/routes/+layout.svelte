@@ -6,6 +6,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
 	import PageScrollbar from '$lib/components/PageScrollbar.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 	import ScrollbarContextMenu from '$lib/components/ScrollbarContextMenu.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
@@ -238,6 +239,7 @@
 
 <div class="app-version text-panel text-panel--tight" data-testid="app-version-value">{appVersion}</div>
 
+<Toast />
 <PageScrollbar />
 
 <!-- Меню в корені: після перемикання на системну смуга зникає — разом із меню,

@@ -4,7 +4,7 @@ import {
 	buildDeck,
 	MEMORY_PAIRS,
 	MEMORY_PAIRS_COMPACT,
-	pairsForViewport
+	layoutForViewport
 } from '$lib/config/memory-game';
 
 const settingsMock = { addScore: vi.fn() };
@@ -53,9 +53,26 @@ describe('колода «Знайди пару»', () => {
 			vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query }));
 
 		stub(true);
-		expect(pairsForViewport()).toBe(MEMORY_PAIRS_COMPACT);
+		expect(layoutForViewport()).toEqual({ pairs: MEMORY_PAIRS_COMPACT, cols: 4 });
 		stub(false);
-		expect(pairsForViewport()).toBe(MEMORY_PAIRS);
+		expect(layoutForViewport()).toEqual({ pairs: MEMORY_PAIRS, cols: 7 });
+	});
+
+	/**
+	 * Пари й колонки — одне рішення: десять пар у сім колонок дають два ряди й
+	 * хвостик, чотирнадцять у чотири — сім рядів. Доти колонки задавав
+	 * медіазапит, а пари — функція, і зв'язок тримався на тому, що обидва пороги
+	 * випадково однакові.
+	 */
+	it('колода лягає повними рядами в обох розкладках', () => {
+		const stub = (matches: boolean) =>
+			vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query }));
+
+		for (const narrow of [true, false]) {
+			stub(narrow);
+			const { pairs, cols } = layoutForViewport();
+			expect((pairs * 2) % cols, `${pairs} пар у ${cols} колонок лишають хвостик`).toBe(0);
+		}
 	});
 
 	it('менша колода лягає повними рядами по чотири', () => {

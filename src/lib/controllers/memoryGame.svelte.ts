@@ -50,6 +50,11 @@ export interface MemoryParty {
 	seed: number;
 	/** Скільки пар роздати. За замовчуванням — те, з чим створили контролер. */
 	pairs?: number;
+	/**
+	 * На скільки колонок класти. Належить ПАРТІЇ, а не екрану: сітка, що
+	 * перебудовується посеред гри, стирає те, що гравець уже запам'ятав.
+	 */
+	cols?: number;
 	/** Хто грає. Соло — це список із одного. */
 	players?: MemoryPlayer[];
 }
@@ -63,6 +68,13 @@ export class MemoryGameController {
 	 * не може, інакше поворот екрана перероздав би колоду посеред ходу.
 	 */
 	pairs = $state(MEMORY_PAIRS);
+
+	/**
+	 * Колонки зафіксовані на всю партію. Медіазапит перебудовував сітку на
+	 * кожну зміну ширини вікна — і 4×5 ставало 7×2 з хвостиком просто тому, що
+	 * вікно потягнули. Гра при цьому вся про те, ЩО ДЕ ЛЕЖИТЬ.
+	 */
+	cols = $state(7);
 
 	slots = $state<MemorySlot[]>([]);
 	players = $state<MemoryPlayer[]>([]);
@@ -91,8 +103,9 @@ export class MemoryGameController {
 	 * Почати партію за її описом. Один обʼєкт, а не три аргументи: це те саме,
 	 * що колись прийде з мережі одним повідомленням.
 	 */
-	start({ seed, pairs = this.pairs, players = [{ ...SOLO_PLAYER }] }: MemoryParty): void {
+	start({ seed, pairs = this.pairs, cols = this.cols, players = [{ ...SOLO_PLAYER }] }: MemoryParty): void {
 		this.pairs = pairs;
+		this.cols = cols;
 		this.slots = buildDeck(seed, pairs).map((card) => ({
 			card,
 			faceUp: false,

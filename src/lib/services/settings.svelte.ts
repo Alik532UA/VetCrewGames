@@ -217,6 +217,23 @@ class Settings {
 	setHeaderTitle(key: TranslationKey | null): void {
 		this.headerTitleKey = key;
 	}
+
+	/**
+	 * Прибрати заголовок, але ЛИШЕ якщо він досі свій.
+	 *
+	 * Під час переходу між сторінками нова монтується раніше, ніж стара
+	 * знищується. Стара при цьому чистила заголовок беззастережно — і стирала
+	 * той, що нова вже поставила. Видно це стало на «Де живем?», коли вибір
+	 * режиму й сама гра розʼїхалися на два маршрути: заголовок ставав `null`,
+	 * шапка поверталася до `app.title`, а разом із ним зникала кнопка «назад» —
+	 * її показують лише там, де заголовок СВІЙ.
+	 *
+	 * Те саме стосується кроку назад: його теж знімає лише той, хто ставив.
+	 */
+	releaseHeader(key: TranslationKey, back?: () => void): void {
+		if (this.headerTitleKey === key) this.headerTitleKey = null;
+		if (back && this.headerBack === back) this.headerBack = null;
+	}
 }
 
 export const settings = new Settings();

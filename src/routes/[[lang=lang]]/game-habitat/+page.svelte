@@ -21,7 +21,9 @@
 
 	onMount(() => {
 		settings.setHeaderTitle('habitat.title');
-		return () => settings.setHeaderTitle(null);
+		// Знімає заголовок лише той, хто його поставив: сторінка режиму монтується
+		// раніше, ніж ця знищується, і беззастережне очищення стирало б її.
+		return () => settings.releaseHeader('habitat.title');
 	});
 </script>
 

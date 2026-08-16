@@ -54,12 +54,10 @@
 		 * Тепер це справжня адреса, тож перехід звичайний — і працює однаково
 		 * що з історії, що при прямому заході за посиланням.
 		 */
-		settings.setHeaderBack(() => goto(langPath(lang, 'game-habitat')));
+		const back = () => goto(langPath(lang, 'game-habitat'));
+		settings.setHeaderBack(back);
 
-		return () => {
-			settings.setHeaderTitle(null);
-			settings.setHeaderBack(null);
-		};
+		return () => settings.releaseHeader('habitat.title', back);
 	});
 </script>
 

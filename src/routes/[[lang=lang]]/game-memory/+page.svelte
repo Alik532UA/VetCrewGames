@@ -5,7 +5,8 @@
 	import { languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { MemoryGameController } from '$lib/controllers/memoryGame.svelte';
-	import { pairsForViewport } from '$lib/config/memory-game';
+	import { layoutForViewport } from '$lib/config/memory-game';
+	import { toast } from '$lib/controllers/toast.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
 
@@ -28,13 +29,41 @@
 	const freshSeed = () => Math.floor(Math.random() * 2 ** 31);
 
 	/**
-	 * Нова партія: зерно випадкове, розмір колоди — за екраном.
+	 * Нова партія: зерно випадкове, розкладка — за екраном.
 	 *
-	 * Розмір питається САМЕ тут, а не при створенні контролера: контролер
+	 * Розкладка питається САМЕ тут, а не при створенні контролера: контролер
 	 * створюється й під час prerender, де `matchMedia` не існує. І питається
-	 * один раз на партію — поворот екрана посеред гри колоду не перероздає.
+	 * один раз на партію — далі вона належить партії, а не вікну.
 	 */
-	const newParty = () => ({ seed: freshSeed(), pairs: pairsForViewport() });
+	const newParty = () => ({ seed: freshSeed(), ...layoutForViewport() });
+
+	/**
+	 * Вікно змінило розмір посеред партії — пропонуємо перерозкласти, але НЕ
+	 * робимо цього самі.
+	 *
+	 * Перебудовувати сітку мовчки не можна: гра вся про те, що де лежить, і
+	 * колода, яка перескочила з 4×5 на 7×2 з хвостиком, стирає все, що гравець
+	 * уже запам'ятав. Тому рішення лишається за ним — і разом із пропозицією
+	 * він бачить, що це саме нова роздача.
+	 *
+	 * До першого ходу пропонувати нема чого: запам'ятовувати ще нічого, тож
+	 * там просто перерозкладаємо.
+	 */
+	function offerRelayout() {
+		const wanted = layoutForViewport();
+		if (wanted.cols === game.cols || game.gameOver) return;
+
+		if (game.moves === 0) {
+			game.start(newParty());
+			return;
+		}
+
+		if (toast.has('memory.resized')) return;
+		toast.info('memory.resized', 12000, {
+			labelKey: 'memory.relayout',
+			onAction: playAgain
+		});
+	}
 
 	function flip(index: number) {
 		if (!game.flip(index)) return;
@@ -68,7 +97,12 @@
 	onMount(() => {
 		game.start(newParty());
 		settings.setHeaderTitle('memory.title');
-		return () => settings.setHeaderTitle(null);
+
+		window.addEventListener('resize', offerRelayout);
+		return () => {
+			window.removeEventListener('resize', offerRelayout);
+			settings.releaseHeader('memory.title');
+		};
 	});
 
 	// Таймер живе поза Svelte, тож його прибирає окремий хук: без цього
@@ -109,7 +143,11 @@
 			</span>
 		</div>
 
-		<div class="deck" data-testid="memory-deck-container">
+			<!--
+				Колонки приходять зі СТАНУ ПАРТІЇ, а не з медіазапиту: сітка, яку
+				перебудовує ширина вікна, стирає запам'ятане.
+			-->
+			<div class="deck" style="--cols: {game.cols}; --rows: {Math.ceil(game.slots.length / game.cols)}" data-testid="memory-deck-container">
 			{#each game.slots as slot, index (slot.card.id)}
 				<MemoryCard
 					{slot}
@@ -179,6 +217,12 @@
 	 * `min()` бере те з двох, що менше, тож на широкому й низькому екрані
 	 * вирішує висота, на вузькому — ширина.
 	 */
+	/*
+	 * `--cols` і `--rows` приходять ІНЛАЙНОМ зі стану партії — тут лише запасні
+	 * значення на випадок, коли розмітка ще не встигла їх поставити. Медіазапит
+	 * звідси прибраний свідомо: він перебудовував сітку на кожну зміну ширини
+	 * вікна, а розкладка належить партії, а не вікну.
+	 */
 	.deck {
 		--cols: 7;
 		--rows: 4;
@@ -195,31 +239,6 @@
 		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
 		gap: var(--space-xs);
 		width: min(90vw, calc(var(--deck-height) * var(--cols) * 3 / (var(--rows) * 4)));
-	}
-
-	/*
-	 * Телефон: чотири колонки й п'ять рядів.
-	 *
-	 * Сім колонок тут дали б картку в 50px — сенсорну ціль вона ще проходить, а
-	 * от упізнати на ній тварину вже ні, і гра саме про це. Але й чотирнадцять
-	 * пар у чотири колонки не годяться: це сім рядів, заміряно 815px колоди при
-	 * 610 доступних, тобто партію доводиться гортати. Тому на телефоні колода
-	 * менша — десять пар (див. `MEMORY_PAIRS_COMPACT`), і вони лягають рівно в
-	 * 4×5.
-	 *
-	 * `width` тут НЕ перекривається: працює та сама формула з `min()`, що й на
-	 * широкому екрані. На 390×844 вирішує ширина (351px, картка 85×113), на
-	 * низькому 375×667 — висота (270px, картка 64×85). Тобто на короткому екрані
-	 * картки меншають самі, замість того щоб виїхати за край.
-	 *
-	 * SYNC: 559px — той самий поріг, що й у `pairsForViewport()`. Медіазапит не
-	 * вміє спитати JS, тож число неминуче у двох місцях.
-	 */
-	@media (max-width: 559px) {
-		.deck {
-			--cols: 4;
-			--rows: 5;
-		}
 	}
 
 </style>

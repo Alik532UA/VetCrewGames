@@ -41,18 +41,27 @@ export const MEMORY_PAIRS = 14;
  */
 export const MEMORY_PAIRS_COMPACT = 10;
 
+/** Розкладка колоди: скільки пар і на скільки колонок їх класти. */
+export interface MemoryLayout {
+	pairs: number;
+	cols: number;
+}
+
 /**
- * Скільки пар роздати на цьому екрані.
+ * Розкладка під поточний екран.
  *
- * SYNC: поріг той самий, що й у медіазапиті сторінки. Медіазапит не вміє
- * посилатися на JS, а JS не вміє спитати CSS, тож число неминуче у двох місцях
- * — і розійтися їм не можна: колода на 14 пар у сітці на 4 колонки дасть сім
- * рядів, під які місця не рахували.
+ * Кількість колонок повертається РАЗОМ із кількістю пар, бо це одне рішення:
+ * десять пар у сім колонок дають два ряди й хвостик, чотирнадцять у чотири —
+ * сім рядів, під які місця не рахували. Доти колонки задавав медіазапит, а
+ * пари — ця функція, і зв'язок між ними тримався на тому, що обидва пороги
+ * випадково однакові.
  *
  * Викликати можна лише в браузері: `matchMedia` під час prerender не існує.
  */
-export function pairsForViewport(): number {
-	return window.matchMedia('(max-width: 559px)').matches ? MEMORY_PAIRS_COMPACT : MEMORY_PAIRS;
+export function layoutForViewport(): MemoryLayout {
+	return window.matchMedia('(max-width: 559px)').matches
+		? { pairs: MEMORY_PAIRS_COMPACT, cols: 4 }
+		: { pairs: MEMORY_PAIRS, cols: 7 };
 }
 
 /**

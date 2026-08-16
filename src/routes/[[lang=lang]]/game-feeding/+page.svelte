@@ -7,6 +7,7 @@
 	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
 	import { BIN } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import FeedingBoard from '$lib/components/FeedingBoard.svelte';
@@ -55,7 +56,7 @@
 	});
 </script>
 
-<div class="game-page">
+<div class="game-page" use:fitToViewport>
 	{#if game.gameOver}
 		<GameOverCard
 			score={game.sessionScore}

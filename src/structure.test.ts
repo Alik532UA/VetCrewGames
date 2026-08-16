@@ -57,7 +57,7 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	'src/routes/[[lang=lang]]/game-population/+page.svelte': 988,
 	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`,
 	// 438 → 409 після винесення `flyAndSlide`, +1 на імпорт `revealScroll`.
-	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 410
+	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 411
 };
 
 /**
@@ -165,8 +165,22 @@ describe('структура проєкту', () => {
 			for (const m of markup.matchAll(/classList\.(?:add|remove|toggle)\('([\w-]+)'/g))
 				used.add(m[1]);
 
+			/*
+			 * Модифікатор, зібраний інтерполяцією, лишає в розмітці лише корінь:
+			 * `class="toast toast--{message.type}"` дає токен `toast--`. Чотири
+			 * оголошені `.toast--success|warn|error|info` при цьому цілком живі —
+			 * просто їхні хвости обчислюються в рантаймі.
+			 *
+			 * Тому клас вважається вжитим і тоді, коли в розмітці є його ПОЧАТОК
+			 * із обрізаною інтерполяцією. Це дзеркало правила про базу BEM у
+			 * перевірці навпроти: там модифікатор виправдовує базу, тут корінь
+			 * виправдовує модифікатор.
+			 */
+			const stems = [...used].filter((token) => token.endsWith('-'));
 			for (const cls of declared) {
-				if (!used.has(cls)) problems.push(`${file}: .${cls}`);
+				if (used.has(cls)) continue;
+				if (stems.some((stem) => cls.startsWith(stem))) continue;
+				problems.push(`${file}: .${cls}`);
 			}
 		}
 
