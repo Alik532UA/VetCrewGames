@@ -43,8 +43,9 @@ const read = (f: string) => readFileSync(f, 'utf8');
 const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// Три екрани, у яких логіка живе просто в маршруті. Розбирати їх треба
 	// винесенням стану в контролери `.svelte.ts` — це окрема робота, не правка.
-	// 1086 → 1016 після винесення `createCrossfade` у `utils/transitions.ts`.
-	'src/routes/[[lang=lang]]/game-population/+page.svelte': 1016,
+	// 1086 → 1016 після винесення `createCrossfade` у `utils/transitions.ts`,
+	// 1016 → 987 після винесення `parkDraggedCard`.
+	'src/routes/[[lang=lang]]/game-population/+page.svelte': 987,
 	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`,
 	// 438 → 409 після винесення `flyAndSlide`. Далі число має лише спадати.
 	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 409,

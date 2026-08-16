@@ -7,6 +7,7 @@
 	import type { Animal } from '$lib/config/population-game';
 	import { Check, X, RotateCcw } from 'lucide-svelte';
 	import { createCrossfade } from '$lib/utils/transitions';
+	import { parkDraggedCard } from '$lib/utils/parkDraggedCard';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 
@@ -81,36 +82,6 @@
 		if (dragOverId === id) dragOverId = null;
 	}
 
-	/**
-	 * Ставить елемент рівно туди, де його відпустили, ДО того як Svelte
-	 * перемалює список: інакше картка стрибнула б із курсора у стару позицію і
-	 * лише звідти полетіла б у нову.
-	 */
-	function setDragElementDropPosition(
-		animalId: number | string,
-		clientX: number,
-		clientY: number,
-		offsetX?: number,
-		offsetY?: number
-	) {
-		const el = document.querySelector(`[data-drag-animal="${animalId}"]`) as HTMLElement;
-		if (!el) return;
-
-		el.style.setProperty('transition', 'none', 'important');
-		el.style.setProperty('transform', 'none', 'important');
-
-		const rect = el.getBoundingClientRect();
-		const ox = offsetX !== undefined ? offsetX : el.offsetWidth / 2;
-		const oy = offsetY !== undefined ? offsetY : el.offsetHeight / 2;
-
-		el.style.setProperty(
-			'transform',
-			`translate3d(${clientX - ox - rect.left}px, ${clientY - oy - rect.top}px, 0)`,
-			'important'
-		);
-		el.style.setProperty('z-index', '9999', 'important');
-	}
-
 	function dropFromMouse(e: DragEvent, target: 'slot' | 'source', targetIndex: number) {
 		e.preventDefault();
 		dragOverId = null;
@@ -124,7 +95,7 @@
 			return;
 		}
 
-		setDragElementDropPosition(game.picked.id, e.clientX, e.clientY);
+		parkDraggedCard(game.picked.id, e.clientX, e.clientY);
 		afterDrop(target === 'slot' ? game.dropOnSlot(targetIndex) : game.dropOnSource(targetIndex));
 	}
 
@@ -281,7 +252,7 @@
 			return;
 		}
 
-		setDragElementDropPosition(
+		parkDraggedCard(
 			game.picked.id,
 			touch.clientX,
 			touch.clientY,
