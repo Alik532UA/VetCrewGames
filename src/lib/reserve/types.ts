@@ -1,4 +1,5 @@
 import type { AnimalOrigin, Quality, StaffRole } from './constants';
+import type { ContractGoal } from './contracts';
 import type { ReserveBiome } from './species';
 
 /**
@@ -46,6 +47,23 @@ export interface Animal {
 	releasedOnDay: number | null;
 }
 
+export interface Contract {
+	id: number;
+	goal: ContractGoal;
+	titleKey: import('$lib/i18n/translations/uk').TranslationKey;
+	/** Скільки треба зробити ПОНАД зроблене на момент видачі. */
+	amount: number;
+	/**
+	 * Знімок лічильника на момент видачі. Без нього «випустити двох» означало б
+	 * двох за всю партію, і контракт приходив би вже виконаним.
+	 */
+	startedAt: number;
+	/** До якого дня включно. Після нього — провал і мінус репутації. */
+	dueDay: number;
+	reward: number;
+	penalty: number;
+}
+
 export interface ReserveState {
 	/**
 	 * Біом заповідника. Обирається ОДИН раз, на початку партії, і далі не
@@ -85,9 +103,16 @@ export interface ReserveState {
 	/** Стан генератора. Зберігається зі станом, інакше сейв не відтворюється. */
 	seed: number;
 	rolls: number;
+	/** Чинні контракти: обіцянки з дедлайном. */
+	contracts: Contract[];
+	/** Пропозиція, яку ще не прийняли й не відхилили. */
+	offered: Contract | null;
+	/** Якого дня востаннє пропонували контракт. */
+	lastOfferDay: number;
 	/** Наступні вільні `id`. */
 	nextAnimalId: number;
 	nextEnclosureId: number;
+	nextContractId: number;
 }
 
 export type ReserveCommand =
@@ -99,7 +124,9 @@ export type ReserveCommand =
 	| { type: 'release'; animalId: number }
 	| { type: 'hire'; role: StaffRole }
 	| { type: 'dismiss'; role: StaffRole }
-	| { type: 'campaign' };
+	| { type: 'campaign' }
+	| { type: 'accept'; contractId: number }
+	| { type: 'claim'; contractId: number };
 
 /** Чому хід не пройшов. Інтерфейсу цього досить, щоб пояснити людині. */
 export type RejectReason =
@@ -121,6 +148,9 @@ export type RejectReason =
 	| 'wrong-biome'
 	| 'already-sound'
 	| 'not-an-upgrade'
-	| 'campaign-done';
+	| 'campaign-done'
+	| 'no-such-contract'
+	| 'contract-unfinished'
+	| 'too-many-contracts';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };

@@ -1,6 +1,7 @@
 import {
 	ANIMALS_PER_KEEPER,
 	COLLAPSE_DAYS,
+	TICKS_PER_DAY,
 	HEAL_IMPACT,
 	HEAL_REPUTATION,
 	REPUTATION_DECAY_PER_DAY,
@@ -19,6 +20,7 @@ import {
 	WEAR_TWO_STEPS,
 	type Quality
 } from './constants';
+import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
 import { comfortOf, speciesById } from './species';
 import type { Animal, Enclosure, ReserveState } from './types';
 
@@ -71,8 +73,36 @@ function comfortFor(state: ReserveState, animal: Animal): number {
  * Викликається лише з `tick()` на межі доби — і саме тому кількість тіків за
  * виклик не впливає на результат.
  */
+/**
+ * Контракти на межі доби: прострочені провалюються, нова пропозиція приходить.
+ *
+ * Провал коштує РЕПУТАЦІЇ, а не грошей: спонсор нічого не забирає, але про
+ * невиконану обіцянку дізнаються. Саме тому брати все підряд невигідно.
+ */
+function settleContracts(state: ReserveState, day: number): void {
+	const missed = state.contracts.filter((c) => day > c.dueDay && !isDone(state, c));
+	for (const contract of missed) {
+		state.reputation = Math.max(REPUTATION_MIN, state.reputation - contract.penalty);
+	}
+	state.contracts = state.contracts.filter((c) => !missed.includes(c));
+
+	// Пропозиція, яку не взяли, теж не висить вічно: спонсор іде до інших.
+	if (state.offered && day > state.offered.dueDay) state.offered = null;
+
+	const canOffer =
+		!state.offered &&
+		state.contracts.length < MAX_ACTIVE_CONTRACTS &&
+		day - state.lastOfferDay >= CONTRACT_INTERVAL_DAYS;
+	if (canOffer) {
+		state.offered = offerContract(state, day);
+		state.lastOfferDay = day;
+		state.nextContractId += 1;
+	}
+}
+
 export function endOfDay(state: ReserveState): void {
 	const here = present(state);
+	const day = Math.floor(state.ticks / TICKS_PER_DAY);
 
 	// Вольєри зношуються щодня — незалежно від того, живе там хтось чи ні.
 	// Порожній вольєр, який стоїть п'ятдесят днів, теж потребує ремонту.
@@ -120,6 +150,8 @@ export function endOfDay(state: ReserveState): void {
 	 * мінусі. Вихід у нуль обнуляє лічильник: тридцять днів із перервою не
 	 * означають, що фонд шкодить постійно.
 	 */
+	settleContracts(state, day);
+
 	// Публіка забуває: без щоденного спаду шкала насичується за десять хвилин
 	// і перестає бути рішенням.
 	state.reputation = Math.max(REPUTATION_MIN, state.reputation - REPUTATION_DECAY_PER_DAY);

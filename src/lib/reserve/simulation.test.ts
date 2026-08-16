@@ -34,6 +34,7 @@ import {
 	type Quality
 } from './constants';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
+import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
 const snapshot = (state: ReserveState) => JSON.stringify(state);
@@ -910,5 +911,113 @@ describe('перемога', () => {
 		state.impact = IMPACT_TO_WIN;
 		state.victory = true;
 		expect(execute(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'game-over' });
+	});
+});
+
+describe('контракти зі спонсорами', () => {
+	const running = () => {
+		const state = createReserve(1, 'forest');
+		state.budget = 1_000_000;
+		return state;
+	};
+
+	it('перевірка жива: спочатку пропозицій немає', () => {
+		expect(running().offered).toBeNull();
+	});
+
+	it('пропозиція приходить не одразу, а за розкладом', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS - 1);
+		expect(state.offered, 'спонсор прийшов раніше строку').toBeNull();
+
+		day(state);
+		expect(state.offered, 'спонсор так і не прийшов').not.toBeNull();
+	});
+
+	/**
+	 * Лічильник переставляється на момент ПРИЙНЯТТЯ, а не видачі. Інакше
+	 * пропозиція, що повисіла кілька днів, приходила б наполовину виконаною
+	 * тим, що гравець робив, поки думав.
+	 */
+	it('умова рахується від моменту прийняття', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		const offer = state.offered!;
+		state.reputation = 70;
+
+		expect(execute(state, { type: 'accept', contractId: offer.id })).toEqual({ ok: true });
+		const taken = state.contracts[0];
+		expect(doneOf(state, taken), 'контракт прийшов частково виконаним').toBe(0);
+	});
+
+	it('невиконаний контракт нагороди не дає', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		execute(state, { type: 'accept', contractId: state.offered!.id });
+
+		expect(execute(state, { type: 'claim', contractId: state.contracts[0].id })).toEqual({
+			ok: false,
+			reason: 'contract-unfinished'
+		});
+	});
+
+	it('виконаний контракт платить і зникає', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		execute(state, { type: 'accept', contractId: state.offered!.id });
+
+		const contract = state.contracts[0];
+		// Доводимо умову до виконання прямо, хоч би що вона міряла.
+		contract.startedAt = progressOf(state, contract.goal) - contract.amount;
+		const before = state.budget;
+
+		expect(execute(state, { type: 'claim', contractId: contract.id })).toEqual({ ok: true });
+		expect(state.budget - before).toBe(contract.reward);
+		expect(state.contracts).toEqual([]);
+	});
+
+	/**
+	 * Провал коштує РЕПУТАЦІЇ, а не грошей: спонсор нічого не забирає, але про
+	 * невиконану обіцянку дізнаються. Саме тому брати все підряд невигідно.
+	 */
+	it('прострочений контракт забирає репутацію', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		execute(state, { type: 'accept', contractId: state.offered!.id });
+
+		const contract = state.contracts[0];
+		const reputation = state.reputation;
+		day(state, contract.dueDay - dayOf(state) + 1);
+
+		expect(state.contracts, 'прострочений контракт лишився в списку').toEqual([]);
+		expect(state.reputation).toBeLessThan(reputation - contract.penalty + 1);
+	});
+
+	it('більше двох контрактів одночасно не беруть', () => {
+		const state = running();
+		for (let i = 0; i < MAX_ACTIVE_CONTRACTS; i++) {
+			day(state, CONTRACT_INTERVAL_DAYS);
+			execute(state, { type: 'accept', contractId: state.offered!.id });
+		}
+		expect(state.contracts).toHaveLength(MAX_ACTIVE_CONTRACTS);
+
+		// Третю пропозицію підставляємо руками: чекати наступної марно, бо поки
+		// місця немає, спонсори й не приходять — а перший контракт тим часом
+		// устиг би прострочитися й звільнити місце.
+		state.offered = { ...state.contracts[0], id: 999, dueDay: 9999 };
+		expect(execute(state, { type: 'accept', contractId: 999 })).toEqual({
+			ok: false,
+			reason: 'too-many-contracts'
+		});
+	});
+
+	it('контракти переживають збереження', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		execute(state, { type: 'accept', contractId: state.offered!.id });
+
+		const copy = JSON.parse(JSON.stringify(state));
+		expect(copy.contracts).toHaveLength(1);
+		expect(copy.contracts[0].goal).toBe(state.contracts[0].goal);
 	});
 });

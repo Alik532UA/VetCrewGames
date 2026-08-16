@@ -112,5 +112,21 @@ export const reserve = {
 	'reserve.campaignHint':
 		'Tell people about the reserve. Nothing for nature, a plus for reputation.',
 	'reserve.victory': 'Goal reached! The reserve has changed the planet.',
-	'reserve.toWin': 'To victory'
+	'reserve.toWin': 'To victory',
+
+	'reserve.contract.release': 'Return two animals to the wild',
+	'reserve.contract.heal': 'Nurse three animals back to health',
+	'reserve.contract.reputation': 'Raise reputation by 15',
+	'reserve.contracts': 'Contracts',
+	'reserve.offer': 'Sponsor offer',
+	'reserve.accept': 'Accept',
+	'reserve.claim': 'Claim reward',
+	'reserve.dueDay': 'by day',
+	'reserve.reward': 'reward',
+	'reserve.penalty': 'penalty for failure',
+	'reserve.noContracts': 'The sponsors are quiet for now.',
+	'reserve.goals': 'Tutorial goals',
+	'reserve.reject.no-such-contract': 'That offer is gone.',
+	'reserve.reject.contract-unfinished': 'The contract is not finished yet.',
+	'reserve.reject.too-many-contracts': 'No more contracts can be taken at once.'
 } as const;

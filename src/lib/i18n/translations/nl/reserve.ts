@@ -113,5 +113,21 @@ export const reserve = {
 	'reserve.campaignHint':
 		'Vertel over het reservaat. Niets voor de natuur, een plus voor de reputatie.',
 	'reserve.victory': 'Doel bereikt! Het reservaat heeft de planeet veranderd.',
-	'reserve.toWin': 'Tot de overwinning'
+	'reserve.toWin': 'Tot de overwinning',
+
+	'reserve.contract.release': 'Twee dieren terugbrengen naar de natuur',
+	'reserve.contract.heal': 'Drie dieren gezond maken',
+	'reserve.contract.reputation': 'De reputatie met 15 verhogen',
+	'reserve.contracts': 'Contracten',
+	'reserve.offer': 'Sponsoraanbod',
+	'reserve.accept': 'Accepteren',
+	'reserve.claim': 'Beloning ophalen',
+	'reserve.dueDay': 'tot dag',
+	'reserve.reward': 'beloning',
+	'reserve.penalty': 'boete bij mislukking',
+	'reserve.noContracts': 'De sponsors zwijgen voorlopig.',
+	'reserve.goals': 'Leerdoelen',
+	'reserve.reject.no-such-contract': 'Dat aanbod bestaat niet meer.',
+	'reserve.reject.contract-unfinished': 'Het contract is nog niet af.',
+	'reserve.reject.too-many-contracts': 'Meer contracten kunnen niet tegelijk.'
 } as const;

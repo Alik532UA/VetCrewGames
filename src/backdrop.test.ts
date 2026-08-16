@@ -46,7 +46,8 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	'src/lib/components/reserve/AcquireTab.svelte': 'вміст висувної панелі, фон дає BottomSheet',
 	'src/lib/components/reserve/EnclosurePanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
 	'src/lib/components/reserve/StaffPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
-	'src/lib/components/reserve/TasksPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet'
+	'src/lib/components/reserve/TasksPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
+	'src/lib/components/reserve/ContractsBlock.svelte': 'вміст висувної панелі, фон дає BottomSheet'
 };
 
 /** Глобальний клас підкладки з `lib/styles/global.css`. */

@@ -15,6 +15,7 @@ import {
 	TICKS_PER_DAY
 } from './constants';
 import { buildings } from './buildings';
+import { contractMove } from './contractMoves';
 import { speciesById, type ReserveBiome } from './species';
 import { endOfDay } from './day';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
@@ -52,11 +53,15 @@ export function createReserve(seed: number, biome: ReserveBiome = 'forest'): Res
 		gameOver: false,
 		victory: false,
 		lastCampaignDay: -1,
+		contracts: [],
+		offered: null,
+		lastOfferDay: 0,
 		subsidy: false,
 		seed,
 		rolls: 0,
 		nextAnimalId: 1,
-		nextEnclosureId: 1
+		nextEnclosureId: 1,
+		nextContractId: 1
 	};
 }
 
@@ -193,6 +198,10 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 			addReputation(state, CAMPAIGN_REPUTATION);
 			return { ok: true };
 		}
+
+		case 'accept':
+		case 'claim':
+			return contractMove(state, command);
 
 		case 'dismiss':
 			if (state.staff[command.role] === 0) return { ok: false, reason: 'nobody-to-dismiss' };

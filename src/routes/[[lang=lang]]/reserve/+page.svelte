@@ -257,7 +257,7 @@
 					{:else if panel === 'staff'}
 						<StaffPanel staff={game.state.staff} subsidy={game.state.subsidy} onCommand={command} />
 					{:else}
-						<TasksPanel state={game.state} />
+						<TasksPanel state={game.state} day={game.day} onCommand={command} />
 					{/if}
 				</BottomSheet>
 			{/if}

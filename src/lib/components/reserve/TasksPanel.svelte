@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import type { ReserveState } from '$lib/reserve/types';
+	import ContractsBlock from './ContractsBlock.svelte';
+	import type { ReserveCommand, ReserveState } from '$lib/reserve/types';
 
 	/**
 	 * Навчальні цілі — те, що веде новачка за руку перших кілька днів.
@@ -10,14 +11,16 @@
 	 * рано чи пізно розійшовся б із дійсністю. Заразом це означає, що цілі
 	 * переживають будь-який сейв без жодної міграції.
 	 *
-	 * Контракти зі спонсорами (дедлайн, нагорода, штраф) стануть другим
-	 * розділом цієї ж панелі — вони потребують подій у ядрі, яких ще немає.
+	 * Контракти зі спонсорами — другий розділ тієї ж панелі, і стоять вони ВИЩЕ:
+	 * у них є дедлайн, а в цілей немає. Те, що згорить, має бути видно першим.
 	 */
 	interface Props {
 		state: ReserveState;
+		day: number;
+		onCommand: (command: ReserveCommand) => void;
 	}
 
-	let { state }: Props = $props();
+	let { state, day, onCommand }: Props = $props();
 
 	const goals = $derived([
 		{ id: 'build', key: 'reserve.goal.build' as const, done: state.enclosures.length > 0 },
@@ -38,6 +41,10 @@
 
 	const left = $derived(goals.filter((goal) => !goal.done));
 </script>
+
+<ContractsBlock {state} {day} {onCommand} />
+
+<h4 class="section">{t('reserve.goals')}</h4>
 
 {#if left.length === 0}
 	<p class="done-all" data-testid="reserve-no-tasks-text">{t('reserve.noTasks')}</p>
@@ -88,6 +95,14 @@
 		margin-left: auto;
 		font-size: var(--font-size-sm);
 		color: var(--color-success);
+	}
+
+	.section {
+		margin: var(--space-md) 0 var(--space-sm);
+		font-size: var(--font-size-sm);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		opacity: 0.7;
 	}
 
 	.done-all {

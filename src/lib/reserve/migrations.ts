@@ -95,7 +95,19 @@ export function migrateV2toV3(raw: unknown): unknown {
 	return { ...raw, victory: false, lastCampaignDay: -1 };
 }
 
+/**
+ * Версія 3 → 4: зʼявилися контракти зі спонсорами.
+ *
+ * Порожні списки й нульові лічильники: перша пропозиція прийде сама, за
+ * розкладом. Нічого вигадувати не доводиться.
+ */
+export function migrateV3toV4(raw: unknown): unknown {
+	if (!isObject(raw)) return raw;
+	return { ...raw, contracts: [], offered: null, lastOfferDay: 0, nextContractId: 1 };
+}
+
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 	1: migrateV1toV2,
-	2: migrateV2toV3
+	2: migrateV2toV3,
+	3: migrateV3toV4
 };

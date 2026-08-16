@@ -116,5 +116,21 @@ export const reserve = {
 	'reserve.campaign': 'Кампанія в соцмережах',
 	'reserve.campaignHint': 'Розповісти про заповідник. Природі — нуль, репутації — плюс.',
 	'reserve.victory': 'Мету досягнуто! Заповідник змінив планету.',
-	'reserve.toWin': 'До перемоги'
+	'reserve.toWin': 'До перемоги',
+
+	'reserve.contract.release': 'Повернути двох тварин у природу',
+	'reserve.contract.heal': 'Вилікувати трьох тварин',
+	'reserve.contract.reputation': 'Підняти репутацію на 15',
+	'reserve.contracts': 'Контракти',
+	'reserve.offer': 'Пропозиція спонсора',
+	'reserve.accept': 'Прийняти',
+	'reserve.claim': 'Отримати нагороду',
+	'reserve.dueDay': 'до дня',
+	'reserve.reward': 'нагорода',
+	'reserve.penalty': 'штраф за провал',
+	'reserve.noContracts': 'Спонсори поки що мовчать.',
+	'reserve.goals': 'Навчальні цілі',
+	'reserve.reject.no-such-contract': 'Такої пропозиції вже немає.',
+	'reserve.reject.contract-unfinished': 'Контракт ще не виконано.',
+	'reserve.reject.too-many-contracts': 'Більше контрактів одночасно не беруть.'
 } as const;

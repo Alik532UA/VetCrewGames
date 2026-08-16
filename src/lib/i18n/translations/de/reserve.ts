@@ -113,5 +113,21 @@ export const reserve = {
 	'reserve.campaign': 'Social-Media-Kampagne',
 	'reserve.campaignHint': 'Vom Reservat erzählen. Für die Natur nichts, für den Ruf ein Plus.',
 	'reserve.victory': 'Ziel erreicht! Das Reservat hat den Planeten verändert.',
-	'reserve.toWin': 'Bis zum Sieg'
+	'reserve.toWin': 'Bis zum Sieg',
+
+	'reserve.contract.release': 'Zwei Tiere in die Wildnis zurückbringen',
+	'reserve.contract.heal': 'Drei Tiere gesund pflegen',
+	'reserve.contract.reputation': 'Den Ruf um 15 steigern',
+	'reserve.contracts': 'Verträge',
+	'reserve.offer': 'Sponsorenangebot',
+	'reserve.accept': 'Annehmen',
+	'reserve.claim': 'Belohnung abholen',
+	'reserve.dueDay': 'bis Tag',
+	'reserve.reward': 'Belohnung',
+	'reserve.penalty': 'Strafe bei Scheitern',
+	'reserve.noContracts': 'Die Sponsoren schweigen vorerst.',
+	'reserve.goals': 'Lernziele',
+	'reserve.reject.no-such-contract': 'Dieses Angebot gibt es nicht mehr.',
+	'reserve.reject.contract-unfinished': 'Der Vertrag ist noch nicht erfüllt.',
+	'reserve.reject.too-many-contracts': 'Mehr Verträge gehen nicht gleichzeitig.'
 } as const;
