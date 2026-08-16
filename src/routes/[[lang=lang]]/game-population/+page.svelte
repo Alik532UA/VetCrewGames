@@ -768,10 +768,17 @@
 	}
 
 	.game-container {
+		/*
+		 * Товщина рамки — змінна, бо від неї залежить скруглення КАРТКИ
+		 * всередині (див. `.game-card`). Два числа, які мусять збігатися,
+		 * розходяться при першій же правці, якщо їх двоє.
+		 */
+		--slot-border: 2px;
+
 		flex: 1;
 		max-width: 110px;
 		aspect-ratio: 11 / 17;
-		border: 2px dashed color-mix(in srgb, var(--color-text-on-panel), transparent 70%);
+		border: var(--slot-border) dashed color-mix(in srgb, var(--color-text-on-panel), transparent 70%);
 		border-radius: var(--radius-md);
 		display: grid;
 		place-items: center;
@@ -807,7 +814,20 @@
 		gap: var(--space-xs);
 		padding: var(--space-sm);
 		background-color: var(--color-bg-card);
-		border-radius: var(--radius-md);
+		/*
+		 * Концентричне скруглення: внутрішній радіус = зовнішній МІНУС відступ.
+		 *
+		 * Картка лежить усередині `.game-container` і зсунута на товщину його
+		 * рамки. З однаковим радіусом у 16px її кут «з'їдається» сильніше за
+		 * кут контейнера, і той визирає з-під неї крескою — уздовж прямих
+		 * країв рамка була 2px, а в кутах розросталася до шести. Виміряно
+		 * картою пікселів кута в браузері, оком це читається як «кути
+		 * випирають».
+		 *
+		 * Запасні 2px — для клона, який їздить за пальцем: він живе в <body>,
+		 * поза контейнером, і успадкувати `--slot-border` йому нема від кого.
+		 */
+		border-radius: calc(var(--radius-md) - var(--slot-border, 2px));
 		box-shadow:
 			0 4px 0 var(--color-bg-panel-dark),
 			var(--shadow-card);
@@ -1097,7 +1117,11 @@
 		top: 0;
 		left: 0;
 		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
-		border-radius: var(--radius-md);
+		/*
+		 * Скруглення тут НЕ задається: клон — це `cloneNode` картки, він несе
+		 * її ж клас і її ж радіус. Власне значення тільки розійшлося б із
+		 * карткою, як тільки та своє змінить.
+		 */
 	}
 	@media (max-width: 480px) {
 		.slots-row,
