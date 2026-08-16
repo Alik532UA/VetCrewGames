@@ -118,6 +118,7 @@
 			verdicts={verdictsFor(BIN)}
 			animals={round.animals}
 			label={formatPlain(t('feeding.bin'))}
+			reveal
 			testId="feeding-verdicts-bin-list"
 		/>
 	{/if}

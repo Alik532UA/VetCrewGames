@@ -8,6 +8,7 @@
 	import { CheckCircle2, XCircle, RotateCcw, Home } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
+	import { revealScroll } from '$lib/utils/revealScroll';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 
 	// Компонент лише СТВОРЮЄ контролер і малює його стан (SVELTE-CORE-v8 § 3.1).
@@ -91,7 +92,7 @@
 										</button>
 									</div>
 								{:else}
-									<div class="myth-card__result" in:slide={{ duration: 400 }} out:fade>
+									<div class="myth-card__result" use:revealScroll in:slide={{ duration: 400 }} out:fade>
 										<button class="btn-next" onclick={() => game.nextRound()} data-testid="mythbusters-next-btn">
 											{@html formatFont(t('myth.next'))}
 										</button>

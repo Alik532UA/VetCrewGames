@@ -8,6 +8,7 @@
 	import { takeHabitatMode } from '$lib/services/randomGame';
 	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import { revealScroll } from '$lib/utils/revealScroll';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import HabitatOptions from '$lib/components/HabitatOptions.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
@@ -112,7 +113,7 @@
 				{@html formatFont(t('habitat.check'))}
 			</button>
 		{:else}
-			<div class="result" transition:slide={{ duration: 300 }}>
+			<div class="result" use:revealScroll transition:slide={{ duration: 300 }}>
 				<div
 					class="result__header"
 					class:result__header--correct={game.outcome === 'correct'}

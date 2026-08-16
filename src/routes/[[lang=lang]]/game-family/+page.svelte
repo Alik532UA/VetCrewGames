@@ -7,6 +7,7 @@
 	import { languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { FamilyGameController } from '$lib/controllers/familyGame.svelte';
+	import { revealScroll } from '$lib/utils/revealScroll';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 
@@ -82,7 +83,7 @@
 		{/key}
 
 		{#if game.answered}
-			<div class="result" transition:slide={{ duration: 350 }}>
+			<div class="result" use:revealScroll transition:slide={{ duration: 350 }}>
 				<div class="result__header" class:result__header--correct={game.isCorrect}>
 					{#if game.isCorrect}
 						<CheckCircle2 size={24} aria-hidden="true" />

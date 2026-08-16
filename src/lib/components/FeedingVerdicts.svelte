@@ -5,6 +5,7 @@
 	import type { FeedingVerdict } from '$lib/controllers/feedingGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import { revealScroll } from '$lib/utils/revealScroll';
 
 	/**
 	 * Розбір кожної страви після «Погодувати» (концепція, гра 1: «детальний
@@ -23,10 +24,16 @@
 		animals: readonly Animal[];
 		/** Кому належить ця група — для читалок. */
 		label: string;
+		/**
+		 * Прокрутити сторінку до себе, коли з'явишся. Ставить лише НИЖНІЙ із
+		 * трьох списків: розбори виїжджають усі разом, і крутити до кожного
+		 * означало б три ривки замість одного.
+		 */
+		reveal?: boolean;
 		testId: string;
 	}
 
-	let { verdicts, animals, label, testId }: Props = $props();
+	let { verdicts, animals, label, reveal = false, testId }: Props = $props();
 
 	/** Підпис цілі: імʼя тварини або «Смітник». */
 	function targetName(target: Target): string {
@@ -36,7 +43,7 @@
 	}
 </script>
 
-<div class="verdicts" role="group" aria-label={label} data-testid={testId}>
+<div class="verdicts" use:revealScroll={reveal} role="group" aria-label={label} data-testid={testId}>
 	{#each verdicts as verdict (verdict.food.id)}
 		<!--
 			Небезпечна страва — та, чиє місце в смітнику й у якої є пояснення шкоди.

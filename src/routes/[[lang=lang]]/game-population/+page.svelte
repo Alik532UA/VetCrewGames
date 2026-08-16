@@ -8,6 +8,7 @@
 	import { Check, X, RotateCcw } from 'lucide-svelte';
 	import { createCrossfade } from '$lib/utils/transitions';
 	import { parkDraggedCard } from '$lib/utils/parkDraggedCard';
+	import { revealScroll } from '$lib/utils/revealScroll';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 
@@ -391,21 +392,19 @@
 			</div>
 		</div>
 
-		<div>
-			{#if !game.checked}
-				<button class="btn-check" disabled={!game.allSlotsFilled} onclick={() => game.check()} data-testid="population-check-btn"
-					>{@html formatFont(t('population.check'))}</button
-				>
-			{:else}
-				<button
-					type="button"
-					class="btn-check"
-					onclick={() => game.nextRound()}
-					data-testid="population-next-round-btn"
-					>{@html formatFont(t('population.nextRound'))}</button
-				>
-			{/if}
-		</div>
+		{#if !game.checked}
+			<button class="btn-check" disabled={!game.allSlotsFilled} onclick={() => game.check()} data-testid="population-check-btn"
+				>{@html formatFont(t('population.check'))}</button
+			>
+		{:else}
+			<button
+				type="button"
+				class="btn-check"
+				onclick={() => game.nextRound()}
+				data-testid="population-next-round-btn"
+				>{@html formatFont(t('population.nextRound'))}</button
+			>
+		{/if}
 
 		<div class="dynamic-zone-wrapper">
 			{#if !game.checked}
@@ -485,7 +484,7 @@
 			{/if}
 
 			{#if game.checked}
-				<div class="results-zone-wrapper" transition:slide={{ duration: 400 }}>
+				<div class="results-zone-wrapper" use:revealScroll transition:slide={{ duration: 400 }}>
 					<div class="results-zone">
 						{#each game.correctOrder as animal, i (animal.id)}
 							<div class="result-card anim-stagger-{i + 1}">
