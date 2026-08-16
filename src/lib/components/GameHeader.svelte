@@ -2,6 +2,7 @@
 	import { ArrowLeft, Sun, Moon, Maximize, Minimize, Snowflake, Leaf } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
+	import LanguageMenu from './LanguageMenu.svelte';
 	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
 	// `formatPlain` міняє кириличну «і» на латинську «i», щоб літера була у
 	// шрифті inglobal, — це правильно для того, що МАЛЮЄТЬСЯ, і неправильно
@@ -10,13 +11,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { page } from '$app/state';
-	import {
-		DEFAULT_LANGUAGE,
-		LANGUAGES,
-		langPath,
-		languageFromParam,
-		routeRestFromId
-	} from '$lib/i18n/routing';
+	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { onMount, untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
 
@@ -59,10 +54,6 @@
 	 * сторінці — змінюється лише мовний сегмент адреси.
 	 */
 	const currentLanguage = $derived(languageFromParam(page.params.lang));
-	const otherLanguage = $derived(
-		LANGUAGES.find((lang) => lang !== currentLanguage) ?? DEFAULT_LANGUAGE
-	);
-	const otherLanguageHref = $derived(langPath(otherLanguage, routeRestFromId(page.route.id)));
 onMount(() => fullscreen.watch());
 </script>
 
@@ -153,16 +144,7 @@ onMount(() => fullscreen.watch());
 				{/if}
 			</button>
 
-			<a
-				class="header-btn lang-btn"
-				href={otherLanguageHref}
-				hreflang={otherLanguage}
-				aria-label={t('header.toggleLocale')}
-				data-testid="header-locale-link"
-				onclick={() => settings.rememberLocale(otherLanguage)}
-			>
-				<span class="lang-text">{otherLanguage.toUpperCase()}</span>
-			</a>
+			<LanguageMenu />
 
 			<button
 				type="button"
@@ -334,16 +316,7 @@ onMount(() => fullscreen.watch());
 		transform: scale(0.95);
 	}
 
-	.lang-btn {
-		width: auto;
-		padding: 0 var(--space-xs);
-		min-width: 36px;
-	}
 
-	.lang-text {
-		font-weight: var(--font-weight-bold);
-		font-size: 11px;
-	}
 
 	@media (max-width: 768px) {
 		.game-title {

@@ -2,15 +2,23 @@ import { browser } from '$app/environment';
 import { on } from 'svelte/events';
 import { storage } from '$lib/services/storage';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
+import { LANGUAGES, type Language } from '$lib/i18n/routing';
 
 export type Theme = 'dark' | 'light-green' | 'winter' | 'orange-purple';
-export type Locale = 'uk' | 'en';
+/**
+ * Мова інтерфейсу — це та сама мова, що й в адресі, тож тип береться з
+ * `routing.ts`, а не оголошується вдруге. Доти тут стояв власний union із двох
+ * значень: додавання третьої мови його б не зачепило, і застосунок мовчки
+ * вважав би її невідомою — рівно той клас розбіжності, від якого routing і
+ * заведений одним джерелом правди.
+ */
+export type Locale = Language;
 export type Font = 'inglobal' | 'e-ukraine';
 /** Яку смугу прокрутки малювати: системну чи власну (SCROLLBAR-v8 § 2.2). */
 export type ScrollbarMode = 'standard' | 'custom';
 
 const THEMES: readonly Theme[] = ['dark', 'light-green', 'winter', 'orange-purple'];
-const LOCALES: readonly Locale[] = ['uk', 'en'];
+const LOCALES: readonly Locale[] = LANGUAGES;
 const FONTS: readonly Font[] = ['inglobal', 'e-ukraine'];
 const SCROLLBAR_MODES: readonly ScrollbarMode[] = ['standard', 'custom'];
 
