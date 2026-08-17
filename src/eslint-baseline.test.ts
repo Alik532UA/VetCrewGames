@@ -26,6 +26,10 @@ const BASELINE = [
 	'no-new-func',
 	'no-script-url',
 	'no-restricted-syntax',
+	// DEBUGGING-v8 § 4. У списку разом із рештою, бо клас той самий: AGENTS.md
+	// забороняє `console.*` текстом, і поки правило вимкнене, заборона тримається
+	// лише на тому, що текст прочитають.
+	'no-console',
 	'@typescript-eslint/no-explicit-any',
 	'@typescript-eslint/no-unused-vars',
 	'@typescript-eslint/ban-ts-comment',
