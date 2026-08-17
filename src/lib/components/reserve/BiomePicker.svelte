@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
-	import { enclosurePrice } from '$lib/reserve/constants';
+	import { enclosurePrice } from '$lib/reserve/prices';
 	import { RESERVE_BIOMES, speciesOfBiome, type ReserveBiome } from '$lib/reserve/species';
 
 	/**

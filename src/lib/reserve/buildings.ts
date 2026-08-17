@@ -1,11 +1,5 @@
-import {
-	ENCLOSURE_IMPACT,
-	enclosurePrice,
-	QUALITIES,
-	repairPrice,
-	RESERVE_RADIUS,
-	upgradePrice
-} from './constants';
+import { ENCLOSURE_IMPACT, QUALITIES, RESERVE_RADIUS } from './constants';
+import { enclosurePrice, repairPrice, upgradePrice } from './prices';
 import { cellKey, cellsOf, worldOf } from './grid';
 import { ENCLOSURE_SIZES } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';

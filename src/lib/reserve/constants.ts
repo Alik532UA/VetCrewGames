@@ -109,7 +109,12 @@ export const IMPACT_TO_WIN = 10_000;
  */
 export const REPUTATION_MIN = 0;
 export const REPUTATION_MAX = 100;
-export const STARTING_REPUTATION = 50;
+/**
+ * Партія починається з НУЛЯ: новий фонд ніхто не знає, і пожертв на старті немає
+ * зовсім. Імʼя доводиться зробити — порятунок, одужання, випуск, кампанія.
+ * Половина шкали на старті означала б 200 монет щодня ні за що.
+ */
+export const STARTING_REPUTATION = 0;
 
 /** Скільки репутації додає випуск у природу. */
 export const RELEASE_REPUTATION = 10;
@@ -148,16 +153,6 @@ export const NO_VET_REPUTATION = -3;
 export const UPKEEP_PER_ANIMAL = 60;
 
 /**
- * Ціна вольєра росте КВАДРАТИЧНО з розміром: `500 × розмір²`.
- *
- * Лінійна ціна зробила б вибір розміру фальшивим — накопичив грошей, збудував
- * десятку, і жодного рішення більше немає. Квадрат тримає великі вольєри
- * рідкісними: одиничка коштує 500, четвірка (рекомендована леву) — 8 000, а
- * десятка — 50 000, тобто цілий стартовий бюджет.
- */
-export const ENCLOSURE_PRICE_FACTOR = 500;
-
-/**
  * Якість вольєра — другий вимір поруч із розміром.
  *
  * Розмір вирішує, ХТО тут поміститься; якість — наскільки добре йому тут.
@@ -170,11 +165,9 @@ export const ENCLOSURE_PRICE_FACTOR = 500;
 export const QUALITIES = [1, 2, 3] as const;
 export type Quality = (typeof QUALITIES)[number];
 
+/** Множник ціни. Самі ціни — у `./prices`: вони функції, а не межі. */
 export const QUALITY_PRICE: Record<Quality, number> = { 1: 1, 2: 1.8, 3: 3 };
 export const QUALITY_SPEED: Record<Quality, number> = { 1: 0.7, 2: 1, 3: 1.4 };
-
-export const enclosurePrice = (size: number, quality: Quality = 2) =>
-	Math.round(ENCLOSURE_PRICE_FACTOR * size * size * QUALITY_PRICE[quality]);
 
 /**
  * Міцність: 1 — щойно збудований, 0 — руїна. Спадає щодня.
@@ -194,16 +187,6 @@ export const WEAR_PER_DAY = 0.02;
  */
 export const WEAR_ONE_STEP = 0.6;
 export const WEAR_TWO_STEPS = 0.3;
-
-/** Повний ремонт коштує чверть ціни вольєра; частковий — пропорційно зносу. */
-export const REPAIR_PRICE_SHARE = 0.25;
-export const repairPrice = (size: number, quality: Quality, durability: number) =>
-	Math.round(enclosurePrice(size, quality) * REPAIR_PRICE_SHARE * (1 - durability));
-
-/** Підняти якість коштує різницю в ціні плюс надбавку за перебудову. */
-export const UPGRADE_SURCHARGE = 1.2;
-export const upgradePrice = (size: number, from: Quality, to: Quality) =>
-	Math.round((enclosurePrice(size, to) - enclosurePrice(size, from)) * UPGRADE_SURCHARGE);
 
 /**
  * Щоденне утримання вольєра — за розмір, а не за штуку.

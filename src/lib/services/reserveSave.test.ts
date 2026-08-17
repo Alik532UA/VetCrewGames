@@ -26,7 +26,8 @@ function makeStorage(seed: Record<string, string> = {}): Storage {
 	} as Storage;
 }
 
-const KEY = 'vetcrewgames_reserve';
+/** Ключ саме тієї ділянки, яку будує `played()`. */
+const KEY = 'vetcrewgames_reserve.savanna';
 
 function played() {
 	const state = createReserve(42, 'savanna');
@@ -48,7 +49,7 @@ describe('сейв заповідника у сховищі', () => {
 		const state = played();
 		expect(saveReserve(state)).toBe(true);
 
-		const back = loadReserve();
+		const back = loadReserve('savanna');
 		expect(back.ok).toBe(true);
 		expect(back.ok && back.state).toEqual(state);
 	});
@@ -56,7 +57,7 @@ describe('сейв заповідника у сховищі', () => {
 	it('порожнє сховище — це просто перший запуск', async () => {
 		vi.stubGlobal('localStorage', makeStorage());
 		const { loadReserve } = await import('./reserveSave');
-		expect(loadReserve()).toEqual({ ok: false, reason: 'empty' });
+		expect(loadReserve('savanna')).toEqual({ ok: false, reason: 'empty' });
 	});
 
 	/**
@@ -71,7 +72,7 @@ describe('сейв заповідника у сховищі', () => {
 		vi.stubGlobal('localStorage', makeStorage({ [KEY]: '{"version":1,"state":{"ticks":' }));
 		const { loadReserve } = await import('./reserveSave');
 
-		const result = loadReserve();
+		const result = loadReserve('savanna');
 		expect(result.ok).toBe(false);
 		expect(result.ok === false && result.reason, 'побите збереження видали за відсутнє').toBe(
 			'malformed'
@@ -81,7 +82,7 @@ describe('сейв заповідника у сховищі', () => {
 	it('чужий запис за нашим ключем теж лише відмова', async () => {
 		vi.stubGlobal('localStorage', makeStorage({ [KEY]: '{"hello":"world"}' }));
 		const { loadReserve } = await import('./reserveSave');
-		expect(loadReserve().ok).toBe(false);
+		expect(loadReserve('savanna').ok).toBe(false);
 	});
 
 	/**
@@ -101,13 +102,83 @@ describe('сейв заповідника у сховищі', () => {
 		expect(saveReserve(played())).toBe(false);
 	});
 
+	/**
+	 * Дві ділянки — дві партії, а не одна поверх іншої.
+	 *
+	 * Доти ключ був один на всю гру, і зайти в савану означало стерти ліс. Зворотний
+	 * дослід простий: досить повернути спільний ключ, і саванна партія приїде з
+	 * лісового збереження — перевірка почервоніє на `biome`.
+	 */
+	it('партії в різних біомах лежать окремо й не перетирають одна одну', async () => {
+		vi.stubGlobal('localStorage', makeStorage());
+		const { saveReserve, loadReserve } = await import('./reserveSave');
+
+		const savanna = played();
+		const forest = createReserve(7, 'forest');
+		execute(forest, { type: 'build', size: 2, quality: 1, cell: { x: 3, z: 0 } });
+
+		saveReserve(savanna);
+		saveReserve(forest);
+
+		const backSavanna = loadReserve('savanna');
+		const backForest = loadReserve('forest');
+		expect(backSavanna.ok && backSavanna.state.biome).toBe('savanna');
+		expect(backForest.ok && backForest.state.biome).toBe('forest');
+		expect(backSavanna.ok && backSavanna.state.animals.length, 'ліс перетер савану').toBe(1);
+		expect(backForest.ok && backForest.state.animals.length).toBe(0);
+
+		// Ділянка, у яку ще не заходили, лишається незайманою.
+		expect(loadReserve('tundra')).toEqual({ ok: false, reason: 'empty' });
+	});
+
+	/**
+	 * Оновлення не має коштувати людині заповідника.
+	 *
+	 * Партії, збережені до поділу сховища, лежать під старим спільним ключем.
+	 * Просто перестати його читати означало б тихо почати нову гру на місці
+	 * годинної роботи. Зворотний дослід: досить прибрати переїзд, і саванна
+	 * ділянка відкриється порожньою, хоч запис лежить поруч.
+	 */
+	it('партія зі старого спільного ключа переїжджає на свою ділянку', async () => {
+		const legacy = makeStorage();
+		vi.stubGlobal('localStorage', legacy);
+		const { saveReserve, loadReserve } = await import('./reserveSave');
+
+		// Пишемо як писала попередня версія — одним ключем на всю гру.
+		const state = played();
+		saveReserve(state);
+		legacy.setItem('vetcrewgames_reserve', legacy.getItem(KEY)!);
+		legacy.removeItem(KEY);
+
+		const back = loadReserve('savanna');
+		expect(back.ok && back.state).toEqual(state);
+		// Переїзд одноразовий: старого ключа більше немає, новий на місці.
+		expect(legacy.getItem('vetcrewgames_reserve')).toBeNull();
+		expect(legacy.getItem(KEY)).not.toBeNull();
+	});
+
+	it('чужу ділянку старий ключ не займає', async () => {
+		const legacy = makeStorage();
+		vi.stubGlobal('localStorage', legacy);
+		const { saveReserve, loadReserve } = await import('./reserveSave');
+
+		saveReserve(played());
+		legacy.setItem('vetcrewgames_reserve', legacy.getItem(KEY)!);
+		legacy.removeItem(KEY);
+
+		// Саванна партія в тундрі не оживає — і не зникає, чекаючи на свою ділянку.
+		expect(loadReserve('tundra')).toEqual({ ok: false, reason: 'empty' });
+		expect(legacy.getItem('vetcrewgames_reserve')).not.toBeNull();
+		expect(loadReserve('savanna').ok).toBe(true);
+	});
+
 	it('видалення прибирає збереження', async () => {
 		const raw = makeStorage();
 		vi.stubGlobal('localStorage', raw);
 		const { saveReserve, dropReserve, loadReserve } = await import('./reserveSave');
 
 		saveReserve(played());
-		dropReserve();
-		expect(loadReserve()).toEqual({ ok: false, reason: 'empty' });
+		dropReserve('savanna');
+		expect(loadReserve('savanna')).toEqual({ ok: false, reason: 'empty' });
 	});
 });

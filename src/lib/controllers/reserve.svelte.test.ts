@@ -12,7 +12,8 @@ import { TICKS_PER_DAY } from '$lib/reserve/constants';
  */
 
 const DAY_MS = TICKS_PER_DAY * TICK_MS;
-const KEY = 'vetcrewgames_reserve';
+/** Ключ ділянки, у якій ведуться ці тести: сховище розділене по біомах. */
+const KEY = 'vetcrewgames_reserve.forest';
 
 /** Сховище підставляється явно: jsdom тут `localStorage` не дає. */
 function makeStorage(): Storage {
@@ -37,7 +38,7 @@ beforeEach(() => {
 });
 
 function fresh(): ReserveController {
-	const controller = new ReserveController();
+	const controller = new ReserveController('forest');
 	controller.reset(42);
 	return controller;
 }
@@ -185,7 +186,7 @@ describe('партія і сховище', () => {
 		first.run({ type: 'hire', role: 'keeper' });
 		runFor(first, DAY_MS * 2);
 
-		const second = new ReserveController();
+		const second = new ReserveController('forest');
 		second.start();
 		expect(second.state.staff.keeper).toBe(1);
 		expect(second.day).toBe(2);
@@ -193,7 +194,7 @@ describe('партія і сховище', () => {
 	});
 
 	it('порожнє сховище — це новий заповідник, а не помилка', () => {
-		const controller = new ReserveController();
+		const controller = new ReserveController('forest');
 		controller.start();
 		expect(controller.restoreProblem).toBeNull();
 		expect(controller.state.ticks).toBe(0);
@@ -205,7 +206,7 @@ describe('партія і сховище', () => {
 	 */
 	it('побитий сейв дає нову партію І причину для екрана', () => {
 		store.setItem(KEY, '{"version":1,"state":{"ticks":');
-		const controller = new ReserveController();
+		const controller = new ReserveController('forest');
 		controller.start();
 
 		expect(controller.restoreProblem?.reason).toBe('malformed');
@@ -216,7 +217,7 @@ describe('партія і сховище', () => {
 		const seeds = new Set<number>();
 		for (const time of [1_000_000, 2_000_000]) {
 			vi.spyOn(Date, 'now').mockReturnValue(time);
-			const controller = new ReserveController();
+			const controller = new ReserveController('forest');
 			controller.reset();
 			seeds.add(controller.state.seed);
 		}

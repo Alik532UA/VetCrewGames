@@ -36,7 +36,26 @@ export type Speed = (typeof SPEEDS)[number];
 const MAX_CATCH_UP_MS = 250;
 
 export class ReserveController {
+	/**
+	 * Біом задається при створенні й далі не міняється: він визначає і адресу
+	 * сторінки, і ключ у сховищі. Контролер без біома не знав би, яку саме з
+	 * чотирьох партій він веде.
+	 */
+	readonly biome: ReserveBiome;
+
+	/*
+	 * Заглушка тут не косметична: ініціалізатори полів виконуються ДО тіла
+	 * конструктора, а `day` і `isFresh` нижче читають `state`. Поле без значення
+	 * зробило б їх читанням `undefined` — саме це й ловить перевірка типів.
+	 */
 	state = $state<ReserveState>(createReserve(1));
+
+	constructor(biome: ReserveBiome) {
+		this.biome = biome;
+		// Справжня стартова партія — уже з біомом. `start()` перезапише її сейвом,
+		// якщо він є, але до того моменту сцена мусить бачити правильний біом.
+		this.state = createReserve(1, biome);
+	}
 	speed = $state<Speed>(1);
 	/** Яку тварину показує картка; `null` — картки немає. */
 	selectedId = $state<number | null>(null);
@@ -71,7 +90,7 @@ export class ReserveController {
 	 * колись вистачить переслати одне число замість усього світу.
 	 */
 	start(): void {
-		const restored = loadReserve();
+		const restored = loadReserve(this.biome);
 		if (restored.ok) {
 			this.state = restored.state;
 			this.#savedDay = dayOf(restored.state);
@@ -82,7 +101,7 @@ export class ReserveController {
 		}
 	}
 
-	reset(seed = Date.now() >>> 0, biome: ReserveBiome = this.state.biome): void {
+	reset(seed = Date.now() >>> 0, biome: ReserveBiome = this.biome): void {
 		this.state = createReserve(seed, biome);
 		this.selectedId = null;
 		this.#carry = 0;

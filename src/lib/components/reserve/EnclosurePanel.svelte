@@ -1,13 +1,8 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
-	import {
-		enclosurePrice,
-		QUALITIES,
-		repairPrice,
-		upgradePrice,
-		type Quality
-	} from '$lib/reserve/constants';
+	import { QUALITIES, type Quality } from '$lib/reserve/constants';
+	import { enclosurePrice, repairPrice, upgradePrice } from '$lib/reserve/prices';
 	import { footprintOf } from '$lib/reserve/grid';
 	import { ENCLOSURE_SIZES } from '$lib/reserve/species';
 	import type { Enclosure, ReserveCommand } from '$lib/reserve/types';

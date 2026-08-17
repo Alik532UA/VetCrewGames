@@ -76,7 +76,21 @@ export const LANGUAGE_ROUTES = {
 	'quiz/play': '/[[lang=lang]]/quiz/play',
 	pairs: '/[[lang=lang]]/pairs',
 	/** Заповідник — не раунд, а партія, що триває; звідси й окремий розділ. */
-	reserve: '/[[lang=lang]]/reserve'
+	reserve: '/[[lang=lang]]/reserve',
+	/*
+	 * Кожен біом — окрема адреса, бо це окрема ПАРТІЯ. Партія в савані й партія в
+	 * лісі тривають паралельно й нічого одна одній не роблять; тримати їх в
+	 * одному стані означало б, що вибір біома стирає попередній заповідник.
+	 *
+	 * Чотири СТАТИЧНІ маршрути, а не один із параметром `[biome]`. Параметр дав
+	 * би один route id на чотири адреси — і `routeRestFromId` перестав би
+	 * відрізняти їх, а разом із ним canonical, hreflang і sitemap. Той самий
+	 * висновок уже застосований до підрежимів «Де живем?».
+	 */
+	'reserve/forest': '/[[lang=lang]]/reserve/forest',
+	'reserve/tundra': '/[[lang=lang]]/reserve/tundra',
+	'reserve/savanna': '/[[lang=lang]]/reserve/savanna',
+	'reserve/rainforest': '/[[lang=lang]]/reserve/rainforest'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;

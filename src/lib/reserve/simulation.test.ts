@@ -14,7 +14,6 @@ import {
 import type { ReserveCommand, ReserveState } from './types';
 import {
 	COLLAPSE_DAYS,
-	enclosurePrice,
 	NO_VET_REPUTATION,
 	ORIGINS,
 	RELEASE_IMPACT,
@@ -30,10 +29,10 @@ import {
 	IMPACT_TO_WIN,
 	REPUTATION_DECAY_PER_DAY,
 	RESERVE_RADIUS,
-	repairPrice,
 	WEAR_PER_DAY,
 	type Quality
 } from './constants';
+import { enclosurePrice, repairPrice } from './prices';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
 import { cellsOf, worldOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
@@ -45,6 +44,16 @@ const snapshot = (state: ReserveState) => JSON.stringify(state);
 const LION = speciesById('lion')!;
 
 /**
+ * Репутація фонду, у якого вже є імʼя.
+ *
+ * Партія починається з нуля, а шкала має підлогу на нулі: «нижче невідомого» не
+ * буває. Тому будь-яке покарання на старті невидиме — і перевірка, що міряє
+ * мінус від нуля, міряє підлогу, а не покарання. Звідси ця межа: спершу імʼя,
+ * потім втрата.
+ */
+const KNOWN = 40;
+
+/**
  * Заповідник із одним вольєром заданого розміру й однією твариною в ньому.
  * Гроші додаються, щоб перевірка розміру не впиралася в бюджет.
  */
@@ -52,6 +61,7 @@ function withLion(size: number, origin: keyof typeof ORIGINS = 'rescue') {
 	// Лев живе в савані — заповідник має бути саме там, інакше його не приймуть.
 	const state = createReserve(1, 'savanna');
 	state.budget = 1_000_000;
+	state.reputation = KNOWN;
 	execute(state, { type: 'build', size, quality: 2, cell: { x: 0, z: 0 } });
 	const result = execute(state, { type: 'acquire', origin, speciesId: 'lion', enclosureId: 1 });
 	return { state, result };
@@ -357,7 +367,15 @@ describe('економіка надходження', () => {
 });
 
 describe('репутація', () => {
-	it('перевірка жива: партія починається з половини шкали', () => {
+	/**
+	 * Новий фонд НІХТО не знає.
+	 *
+	 * Половина шкали на старті означала б двісті монет пожертв щодня ні за що — і
+	 * гру, у якій перші рішення нічого не варті. Імʼя доводиться зробити: порятунок,
+	 * одужання, випуск, кампанія.
+	 */
+	it('перевірка жива: партія починається з нуля репутації', () => {
+		expect(STARTING_REPUTATION).toBe(0);
 		expect(createReserve(1).reputation).toBe(STARTING_REPUTATION);
 	});
 
@@ -369,28 +387,30 @@ describe('репутація', () => {
 	it('тварина без ветеринара коштує репутації, але проходить', () => {
 		const { state, result } = withLion(4);
 		expect(result).toEqual({ ok: true });
-		expect(state.reputation).toBe(
-			STARTING_REPUTATION + ORIGINS.rescue.reputation + NO_VET_REPUTATION
-		);
+		expect(state.reputation).toBe(KNOWN + ORIGINS.rescue.reputation + NO_VET_REPUTATION);
 	});
 
 	it('із ветеринаром докору немає', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
+		state.reputation = KNOWN;
 		execute(state, { type: 'hire', role: 'vet' });
 		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
-		expect(state.reputation).toBe(STARTING_REPUTATION + ORIGINS.rescue.reputation);
+		expect(state.reputation).toBe(KNOWN + ORIGINS.rescue.reputation);
 	});
 
 	it('чорний ринок бʼє і по репутації, і по «Користі планеті»', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
+		// Без імені мінус двадцять пʼять просто вперся б у нуль, і перевірка міряла б
+		// підлогу шкали замість ціни чорного ринку.
+		state.reputation = KNOWN;
 		execute(state, { type: 'hire', role: 'vet' });
 		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
 
-		expect(state.reputation).toBe(STARTING_REPUTATION + ORIGINS['black-market'].reputation);
+		expect(state.reputation).toBe(KNOWN + ORIGINS['black-market'].reputation);
 		expect(state.impact).toBe(ENCLOSURE_IMPACT + ORIGINS['black-market'].impact);
 	});
 
@@ -810,6 +830,8 @@ describe('дві шкали розходяться саме там, де це щ
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
 		state.staff.vet = 1;
+		// Фонд із іменем: «у сумі нуль» і «сама спадає» від нуля не перевіряються.
+		state.reputation = KNOWN;
 		return state;
 	};
 
@@ -825,7 +847,7 @@ describe('дві шкали розходяться саме там, де це щ
 		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 
 		expect(state.impact).toBe(ENCLOSURE_IMPACT);
-		expect(state.reputation, 'публіка розділилася — у сумі нуль').toBe(STARTING_REPUTATION);
+		expect(state.reputation, 'публіка розділилася — у сумі нуль').toBe(KNOWN);
 	});
 
 	/** Кампанія — дзеркальний випадок: природі нуль, репутації плюс. */
@@ -835,7 +857,7 @@ describe('дві шкали розходяться саме там, де це щ
 
 		expect(execute(state, { type: 'campaign' })).toEqual({ ok: true });
 		expect(state.impact, 'допис нікого не врятував').toBe(impact);
-		expect(state.reputation).toBe(STARTING_REPUTATION + CAMPAIGN_REPUTATION);
+		expect(state.reputation).toBe(KNOWN + CAMPAIGN_REPUTATION);
 	});
 
 	it('кампанія коштує грошей і буває раз на день', () => {
@@ -874,7 +896,7 @@ describe('дві шкали розходяться саме там, де це щ
 	it('репутація сама спадає, поки нічого не відбувається', () => {
 		const state = savanna();
 		day(state, 4);
-		expect(state.reputation).toBeCloseTo(STARTING_REPUTATION - 4 * REPUTATION_DECAY_PER_DAY);
+		expect(state.reputation).toBeCloseTo(KNOWN - 4 * REPUTATION_DECAY_PER_DAY);
 	});
 
 	it('спад не заганяє репутацію нижче нуля', () => {
@@ -991,6 +1013,12 @@ describe('контракти зі спонсорами', () => {
 	 */
 	it('прострочений контракт забирає репутацію', () => {
 		const state = running();
+		// Імʼя доводиться дати ДО підписання, а не після.
+		//
+		// Штраф видно лише тому, у кого є що втрачати, — але контракт міряє ПРИРІСТ
+		// від дня підписання. Сорок репутації, вкинуті після, зарахувалися б як
+		// виконана обіцянка, і перевірка сперечалася б сама з собою.
+		state.reputation = KNOWN;
 		day(state, CONTRACT_INTERVAL_DAYS);
 		execute(state, { type: 'accept', contractId: state.offered!.id });
 
