@@ -41,6 +41,18 @@ export class LocalRoom {
 			},
 
 			append: async (move) => {
+				/*
+				 * `undefined` усередині ходу — помилка програмування, і тут вона кидає
+				 * рівно так, як кидає `set()` у Firebase.
+				 *
+				 * Доти підставний транспорт таке приймав, і саме через це тести
+				 * пропустили справжній дефект: хід `peek` ніс `payload: undefined`, жива
+				 * база його відкидала, і перегортання не оголошувалося ніколи. Підставка,
+				 * добріша за оригінал, доводить не те, що треба.
+				 */
+				for (const [key, value] of Object.entries(move)) {
+					if (value === undefined) throw new Error(`move.${key} is undefined`);
+				}
 				if (this.#moves.some((existing) => existing.seq === move.seq)) return false;
 				this.#moves.push(move);
 				this.#moves.sort((a, b) => a.seq - b.seq);

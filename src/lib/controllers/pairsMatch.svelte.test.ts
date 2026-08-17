@@ -324,3 +324,46 @@ describe('кінець партії', () => {
 		stop();
 	});
 });
+
+describe('хід їде транспортом, а не лише в памʼяті', () => {
+	it('хід без даних не несе порожнього поля', async () => {
+		/*
+		 * Закріплений дефект. `set()` у Firebase на `undefined` усередині обʼєкта
+		 * КИДАЄ, тож хід `peek` (даних не несе) не записувався ніколи — дошка
+		 * назавжди лишалася з двома відкритими картками. Помітити це на підставному
+		 * транспорті було неможливо, бо той `undefined` приймав; тепер він так само
+		 * суворий, і ця перевірка падає на регресії.
+		 */
+		const { room, host, stop } = table();
+		const [a, b] = findMismatch(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		await host.resolve();
+
+		const peek = room.moves.find((move) => move.type === 'peek');
+		expect(peek, 'перегортання мусило дійти до транспорту').toBeTruthy();
+		expect(Object.values(peek!).every((value) => value !== undefined)).toBe(true);
+		expect('payload' in peek!, 'порожнього поля немає взагалі').toBe(false);
+		stop();
+	});
+
+	it('жоден хід партії не містить undefined', async () => {
+		const { room, host, stop } = table();
+		const [a, b] = findPair(host);
+		await host.flip(a);
+		await host.flip(b);
+		const [c, d] = findMismatch(host);
+		await host.flip(c);
+		await host.flip(d);
+		await host.resolve();
+
+		expect(room.moves.length).toBeGreaterThan(4);
+		for (const move of room.moves) {
+			for (const [key, value] of Object.entries(move)) {
+				expect(value, `${move.type}.${key}`).not.toBeUndefined();
+			}
+		}
+		stop();
+	});
+});

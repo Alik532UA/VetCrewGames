@@ -166,8 +166,16 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				// би між «1» і «2».
 				await set(ref(db, `rooms/${code}/moves/${String(move.seq).padStart(6, '0')}`), move);
 				return true;
-			} catch {
-				// Номер уже зайнятий (правило «лише створити») — цей хід зникає.
+			} catch (error) {
+				/*
+				 * `false` лише на ВІДМОВУ ПРАВИЛ — тобто «номер уже зайнятий». Решту
+				 * кидаємо далі, і це виправлення справжнього дефекту: перша версія
+				 * ковтала будь-яку помилку, і хід із порожнім полем (`set()` на
+				 * `undefined` кидає) зникав безслідно. Дошка чекала на перегортання,
+				 * якого не буде, і жодного слова ні в консолі, ні в логах.
+				 */
+				const denied = error instanceof Error && /permission_denied/i.test(error.message ?? '');
+				if (!denied) throw error;
 				return false;
 			}
 		},

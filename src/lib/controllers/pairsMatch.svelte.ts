@@ -89,7 +89,17 @@ export class PairsMatch {
 	}
 
 	async #send(type: string, payload?: Record<string, number>): Promise<void> {
-		const move: Move = { seq: this.applied + 1, by: this.#me, type, payload };
+		/*
+		 * Поля `payload` НЕМАЄ, коли даних немає, — а не `undefined`.
+		 *
+		 * Це не охайність: `set()` у Firebase на `undefined` усередині обʼєкта кидає
+		 * помилку. Хід `peek` даних не несе, тож він не записувався НІКОЛИ — дошка
+		 * назавжди лишалася з двома відкритими картками. Підставний транспорт
+		 * `undefined` приймав, тож тести цього не бачили; тепер не приймає й він.
+		 */
+		const move: Move = payload
+			? { seq: this.applied + 1, by: this.#me, type, payload }
+			: { seq: this.applied + 1, by: this.#me, type };
 		// `false` означає, що цей номер уже зайняли. Хід зникає, і це правильно:
 		// журнал — правда, а не наш намір.
 		await this.#transport.append(move);
