@@ -1,3 +1,4 @@
+import { randomFor } from '$lib/utils/seededRandom';
 import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 import { settings } from '$lib/services/settings.svelte';
 import type { RoundOutcome } from '$lib/types/game';
@@ -72,14 +73,32 @@ export class PopulationGameController {
 		return this.totalRounds * this.slotCount;
 	}
 
-	constructor(slotCount = 3, totalRounds = 10) {
+	/**
+	 * Джерело випадковості ПАРТІЇ — одне на всю партію, а не на раунд.
+	 *
+	 * Саме тому воно поле, а не виклик у `#next()`: послідовність раундів мусить
+	 * відтворюватися цілком. Новий генератор на кожен раунд дав би однакове перше
+	 * питання й розбіжність далі — найгірший різновид розбіжності, бо схожий на
+	 * робочу гру.
+	 *
+	 * Без зерна тут `Math.random`: соло-партія має бути іншою щоразу. Із зерном —
+	 * та сама гра в усіх учасників, і для цього досить переслати одне число.
+	 */
+	#random: () => number;
+
+	/** Зерно партії; `undefined` — соло, кожен захід інший. */
+	readonly #seed: number | undefined;
+
+	constructor(slotCount = 3, totalRounds = 10, seed?: number) {
+		this.#seed = seed;
+		this.#random = randomFor(seed);
 		this.slotCount = slotCount;
 		this.totalRounds = totalRounds;
 	}
 
 	/** Новий розклад карток. Викликається на старті раунду й на «Грати знову». */
 	startRound(): void {
-		const picked = getRandomAnimals(this.slotCount);
+		const picked = getRandomAnimals(this.slotCount, this.#random);
 		this.sourceAnimals = picked;
 		this.initialSourceAnimals = [...picked];
 		this.slots = Array(this.slotCount).fill(null);
@@ -228,7 +247,13 @@ export class PopulationGameController {
 		}
 	}
 
+	/**
+	 * Те саме зерно — та сама гра, і ПІСЛЯ «грати знову»: генератор створюється
+	 * заново. Для соло це нічого не міняє (там він і був `Math.random`), а для
+	 * спільної партії робить повтор передбачуваним, а не «майже тим самим».
+	 */
 	reset(): void {
+		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
 		this.sessionScore = 0;

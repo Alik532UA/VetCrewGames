@@ -1,3 +1,4 @@
+import { randomFor } from '$lib/utils/seededRandom';
 import {
 	BIN,
 	buildFeedingRound,
@@ -53,9 +54,27 @@ export class FeedingGameController {
 
 	#used: string[] = [];
 
-	constructor(totalRounds = 10) {
+	/**
+	 * Джерело випадковості ПАРТІЇ — одне на всю партію, а не на раунд.
+	 *
+	 * Саме тому воно поле, а не виклик у `#next()`: послідовність раундів мусить
+	 * відтворюватися цілком. Новий генератор на кожен раунд дав би однакове перше
+	 * питання й розбіжність далі — найгірший різновид розбіжності, бо схожий на
+	 * робочу гру.
+	 *
+	 * Без зерна тут `Math.random`: соло-партія має бути іншою щоразу. Із зерном —
+	 * та сама гра в усіх учасників, і для цього досить переслати одне число.
+	 */
+	#random: () => number;
+
+	constructor(totalRounds = 10, seed?: number) {
 		this.totalRounds = totalRounds;
+		this.#seed = seed;
+		this.#random = randomFor(seed);
 	}
+
+	/** Зерно партії; `undefined` — соло, кожен захід інший. */
+	readonly #seed: number | undefined;
 
 	/** Скільки страв у раунді — стільки й максимум очок за нього. */
 	get foodsPerRound(): number {
@@ -177,7 +196,13 @@ export class FeedingGameController {
 		this.#next();
 	}
 
+	/**
+	 * Те саме зерно — та сама гра, і ПІСЛЯ «грати знову»: генератор створюється
+	 * заново. Для соло це нічого не міняє (там він і був `Math.random`), а для
+	 * спільної партії робить повтор передбачуваним, а не «майже тим самим».
+	 */
 	reset(): void {
+		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
 		this.sessionScore = 0;
@@ -197,7 +222,7 @@ export class FeedingGameController {
 			return;
 		}
 
-		const set = getNextFeedingSet(this.#used);
+		const set = getNextFeedingSet(this.#used, this.#random);
 		if (!set) {
 			// Наборів менше, ніж раундів: партія завершується достроково, а не
 			// показує той самий стіл удруге.

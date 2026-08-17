@@ -1,3 +1,4 @@
+import { pickOne, shuffle } from '$lib/utils/seededRandom';
 import { animals, type Animal } from './population-game';
 
 /**
@@ -116,7 +117,7 @@ const byId = new Map(animals.map((animal) => [animal.id, animal]));
  * назви. Мовчазним це не буде — інваріант у тесті вимагає, щоб таких не було
  * жодного.
  */
-export function buildRound(puzzle: FamilyPuzzle, shuffle = defaultShuffle): FamilyRound | null {
+export function buildRound(puzzle: FamilyPuzzle, random: () => number): FamilyRound | null {
 	const ids = [...puzzle.groupIds, puzzle.oddId];
 	const cards = ids.map((id) => byId.get(id));
 	if (cards.some((animal) => animal === undefined)) return null;
@@ -124,19 +125,25 @@ export function buildRound(puzzle: FamilyPuzzle, shuffle = defaultShuffle): Fami
 	const oddAnimal = byId.get(puzzle.oddId)!;
 	return {
 		id: puzzle.id,
-		cards: shuffle(cards as Animal[]),
+		cards: shuffle(cards as Animal[], random),
 		oddAnimal,
 		explanationKey: puzzle.explanationKey
 	};
 }
 
-function defaultShuffle(cards: Animal[]): Animal[] {
-	return [...cards].sort(() => Math.random() - 0.5);
-}
-
-/** Наступний набір, якого ще не показували. `null` — усі вичерпані. */
-export function getNextPuzzle(excludeIds: readonly string[] = []): FamilyPuzzle | null {
-	const available = familyPuzzles.filter((puzzle) => !excludeIds.includes(puzzle.id));
-	if (available.length === 0) return null;
-	return available[Math.floor(Math.random() * available.length)];
+/**
+ * Наступний набір, якого ще не показували. `null` — усі вичерпані.
+ *
+ * Генератор приходить ПАРАМЕТРОМ і без типового значення. Типове `Math.random`
+ * лишило б тихий недетермінований шлях: спільна партія розклала б двом гравцям
+ * різні раунди, і побачив би це гравець, а не тест.
+ */
+export function getNextPuzzle(
+	excludeIds: readonly string[],
+	random: () => number
+): FamilyPuzzle | null {
+	return pickOne(
+		familyPuzzles.filter((puzzle) => !excludeIds.includes(puzzle.id)),
+		random
+	);
 }

@@ -1,3 +1,4 @@
+import { pickOne } from '$lib/utils/seededRandom';
 import { asset } from '$app/paths';
 import { animals, type Animal } from './population-game';
 
@@ -192,8 +193,12 @@ export function buildHabitatRound(entry: HabitatEntry, mode: HabitatMode): Habit
 }
 
 /** Наступний запис, якого ще не показували в цій партії. */
-export function getNextHabitatEntry(excludeIds: readonly string[] = []): HabitatEntry | null {
-	const available = habitatEntries.filter((entry) => !excludeIds.includes(entry.animalId));
-	if (available.length === 0) return null;
-	return available[Math.floor(Math.random() * available.length)];
+export function getNextHabitatEntry(
+	excludeIds: readonly string[],
+	random: () => number
+): HabitatEntry | null {
+	return pickOne(
+		habitatEntries.filter((entry) => !excludeIds.includes(entry.animalId)),
+		random
+	);
 }

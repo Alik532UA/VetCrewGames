@@ -1,3 +1,4 @@
+import { randomFor } from '$lib/utils/seededRandom';
 import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
 import { settings } from '$lib/services/settings.svelte';
 import { storage } from '$lib/services/storage';
@@ -45,13 +46,39 @@ export class MythGameController {
 	#usedThisGame: string[] = [];
 	#usedEver: string[] = [];
 
-	constructor(totalRounds = 10) {
+	/**
+	 * Джерело випадковості ПАРТІЇ — одне на всю партію, а не на раунд.
+	 *
+	 * Саме тому воно поле, а не виклик у `#next()`: послідовність раундів мусить
+	 * відтворюватися цілком. Новий генератор на кожен раунд дав би однакове перше
+	 * питання й розбіжність далі — найгірший різновид розбіжності, бо схожий на
+	 * робочу гру.
+	 *
+	 * Без зерна тут `Math.random`: соло-партія має бути іншою щоразу. Із зерном —
+	 * та сама гра в усіх учасників, і для цього досить переслати одне число.
+	 */
+	#random: () => number;
+
+	constructor(totalRounds = 10, seed?: number) {
 		this.totalRounds = totalRounds;
+		this.#seed = seed;
+		this.#random = randomFor(seed);
 	}
 
-	/** Гідрація зі сховища й перше питання. Викликає компонент один раз. */
+	/** Зерно партії; `undefined` — соло, кожен захід інший. */
+	readonly #seed: number | undefined;
+
+	/**
+	 * Гідрація зі сховища й перше питання. Викликає компонент один раз.
+	 *
+	 * **У партії із зерном сховище НЕ читається.** «Показане назавжди» — це
+	 * місцева пам'ять цього браузера, і в двох учасників вона різна. Спільна
+	 * партія, яка на неї спирається, розвела б гравців із того самого зерна на
+	 * різні питання — розбіжність, схожа на робочу гру, і тому найгірша. Соло
+	 * читає й далі: там пам'ять про показане і є та річ, яка не дає повторів.
+	 */
 	start(): void {
-		this.#usedEver = storage.getJSON<string[]>(SHOWN_KEY) ?? [];
+		this.#usedEver = this.#seed === undefined ? (storage.getJSON<string[]>(SHOWN_KEY) ?? []) : [];
 		this.#next();
 	}
 
@@ -77,7 +104,13 @@ export class MythGameController {
 	}
 
 	/** «Зіграти ще раз» на екрані підсумку. */
+	/**
+	 * Те саме зерно — та сама гра, і ПІСЛЯ «грати знову»: генератор створюється
+	 * заново. Для соло це нічого не міняє (там він і був `Math.random`), а для
+	 * спільної партії робить повтор передбачуваним, а не «майже тим самим».
+	 */
 	reset(): void {
+		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
 		this.sessionScore = 0;
@@ -93,7 +126,7 @@ export class MythGameController {
 			return;
 		}
 
-		let question = getNextQuestion([...this.#usedThisGame, ...this.#usedEver]);
+		let question = getNextQuestion([...this.#usedThisGame, ...this.#usedEver], this.#random);
 
 		// Питання скінчилися не в цій партії, а взагалі: пам'ять про попередні
 		// сесії скидається, і колода починається з початку. Наскрізний запис —
@@ -101,7 +134,7 @@ export class MythGameController {
 		if (!question) {
 			this.#usedEver = [];
 			this.#persistUsed();
-			question = getNextQuestion(this.#usedThisGame);
+			question = getNextQuestion(this.#usedThisGame, this.#random);
 		}
 
 		// Не лишилося навіть без обмежень — колода коротша за кількість раундів.

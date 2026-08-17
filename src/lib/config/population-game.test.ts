@@ -9,14 +9,14 @@ describe('Population Game Logic', () => {
 
 	it('should return the specified number of random animals', () => {
 		const count = 3;
-		const randomAnimals = getRandomAnimals(count);
+		const randomAnimals = getRandomAnimals(count, Math.random);
 		expect(Array.isArray(randomAnimals)).toBe(true);
 		expect(randomAnimals.length).toBe(count);
 	});
 
 	it('should not return duplicate animals in the same batch', () => {
 		const count = 3;
-		const randomAnimals = getRandomAnimals(count);
+		const randomAnimals = getRandomAnimals(count, Math.random);
 		const uniqueIds = new Set(randomAnimals.map((a) => a.id));
 		expect(uniqueIds.size).toBe(count);
 	});

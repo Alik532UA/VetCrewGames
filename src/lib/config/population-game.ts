@@ -1,3 +1,4 @@
+import { shuffle } from '$lib/utils/seededRandom';
 import { asset } from '$app/paths';
 
 export interface Animal {
@@ -606,8 +607,15 @@ export const animals: Animal[] = [
 	}
 ];
 
-/** Pick N random unique animals from the dataset */
-export function getRandomAnimals(count: number): Animal[] {
-	const shuffled = [...animals].sort(() => Math.random() - 0.5);
-	return shuffled.slice(0, count);
+/**
+ * `count` різних тварин із каталогу.
+ *
+ * Тасування — Фішер-Йетс, а не `sort(() => Math.random() - 0.5)`. Той ідіом не
+ * просто недетермінований: він дає НЕРІВНОМІРНИЙ розподіл, бо компаратор
+ * порушує транзитивність і результат залежить від алгоритму сортування. Тобто
+ * частина тварин траплялася гравцеві частіше за інших — тихо й без жодної
+ * причини. Те саме було в грі 5.
+ */
+export function getRandomAnimals(count: number, random: () => number): Animal[] {
+	return shuffle(animals, random).slice(0, count);
 }

@@ -1,3 +1,4 @@
+import { randomFor } from '$lib/utils/seededRandom';
 import {
 	buildHabitatRound,
 	getNextHabitatEntry,
@@ -40,9 +41,27 @@ export class HabitatGameController {
 
 	#used: string[] = [];
 
-	constructor(totalRounds = 10) {
+	/**
+	 * Джерело випадковості ПАРТІЇ — одне на всю партію, а не на раунд.
+	 *
+	 * Саме тому воно поле, а не виклик у `#next()`: послідовність раундів мусить
+	 * відтворюватися цілком. Новий генератор на кожен раунд дав би однакове перше
+	 * питання й розбіжність далі — найгірший різновид розбіжності, бо схожий на
+	 * робочу гру.
+	 *
+	 * Без зерна тут `Math.random`: соло-партія має бути іншою щоразу. Із зерном —
+	 * та сама гра в усіх учасників, і для цього досить переслати одне число.
+	 */
+	#random: () => number;
+
+	constructor(totalRounds = 10, seed?: number) {
 		this.totalRounds = totalRounds;
+		this.#seed = seed;
+		this.#random = randomFor(seed);
 	}
+
+	/** Зерно партії; `undefined` — соло, кожен захід інший. */
+	readonly #seed: number | undefined;
 
 	/** Кнопка перевірки має сенс лише тоді, коли щось обрано. */
 	canCheck = $derived(!this.checked && this.selected.length > 0);
@@ -95,7 +114,13 @@ export class HabitatGameController {
 	}
 
 	/** Повертає на стартовий екран — саме там міняється підрежим. */
+	/**
+	 * Те саме зерно — та сама гра, і ПІСЛЯ «грати знову»: генератор створюється
+	 * заново. Для соло це нічого не міняє (там він і був `Math.random`), а для
+	 * спільної партії робить повтор передбачуваним, а не «майже тим самим».
+	 */
 	reset(): void {
+		this.#random = randomFor(this.#seed);
 		this.mode = null;
 		this.round = null;
 		this.checked = false;
@@ -117,7 +142,7 @@ export class HabitatGameController {
 			return;
 		}
 
-		const entry = getNextHabitatEntry(this.#used);
+		const entry = getNextHabitatEntry(this.#used, this.#random);
 		if (!entry) {
 			// Записи скінчилися раніше за раунди — партія завершується, а не
 			// повторює те саме питання.

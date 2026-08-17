@@ -9,14 +9,14 @@ describe('Myth Game Logic', () => {
 
 	it('should return a question that is not in the usedIds array', () => {
 		const usedIds = [myths[0].id];
-		const nextQuestion = getNextQuestion(usedIds);
+		const nextQuestion = getNextQuestion(usedIds, Math.random);
 		expect(nextQuestion).toBeDefined();
 		expect(nextQuestion?.id).not.toBe(usedIds[0]);
 	});
 
 	it('should return null or reset if all questions are used', () => {
 		const allIds = myths.map((m) => m.id);
-		const nextQuestion = getNextQuestion(allIds);
+		const nextQuestion = getNextQuestion(allIds, Math.random);
 		expect(nextQuestion).toBeNull();
 	});
 });

@@ -1,3 +1,4 @@
+import { pickOne } from '$lib/utils/seededRandom';
 import { animals, type Animal } from './population-game';
 
 export interface MythStatement {
@@ -1209,15 +1210,16 @@ export interface GameQuestion extends MythStatement {
 	animal: Animal;
 }
 
-export function getNextQuestion(excludeIds: string[] = []): GameQuestion | null {
-	const available = myths.filter((m) => !excludeIds.includes(m.id));
-	if (available.length === 0) return null;
+export function getNextQuestion(
+	excludeIds: readonly string[],
+	random: () => number
+): GameQuestion | null {
+	const chosen = pickOne(
+		myths.filter((m) => !excludeIds.includes(m.id)),
+		random
+	);
+	if (!chosen) return null;
 
-	const randomMyth = available[Math.floor(Math.random() * available.length)];
-	const animal = animals.find((a) => a.id === randomMyth.animalId)!;
-
-	return {
-		...randomMyth,
-		animal
-	};
+	const animal = animals.find((a) => a.id === chosen.animalId)!;
+	return { ...chosen, animal };
 }

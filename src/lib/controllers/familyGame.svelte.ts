@@ -1,3 +1,4 @@
+import { randomFor } from '$lib/utils/seededRandom';
 import { buildRound, getNextPuzzle, type FamilyRound } from '$lib/config/family-game';
 import type { Animal } from '$lib/config/population-game';
 import { settings } from '$lib/services/settings.svelte';
@@ -28,9 +29,27 @@ export class FamilyGameController {
 	/** Набори, показані в цій партії: повторів у межах партії не буває. */
 	#used: string[] = [];
 
-	constructor(totalRounds = 10) {
+	/**
+	 * Джерело випадковості ПАРТІЇ — одне на всю партію, а не на раунд.
+	 *
+	 * Саме тому воно поле, а не виклик у `#next()`: послідовність раундів мусить
+	 * відтворюватися цілком. Новий генератор на кожен раунд дав би однакове перше
+	 * питання й розбіжність далі — найгірший різновид розбіжності, бо схожий на
+	 * робочу гру.
+	 *
+	 * Без зерна тут `Math.random`: соло-партія має бути іншою щоразу. Із зерном —
+	 * та сама гра в усіх учасників, і для цього досить переслати одне число.
+	 */
+	#random: () => number;
+
+	constructor(totalRounds = 10, seed?: number) {
 		this.totalRounds = totalRounds;
+		this.#seed = seed;
+		this.#random = randomFor(seed);
 	}
+
+	/** Зерно партії; `undefined` — соло, кожен захід інший. */
+	readonly #seed: number | undefined;
 
 	get answered(): boolean {
 		return this.chosen !== null;
@@ -63,7 +82,13 @@ export class FamilyGameController {
 		this.#next();
 	}
 
+	/**
+	 * Те саме зерно — та сама гра, і ПІСЛЯ «грати знову»: генератор створюється
+	 * заново. Для соло це нічого не міняє (там він і був `Math.random`), а для
+	 * спільної партії робить повтор передбачуваним, а не «майже тим самим».
+	 */
 	reset(): void {
+		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
 		this.sessionScore = 0;
@@ -84,14 +109,14 @@ export class FamilyGameController {
 		// Наборів менше, ніж могло б знадобитися раундів, тож коли вони
 		// вичерпуються — партія просто завершується достроково. Показувати той
 		// самий набір удруге гірше: гравець уже знає відповідь.
-		const puzzle = getNextPuzzle(this.#used);
+		const puzzle = getNextPuzzle(this.#used, this.#random);
 		if (!puzzle) {
 			this.round = null;
 			this.gameOver = true;
 			return;
 		}
 
-		const round = buildRound(puzzle);
+		const round = buildRound(puzzle, this.#random);
 		if (!round) {
 			// Набір посилається на тварину, якої немає в каталозі. Пропускаємо
 			// його, а не показуємо порожню картку; інваріант у тесті стежить,

@@ -1,3 +1,4 @@
+import { pickOne } from '$lib/utils/seededRandom';
 import { asset } from '$app/paths';
 import { animals, type Animal } from './population-game';
 
@@ -169,12 +170,24 @@ export const feedingSets: readonly FeedingSet[] = [
 	{ id: 'panda-penguin', animalIds: ['panda', 'penguin'], foodIds: ['bamboo', 'fish', 'bread'] },
 	{ id: 'koala-monkey', animalIds: ['koala', 'monkey'], foodIds: ['eucalyptus', 'fruit', 'onion'] },
 	{ id: 'horse-cat', animalIds: ['horse', 'cat'], foodIds: ['hay', 'fish', 'milk'] },
-	{ id: 'chicken-squirrel', animalIds: ['chicken', 'squirrel'], foodIds: ['grain', 'nuts', 'chocolate'] },
-	{ id: 'hedgehog-capybara', animalIds: ['hedgehog', 'capybara'], foodIds: ['insects', 'hay', 'avocado'] },
+	{
+		id: 'chicken-squirrel',
+		animalIds: ['chicken', 'squirrel'],
+		foodIds: ['grain', 'nuts', 'chocolate']
+	},
+	{
+		id: 'hedgehog-capybara',
+		animalIds: ['hedgehog', 'capybara'],
+		foodIds: ['insects', 'hay', 'avocado']
+	},
 	{ id: 'elephant-wolf', animalIds: ['elephant', 'wolf'], foodIds: ['fruit', 'meat', 'bread'] },
 	{ id: 'parrot-seal', animalIds: ['parrot', 'seal'], foodIds: ['nuts', 'fish', 'avocado'] },
 	{ id: 'whale-sheep', animalIds: ['blue_whale', 'sheep'], foodIds: ['krill', 'hay', 'onion'] },
-	{ id: 'lion-anteater', animalIds: ['lion', 'giant_anteater'], foodIds: ['meat', 'insects', 'milk'] }
+	{
+		id: 'lion-anteater',
+		animalIds: ['lion', 'giant_anteater'],
+		foodIds: ['meat', 'insects', 'milk']
+	}
 ];
 
 /** Куди страва має потрапити: до однієї з тварин або в смітник. */
@@ -207,8 +220,13 @@ export function buildFeedingRound(set: FeedingSet): FeedingRound | null {
 	};
 }
 
-export function getNextFeedingSet(excludeIds: readonly string[] = []): FeedingSet | null {
-	const available = feedingSets.filter((set) => !excludeIds.includes(set.id));
-	if (available.length === 0) return null;
-	return available[Math.floor(Math.random() * available.length)];
+/** Наступний набір. Генератор — параметром: див. `getNextPuzzle` у грі 5. */
+export function getNextFeedingSet(
+	excludeIds: readonly string[],
+	random: () => number
+): FeedingSet | null {
+	return pickOne(
+		feedingSets.filter((set) => !excludeIds.includes(set.id)),
+		random
+	);
 }

@@ -50,20 +50,23 @@ describe('набори «Хто з іншої родини?»', () => {
 	});
 
 	it('buildRound() віддає чотири картки й правильну відповідь серед них', () => {
-		// Без перемішування: порядок карток тут не перевіряється, перевіряється склад.
-		const round = buildRound(familyPuzzles[0], (cards) => cards);
+		// Порядок карток тут не перевіряється, перевіряється склад.
+		const round = buildRound(familyPuzzles[0], Math.random);
 		expect(round).not.toBeNull();
 		expect(round!.cards).toHaveLength(4);
 		expect(round!.cards.map((c) => c.id)).toContain(round!.oddAnimal.id);
 	});
 
 	it('buildRound() повертає null на невідомій тварині, а не картку-привида', () => {
-		const round = buildRound({
-			id: 'broken',
-			groupIds: ['cat', 'tiger', 'leopard'],
-			oddId: 'дракон',
-			explanationKey: 'family.felids.explanation'
-		});
+		const round = buildRound(
+			{
+				id: 'broken',
+				groupIds: ['cat', 'tiger', 'leopard'],
+				oddId: 'дракон',
+				explanationKey: 'family.felids.explanation'
+			},
+			Math.random
+		);
 		expect(round).toBeNull();
 	});
 });
