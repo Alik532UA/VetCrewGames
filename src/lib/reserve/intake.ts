@@ -1,5 +1,6 @@
 import { NO_VET_REPUTATION, ORIGINS } from './constants';
-import { addReputation, roll } from './roll';
+import { roll } from './roll';
+import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { speciesById, type ReserveBiome } from './species';
 import type { CommandResult, ReserveCommand, ReserveState, Site } from './types';
 
@@ -43,9 +44,10 @@ export function intake(
 	const cost = terms.price + terms.logistics;
 	if (state.budget < cost) return { ok: false, reason: 'no-money' };
 
-	state.budget -= cost;
-	state.impact += terms.impact;
-	addReputation(state, terms.reputation);
+	spend(state, cost, 'intake');
+	addImpact(state, terms.impact, 'intake');
+	addReputation(state, terms.reputation, 'intake');
+	countAnimal(state, 'inReserve', 1, 'intake');
 
 	/*
 	 * Чорний ринок РОЗРИВАЄ чинні контракти — і це найдорожча його ціна.
@@ -65,7 +67,7 @@ export function intake(
 	 * з біди краще, ніж лишити там. Але це те, за що фонд критикують, —
 	 * звідси мінус репутації, а не заборона.
 	 */
-	if (site.staff.vet === 0) addReputation(state, NO_VET_REPUTATION);
+	if (site.staff.vet === 0) addReputation(state, NO_VET_REPUTATION, 'noVet');
 
 	site.animals.push({
 		id: state.nextAnimalId++,

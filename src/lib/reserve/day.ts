@@ -21,7 +21,7 @@ import {
 import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
 import { closeDay } from './journal';
 import { expireRaid, maybeRaid } from './raids';
-import { addReputation } from './roll';
+import { addImpact, addReputation, earn, spend } from './ledger';
 import { comfortOf, speciesById, RESERVE_BIOMES } from './species';
 import type { Animal, Enclosure, ReserveState, Site } from './types';
 
@@ -82,7 +82,7 @@ function comfortFor(site: Site, animal: Animal): number {
 function settleContracts(state: ReserveState, day: number): void {
 	const missed = state.contracts.filter((c) => day > c.dueDay && !isDone(state, c));
 	for (const contract of missed) {
-		addReputation(state, -contract.penalty);
+		addReputation(state, -contract.penalty, 'penalty');
 	}
 	state.contracts = state.contracts.filter((c) => !missed.includes(c));
 
@@ -115,10 +115,23 @@ function siteDay(state: ReserveState, site: Site): void {
 	}
 
 	const here = presentAt(site);
-	state.budget -= here.length * UPKEEP_PER_ANIMAL;
-	state.budget -= site.enclosures.reduce((sum, e) => sum + e.size * UPKEEP_PER_SIZE, 0);
-	state.budget -= site.staff.vet * WAGES.vet + site.staff.keeper * WAGES.keeper;
-	state.budget -= site.staff.ranger * WAGES.ranger;
+	/*
+	 * Кожна витрата — окремим рядком із причиною.
+	 *
+	 * Доти всі чотири складалися в одне число, з якого не видно жодного рішення: чи
+	 * то штат завеликий, чи то вольєрів набудували. Сума однакова, причини різні, і
+	 * саме причина каже, що робити далі. Чотири ділянки складаються в ті самі
+	 * рядки: реєстр додає до наявної причини, а не пише пʼятий раз те саме.
+	 */
+	spend(state, here.length * UPKEEP_PER_ANIMAL, 'upkeep.animals');
+	spend(
+		state,
+		site.enclosures.reduce((sum, e) => sum + e.size * UPKEEP_PER_SIZE, 0),
+		'upkeep.enclosures'
+	);
+	spend(state, site.staff.vet * WAGES.vet, 'wage.vet');
+	spend(state, site.staff.keeper * WAGES.keeper, 'wage.keeper');
+	spend(state, site.staff.ranger * WAGES.ranger, 'wage.ranger');
 
 	const recovering = here.filter((a) => a.stage === 'recovering');
 	if (recovering.length > 0) {
@@ -132,8 +145,8 @@ function siteDay(state: ReserveState, site: Site): void {
 				animal.stage = 'healthy';
 				// Вилікувана тварина в неволі допомагає природі мало (+1), а от
 				// публіці видно саме одужання (+5).
-				state.impact += HEAL_IMPACT;
-				addReputation(state, HEAL_REPUTATION);
+				addImpact(state, HEAL_IMPACT, 'heal');
+				addReputation(state, HEAL_REPUTATION, 'heal');
 			}
 		}
 	}
@@ -159,7 +172,7 @@ export function endOfDay(state: ReserveState): void {
 	 * просто нічого не приносить. Відʼємні пожертви читалися б як штраф, якого ніхто
 	 * не оголошував.
 	 */
-	state.budget += Math.max(0, state.reputation) * DONATION_PER_REPUTATION;
+	earn(state, Math.max(0, state.reputation) * DONATION_PER_REPUTATION, 'donations');
 
 	/*
 	 * Життя йде на ВСІХ чотирьох землях, а не лише на відкритій.
@@ -182,7 +195,7 @@ export function endOfDay(state: ReserveState): void {
 
 	// Публіка забуває: без щоденного спаду шкала насичується за десять хвилин
 	// і перестає бути рішенням.
-	addReputation(state, -REPUTATION_DECAY_PER_DAY);
+	addReputation(state, -REPUTATION_DECAY_PER_DAY, 'decay');
 
 	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
 	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;

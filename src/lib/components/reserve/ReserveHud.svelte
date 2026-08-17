@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
-	import { IMPACT_TO_WIN } from '$lib/reserve/constants';
 	import { deltaOf } from '$lib/reserve/journal';
-	import type { JournalDay, MetricSet } from '$lib/reserve/types';
+	import type { JournalDay, JournalNote, MetricSet } from '$lib/reserve/types';
 	import { SPEEDS, type Speed } from '$lib/controllers/reserve.svelte';
 	import HudHistory from './HudHistory.svelte';
+	import { hudProbe } from './hudProbe.svelte';
+	import { hudStats } from './hudStats';
 
 	/**
 	 * Показники партії й керування часом.
@@ -37,6 +38,8 @@
 		manySites: boolean;
 		/** Історія змін по днях — саме її показує підказка над показником. */
 		journal: JournalDay[];
+		/** Причини змін ПОТОЧНОЇ доби: журнал побачить їх лише на її межі. */
+		todayNotes: JournalNote[];
 		/** Зріз на початку доби: різниця з живими числами і є «сьогодні». */
 		dayStart: MetricSet;
 		speed: Speed;
@@ -52,16 +55,17 @@
 		inWild,
 		manySites,
 		journal,
+		todayNotes,
 		dayStart,
 		speed,
 		onSpeed
 	}: Props = $props();
 
 	/**
-	 * Показник, чия історія розкрита. Один за раз: дві підказки поруч перекрили б
-	 * і карту, і одна одну.
+	 * Відкриття підказки живе окремо (`hudProbe`): наведення, відкладене закриття
+	 * й закріплення кліком — це режим роботи, а не деталь шапки.
 	 */
-	let open = $state<keyof MetricSet | null>(null);
+	const probe = hudProbe();
 
 	/** Зміна за поточну добу — та, якої ще немає в журналі. */
 	const today = $derived(deltaOf({ budget, impact, reputation, inReserve, inWild }, dayStart));
@@ -70,64 +74,9 @@
 	const speedLabel = (value: Speed) =>
 		value === 0 ? t('reserve.speed.pause') : t(`reserve.speed.x${value}` as const);
 
-	/**
-	 * Показники несуть КЛЮЧ підпису, а не готовий рядок.
-	 *
-	 * Так треба, бо інваріант у `src/i18n-font.test.ts` читає розмітку: підпис,
-	 * зібраний тут через `t()`, проходив би крізь перевірку непоміченим — і саме
-	 * так тут спершу й опинилася кирилична «і», яку шрифт не має чим малювати.
-	 * Форматування лишається в розмітці навмисно.
-	 *
-	 * Значення форматувати не треба: це числа, а цифри в шрифті є.
-	 */
-	const stats = $derived([
-		{
-			id: 'day',
-			labelKey: 'reserve.day' as const,
-			value: String(day),
-			bad: false,
-			metric: null
-		},
-		{
-			id: 'budget',
-			labelKey: 'reserve.budget' as const,
-			value: budget.toLocaleString(settings.locale),
-			bad: budget < 0,
-			metric: 'budget' as const
-		},
-		{
-			id: 'impact',
-			labelKey: 'reserve.impact' as const,
-			// Показник і мета поруч: інакше «34» нічого не каже про те, чи це багато.
-			value: `${impact} / ${IMPACT_TO_WIN.toLocaleString(settings.locale)}`,
-			bad: impact < 0,
-			metric: 'impact' as const
-		},
-		{
-			id: 'reputation',
-			labelKey: 'reserve.reputation' as const,
-			value: String(reputation),
-			// Мінус тут значить, що громада забирає землю, — це варто побачити кольором.
-			bad: reputation < 0,
-			metric: 'reputation' as const
-		},
-		{
-			id: 'inreserve',
-			labelKey: (manySites ? 'reserve.inReserves' : 'reserve.inReserve') as
-				| 'reserve.inReserve'
-				| 'reserve.inReserves',
-			value: String(inReserve),
-			bad: false,
-			metric: 'inReserve' as const
-		},
-		{
-			id: 'inwild',
-			labelKey: 'reserve.inWild' as const,
-			value: String(inWild),
-			bad: false,
-			metric: 'inWild' as const
-		}
-	]);
+	const stats = $derived(
+		hudStats({ day, budget, impact, reputation, inReserve, inWild, manySites }, settings.locale)
+	);
 </script>
 
 <header class="hud" data-testid="reserve-hud-header">
@@ -146,11 +95,15 @@
 					<button
 						type="button"
 						class="hud__stat hud__stat--probe"
-						aria-expanded={open === metric}
-						onmouseenter={() => (open = metric)}
-						onmouseleave={() => (open = null)}
-						onfocus={() => (open = metric)}
-						onblur={() => (open = null)}
+						aria-expanded={probe.open === metric}
+						onmouseenter={() => probe.show(metric)}
+						onmouseleave={() => probe.hide()}
+						onfocus={() => probe.show(metric)}
+						onblur={() => probe.hide()}
+						onclick={() => probe.togglePin(metric)}
+						onkeydown={(event) => {
+							if (event.key === 'Escape') probe.unpin();
+						}}
 						data-testid="reserve-{stat.id}-history-btn"
 					>
 						<span class="hud__label">{@html formatFont(t(stat.labelKey))}</span>
@@ -161,8 +114,18 @@
 						>
 					</button>
 
-					{#if open === metric}
-						<HudHistory {metric} {journal} today={today[metric]} {day} />
+					{#if probe.open === metric}
+						<HudHistory
+							{metric}
+							{journal}
+							today={today[metric]}
+							{todayNotes}
+							{day}
+							pinned={probe.pinnedOn(metric)}
+							onKeep={() => probe.show(metric)}
+							onLeave={() => probe.hide()}
+							onClose={() => probe.unpin()}
+						/>
 					{/if}
 				{:else}
 					<div class="hud__stat">

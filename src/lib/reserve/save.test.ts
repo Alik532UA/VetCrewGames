@@ -1,7 +1,8 @@
 // @vitest-environment node
 // Формат збереження нічого не знає про сховище — і перевірка теж не має знати.
 import { describe, expect, it } from 'vitest';
-import { MIGRATIONS, restore, SCHEMA_VERSION, serialize } from './save';
+import { restore, SCHEMA_VERSION, serialize } from './save';
+import { MIGRATIONS } from './migrations';
 import { createReserve, execute, tick } from './simulation';
 import { TICKS_PER_DAY } from './constants';
 import type { ReserveBiome } from './species';
@@ -193,3 +194,49 @@ function withAnimal(broken: Record<string, unknown>) {
 	const state = played();
 	return withSite({ animals: [{ ...home(state).animals[0], ...broken }] });
 }
+
+describe('сходинка 1 → 2: у показників зʼявився розклад причин', () => {
+	/** Сейв, який могла записати версія 1: журнал без розкладу, `today` ще немає. */
+	const version1 = () => {
+		const state = createReserve(9) as unknown as Record<string, unknown>;
+		state.journal = [
+			{ day: 1, budget: -235, impact: 0, reputation: -0.5, inReserve: 0, inWild: 0 }
+		];
+		delete state.today;
+		return { version: 1, state };
+	};
+
+	it('старий сейв піднімається, а не викидається', () => {
+		const result = restore(version1());
+		expect(result.ok, 'ok' in result && !result.ok ? JSON.stringify(result) : '').toBe(true);
+	});
+
+	it('старі дні лишаються з ПОРОЖНІМ розкладом, а не з вигаданим', () => {
+		/*
+		 * Розписати «−235» назад на зарплати й утримання неможливо: даних для цього
+		 * ніколи не існувало. Вигадана бухгалтерія була б гіршою за її відсутність —
+		 * гравець ухвалював би рішення за числами, яких не було.
+		 */
+		const result = restore(version1());
+		if (!result.ok) throw new Error('сейв мусив піднятися');
+
+		expect(result.state.journal[0].notes).toEqual([]);
+		expect(result.state.journal[0].budget, 'сама різниця лишається').toBe(-235);
+	});
+
+	it('розклад поточної доби зʼявляється порожнім списком', () => {
+		// Без нього перший же `note()` упав би на `state.today.find`.
+		const result = restore(version1());
+		if (!result.ok) throw new Error('сейв мусив піднятися');
+		expect(result.state.today).toEqual([]);
+	});
+
+	it('партія після підйому жива: доба закривається з розкладом', () => {
+		const result = restore(version1());
+		if (!result.ok) throw new Error('сейв мусив піднятися');
+
+		tick(result.state, TICKS_PER_DAY);
+		const last = result.state.journal[result.state.journal.length - 1];
+		expect(last.notes.length, 'нова доба вже підписана').toBeGreaterThan(0);
+	});
+});

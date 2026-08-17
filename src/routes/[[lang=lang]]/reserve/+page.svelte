@@ -83,6 +83,7 @@
 		inWild={released(game.state).length}
 		manySites={populatedSites(game.state) > 1}
 		journal={game.state.journal}
+		todayNotes={game.state.today}
 		dayStart={game.state.dayStart}
 		speed={game.speed}
 		onSpeed={(value: Speed) => (game.speed = value)}

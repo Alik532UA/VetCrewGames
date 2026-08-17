@@ -1,6 +1,7 @@
 import type { AnimalOrigin, Quality, StaffRole } from './constants';
 import type { ContractGoal } from './contracts';
 import type { ReserveBiome } from './species';
+import type { JournalDay, JournalNote, MetricSet } from './metrics';
 
 /**
  * Стан заповідника й ходи, якими його змінюють.
@@ -72,22 +73,12 @@ export interface Contract {
 	penalty: number;
 }
 
-/**
- * Показники, які показує шапка. Зріз, а не події: журнал міряє РІЗНИЦЮ між двома
- * зрізами, тому обидва мусять мати однакову форму.
+/*
+ * Показники, причини змін і історія переїхали в `metrics.ts` — там словник, тут
+ * партія. Реекспорт лишається, щоб не переписувати два десятки імпортів заради
+ * переїзду: `from './types'` і далі дає все, що давав.
  */
-export interface MetricSet {
-	budget: number;
-	impact: number;
-	reputation: number;
-	inReserve: number;
-	inWild: number;
-}
-
-/** Один день історії: на скільки змінився кожен показник. */
-export interface JournalDay extends MetricSet {
-	day: number;
-}
+export type { JournalDay, JournalNote, LedgerMetric, LedgerReason, MetricSet } from './metrics';
 
 /** Тактика проти браконьєрів. Три рішення з технічного завдання. */
 export type RaidTactic = 'drone' | 'ambush' | 'ignore';
@@ -176,6 +167,13 @@ export interface ReserveState {
 	journal: JournalDay[];
 	/** Зріз показників на початку поточної доби. З ним порівнюється кінець. */
 	dayStart: MetricSet;
+	/**
+	 * Причини змін ПОТОЧНОЇ, ще не закритої доби.
+	 *
+	 * У стані, а не в контролері: закрита вкладка не має стирати розклад половини
+	 * дня. На межі доби переїжджає в `journal` разом із виміряною різницею.
+	 */
+	today: JournalNote[];
 	/**
 	 * Наліт браконьєрів, який чекає на рішення. `null` — тихо.
 	 *

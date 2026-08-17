@@ -1,4 +1,5 @@
-import { addReputation, roll } from './roll';
+import { roll } from './roll';
+import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { RESERVE_BIOMES, type ReserveBiome } from './species';
 import type { Animal, RaidTactic, ReserveState } from './types';
 
@@ -130,7 +131,7 @@ export function resolveRaid(state: ReserveState, tactic: RaidTactic): boolean {
 
 	if (tactic === 'drone') {
 		if (state.budget < DRONE_PRICE) return false;
-		state.budget -= DRONE_PRICE;
+		spend(state, DRONE_PRICE, 'drone');
 	}
 	// Засідку влаштовує патруль ТІЄЇ ділянки, на яку прийшли.
 	const site = state.sites[raid.biome];
@@ -142,15 +143,16 @@ export function resolveRaid(state: ReserveState, tactic: RaidTactic): boolean {
 		// Поранення трапляється незалежно від того, чи затримали браконьєрів:
 		// засідка небезпечна сама по собі, а не лише коли не вдалася.
 		site.staff.ranger -= 1;
-		state.budget -= INJURY_PRICE;
+		spend(state, INJURY_PRICE, 'injury');
 	}
 
 	if (success) {
-		addReputation(state, RAID_SAVED_REPUTATION);
+		addReputation(state, RAID_SAVED_REPUTATION, 'raidSaved');
 	} else {
 		site.animals = site.animals.filter((a) => a.id !== raid.animalId);
-		state.impact += RAID_LOST_IMPACT;
-		addReputation(state, RAID_LOST_REPUTATION);
+		addImpact(state, RAID_LOST_IMPACT, 'raidLost');
+		addReputation(state, RAID_LOST_REPUTATION, 'raidLost');
+		countAnimal(state, 'inReserve', -1, 'raidLost');
 	}
 
 	state.raid = null;

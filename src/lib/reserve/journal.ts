@@ -1,5 +1,5 @@
 import { RESERVE_BIOMES } from './species';
-import type { MetricSet, ReserveState } from './types';
+import type { JournalNote, LedgerMetric, MetricSet, ReserveState } from './types';
 
 /**
  * Історія показників по днях: на скільки й коли змінилося кожне число.
@@ -17,9 +17,11 @@ import type { MetricSet, ReserveState } from './types';
  * порівнює його з кінцем: одне місце, і воно не може розійтися з правилами, бо
  * читає їхній РЕЗУЛЬТАТ.
  *
- * Ціна рішення: за що саме змінився бюджет, журнал не знає — лише на скільки.
- * Для підказки цього досить; розклад «звідки і куди» був би окремою задачею з
- * окремим форматом.
+ * **Розклад причин прийшов ЗВЕРХУ на цей вимір, а не замість нього.** Кожна
+ * зміна показника тепер іде через `ledger.ts` і несе причину; зріз лишився тим,
+ * чим був, — доказом ПОВНОТИ. Якщо сума підписаних записів не дорівнює
+ * виміряній різниці, різниця стає рядком «Інше»: забуте місце видно в самій
+ * підказці, а не втрачено.
  */
 
 /** Скільки останніх днів тримаємо. Далі історія нікому не цікава, а сейв росте. */
@@ -78,10 +80,38 @@ const round = (value: number) => Math.round(value * 100) / 100;
  */
 export function closeDay(state: ReserveState, day: number): void {
 	const now = metricsOf(state);
-	state.journal.push({ day, ...deltaOf(now, state.dayStart) });
+	const delta = deltaOf(now, state.dayStart);
+	state.journal.push({ day, ...delta, notes: settle(state.today, delta) });
+	state.today = [];
 	// Викидаємо найдавніше, а не обрізаємо з кінця: цікавий саме хвіст.
 	if (state.journal.length > JOURNAL_DAYS) {
 		state.journal.splice(0, state.journal.length - JOURNAL_DAYS);
 	}
 	state.dayStart = now;
 }
+
+/**
+ * Звести записи з виміряною різницею.
+ *
+ * Розбіжність не ховається й не валить гру: вона стає рядком «Інше». Це і є той
+ * запобіжник, через який реєстр можна було вводити без страху — місце, де зміну
+ * забули підписати, показує себе саме, у підказці, замість тихо зникнути.
+ *
+ * Зворотний бік теж ловиться: якщо записали БІЛЬШЕ, ніж сталося (наприклад,
+ * репутацію, яку зрізав затиск), «Інше» вийде з протилежним знаком.
+ */
+function settle(notes: JournalNote[], delta: MetricSet): JournalNote[] {
+	const out = notes.filter((entry) => entry.amount !== 0);
+
+	for (const metric of METRICS) {
+		const noted = out
+			.filter((entry) => entry.metric === metric)
+			.reduce((sum, entry) => sum + entry.amount, 0);
+		const rest = round(delta[metric] - noted);
+		if (rest !== 0) out.push({ metric, reason: 'other', amount: rest });
+	}
+
+	return out;
+}
+
+const METRICS: LedgerMetric[] = ['budget', 'impact', 'reputation', 'inReserve', 'inWild'];

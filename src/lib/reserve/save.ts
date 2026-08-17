@@ -1,5 +1,6 @@
 import { ORIGINS, QUALITIES, REPUTATION_MAX, REPUTATION_MIN, WAGES } from './constants';
 import { isEnclosureSize, RESERVE_BIOMES, speciesById } from './species';
+import { MIGRATIONS } from './migrations';
 import type { ReserveState } from './types';
 
 /**
@@ -30,17 +31,7 @@ import type { ReserveState } from './types';
  * жодної історії, як вони стали одним. Тому старі записи не піднімаються, а
  * прибираються — див. `LEGACY_KEYS` у `services/reserveSave.ts`.
  */
-export const SCHEMA_VERSION = 1;
-
-/**
- * Сходинки міграції: `MIGRATIONS[n]` піднімає сейв версії `n` до `n + 1`.
- *
- * Порожній, бо формат фонду щойно народився. Механізм при цьому лишається на
- * місці, і саме тому він тут: перша ж зміна форми фонду вимагатиме сходинки, і
- * тоді її буде куди покласти. Реєстр, який зʼявляється разом із потребою, завжди
- * зʼявляється пізно.
- */
-export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {};
+export const SCHEMA_VERSION = 2;
 
 export interface SaveFile {
 	version: number;
@@ -159,6 +150,9 @@ function checkState(value: unknown): string | null {
 	// Журнал перевіряється на форму, а не на вміст: він ні на що не впливає, а
 	// зіпсований день історії — не привід викидати заповідник.
 	if (!Array.isArray(value.journal)) return 'journal';
+	// Так само й розклад поточної доби: форма списку, а не вміст. Зіпсований
+	// рядок історії не варто того, щоб через нього викидати заповідник.
+	if (!Array.isArray(value.today)) return 'today';
 	if (!isObject(value.dayStart)) return 'dayStart';
 	for (const field of ['budget', 'impact', 'reputation', 'inReserve', 'inWild'])
 		if (!isNumber(value.dayStart[field])) return `dayStart.${field}`;

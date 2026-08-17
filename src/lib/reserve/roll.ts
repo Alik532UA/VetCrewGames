@@ -1,15 +1,15 @@
 import { seededRandom } from '$lib/utils/seededRandom';
-import { REPUTATION_MAX, REPUTATION_MIN } from './constants';
 import type { ReserveState } from './types';
 
 /**
- * Дві дії, які потрібні і правилам, і добі: кидок і зміна репутації.
+ * Кидок кістки: одна дія, яка потрібна і правилам, і добі.
  *
- * Жили в `simulation.ts`, поки випадковість була потрібна лише при надходженні
+ * Жив у `simulation.ts`, поки випадковість була потрібна лише при надходженні
  * тварини. Браконьєри кидають кістку в кінці доби — а `day.ts` не може імпортувати
- * `simulation.ts`, бо той імпортує його: вийшло б коло. Тому обидві переїхали
- * сюди, і заразом зникло дублювання — межі шкали репутації доти повторювалися в
- * `day.ts` двома окремими рядками.
+ * `simulation.ts`, бо той імпортує його: вийшло б коло. Тому переїхав сюди.
+ *
+ * Репутація жила поруч і поїхала в `ledger.ts`: відколи кожна зміна показника
+ * пишеться з причиною, це вже не сусідня дрібниця, а частина реєстру.
  */
 
 /**
@@ -28,9 +28,4 @@ export function roll(state: ReserveState): number {
 	for (let i = 0; i < state.rolls; i++) random();
 	state.rolls += 1;
 	return random();
-}
-
-/** Репутація живе в межах 0–100: поза ними вона перестала б щось означати. */
-export function addReputation(state: ReserveState, delta: number): void {
-	state.reputation = Math.min(REPUTATION_MAX, Math.max(REPUTATION_MIN, state.reputation + delta));
 }

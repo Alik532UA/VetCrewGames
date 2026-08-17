@@ -1,4 +1,5 @@
 import { ENCLOSURE_IMPACT, QUALITIES } from './constants';
+import { addImpact, spend } from './ledger';
 import { reserveHalf } from './plot';
 import { placementProblem } from './placement';
 import { enclosurePrice, repairPrice, upgradePrice } from './prices';
@@ -43,11 +44,11 @@ export function buildings(
 			const cost = enclosurePrice(command.size, command.quality);
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };
 
-			state.budget -= cost;
+			spend(state, cost, 'build');
 			// Будівництво саме по собі природі не допомагає: ресурси спалено, земля
 			// зайнята, жодної врятованої тварини. Публіка ж розділилася — хтось
 			// бачить благі наміри, хтось піар, — і репутація не рухається взагалі.
-			state.impact += ENCLOSURE_IMPACT;
+			addImpact(state, ENCLOSURE_IMPACT, 'enclosure');
 			site.enclosures.push({
 				id: state.nextEnclosureId++,
 				cell: command.cell,
@@ -68,7 +69,7 @@ export function buildings(
 			const cost = repairPrice(enclosure.size, enclosure.quality, enclosure.durability);
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };
 
-			state.budget -= cost;
+			spend(state, cost, 'repair');
 			enclosure.durability = 1;
 			return { ok: true };
 		}
@@ -83,7 +84,7 @@ export function buildings(
 			const cost = upgradePrice(enclosure.size, enclosure.quality, command.quality);
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };
 
-			state.budget -= cost;
+			spend(state, cost, 'upgrade');
 			enclosure.quality = command.quality;
 			// Перебудова заразом і оновлює: платити ще й за ремонт було б дивно.
 			enclosure.durability = 1;

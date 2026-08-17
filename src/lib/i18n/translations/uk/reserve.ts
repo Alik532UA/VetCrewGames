@@ -168,5 +168,31 @@ export const reserve = {
 	'reserve.today': 'Сьогодні',
 	'reserve.historyQuiet': 'Нічого не змінювалося',
 	'reserve.historyNew': 'Партія щойно почалася',
+
+	// За що змінився показник. Кожна причина — окремий рядок у підказці:
+	// «−235» не каже нічого, а «−120 зарплата ветеринарам» каже, що робити.
+	'reserve.why.wage.vet': 'Зарплата ветеринарам',
+	'reserve.why.wage.keeper': 'Зарплата доглядачам',
+	'reserve.why.wage.ranger': 'Зарплата рейнджерам',
+	'reserve.why.upkeep.animals': 'Утримання тварин',
+	'reserve.why.upkeep.enclosures': 'Утримання вольєрів',
+	'reserve.why.donations': 'Пожертви',
+	'reserve.why.build': 'Будівництво вольєра',
+	'reserve.why.repair': 'Ремонт вольєра',
+	'reserve.why.upgrade': 'Підняття якості',
+	'reserve.why.intake': 'Прийом тварини',
+	'reserve.why.campaign': 'Кампанія в соцмережах',
+	'reserve.why.contract': 'Нагорода за контракт',
+	'reserve.why.penalty': 'Провалений контракт',
+	'reserve.why.drone': 'Дрон проти браконьєрів',
+	'reserve.why.injury': 'Лікування рейнджера',
+	'reserve.why.enclosure': 'Слід від будівництва',
+	'reserve.why.heal': 'Тварина одужала',
+	'reserve.why.release': 'Повернення в природу',
+	'reserve.why.noVet': 'Прийом без ветеринара',
+	'reserve.why.decay': 'Про заповідник забувають',
+	'reserve.why.raidSaved': 'Браконьєрів зупинено',
+	'reserve.why.raidLost': 'Тварину забрали браконьєри',
+	'reserve.why.other': 'Інше',
 	'reserve.noHistory': 'Змін ще не було.'
 } as const;

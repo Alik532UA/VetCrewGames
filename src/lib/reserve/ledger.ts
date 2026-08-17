@@ -1,0 +1,103 @@
+import { REPUTATION_MAX, REPUTATION_MIN } from './constants';
+import type { LedgerMetric, LedgerReason, ReserveState } from './types';
+
+/**
+ * Єдиний шлях зміни показників — і єдине місце, де записується ПРИЧИНА.
+ *
+ * Доти журнал міряв різницю двох зрізів: на початку доби один, у кінці другий, і
+ * в історію писалася різниця. Дешево й неможливо забути — але «−235» не каже
+ * нічого. Гравець бачить, що гроші йдуть, і не бачить, куди: зарплати, утримання
+ * й ремонт складаються в одне число, з якого не видно жодного рішення.
+ *
+ * **Чому не «дописати рядок у кожному місці, де міняються гроші».** Саме цього
+ * колишній комментар журналу й боявся, і слушно: гроші міняються в десятьох
+ * місцях, і кожне — це місце, де рядок можна забути, не дізнавшись про це
+ * ніколи. Тому тут не додаток до мутації, а ЄДИНИЙ спосіб її зробити: поле
+ * `state.budget` більше не змінюють напряму — це заборонено перевіркою в
+ * `ledger.test.ts`, яка читає джерела теки.
+ *
+ * **І другий запобіжник, важливіший за перший.** Старий вимір різницею нікуди не
+ * зник: `closeDay` досі бере зріз і порівнює його з сумою записів. Розбіжність не
+ * ховається й не валить гру — вона стає рядком «Інше». Тобто забуте місце видно
+ * очима в самій підказці, а тест на «Іншого» після насиченої доби ловить його ще
+ * до того. Реєстр дає причини, зріз доводить повноту.
+ */
+
+/** Скільки записів на добу тримаємо. Більше — це вже не підказка, а таблиця. */
+export const NOTES_PER_DAY = 24;
+
+/**
+ * Записати причину зміни.
+ *
+ * Однакові причини СКЛАДАЮТЬСЯ: три ветеринари — це «Зарплата ветеринарам −360»,
+ * а не три рядки по −120. Гравцеві потрібне рішення, а не бухгалтерія.
+ *
+ * Нуль не пишеться. Рядок «Зарплата рейнджерам 0» повідомляє тільки те, що
+ * рейнджерів немає, — а це вже видно в панелі персоналу.
+ */
+export function note(
+	state: ReserveState,
+	metric: LedgerMetric,
+	amount: number,
+	reason: LedgerReason
+): void {
+	if (amount === 0) return;
+
+	const same = state.today.find((entry) => entry.metric === metric && entry.reason === reason);
+	if (same) {
+		same.amount = round(same.amount + amount);
+		return;
+	}
+	// Межа на випадок дивної доби: сорок рядків у підказці ніхто не читає.
+	if (state.today.length >= NOTES_PER_DAY) return;
+	state.today.push({ metric, reason, amount: round(amount) });
+}
+
+/**
+ * Репутація дробова (спад 0.5 на день), і без округлення сума записів виходила б
+ * «−0.5000000000000007». У підказці це читається як помилка, а не як число.
+ */
+const round = (value: number) => Math.round(value * 100) / 100;
+
+/** Витрата. Додатне `amount` — саме стільки й піде з каси. */
+export function spend(state: ReserveState, amount: number, reason: LedgerReason): void {
+	state.budget -= amount;
+	note(state, 'budget', -amount, reason);
+}
+
+/** Надходження. */
+export function earn(state: ReserveState, amount: number, reason: LedgerReason): void {
+	state.budget += amount;
+	note(state, 'budget', amount, reason);
+}
+
+/** «Користь планеті». Знак у `delta`: будівництво шкодить, випуск допомагає. */
+export function addImpact(state: ReserveState, delta: number, reason: LedgerReason): void {
+	state.impact += delta;
+	note(state, 'impact', delta, reason);
+}
+
+/**
+ * Репутація живе в межах −50…100: поза ними вона перестала б щось означати.
+ *
+ * Записується ЗМІНА, ЩО СТАЛАСЯ, а не та, яку просили. При репутації 100 «+4»
+ * означає нуль, і рядок «+4» у підказці був би прямою брехнею — та ще й сума
+ * записів розійшлася б із виміряною різницею, і поверх неї виліз би «Інше».
+ */
+export function addReputation(state: ReserveState, delta: number, reason: LedgerReason): void {
+	const before = state.reputation;
+	state.reputation = Math.min(REPUTATION_MAX, Math.max(REPUTATION_MIN, before + delta));
+	note(state, 'reputation', state.reputation - before, reason);
+}
+
+/** Лічильники мешканців: у заповіднику й на волі. Причина потрібна й тут. */
+export function countAnimal(
+	state: ReserveState,
+	metric: 'inReserve' | 'inWild',
+	delta: number,
+	reason: LedgerReason
+): void {
+	// Самі числа виводяться з масивів тварин (`metricsOf`), тут лишається ЛИШЕ
+	// причина: подвійне ведення дало б два джерела правди про те саме.
+	note(state, metric, delta, reason);
+}

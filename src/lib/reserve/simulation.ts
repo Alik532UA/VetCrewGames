@@ -15,7 +15,7 @@ import { RESERVE_BIOMES, type ReserveBiome } from './species';
 import { startMetrics } from './journal';
 import { intake } from './intake';
 import { DRONE_PRICE, resolveRaid } from './raids';
-import { addReputation } from './roll';
+import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { endOfDay } from './day';
 import { occupant } from './readers';
 import type { CommandResult, ReserveCommand, ReserveState, Site } from './types';
@@ -74,6 +74,7 @@ export function createReserve(seed: number): ReserveState {
 		raid: null,
 		journal: [],
 		dayStart: startMetrics(STARTING_BUDGET, STARTING_REPUTATION),
+		today: [],
 		nextAnimalId: 1,
 		nextEnclosureId: 1,
 		nextContractId: 1
@@ -136,11 +137,13 @@ export function execute(
 
 			animal.stage = 'released';
 			animal.releasedOnDay = dayOf(state);
-			state.impact += RELEASE_IMPACT;
+			addImpact(state, RELEASE_IMPACT, 'release');
 			if (state.impact >= IMPACT_TO_WIN) state.victory = true;
 			// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
 			// суто оборонною — плюс до умови програшу й жодної копійки.
-			addReputation(state, RELEASE_REPUTATION);
+			addReputation(state, RELEASE_REPUTATION, 'release');
+			countAnimal(state, 'inReserve', -1, 'release');
+			countAnimal(state, 'inWild', 1, 'release');
 			return { ok: true };
 		}
 
@@ -154,10 +157,10 @@ export function execute(
 			if (state.lastCampaignDay === dayOf(state)) return { ok: false, reason: 'campaign-done' };
 			if (state.budget < CAMPAIGN_PRICE) return { ok: false, reason: 'no-money' };
 
-			state.budget -= CAMPAIGN_PRICE;
+			spend(state, CAMPAIGN_PRICE, 'campaign');
 			state.lastCampaignDay = dayOf(state);
 			// Природі від допису НУЛЬ — росте лише те, що про фонд знають.
-			addReputation(state, CAMPAIGN_REPUTATION);
+			addReputation(state, CAMPAIGN_REPUTATION, 'campaign');
 			return { ok: true };
 		}
 

@@ -1,4 +1,5 @@
 import { isDone, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
+import { earn } from './ledger';
 import type { CommandResult, ReserveCommand, ReserveState } from './types';
 
 /**
@@ -34,7 +35,7 @@ export function contractMove(state: ReserveState, command: ReserveCommand): Comm
 			const contract = state.contracts[index];
 			if (!isDone(state, contract)) return { ok: false, reason: 'contract-unfinished' };
 
-			state.budget += contract.reward;
+			earn(state, contract.reward, 'contract');
 			state.contracts.splice(index, 1);
 			return { ok: true };
 		}
