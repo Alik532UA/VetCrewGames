@@ -2,6 +2,7 @@
 	import { T, useThrelte } from '@threlte/core';
 	import { OrthographicCamera, Plane, Raycaster, Vector2, Vector3, type Object3D } from 'three';
 	import { DEFAULT_ZOOM, isoControls } from './isoCamera';
+	import type { MapView } from './mapView.svelte';
 	import { placeEnclosures } from './sceneLayout';
 	import { RESERVE_RADIUS } from '$lib/reserve/constants';
 	import { cellOf } from '$lib/reserve/grid';
@@ -21,6 +22,8 @@
 	 */
 	interface Props {
 		biome: ReserveBiome;
+		/** Спільний стан огляду: сцена його звітує, мінікарта читає й наказує. */
+		view: MapView;
 		/** Увімкнено режим розміщення: наступний тап по землі ставить вольєр. */
 		placing: boolean;
 		onGround: (cell: { x: number; z: number }) => void;
@@ -31,7 +34,7 @@
 		onSelect: (id: number) => void;
 	}
 
-	let { biome, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
+	let { biome, view, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
 		$props();
 
 	const { invalidate, renderer, scene } = useThrelte();
@@ -120,9 +123,52 @@
 	}
 
 	$effect(() => {
-		if (!camera) return;
-		const controls = isoControls(renderer.domElement, camera, target, invalidate, pick);
-		return () => controls.destroy();
+		const lens = camera;
+		if (!lens) return;
+		const canvas = renderer.domElement;
+
+		/*
+		 * Розмір вікна ділиться на масштаб ТУТ, а не в мінікарті: скільки пікселів
+		 * має полотно, знає лише сцена. Мінікарта отримує вже світові одиниці й
+		 * лишається чистою від рушія.
+		 */
+		const report = () =>
+			view.report(
+				target.x,
+				target.z,
+				lens.zoom,
+				canvas.clientWidth / lens.zoom,
+				canvas.clientHeight / lens.zoom
+			);
+
+		const controls = isoControls(
+			canvas,
+			lens,
+			target,
+			() => {
+				invalidate();
+				report();
+			},
+			pick
+		);
+
+		// Наказ ізвідти: мінікарта не чіпає камеру сама, вона просить сцену.
+		const detach = view.attach((x: number, z: number, zoom: number) => {
+			target.x = x;
+			target.z = z;
+			lens.zoom = zoom;
+			controls.apply();
+		});
+
+		// Вікно змінило розмір — рамка на мінікарті мусить змінитися разом із ним.
+		window.addEventListener('resize', report);
+		report();
+
+		return () => {
+			window.removeEventListener('resize', report);
+			detach();
+			controls.destroy();
+		};
 	});
 
 	/**

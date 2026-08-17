@@ -28,10 +28,22 @@ export const MAX_ZOOM = 140;
 export const DEFAULT_ZOOM = 34;
 
 /** На скільки світових одиниць від центру можна відʼїхати. */
-const MAX_PAN = 24;
+export const MAX_PAN = 24;
+
+/**
+ * Скільки світу проїжджає під пальцем на одиницю масштабу.
+ *
+ * Число має імʼя, бо його читають ДВОЄ: панорамування, яке рухає сцену, і
+ * мінікарта, яка малює рамку видимої області. Розійшовшись, вони дали б рамку,
+ * що не збігається з тим, що на екрані, — а мінікарта тільки для того й існує,
+ * щоб показувати, де ти.
+ */
+export const PAN_FACTOR = 0.85;
 
 export interface IsoControls {
 	destroy(): void;
+	/** Перерахувати камеру після зміни цілі чи масштабу ЗЗОВНІ (мінікарта). */
+	apply(): void;
 }
 
 /**
@@ -130,8 +142,8 @@ export function isoControls(
 		const dy = (next.y - previous.y) / camera.zoom;
 
 		// В ізометрії горизонталь екрана — це діагональ світу; звідси поворот осей.
-		target.x -= (dx + dy) * 0.85;
-		target.z -= (dy - dx) * 0.85;
+		target.x -= (dx + dy) * PAN_FACTOR;
+		target.z -= (dy - dx) * PAN_FACTOR;
 		apply();
 	}
 
@@ -164,6 +176,7 @@ export function isoControls(
 	apply();
 
 	return {
+		apply,
 		destroy() {
 			element.removeEventListener('pointerdown', onPointerDown);
 			element.removeEventListener('pointermove', onPointerMove);

@@ -13,6 +13,7 @@
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { RouteRest } from '$lib/i18n/routing';
 	import ReserveHud from './ReserveHud.svelte';
+	import ReserveStage from './ReserveStage.svelte';
 	import ReserveOutcome from './ReserveOutcome.svelte';
 	import ReserveSheet from './ReserveSheet.svelte';
 	import AnimalCard from './AnimalCard.svelte';
@@ -21,12 +22,9 @@
 	/**
 	 * Партія заповідника в ОДНОМУ біомі.
 	 *
-	 * Біом приходить пропсом від маршруту, а не вибирається тут. Кожна ділянка
-	 * живе за власною адресою й у власному збереженні, тож партія в савані й
-	 * партія в лісі тривають ПАРАЛЕЛЬНО й нічого одна одній не роблять. Доти
-	 * вибір біома був станом цієї сторінки — і кожен новий вибір стирав
-	 * попередній заповідник.
-	 *
+	 * Біом приходить пропсом від маршруту, а не вибирається тут: кожна ділянка живе
+	 * за власною адресою й у власному збереженні, тож партії тривають ПАРАЛЕЛЬНО.
+	 * Доти вибір біома був станом цієї сторінки — і стирав попередній заповідник.
 	 *
 	 * Правила — у `$lib/reserve/`, час — у контролері, тут лише показ і введення
 	 * (SVELTE-CORE-v8 § 3.1). Сторінка не викликає `tick()` напряму й не рахує
@@ -55,17 +53,6 @@
 	const game = new ReserveController(biome);
 	const lang = $derived(languageFromParam(page.params.lang));
 
-	/**
-	 * Сцена приходить `import()`-ом, і саме тому вона не в цьому файлі.
-	 *
-	 * `three` важить більше, ніж увесь інший JS сайту разом. Статичний імпорт
-	 * поклав би його в чанк маршруту; динамічний лишає окремим файлом, який
-	 * завантажує лише той, хто в заповідник справді зайшов.
-	 */
-	let Scene = $state<typeof import('$lib/components/reserve/ReserveScene.svelte').default | null>(
-		null
-	);
-
 	let panel = $state<Panel | null>(null);
 
 	/**
@@ -90,10 +77,6 @@
 					: 'reserve.saveBroken'
 			);
 		}
-
-		import('$lib/components/reserve/ReserveScene.svelte').then((module) => {
-			Scene = module.default;
-		});
 
 		const stop = game.startClock();
 		return () => {
@@ -171,29 +154,17 @@
 			</p>
 		{/if}
 
-		<!--
-				Карта — ТЛО сторінки, а не рядок у стовпці.
-
-				Доти вона стояла між шапкою й смугою кнопок і отримувала те, що
-				лишилося: на 320×640 це виявилося 220px, тобто третина екрана.
-				Тепер вона розкладена на всю площу, а показники й кнопки лежать
-				поверх — на телефоні це єдиний спосіб дати карті весь екран, не
-				ховаючи керування.
-			-->
-		<div class="reserve-map">
-			{#if Scene}
-				<Scene
-					biome={game.state.biome}
-					seed={game.state.seed}
-					enclosures={game.state.enclosures}
-					animals={here}
-					selectedId={game.selectedId}
-					onSelect={(id: number) => (game.selectedId = id)}
-					placing={pending !== null}
-					onGround={placeAt}
-				/>
-			{/if}
-		</div>
+		<ReserveStage
+			biome={game.state.biome}
+			seed={game.state.seed}
+			enclosures={game.state.enclosures}
+			animals={here}
+			selectedId={game.selectedId}
+			onSelect={(id: number) => (game.selectedId = id)}
+			placing={pending !== null}
+			onGround={placeAt}
+			showMinimap={!panel}
+		/>
 
 		<!-- Розпірка тримає смугу кнопок унизу, поки карта лежить під усім. -->
 		<div class="reserve-fill"></div>
@@ -255,30 +226,6 @@
 		 */
 		width: 100%;
 		padding: 0 var(--space-sm) var(--space-sm);
-	}
-
-	/*
-	 * Карта лежить під усім і займає всю сторінку.
-	 *
-	 * `inset: 0` замість `flex: 1`: у стовпці вона отримувала лишок після
-	 * показників і кнопок, а на телефоні лишку майже немає. Тепер вона —
-	 * основа, а керування лежить поверх.
-	 */
-	.reserve-map {
-		position: absolute;
-		inset: 0;
-		/*
-		 * Відʼємний `z-index`, а не `z-index: 0` плюс `position: relative` на всіх
-		 * сусідах.
-		 *
-		 * Той варіант тут уже був, і він мовчки ламав панель. Правило
-		 * `.reserve-page > :not(.reserve-map)` специфічніше за `.sheet`, тож
-		 * `position: fixed` панелі перетворювався на `relative`: вона ставала
-		 * звичайним рядком у стовпці, розпірка під нею стискалася — і смуга кнопок
-		 * підстрибувала вгору щоразу, коли відкривалося меню. Карта, що йде за вміст
-		 * сама, нікого сусіда не чіпає й нічого не ламає.
-		 */
-		z-index: -1;
 	}
 
 	.reserve-fill {

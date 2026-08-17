@@ -3,6 +3,7 @@
 	import SceneBody from './SceneBody.svelte';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
+	import type { MapView } from './mapView.svelte';
 
 	/**
 	 * Обгортка сцени: полотно й розмір, більше нічого.
@@ -15,6 +16,8 @@
 	 */
 	interface Props {
 		biome: ReserveBiome;
+		/** Спільний стан огляду — той самий обʼєкт тримає мінікарта. */
+		view: MapView;
 		/** Зерно партії: краєвид детермінований, як і все інше. */
 		seed: number;
 		enclosures: Enclosure[];
@@ -26,13 +29,23 @@
 		onGround: (cell: { x: number; z: number }) => void;
 	}
 
-	let { biome, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
+	let { biome, view, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
 		$props();
 </script>
 
 <div class="scene" data-testid="reserve-scene-panel">
 	<Canvas>
-		<SceneBody {biome} {seed} {enclosures} {animals} {selectedId} {onSelect} {placing} {onGround} />
+		<SceneBody
+			{biome}
+			{view}
+			{seed}
+			{enclosures}
+			{animals}
+			{selectedId}
+			{onSelect}
+			{placing}
+			{onGround}
+		/>
 	</Canvas>
 </div>
 
