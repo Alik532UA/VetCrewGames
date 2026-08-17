@@ -132,5 +132,8 @@ export const reserve = {
 	'reserve.goals': 'Навчальні цілі',
 	'reserve.reject.no-such-contract': 'Такої пропозиції вже немає.',
 	'reserve.reject.contract-unfinished': 'Контракт ще не виконано.',
-	'reserve.reject.too-many-contracts': 'Більше контрактів одночасно не беруть.'
+	'reserve.reject.too-many-contracts': 'Більше контрактів одночасно не беруть.',
+
+	'reserve.reject.out-of-bounds': 'Ділянка скінчилася — далі не ваша земля.',
+	'reserve.plot': 'Межа ділянки'
 } as const;

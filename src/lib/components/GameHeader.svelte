@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { ArrowLeft, Maximize, Minimize } from 'lucide-svelte';
+	import { Maximize, Minimize } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
 	import HeaderControls from './HeaderControls.svelte';
+	import HeaderNav from './HeaderNav.svelte';
 	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
 	// `formatPlain` міняє кириличну «і» на латинську «i», щоб літера була у
 	// шрифті inglobal, — це правильно для того, що МАЛЮЄТЬСЯ, і неправильно
@@ -10,8 +11,6 @@
 	// покруч. Той самий висновок уже записаний у +layout.svelte для <title>.
 	import { t, formatFont } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
-	import { page } from '$app/state';
-	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { onMount, untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
 
@@ -48,45 +47,15 @@
 		return () => clearTimeout(timeoutId);
 	});
 
-	/**
-	 * Перемикач мови — ПОСИЛАННЯ, а не кнопка з `goto()` (I18N-v8 § 5.3):
-	 * працює без JS, читається пошуковиком і лишає користувача на ТІЙ САМІЙ
-	 * сторінці — змінюється лише мовний сегмент адреси.
-	 */
-	const currentLanguage = $derived(languageFromParam(page.params.lang));
-onMount(() => fullscreen.watch());
+	// Мова сторінки поїхала в `HeaderNav` разом із посиланнями, які її вживають:
+	// «назад» і «додому» ведуть у меню ТІЄЇ САМОЇ мови, і знати її має той, хто
+	// будує адресу.
+	onMount(() => fullscreen.watch());
 </script>
 
 <header class="game-header">
 	<div class="game-header__inner">
-		<div class="game-header__left">
-			{#if showBack && activeTitleKey !== 'app.title'}
-				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
-					<!--
-						Лишається посиланням на головну, а не стає кнопкою: середній клік,
-						Ctrl-клік і робота без JS зберігаються. Сторінка з власним кроком
-						назад просто перехоплює звичайний клік.
-					-->
-					<a
-						href={langPath(currentLanguage)}
-						class="header-btn"
-						aria-label={t('common.back')}
-						data-testid="header-back-link"
-						onclick={(e) => {
-							if (!settings.headerBack) return;
-							e.preventDefault();
-							settings.headerBack();
-						}}
-					>
-						<ArrowLeft size={22} />
-					</a>
-				</div>
-			{:else}
-				<div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }} class="btn-wrap">
-					<div class="header-btn placeholder"></div>
-				</div>
-			{/if}
-		</div>
+		<HeaderNav {showBack} {activeTitleKey} />
 
 		<div class="game-header__center">
 			<div class="title-with-score">
@@ -171,20 +140,10 @@ onMount(() => fullscreen.watch());
 		gap: var(--space-md);
 	}
 
-	.game-header__left,
 	.game-header__right {
 		display: flex;
 		align-items: center;
 		gap: var(--space-xs);
-	}
-
-	.btn-wrap {
-		display: grid;
-		grid-template-areas: 'btn';
-		align-items: center;
-	}
-	.btn-wrap > * {
-		grid-area: btn;
 	}
 
 	.game-header__center {

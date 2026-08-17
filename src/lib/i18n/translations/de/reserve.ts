@@ -129,5 +129,8 @@ export const reserve = {
 	'reserve.goals': 'Lernziele',
 	'reserve.reject.no-such-contract': 'Dieses Angebot gibt es nicht mehr.',
 	'reserve.reject.contract-unfinished': 'Der Vertrag ist noch nicht erfüllt.',
-	'reserve.reject.too-many-contracts': 'Mehr Verträge gehen nicht gleichzeitig.'
+	'reserve.reject.too-many-contracts': 'Mehr Verträge gehen nicht gleichzeitig.',
+
+	'reserve.reject.out-of-bounds': 'Das Grundstück endet hier — dahinter ist nicht dein Land.',
+	'reserve.plot': 'Grundstücksgrenze'
 } as const;

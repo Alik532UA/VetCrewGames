@@ -129,5 +129,8 @@ export const reserve = {
 	'reserve.goals': 'Leerdoelen',
 	'reserve.reject.no-such-contract': 'Dat aanbod bestaat niet meer.',
 	'reserve.reject.contract-unfinished': 'Het contract is nog niet af.',
-	'reserve.reject.too-many-contracts': 'Meer contracten kunnen niet tegelijk.'
+	'reserve.reject.too-many-contracts': 'Meer contracten kunnen niet tegelijk.',
+
+	'reserve.reject.out-of-bounds': 'Het perceel eindigt hier — daarachter is niet jouw land.',
+	'reserve.plot': 'Perceelgrens'
 } as const;

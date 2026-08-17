@@ -3,8 +3,10 @@ import {
 	enclosurePrice,
 	QUALITIES,
 	repairPrice,
+	RESERVE_RADIUS,
 	upgradePrice
 } from './constants';
+import { placeOf } from './grid';
 import { ENCLOSURE_SIZES } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
 
@@ -28,6 +30,15 @@ export function buildings(
 			if (!ENCLOSURE_SIZES.includes(command.size as (typeof ENCLOSURE_SIZES)[number]))
 				return { ok: false, reason: 'bad-size' };
 			if (!QUALITIES.includes(command.quality)) return { ok: false, reason: 'bad-quality' };
+
+			/*
+			 * Ділянка має межі, і вони не декоративні. Місце визначає `id`, тож
+			 * перевіряти треба саме те, куди СТАНЕ наступний вольєр, а не де є
+			 * вільно: сітка заповнюється спіраллю від центру.
+			 */
+			const spot = placeOf(state.nextEnclosureId);
+			if (Math.hypot(spot.x, spot.z) > RESERVE_RADIUS)
+				return { ok: false, reason: 'out-of-bounds' };
 
 			const cost = enclosurePrice(command.size, command.quality);
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };

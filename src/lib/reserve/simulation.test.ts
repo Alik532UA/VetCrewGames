@@ -29,11 +29,13 @@ import {
 	HEAL_REPUTATION,
 	IMPACT_TO_WIN,
 	REPUTATION_DECAY_PER_DAY,
+	RESERVE_RADIUS,
 	repairPrice,
 	WEAR_PER_DAY,
 	type Quality
 } from './constants';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
+import { placeOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
@@ -1019,5 +1021,60 @@ describe('контракти зі спонсорами', () => {
 		const copy = JSON.parse(JSON.stringify(state));
 		expect(copy.contracts).toHaveLength(1);
 		expect(copy.contracts[0].goal).toBe(state.contracts[0].goal);
+	});
+});
+
+describe('межа ділянки', () => {
+	const rich = () => {
+		const state = createReserve(1, 'forest');
+		state.budget = 100_000_000;
+		return state;
+	};
+
+	it('перевірка жива: у межах ділянки будувати можна', () => {
+		const state = rich();
+		expect(execute(state, { type: 'build', size: 1, quality: 1 })).toEqual({ ok: true });
+	});
+
+	/**
+	 * Ділянка має межі, і вони не декоративні. Без цієї перевірки спіраль росла
+	 * б у безкінечність, а пунктир на карті означав би рівно нічого.
+	 */
+	it('за межею ділянки будувати не дають', () => {
+		const state = rich();
+		let built = 0;
+		let refusal: unknown = null;
+
+		// Будуємо, доки не впремося. Межа мусить настати — інакше цикл сам це й
+		// покаже, вичерпавши стелю.
+		for (let i = 0; i < 400; i++) {
+			const result = execute(state, { type: 'build', size: 1, quality: 1 });
+			if (result.ok) {
+				built++;
+				continue;
+			}
+			refusal = result;
+			break;
+		}
+
+		expect(refusal, `межа не настала після ${built} вольєрів`).toEqual({
+			ok: false,
+			reason: 'out-of-bounds'
+		});
+		// Ділянка радіусом 14 при кроці 2.2 вміщає десятки вольєрів: межа існує,
+		// але тісною не почувається.
+		expect(built).toBeGreaterThan(30);
+	});
+
+	it('усі збудовані вольєри стоять у межах', () => {
+		const state = rich();
+		for (let i = 0; i < 60; i++) execute(state, { type: 'build', size: 1, quality: 1 });
+
+		for (const enclosure of state.enclosures) {
+			const spot = placeOf(enclosure.id);
+			expect(Math.hypot(spot.x, spot.z), `вольєр ${enclosure.id} за межею`).toBeLessThanOrEqual(
+				RESERVE_RADIUS
+			);
+		}
 	});
 });

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { T, useThrelte } from '@threlte/core';
 	import { OrthographicCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
-	import { isoControls } from './isoCamera';
+	import { DEFAULT_ZOOM, isoControls } from './isoCamera';
 	import { placeEnclosures } from './sceneLayout';
-	import { nearWater, terrainOf } from '$lib/reserve/terrain';
+	import { RESERVE_RADIUS } from '$lib/reserve/constants';
+	import { nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
+	import DecorPiece from './DecorPiece.svelte';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
 
@@ -87,8 +89,39 @@
 		return () => controls.destroy();
 	});
 
+	/**
+	 * Пунктир по колу межі: рівні проміжки, кожна плитка повернута по дотичній.
+	 *
+	 * Коло, а не квадрат, бо саме коло й перевіряє ядро (`hypot > RESERVE_RADIUS`).
+	 * Малювати квадрат означало б показувати межу, якої немає.
+	 */
+	const DASH_LENGTH = 1.1;
+	const dashes = $derived.by(() => {
+		const circumference = 2 * Math.PI * RESERVE_RADIUS;
+		const count = Math.round(circumference / (DASH_LENGTH * 2));
+		return Array.from({ length: count }, (_, i) => {
+			const angle = (i / count) * Math.PI * 2;
+			return {
+				key: i,
+				x: Math.cos(angle) * RESERVE_RADIUS,
+				z: Math.sin(angle) * RESERVE_RADIUS,
+				// Плитка лежить уздовж кола: дотична — це кут плюс 90°.
+				turn: -angle
+			};
+		});
+	});
+
 	const placed = $derived(placeEnclosures(enclosures, animals));
 	const terrain = $derived(terrainOf(biome, seed));
+
+	/**
+	 * Земля рівно така, щоб укрити рельєф із запасом на два кроки.
+	 *
+	 * Удвічі більша за радіус рельєфу навмисно: карта не має ОБРИВАТИСЯ на око.
+	 * Природа не закінчується там, де закінчується твоя ділянка, — вона просто
+	 * стає рідшою, а далі йде рівна земля до горизонту.
+	 */
+	const GROUND_SIDE = WORLD_RADIUS * 4;
 
 	/** Колір ґрунту біома. Тундра сіра, тропіки темно-зелені. */
 	const GROUND: Record<ReserveBiome, string> = {
@@ -98,18 +131,17 @@
 		rainforest: '#4c7a43'
 	};
 
-	const PLANT: Record<ReserveBiome, string> = {
-		forest: '#3f6b34',
-		tundra: '#6b7a5a',
-		savanna: '#7d8a45',
-		rainforest: '#2f5c2a'
-	};
-
 	/** Колір мешканця каже про стан: одужує — теплий, здорова — зелена. */
 	const colorOf = (animal: Animal) => (animal.stage === 'healthy' ? '#4caf50' : '#c98a3c');
 </script>
 
-<T.OrthographicCamera bind:ref={camera} makeDefault position={[14, 14, 14]} zoom={54} near={-200} />
+<T.OrthographicCamera
+	bind:ref={camera}
+	makeDefault
+	position={[14, 14, 14]}
+	zoom={DEFAULT_ZOOM}
+	near={-200}
+/>
 
 <T.AmbientLight intensity={1.4} />
 <T.DirectionalLight position={[8, 14, 6]} intensity={2.2} />
@@ -119,34 +151,33 @@
 	заповідник виглядав би наліпкою, а не місцем.
 -->
 <T.Mesh position={[0, -0.55, 0]}>
-	<T.BoxGeometry args={[80, 1, 80]} />
+	<T.BoxGeometry args={[GROUND_SIDE, 1, GROUND_SIDE]} />
 	<T.MeshStandardMaterial color={GROUND[biome]} />
 </T.Mesh>
 
-<!-- Рельєф біома. Детермінований: та сама партія — той самий краєвид. -->
+<!--
+	Межа ділянки — пунктиром.
+
+	Не паркан і не стіна: гравець мусить БАЧИТИ, де закінчуються його права на
+	забудову, і водночас бачити, що земля тягнеться далі. Пунктир зроблений
+	короткими плитками, а не `LineDashedMaterial`: тому вимагає
+	`computeLineDistances()` на кожній зміні геометрії, а плитки просто лежать
+	там, де порахували.
+-->
+{#each dashes as dash (dash.key)}
+	<T.Mesh position={[dash.x, 0.02, dash.z]} rotation.y={dash.turn}>
+		<T.BoxGeometry args={[DASH_LENGTH, 0.04, 0.12]} />
+		<T.MeshStandardMaterial color="#f0e6c8" />
+	</T.Mesh>
+{/each}
+
+<!--
+	Рельєф біома. Детермінований: та сама партія — той самий краєвид.
+	Кожна фігура малюється `DecorPiece`: вісім родів замість одного конуса
+	різного розміру.
+-->
 {#each terrain as item, index (`${item.kind}-${index}`)}
-	{#if item.kind === 'water'}
-		<T.Mesh position={[item.x, -0.08, item.z]}>
-			<T.CylinderGeometry args={[1.5 * item.scale, 1.5 * item.scale, 0.12, 12]} />
-			<T.MeshStandardMaterial color="#3f7fa8" />
-		</T.Mesh>
-	{:else if item.kind === 'plant'}
-		<T.Group position={[item.x, 0, item.z]}>
-			<T.Mesh position={[0, 0.3 * item.scale, 0]}>
-				<T.CylinderGeometry args={[0.07, 0.1, 0.6 * item.scale, 5]} />
-				<T.MeshStandardMaterial color="#6b4a2f" />
-			</T.Mesh>
-			<T.Mesh position={[0, 0.85 * item.scale, 0]}>
-				<T.ConeGeometry args={[0.55 * item.scale, 1.1 * item.scale, 7]} />
-				<T.MeshStandardMaterial color={PLANT[biome]} />
-			</T.Mesh>
-		</T.Group>
-	{:else}
-		<T.Mesh position={[item.x, 0.05, item.z]}>
-			<T.DodecahedronGeometry args={[0.4 * item.scale, 0]} />
-			<T.MeshStandardMaterial color="#8b8b86" />
-		</T.Mesh>
-	{/if}
+	<DecorPiece {item} {biome} />
 {/each}
 
 {#each placed as { enclosure, animal, x, z } (enclosure.id)}

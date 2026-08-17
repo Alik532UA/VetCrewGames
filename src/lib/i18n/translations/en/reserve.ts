@@ -128,5 +128,8 @@ export const reserve = {
 	'reserve.goals': 'Tutorial goals',
 	'reserve.reject.no-such-contract': 'That offer is gone.',
 	'reserve.reject.contract-unfinished': 'The contract is not finished yet.',
-	'reserve.reject.too-many-contracts': 'No more contracts can be taken at once.'
+	'reserve.reject.too-many-contracts': 'No more contracts can be taken at once.',
+
+	'reserve.reject.out-of-bounds': 'The plot ends here — beyond is not your land.',
+	'reserve.plot': 'Plot boundary'
 } as const;

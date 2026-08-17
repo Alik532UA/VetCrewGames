@@ -149,6 +149,8 @@ export type RejectReason =
 	| 'already-sound'
 	| 'not-an-upgrade'
 	| 'campaign-done'
+	/** Наступне місце в сітці випало б за межу ділянки. */
+	| 'out-of-bounds'
 	| 'no-such-contract'
 	| 'contract-unfinished'
 	| 'too-many-contracts';
