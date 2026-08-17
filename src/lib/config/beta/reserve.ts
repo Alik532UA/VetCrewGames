@@ -60,7 +60,7 @@ export const reserveTab: BetaTab = {
 				en: 'Click an animal. Its window must open ON TOP of the bottom bar and the minimap, and there must be a way to close it.'
 			},
 			coverage: 'manual',
-			testid: 'reserve-card-close-btn'
+			testid: 'reserve-animal-*-btn'
 		},
 		{
 			id: 'reserve_6',
@@ -70,7 +70,7 @@ export const reserveTab: BetaTab = {
 				en: 'Click an EMPTY enclosure. The enclosure window must open — with its condition and its buttons — not an animal window and not nothing at all.'
 			},
 			coverage: 'manual',
-			testid: 'reserve-enclosure-vacant-text'
+			testid: 'reserve-enclosure-*-btn'
 		},
 		{
 			id: 'reserve_7',
@@ -81,7 +81,7 @@ export const reserveTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/reserve/ledger.test.ts',
-			testid: 'reserve-history-tooltip'
+			testid: 'reserve-*-history-btn'
 		},
 		{
 			id: 'reserve_8',
@@ -134,6 +134,7 @@ export const reserveTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/reserve.svelte.test.ts',
+			testid: 'reserve-startover-btn',
 			negative: true
 		},
 		{

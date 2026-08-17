@@ -34,6 +34,7 @@ export const mythTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/mythGame.svelte.test.ts',
+			testid: 'mythbusters-truth-btn',
 			negative: true
 		},
 		{

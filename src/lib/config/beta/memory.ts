@@ -21,10 +21,11 @@ export const memoryTab: BetaTab = {
 			id: 'memory_2',
 			category: { uk: 'Дошка', en: 'The board' },
 			text: {
-				uk: 'Почніть партію заново двічі. Розкладка мусить бути щоразу інша, а не та сама.',
-				en: 'Start a new game twice. The layout must be different each time, not the same one again.'
+				uk: 'Дограйте партію й натисніть «Грати ще» на екрані підсумку. Розкладка мусить бути інша, а не та сама.',
+				en: 'Finish a game and press «Play again» on the summary screen. The layout must be a different one, not the same again.'
 			},
-			coverage: 'manual'
+			coverage: 'manual',
+			testid: 'memory-game-over-play-again-btn'
 		},
 		{
 			id: 'memory_3',
@@ -52,7 +53,8 @@ export const memoryTab: BetaTab = {
 				uk: 'Не чекаючи, поки закриються дві різні картки, натисніть третю. У соло-партії третя мусить одразу відкритися — грати швидко ніщо не мусить заважати.',
 				en: 'Without waiting for two different cards to close, click a third one. In a solo game the third must open right away — nothing should get in the way of playing fast.'
 			},
-			coverage: 'testable'
+			coverage: 'testable',
+			testid: 'memory-card-btn-*'
 		},
 		{
 			id: 'memory_6',
@@ -68,20 +70,20 @@ export const memoryTab: BetaTab = {
 		},
 		{
 			id: 'memory_7',
-			category: { uk: 'Двоє на одному пристрої', en: 'Two on one device' },
+			category: { uk: 'Розмір вікна', en: 'Window size' },
 			text: {
-				uk: 'Грайте вдвох на одному пристрої. Знайдена пара мусить лишати хід тому самому гравцеві, а промах — передавати наступному.',
-				en: 'Play two on one device. A found pair must keep the turn with the same player, while a miss must pass it to the next one.'
+				uk: 'Змініть розмір вікна посеред партії, зробивши хоч один хід. Колода НЕ мусить перерозкластися сама — гра мусить лише запропонувати це окремою кнопкою, бо нова розкладка стирає все, що ви запамʼятали.',
+				en: 'Resize the window in the middle of a game, after at least one move. The deck must NOT re-deal itself — the game must merely offer that as a separate button, because a new layout erases everything you had memorised.'
 			},
-			coverage: 'covered',
-			test: 'src/lib/controllers/memoryGame.svelte.test.ts'
+			coverage: 'manual',
+			negative: true
 		},
 		{
 			id: 'memory_8',
 			category: { uk: 'Кінець партії', en: 'The end' },
 			text: {
-				uk: 'Дограйте до кінця. Мусить бути видно, хто переміг, і сума знайдених пар у гравців мусить дорівнювати кількості пар на дошці.',
-				en: 'Play to the end. It must show who won, and the players found pairs must add up to the number of pairs on the board.'
+				uk: 'Дограйте до кінця. У підсумку мусить бути видно, скільки пар знайдено з усіх, і це число мусить дорівнювати кількості пар на дошці.',
+				en: 'Play to the end. The summary must show how many pairs were found out of the total, and that number must equal the pairs on the board.'
 			},
 			coverage: 'manual'
 		}

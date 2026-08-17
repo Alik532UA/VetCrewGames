@@ -51,6 +51,7 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/pairsMatch.svelte.test.ts',
+			testid: 'pairs-card-btn-*',
 			negative: true
 		},
 		{
@@ -62,6 +63,7 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/pairsMatch.svelte.test.ts',
+			testid: 'pairs-card-btn-*',
 			negative: true
 		},
 		{
@@ -72,7 +74,8 @@ export const onlineTab: BetaTab = {
 				en: 'Click the same card on both devices at the same time. The move must count once, and the two boards must stay identical.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/controllers/pairsMatch.svelte.test.ts'
+			test: 'src/lib/controllers/pairsMatch.svelte.test.ts',
+			testid: 'pairs-card-btn-*'
 		},
 		{
 			id: 'online_7',

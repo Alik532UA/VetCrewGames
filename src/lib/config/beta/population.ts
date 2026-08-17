@@ -60,21 +60,21 @@ export const populationTab: BetaTab = {
 			id: 'population_6',
 			category: { uk: 'Числа', en: 'The numbers' },
 			text: {
-				uk: 'Придивіться до чисел чисельності. Тисячі мусять бути розділені пробілами (1 200 000), а не написані злитим рядком цифр.',
-				en: 'Look at the population figures. Thousands must be separated by spaces (1 200 000) rather than written as one run of digits.'
+				uk: 'Натисніть «Перевірити» й придивіться до чисел чисельності — до перевірки їх не показують. Велике число мусить бути округлене зі словом — «~1,2 млн», «~500 тис» — і слово мусить бути мовою сторінки, а не злитим рядком цифр.',
+				en: 'Press «Check» and look at the population figures — they are not shown before that. A large number must be rounded with a word — «~1.2 M», «~500 K» — and that word must be in the pages language, not one long run of digits.'
 			},
-			coverage: 'covered',
-			test: 'src/lib/config/population-game.test.ts'
+			coverage: 'testable',
+			testid: 'population-check-btn'
 		},
 		{
 			id: 'population_7',
 			category: { uk: 'Раунди', en: 'Rounds' },
 			text: {
-				uk: 'Пройдіть кілька раундів. Набір тварин мусить змінюватися, і той самий набір не мусить трапитися двічі за партію.',
-				en: 'Play a few rounds. The set of animals must change, and the same set must not come up twice in one game.'
+				uk: 'Придивіться до тварин ОДНОГО раунду: та сама тварина не мусить трапитися в ньому двічі. Між раундами тварини повторюватися можуть — це не помилка.',
+				en: 'Look at the animals within ONE round: the same animal must not appear in it twice. Between rounds animals may repeat — that is not a bug.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/controllers/quizSeed.test.ts',
+			test: 'src/lib/config/population-game.test.ts',
 			negative: true
 		},
 		{

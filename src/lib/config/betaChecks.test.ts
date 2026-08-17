@@ -46,6 +46,61 @@ const markup = svelteFiles('src')
 	.map((file) => readFileSync(file, 'utf8'))
 	.join('\n');
 
+/**
+ * Усі локатори, які проєкт СПРАВДІ малює.
+ *
+ * Проста перевірка «чи є в джерелах рядок `data-testid="…"`» тут не працює, і на
+ * цьому вже згорів пункт про тему. Локатор у цьому проєкті буває складеним із
+ * ДВОХ файлів: `HeaderControls.svelte` передає `testId="header-theme"`, а
+ * `HeaderMenu.svelte` малює `data-testid="{testId}-btn"`. Рядка
+ * `header-theme-btn` немає ніде — отже пункт, який на нього посилається,
+ * виглядав би помилковим, а пункт БЕЗ локатора проходив би без перевірки взагалі.
+ * Саме так стара логіка теми й прожила 46 комітів у чеклисті: я прибрав локатор,
+ * коли він не знайшовся, замість піти за тим, що знайшлося.
+ *
+ * Тому тут локатори збираються так, як їх збирає браузер:
+ *
+ *  * літерали `data-testid="reserve-card-close-btn"` — як є;
+ *  * шаблони `data-testid="reserve-animal-{animal.id}-btn"` — динамічна частина
+ *    стає `*`, і пункт має право написати `reserve-animal-*-btn`;
+ *  * шаблон, що ПОЧИНАЄТЬСЯ з `{testId}`, розкривається кожним значенням
+ *    `testId="…"`, яке є в проєкті: звідси й беруться `header-theme-btn` і
+ *    `memory-game-over-play-again-btn`.
+ */
+const star = (id: string) => id.replace(/\$?\{[^}]*\}/g, '*');
+
+function knownLocators(): Set<string> {
+	const ids = new Set<string>();
+	const raw = [...markup.matchAll(/data-testid=(?:"([^"]*)"|\{`([^`]*)`\})/g)].map(
+		(m) => m[1] ?? m[2]
+	);
+	// Значення пропа `testId`: і бази («header-theme»), і готові шаблони
+	// («memory-card-btn-{slot.card.id}»).
+	const props = [...markup.matchAll(/\btestId=(?:"([^"]*)"|\{`([^`]*)`\})/g)].map(
+		(m) => m[1] ?? m[2]
+	);
+
+	const bases = props.filter((value) => !value.includes('{'));
+	for (const value of props) if (value.includes('{')) ids.add(star(value));
+
+	for (const id of raw) {
+		if (!id.includes('{')) {
+			ids.add(id);
+			continue;
+		}
+		if (/^\$?\{/.test(id)) {
+			// Перший сегмент динамічний — сам собою він не означає нічого
+			// («*-btn» підійшло б до будь-чого). Розкриваємо його базами.
+			for (const base of bases) ids.add(star(id.replace(/^\$?\{[^}]*\}/, base)));
+			continue;
+		}
+		ids.add(star(id));
+	}
+	return ids;
+}
+
+const LOCATORS = knownLocators();
+
 const checks = allBetaChecks();
 const withId = (list: BetaCheck[]) => list.map((check) => check.id).join(', ');
 
@@ -139,13 +194,49 @@ describe('чеклист бета-тестування', () => {
 	 * Наша відповідь на «чеклист відстав від коду» з боку розмітки: пункт, який
 	 * просить натиснути щось конкретне, називає локатор — і локатор мусить існувати.
 	 */
+	it('перевірка жива: локатори зібрано, зокрема складені', () => {
+		expect(LOCATORS.size).toBeGreaterThan(100);
+		// Складений із двох файлів: `testId="header-theme"` плюс `{testId}-btn`.
+		expect(LOCATORS.has('header-theme-btn'), 'складені локатори не збираються').toBe(true);
+		// Динамічний: `data-testid="reserve-animal-{animal.id}-btn"`.
+		expect(LOCATORS.has('reserve-animal-*-btn'), 'шаблони не зводяться до *').toBe(true);
+		// А вигаданого бути не мусить, інакше перевірка пропускає будь-що.
+		expect(LOCATORS.has('header-thema-btn'), 'перевірка приймає вигадані локатори').toBe(false);
+	});
+
 	it('названий data-testid є в коді', () => {
-		const missing = checks
-			.filter((check) => check.testid)
-			.filter((check) => !markup.includes(`data-testid="${check.testid}"`));
+		const missing = checks.filter((check) => check.testid).filter((c) => !LOCATORS.has(c.testid!));
 		expect(
 			missing.map((check) => `${check.id} → ${check.testid}`),
 			'пункт просить натиснути елемент, якого в коді вже немає'
+		).toEqual([]);
+	});
+
+	/**
+	 * Пункт, що просить НАТИСНУТИ, мусить назвати локатор.
+	 *
+	 * Це найдорожчий інваріант у файлі, і він з'явився після справжнього випадку.
+	 * Пункт «натисніть кнопку зміни теми чотири рази підряд — кольори мусять пройти
+	 * чотири набори» описував логіку, якої не було вже 46 комітів: тему давно
+	 * вибирають зі списку. Побачив це користувач.
+	 *
+	 * Причина, чому цього не побачив жоден інваріант, важливіша за сам пункт: поле
+	 * `testid` було НЕОБОВʼЯЗКОВЕ. Я пошукав локатор, не знайшов (він складений із
+	 * двох файлів), прибрав поле — і пункт став неперевірним за побудовою.
+	 * Перевірка мовчала не тому, що помилилася, а тому, що її позбавили входу.
+	 *
+	 * Тепер вхід забрати не можна: якщо в тексті є «Натисніть», локатор
+	 * обовʼязковий. Пункт, який просить натиснути те, чого не можна назвати, —
+	 * пункт про інтерфейс, якого автор не читав.
+	 */
+	it('пункт, що просить натиснути, називає локатор', () => {
+		const naked = checks
+			.filter((check) => /Натисн|натисн/.test(check.text.uk))
+			.filter((check) => !check.testid)
+			.map((check) => `${check.id}: ${check.text.uk.slice(0, 60)}…`);
+		expect(
+			naked,
+			`«Натисніть» без локатора — пункт неперевірний за побудовою:\n${naked.join('\n')}`
 		).toEqual([]);
 	});
 

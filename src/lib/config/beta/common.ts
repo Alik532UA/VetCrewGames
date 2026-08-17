@@ -18,10 +18,11 @@ export const commonTab: BetaTab = {
 			id: 'common_1',
 			category: { uk: 'Теми', en: 'Themes' },
 			text: {
-				uk: 'Натисніть кнопку зміни теми в шапці чотири рази підряд. Кольори мусять пройти чотири різні набори й на пʼятому натисканні повернутися до першого.',
-				en: 'Press the theme button in the header four times in a row. The colours must go through four different sets and return to the first one on the fifth press.'
+				uk: 'Натисніть кнопку теми в шапці. Мусить відкритися список із чотирьох тем, у якому позначено поточну; вибір теми зі списку одразу міняє кольори, а повторний натиск по кнопці список закриває.',
+				en: 'Press the theme button in the header. A list of four themes must open with the current one marked; picking a theme changes the colours at once, and pressing the button again closes the list.'
 			},
-			coverage: 'manual'
+			coverage: 'manual',
+			testid: 'header-theme-btn'
 		},
 		{
 			id: 'common_2',
@@ -82,8 +83,8 @@ export const commonTab: BetaTab = {
 			id: 'common_7',
 			category: { uk: 'Памʼять між заходами', en: 'Settings that persist' },
 			text: {
-				uk: 'Виберіть тему, мову й шрифт, тоді перезавантажте сторінку. Усі три мусять лишитися ті самі, а не скочити на початкові.',
-				en: 'Pick a theme, a language and a font, then reload the page. All three must stay as chosen instead of jumping back to the defaults.'
+				uk: 'Виберіть тему, тоді перезавантажте сторінку. Тема мусить лишитися та сама, а не скочити на початкову. Мова теж мусить лишитися — вона живе в адресі.',
+				en: 'Pick a theme, then reload the page. The theme must stay as chosen instead of jumping back to the default. The language must stay too — it lives in the address.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/services/settings.svelte.test.ts'
@@ -126,6 +127,7 @@ export const commonTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/services/randomGame.test.ts',
+			testid: 'menu-random-btn',
 			negative: true
 		},
 		{

@@ -25,6 +25,7 @@ export const familyTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/familyGame.svelte.test.ts',
+			testid: 'family-animal-btn-*',
 			negative: true
 		},
 		{

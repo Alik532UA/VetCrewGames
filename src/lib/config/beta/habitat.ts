@@ -47,6 +47,7 @@ export const habitatTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/habitatGame.svelte.test.ts',
+			testid: 'habitat-check-btn',
 			negative: true
 		},
 		{
@@ -57,6 +58,7 @@ export const habitatTab: BetaTab = {
 				en: 'Press «Check» without selecting anything. The round must not be scored silently: either the button does nothing, or it says nothing is selected.'
 			},
 			coverage: 'manual',
+			testid: 'habitat-check-btn',
 			negative: true
 		},
 		{

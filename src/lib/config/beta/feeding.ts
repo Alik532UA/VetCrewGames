@@ -22,16 +22,19 @@ export const feedingTab: BetaTab = {
 				uk: 'Заберіть покладений корм назад, поки не натиснули «Погодувати». Це мусить бути можливо, і корм мусить повернутися в перелік.',
 				en: 'Take a placed piece of food back before pressing «Feed». That must be possible, and the food must return to the list.'
 			},
-			coverage: 'testable'
+			coverage: 'covered',
+			test: 'src/lib/controllers/feedingGame.svelte.test.ts',
+			testid: 'feeding-dish-btn-*'
 		},
 		{
 			id: 'feeding_3',
 			category: { uk: 'Розкладання корму', en: 'Handing out food' },
 			text: {
-				uk: 'На телефоні розкладіть корм пальцем. Перетягування мусить працювати без мишки.',
-				en: 'On a phone hand out the food with your finger. Dragging must work without a mouse.'
+				uk: 'На телефоні розкладіть корм БЕЗ перетягування: біля кожної тарілки мусять бути маленькі кнопки — окремо на кожну тварину й на смітник. Одного дотику мусить бути досить.',
+				en: 'On a phone hand out the food WITHOUT dragging: next to each dish there must be small buttons — one per animal and one for the bin. A single tap must be enough.'
 			},
-			coverage: 'manual'
+			coverage: 'manual',
+			testid: 'feeding-quick-btn-*-*'
 		},
 		{
 			id: 'feeding_4',
@@ -52,6 +55,7 @@ export const feedingTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/feedingGame.svelte.test.ts',
+			testid: 'feeding-feed-btn',
 			negative: true
 		},
 		{
