@@ -189,5 +189,24 @@ export const reserve = {
 	'reserve.why.raidSaved': 'Poachers stopped',
 	'reserve.why.raidLost': 'Animal taken by poachers',
 	'reserve.why.other': 'Other',
+
+	// Етап 13: корм у коморі й суб-модулі вольєра.
+	'reserve.feed': 'Feed',
+	'reserve.feedDays': 'days',
+	'reserve.feedEmpty': 'The larder is empty — the animals are going hungry.',
+	'reserve.restock': 'Buy feed',
+	'reserve.needsHere': 'This enclosure needs',
+	'reserve.needsAll': 'Everything needed is here.',
+	'reserve.module.water': 'Pond',
+	'reserve.module.plants': 'Planting',
+	'reserve.module.shelter': 'Shelter',
+	'reserve.module.water.byWater': 'Water nearby',
+	'reserve.unmet': 'An unmet need — the animal is stressed.',
+	'reserve.why.feed': 'Animal feed',
+	'reserve.why.eaten': 'Eaten by the animals',
+	'reserve.why.module': 'Enclosure fittings',
+	'reserve.reject.already-equipped': 'This is already in the enclosure.',
+	'reserve.reject.water-nearby': 'Natural water is right there — no need to dig.',
+	'reserve.reject.bad-amount': 'That is not a valid amount of feed.',
 	'reserve.noHistory': 'No changes yet.'
 } as const;

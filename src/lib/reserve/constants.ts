@@ -74,7 +74,9 @@ export const ORIGINS: Record<AnimalOrigin, OriginTerms> = {
  * затівалося: +50, тобто вп’ятдесят разів більше за лікування.
  */
 export const HEAL_IMPACT = 1;
+
 export const HEAL_REPUTATION = 5;
+
 export const RELEASE_IMPACT = 50;
 
 /**
@@ -111,7 +113,9 @@ export const IMPACT_TO_WIN = 10_000;
  * не відбирає: ненависть не виносить із каси, вона просто нічого не приносить.
  */
 export const REPUTATION_MIN = -50;
+
 export const REPUTATION_MAX = 100;
+
 /**
  * Партія починається з НУЛЯ: новий фонд ніхто не знає, і пожертв на старті немає
  * зовсім. Імʼя доводиться зробити — порятунок, одужання, випуск, кампанія.
@@ -141,6 +145,7 @@ export const REPUTATION_DECAY_PER_DAY = 0.5;
  * переконує.
  */
 export const CAMPAIGN_PRICE = 2_000;
+
 export const CAMPAIGN_REPUTATION = 3;
 
 /**
@@ -151,9 +156,6 @@ export const CAMPAIGN_REPUTATION = 3;
  * тому число тут, а не заборона.
  */
 export const NO_VET_REPUTATION = -3;
-
-/** Скільки коштує день утримання однієї тварини. */
-export const UPKEEP_PER_ANIMAL = 60;
 
 /**
  * Якість вольєра — другий вимір поруч із розміром.
@@ -166,10 +168,12 @@ export const UPKEEP_PER_ANIMAL = 60;
  * коштує втричі, тож на початку партії вона недосяжна для великих розмірів.
  */
 export const QUALITIES = [1, 2, 3] as const;
+
 export type Quality = (typeof QUALITIES)[number];
 
 /** Множник ціни. Самі ціни — у `./prices`: вони функції, а не межі. */
 export const QUALITY_PRICE: Record<Quality, number> = { 1: 1, 2: 1.8, 3: 3 };
+
 export const QUALITY_SPEED: Record<Quality, number> = { 1: 0.7, 2: 1, 3: 1.4 };
 
 /**
@@ -189,6 +193,7 @@ export const WEAR_PER_DAY = 0.02;
  * падає на щабель, нижче 0.3 — на два.
  */
 export const WEAR_ONE_STEP = 0.6;
+
 export const WEAR_TWO_STEPS = 0.3;
 
 /**
@@ -209,32 +214,28 @@ export const UPKEEP_PER_SIZE = 15;
  * спокій, дешевший за доглядача — як дрібниця, яку беруть не думаючи.
  */
 export const WAGES = { vet: 120, keeper: 80, ranger: 100 } as const;
+
 export type StaffRole = keyof typeof WAGES;
-
-/**
- * Скільки одужання додає один ветеринар за день, у частках від повного.
- *
- * Один ветеринар витягує одну тварину приблизно за десять днів; двоє на одну —
- * удвічі швидше. Розподіл між тваринами рівний: черги в MVP немає.
- */
-export const RECOVERY_PER_VET_DAY = 0.1;
-
-/**
- * Стрес росте щодня, поки в тварини немає доглядача, і сповільнює одужання.
- *
- * Один доглядач заспокоює трьох тварин. Понад це стрес росте, і при повному
- * випуск блокується — тварина, яка боїться людей і не вміє добувати їжу, у
- * природі не виживе.
- */
-export const ANIMALS_PER_KEEPER = 3;
-export const STRESS_PER_DAY = 0.08;
-export const STRESS_RELIEF_PER_DAY = 0.12;
-
-/** Вище за це випуск неможливий, хоч би яким здоровим було тіло. */
-export const STRESS_BLOCKS_RELEASE = 0.7;
 
 /** Скільки грошей на день приносить кожен пункт репутації. */
 export const DONATION_PER_REPUTATION = 4;
 
 /** З чого починається партія. */
 export const STARTING_BUDGET = 50_000;
+
+/*
+ * Числа догляду переїхали в `care.ts`: одужання, стрес, голод, корм. Реекспорт
+ * лишається, щоб решта коду й далі питала сталі заповідника одними дверима.
+ */
+export {
+	ANIMALS_PER_KEEPER,
+	FEED_PER_ANIMAL,
+	RECOVERY_PER_VET_DAY,
+	STARTING_FEED,
+	STRESS_BLOCKS_RELEASE,
+	STRESS_PER_DAY,
+	STRESS_FLOOR_PER_UNMET,
+	STRESS_PER_HUNGER,
+	STRESS_RELIEF_PER_DAY,
+	UPKEEP_PER_ANIMAL
+} from './care';

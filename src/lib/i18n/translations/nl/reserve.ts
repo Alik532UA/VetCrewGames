@@ -190,5 +190,24 @@ export const reserve = {
 	'reserve.why.raidSaved': 'Stropers gestopt',
 	'reserve.why.raidLost': 'Dier meegenomen door stropers',
 	'reserve.why.other': 'Overig',
+
+	// Етап 13: корм у коморі й суб-модулі вольєра.
+	'reserve.feed': 'Voer',
+	'reserve.feedDays': 'dagen',
+	'reserve.feedEmpty': 'De voorraad is leeg — de dieren hebben honger.',
+	'reserve.restock': 'Voer kopen',
+	'reserve.needsHere': 'Dit verblijf heeft nodig',
+	'reserve.needsAll': 'Alles wat nodig is, is er.',
+	'reserve.module.water': 'Waterpartij',
+	'reserve.module.plants': 'Aanplant',
+	'reserve.module.shelter': 'Schuilplaats',
+	'reserve.module.water.byWater': 'Water dichtbij',
+	'reserve.unmet': 'Een onvervulde behoefte — het dier heeft stress.',
+	'reserve.why.feed': 'Voer voor de dieren',
+	'reserve.why.eaten': 'Opgegeten door de dieren',
+	'reserve.why.module': 'Inrichting van het verblijf',
+	'reserve.reject.already-equipped': 'Dit staat al in het verblijf.',
+	'reserve.reject.water-nearby': 'Er is natuurlijk water — graven is zinloos.',
+	'reserve.reject.bad-amount': 'Zoveel voer bestaat niet.',
 	'reserve.noHistory': 'Nog geen wijzigingen.'
 } as const;

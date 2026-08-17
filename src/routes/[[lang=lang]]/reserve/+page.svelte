@@ -77,6 +77,7 @@
 	<ReserveHud
 		day={game.day}
 		budget={game.state.budget}
+		feed={game.state.feed}
 		impact={game.state.impact}
 		reputation={game.state.reputation}
 		inReserve={residents(game.state).length}

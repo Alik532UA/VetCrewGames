@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { restore, SCHEMA_VERSION, serialize } from './save';
 import { MIGRATIONS } from './migrations';
 import { createReserve, execute, tick } from './simulation';
-import { TICKS_PER_DAY } from './constants';
+import { STRESS_PER_DAY, TICKS_PER_DAY } from './constants';
 import type { ReserveBiome } from './species';
 import type { ReserveCommand, ReserveState } from './types';
 
@@ -238,5 +238,63 @@ describe('сходинка 1 → 2: у показників зʼявився р�
 		tick(result.state, TICKS_PER_DAY);
 		const last = result.state.journal[result.state.journal.length - 1];
 		expect(last.notes.length, 'нова доба вже підписана').toBeGreaterThan(0);
+	});
+});
+
+describe('сходинка 2 → 3: суб-модулі й комора', () => {
+	/** Сейв версії 2: вольєр без модулів, комори не існує. */
+	const version2 = () => {
+		const state = createReserve(11);
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+		execute(
+			state,
+			{ type: 'acquire', origin: 'rescue', speciesId: 'deer', enclosureId: 1 },
+			'forest'
+		);
+		const raw = JSON.parse(JSON.stringify(state)) as Record<string, unknown>;
+		delete raw.feed;
+		const sites = raw.sites as Record<string, { enclosures: Record<string, unknown>[] }>;
+		for (const site of Object.values(sites)) {
+			for (const pen of site.enclosures) {
+				delete pen.modules;
+				delete pen.byWater;
+			}
+		}
+		return { version: 2, state: raw };
+	};
+
+	it('старі вольєри дістають ВСІ модулі, а не порожній список', () => {
+		/*
+		 * Доти плата за утримання йшла за розмір і покривала все разом — фонд уже
+		 * платив за воду, рослини й укриття, просто одним числом. Порожні вольєри
+		 * заднім числом оголосили б, що всі тварини роками страждали, і зустріли б
+		 * гравця стресом, якого він не мав шансу передбачити.
+		 */
+		const result = restore(version2());
+		if (!result.ok) throw new Error(`сейв мусив піднятися: ${JSON.stringify(result)}`);
+
+		expect(result.state.sites.forest.enclosures[0].modules).toEqual(['water', 'plants', 'shelter']);
+	});
+
+	it('комора наповнюється за кількістю ротів, а не нулем', () => {
+		// Нуль означав би голод у першу ж добу після оновлення — за правилом, якого в
+		// тій партії ще не існувало.
+		const result = restore(version2());
+		if (!result.ok) throw new Error('сейв мусив піднятися');
+		expect(result.state.feed).toBe(10);
+	});
+
+	it('партія після підйому жива: доба проходить без голоду', () => {
+		const result = restore(version2());
+		if (!result.ok) throw new Error('сейв мусив піднятися');
+
+		tick(result.state, TICKS_PER_DAY);
+		expect(result.state.feed, 'олень зʼїв рівно порцію').toBe(9);
+		/*
+		 * Рівно стільки, скільки додає ВІДСУТНІСТЬ ДОГЛЯДАЧА, — і ні краплі більше.
+		 * Це і є доказ: ні голод (+0.24), ні незакрита потреба (дно 0.25) не втрутилися,
+		 * бо міграція дала і корм, і всі модулі.
+		 */
+		expect(result.state.sites.forest.animals[0].stress).toBe(STRESS_PER_DAY);
 	});
 });

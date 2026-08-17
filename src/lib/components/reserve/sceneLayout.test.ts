@@ -15,7 +15,9 @@ const enclosure = (id: number, size = 3): Enclosure => ({
 	cell: spiralCell(id - 1),
 	size,
 	quality: 2,
-	durability: 1
+	durability: 1,
+	modules: [],
+	byWater: false
 });
 
 const animal = (
@@ -157,8 +159,8 @@ describe('рельєф біома', () => {
 		expect(water, 'у тропіках немає води — перевірка мертва').toBeDefined();
 		if (!water) return;
 
-		expect(nearWater(terrain, water.x, water.z)).toBe(true);
-		expect(nearWater(terrain, water.x + 500, water.z + 500)).toBe(false);
+		expect(nearWater(terrain.water, water.x, water.z)).toBe(true);
+		expect(nearWater(terrain.water, water.x + 500, water.z + 500)).toBe(false);
 	});
 });
 

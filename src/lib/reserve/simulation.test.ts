@@ -179,7 +179,15 @@ describe('вольєри', () => {
 			ok: true
 		});
 		expect(home(state).enclosures).toEqual([
-			{ id: 1, cell: { x: 0, z: 0 }, size: 4, quality: 2, durability: 1 }
+			{
+				id: 1,
+				cell: { x: 0, z: 0 },
+				size: 4,
+				quality: 2,
+				durability: 1,
+				modules: [],
+				byWater: false
+			}
 		]);
 		expect(state.budget).toBe(STARTING_BUDGET - enclosurePrice(4, 2));
 	});
@@ -513,8 +521,19 @@ describe('репутація', () => {
 });
 
 describe('випуск у дику природу', () => {
+	/**
+	 * Лев, за яким СПРАВДІ доглядають.
+	 *
+	 * Доглядач і укриття тут не для повноти картини: відколи незакрита потреба
+	 * вольєра підіймає стрес (етап 13), лев без укриття й без доглядача набирає
+	 * повний стрес за сім діб — і випуск блокується. Тест про запис дня випуску
+	 * падав саме на цьому, і правильна відповідь була не послабити правило, а
+	 * дати фікстурі грати як грає уважний гравець.
+	 */
 	const readyToRelease = (releasable: boolean) => {
 		const { state } = withLion(4);
+		move(state, { type: 'hire', role: 'keeper' });
+		move(state, { type: 'equip', enclosureId: 1, module: 'shelter' });
 		Object.assign(home(state).animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable });
 		return state;
 	};

@@ -1,9 +1,9 @@
 // @vitest-environment node
 // Перевірка лише читає файли — DOM їй не потрібен, а jsdom стоїть не в кожному
 // з проєктів. Закріплення середовища тут прибирає цю залежність.
-import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { describe, expect, it } from 'vitest';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * Перевірка конвенцій data-testid за TESTID-AND-NAMING-v8.md § 1.9.1.
@@ -16,19 +16,61 @@ import { join } from "node:path";
 
 const CANON = new Set([
 	// інтерактивні
-	"btn", "link", "input", "textarea", "checkbox", "radio", "select", "toggle", "slider", "option",
+	'btn',
+	'link',
+	'input',
+	'textarea',
+	'checkbox',
+	'radio',
+	'select',
+	'toggle',
+	'slider',
+	'option',
 	// форми
-	"form", "fieldset", "label", "error", "hint",
+	'form',
+	'fieldset',
+	'label',
+	'error',
+	'hint',
 	// оверлеї
-	"modal", "drawer", "backdrop", "overlay", "tooltip", "toast",
+	'modal',
+	'drawer',
+	'backdrop',
+	'overlay',
+	'tooltip',
+	'toast',
 	// структура
-	"card", "list", "item", "row", "cell", "tabs", "tab", "panel",
-	"section", "header", "footer", "nav", "banner", "menu", "toolbar", "container",
+	'card',
+	'list',
+	'item',
+	'row',
+	'cell',
+	'tabs',
+	'tab',
+	'panel',
+	'section',
+	'header',
+	'footer',
+	'nav',
+	'banner',
+	'menu',
+	'toolbar',
+	'container',
 	// медіа
-	"icon", "img",
+	'icon',
+	'img',
 	// read-only контент
-	"title", "text", "message", "warning", "value", "count", "status",
-	"badge", "progress", "spinner", "skeleton"
+	'title',
+	'text',
+	'message',
+	'warning',
+	'value',
+	'count',
+	'status',
+	'badge',
+	'progress',
+	'spinner',
+	'skeleton'
 ]);
 
 /**
@@ -40,32 +82,32 @@ const CANON = new Set([
  * перевірку такою, що бореться з предметною областю.
  */
 const BANNED_AS_TYPE: Record<string, string> = {
-	wrapper: "container",
-	wrap: "container",
-	box: "container",
-	root: "container",
-	block: "section",
-	area: "section",
-	group: "fieldset | toolbar | section",
-	content: "panel",
-	grid: "list",
-	widget: "card | panel | section",
-	display: "value",
-	switcher: "select | toggle | tabs",
-	trigger: "btn",
-	help: "hint",
-	dialog: "modal",
-	popup: "modal",
-	step: "item",
-	dot: "item | badge",
-	subtab: "tab"
+	wrapper: 'container',
+	wrap: 'container',
+	box: 'container',
+	root: 'container',
+	block: 'section',
+	area: 'section',
+	group: 'fieldset | toolbar | section',
+	content: 'panel',
+	grid: 'list',
+	widget: 'card | panel | section',
+	display: 'value',
+	switcher: 'select | toggle | tabs',
+	trigger: 'btn',
+	help: 'hint',
+	dialog: 'modal',
+	popup: 'modal',
+	step: 'item',
+	dot: 'item | badge',
+	subtab: 'tab'
 };
 
 /**
  * Заборонено в будь-якій позиції: щойно в проєкті співіснують `-btn` і
  * `-button`, кожен локатор стає здогадкою про те, який з двох обрав автор.
  */
-const BANNED_ANYWHERE: Record<string, string> = { button: "btn", buttons: "btn | toolbar" };
+const BANNED_ANYWHERE: Record<string, string> = { button: 'btn', buttons: 'btn | toolbar' };
 
 /**
  * Легасі-id, що чекають на міграцію (§ 1.10). Список тільки скорочується.
@@ -88,15 +130,15 @@ const ALLOWED_DUPLICATES = new Set<string>([]);
  * рядок: інакше `news-card-${id}` перетворюється на `news-card-`, і перевірка
  * kebab-case падає на висячому дефісі, якого в коді немає.
  */
-const DYNAMIC = "x";
+const DYNAMIC = 'x';
 
 function svelteFiles(dir: string, out: string[] = []): string[] {
 	for (const entry of readdirSync(dir)) {
 		const full = join(dir, entry);
 		if (statSync(full).isDirectory()) {
-			if (["node_modules", ".svelte-kit", "build"].includes(entry)) continue;
+			if (['node_modules', '.svelte-kit', 'build'].includes(entry)) continue;
 			svelteFiles(full, out);
-		} else if (entry.endsWith(".svelte")) out.push(full);
+		} else if (entry.endsWith('.svelte')) out.push(full);
 	}
 	return out;
 }
@@ -108,16 +150,16 @@ function svelteFiles(dir: string, out: string[] = []): string[] {
  * і повідомляє про дублікати, яких у DOM немає.
  */
 const markupOnly = (text: string) =>
-	text.replace(/<style[\s\S]*?<\/style>/g, "").replace(/<!--[\s\S]*?-->/g, "");
+	text.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<!--[\s\S]*?-->/g, '');
 
 function collect(): { id: string; file: string }[] {
 	const found: { id: string; file: string }[] = [];
-	for (const file of svelteFiles("src")) {
-		const text = markupOnly(readFileSync(file, "utf8"));
+	for (const file of svelteFiles('src')) {
+		const text = markupOnly(readFileSync(file, 'utf8'));
 		const re = /data-testid=(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\}|\{'([^']*)'\})/g;
 		let m: RegExpExecArray | null;
 		while ((m = re.exec(text))) {
-			found.push({ id: m[1] ?? m[2] ?? m[3] ?? m[4], file: file.replace(/\\/g, "/") });
+			found.push({ id: m[1] ?? m[2] ?? m[3] ?? m[4], file: file.replace(/\\/g, '/') });
 		}
 	}
 	return found;
@@ -130,42 +172,49 @@ function collect(): { id: string; file: string }[] {
  * цілком правильний id.
  */
 const segmentsOf = (id: string) =>
-	id.replace(/\$?\{[^}]*\}/g, `-${DYNAMIC}-`).split("-").filter(Boolean);
+	id
+		.replace(/\$?\{[^}]*\}/g, `-${DYNAMIC}-`)
+		.split('-')
+		.filter(Boolean);
 
 /** Останній сегмент, що не є динамічним чи числовим дискримінатором. */
 function typeSegment(id: string): string {
 	const segs = segmentsOf(id);
-	while (segs.length && (segs.at(-1) === DYNAMIC || /^\d+$/.test(segs.at(-1) as string))) segs.pop();
-	return segs.at(-1) ?? "";
+	while (segs.length && (segs.at(-1) === DYNAMIC || /^\d+$/.test(segs.at(-1) as string)))
+		segs.pop();
+	return segs.at(-1) ?? '';
 }
 
-describe("data-testid conventions (v8)", () => {
+describe('data-testid conventions (v8)', () => {
 	const all = collect();
 	const checked = all.filter(({ id }) => !LEGACY_ALLOWED.has(id));
 
-	it("знаходить testid у джерелах — сама перевірка жива", () => {
+	it('знаходить testid у джерелах — сама перевірка жива', () => {
 		expect(all.length).toBeGreaterThan(0);
 	});
 
-	it("не вживає заборонених слів у позиції типу (§ 1.4)", () => {
+	it('не вживає заборонених слів у позиції типу (§ 1.4)', () => {
 		const bad = checked
 			.filter(({ id }) => typeSegment(id) in BANNED_AS_TYPE)
-			.map(({ id, file }) => `${id}  (${file}) — «${typeSegment(id)}» → ${BANNED_AS_TYPE[typeSegment(id)]}`);
-		expect(bad, `Заборонений тип:\n${bad.join("\n")}`).toEqual([]);
+			.map(
+				({ id, file }) =>
+					`${id}  (${file}) — «${typeSegment(id)}» → ${BANNED_AS_TYPE[typeSegment(id)]}`
+			);
+		expect(bad, `Заборонений тип:\n${bad.join('\n')}`).toEqual([]);
 	});
 
-	it("не змішує -btn і -button (§ 1.4)", () => {
+	it('не змішує -btn і -button (§ 1.4)', () => {
 		const bad = checked
 			.filter(({ id }) => segmentsOf(id).some((s) => s in BANNED_ANYWHERE))
 			.map(({ id, file }) => `${id}  (${file}) — «button» → btn`);
-		expect(bad, `Заборонене слово в будь-якій позиції:\n${bad.join("\n")}`).toEqual([]);
+		expect(bad, `Заборонене слово в будь-якій позиції:\n${bad.join('\n')}`).toEqual([]);
 	});
 
-	it("кожен testid має канонічний тип (§ 1.3)", () => {
+	it('кожен testid має канонічний тип (§ 1.3)', () => {
 		const bad = checked
 			.filter(({ id }) => !segmentsOf(id).some((s) => CANON.has(s)))
 			.map(({ id, file }) => `${id}  (${file})`);
-		expect(bad, `Без канонічного типу:\n${bad.join("\n")}`).toEqual([]);
+		expect(bad, `Без канонічного типу:\n${bad.join('\n')}`).toEqual([]);
 	});
 
 	/**
@@ -180,45 +229,47 @@ describe("data-testid conventions (v8)", () => {
 	 * `<a role="button">`, `-card` на `<article>`, `-value` на будь-чому. Тому
 	 * одне правило, а не таблиця відповідностей.
 	 */
-	it("тип -label стоїть лише на елементі <label> (§ 1.3)", () => {
+	it('тип -label стоїть лише на елементі <label> (§ 1.3)', () => {
 		const bad: string[] = [];
-		for (const file of svelteFiles("src")) {
-			const text = markupOnly(readFileSync(file, "utf8"));
+		for (const file of svelteFiles('src')) {
+			const text = markupOnly(readFileSync(file, 'utf8'));
 			// Тег і його атрибути до `data-testid`; `[^>]*?` не перетинає межу тегу.
 			const re = /<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?data-testid=(?:"([^"]*)"|\{`([^`]*)`\})/g;
 			let m: RegExpExecArray | null;
 			while ((m = re.exec(text))) {
 				const tag = m[1].toLowerCase();
 				const id = m[2] ?? m[3];
-				if (typeSegment(id) === "label" && tag !== "label") {
-					bad.push(`${id}  (<${tag}> у ${file.replace(/\\/g, "/")}) — тип за змістом: -title / -text / -message / -status / -value`);
+				if (typeSegment(id) === 'label' && tag !== 'label') {
+					bad.push(
+						`${id}  (<${tag}> у ${file.replace(/\\/g, '/')}) — тип за змістом: -title / -text / -message / -status / -value`
+					);
 				}
 			}
 		}
-		expect(bad, `Тип -label не на <label>:\n${bad.join("\n")}`).toEqual([]);
+		expect(bad, `Тип -label не на <label>:\n${bad.join('\n')}`).toEqual([]);
 	});
 
-	it("тільки kebab-case ASCII (§ 1.2)", () => {
+	it('тільки kebab-case ASCII (§ 1.2)', () => {
 		const bad = all
 			.filter(({ id }) => /[A-Z]|[Ѐ-ӿ]|--|^-|-$/.test(id.replace(/\$?\{[^}]*\}/g, DYNAMIC)))
 			.map(({ id, file }) => `${id}  (${file})`);
-		expect(bad, `Порушення kebab-case:\n${bad.join("\n")}`).toEqual([]);
+		expect(bad, `Порушення kebab-case:\n${bad.join('\n')}`).toEqual([]);
 	});
 
-	it("немає недетермінованих id (§ 1.6)", () => {
+	it('немає недетермінованих id (§ 1.6)', () => {
 		const bad = all
 			.filter(({ id }) => /randomUUID|Math\.random|Date\.now/.test(id))
 			.map(({ id, file }) => `${id}  (${file})`);
-		expect(bad, `Недетерміновані id:\n${bad.join("\n")}`).toEqual([]);
+		expect(bad, `Недетерміновані id:\n${bad.join('\n')}`).toEqual([]);
 	});
 
-	it("немає дублікатів у межах одного компонента (§ анти-патерн HIGH)", () => {
+	it('немає дублікатів у межах одного компонента (§ анти-патерн HIGH)', () => {
 		const byFile = new Map<string, string[]>();
 		// Динамічні id пропускаємо: той самий шаблон у двох циклах дає різні
 		// значення в DOM, тому це не колізія. Статичний id, повторений у файлі,
 		// колізія завжди — компонент рендериться цілком.
 		for (const { id, file } of all) {
-			if (id.includes("{") || ALLOWED_DUPLICATES.has(id)) continue;
+			if (id.includes('{') || ALLOWED_DUPLICATES.has(id)) continue;
 			byFile.set(file, [...(byFile.get(file) ?? []), id]);
 		}
 
@@ -230,6 +281,52 @@ describe("data-testid conventions (v8)", () => {
 				seen.add(id);
 			}
 		}
-		expect(dupes, `Дублікати в одному файлі:\n${dupes.join("\n")}`).toEqual([]);
+		expect(dupes, `Дублікати в одному файлі:\n${dupes.join('\n')}`).toEqual([]);
+	});
+});
+
+/**
+ * Локатор, зібраний із ДАНИХ, теж займає ім'я.
+ *
+ * Плашки шапки заповідника беруть `data-testid="reserve-{stat.id}-value"` зі
+ * списку в `hudStats.ts`. Перевірка вище такі шаблони свідомо пропускає — і саме
+ * через це прогледіла справжню колізію: комора корму мала літерал
+ * `reserve-feed-value`, а шапка зібрала таке саме ім'я з `id: 'feed'`. У DOM їх
+ * стало двоє, і тест у браузері брав то одного, то іншого.
+ *
+ * Тому шаблон тут РОЗКРИВАЄТЬСЯ: єдине місце в проєкті, де imʼя локатора виводиться
+ * з таблиці, і зіставляється з усіма літералами.
+ */
+describe('локатори, зібрані з даних (§ 1.9.1)', () => {
+	it('плашки шапки не збігаються з жодним літералом', async () => {
+		const { hudStats } = await import('./lib/components/reserve/hudStats');
+		const chips = hudStats(
+			{
+				day: 1,
+				budget: 0,
+				feed: 0,
+				impact: 0,
+				reputation: 0,
+				inReserve: 0,
+				inWild: 0,
+				manySites: false
+			},
+			'uk'
+		);
+
+		const literals = new Map<string, string>();
+		for (const { id, file } of collect()) {
+			if (!id.includes('{')) literals.set(id, file);
+		}
+
+		const clashes: string[] = [];
+		for (const chip of chips) {
+			for (const suffix of ['value', 'history-btn']) {
+				const id = `reserve-${chip.id}-${suffix}`;
+				const where = literals.get(id);
+				if (where) clashes.push(`${id}  (плашка ↔ ${where})`);
+			}
+		}
+		expect(clashes, `Одне ім'я на два елементи:\n${clashes.join('\n')}`).toEqual([]);
 	});
 });

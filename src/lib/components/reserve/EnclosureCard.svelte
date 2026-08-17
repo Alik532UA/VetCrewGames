@@ -4,6 +4,7 @@
 	import type { Quality } from '$lib/reserve/constants';
 	import { effectiveQuality } from '$lib/reserve/simulation';
 	import { repairPrice, upgradePrice } from '$lib/reserve/prices';
+	import { equipped, modulePrice, MODULES } from '$lib/reserve/modules';
 	import { speciesById } from '$lib/reserve/species';
 	import type { Animal, Enclosure, ReserveCommand } from '$lib/reserve/types';
 	import MapCard from './MapCard.svelte';
@@ -40,6 +41,16 @@
 	const worn = $derived(real < enclosure.quality);
 	const next = $derived(Math.min(3, enclosure.quality + 1) as Quality);
 	const species = $derived(resident ? speciesById(resident.speciesId)?.nameKey : undefined);
+
+	/**
+	 * Що потрібно ТОМУ, хто тут живе.
+	 *
+	 * Потреби показуються лише коли є мешканець: у порожньому вольєрі «потрібне»
+	 * залежить від того, кого туди привезуть, і оголошувати це заздалегідь означало
+	 * б продавати модулі під вид, якого ще немає.
+	 */
+	const needs = $derived(resident ? (speciesById(resident.speciesId)?.needs ?? []) : []);
+	const unmet = $derived(needs.filter((need) => !equipped(enclosure, need)));
 </script>
 
 <MapCard
@@ -84,6 +95,52 @@
 			{@html formatFont(t('reserve.vacant'))}
 		</p>
 	{/if}
+
+	<!--
+		Суб-модулі: що вже стоїть, чого бракує мешканцю й скільком це коштує.
+
+		Незакрита потреба — не дрібниця: вона щодня підіймає стрес незалежно від
+		доглядача, а стрес спиняє випуск. Тому вона тут КОЛЬОРОМ, а не рядком у кінці.
+	-->
+	{#if resident}
+		<p class="pen__meta" data-testid="reserve-enclosure-needs-text">
+			{#if unmet.length === 0}
+				{@html formatFont(t('reserve.needsAll'))}
+			{:else}
+				<span class="pen__drop">{@html formatFont(t('reserve.unmet'))}</span>
+			{/if}
+		</p>
+	{/if}
+
+	<div class="pen__row">
+		{#each MODULES as module (module)}
+			{@const there = equipped(enclosure, module)}
+			{@const wanted = unmet.includes(module)}
+			{#if there}
+				<span class="pen__has" data-testid="reserve-module-{module}-badge">
+					{@html formatFont(
+						t(
+							module === 'water' && enclosure.byWater
+								? 'reserve.module.water.byWater'
+								: (`reserve.module.${module}` as const)
+						)
+					)}
+				</span>
+			{:else}
+				<button
+					type="button"
+					class="chip"
+					class:chip--want={wanted}
+					onclick={() => onCommand({ type: 'equip', enclosureId: enclosure.id, module })}
+					data-testid="reserve-module-{module}-btn"
+				>
+					{@html formatFont(t(`reserve.module.${module}` as const))} — {money(
+						modulePrice(enclosure.size)
+					)}
+				</button>
+			{/if}
+		{/each}
+	</div>
 
 	<!--
 		Ціни на кнопках, а не в підказці. Ремонт коштує пропорційно зносу, тож число
@@ -167,6 +224,28 @@
 	.pen__bars progress {
 		flex: 1;
 		min-width: 0;
+	}
+
+	.pen__row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-sm);
+	}
+
+	/* Те, що вже стоїть, — не кнопка: натискати нема чого. */
+	.pen__has {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--color-success), transparent 75%);
+		font-size: var(--font-size-sm);
+	}
+
+	/* Чого бракує саме цьому мешканцю — видно ще до того, як читати ціну. */
+	.chip--want {
+		border: 2px solid var(--color-error);
 	}
 
 	.chip {

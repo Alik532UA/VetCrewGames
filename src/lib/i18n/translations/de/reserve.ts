@@ -190,5 +190,24 @@ export const reserve = {
 	'reserve.why.raidSaved': 'Wilderer gestoppt',
 	'reserve.why.raidLost': 'Tier von Wilderern geraubt',
 	'reserve.why.other': 'Sonstiges',
+
+	// Етап 13: корм у коморі й суб-модулі вольєра.
+	'reserve.feed': 'Futter',
+	'reserve.feedDays': 'Tage',
+	'reserve.feedEmpty': 'Die Kammer ist leer — die Tiere hungern.',
+	'reserve.restock': 'Futter kaufen',
+	'reserve.needsHere': 'Dieses Gehege braucht',
+	'reserve.needsAll': 'Alles Nötige ist vorhanden.',
+	'reserve.module.water': 'Teich',
+	'reserve.module.plants': 'Bepflanzung',
+	'reserve.module.shelter': 'Unterstand',
+	'reserve.module.water.byWater': 'Wasser in der Nähe',
+	'reserve.unmet': 'Ein unerfülltes Bedürfnis — das Tier ist gestresst.',
+	'reserve.why.feed': 'Futter für die Tiere',
+	'reserve.why.eaten': 'Von den Tieren gefressen',
+	'reserve.why.module': 'Ausstattung des Geheges',
+	'reserve.reject.already-equipped': 'Das steht im Gehege schon.',
+	'reserve.reject.water-nearby': 'Natürliches Wasser ist da — Graben lohnt nicht.',
+	'reserve.reject.bad-amount': 'So viel Futter gibt es nicht.',
 	'reserve.noHistory': 'Noch keine Änderungen.'
 } as const;

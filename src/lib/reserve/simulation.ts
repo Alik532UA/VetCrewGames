@@ -5,6 +5,7 @@ import {
 	RELEASE_IMPACT,
 	RELEASE_REPUTATION,
 	STARTING_BUDGET,
+	STARTING_FEED,
 	STARTING_REPUTATION,
 	STRESS_BLOCKS_RELEASE,
 	TICKS_PER_DAY
@@ -16,6 +17,7 @@ import { startMetrics } from './journal';
 import { intake } from './intake';
 import { DRONE_PRICE, resolveRaid } from './raids';
 import { addImpact, addReputation, countAnimal, spend } from './ledger';
+import { restock } from './larder';
 import { endOfDay } from './day';
 import { occupant } from './readers';
 import type { CommandResult, ReserveCommand, ReserveState, Site } from './types';
@@ -58,6 +60,7 @@ export function createReserve(seed: number): ReserveState {
 	return {
 		ticks: 0,
 		budget: STARTING_BUDGET,
+		feed: STARTING_FEED,
 		impact: 0,
 		reputation: STARTING_REPUTATION,
 		sites: emptySites(),
@@ -73,7 +76,7 @@ export function createReserve(seed: number): ReserveState {
 		rolls: 0,
 		raid: null,
 		journal: [],
-		dayStart: startMetrics(STARTING_BUDGET, STARTING_REPUTATION),
+		dayStart: startMetrics(STARTING_BUDGET, STARTING_FEED, STARTING_REPUTATION),
 		today: [],
 		nextAnimalId: 1,
 		nextEnclosureId: 1,
@@ -122,8 +125,9 @@ export function execute(
 		case 'build':
 		case 'repair':
 		case 'upgrade':
+		case 'equip':
 		case 'demolish':
-			return buildings(state, site, command, occupant);
+			return buildings(state, site, at, command, occupant);
 
 		case 'acquire':
 			return intake(state, site, at, command, occupant);
@@ -146,6 +150,10 @@ export function execute(
 			countAnimal(state, 'inWild', 1, 'release');
 			return { ok: true };
 		}
+
+		case 'restock':
+			// Комора спільна на весь фонд, тож ділянка тут ні до чого.
+			return restock(state, command.portions);
 
 		case 'hire':
 			// Штат — ділянки: ветеринар із савани не лікує ведмедя в лісі.

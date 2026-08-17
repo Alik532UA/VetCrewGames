@@ -2,7 +2,8 @@
 	import { t, td, formatFont } from '$lib/i18n';
 	import { STRESS_BLOCKS_RELEASE } from '$lib/reserve/constants';
 	import { speciesById } from '$lib/reserve/species';
-	import type { Animal, ReserveCommand } from '$lib/reserve/types';
+	import { unmetNeeds } from '$lib/reserve/modules';
+	import type { Animal, Enclosure, ReserveCommand } from '$lib/reserve/types';
 	import MapCard from './MapCard.svelte';
 
 	/**
@@ -19,20 +20,33 @@
 	 */
 	interface Props {
 		animal: Animal;
+		/** Вольєр, у якому він живе; `null` — уже на волі. Звідси видно потреби. */
+		home: Enclosure | null;
 		onCommand: (command: ReserveCommand) => void;
 		/** Перейти до картки вольєра, у якому він живе. */
 		onEnclosure: (enclosureId: number) => void;
 		onClose: () => void;
 	}
 
-	let { animal, onCommand, onEnclosure, onClose }: Props = $props();
+	let { animal, home, onCommand, onEnclosure, onClose }: Props = $props();
 
 	const percent = (value: number) => `${Math.round(value * 100)}%`;
 	const blocked = $derived(
 		animal.stage !== 'healthy' || !animal.releasable || animal.stress > STRESS_BLOCKS_RELEASE
 	);
 	/** Назва виду зі спільного словника: другий список імен розійшовся б із першим. */
-	const name = $derived(speciesById(animal.speciesId)?.nameKey);
+	const species = $derived(speciesById(animal.speciesId));
+	const name = $derived(species?.nameKey);
+
+	/**
+	 * Чого цій тварині бракує в її вольєрі.
+	 *
+	 * Стоїть у КАРТЦІ ТВАРИНИ, а не лише в картці вольєра, і це не дублювання:
+	 * гравець дивиться сюди, щоб зрозуміти, чому стрес не спадає. Відповідь «бо в
+	 * лисиці немає нори» мусить бути там, де питання, — інакше її шукають у
+	 * налаштуваннях доглядачів.
+	 */
+	const unmet = $derived(species && home ? unmetNeeds(species.needs, home) : []);
 </script>
 
 <MapCard
@@ -61,6 +75,15 @@
 			<span>{percent(animal.stress)}</span>
 		</dd>
 	</dl>
+
+	{#if unmet.length > 0}
+		<p class="card__note" data-testid="reserve-card-unmet-text">
+			{@html formatFont(t('reserve.needsHere'))}:
+			{#each unmet as need, index (need)}{index > 0 ? ', ' : ''}{@html formatFont(
+					t(`reserve.module.${need}` as const)
+				)}{/each}
+		</p>
+	{/if}
 
 	{#if !animal.releasable}
 		<p class="card__note" data-testid="reserve-card-captive">

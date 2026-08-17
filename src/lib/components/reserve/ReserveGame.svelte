@@ -158,6 +158,7 @@
 	<ReserveHud
 		day={game.day}
 		budget={game.state.budget}
+		feed={game.state.feed}
 		impact={game.state.impact}
 		reputation={game.state.reputation}
 		{inReserve}
@@ -220,7 +221,12 @@
 
 		<ReserveRaid {game} />
 
-		<MapSelection {game} residents={here} onCommand={command} />
+		<MapSelection
+			{game}
+			residents={here}
+			enclosures={game.state.sites[biome].enclosures}
+			onCommand={command}
+		/>
 
 		{#if panel}
 			<ReserveSheet

@@ -37,7 +37,7 @@ export function hudStats(
 	numbers: MetricSet & { day: number; manySites: boolean },
 	locale: string
 ): Chip[] {
-	const { day, budget, impact, reputation, inReserve, inWild, manySites } = numbers;
+	const { day, budget, feed, impact, reputation, inReserve, inWild, manySites } = numbers;
 
 	return [
 		{ id: 'day', labelKey: 'reserve.day', value: String(day), bad: false, metric: null },
@@ -47,6 +47,14 @@ export function hudStats(
 			value: budget.toLocaleString(locale),
 			bad: budget < 0,
 			metric: 'budget'
+		},
+		{
+			id: 'feed',
+			labelKey: 'reserve.feed',
+			value: String(feed),
+			// Нуль означає голод: одужання спиняється, стрес росте втричі швидше.
+			bad: feed === 0,
+			metric: 'feed'
 		},
 		{
 			id: 'impact',

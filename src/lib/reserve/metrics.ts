@@ -17,6 +17,8 @@
  */
 export interface MetricSet {
 	budget: number;
+	/** Порції корму в коморі. Показник, бо його забувають — і бачити це треба. */
+	feed: number;
 	impact: number;
 	reputation: number;
 	inReserve: number;
@@ -40,6 +42,12 @@ export type LedgerReason =
 	| 'upkeep.animals'
 	| 'upkeep.enclosures'
 	| 'donations'
+	/** Корм куплено. */
+	| 'feed'
+	/** Корм зʼїдено. */
+	| 'eaten'
+	/** Суб-модуль вольєра: водойма, насадження, укриття. */
+	| 'module'
 	| 'build'
 	| 'repair'
 	| 'upgrade'

@@ -2,6 +2,7 @@ import type { AnimalOrigin, Quality, StaffRole } from './constants';
 import type { ContractGoal } from './contracts';
 import type { ReserveBiome } from './species';
 import type { JournalDay, JournalNote, MetricSet } from './metrics';
+import type { RejectReason } from './rejects';
 
 /**
  * Стан заповідника й ходи, якими його змінюють.
@@ -12,6 +13,9 @@ import type { JournalDay, JournalNote, MetricSet } from './metrics';
  */
 
 export type AnimalStage = 'recovering' | 'healthy' | 'released';
+
+/** Суб-модуль вольєра. Навіщо саме три й чому не всі — у `modules.ts`. */
+export type Module = 'water' | 'plants' | 'shelter';
 
 export interface Enclosure {
 	id: number;
@@ -29,6 +33,18 @@ export interface Enclosure {
 	quality: Quality;
 	/** 1 — щойно збудований, 0 — руїна. Спадає щодня, підіймається ремонтом. */
 	durability: number;
+	/** Які суб-модулі вже стоять. Незакрита потреба виду підіймає стрес. */
+	modules: Module[];
+	/**
+	 * Чи стоїть вольєр біля ПРИРОДНОЇ води.
+	 *
+	 * Рахується ОДИН раз, коли вольєр ставлять, і лежить у стані. Не щодня: щоб
+	 * дізнатися це, треба згенерувати рельєф — шістсот сімдесят фігур, шість
+	 * мілісекунд, — і робити це на кожному тіку заради незмінного факту було б
+	 * марнотратством. Заразом місце на карті стає рішенням: біля річки водойму
+	 * купувати не треба.
+	 */
+	byWater: boolean;
 }
 
 export interface Animal {
@@ -165,6 +181,13 @@ export interface ReserveState {
 	 * охоплювати те, що гравець бачить.
 	 */
 	journal: JournalDay[];
+	/**
+	 * Корм у коморі, у порціях. Одна порція — одна тварина на добу.
+	 *
+	 * Спільний на весь фонд, як і гроші: комора одна, і саме тому четверта ділянка
+	 * — рішення, а не безкоштовний додаток.
+	 */
+	feed: number;
 	/** Зріз показників на початку поточної доби. З ним порівнюється кінець. */
 	dayStart: MetricSet;
 	/**
@@ -199,6 +222,10 @@ export interface ReserveState {
 export type ReserveCommand =
 	| { type: 'build'; size: number; quality: Quality; cell: { x: number; z: number } }
 	| { type: 'demolish'; enclosureId: number }
+	/** Поставити суб-модуль: водойму, насадження або укриття. */
+	| { type: 'equip'; enclosureId: number; module: Module }
+	/** Купити корму в комору. `portions` — скільки порцій. */
+	| { type: 'restock'; portions: number }
 	| { type: 'repair'; enclosureId: number }
 	| { type: 'upgrade'; enclosureId: number; quality: Quality }
 	| { type: 'acquire'; origin: AnimalOrigin; speciesId: string; enclosureId: number }
@@ -210,37 +237,10 @@ export type ReserveCommand =
 	| { type: 'claim'; contractId: number }
 	| { type: 'raid'; tactic: RaidTactic };
 
-/** Чому хід не пройшов. Інтерфейсу цього досить, щоб пояснити людині. */
-export type RejectReason =
-	| 'game-over'
-	| 'no-money'
-	| 'subsidy-mode'
-	| 'no-such-animal'
-	| 'not-healthy'
-	| 'too-stressed'
-	| 'not-releasable'
-	| 'nobody-to-dismiss'
-	| 'no-such-species'
-	| 'no-such-enclosure'
-	| 'enclosure-taken'
-	| 'enclosure-too-small'
-	| 'bad-size'
-	| 'bad-quality'
-	/** Вид не живе в цьому біомі — і саме це гра пояснює, а не обходить. */
-	| 'wrong-biome'
-	| 'already-sound'
-	| 'not-an-upgrade'
-	| 'campaign-done'
-	/** Нальоту немає — вирішувати нічого. */
-	| 'no-raid'
-	/** Засідку нема кому влаштувати: патруля немає. */
-	| 'no-ranger'
-	/** Наступне місце в сітці випало б за межу ділянки. */
-	| 'out-of-bounds'
-	/** Клітинка вже під іншим вольєром. */
-	| 'cell-taken'
-	| 'no-such-contract'
-	| 'contract-unfinished'
-	| 'too-many-contracts';
+/*
+ * Перелік відмов живе в `rejects.ts` — там він читається разом зі словником
+ * перекладу. Реекспорт лишається, щоб не правити два десятки імпортів.
+ */
+export type { RejectReason } from './rejects';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };

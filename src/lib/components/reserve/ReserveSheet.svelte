@@ -82,6 +82,7 @@
 			{released}
 			{freeEnclosures}
 			hasVet={state.sites[at].staff.vet > 0}
+			feed={state.feed}
 			{selectedId}
 			{onSelect}
 			{onCommand}

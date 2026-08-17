@@ -1,4 +1,5 @@
 import type { TranslationKey } from '$lib/i18n/translations/uk';
+import type { Module } from './types';
 
 /**
  * Види, яких приймає заповідник, і скільки місця їм треба.
@@ -44,6 +45,18 @@ export interface Species {
 	 * що так цікавіше, а тому що це і є те, чого гра навчає.
 	 */
 	biomes: readonly ReserveBiome[];
+	/**
+	 * Без чого вид страждає, хоч би яким великим був вольєр.
+	 *
+	 * Одна-дві потреби на вид, ніколи всі три. Вид, якому потрібно все, зробив би
+	 * покупку модулів обовʼязковою — тобто податком, а не рішенням. А так гравець
+	 * мусить знати, кого він узяв: бобру потрібна вода, лисиці — нора, і платити
+	 * за чуже їм обом марно.
+	 *
+	 * Водойму може закрити САМЕ МІСЦЕ: вольєр біля річки вже має воду
+	 * (`modules.ts`). Це і робить читання карти вартим часу.
+	 */
+	needs: readonly Module[];
 }
 
 /**
@@ -99,34 +112,120 @@ export function comfortOf(species: Species, size: number): number {
  * вистачає дев'ятки, десятка лишається чистою розкішшю, а не обов'язковою.
  */
 export const SPECIES: Species[] = [
-	{ id: 'hedgehog', nameKey: 'animal.hedgehog', minSize: 1, recSize: 2, biomes: ['forest'] },
-	{ id: 'owl', nameKey: 'animal.owl', minSize: 1, recSize: 2, biomes: ['forest', 'tundra'] },
-	{ id: 'fox', nameKey: 'animal.fox', minSize: 2, recSize: 3, biomes: ['forest', 'tundra'] },
-	{ id: 'raccoon', nameKey: 'animal.raccoon', minSize: 2, recSize: 3, biomes: ['forest'] },
+	{
+		id: 'hedgehog',
+		nameKey: 'animal.hedgehog',
+		minSize: 1,
+		recSize: 2,
+		biomes: ['forest'],
+		needs: ['shelter']
+	},
+	{
+		id: 'owl',
+		nameKey: 'animal.owl',
+		minSize: 1,
+		recSize: 2,
+		biomes: ['forest', 'tundra'],
+		needs: ['plants']
+	},
+	{
+		id: 'fox',
+		nameKey: 'animal.fox',
+		minSize: 2,
+		recSize: 3,
+		biomes: ['forest', 'tundra'],
+		needs: ['shelter']
+	},
+	{
+		id: 'raccoon',
+		nameKey: 'animal.raccoon',
+		minSize: 2,
+		recSize: 3,
+		biomes: ['forest'],
+		needs: ['plants']
+	},
 	// Бобру потрібна водойма — звідси розрив у два кроки замість одного.
-	{ id: 'beaver', nameKey: 'animal.beaver', minSize: 2, recSize: 4, biomes: ['forest'] },
+	{
+		id: 'beaver',
+		nameKey: 'animal.beaver',
+		minSize: 2,
+		recSize: 4,
+		biomes: ['forest'],
+		needs: ['water']
+	},
 	// Орлу потрібна висота для польоту, а не площа підлоги.
-	{ id: 'eagle', nameKey: 'animal.eagle', minSize: 3, recSize: 5, biomes: ['forest', 'tundra'] },
-	{ id: 'wolf', nameKey: 'animal.wolf', minSize: 3, recSize: 5, biomes: ['forest', 'tundra'] },
+	{
+		id: 'eagle',
+		nameKey: 'animal.eagle',
+		minSize: 3,
+		recSize: 5,
+		biomes: ['forest', 'tundra'],
+		needs: ['plants']
+	},
+	{
+		id: 'wolf',
+		nameKey: 'animal.wolf',
+		minSize: 3,
+		recSize: 5,
+		biomes: ['forest', 'tundra'],
+		needs: ['shelter']
+	},
 	{
 		id: 'leopard',
 		nameKey: 'animal.leopard',
 		minSize: 3,
 		recSize: 5,
-		biomes: ['savanna', 'rainforest']
+		biomes: ['savanna', 'rainforest'],
+		needs: ['plants']
 	},
 	// Лев — приклад із технічного завдання, числа взяті звідти дослівно.
-	{ id: 'lion', nameKey: 'animal.lion', minSize: 3, recSize: 4, biomes: ['savanna'] },
-	{ id: 'deer', nameKey: 'animal.deer', minSize: 4, recSize: 6, biomes: ['forest', 'tundra'] },
-	{ id: 'tiger', nameKey: 'animal.tiger', minSize: 4, recSize: 6, biomes: ['rainforest'] },
-	{ id: 'bear', nameKey: 'animal.bear', minSize: 4, recSize: 6, biomes: ['forest', 'tundra'] },
-	{ id: 'rhino', nameKey: 'animal.rhino', minSize: 6, recSize: 8, biomes: ['savanna'] },
+	{
+		id: 'lion',
+		nameKey: 'animal.lion',
+		minSize: 3,
+		recSize: 4,
+		biomes: ['savanna'],
+		needs: ['shelter']
+	},
+	{
+		id: 'deer',
+		nameKey: 'animal.deer',
+		minSize: 4,
+		recSize: 6,
+		biomes: ['forest', 'tundra'],
+		needs: ['plants']
+	},
+	{
+		id: 'tiger',
+		nameKey: 'animal.tiger',
+		minSize: 4,
+		recSize: 6,
+		biomes: ['rainforest'],
+		needs: ['water', 'plants']
+	},
+	{
+		id: 'bear',
+		nameKey: 'animal.bear',
+		minSize: 4,
+		recSize: 6,
+		biomes: ['forest', 'tundra'],
+		needs: ['shelter', 'plants']
+	},
+	{
+		id: 'rhino',
+		nameKey: 'animal.rhino',
+		minSize: 6,
+		recSize: 8,
+		biomes: ['savanna'],
+		needs: ['water']
+	},
 	{
 		id: 'elephant',
 		nameKey: 'animal.elephant',
 		minSize: 7,
 		recSize: 9,
-		biomes: ['savanna', 'rainforest']
+		biomes: ['savanna', 'rainforest'],
+		needs: ['water', 'plants']
 	}
 ];
 

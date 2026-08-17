@@ -31,7 +31,7 @@ import type { ReserveState } from './types';
  * жодної історії, як вони стали одним. Тому старі записи не піднімаються, а
  * прибираються — див. `LEGACY_KEYS` у `services/reserveSave.ts`.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export interface SaveFile {
 	version: number;
@@ -99,6 +99,10 @@ function checkEnclosure(value: unknown, index: number): string | null {
 		return `enclosures[${index}].quality = ${String(value.quality)}`;
 	if (!isNumber(value.durability) || value.durability < 0 || value.durability > 1)
 		return `enclosures[${index}].durability = ${String(value.durability)}`;
+	// Суб-модулі — список; який саме, перевіряти не варто: незнайомий рядок нічого
+	// не закриє й нічого не зламає, а викидати через нього партію — надто дорого.
+	if (!Array.isArray(value.modules)) return `enclosures[${index}].modules`;
+	if (typeof value.byWater !== 'boolean') return `enclosures[${index}].byWater`;
 	if (!isObject(value.cell) || !isNumber(value.cell.x) || !isNumber(value.cell.z))
 		return `enclosures[${index}].cell`;
 	return null;
@@ -153,6 +157,9 @@ function checkState(value: unknown): string | null {
 	// Так само й розклад поточної доби: форма списку, а не вміст. Зіпсований
 	// рядок історії не варто того, щоб через нього викидати заповідник.
 	if (!Array.isArray(value.today)) return 'today';
+	// Комора — число: без неї перша ж доба дала б `undefined - 3 = NaN`, і корм
+	// назавжди лишився б NaN, нічого не ламаючи на вигляд.
+	if (!isNumber(value.feed)) return 'feed';
 	if (!isObject(value.dayStart)) return 'dayStart';
 	for (const field of ['budget', 'impact', 'reputation', 'inReserve', 'inWild'])
 		if (!isNumber(value.dayStart[field])) return `dayStart.${field}`;

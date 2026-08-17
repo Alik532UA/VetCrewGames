@@ -1,7 +1,7 @@
 import { seededRandom } from '$lib/utils/seededRandom';
 import { RESERVE_HALF_MAX } from './plot';
 import { CELL_WORLD, spiralCell } from './grid';
-import { PALETTE, SCATTERED } from './palette';
+import { PALETTE, SCATTERED, type Palette } from './palette';
 import { lake, river, type RiverPath } from './water';
 import type { ReserveBiome } from './species';
 
@@ -141,6 +141,39 @@ export interface Terrain {
 	rivers: RiverPath[];
 	/** Водойми, рослини, каміння — усе, що стоїть у точці. */
 	items: DecorItem[];
+	/** Сама лише вода. Те саме, що віддає `waterOf`, — щоб не питати вдруге. */
+	water: Water;
+}
+
+/**
+ * Тільки ВОДА: річки й озера, без жодної рослини.
+ *
+ * Окремим входом, бо будівництво вольєра питає рівно це — «чи є поруч вода», — і
+ * платити за таку відповідь усім рельєфом надто дорого. Заміряно: повний рельєф
+ * 1.89 мс, і відколи хід `build` по нього ходив, сам хід коштував 1.67 мс замість
+ * нуля. Статистичний тест на десять тисяч будівництв вибив межу часу — саме він і
+ * показав ціну.
+ *
+ * Працює це тому, що вода в `buildTerrain` генерується ПЕРШОЮ: ті самі перші
+ * виклики того самого генератора дають ту саму воду. Порядок тут — не деталь
+ * реалізації, а умова; перевірено тестом, який порівнює обидва входи.
+ */
+export function waterOf(biome: ReserveBiome, seed: number): Water {
+	return waterPart(seededRandom(seed ^ 0x5eed), PALETTE[biome]);
+}
+
+/** Річки й озера. Один і той самий код служить обом входам. */
+export interface Water {
+	rivers: RiverPath[];
+	lakes: DecorItem[];
+}
+
+function waterPart(random: () => number, palette: Palette): Water {
+	// СПЕРШУ вода: усе інше обходить її, а не навпаки.
+	const rivers = Array.from({ length: palette.rivers }, () => river(random, WORLD_RADIUS));
+	const lakes: DecorItem[] = [];
+	for (let i = 0; i < palette.lakes; i++) lakes.push(...lake(random, WORLD_RADIUS));
+	return { rivers, lakes };
 }
 
 export function terrainOf(biome: ReserveBiome, seed: number): Terrain {
@@ -148,10 +181,7 @@ export function terrainOf(biome: ReserveBiome, seed: number): Terrain {
 	const palette = PALETTE[biome];
 	const sites = buildSites();
 
-	// СПЕРШУ вода: усе інше обходить її, а не навпаки.
-	const rivers = Array.from({ length: palette.rivers }, () => river(random, WORLD_RADIUS));
-	const water: DecorItem[] = [];
-	for (let i = 0; i < palette.lakes; i++) water.push(...lake(random, WORLD_RADIUS));
+	const { rivers, lakes: water } = waterPart(random, palette);
 
 	/*
 	 * Русло теж мусить відганяти дерева, хоч і малюється смугою. Для перевірки
@@ -183,7 +213,7 @@ export function terrainOf(biome: ReserveBiome, seed: number): Terrain {
 			...scatter(random, kind, wild, blocking, sites, RESERVE_HALF_MAX, WORLD_RADIUS)
 		];
 	});
-	return { rivers, items: [...water, ...rest] };
+	return { rivers, items: [...water, ...rest], water: { rivers, lakes: water } };
 }
 
 /**
@@ -195,18 +225,20 @@ export function terrainOf(biome: ReserveBiome, seed: number): Terrain {
  */
 export const NEAR_WATER_DISTANCE = 4;
 
-export function nearWater(terrain: Terrain, x: number, z: number): boolean {
-	const lakes = terrain.items.some(
-		(item) =>
-			item.kind === 'water' &&
-			Math.hypot(item.x - x, item.z - z) <= waterRadius(item.scale) + NEAR_WATER_DISTANCE
+export function nearWater(water: Water, x: number, z: number): boolean {
+	const byLake = water.lakes.some(
+		(item) => Math.hypot(item.x - x, item.z - z) <= waterRadius(item.scale) + NEAR_WATER_DISTANCE
 	);
-	if (lakes) return true;
+	if (byLake) return true;
 
 	// Річка теж вода: вольєр на її березі штучної водойми не потребує.
-	return terrain.rivers.some((path) =>
+	return water.rivers.some((path) =>
 		path.points.some(
 			(point) => Math.hypot(point.x - x, point.z - z) <= path.width / 2 + NEAR_WATER_DISTANCE
 		)
 	);
 }
+
+/** Те саме питання від того, у кого є лише зерно: один вхід для симуляції. */
+export const waterNear = (biome: ReserveBiome, seed: number, x: number, z: number): boolean =>
+	nearWater(waterOf(biome, seed), x, z);

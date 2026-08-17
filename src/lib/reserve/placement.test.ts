@@ -19,7 +19,9 @@ const box = (id: number, x: number, z: number, size: number): Enclosure => ({
 	cell: { x, z },
 	size,
 	quality: 2,
-	durability: 1
+	durability: 1,
+	modules: [],
+	byWater: false
 });
 
 describe('де можна ставити вольєр', () => {

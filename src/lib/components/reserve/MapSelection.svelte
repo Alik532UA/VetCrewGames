@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ReserveController } from '$lib/controllers/reserve.svelte';
-	import type { Animal, ReserveCommand } from '$lib/reserve/types';
+	import type { Animal, Enclosure, ReserveCommand } from '$lib/reserve/types';
 	import AnimalCard from './AnimalCard.svelte';
 	import EnclosureCard from './EnclosureCard.svelte';
 
@@ -17,10 +17,19 @@
 		game: ReserveController;
 		/** Мешканці ЦІЄЇ ділянки: у вибраному вольєрі шукається саме тут. */
 		residents: Animal[];
+		/** Вольєри ЦІЄЇ ділянки: у вибраної тварини шукається її дім. */
+		enclosures: Enclosure[];
 		onCommand: (command: ReserveCommand) => void;
 	}
 
-	let { game, residents, onCommand }: Props = $props();
+	let { game, residents, enclosures, onCommand }: Props = $props();
+
+	/** Дім вибраної тварини: звідси картка бачить її незакриті потреби. */
+	const home = $derived.by(() => {
+		const animal = game.selected;
+		if (!animal) return null;
+		return enclosures.find((pen) => pen.id === animal.enclosureId) ?? null;
+	});
 
 	const resident = $derived.by(() => {
 		const pen = game.selectedEnclosure;
@@ -36,6 +45,7 @@
 {#if game.selected}
 	<AnimalCard
 		animal={game.selected}
+		{home}
 		{onCommand}
 		onEnclosure={(id) => game.selectEnclosure(id)}
 		onClose={() => game.clearSelection()}

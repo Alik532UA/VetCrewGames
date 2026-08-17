@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
 	import { CELL, innerSpan } from './sceneLayout';
+	import { equipped } from '$lib/reserve/modules';
 	import AnimalFigure from './AnimalFigure.svelte';
-	import type { Animal } from '$lib/reserve/types';
+	import type { Animal, Enclosure } from '$lib/reserve/types';
 
 	/**
 	 * Вольєр на карті: умовний прямокутник, обмежений ПАРКАНОМ.
@@ -14,10 +15,14 @@
 	 * шматок лісу, а не залив його.
 	 */
 	interface Props {
-		/** Чи поруч є ПРИРОДНА вода: якщо ні, усередині доводиться копати свою. */
-		hasWater: boolean;
-		/** `id` самої будівлі: тап по паркану чи землі всередині відкриває ЇЇ меню. */
-		enclosureId: number;
+		/**
+		 * Сама будівля: з неї беруться `id` для влучання променем і СУБ-МОДУЛІ.
+		 *
+		 * Доти сюди приходив прапорець «поруч є вода», і водойма малювалася там, де
+		 * природної не було, — тобто безкоштовно й скрізь. Тепер видно куплене: що
+		 * гравець поставив, те й стоїть у вольєрі.
+		 */
+		enclosure: Enclosure;
 		animal: Animal | null;
 		x: number;
 		z: number;
@@ -26,7 +31,8 @@
 		selected: boolean;
 	}
 
-	let { hasWater, enclosureId, animal, x, z, span, selected }: Props = $props();
+	let { enclosure, animal, x, z, span, selected }: Props = $props();
+	const enclosureId = $derived(enclosure.id);
 
 	/** Півсторона паркана у світових одиницях, із невеликим відступом усередину. */
 	const half = $derived(innerSpan(span) / 2);
@@ -89,14 +95,42 @@
 	{/each}
 
 	<!--
-		Штучна водойма — лише коли природної поруч немає. У цьому й сенс того, що
-		рельєф не декорація: місце під вольєр не байдуже, і видно це просто на карті.
+		Суб-модулі: те, що гравець КУПИВ, і те, чого виду бракує.
+
+		Водойма малюється лише коли її поставили, — біля річки її й не поставиш
+		(команда відмовляє). Тобто рельєф не декорація двічі: місце вирішує, чи
+		доведеться платити, і видно це просто на карті.
 	-->
-	{#if !hasWater}
+	{#if enclosure.modules.includes('water')}
 		<T.Mesh position={[half * 0.45, 0.03, half * 0.45]}>
 			<T.CylinderGeometry args={[half * 0.28, half * 0.28, 0.06, 16]} />
 			<T.MeshStandardMaterial color="#4a9ec4" />
 		</T.Mesh>
+	{/if}
+
+	{#if equipped(enclosure, 'plants')}
+		<!-- Насадження: три кущі по кутах, щоб не читалися як один. -->
+		{#each [[-0.5, -0.5], [0.45, -0.6], [-0.6, 0.5]] as [dx, dz], index (index)}
+			<T.Mesh position={[half * dx, 0.16, half * dz]} scale={[1, 0.7, 1]}>
+				<T.IcosahedronGeometry args={[Math.min(0.42, half * 0.22), 0]} />
+				<T.MeshStandardMaterial color="#3f6b34" />
+			</T.Mesh>
+		{/each}
+	{/if}
+
+	{#if equipped(enclosure, 'shelter')}
+		<!-- Укриття: коробка з похилим дахом. Проста форма, зате пізнавана. -->
+		{@const box = Math.min(0.7, half * 0.35)}
+		<T.Group position={[-half * 0.45, 0, half * 0.5]}>
+			<T.Mesh position={[0, box * 0.35, 0]}>
+				<T.BoxGeometry args={[box, box * 0.7, box * 0.8]} />
+				<T.MeshStandardMaterial color="#6b4a2f" />
+			</T.Mesh>
+			<T.Mesh position={[0, box * 0.85, 0]} rotation.y={Math.PI / 4}>
+				<T.ConeGeometry args={[box * 0.75, box * 0.5, 4]} />
+				<T.MeshStandardMaterial color="#8a6f4a" />
+			</T.Mesh>
+		</T.Group>
 	{/if}
 
 	{#if animal}

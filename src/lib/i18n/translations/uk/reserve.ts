@@ -194,5 +194,24 @@ export const reserve = {
 	'reserve.why.raidSaved': 'Браконьєрів зупинено',
 	'reserve.why.raidLost': 'Тварину забрали браконьєри',
 	'reserve.why.other': 'Інше',
+
+	// Етап 13: корм у коморі й суб-модулі вольєра.
+	'reserve.feed': 'Корм',
+	'reserve.feedDays': 'днів',
+	'reserve.feedEmpty': 'Комора порожня — тварини голодують.',
+	'reserve.restock': 'Купити корму',
+	'reserve.needsHere': 'Потрібно вольєру',
+	'reserve.needsAll': 'Усе потрібне є.',
+	'reserve.module.water': 'Водойма',
+	'reserve.module.plants': 'Насадження',
+	'reserve.module.shelter': 'Укриття',
+	'reserve.module.water.byWater': 'Вода поруч',
+	'reserve.unmet': 'Незакрита потреба — тварина в стресі.',
+	'reserve.why.feed': 'Корм для тварин',
+	'reserve.why.eaten': 'Тварини з\'їли',
+	'reserve.why.module': 'Обладнання вольєра',
+	'reserve.reject.already-equipped': 'Це у вольєрі вже стоїть.',
+	'reserve.reject.water-nearby': 'Поруч природна вода — копати нема сенсу.',
+	'reserve.reject.bad-amount': 'Стільки корму не буває.',
 	'reserve.noHistory': 'Змін ще не було.'
 } as const;

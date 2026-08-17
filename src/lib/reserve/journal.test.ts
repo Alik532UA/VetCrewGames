@@ -145,8 +145,8 @@ describe('журнал показників', () => {
 	});
 
 	it('різниця дробової репутації не показує сміття з плаваючої коми', () => {
-		const after = { budget: 0, impact: 0, reputation: 39.5, inReserve: 0, inWild: 0 };
-		const before = { budget: 0, impact: 0, reputation: 40, inReserve: 0, inWild: 0 };
+		const after = { budget: 0, feed: 0, impact: 0, reputation: 39.5, inReserve: 0, inWild: 0 };
+		const before = { budget: 0, feed: 0, impact: 0, reputation: 40, inReserve: 0, inWild: 0 };
 		expect(deltaOf(after, before).reputation).toBe(-0.5);
 	});
 

@@ -1,9 +1,12 @@
 import { ENCLOSURE_IMPACT, QUALITIES } from './constants';
 import { addImpact, spend } from './ledger';
+import { modulePrice } from './modules';
+import { waterNear } from './terrain';
+import { worldOf } from './grid';
 import { reserveHalf } from './plot';
 import { placementProblem } from './placement';
 import { enclosurePrice, repairPrice, upgradePrice } from './prices';
-import { isEnclosureSize } from './species';
+import { isEnclosureSize, type ReserveBiome } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState, Site } from './types';
 
 /**
@@ -19,6 +22,8 @@ import type { Animal, CommandResult, ReserveCommand, ReserveState, Site } from '
 export function buildings(
 	state: ReserveState,
 	site: Site,
+	/** Ділянка: рельєф у неї свій, а від нього залежить природна вода. */
+	at: ReserveBiome,
 	command: ReserveCommand,
 	occupant: (site: Site, enclosureId: number) => Animal | undefined
 ): CommandResult {
@@ -49,11 +54,26 @@ export function buildings(
 			// зайнята, жодної врятованої тварини. Публіка ж розділилася — хтось
 			// бачить благі наміри, хтось піар, — і репутація не рухається взагалі.
 			addImpact(state, ENCLOSURE_IMPACT, 'enclosure');
+			/*
+			 * Чи є поруч природна вода — рахується ТУТ і лягає в стан.
+			 *
+			 * Один раз на будівництво, а не щодня: факт не змінюється, а щоб його
+			 * дізнатися, треба згенерувати воду з зерна. Питається САМЕ ВОДА
+			 * (`waterNear`), не весь рельєф: повний краєвид коштує 1.89 мс, і хід
+			 * будівництва подорожчав би з нуля до тих самих двох мілісекунд — заміряно.
+			 *
+			 * Заразом місце на карті стає рішенням: біля річки водойму не копають.
+			 */
+			const spot = worldOf(command.cell);
+			const byWater = waterNear(at, state.seed, spot.x, spot.z);
+
 			site.enclosures.push({
 				id: state.nextEnclosureId++,
 				cell: command.cell,
 				size: command.size,
 				quality: command.quality,
+				modules: [],
+				byWater,
 				durability: 1
 			});
 			return { ok: true };
@@ -71,6 +91,30 @@ export function buildings(
 
 			spend(state, cost, 'repair');
 			enclosure.durability = 1;
+			return { ok: true };
+		}
+
+		case 'equip': {
+			const enclosure = site.enclosures.find((e) => e.id === command.enclosureId);
+			if (!enclosure) return { ok: false, reason: 'no-such-enclosure' };
+			// Двічі те саме не ставлять — і про це кажуть, а не мовчки беруть плату.
+			if (enclosure.modules.includes(command.module))
+				return { ok: false, reason: 'already-equipped' };
+			/*
+			 * Водойму біля річки копати НЕ ДАЄМО, а не просто «не варто».
+			 *
+			 * Потреба вже закрита місцем, тож гроші пішли б ні за що — і гравець
+			 * дізнався б про це лише з того, що стрес не змінився. Відмова з причиною
+			 * навчає читати карту; тихий продаж навчав би не довіряти грі.
+			 */
+			if (command.module === 'water' && enclosure.byWater)
+				return { ok: false, reason: 'water-nearby' };
+
+			const cost = modulePrice(enclosure.size);
+			if (state.budget < cost) return { ok: false, reason: 'no-money' };
+
+			spend(state, cost, 'module');
+			enclosure.modules.push(command.module);
 			return { ok: true };
 		}
 

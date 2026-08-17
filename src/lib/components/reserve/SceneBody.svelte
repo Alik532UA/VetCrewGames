@@ -7,7 +7,7 @@
 	import { placementProblem, type PlacementProblem } from '$lib/reserve/placement';
 	import { createPicker } from './picking';
 	import { footprintOf, worldOf, type Cell } from '$lib/reserve/grid';
-	import { nearWater, terrainOf } from '$lib/reserve/terrain';
+	import { terrainOf } from '$lib/reserve/terrain';
 	import EnclosureShape from './EnclosureShape.svelte';
 	import SceneWorld from './SceneWorld.svelte';
 	import type { ReserveBiome } from '$lib/reserve/species';
@@ -243,13 +243,12 @@
 
 {#each placed as spot (spot.enclosure.id)}
 	<EnclosureShape
-		hasWater={nearWater(terrain, spot.x, spot.z)}
+		enclosure={spot.enclosure}
 		animal={spot.animal}
 		x={spot.x}
 		z={spot.z}
 		span={spot.span}
 		selected={spot.enclosure.id === selectedEnclosureId ||
 			(spot.animal !== null && spot.animal.id === selectedId)}
-		enclosureId={spot.enclosure.id}
 	/>
 {/each}

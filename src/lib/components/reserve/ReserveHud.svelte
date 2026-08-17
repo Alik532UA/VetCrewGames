@@ -24,6 +24,8 @@
 	interface Props {
 		day: number;
 		budget: number;
+		/** Порції корму в коморі: нуль означає голод, і його видно кольором. */
+		feed: number;
 		impact: number;
 		reputation: number;
 		inReserve: number;
@@ -49,6 +51,7 @@
 	let {
 		day,
 		budget,
+		feed,
 		impact,
 		reputation,
 		inReserve,
@@ -68,14 +71,19 @@
 	const probe = hudProbe();
 
 	/** Зміна за поточну добу — та, якої ще немає в журналі. */
-	const today = $derived(deltaOf({ budget, impact, reputation, inReserve, inWild }, dayStart));
+	const today = $derived(
+		deltaOf({ budget, feed, impact, reputation, inReserve, inWild }, dayStart)
+	);
 
 	/** Підпис для читалки: пауза називається дією, а не значком. */
 	const speedLabel = (value: Speed) =>
 		value === 0 ? t('reserve.speed.pause') : t(`reserve.speed.x${value}` as const);
 
 	const stats = $derived(
-		hudStats({ day, budget, impact, reputation, inReserve, inWild, manySites }, settings.locale)
+		hudStats(
+			{ day, budget, feed, impact, reputation, inReserve, inWild, manySites },
+			settings.locale
+		)
 	);
 </script>
 

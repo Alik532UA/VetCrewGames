@@ -39,6 +39,7 @@ export function metricsOf(state: ReserveState): MetricSet {
 	}
 	return {
 		budget: state.budget,
+		feed: state.feed,
 		impact: state.impact,
 		reputation: state.reputation,
 		inReserve,
@@ -47,8 +48,9 @@ export function metricsOf(state: ReserveState): MetricSet {
 }
 
 /** Зріз партії, у якій ще нічого не сталося: тварин немає, числа стартові. */
-export const startMetrics = (budget: number, reputation: number): MetricSet => ({
+export const startMetrics = (budget: number, feed: number, reputation: number): MetricSet => ({
 	budget,
+	feed,
 	impact: 0,
 	reputation,
 	inReserve: 0,
@@ -59,6 +61,7 @@ export const startMetrics = (budget: number, reputation: number): MetricSet => (
 export function deltaOf(after: MetricSet, before: MetricSet): MetricSet {
 	return {
 		budget: after.budget - before.budget,
+		feed: after.feed - before.feed,
 		impact: after.impact - before.impact,
 		reputation: round(after.reputation - before.reputation),
 		inReserve: after.inReserve - before.inReserve,
@@ -114,4 +117,4 @@ function settle(notes: JournalNote[], delta: MetricSet): JournalNote[] {
 	return out;
 }
 
-const METRICS: LedgerMetric[] = ['budget', 'impact', 'reputation', 'inReserve', 'inWild'];
+const METRICS: LedgerMetric[] = ['budget', 'feed', 'impact', 'reputation', 'inReserve', 'inWild'];

@@ -2,6 +2,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { speciesById, type ReserveBiome } from '$lib/reserve/species';
 	import AcquireTab from './AcquireTab.svelte';
+	import FeedBlock from './FeedBlock.svelte';
 	import type { Animal, Enclosure, ReserveCommand } from '$lib/reserve/types';
 
 	/**
@@ -17,6 +18,8 @@
 		released: Animal[];
 		freeEnclosures: Enclosure[];
 		hasVet: boolean;
+		/** Порції корму в коморі: комора спільна на весь фонд. */
+		feed: number;
 		selectedId: number | null;
 		onSelect: (id: number) => void;
 		onCommand: (command: ReserveCommand) => void;
@@ -30,6 +33,7 @@
 		released,
 		freeEnclosures,
 		hasVet,
+		feed,
 		selectedId,
 		onSelect,
 		onCommand,
@@ -73,6 +77,12 @@
 </div>
 
 {#if tab === 'here'}
+	<!--
+		Комора — перше, що видно у списку мешканців: голод спиняє одужання повністю,
+		тож питання «чи є чим годувати» важливіше за будь-який рядок нижче.
+	-->
+	<FeedBlock {feed} mouths={residents.length} {onCommand} />
+
 	{#if residents.length === 0}
 		<p class="empty" data-testid="reserve-empty-text">{@html formatFont(t('reserve.empty'))}</p>
 	{:else}
