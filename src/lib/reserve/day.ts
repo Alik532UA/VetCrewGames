@@ -151,9 +151,15 @@ function siteDay(state: ReserveState, site: Site): void {
 export function endOfDay(state: ReserveState): void {
 	const day = Math.floor(state.ticks / TICKS_PER_DAY);
 
-	// Пожертви йдуть за РЕПУТАЦІЄЮ, а не за «Користю планеті»: перша — це те,
-	// що про фонд знають, друга — те, що він насправді зробив. Одні на весь фонд.
-	state.budget += state.reputation * DONATION_PER_REPUTATION;
+	/*
+	 * Пожертви йдуть за РЕПУТАЦІЄЮ, а не за «Користю планеті»: перша — це те, що про
+	 * фонд знають, друга — те, що він насправді зробив. Одні на весь фонд.
+	 *
+	 * Нижче нуля — нуль, а не мінус: ненависть не виносить грошей із каси, вона
+	 * просто нічого не приносить. Відʼємні пожертви читалися б як штраф, якого ніхто
+	 * не оголошував.
+	 */
+	state.budget += Math.max(0, state.reputation) * DONATION_PER_REPUTATION;
 
 	/*
 	 * Життя йде на ВСІХ чотирьох землях, а не лише на відкритій.

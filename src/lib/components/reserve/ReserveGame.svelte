@@ -78,6 +78,15 @@
 	 */
 	let buildSize = $state<number | undefined>(undefined);
 
+	/**
+	 * Над якою точкою екрана спливе панель.
+	 *
+	 * Приходить із кнопки, що її відкрила. `null` — коли кнопки не було: до вольєрів
+	 * можна потрапити з попередження в прийомі тварини, і прив'язувати вікно до
+	 * кнопки, якої гравець не тиснув, було б брехнею про причину.
+	 */
+	let anchorX = $state<number | null>(null);
+
 	onMount(() => {
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, backTo)));
 		game.start();
@@ -193,7 +202,10 @@
 		<ReserveBar
 			{panel}
 			placing={pending !== null}
-			onPanel={(id) => (panel = panel === id ? null : id)}
+			onPanel={(id, x) => {
+				anchorX = x;
+				panel = panel === id ? null : id;
+			}}
 			onCampaign={() => command({ type: 'campaign' })}
 			onCancel={() => (pending = null)}
 		/>
@@ -216,6 +228,7 @@
 		{#if panel}
 			<ReserveSheet
 				{panel}
+				{anchorX}
 				at={biome}
 				state={game.state}
 				day={game.day}
@@ -230,6 +243,7 @@
 				onBuildFor={(size: number) => {
 					buildSize = size;
 					panel = 'enclosures';
+					anchorX = null;
 				}}
 				onPlace={(size: number, quality: Quality) => {
 					pending = { size, quality };

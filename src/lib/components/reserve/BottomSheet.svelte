@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { t } from '$lib/i18n';
+	import { dragWindow } from './dragWindow.svelte';
 
 	/**
 	 * Панель, що висувається знизу поверх карти.
@@ -11,11 +12,20 @@
 	 */
 	interface Props {
 		title: string;
+		/**
+		 * Центр кнопки, з якої панель викликали, у пікселях вікна.
+		 *
+		 * `null` означає «по центру екрана» — так відкриваються панелі, у яких кнопки
+		 * немає (наприклад, коли сюди привело попередження з іншої панелі).
+		 */
+		anchorX: number | null;
+		/** Імʼя вікна: під ним запамʼятовується місце, куди його відтягнули. */
+		id: string;
 		onClose: () => void;
 		children: Snippet;
 	}
 
-	let { title, onClose, children }: Props = $props();
+	let { title, anchorX, id, onClose, children }: Props = $props();
 </script>
 
 <!--
@@ -29,7 +39,13 @@
 	data-testid="reserve-sheet-backdrop"
 ></div>
 
-<section class="sheet" data-testid="reserve-sheet-panel">
+<section
+	class="sheet"
+	style={anchorX === null ? undefined : `--anchor: ${Math.round(anchorX)}px`}
+	use:dragWindow={{ id: `sheet:${id}`, handle: '.sheet__head' }}
+	data-testid="reserve-sheet-panel"
+>
+	<!-- Заголовок — ручка вікна: за нього його й тягнуть. -->
 	<header class="sheet__head">
 		<h2 class="sheet__title">{title}</h2>
 		<button
@@ -57,6 +73,12 @@
 	.sheet {
 		position: fixed;
 		/*
+		 * Ширина названа змінною, бо її читає `clamp` нижче: щоб не вилізти за край,
+		 * треба знати, наскільки вікно широке.
+		 */
+		--sheet-w: min(34rem, calc(100vw - 2 * var(--space-sm)));
+		--anchor: 50vw;
+		/*
 		 * НАД смугою кнопок, а не під нею.
 		 *
 		 * Доти панель стояла в `bottom: 0` і накривала ту саму смугу, з якої її
@@ -65,12 +87,21 @@
 		 */
 		bottom: 4.5rem;
 		/*
+		 * Панель спливає НАД своєю кнопкою — і не вилазить за екран.
+		 *
+		 * `clamp` робить обидві речі одним рядком: середнє значення ставить вікно по
+		 * центру кнопки, а межі не дають йому виїхати за краї. Доти панель завжди
+		 * стояла в середині екрана, і на широкому вікні звʼязок із кнопкою губився.
+		 *
 		 * Не на всю ширину: панель зі списком у три слова, розтягнута на 1900px,
 		 * читається як помилка розкладки. Ліворуч лишається видною карта.
 		 */
-		left: 50%;
-		width: min(34rem, calc(100% - 2 * var(--space-sm)));
-		transform: translateX(-50%);
+		left: clamp(
+			var(--space-sm),
+			calc(var(--anchor) - var(--sheet-w) / 2),
+			calc(100vw - var(--sheet-w) - var(--space-sm))
+		);
+		width: var(--sheet-w);
 		border-radius: var(--radius-md);
 		z-index: 21;
 		display: flex;
@@ -90,6 +121,9 @@
 	}
 
 	.sheet__head {
+		/* Ручка вікна: жест уздовж неї тягне панель, а не гортає сторінку. */
+		cursor: grab;
+		touch-action: none;
 		display: flex;
 		gap: var(--space-sm);
 		align-items: center;

@@ -107,7 +107,8 @@
 			id: 'reputation',
 			labelKey: 'reserve.reputation' as const,
 			value: String(reputation),
-			bad: false,
+			// Мінус тут значить, що громада забирає землю, — це варто побачити кольором.
+			bad: reputation < 0,
 			metric: 'reputation' as const
 		},
 		{

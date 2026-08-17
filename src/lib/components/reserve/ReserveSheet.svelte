@@ -40,6 +40,8 @@
 		/** Розмір, з яким відкрилася панель вольєрів; `undefined` — типовий. */
 		buildSize?: number;
 		onClose: () => void;
+		/** Центр кнопки, з якої відкрили: панель спливає саме над нею. */
+		anchorX: number | null;
 	}
 
 	let {
@@ -57,7 +59,8 @@
 		onPlace,
 		onBuildFor,
 		buildSize,
-		onClose
+		onClose,
+		anchorX
 	}: Props = $props();
 
 	const TITLE: Record<
@@ -71,7 +74,7 @@
 	};
 </script>
 
-<BottomSheet title={t(TITLE[panel])} {onClose}>
+<BottomSheet title={t(TITLE[panel])} id={panel} {anchorX} {onClose}>
 	{#if panel === 'animals'}
 		<AnimalsPanel
 			biome={at}

@@ -16,12 +16,26 @@
 	interface Props {
 		panel: Panel | null;
 		placing: boolean;
-		onPanel: (id: Panel) => void;
+		/**
+		 * Панель відкрита — і разом з нею передається `x` центру кнопки.
+		 *
+		 * Вікно спливає НАД тією кнопкою, з якої його викликали: інакше воно завжди
+		 * виїжджало з середини екрана, і звʼязок «натиснув тут — відкрилося там»
+		 * доводилося вгадувати. Координата міряється з живої кнопки, бо смуга
+		 * прокручується вбік і її кнопки не стоять на місці.
+		 */
+		onPanel: (id: Panel, anchorX: number) => void;
 		onCampaign: () => void;
 		onCancel: () => void;
 	}
 
 	let { panel, placing, onPanel, onCampaign, onCancel }: Props = $props();
+
+	/** Центр кнопки в координатах вікна: саме над ним і спливе панель. */
+	const centerOf = (button: HTMLElement) => {
+		const box = button.getBoundingClientRect();
+		return box.left + box.width / 2;
+	};
 
 	const BUTTONS: Array<{
 		id: Panel;
@@ -50,7 +64,7 @@
 			class="bar__btn"
 			class:bar__btn--on={panel === item.id}
 			aria-pressed={panel === item.id}
-			onclick={() => onPanel(item.id)}
+			onclick={(event) => onPanel(item.id, centerOf(event.currentTarget))}
 			data-testid="reserve-panel-{item.id}-btn"
 		>
 			{@html formatFont(t(item.key))}

@@ -28,12 +28,14 @@ import {
 	HEAL_REPUTATION,
 	IMPACT_TO_WIN,
 	REPUTATION_DECAY_PER_DAY,
+	REPUTATION_MIN,
+	WAGES,
 	WEAR_PER_DAY,
 	type Quality
 } from './constants';
 import { enclosurePrice, repairPrice } from './prices';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
-import { cellsOf, worldOf } from './grid';
+import { CELL_WORLD, cellsOf, worldOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
 import { reserveHalf } from './plot';
 import { MAX_ENCLOSURE_SIZE, type ReserveBiome } from './species';
@@ -97,7 +99,8 @@ const SCRIPT: ReserveCommand[] = [
 	{ type: 'hire', role: 'ranger' },
 	// Різні клітинки: два вольєри на одному місці більше не ставляться.
 	{ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } },
-	{ type: 'build', size: 2, quality: 2, cell: { x: 5, z: 0 } },
+	// Клітинка поруч, не за парканом: стартова ділянка — десять клітинок на десять.
+	{ type: 'build', size: 2, quality: 2, cell: { x: -2, z: 0 } },
 	// Обидва види лісові: партія за замовчуванням розгортається в лісі.
 	{ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 },
 	{ type: 'acquire', origin: 'rescue', speciesId: 'fox', enclosureId: 2 }
@@ -474,13 +477,19 @@ describe('репутація', () => {
 		expect(state.reputation - before.reputation).toBe(RELEASE_REPUTATION);
 	});
 
-	it('репутація не виходить за 0 і 100', () => {
+	it('репутація не виходить за межі шкали', () => {
 		const state = createReserve(1);
 		state.budget = 10_000_000;
-		state.reputation = 2;
+		/*
+		 * Будуємо ДО того, як опускаємо репутацію, і порядок тут суттєвий: на дні
+		 * шкали громада вже не дає землі, тож вольєр просто не поставився б — і
+		 * перевірка впала б на зовсім іншому правилі.
+		 */
 		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+
+		state.reputation = REPUTATION_MIN + 2;
 		move(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
-		expect(state.reputation).toBe(0);
+		expect(state.reputation, 'шкала пробила дно').toBe(REPUTATION_MIN);
 
 		state.reputation = 98;
 		Object.assign(home(state).animals[0], {
@@ -965,11 +974,42 @@ describe('дві шкали розходяться саме там, де це щ
 		expect(state.reputation).toBeCloseTo(KNOWN - 4 * REPUTATION_DECAY_PER_DAY);
 	});
 
-	it('спад не заганяє репутацію нижче нуля', () => {
+	it('спад не заганяє репутацію нижче дна шкали', () => {
 		const state = savanna();
-		state.reputation = 0;
+		state.reputation = REPUTATION_MIN;
 		day(state, 5);
-		expect(state.reputation).toBe(0);
+		expect(state.reputation).toBe(REPUTATION_MIN);
+	});
+
+	/**
+	 * Нуль репутації — не дно, і саме це нове.
+	 *
+	 * Доти всі покарання впиралися в нуль, і фондові, про якого ніхто не чув, вони
+	 * не коштували нічого. Тепер мінус справжній, і за нього забирають ЗЕМЛЮ.
+	 */
+	it('мінус репутації звужує ділянку до однієї клітинки', () => {
+		const wide = reserveHalf(0);
+		const narrow = reserveHalf(REPUTATION_MIN);
+		expect(narrow).toBeLessThan(wide);
+		expect(narrow, 'на дні шкали лишається пів клітинки').toBeCloseTo(CELL_WORLD / 2);
+
+		const state = savanna();
+		state.reputation = REPUTATION_MIN;
+		// Клітинка, яка на нулі репутації ще була в межах, тепер за парканом.
+		expect(move(state, { type: 'build', size: 1, quality: 1, cell: { x: 3, z: 3 } })).toEqual({
+			ok: false,
+			reason: 'out-of-bounds'
+		});
+	});
+
+	/** А пожертв у мінусі просто немає — гроші з каси ніхто не виносить. */
+	it('відʼємна репутація не забирає грошей', () => {
+		const state = savanna();
+		state.reputation = REPUTATION_MIN;
+		const before = state.budget;
+		day(state);
+		// Витрати на персонал лишаються, а от пожертви саме нульові, не відʼємні.
+		expect(state.budget).toBe(before - WAGES.vet);
 	});
 });
 
@@ -1136,9 +1176,17 @@ describe('контракти зі спонсорами', () => {
 });
 
 describe('межа ділянки', () => {
+	/**
+	 * Фонд, у якого не бракує ні грошей, ні ЗЕМЛІ.
+	 *
+	 * Репутація тут не декорація: від неї залежить межа забудови, і без неї
+	 * перевірки про слід вольєра падали б на «за парканом» — тобто на зовсім іншому
+	 * правилі, ніж те, яке міряють.
+	 */
 	const rich = () => {
 		const state = createReserve(1);
 		state.budget = 100_000_000;
+		state.reputation = 100;
 		return state;
 	};
 

@@ -122,7 +122,7 @@
 	 * діагональ довша за сторону в 1.41 раза, — тож `viewBox` розширений на цей
 	 * самий множник. Інакше кути карти зрізалися б.
 	 */
-	const TILT = -45;
+	const TILT = 45;
 	const VIEW = $derived(HALF * Math.SQRT2);
 
 	/**
@@ -137,10 +137,17 @@
 		const px = ((event.clientX - box.left) / box.width) * VIEW * 2 - VIEW;
 		const py = ((event.clientY - box.top) / box.height) * VIEW * 2 - VIEW;
 
+		/*
+		 * Обертання НАЗАД: `R(-TILT)` у тому самому вигляді, у якому SVG крутить
+		 * уперед — (x·cos − y·sin, x·sin + y·cos). Доти тут стояла транспонована
+		 * матриця, і вона збігалася з малюванням лише поки поворот був у той самий
+		 * бік помилково: два неправильні знаки гасили один одного, і помилку було
+		 * видно тільки коли один із них виправили.
+		 */
 		const radians = (-TILT * Math.PI) / 180;
 		const cos = Math.cos(radians);
 		const sin = Math.sin(radians);
-		view.look(px * cos + py * sin, -px * sin + py * cos);
+		view.look(px * cos - py * sin, px * sin + py * cos);
 	}
 </script>
 

@@ -2,6 +2,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import { DRONE_PRICE } from '$lib/reserve/raids';
+	import { dragWindow } from './dragWindow.svelte';
 	import { speciesById } from '$lib/reserve/species';
 	import type { Animal, RaidTactic } from '$lib/reserve/types';
 
@@ -76,8 +77,13 @@
 	class="raid"
 	role="alertdialog"
 	aria-label={t('reserve.raid.title')}
+	use:dragWindow={{ id: 'raid', handle: '.raid__title' }}
 	data-testid="reserve-raid-modal"
 >
+	<!--
+		Заголовок — ручка. Вікно вимагає рішення, але право подивитися на карту перед
+		рішенням у гравця лишається: тактика вибирається за твариною, а не за текстом.
+	-->
 	<h2 class="raid__title">{@html formatFont(t('reserve.raid.title'))}</h2>
 
 	<p class="raid__text">
@@ -141,6 +147,9 @@
 	}
 
 	.raid__title {
+		/* Ручка вікна: жест уздовж неї тягне вікно, а не виділяє текст. */
+		cursor: grab;
+		touch-action: none;
 		margin: 0;
 		color: var(--color-error);
 		font-size: var(--font-size-lg);

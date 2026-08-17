@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { formatFont } from '$lib/i18n';
 	import { devPanel } from '$lib/services/devPanel.svelte';
-	import { TICKS_PER_DAY } from '$lib/reserve/constants';
+	import { dragWindow } from './dragWindow.svelte';
+	import { REPUTATION_MAX, REPUTATION_MIN, TICKS_PER_DAY } from '$lib/reserve/constants';
 	import { dayOf } from '$lib/reserve/simulation';
 	import { speciesOfBiome, type ReserveBiome } from '$lib/reserve/species';
 	import type { ReserveController } from '$lib/controllers/reserve.svelte';
@@ -64,7 +65,7 @@
 			id: 'reputation',
 			label: 'Репутація',
 			get: () => game.state.reputation,
-			set: (v) => (game.state.reputation = Math.min(100, Math.max(0, v)))
+			set: (v) => (game.state.reputation = Math.min(REPUTATION_MAX, Math.max(REPUTATION_MIN, v)))
 		},
 		{
 			id: 'vet',
@@ -141,7 +142,12 @@
 	}
 </script>
 
-<section class="dev" data-testid="reserve-dev-panel">
+<section
+	class="dev"
+	use:dragWindow={{ id: 'dev', handle: '.dev__head' }}
+	data-testid="reserve-dev-panel"
+>
+	<!-- Заголовок — ручка вікна: за нього його й тягнуть. -->
 	<header class="dev__head">
 		<b>{@html formatFont('Службове меню')}</b>
 		<button type="button" onclick={() => devPanel.close()} data-testid="reserve-dev-close-btn"
@@ -183,12 +189,14 @@
 <style>
 	.dev {
 		/*
-		 * Ліворуч знизу: праворуч мінікарта, унизу смуга кнопок, а зверху показники.
-		 * Меню розробника не має закривати саме те, що ним перевіряють.
+		 * Праворуч по центру висоти: унизу смуга кнопок і мінікарта, зверху показники,
+		 * а середина правого боку — єдине місце, де меню нічого з них не накриває. І
+		 * його все одно можна відтягнути за заголовок.
 		 */
 		position: fixed;
-		bottom: var(--space-sm);
-		left: var(--space-sm);
+		top: 50%;
+		right: var(--space-sm);
+		transform: translateY(-50%);
 		z-index: 50;
 		display: flex;
 		flex-direction: column;
@@ -204,6 +212,9 @@
 	}
 
 	.dev__head {
+		/* Ручка вікна: жест уздовж неї тягне меню, а не гортає сторінку. */
+		cursor: grab;
+		touch-action: none;
 		display: flex;
 		gap: var(--space-sm);
 		align-items: center;
