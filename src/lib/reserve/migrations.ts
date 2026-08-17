@@ -154,10 +154,25 @@ export function migrateV5toV6(raw: unknown): unknown {
 	};
 }
 
+/**
+ * Версія 6 → 7: зʼявилися браконьєри й рейнджери.
+ *
+ * Патруля в старій партії не було — і нуль тут не покарання, а факт: гравець його
+ * не наймав. Нальоту теж немає: починати відновлену партію з відкритого вікна
+ * «у вас крадуть тварину» означало б покарати за оновлення гри.
+ */
+export function migrateV6toV7(raw: unknown): unknown {
+	if (!isObject(raw)) return raw;
+	const staff = isObject(raw.staff) ? raw.staff : {};
+
+	return { ...raw, raid: null, staff: { ...staff, ranger: 0 } };
+}
+
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 	1: migrateV1toV2,
 	2: migrateV2toV3,
 	3: migrateV3toV4,
 	4: migrateV4toV5,
-	5: migrateV5toV6
+	5: migrateV5toV6,
+	6: migrateV6toV7
 };

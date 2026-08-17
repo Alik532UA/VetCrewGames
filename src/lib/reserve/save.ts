@@ -27,7 +27,7 @@ import type { ReserveState } from './types';
  * читається неправильно. **Разом із номером додається сходинка в `MIGRATIONS`** —
  * без неї підйом версії просто викидає чужу партію.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export interface SaveFile {
 	version: number;
@@ -144,6 +144,9 @@ function checkState(value: unknown): string | null {
 
 	for (const field of ['gameOver', 'victory', 'subsidy'])
 		if (typeof value[field] !== 'boolean') return field;
+
+	// Наліт або є, або його немає: третього стану подія не має.
+	if (value.raid !== null && !isObject(value.raid)) return 'raid';
 
 	// Журнал перевіряється на форму, а не на вміст: він ні на що не впливає, а
 	// зіпсований день історії — не привід викидати заповідник.

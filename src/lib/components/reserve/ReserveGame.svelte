@@ -9,7 +9,7 @@
 	import { ReserveController, type Speed } from '$lib/controllers/reserve.svelte';
 	import type { Quality } from '$lib/reserve/constants';
 	import { freeEnclosures, released, residents } from '$lib/reserve/simulation';
-	import type { ReserveCommand } from '$lib/reserve/types';
+	import type { RaidTactic, ReserveCommand } from '$lib/reserve/types';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { RouteRest } from '$lib/i18n/routing';
 	import ReserveHud from './ReserveHud.svelte';
@@ -17,6 +17,7 @@
 	import ReserveOutcome from './ReserveOutcome.svelte';
 	import ReserveSheet from './ReserveSheet.svelte';
 	import AnimalCard from './AnimalCard.svelte';
+	import RaidModal from './RaidModal.svelte';
 	import ReserveBar, { type Panel } from './ReserveBar.svelte';
 
 	/**
@@ -95,6 +96,32 @@
 	function command(cmd: ReserveCommand) {
 		const result = game.run(cmd);
 		if (!result.ok) toast.error(`reserve.reject.${result.reason}` as const);
+	}
+
+	/**
+	 * Наліт: рішення ухвалене — і людина мусить дізнатися, чим воно скінчилося.
+	 *
+	 * Без цього тактика виглядала б однаково при будь-якому результаті: вікно
+	 * закрилося, а що сталося з твариною й патрулем — шукай очима. Тому наслідок
+	 * читається зі СТАНУ після ходу, а не з тактики: тактика — це намір, а
+	 * повідомляти треба факт.
+	 */
+	function answerRaid(tactic: RaidTactic) {
+		const targetId = game.state.raid?.animalId;
+		const rangers = game.state.staff.ranger;
+
+		const result = game.run({ type: 'raid', tactic });
+		if (!result.ok) {
+			toast.error(`reserve.reject.${result.reason}` as const);
+			return;
+		}
+
+		if (game.state.animals.some((animal) => animal.id === targetId)) {
+			toast.success('reserve.raid.saved');
+		} else {
+			toast.error('reserve.raid.lost');
+		}
+		if (game.state.staff.ranger < rangers) toast.warn('reserve.raid.injured');
 	}
 
 	/** Тап по землі в режимі розміщення: ставимо замовлений вольєр і виходимо. */
@@ -179,6 +206,15 @@
 			onCancel={() => (pending = null)}
 			onRestart={startOver}
 		/>
+
+		{#if game.state.raid}
+			<RaidModal
+				target={game.state.animals.find((a) => a.id === game.state.raid?.animalId) ?? null}
+				hasRanger={game.state.staff.ranger > 0}
+				budget={game.state.budget}
+				onTactic={answerRaid}
+			/>
+		{/if}
 
 		{#if game.selected}
 			<AnimalCard

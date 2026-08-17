@@ -78,6 +78,9 @@ function play(seed: number, commands: ReserveCommand[], ticks: number): ReserveS
 const SCRIPT: ReserveCommand[] = [
 	{ type: 'hire', role: 'vet' },
 	{ type: 'hire', role: 'keeper' },
+	// Патруль тут не декорація: без нього браконьєри крадуть тварину десь на
+	// тридцятий день, і перевірка, яка міряє зовсім інше, ставала б лотереєю.
+	{ type: 'hire', role: 'ranger' },
 	// Різні клітинки: два вольєри на одному місці більше не ставляться.
 	{ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } },
 	{ type: 'build', size: 2, quality: 2, cell: { x: 3, z: 0 } },

@@ -5,8 +5,6 @@ import {
 	HEAL_IMPACT,
 	HEAL_REPUTATION,
 	REPUTATION_DECAY_PER_DAY,
-	REPUTATION_MAX,
-	REPUTATION_MIN,
 	DONATION_PER_REPUTATION,
 	QUALITY_SPEED,
 	RECOVERY_PER_VET_DAY,
@@ -22,6 +20,8 @@ import {
 } from './constants';
 import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
 import { closeDay } from './journal';
+import { expireRaid, maybeRaid } from './raids';
+import { addReputation } from './roll';
 import { comfortOf, speciesById } from './species';
 import type { Animal, Enclosure, ReserveState } from './types';
 
@@ -83,7 +83,7 @@ function comfortFor(state: ReserveState, animal: Animal): number {
 function settleContracts(state: ReserveState, day: number): void {
 	const missed = state.contracts.filter((c) => day > c.dueDay && !isDone(state, c));
 	for (const contract of missed) {
-		state.reputation = Math.max(REPUTATION_MIN, state.reputation - contract.penalty);
+		addReputation(state, -contract.penalty);
 	}
 	state.contracts = state.contracts.filter((c) => !missed.includes(c));
 
@@ -132,7 +132,7 @@ export function endOfDay(state: ReserveState): void {
 				// Вилікувана тварина в неволі допомагає природі мало (+1), а от
 				// публіці видно саме одужання (+5).
 				state.impact += HEAL_IMPACT;
-				state.reputation = Math.min(REPUTATION_MAX, state.reputation + HEAL_REPUTATION);
+				addReputation(state, HEAL_REPUTATION);
 			}
 		}
 	}
@@ -155,10 +155,20 @@ export function endOfDay(state: ReserveState): void {
 
 	// Публіка забуває: без щоденного спаду шкала насичується за десять хвилин
 	// і перестає бути рішенням.
-	state.reputation = Math.max(REPUTATION_MIN, state.reputation - REPUTATION_DECAY_PER_DAY);
+	addReputation(state, -REPUTATION_DECAY_PER_DAY);
 
 	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
 	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;
+
+	/*
+	 * Браконьєри — остання подія доби, і порядок тут важливий.
+	 *
+	 * Спершу закривається невирішений наліт (терпіння події вийшло), і лише потім
+	 * кидається новий: інакше сьогоднішнє вікно перетерло б учорашнє, і людина
+	 * втратила б тварину, навіть не побачивши, що її прийшли крати.
+	 */
+	expireRaid(state, day);
+	maybeRaid(state, day);
 
 	// Журнал — ОСТАННІМ рядком: він міряє добу, тож мусить бачити її всю.
 	closeDay(state, day);

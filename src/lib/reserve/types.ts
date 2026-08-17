@@ -89,6 +89,17 @@ export interface JournalDay extends MetricSet {
 	day: number;
 }
 
+/** Тактика проти браконьєрів. Три рішення з технічного завдання. */
+export type RaidTactic = 'drone' | 'ambush' | 'ignore';
+
+/** Наліт, який чекає на рішення. */
+export interface Raid {
+	/** Кого прийшли крати. */
+	animalId: number;
+	/** Якого дня прийшли: за ним рахується терпіння події. */
+	day: number;
+}
+
 export interface ReserveState {
 	/**
 	 * Біом заповідника. Обирається ОДИН раз, на початку партії, і далі не
@@ -144,6 +155,13 @@ export interface ReserveState {
 	journal: JournalDay[];
 	/** Зріз показників на початку поточної доби. З ним порівнюється кінець. */
 	dayStart: MetricSet;
+	/**
+	 * Наліт браконьєрів, який чекає на рішення. `null` — тихо.
+	 *
+	 * У стані, а не в інтерфейсі: наліт — це подія симуляції з дедлайном, і
+	 * закрита вкладка не має її скасовувати.
+	 */
+	raid: Raid | null;
 	/** Наступні вільні `id`. */
 	nextAnimalId: number;
 	nextEnclosureId: number;
@@ -161,7 +179,8 @@ export type ReserveCommand =
 	| { type: 'dismiss'; role: StaffRole }
 	| { type: 'campaign' }
 	| { type: 'accept'; contractId: number }
-	| { type: 'claim'; contractId: number };
+	| { type: 'claim'; contractId: number }
+	| { type: 'raid'; tactic: RaidTactic };
 
 /** Чому хід не пройшов. Інтерфейсу цього досить, щоб пояснити людині. */
 export type RejectReason =
@@ -184,6 +203,10 @@ export type RejectReason =
 	| 'already-sound'
 	| 'not-an-upgrade'
 	| 'campaign-done'
+	/** Нальоту немає — вирішувати нічого. */
+	| 'no-raid'
+	/** Засідку нема кому влаштувати: патруля немає. */
+	| 'no-ranger'
 	/** Наступне місце в сітці випало б за межу ділянки. */
 	| 'out-of-bounds'
 	/** Клітинка вже під іншим вольєром. */
