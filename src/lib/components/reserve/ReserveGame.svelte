@@ -7,7 +7,8 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
-	import { reserveHalf, type Quality } from '$lib/reserve/constants';
+	import type { Quality } from '$lib/reserve/constants';
+	import { reserveHalf } from '$lib/reserve/plot';
 	import {
 		freeEnclosures,
 		populatedSites,
@@ -258,7 +259,12 @@
 		 * колонкою на 1100px означало б залишити третину екрана тлом.
 		 */
 		width: 100%;
-		padding: 0 var(--space-sm) var(--space-sm);
+		/*
+		 * Відступ ЗВЕРХУ теж потрібен: показники прилипали до шапки сайту й читалися
+		 * як її продовження. Знизу такий самий — смуга кнопок від нього й виглядає
+		 * припасованою до вікна.
+		 */
+		padding: var(--space-sm);
 	}
 
 	.reserve-fill {

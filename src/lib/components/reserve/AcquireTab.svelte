@@ -79,25 +79,13 @@
 		</p>
 	{/if}
 
-	<label class="take__field">
-		<span>{@html formatFont(t('reserve.pickEnclosure'))}</span>
-		<select
-			value={home?.id ?? 0}
-			onchange={(event) => (enclosureId = Number(event.currentTarget.value))}
-			data-testid="reserve-enclosure-select"
-		>
-			{#each fitting as enclosure (enclosure.id)}
-				<option value={enclosure.id}>
-					{@html formatFont(t('reserve.enclosure'))}
-					{enclosure.id} · {@html formatFont(t('reserve.size'))}
-					{enclosure.size} · {@html formatFont(t('reserve.comfort'))} ×{picked
-						? comfortOf(picked, enclosure.size).toFixed(1)
-						: '1'}
-				</option>
-			{/each}
-		</select>
-	</label>
+	<!--
+		Або вибір вольєра, або попередження — ніколи разом.
 
+		Доти на екрані стояли обидва: порожній список «куди поселити» й напис, що
+		селити нікуди. Це два різні стани того самого питання, і показувати їх
+		одночасно означає казати дві речі, з яких правдива одна.
+	-->
 	{#if fitting.length === 0}
 		<div class="warn" data-testid="reserve-no-free-text">
 			<span>{@html formatFont(t('reserve.noFreeEnclosure'))}</span>
@@ -109,6 +97,31 @@
 			>
 				{@html formatFont(t('reserve.build'))}
 			</button>
+		</div>
+	{:else}
+		<h3 class="take__title">{@html formatFont(t('reserve.pickEnclosure'))}</h3>
+		<!--
+			Вольєри — КНОПКИ, а не випадний список, з тієї самої причини, що й види:
+			кожен вольєр несе своє число комфорту, і побачити його треба ДО вибору, а
+			не після. Список показував лише той рядок, на який уже натиснули.
+		-->
+		<div class="take__row" role="group" aria-label={t('reserve.pickEnclosure')}>
+			{#each fitting as enclosure (enclosure.id)}
+				<button
+					type="button"
+					class="chip chip--home"
+					class:chip--on={home?.id === enclosure.id}
+					aria-pressed={home?.id === enclosure.id}
+					onclick={() => (enclosureId = enclosure.id)}
+					data-testid="reserve-enclosure-{enclosure.id}-btn"
+				>
+					<b>#{enclosure.id}</b>
+					<span class="chip__meta">
+						{@html formatFont(t('reserve.size'))}
+						{enclosure.size} · ×{picked ? comfortOf(picked, enclosure.size).toFixed(1) : '1'}
+					</span>
+				</button>
+			{/each}
 		</div>
 	{/if}
 
@@ -185,20 +198,20 @@
 		opacity: 0.75;
 	}
 
-	.take__field {
+	/* Кнопка вольєра ширша за кнопку виду: у неї два рядки — номер і комфорт. */
+	.chip--home {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
-		margin-top: var(--space-sm);
+		gap: 2px;
+		align-items: flex-start;
+		padding: 4px var(--space-sm);
+		text-align: left;
 	}
 
-	.take__field select {
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
+	.chip__meta {
+		font-size: var(--font-size-sm);
+		font-variant-numeric: tabular-nums;
+		opacity: 0.8;
 	}
 
 	.warn {

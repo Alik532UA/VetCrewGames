@@ -75,6 +75,8 @@ export const reserve = {
 	'reserve.build': 'Побудувати вольєр',
 	'reserve.demolish': 'Знести',
 	'reserve.size': 'Розмір',
+	'reserve.sizeDown': 'Менший вольєр',
+	'reserve.sizeUp': 'Більший вольєр',
 	'reserve.free': 'Вільний',
 	'reserve.needs': 'Потрібен вольєр',
 	'reserve.needsMin': 'мінімум',

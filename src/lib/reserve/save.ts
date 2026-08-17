@@ -1,5 +1,5 @@
 import { ORIGINS, QUALITIES, REPUTATION_MAX, REPUTATION_MIN, WAGES } from './constants';
-import { ENCLOSURE_SIZES, RESERVE_BIOMES, speciesById } from './species';
+import { isEnclosureSize, RESERVE_BIOMES, speciesById } from './species';
 import type { ReserveState } from './types';
 
 /**
@@ -102,7 +102,7 @@ function checkAnimal(value: unknown, index: number): string | null {
 function checkEnclosure(value: unknown, index: number): string | null {
 	if (!isObject(value)) return `enclosures[${index}] не обʼєкт`;
 	if (!isNumber(value.id)) return `enclosures[${index}].id`;
-	if (!isNumber(value.size) || !ENCLOSURE_SIZES.includes(value.size as never))
+	if (!isNumber(value.size) || !isEnclosureSize(value.size as number))
 		return `enclosures[${index}].size = ${String(value.size)}`;
 	if (!isNumber(value.quality) || !QUALITIES.includes(value.quality as never))
 		return `enclosures[${index}].quality = ${String(value.quality)}`;

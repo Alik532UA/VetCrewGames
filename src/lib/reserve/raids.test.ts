@@ -241,7 +241,7 @@ describe('браконьєри', () => {
 		state.offered = { ...state.contracts[0], id: 2 };
 
 		// Клітинка близька до центру: у фонду без імені ділянка найменша.
-		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 3, z: 0 } });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 5, z: 0 } });
 		move(state, {
 			type: 'acquire',
 			origin: 'black-market',

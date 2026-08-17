@@ -1,7 +1,8 @@
-import { ENCLOSURE_IMPACT, QUALITIES, reserveHalf } from './constants';
+import { ENCLOSURE_IMPACT, QUALITIES } from './constants';
+import { reserveHalf } from './plot';
 import { placementProblem } from './placement';
 import { enclosurePrice, repairPrice, upgradePrice } from './prices';
-import { ENCLOSURE_SIZES } from './species';
+import { isEnclosureSize } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState, Site } from './types';
 
 /**
@@ -22,8 +23,7 @@ export function buildings(
 ): CommandResult {
 	switch (command.type) {
 		case 'build': {
-			if (!ENCLOSURE_SIZES.includes(command.size as (typeof ENCLOSURE_SIZES)[number]))
-				return { ok: false, reason: 'bad-size' };
+			if (!isEnclosureSize(command.size)) return { ok: false, reason: 'bad-size' };
 			if (!QUALITIES.includes(command.quality)) return { ok: false, reason: 'bad-quality' };
 
 			/*

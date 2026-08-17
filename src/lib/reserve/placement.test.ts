@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { placementProblem } from './placement';
-import { reserveHalf } from './constants';
+import { reserveHalf } from './plot';
 import { CELL_WORLD, footprintOf } from './grid';
 import type { Enclosure } from './types';
 

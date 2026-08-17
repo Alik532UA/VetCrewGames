@@ -71,6 +71,8 @@ export const reserve = {
 	'reserve.build': 'Gehege bauen',
 	'reserve.demolish': 'Abreißen',
 	'reserve.size': 'Größe',
+	'reserve.sizeDown': 'Kleineres Gehege',
+	'reserve.sizeUp': 'Größeres Gehege',
 	'reserve.free': 'Frei',
 	'reserve.needs': 'Braucht ein Gehege',
 	'reserve.needsMin': 'Minimum',

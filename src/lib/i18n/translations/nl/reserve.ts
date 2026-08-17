@@ -70,6 +70,8 @@ export const reserve = {
 	'reserve.build': 'Verblijf bouwen',
 	'reserve.demolish': 'Slopen',
 	'reserve.size': 'Grootte',
+	'reserve.sizeDown': 'Kleiner verblijf',
+	'reserve.sizeUp': 'Groter verblijf',
 	'reserve.free': 'Vrij',
 	'reserve.needs': 'Heeft een verblijf nodig',
 	'reserve.needsMin': 'minimaal',

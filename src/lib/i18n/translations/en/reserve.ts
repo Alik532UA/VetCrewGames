@@ -69,6 +69,8 @@ export const reserve = {
 	'reserve.build': 'Build an enclosure',
 	'reserve.demolish': 'Demolish',
 	'reserve.size': 'Size',
+	'reserve.sizeDown': 'Smaller enclosure',
+	'reserve.sizeUp': 'Bigger enclosure',
 	'reserve.free': 'Free',
 	'reserve.needs': 'Needs an enclosure',
 	'reserve.needsMin': 'minimum',

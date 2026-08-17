@@ -62,7 +62,7 @@ describe('формат збереження', () => {
 		if (!saved.ok) return;
 
 		for (const state of [straight, saved.state]) {
-			move(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
+			move(state, { type: 'build', size: 5, quality: 2, cell: { x: 6, z: 0 } });
 			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
 			tick(state, TICKS_PER_DAY * 5);
 		}

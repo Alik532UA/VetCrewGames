@@ -154,7 +154,7 @@ describe('журнал показників', () => {
 		const one = playing();
 		const two = playing();
 		for (const state of [one, two]) {
-			move(state, { type: 'build', size: 3, quality: 1, cell: { x: 1, z: 1 } });
+			move(state, { type: 'build', size: 3, quality: 1, cell: { x: 5, z: 5 } });
 			day(state, 4);
 		}
 		expect(JSON.stringify(one)).toBe(JSON.stringify(two));

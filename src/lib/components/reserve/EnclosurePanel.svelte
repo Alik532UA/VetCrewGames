@@ -3,17 +3,14 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { QUALITIES, type Quality } from '$lib/reserve/constants';
 	import { enclosurePrice, repairPrice, upgradePrice } from '$lib/reserve/prices';
-	import { footprintOf } from '$lib/reserve/grid';
-	import { ENCLOSURE_SIZES } from '$lib/reserve/species';
+	import SizePicker from './SizePicker.svelte';
 	import type { Enclosure, ReserveCommand } from '$lib/reserve/types';
 
 	/**
 	 * Вольєри: вибрати розмір і якість, потім поставити на карту.
 	 *
-	 * Розмір — КНОПКИ, а не повзунок. Повзунок годиться для величини, у якої
-	 * важлива тенденція; тут кожне з десяти значень — окреме рішення з окремою
-	 * ціною і окремим списком тих, кого воно вміщає. Ловити третину піксельного
-	 * ходу, щоб трапити в «четвірку для лева», — не той жест.
+	 * Розмір вибирає `SizePicker`: лічильник плюс пʼять заготовок за грошима.
+	 * Пʼятдесят кнопок не влазять на екран, а повзунок гірший за них обох.
 	 *
 	 * Сама будівля звідси НЕ ставиться: панель лише готує замовлення, а місце
 	 * гравець тицяє на карті. Тому кнопка й називається «оберіть місце».
@@ -34,10 +31,12 @@
 		 * значення й діє як початкове, а далі його можна змінити кнопками.
 		 */
 		initialSize?: number;
+		/** Гроші фонду: від них залежать заготовки розміру й попередження про ціну. */
+		budget: number;
 		onCommand: (command: ReserveCommand) => void;
 	}
 
-	let { enclosures, occupied, effectiveQualityOf, onPlace, onCommand, initialSize }: Props =
+	let { enclosures, occupied, effectiveQualityOf, onPlace, onCommand, initialSize, budget }: Props =
 		$props();
 
 	/*
@@ -57,22 +56,7 @@
 
 <div class="build">
 	<h3 class="build__title">{@html formatFont(t('reserve.size'))}</h3>
-	<div class="build__row" role="group" aria-label={t('reserve.size')}>
-		{#each ENCLOSURE_SIZES as value (value)}
-			<button
-				type="button"
-				class="chip chip--size"
-				class:chip--on={size === value}
-				aria-pressed={size === value}
-				onclick={() => (size = value)}
-				data-testid="reserve-size-{value}-btn"
-			>
-				{value}
-			</button>
-		{/each}
-	</div>
-	<!-- Слід у клітинках: розмір — це не лише ціна, а й зайнята земля. -->
-	<p class="build__note">{footprintOf(size)}×{footprintOf(size)}</p>
+	<SizePicker {size} {quality} {budget} onSize={(value) => (size = value)} />
 
 	<h3 class="build__title">{@html formatFont(t('reserve.quality'))}</h3>
 
@@ -197,20 +181,6 @@
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
-	}
-
-	/* Десять розмірів мусять уміститися в два рядки навіть на 320px. */
-	.chip--size {
-		min-width: 44px;
-		padding: 0;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.build__note {
-		margin: 0;
-		font-size: var(--font-size-sm);
-		font-variant-numeric: tabular-nums;
-		opacity: 0.7;
 	}
 
 	.chip--on {

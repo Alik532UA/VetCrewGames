@@ -90,6 +90,7 @@
 			{occupied}
 			effectiveQualityOf={effectiveQuality}
 			initialSize={buildSize}
+			budget={state.budget}
 			{onPlace}
 			{onCommand}
 		/>

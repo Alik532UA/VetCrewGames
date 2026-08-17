@@ -28,7 +28,6 @@ import {
 	HEAL_REPUTATION,
 	IMPACT_TO_WIN,
 	REPUTATION_DECAY_PER_DAY,
-	reserveHalf,
 	WEAR_PER_DAY,
 	type Quality
 } from './constants';
@@ -36,7 +35,8 @@ import { enclosurePrice, repairPrice } from './prices';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
 import { cellsOf, worldOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
-import type { ReserveBiome } from './species';
+import { reserveHalf } from './plot';
+import { MAX_ENCLOSURE_SIZE, type ReserveBiome } from './species';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
 
@@ -97,7 +97,7 @@ const SCRIPT: ReserveCommand[] = [
 	{ type: 'hire', role: 'ranger' },
 	// Різні клітинки: два вольєри на одному місці більше не ставляться.
 	{ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } },
-	{ type: 'build', size: 2, quality: 2, cell: { x: 3, z: 0 } },
+	{ type: 'build', size: 2, quality: 2, cell: { x: 5, z: 0 } },
 	// Обидва види лісові: партія за замовчуванням розгортається в лісі.
 	{ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 },
 	{ type: 'acquire', origin: 'rescue', speciesId: 'fox', enclosureId: 2 }
@@ -189,17 +189,33 @@ describe('вольєри', () => {
 		expect(enclosurePrice(8)).toBe(enclosurePrice(4) * 4);
 	});
 
+	/** Межа рахується від константи, а не від числа в тесті: вона вже раз виросла. */
 	it('розміру поза шкалою не існує', () => {
 		const state = createReserve(1);
-		expect(move(state, { type: 'build', size: 11, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
-			ok: false,
-			reason: 'bad-size'
-		});
-		expect(move(state, { type: 'build', size: 0, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
-			ok: false,
-			reason: 'bad-size'
-		});
+		for (const size of [MAX_ENCLOSURE_SIZE + 1, 0, -3, 2.5]) {
+			expect(
+				move(state, { type: 'build', size, quality: 2, cell: { x: 0, z: 0 } }),
+				`розмір ${size}`
+			).toEqual({ ok: false, reason: 'bad-size' });
+		}
 		expect(home(state).enclosures).toEqual([]);
+	});
+
+	/** А найбільший дозволений — проходить, якщо на нього є гроші й земля. */
+	it('найбільший вольєр ставиться', () => {
+		const state = createReserve(1);
+		state.budget = 100_000_000;
+		state.reputation = 100;
+		const corner = -Math.floor(MAX_ENCLOSURE_SIZE / 2);
+		expect(
+			move(state, {
+				type: 'build',
+				size: MAX_ENCLOSURE_SIZE,
+				quality: 1,
+				cell: { x: corner, z: corner }
+			})
+		).toEqual({ ok: true });
+		expect(home(state).enclosures[0].size).toBe(MAX_ENCLOSURE_SIZE);
 	});
 
 	/**
@@ -249,7 +265,7 @@ describe('вольєри', () => {
 
 	it('порожній вольєр можна знести, зайнятий — ні', () => {
 		const { state } = withLion(4);
-		move(state, { type: 'build', size: 2, quality: 2, cell: { x: 4, z: 0 } });
+		move(state, { type: 'build', size: 2, quality: 2, cell: { x: 6, z: 0 } });
 
 		expect(move(state, { type: 'demolish', enclosureId: 1 })).toEqual({
 			ok: false,
@@ -540,7 +556,7 @@ describe('два списки замість одного', () => {
 	 */
 	it('випущений залишає список мешканців і потрапляє в окремий', () => {
 		const { state } = withLion(4);
-		move(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
+		move(state, { type: 'build', size: 5, quality: 2, cell: { x: 6, z: 0 } });
 		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
 
 		expect(residents(state)).toHaveLength(2);

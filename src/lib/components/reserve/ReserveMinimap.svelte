@@ -18,6 +18,15 @@
 	 * Малюється SVG, а не другим полотном: тривимірний рушій уже завантажений, але
 	 * друга сцена коштувала б другого рендера щокадру заради ста пікселів. Плоскій
 	 * карті згори перспектива не потрібна взагалі.
+	 *
+	 * Вміст ПОВЕРНУТИЙ на 45°, і це головне в ній.
+	 *
+	 * Сцена ізометрична: горизонталь екрана — це діагональ світу. Мінікарта ж
+	 * малювала світ як план — північ угору, — і два зображення дивилися під різними
+	 * кутами. Гравець мусив щоразу перекладати одне в інше в голові: «річка на
+	 * мінікарті йде вправо, а на екрані — вправо-вниз». Поворот прибирає переклад:
+	 * що вгорі на екрані, те й угорі на мінікарті. Заразом рамка видимої області
+	 * стає рівним прямокутником, а не ромбом.
 	 */
 	interface Props {
 		view: MapView;
@@ -101,12 +110,37 @@
 			.join(' ');
 	});
 
-	/** Тап по мінікарті: переводимо піксель картинки у світову точку. */
+	/**
+	 * Поворот світу під кут камери.
+	 *
+	 * Мінус 45°, бо саме на 45° повернута камера: у неї горизонталь екрана — це
+	 * напрямок (1, −1) світу. Обертається ВЕСЬ вміст одною групою, а не кожна
+	 * фігура окремо: інакше довелося б повертати ще й тап по мінікарті, і два
+	 * повороти розійшлися б на першій же правці.
+	 *
+	 * Через поворот квадрат світу перестає вміщатися в квадрат картинки — його
+	 * діагональ довша за сторону в 1.41 раза, — тож `viewBox` розширений на цей
+	 * самий множник. Інакше кути карти зрізалися б.
+	 */
+	const TILT = -45;
+	const VIEW = $derived(HALF * Math.SQRT2);
+
+	/**
+	 * Тап по мінікарті: переводимо піксель картинки у світову точку.
+	 *
+	 * Поворот доводиться скасовувати вручну: піксель прийшов у системі КАРТИНКИ, а
+	 * камері потрібні координати світу. Кут той самий `TILT`, лише зі зворотним
+	 * знаком — і саме тому він один на обидва місця, а не два схожі числа.
+	 */
 	function jump(event: MouseEvent) {
 		const box = (event.currentTarget as SVGElement).getBoundingClientRect();
-		const x = ((event.clientX - box.left) / box.width) * HALF * 2 - HALF;
-		const z = ((event.clientY - box.top) / box.height) * HALF * 2 - HALF;
-		view.look(x, z);
+		const px = ((event.clientX - box.left) / box.width) * VIEW * 2 - VIEW;
+		const py = ((event.clientY - box.top) / box.height) * VIEW * 2 - VIEW;
+
+		const radians = (-TILT * Math.PI) / 180;
+		const cos = Math.cos(radians);
+		const sin = Math.sin(radians);
+		view.look(px * cos + py * sin, -px * sin + py * cos);
 	}
 </script>
 
@@ -117,43 +151,45 @@
 		поруч є повзунок і сама сцена, якою так само можна керувати.
 	-->
 	<svg
-		viewBox="{-HALF} {-HALF} {HALF * 2} {HALF * 2}"
+		viewBox="{-VIEW} {-VIEW} {VIEW * 2} {VIEW * 2}"
 		role="presentation"
 		onclick={jump}
 		data-testid="reserve-minimap-img"
 	>
-		<rect x={-HALF} y={-HALF} width={HALF * 2} height={HALF * 2} class="mini__ground" />
+		<g transform="rotate({TILT})">
+			<rect x={-HALF} y={-HALF} width={HALF * 2} height={HALF * 2} class="mini__ground" />
 
-		{#each terrain.rivers as path, index (index)}
-			<polyline
-				points={path.points.map((p) => `${p.x.toFixed(1)},${p.z.toFixed(1)}`).join(' ')}
-				class="mini__river"
-				stroke-width={path.width * 2}
+			{#each terrain.rivers as path, index (index)}
+				<polyline
+					points={path.points.map((p) => `${p.x.toFixed(1)},${p.z.toFixed(1)}`).join(' ')}
+					class="mini__river"
+					stroke-width={path.width * 2}
+				/>
+			{/each}
+
+			{#each lakes as item, index (index)}
+				<circle cx={item.x} cy={item.z} r={waterRadius(item.scale)} class="mini__water" />
+			{/each}
+
+			{#each green as item, index (index)}
+				<circle cx={item.x} cy={item.z} r={0.5 * item.scale} class="mini__green" />
+			{/each}
+
+			<!-- Межа забудови — той самий пунктирний квадрат, що й на сцені. -->
+			<rect
+				x={-plotHalf}
+				y={-plotHalf}
+				width={plotHalf * 2}
+				height={plotHalf * 2}
+				class="mini__bound"
 			/>
-		{/each}
 
-		{#each lakes as item, index (index)}
-			<circle cx={item.x} cy={item.z} r={waterRadius(item.scale)} class="mini__water" />
-		{/each}
+			{#each boxes as box (box.id)}
+				<rect x={box.x} y={box.z} width={box.w} height={box.h} class="mini__box" />
+			{/each}
 
-		{#each green as item, index (index)}
-			<circle cx={item.x} cy={item.z} r={0.5 * item.scale} class="mini__green" />
-		{/each}
-
-		<!-- Межа забудови — той самий пунктирний квадрат, що й на сцені. -->
-		<rect
-			x={-plotHalf}
-			y={-plotHalf}
-			width={plotHalf * 2}
-			height={plotHalf * 2}
-			class="mini__bound"
-		/>
-
-		{#each boxes as box (box.id)}
-			<rect x={box.x} y={box.z} width={box.w} height={box.h} class="mini__box" />
-		{/each}
-
-		<polygon points={frame} class="mini__frame" />
+			<polygon points={frame} class="mini__frame" />
+		</g>
 	</svg>
 
 	<input

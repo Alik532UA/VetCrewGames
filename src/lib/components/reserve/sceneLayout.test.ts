@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CELL, placeEnclosures } from './sceneLayout';
 import { spiralCell, worldOf } from '$lib/reserve/grid';
 import { inWater, nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
-import { RESERVE_HALF_MAX } from '$lib/reserve/constants';
+import { RESERVE_HALF_MAX } from '$lib/reserve/plot';
 import { RESERVE_BIOMES } from '$lib/reserve/species';
 import { DEFAULT_ZOOM } from './isoCamera';
 import type { Animal, Enclosure } from '$lib/reserve/types';
@@ -280,13 +280,21 @@ describe('генерація рельєфу', () => {
 				const reach = Math.max(...path.points.map((p) => Math.hypot(p.x, p.z)));
 				expect(reach, biome).toBeGreaterThanOrEqual(WORLD_RADIUS * 0.9);
 
-				// Сусідні точки стоять щільно: розрив читався б як обрив русла.
+				/*
+				 * Точки стоять густіше, ніж річка широка.
+				 *
+				 * Саме це й означає «берег не гранований»: смуга не має розривів за
+				 * побудовою, але якщо крок довший за ширину, вигини читаються ламаною.
+				 * Доти тут стояло «менше двох одиниць» — число з часів, коли світ був
+				 * удесятеро менший, і після його зростання перевірка почала падати на
+				 * цілком гладкому руслі.
+				 */
 				for (let i = 1; i < path.points.length; i++) {
 					const step = Math.hypot(
 						path.points[i].x - path.points[i - 1].x,
 						path.points[i].z - path.points[i - 1].z
 					);
-					expect(step, 'розрив у руслі').toBeLessThan(2);
+					expect(step, 'русло грановане: крок довший за ширину').toBeLessThan(path.width);
 				}
 			}
 		}
