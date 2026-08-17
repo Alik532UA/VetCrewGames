@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import ReserveMinimap from './ReserveMinimap.svelte';
+	import SceneLoading from './SceneLoading.svelte';
 	import { MapView } from './mapView.svelte';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
@@ -55,6 +56,15 @@
 	 */
 	let Scene = $state<typeof import('./ReserveScene.svelte').default | null>(null);
 
+	/**
+	 * Скільки заповідника вже стоїть: 0 → 1.
+	 *
+	 * Нуль означає й «рушій ще їде мережею», і «сцена ще не почалася» — для гравця
+	 * це той самий стан очікування, і розділяти його двома різними смужками нема
+	 * чого. Одиниця прибирає смужку.
+	 */
+	let built = $state(0);
+
 	onMount(() => {
 		import('./ReserveScene.svelte').then((module) => {
 			Scene = module.default;
@@ -83,9 +93,18 @@
 			{onSelect}
 			{placingSize}
 			{onGround}
+			onProgress={(done) => (built = done)}
 		/>
 	{/if}
 </div>
+
+<!--
+	Смужка поступу живе ПОЗА `.stage`: та лежить під усім вмістом (`z-index: -1`),
+	і напис у ній виявився б за картою.
+-->
+{#if built < 1}
+	<SceneLoading done={built} />
+{/if}
 
 {#if Scene && showMinimap}
 	<ReserveMinimap {view} {biome} {seed} {enclosures} {plotHalf} />

@@ -28,6 +28,8 @@
 		onSelect: (id: number) => void;
 		/** Розмір вольєра, який чекає місця; `null` — звичайний режим. */
 		placingSize: number | null;
+		/** Скільки рельєфу вже стоїть на сцені: 0 → 1. */
+		onProgress: (done: number) => void;
 		onGround: (cell: { x: number; z: number }) => void;
 	}
 
@@ -41,7 +43,8 @@
 		selectedId,
 		onSelect,
 		placingSize,
-		onGround
+		onGround,
+		onProgress
 	}: Props = $props();
 </script>
 
@@ -58,6 +61,7 @@
 			{onSelect}
 			{placingSize}
 			{onGround}
+			{onProgress}
 		/>
 	</Canvas>
 </div>

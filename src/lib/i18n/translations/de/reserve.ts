@@ -1,5 +1,6 @@
 export const reserve = {
 	'reserve.title': 'Reservat',
+	'reserve.loading': 'Reservat wird vorbereitet',
 	'reserve.day': 'Tag',
 	'reserve.budget': 'Budget',
 	'reserve.impact': 'Nutzen für den Planeten',

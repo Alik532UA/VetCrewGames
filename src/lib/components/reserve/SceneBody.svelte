@@ -6,10 +6,12 @@
 	import { CELL, placeEnclosures } from './sceneLayout';
 	import { placementProblem, type PlacementProblem } from '$lib/reserve/placement';
 	import { createPicker } from './picking';
+	import { growInBatches } from './growInBatches.svelte';
 	import PlotBorder from './PlotBorder.svelte';
 
 	import { footprintOf, worldOf, type Cell } from '$lib/reserve/grid';
 	import { nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
+	import { GROUND_COLOR } from '$lib/reserve/palette';
 	import DecorPiece from './DecorPiece.svelte';
 	import EnclosureShape from './EnclosureShape.svelte';
 	import RiverRibbon from './RiverRibbon.svelte';
@@ -38,6 +40,14 @@
 		 */
 		placingSize: number | null;
 		onGround: (cell: { x: number; z: number }) => void;
+		/**
+		 * Скільки рельєфу вже стоїть на сцені: 0 → 1.
+		 *
+		 * Не косметика для смужки, а єдиний спосіб показати, що сторінка жива:
+		 * рельєфу тут шістсот сімдесят фігур, і разом вони блокували головний потік
+		 * на дві з половиною секунди — виміряно однією задачею на 2663 мс.
+		 */
+		onProgress: (done: number) => void;
 		seed: number;
 		enclosures: Enclosure[];
 		animals: Animal[];
@@ -55,7 +65,8 @@
 		selectedId,
 		onSelect,
 		placingSize,
-		onGround
+		onGround,
+		onProgress
 	}: Props = $props();
 
 	const placing = $derived(placingSize !== null);
@@ -180,6 +191,15 @@
 		};
 	});
 
+	/**
+	 * Рельєф виростає ПОРЦІЯМИ: шістсот сімдесят фігур одним махом блокували
+	 * головний потік на дві з половиною секунди — див. `growInBatches`.
+	 */
+	const growth = growInBatches(
+		() => terrain.items.length,
+		(done) => onProgress(done)
+	);
+
 	const placed = $derived(placeEnclosures(enclosures, animals));
 
 	/** Слід привида у світі: центр і сторона рахуються як у справжнього вольєра. */
@@ -206,14 +226,6 @@
 	 * стає рідшою, а далі йде рівна земля до горизонту.
 	 */
 	const GROUND_SIDE = WORLD_RADIUS * 4;
-
-	/** Колір ґрунту біома. Тундра сіра, тропіки темно-зелені. */
-	const GROUND: Record<ReserveBiome, string> = {
-		forest: '#6f8f5a',
-		tundra: '#9aa7a8',
-		savanna: '#c2a95f',
-		rainforest: '#4c7a43'
-	};
 </script>
 
 <T.OrthographicCamera
@@ -233,7 +245,7 @@
 -->
 <T.Mesh position={[0, -0.55, 0]}>
 	<T.BoxGeometry args={[GROUND_SIDE, 1, GROUND_SIDE]} />
-	<T.MeshStandardMaterial color={GROUND[biome]} />
+	<T.MeshStandardMaterial color={GROUND_COLOR[biome]} />
 </T.Mesh>
 
 <!--
@@ -251,7 +263,11 @@
 	<RiverRibbon {path} color="#3f7fa8" />
 {/each}
 
-{#each terrain.items as item, index (`${item.kind}-${index}`)}
+<!--
+	Рельєф з'являється порціями — див. `shown`. Ключ від індексу лишається чинним:
+	зріз тільки РОСТЕ, тож у вже поставленої фігури індекс не змінюється.
+-->
+{#each terrain.items.slice(0, growth.shown) as item, index (`${item.kind}-${index}`)}
 	<DecorPiece {item} {biome} />
 {/each}
 

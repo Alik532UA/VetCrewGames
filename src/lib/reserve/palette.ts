@@ -84,3 +84,16 @@ export const SCATTERED: Array<keyof Palette> = [
 	'boulder',
 	'cliff'
 ];
+
+/**
+ * Колір ґрунту біома. Тундра сіра, тропіки темно-зелені.
+ *
+ * Тут, а не в розмітці сцени: це дані про біом — такі самі, як кількість ялин
+ * поруч. Сцена малює те, що їй дали, і не мусить знати, якого кольору савана.
+ */
+export const GROUND_COLOR: Record<ReserveBiome, string> = {
+	forest: '#6f8f5a',
+	tundra: '#9aa7a8',
+	savanna: '#c2a95f',
+	rainforest: '#4c7a43'
+};
