@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { RESERVE_RADIUS } from '$lib/reserve/constants';
 	import { cellsOf, worldOf } from '$lib/reserve/grid';
 	import { terrainOf, waterRadius, WORLD_RADIUS } from '$lib/reserve/terrain';
 	import type { ReserveBiome } from '$lib/reserve/species';
@@ -25,9 +24,11 @@
 		biome: ReserveBiome;
 		seed: number;
 		enclosures: Enclosure[];
+		/** Півсторона ділянки: мінікарта показує ту саму межу, що й сцена. */
+		plotHalf: number;
 	}
 
-	let { view, biome, seed, enclosures }: Props = $props();
+	let { view, biome, seed, enclosures, plotHalf }: Props = $props();
 
 	/** Півсторона квадрата, який показує мінікарта: увесь згенерований світ. */
 	const HALF = WORLD_RADIUS;
@@ -139,8 +140,14 @@
 			<circle cx={item.x} cy={item.z} r={0.5 * item.scale} class="mini__green" />
 		{/each}
 
-		<!-- Межа забудови — пунктиром, як і на сцені: те саме коло, той самий сенс. -->
-		<circle cx="0" cy="0" r={RESERVE_RADIUS} class="mini__bound" />
+		<!-- Межа забудови — той самий пунктирний квадрат, що й на сцені. -->
+		<rect
+			x={-plotHalf}
+			y={-plotHalf}
+			width={plotHalf * 2}
+			height={plotHalf * 2}
+			class="mini__bound"
+		/>
 
 		{#each boxes as box (box.id)}
 			<rect x={box.x} y={box.z} width={box.w} height={box.h} class="mini__box" />

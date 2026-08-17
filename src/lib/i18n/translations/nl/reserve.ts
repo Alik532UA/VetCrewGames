@@ -93,9 +93,6 @@ export const reserve = {
 	'reserve.reject.enclosure-too-small': 'Het verblijf is te klein voor deze soort.',
 	'reserve.reject.bad-size': 'Een verblijf van die grootte bestaat niet.',
 
-	'reserve.pickBiome': 'Waar het reservaat komt te staan',
-	'reserve.pickBiomeHint':
-		'Het bioom bepaalt wie hier wordt gebracht. Hoe groter de soorten, hoe duurder de verblijven.',
 	'reserve.speciesHere': 'soorten',
 	'reserve.fromPrice': 'verblijf vanaf',
 	'reserve.map': 'Kaart',
@@ -104,6 +101,9 @@ export const reserve = {
 	'reserve.repair': 'Repareren',
 	'reserve.upgrade': 'Kwaliteit verhogen',
 	'reserve.restart': 'Opnieuw beginnen',
+	'reserve.restartAll': 'Begin ze allemaal opnieuw',
+	'reserve.restartAllConfirm': 'Echt alle reservaten wissen?',
+	'reserve.restartAllDone': 'Alle reservaten zijn gewist.',
 	'reserve.restartConfirm': 'Het spel is opnieuw begonnen.',
 	'reserve.tasks': 'Taken',
 	'reserve.taskDone': 'Klaar',

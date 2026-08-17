@@ -180,34 +180,44 @@
 </header>
 
 <style>
+	/*
+	 * Сама шапка — ПРОЗОРА смуга, а не панель.
+	 *
+	 * Доти всі показники сиділи в одному тлі на всю ширину екрана, і на широкому
+	 * вікні воно виглядало як порожня перекладина: шість коротких чисел і півтори
+	 * тисячі пікселів фарби. Тепер тло має кожен показник окремо, а між ними
+	 * видно карту — тобто те, що під шапкою й лежить.
+	 */
 	.hud {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-sm);
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
 		width: 100%;
-		padding: var(--space-sm);
-		border-radius: var(--radius-md);
-		background: var(--color-bg-panel);
 	}
 
 	/*
-	 * Шість показників на 320px не вміщаються в рядок, і стискати їх не можна:
-	 * бюджет у шість цифр має лишатися читабельним. Тому сітка з автозаповненням
-	 * — вона сама вирішує, скільки колонок влізло.
+	 * Плашки, а не сітка: ширина кожної залежить від ЇЇ тексту. Рівні колонки
+	 * давали «Бюджет 50 000» і «На волі 0» однакове поле, і друга виглядала
+	 * порожньою. Перенос лишається — на 320px шість плашок в один рядок не влазять.
 	 */
 	.hud__stats {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
-		gap: var(--space-sm) var(--space-md);
-		flex: 1 1 14rem;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-sm);
 		margin: 0;
 	}
 
-	/* Клітинка тримає підказку: та висить абсолютно й чіпляється саме за неї. */
+	/*
+	 * Клітинка — і власне тло показника, і якір підказки: та висить абсолютно й
+	 * чіпляється саме за неї.
+	 */
 	.hud__cell {
 		position: relative;
+		padding: 4px var(--space-sm);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-panel);
 	}
 
 	.hud__stat {
@@ -243,9 +253,13 @@
 		color: var(--color-error);
 	}
 
+	/* Керування часом — теж окрема плашка: це інша річ, ніж показники. */
 	.hud__speeds {
 		display: flex;
 		gap: 4px;
+		padding: 4px;
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-panel);
 	}
 
 	.hud__speed {

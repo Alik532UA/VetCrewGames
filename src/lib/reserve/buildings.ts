@@ -1,6 +1,6 @@
-import { ENCLOSURE_IMPACT, QUALITIES, RESERVE_RADIUS } from './constants';
+import { ENCLOSURE_IMPACT, QUALITIES, reserveHalf } from './constants';
+import { placementProblem } from './placement';
 import { enclosurePrice, repairPrice, upgradePrice } from './prices';
-import { cellKey, cellsOf, worldOf } from './grid';
 import { ENCLOSURE_SIZES } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
 
@@ -26,21 +26,18 @@ export function buildings(
 			if (!QUALITIES.includes(command.quality)) return { ok: false, reason: 'bad-quality' };
 
 			/*
-			 * Місце вибрав ГРАВЕЦЬ, тож перевіряємо саме його — і КОЖНУ клітинку
-			 * сліду, а не лише кут. Вольєр на десять займає чотири клітинки в
-			 * ширину, і його кут може бути в межах ділянки, коли протилежний уже
-			 * за парканом.
+			 * Місце вибрав ГРАВЕЦЬ, і перевіряє його те саме правило, яким сцена малює
+			 * привид майбутнього вольєра. Межа читається З РЕПУТАЦІЇ в момент ходу:
+			 * ділянку дає громада, і учора дозволена клітинка сьогодні може бути за
+			 * парканом.
 			 */
-			const footprint = cellsOf(command.cell, command.size);
-			for (const cell of footprint) {
-				const spot = worldOf(cell);
-				if (Math.hypot(spot.x, spot.z) > RESERVE_RADIUS)
-					return { ok: false, reason: 'out-of-bounds' };
-			}
-
-			const busy = new Set(state.enclosures.flatMap((e) => cellsOf(e.cell, e.size).map(cellKey)));
-			if (footprint.some((cell) => busy.has(cellKey(cell))))
-				return { ok: false, reason: 'cell-taken' };
+			const problem = placementProblem(
+				state.enclosures,
+				command.cell,
+				command.size,
+				reserveHalf(state.reputation)
+			);
+			if (problem) return { ok: false, reason: problem };
 
 			const cost = enclosurePrice(command.size, command.quality);
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };

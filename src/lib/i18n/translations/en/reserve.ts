@@ -92,9 +92,6 @@ export const reserve = {
 	'reserve.reject.enclosure-too-small': 'The enclosure is too small for this species.',
 	'reserve.reject.bad-size': 'There is no enclosure of that size.',
 
-	'reserve.pickBiome': 'Where the reserve will stand',
-	'reserve.pickBiomeHint':
-		'The biome decides who is brought here. The bigger the species, the pricier the enclosures.',
 	'reserve.speciesHere': 'species',
 	'reserve.fromPrice': 'enclosure from',
 	'reserve.map': 'Map',
@@ -103,6 +100,9 @@ export const reserve = {
 	'reserve.repair': 'Repair',
 	'reserve.upgrade': 'Upgrade quality',
 	'reserve.restart': 'Start over',
+	'reserve.restartAll': 'Start them all over',
+	'reserve.restartAllConfirm': 'Really erase every reserve?',
+	'reserve.restartAllDone': 'Every reserve has been erased.',
 	'reserve.restartConfirm': 'The game has been started over.',
 	'reserve.tasks': 'Tasks',
 	'reserve.taskDone': 'Done',

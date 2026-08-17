@@ -21,11 +21,13 @@
 		animals: Animal[];
 		selectedId: number | null;
 		onSelect: (id: number) => void;
-		/** Режим розміщення: тап по землі повертає клітинку, а не вибирає тварину. */
-		placing: boolean;
+		/** Розмір вольєра, який чекає місця; `null` — звичайний режим. */
+		placingSize: number | null;
 		onGround: (cell: { x: number; z: number }) => void;
 		/** Мінікарта зайва, коли поверх карти вже відкрита панель. */
 		showMinimap: boolean;
+		/** Півсторона ділянки: її дає репутація, і межа рухається разом із нею. */
+		plotHalf: number;
 	}
 
 	let {
@@ -35,9 +37,10 @@
 		animals,
 		selectedId,
 		onSelect,
-		placing,
+		placingSize,
 		onGround,
-		showMinimap
+		showMinimap,
+		plotHalf
 	}: Props = $props();
 
 	/** Куди дивиться камера. Спільне для сцени й мінікарти — обидві його міняють. */
@@ -71,20 +74,21 @@
 	{#if Scene}
 		<Scene
 			{view}
+			{plotHalf}
 			{biome}
 			{seed}
 			{enclosures}
 			{animals}
 			{selectedId}
 			{onSelect}
-			{placing}
+			{placingSize}
 			{onGround}
 		/>
 	{/if}
 </div>
 
 {#if Scene && showMinimap}
-	<ReserveMinimap {view} {biome} {seed} {enclosures} />
+	<ReserveMinimap {view} {biome} {seed} {enclosures} {plotHalf} />
 {/if}
 
 <style>

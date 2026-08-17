@@ -19,10 +19,9 @@
 		onPanel: (id: Panel) => void;
 		onCampaign: () => void;
 		onCancel: () => void;
-		onRestart: () => void;
 	}
 
-	let { panel, placing, onPanel, onCampaign, onCancel, onRestart }: Props = $props();
+	let { panel, placing, onPanel, onCampaign, onCancel }: Props = $props();
 
 	const BUTTONS: Array<{
 		id: Panel;
@@ -66,10 +65,6 @@
 		data-testid="reserve-campaign-btn"
 	>
 		{@html formatFont(t('reserve.campaign'))}
-	</button>
-
-	<button type="button" class="bar__btn" onclick={onRestart} data-testid="reserve-startover-btn">
-		{@html formatFont(t('reserve.restart'))}
 	</button>
 </nav>
 

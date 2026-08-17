@@ -1,5 +1,5 @@
 import { seededRandom } from '$lib/utils/seededRandom';
-import { RESERVE_RADIUS } from './constants';
+import { RESERVE_HALF_MAX } from './constants';
 import { CELL_WORLD, spiralCell } from './grid';
 import { PALETTE, SCATTERED } from './palette';
 import { lake, river, type RiverPath } from './water';
@@ -44,10 +44,24 @@ export interface DecorItem {
 }
 
 /**
- * Радіус, у якому росте рельєф. Ділянка гравця вдвічі менша (`RESERVE_RADIUS`),
- * тож ліс триває й ЗА нею: карта не обривається на паркані.
+ * Радіус, у якому росте рельєф. Найбільша ділянка гравця (`RESERVE_HALF_MAX`)
+ * менша за нього більш ніж удвічі, тож ліс триває й ЗА нею: карта не
+ * обривається на паркані.
  */
-export const WORLD_RADIUS = 30;
+export const WORLD_RADIUS = 60;
+
+/**
+ * Радіус, під який рахована таблиця густини `PALETTE`.
+ *
+ * Світ виріс удвічі — і кількість фігур росте разом із ним ЛІНІЙНО, а не по
+ * площі. По площі було б учетверо, і телефон малював би пів тисячі мешів заради
+ * узбіччя, на яке ніхто не дивиться. Ціна рішення названа прямо: дика земля
+ * стала вдвічі рідшою, ніж була.
+ */
+const PALETTE_RADIUS = 30;
+
+/** Множник таблиці: скільки фігур припадає на одне число палітри. */
+const DENSITY = WORLD_RADIUS / PALETTE_RADIUS;
 
 /**
  * Частка фігур, що припадає на землю ЗА межею ділянки.
@@ -161,11 +175,11 @@ export function terrainOf(biome: ReserveBiome, seed: number): Terrain {
 	 */
 	const rest = SCATTERED.flatMap((key) => {
 		const kind = key as DecorKind;
-		const total = palette[key];
+		const total = Math.round(palette[key] * DENSITY);
 		const wild = Math.round(total * WILD_SHARE);
 		return [
-			...scatter(random, kind, total - wild, blocking, sites, 0, RESERVE_RADIUS),
-			...scatter(random, kind, wild, blocking, sites, RESERVE_RADIUS, WORLD_RADIUS)
+			...scatter(random, kind, total - wild, blocking, sites, 0, RESERVE_HALF_MAX),
+			...scatter(random, kind, wild, blocking, sites, RESERVE_HALF_MAX, WORLD_RADIUS)
 		];
 	});
 	return { rivers, items: [...water, ...rest] };

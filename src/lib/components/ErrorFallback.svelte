@@ -40,6 +40,14 @@
 </div>
 
 <style>
+	/*
+	 * Власне тло — не косметика.
+	 *
+	 * Повідомлення про поломку лежало прозорим просто на тлі сторінки, а тло в цій
+	 * грі — намальований осінній ліс. Світлий текст на світлих кронах читався
+	 * гірше за все інше на екрані, і саме в той момент, коли людині найбільше
+	 * потрібно зрозуміти, що сталося й куди тиснути.
+	 */
 	.error-fallback {
 		display: flex;
 		flex-direction: column;
@@ -47,6 +55,10 @@
 		justify-content: center;
 		gap: var(--space-md);
 		padding: var(--space-xl);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-panel);
+		box-shadow: 0 8px 32px rgb(0 0 0 / 35%);
 		text-align: center;
 		max-width: 600px;
 		margin: var(--space-xl) auto;

@@ -97,9 +97,6 @@ export const reserve = {
 	'reserve.reject.enclosure-too-small': 'Вольєр замалий для цього виду.',
 	'reserve.reject.bad-size': 'Такого розміру вольєра не буває.',
 
-	'reserve.pickBiome': 'Де стоятиме заповідник',
-	'reserve.pickBiomeHint':
-		'Біом вирішує, кого сюди привозять. Що більші види — то дорожчі вольєри.',
 	'reserve.speciesHere': 'видів',
 	'reserve.fromPrice': 'вольєр від',
 	'reserve.map': 'Карта',
@@ -108,6 +105,9 @@ export const reserve = {
 	'reserve.repair': 'Відремонтувати',
 	'reserve.upgrade': 'Підняти якість',
 	'reserve.restart': 'Почати заново',
+	'reserve.restartAll': 'Почати всі заново',
+	'reserve.restartAllConfirm': 'Точно стерти всі заповідники?',
+	'reserve.restartAllDone': 'Усі заповідники стерто.',
 	'reserve.restartConfirm': 'Партію почато заново.',
 	'reserve.tasks': 'Завдання',
 	'reserve.taskDone': 'Виконано',

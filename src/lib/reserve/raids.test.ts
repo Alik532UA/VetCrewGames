@@ -226,7 +226,8 @@ describe('браконьєри', () => {
 		];
 		state.offered = { ...state.contracts[0], id: 2 };
 
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 4, z: 0 } });
+		// Клітинка близька до центру: у фонду без імені ділянка найменша.
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 3, z: 0 } });
 		execute(state, {
 			type: 'acquire',
 			origin: 'black-market',

@@ -7,7 +7,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { ReserveController, type Speed } from '$lib/controllers/reserve.svelte';
-	import type { Quality } from '$lib/reserve/constants';
+	import { reserveHalf, type Quality } from '$lib/reserve/constants';
 	import { freeEnclosures, released, residents } from '$lib/reserve/simulation';
 	import type { RaidTactic, ReserveCommand } from '$lib/reserve/types';
 	import type { ReserveBiome } from '$lib/reserve/species';
@@ -184,13 +184,14 @@
 		{/if}
 
 		<ReserveStage
+			plotHalf={reserveHalf(game.state.reputation)}
 			biome={game.state.biome}
 			seed={game.state.seed}
 			enclosures={game.state.enclosures}
 			animals={here}
 			selectedId={game.selectedId}
 			onSelect={(id: number) => (game.selectedId = id)}
-			placing={pending !== null}
+			placingSize={pending?.size ?? null}
 			onGround={placeAt}
 			showMinimap={!panel}
 		/>
@@ -204,7 +205,6 @@
 			onPanel={(id) => (panel = panel === id ? null : id)}
 			onCampaign={() => command({ type: 'campaign' })}
 			onCancel={() => (pending = null)}
-			onRestart={startOver}
 		/>
 
 		{#if game.state.raid}

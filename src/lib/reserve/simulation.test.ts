@@ -28,7 +28,7 @@ import {
 	HEAL_REPUTATION,
 	IMPACT_TO_WIN,
 	REPUTATION_DECAY_PER_DAY,
-	RESERVE_RADIUS,
+	reserveHalf,
 	WEAR_PER_DAY,
 	type Quality
 } from './constants';
@@ -1101,7 +1101,7 @@ describe('межа ділянки', () => {
 	 */
 	it('великий вольєр не звисає за межу кутом', () => {
 		const state = rich();
-		const edge = Math.floor(RESERVE_RADIUS / 2.2);
+		const edge = Math.floor(reserveHalf(state.reputation) / 2.2);
 		// Одиничка на самому краю проходить…
 		expect(buildAt(state, edge, 0).ok, 'край не тримає навіть одиничку').toBe(true);
 		// …а десятка з тим самим кутом уже ні: її слід — чотири клітинки.
@@ -1128,9 +1128,29 @@ describe('межа ділянки', () => {
 		const state = rich();
 		for (let cx = -5; cx <= 5; cx++) buildAt(state, cx, 0);
 
+		// Межа КВАДРАТНА: перевіряємо кожну вісь окремо, як це робить і ядро.
+		const half = reserveHalf(state.reputation);
 		for (const enclosure of state.enclosures) {
 			const spot = worldOf(enclosure.cell);
-			expect(Math.hypot(spot.x, spot.z)).toBeLessThanOrEqual(RESERVE_RADIUS);
+			expect(Math.max(Math.abs(spot.x), Math.abs(spot.z))).toBeLessThanOrEqual(half);
 		}
+	});
+
+	/**
+	 * Землю дає ГРОМАДА, а не гроші: та сама клітинка то за межею, то в межах.
+	 *
+	 * Це найважливіше в новій межі — і саме воно ловиться найпростіше: беремо
+	 * клітинку, недосяжну для нікому невідомого фонду, і даємо фонду ім'я.
+	 */
+	it('репутація розширює ділянку, а її спад — звужує', () => {
+		const far = Math.floor(reserveHalf(100) / 2.2);
+
+		const unknown = rich();
+		unknown.reputation = 0;
+		expect(buildAt(unknown, far, 0)).toEqual({ ok: false, reason: 'out-of-bounds' });
+
+		const known = rich();
+		known.reputation = 100;
+		expect(buildAt(known, far, 0), "ім'я не розширило ділянку").toEqual({ ok: true });
 	});
 });

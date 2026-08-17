@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { isoControls, MAX_ZOOM, MIN_ZOOM } from './isoCamera';
+import { isoControls, MAX_PAN, MAX_ZOOM, MIN_ZOOM } from './isoCamera';
 import { OrthographicCamera, Vector3 } from 'three';
 
 /**
@@ -87,8 +87,8 @@ describe('ізометрична камера', () => {
 		// Тягнемо навмисне абсурдно далеко — по мільйону пікселів у кожен бік.
 		for (let i = 1; i <= 20; i++) pointer('pointermove', i * 50_000, i * 50_000);
 
-		expect(Math.abs(target.x)).toBeLessThanOrEqual(24);
-		expect(Math.abs(target.z)).toBeLessThanOrEqual(24);
+		expect(Math.abs(target.x)).toBeLessThanOrEqual(MAX_PAN);
+		expect(Math.abs(target.z)).toBeLessThanOrEqual(MAX_PAN);
 	});
 
 	it('масштаб тримається в межах', () => {

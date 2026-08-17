@@ -18,19 +18,31 @@
 		biome: ReserveBiome;
 		/** Спільний стан огляду — той самий обʼєкт тримає мінікарта. */
 		view: MapView;
+		/** Півсторона ділянки за поточної репутації. */
+		plotHalf: number;
 		/** Зерно партії: краєвид детермінований, як і все інше. */
 		seed: number;
 		enclosures: Enclosure[];
 		animals: Animal[];
 		selectedId: number | null;
 		onSelect: (id: number) => void;
-		/** Режим розміщення: тап по землі повертає клітинку, а не вибирає тварину. */
-		placing: boolean;
+		/** Розмір вольєра, який чекає місця; `null` — звичайний режим. */
+		placingSize: number | null;
 		onGround: (cell: { x: number; z: number }) => void;
 	}
 
-	let { biome, view, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
-		$props();
+	let {
+		biome,
+		view,
+		plotHalf,
+		seed,
+		enclosures,
+		animals,
+		selectedId,
+		onSelect,
+		placingSize,
+		onGround
+	}: Props = $props();
 </script>
 
 <div class="scene" data-testid="reserve-scene-panel">
@@ -38,12 +50,13 @@
 		<SceneBody
 			{biome}
 			{view}
+			{plotHalf}
 			{seed}
 			{enclosures}
 			{animals}
 			{selectedId}
 			{onSelect}
-			{placing}
+			{placingSize}
 			{onGround}
 		/>
 	</Canvas>

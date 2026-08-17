@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CELL, placeEnclosures } from './sceneLayout';
 import { spiralCell, worldOf } from '$lib/reserve/grid';
 import { inWater, nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
+import { RESERVE_HALF_MAX } from '$lib/reserve/constants';
 import { RESERVE_BIOMES } from '$lib/reserve/species';
 import { DEFAULT_ZOOM } from './isoCamera';
 import type { Animal, Enclosure } from '$lib/reserve/types';
@@ -191,17 +192,21 @@ describe('рельєф справді потрапляє в кадр', () => {
 	 * Саме через це карта виглядала порожнім клаптиком трави: при масштабі 54 у
 	 * кадр не потрапляло майже нічого, хоч рельєф і був намальований.
 	 *
-	 * Поріг тут третина, а не більшість, і це не поступка. Рельєф навмисно
-	 * розкиданий по ВСІЙ карті (±26), а початковий кадр показує центральні ±12:
-	 * побачити все з першого погляду й водночас мати що відкривати
-	 * панорамуванням — вимоги, які виключають одна одну. Третина означає
-	 * «краєвид обжитий одразу», а не «усе видно».
+	 * Поріг тут третина, а не більшість, і це не поступка. Рахується він від
+	 * ДІЛЯНКИ, а не від усього світу: світ тягнеться на ±60, і побачити його весь з
+	 * першого погляду неможливо за визначенням — обжитим має виглядати те, на чому
+	 * грають. Побачити все одразу й водночас мати що відкривати панорамуванням —
+	 * вимоги, які виключають одна одну.
 	 */
-	it('при типовому масштабі видно щонайменше третину рельєфу', () => {
+	it('при типовому масштабі видно щонайменше третину рельєфу ділянки', () => {
 		for (const biome of RESERVE_BIOMES) {
-			const total = terrainOf(biome, 42).items.length;
+			const onPlot = terrainOf(biome, 42).items.filter(
+				(item) => Math.max(Math.abs(item.x), Math.abs(item.z)) <= RESERVE_HALF_MAX
+			).length;
 			const inFrame = visible(biome, DEFAULT_ZOOM);
-			expect(inFrame, `${biome}: у кадрі ${inFrame} із ${total}`).toBeGreaterThan(total / 3);
+			expect(inFrame, `${biome}: у кадрі ${inFrame} із ${onPlot} на ділянці`).toBeGreaterThan(
+				onPlot / 3
+			);
 		}
 	});
 
@@ -212,12 +217,15 @@ describe('рельєф справді потрапляє в кадр', () => {
 	});
 
 	it('навіть на найдальшому масштабі рельєф не виходить за землю', () => {
-		// Земля — 80×80, тобто ±40. Декор мусить лишатися на ній, інакше дерева
-		// висіли б у пустоті.
+		/*
+		 * Земля вчетверо ширша за радіус рельєфу, тобто ±2·WORLD_RADIUS. Числа тут
+		 * ВИВЕДЕНІ, а не вписані: доти стояло «±40», і після подвоєння світу
+		 * перевірка почала падати на цілком правильному рельєфі.
+		 */
 		for (const biome of RESERVE_BIOMES) {
 			for (const item of terrainOf(biome, 42).items) {
-				expect(Math.abs(item.x), biome).toBeLessThan(40);
-				expect(Math.abs(item.z), biome).toBeLessThan(40);
+				expect(Math.abs(item.x), biome).toBeLessThanOrEqual(WORLD_RADIUS);
+				expect(Math.abs(item.z), biome).toBeLessThanOrEqual(WORLD_RADIUS);
 			}
 		}
 	});

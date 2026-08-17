@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { T, useThrelte } from '@threlte/core';
-	import { OrthographicCamera, Plane, Raycaster, Vector2, Vector3, type Object3D } from 'three';
+	import { OrthographicCamera, Vector3 } from 'three';
 	import { DEFAULT_ZOOM, isoControls } from './isoCamera';
 	import type { MapView } from './mapView.svelte';
-	import { placeEnclosures } from './sceneLayout';
-	import { RESERVE_RADIUS } from '$lib/reserve/constants';
-	import { cellOf } from '$lib/reserve/grid';
+	import { CELL, placeEnclosures } from './sceneLayout';
+	import { placementProblem, type PlacementProblem } from '$lib/reserve/placement';
+	import { createPicker } from './picking';
+	import PlotBorder from './PlotBorder.svelte';
+
+	import { footprintOf, worldOf, type Cell } from '$lib/reserve/grid';
 	import { nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
 	import DecorPiece from './DecorPiece.svelte';
 	import EnclosureShape from './EnclosureShape.svelte';
@@ -24,8 +27,16 @@
 		biome: ReserveBiome;
 		/** Спільний стан огляду: сцена його звітує, мінікарта читає й наказує. */
 		view: MapView;
-		/** Увімкнено режим розміщення: наступний тап по землі ставить вольєр. */
-		placing: boolean;
+		/** Півсторона ділянки: її дає репутація, і межа рухається разом із нею. */
+		plotHalf: number;
+		/**
+		 * Розмір вольєра, який чекає місця; `null` — звичайний режим.
+		 *
+		 * Саме РОЗМІР, а не «так чи ні»: привид під пальцем мусить бути тієї
+		 * величини, яка справді стане на землю, інакше він обіцяв би не те, що
+		 * поставиться.
+		 */
+		placingSize: number | null;
 		onGround: (cell: { x: number; z: number }) => void;
 		seed: number;
 		enclosures: Enclosure[];
@@ -34,8 +45,28 @@
 		onSelect: (id: number) => void;
 	}
 
-	let { biome, view, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
-		$props();
+	let {
+		biome,
+		view,
+		plotHalf,
+		seed,
+		enclosures,
+		animals,
+		selectedId,
+		onSelect,
+		placingSize,
+		onGround
+	}: Props = $props();
+
+	const placing = $derived(placingSize !== null);
+
+	/**
+	 * Клітинка під пальцем і те, чи можна на неї ставити.
+	 *
+	 * Живе тут, а не на сторінці: сторінка не знає ні про промінь, ні про полотно,
+	 * а без них питання «де палець» не має відповіді.
+	 */
+	let hover = $state<{ cell: Cell; problem: PlacementProblem } | null>(null);
 
 	const { invalidate, renderer, scene } = useThrelte();
 
@@ -51,81 +82,57 @@
 	let camera: OrthographicCamera | undefined = $state();
 
 	/**
-	 * Вибір тварини — власний промінь, а не плагін `interactivity` з
-	 * `@threlte/extras`.
+	 * Хто й що під пальцем — питає `picking.ts`, а тут лишається лише РІШЕННЯ.
 	 *
-	 * Причин дві, і перша важливіша. Плагін не відрізняє тап від перетягування:
-	 * кожне панорамування закінчувалося б вибором тварини, над якою випадково
-	 * відпустили палець. Друга — ще один пакет заради двадцяти рядків.
+	 * Камера передається функцією: `<Canvas>` створює її не одночасно з розміткою,
+	 * і посилання, взяте один раз, лишилося б `undefined` назавжди.
 	 */
-	const raycaster = new Raycaster();
-	const pointer = new Vector2();
-	/** Площина землі: промінь шукає перетин саме з нею, а не з мешем. */
-	const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), 0);
-
-	/** Мешканця несе ГРУПА, а промінь влучає в меш — шукаємо вгору по батьках. */
-	function animalIdAt(object: Object3D): number | null {
-		for (let node: Object3D | null = object; node; node = node.parent) {
-			const id = node.userData?.animalId;
-			if (typeof id === 'number') return id;
-		}
-		return null;
-	}
+	const picker = createPicker(renderer.domElement as HTMLCanvasElement, scene, () => camera);
 
 	function pick(clientX: number, clientY: number) {
-		if (!camera) return;
-
 		/*
 		 * У режимі розміщення тап означає МІСЦЕ, а не вибір. Дві різні відповіді
 		 * на один жест — саме те, чого гравець і чекає: спершу «куди», потім «кого».
 		 */
 		if (placing) {
-			const cell = groundCellAt(clientX, clientY);
+			const cell = picker.cellAt(clientX, clientY);
 			if (cell) onGround(cell);
 			return;
 		}
-		const box = renderer.domElement.getBoundingClientRect();
-		pointer.x = ((clientX - box.left) / box.width) * 2 - 1;
-		pointer.y = -((clientY - box.top) / box.height) * 2 + 1;
-
-		raycaster.setFromCamera(pointer, camera);
-		for (const hit of raycaster.intersectObjects(scene.children, true)) {
-			const id = animalIdAt(hit.object);
-			if (id !== null) {
-				onSelect(id);
-				return;
-			}
-		}
+		const id = picker.animalAt(clientX, clientY);
+		if (id !== null) onSelect(id);
 	}
 
-	/**
-	 * Керування чіпляється в `$effect`, а не в `onMount`: `<Canvas>` створює свої
-	 * обʼєкти не одночасно з монтуванням розмітки, тож на момент `onMount` камери
-	 * ще може не бути. Раніше тут стояло `if (!camera) return` — і це найгірший
-	 * різновид помилки: сцена малюється, повідомлень немає, просто нічого не
-	 * рухається й не натискається.
-	 */
-	/**
-	 * Куди на землі влучив палець, у клітинках сітки.
+	/*
+	 * Привид зникає, щойно режим розміщення скінчився.
 	 *
-	 * Промінь перетинається з площиною y = 0, а не з мешем землі: земля — тонка
-	 * коробка, і промінь, що прийшов збоку, влучив би в її бік, а не у верх.
+	 * Без цього він лишався б висіти на карті після поставленого вольєра — а
+	 * зелений квадрат, який ні на що не реагує, читається як поломка.
 	 */
-	function groundCellAt(clientX: number, clientY: number) {
-		if (!camera) return null;
-		const box = renderer.domElement.getBoundingClientRect();
-		pointer.x = ((clientX - box.left) / box.width) * 2 - 1;
-		pointer.y = -((clientY - box.top) / box.height) * 2 + 1;
-		raycaster.setFromCamera(pointer, camera);
-
-		const hit = raycaster.ray.intersectPlane(GROUND_PLANE, new Vector3());
-		return hit ? cellOf(hit.x, hit.z) : null;
-	}
+	$effect(() => {
+		if (!placing) hover = null;
+	});
 
 	$effect(() => {
 		const lens = camera;
 		if (!lens) return;
 		const canvas = renderer.domElement;
+
+		/** Куди дивиться палець у режимі розміщення. Поза ним нічого не рахуємо. */
+		const trace = (event: PointerEvent) => {
+			if (!placing) return;
+			const cell = picker.cellAt(event.clientX, event.clientY);
+			hover = cell
+				? { cell, problem: placementProblem(enclosures, cell, placingSize ?? 1, plotHalf) }
+				: null;
+			invalidate();
+		};
+		const forget = () => {
+			hover = null;
+			invalidate();
+		};
+		canvas.addEventListener('pointermove', trace);
+		canvas.addEventListener('pointerleave', forget);
 
 		/*
 		 * Розмір вікна ділиться на масштаб ТУТ, а не в мінікарті: скільки пікселів
@@ -165,35 +172,30 @@
 		report();
 
 		return () => {
+			canvas.removeEventListener('pointermove', trace);
+			canvas.removeEventListener('pointerleave', forget);
 			window.removeEventListener('resize', report);
 			detach();
 			controls.destroy();
 		};
 	});
 
-	/**
-	 * Пунктир по колу межі: рівні проміжки, кожна плитка повернута по дотичній.
-	 *
-	 * Коло, а не квадрат, бо саме коло й перевіряє ядро (`hypot > RESERVE_RADIUS`).
-	 * Малювати квадрат означало б показувати межу, якої немає.
-	 */
-	const DASH_LENGTH = 1.1;
-	const dashes = $derived.by(() => {
-		const circumference = 2 * Math.PI * RESERVE_RADIUS;
-		const count = Math.round(circumference / (DASH_LENGTH * 2));
-		return Array.from({ length: count }, (_, i) => {
-			const angle = (i / count) * Math.PI * 2;
-			return {
-				key: i,
-				x: Math.cos(angle) * RESERVE_RADIUS,
-				z: Math.sin(angle) * RESERVE_RADIUS,
-				// Плитка лежить уздовж кола: дотична — це кут плюс 90°.
-				turn: -angle
-			};
-		});
-	});
-
 	const placed = $derived(placeEnclosures(enclosures, animals));
+
+	/** Слід привида у світі: центр і сторона рахуються як у справжнього вольєра. */
+	const ghost = $derived.by(() => {
+		if (!hover || placingSize === null) return null;
+		const span = footprintOf(placingSize);
+		const spot = worldOf(hover.cell);
+		const shift = ((span - 1) * CELL) / 2;
+		return {
+			x: spot.x + shift,
+			z: spot.z + shift,
+			side: span * CELL - 0.3,
+			// Колір — це та сама причина, з якою потім прийшла б відмова.
+			colour: hover.problem ? '#e0574c' : '#7bd66f'
+		};
+	});
 	const terrain = $derived(terrainOf(biome, seed));
 
 	/**
@@ -235,20 +237,10 @@
 </T.Mesh>
 
 <!--
-	Межа ділянки — пунктиром.
-
-	Не паркан і не стіна: гравець мусить БАЧИТИ, де закінчуються його права на
-	забудову, і водночас бачити, що земля тягнеться далі. Пунктир зроблений
-	короткими плитками, а не `LineDashedMaterial`: тому вимагає
-	`computeLineDistances()` на кожній зміні геометрії, а плитки просто лежать
-	там, де порахували.
+	Межа ділянки — пунктиром. Не паркан і не стіна: гравець мусить бачити, де
+	закінчуються його права на забудову, і водночас бачити, що земля тягнеться далі.
 -->
-{#each dashes as dash (dash.key)}
-	<T.Mesh position={[dash.x, 0.02, dash.z]} rotation.y={dash.turn}>
-		<T.BoxGeometry args={[DASH_LENGTH, 0.04, 0.12]} />
-		<T.MeshStandardMaterial color="#f0e6c8" />
-	</T.Mesh>
-{/each}
+<PlotBorder half={plotHalf} />
 
 <!--
 	Рельєф біома. Детермінований: та сама партія — той самий краєвид.
@@ -262,6 +254,20 @@
 {#each terrain.items as item, index (`${item.kind}-${index}`)}
 	<DecorPiece {item} {biome} />
 {/each}
+
+<!--
+	Привид майбутнього вольєра.
+
+	Поки палець їздить по карті, видно і РОЗМІР сліду, і те, чи місце вільне. Доти
+	гравець тицяв навмання й дізнавався про відмову тостом уже після дотику — тобто
+	після того, як рішення ухвалене.
+-->
+{#if ghost}
+	<T.Mesh position={[ghost.x, 0.04, ghost.z]} rotation.x={-Math.PI / 2}>
+		<T.PlaneGeometry args={[ghost.side, ghost.side]} />
+		<T.MeshBasicMaterial transparent opacity={0.35} color={ghost.colour} />
+	</T.Mesh>
+{/if}
 
 {#each placed as spot (spot.enclosure.id)}
 	<EnclosureShape

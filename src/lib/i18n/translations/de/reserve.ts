@@ -94,9 +94,6 @@ export const reserve = {
 	'reserve.reject.enclosure-too-small': 'Das Gehege ist für diese Art zu klein.',
 	'reserve.reject.bad-size': 'Ein Gehege dieser Größe gibt es nicht.',
 
-	'reserve.pickBiome': 'Wo das Reservat stehen wird',
-	'reserve.pickBiomeHint':
-		'Das Biom entscheidet, wer hierher gebracht wird. Je größer die Arten, desto teurer die Gehege.',
 	'reserve.speciesHere': 'Arten',
 	'reserve.fromPrice': 'Gehege ab',
 	'reserve.map': 'Karte',
@@ -105,6 +102,9 @@ export const reserve = {
 	'reserve.repair': 'Reparieren',
 	'reserve.upgrade': 'Qualität erhöhen',
 	'reserve.restart': 'Neu beginnen',
+	'reserve.restartAll': 'Alle neu beginnen',
+	'reserve.restartAllConfirm': 'Wirklich alle Reservate löschen?',
+	'reserve.restartAllDone': 'Alle Reservate wurden gelöscht.',
 	'reserve.restartConfirm': 'Das Spiel wurde neu begonnen.',
 	'reserve.tasks': 'Aufgaben',
 	'reserve.taskDone': 'Erledigt',
