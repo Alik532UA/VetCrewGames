@@ -23,6 +23,7 @@
 		SITE_BASE,
 		SITE_ORIGIN,
 		DEFAULT_LANGUAGE,
+		isHiddenRoute,
 		langPath,
 		langUrl,
 		languageFromParam,
@@ -66,6 +67,17 @@
 	// Абсолютні адреси — з явних констант, а не з `page.url`: під час prerender
 	// origin дорівнює `sveltekit-prerender` (SEO-v8 § 1.2).
 	let canonical = $derived(langUrl(routeLanguage, routeRest));
+	/**
+	 * Службова сторінка поза індексом.
+	 *
+	 * Виводиться з переліку в `routing.ts`, а не з умови на адресу тут: sitemap
+	 * будується з ЗГЕНЕРОВАНИХ сторінок і бере ті, у яких є canonical. Тобто
+	 * достатньо не малювати canonical — і сторінка не потрапить ні в sitemap, ні
+	 * у взаємні hreflang, і жоден із трьох механізмів не доведеться правити
+	 * окремо. `noindex` при цьому все одно ставиться явно: пошуковик приходить і
+	 * без sitemap.
+	 */
+	let hidden = $derived(isHiddenRoute(routeRest));
 	let ogImage = $derived(`${SITE_ORIGIN}${SITE_BASE}/images/VetCrewGames_logo_v1.png`);
 
 	// Fires on the initial load too, so this covers the first view and each
@@ -172,17 +184,22 @@
 	<link rel="icon" href={asset('/favicon.svg')} />
 	<title>{pageTitle}</title>
 	<meta name="description" content={seoDescription} />
-	<link rel="canonical" href={canonical} />
 
-	<!--
-		hreflang: набір однаковий на всіх мовних версіях і взаємний, плюс
-		`x-default` на типову мову (SEO-v8 § 2.2). Без цього дві мовні версії
-		того самого вмісту конкурують одна з одною в індексі.
-	-->
-	{#each INDEXED_LANGUAGES as lang (lang)}
-		<link rel="alternate" hreflang={lang} href={langUrl(lang, routeRest)} />
-	{/each}
-	<link rel="alternate" hreflang="x-default" href={langUrl(DEFAULT_LANGUAGE, routeRest)} />
+	{#if hidden}
+		<meta name="robots" content="noindex, nofollow" />
+	{:else}
+		<link rel="canonical" href={canonical} />
+
+		<!--
+			hreflang: набір однаковий на всіх мовних версіях і взаємний, плюс
+			`x-default` на типову мову (SEO-v8 § 2.2). Без цього дві мовні версії
+			того самого вмісту конкурують одна з одною в індексі.
+		-->
+		{#each INDEXED_LANGUAGES as lang (lang)}
+			<link rel="alternate" hreflang={lang} href={langUrl(lang, routeRest)} />
+		{/each}
+		<link rel="alternate" hreflang="x-default" href={langUrl(DEFAULT_LANGUAGE, routeRest)} />
+	{/if}
 
 	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />

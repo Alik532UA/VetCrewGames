@@ -104,5 +104,27 @@ export const ui = {
 	'error.title': 'Er is iets misgegaan',
 	'error.message': 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.',
 	'error.retry': 'Opnieuw proberen',
-	'error.goHome': 'Naar de startpagina'
+	'error.goHome': 'Naar de startpagina',
+	// Bètachecklist. De punten zelf staan in `src/lib/config/beta/`.
+	'beta.title': 'Bètatest',
+	'beta.intro':
+		'Een lijst met dingen die het controleren waard zijn. Markeer de punten, kopieer aan het eind het rapport en stuur het ons.',
+	'beta.progress': 'Gemarkeerd in deze versie',
+	'beta.vote.none': 'Niet gecontroleerd',
+	'beta.vote.fail': 'Werkt niet',
+	'beta.vote.weird': 'Werkt, maar vreemd',
+	'beta.vote.ok': 'Werkt',
+	'beta.coverage.manual': 'Alleen mensen',
+	'beta.coverage.testable': 'Nog geen automatische test',
+	'beta.coverage.covered': 'Gedekt door een test',
+	'beta.coverage.manualHint': 'Geen machine controleert dit — hier hebben we jouw ogen nodig.',
+	'beta.coverage.testableHint':
+		'Dit zou automatisch te controleren zijn, maar die test bestaat nog niet.',
+	'beta.coverage.coveredHint':
+		'Hier kijkt al een automatische test naar. Vind je hier een fout, dan zit de fout in de test — en dat is extra waardevol.',
+	'beta.stale': 'gemarkeerd in een andere versie',
+	'beta.copy': 'Rapport kopiëren',
+	'beta.copied': 'Rapport gekopieerd',
+	'beta.clear': 'Markeringen wissen',
+	'beta.copyFailed': 'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.'
 } as const;

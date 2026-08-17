@@ -10,12 +10,25 @@ describe('випадкова гра', () => {
 	 */
 	const MENUS = ['', 'quiz', 'quiz/play', 'pairs', 'game-habitat'];
 	const OWN_SECTION = ['game-memory'];
+	/** Службові сторінки: чеклист бета-тестування — не гра й не меню. */
+	const SERVICE = ['beta-test'];
 
-	it('це всі маршрути, крім меню й розділів із власною грою', () => {
+	it('це всі маршрути, крім меню, розділів із власною грою й службових', () => {
 		const games = Object.keys(LANGUAGE_ROUTES).filter(
-			(route) => !MENUS.includes(route) && !OWN_SECTION.includes(route)
+			(route) =>
+				!MENUS.includes(route) && !OWN_SECTION.includes(route) && !SERVICE.includes(route)
 		);
 		expect([...PLAYABLE_ROUTES].sort()).toEqual(games.sort());
+	});
+
+	/**
+	 * Окремо й прямо: кнопка «Випадкова гра», яка приводить у чеклист перевірок, —
+	 * це зламана обіцянка, а не жарт.
+	 */
+	it('службові сторінки не випадають', () => {
+		for (const route of SERVICE) {
+			expect(PLAYABLE_ROUTES, `${route} — службова сторінка`).not.toContain(route);
+		}
 	});
 
 	/**

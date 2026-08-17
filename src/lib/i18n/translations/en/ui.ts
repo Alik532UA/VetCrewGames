@@ -102,5 +102,27 @@ export const ui = {
 	'error.title': 'Something went wrong',
 	'error.message': 'An unexpected error occurred. Please try again.',
 	'error.retry': 'Try again',
-	'error.goHome': 'Go home'
+	'error.goHome': 'Go home',
+	// Beta checklist page. The items themselves live in `src/lib/config/beta/`.
+	'beta.title': 'Beta testing',
+	'beta.intro':
+		'A list of things worth checking. Mark the items, then copy the report at the end and send it to us.',
+	'beta.progress': 'Marked on this version',
+	'beta.vote.none': 'Not checked',
+	'beta.vote.fail': 'Broken',
+	'beta.vote.weird': 'Works, but odd',
+	'beta.vote.ok': 'Works',
+	'beta.coverage.manual': 'People only',
+	'beta.coverage.testable': 'No automated test yet',
+	'beta.coverage.covered': 'Covered by a test',
+	'beta.coverage.manualHint': 'No machine checks this — your own eyes are what is needed here.',
+	'beta.coverage.testableHint':
+		'This could be checked automatically, but no such test exists yet.',
+	'beta.coverage.coveredHint':
+		'An automated test already watches this. If you find a bug here, the test is wrong — and that is especially valuable to us.',
+	'beta.stale': 'marked on a different version',
+	'beta.copy': 'Copy the report',
+	'beta.copied': 'Report copied',
+	'beta.clear': 'Clear the marks',
+	'beta.copyFailed': 'The browser refused to copy it. Select the text below and copy it by hand.'
 } as const;

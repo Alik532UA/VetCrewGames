@@ -104,6 +104,25 @@ const EXPECTED_PAGES = [
 ];
 
 /**
+ * Сторінки ПОЗА індексом (`HIDDEN_ROUTES` у `src/lib/i18n/routing.ts`).
+ *
+ * Вони мусять існувати — і мусять бути прихованими саме так, як обіцяно:
+ * `noindex`, без canonical і без рядка в sitemap. Перевіряється протилежне до
+ * решти сторінок, а не «виняток»: слабший варіант (просто не вимагати canonical)
+ * пропустив би найтихішу поломку — сторінку, що тихо повернулася в пошук, коли
+ * хтось переніс мета-теги з `{#if}` вище.
+ *
+ * У списку всі чотири мови: `entries()` малює приховану сторінку так само, як
+ * будь-яку іншу, і мовчазне зникнення трьох із них теж дефект.
+ */
+const HIDDEN_PAGES = [
+	'beta-test/index.html',
+	'en/beta-test/index.html',
+	'de/beta-test/index.html',
+	'nl/beta-test/index.html'
+];
+
+/**
  * Два бюджети, а не один (PERFORMANCE-v8 § 1).
  *
  * `ENTRY` — те, що завантажує КОЖЕН відвідувач, хоч би куди він зайшов. Це
@@ -170,6 +189,14 @@ for (const file of htmlFiles) {
 	const where = file.replace(`${BUILD}/`, '');
 	// 404.html — SPA-фолбек: у ньому за побудовою немає ні вмісту, ні canonical.
 	const isFallback = where === '404.html';
+	/*
+	 * Прихована сторінка звільнена РІВНО від canonical, і ні від чого більше.
+	 * Прирівняти її до фолбека було б дешевше на два рядки й неправильно: разом із
+	 * canonical вона перестала б перевірятися на порожнє тіло, на title і на
+	 * правило смуги прокрутки в <head> — тобто найслабше покритою сторінкою стала б
+	 * саме та, якою користуються тестувальники.
+	 */
+	const isHidden = HIDDEN_PAGES.includes(where);
 
 	// SEO-v8 § 1.1 — сторінка в індексі з порожнім тілом.
 	if (!isFallback) {
@@ -185,10 +212,24 @@ for (const file of htmlFiles) {
 	if (/https?:\/\/[^"']*\.\//.test(html)) fail(`${where}: абсолютний URL із "./" усередині`);
 
 	if (!isFallback) {
-		const canonicals = html.match(/<link[^>]+rel="canonical"[^>]*>/g) ?? [];
-		if (canonicals.length !== 1) fail(`${where}: canonical знайдено ${canonicals.length} разів`);
-		else if (!canonicals[0].includes(`href="${SITE_ORIGIN}`))
-			fail(`${where}: canonical не абсолютна або веде на чужий origin — ${canonicals[0]}`);
+		if (isHidden) {
+			// Обидва боки обіцянки: пошуковикові сказано «не індексувати», і жодного
+			// canonical, через який сторінка потрапила б у sitemap.
+			if (!/<meta name="robots" content="noindex/.test(html))
+				fail(`${where}: службова сторінка без noindex — вона потрапить у пошук`);
+			if (/rel="canonical"/.test(html))
+				fail(`${where}: у службової сторінки є canonical — вона доїде в sitemap`);
+			if (/rel="alternate"/.test(html))
+				fail(`${where}: у службової сторінки є hreflang — вона доїде в індекс`);
+		} else {
+			const canonicals = html.match(/<link[^>]+rel="canonical"[^>]*>/g) ?? [];
+			if (canonicals.length !== 1) fail(`${where}: canonical знайдено ${canonicals.length} разів`);
+			else if (!canonicals[0].includes(`href="${SITE_ORIGIN}`))
+				fail(`${where}: canonical не абсолютна або веде на чужий origin — ${canonicals[0]}`);
+
+			if (/<meta name="robots" content="noindex/.test(html))
+				fail(`${where}: звичайна сторінка помічена noindex — вона зникне з пошуку`);
+		}
 
 		if (!/<title>[^<]{5,}<\/title>/.test(html))
 			fail(`${where}: title відсутній або надто короткий`);
@@ -268,6 +309,12 @@ for (const [relative, expectedLang] of EXPECTED_PAGES) {
 		if (!new RegExp(`rel="alternate"[^>]+hreflang="${hreflang}"`).test(html))
 			fail(`${relative}: немає hreflang="${hreflang}"`);
 	}
+}
+
+// --- приховані сторінки існують у всіх мовах --------------------------------
+for (const relative of HIDDEN_PAGES) {
+	if (!allFiles.includes(`${BUILD}/${relative}`))
+		fail(`${relative}: службової сторінки немає — зник entries() або сам маршрут`);
 }
 
 // --- sitemap збігається зі згенерованими сторінками (SEO-v8 § 5) ------------

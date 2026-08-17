@@ -106,5 +106,27 @@ export const ui = {
 	'error.title': 'Etwas ist schiefgelaufen',
 	'error.message': 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
 	'error.retry': 'Erneut versuchen',
-	'error.goHome': 'Zur Startseite'
+	'error.goHome': 'Zur Startseite',
+	// Beta-Checkliste. Die Punkte selbst liegen in `src/lib/config/beta/`.
+	'beta.title': 'Beta-Test',
+	'beta.intro':
+		'Eine Liste von Dingen, die geprüft werden sollten. Markiere die Punkte, kopiere am Ende den Bericht und schicke ihn uns.',
+	'beta.progress': 'In dieser Version markiert',
+	'beta.vote.none': 'Nicht geprüft',
+	'beta.vote.fail': 'Funktioniert nicht',
+	'beta.vote.weird': 'Funktioniert, aber seltsam',
+	'beta.vote.ok': 'Funktioniert',
+	'beta.coverage.manual': 'Nur Menschen',
+	'beta.coverage.testable': 'Noch kein automatischer Test',
+	'beta.coverage.covered': 'Von einem Test abgedeckt',
+	'beta.coverage.manualHint': 'Das prüft keine Maschine — hier brauchen wir deine Augen.',
+	'beta.coverage.testableHint':
+		'Das ließe sich automatisch prüfen, aber so eine Prüfung gibt es noch nicht.',
+	'beta.coverage.coveredHint':
+		'Hier schaut schon ein automatischer Test hin. Findest du hier einen Fehler, dann irrt der Test — und das ist besonders wertvoll.',
+	'beta.stale': 'in einer anderen Version markiert',
+	'beta.copy': 'Bericht kopieren',
+	'beta.copied': 'Bericht kopiert',
+	'beta.clear': 'Markierungen löschen',
+	'beta.copyFailed': 'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.'
 } as const;

@@ -1,0 +1,160 @@
+import type { BetaTab } from '../betaChecks';
+
+/**
+ * Заповідник — партія, що триває, а не раунд. Звідси й характер перевірок:
+ * майже все тут про те, чи витримує стан час, перезавантаження й другу ділянку.
+ *
+ * Найважливіші пункти — про підписи змін показників. Показник, що змінився без
+ * причини, неможливо ні перевірити, ні оскаржити: людина бачить «-235» і не має
+ * жодного способу дізнатися, за що.
+ */
+export const reserveTab: BetaTab = {
+	id: 'reserve',
+	title: { uk: 'Заповідник', en: 'The reserve' },
+	routes: ['reserve/forest', 'reserve/tundra', 'reserve/savanna', 'reserve/rainforest'],
+	checks: [
+		{
+			id: 'reserve_1',
+			category: { uk: 'Початок партії', en: 'Starting out' },
+			text: {
+				uk: 'Виберіть ділянку. Заповідник мусить будуватися зі смужкою поступу, яка рухається, — а не завмирати на кілька секунд без жодної ознаки життя.',
+				en: 'Pick a site. The reserve must build with a progress bar that moves — not freeze for a few seconds with no sign of life.'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'reserve_2',
+			category: { uk: 'Початок партії', en: 'Starting out' },
+			text: {
+				uk: 'Відкрийте дві різні ділянки, скажімо ліс і савану. Це дві окремі партії: гроші й тварини однієї не мусять зʼявлятися в другій.',
+				en: 'Open two different sites, say the forest and the savanna. These are two separate games: money and animals from one must not show up in the other.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/reserve/save.test.ts',
+			negative: true
+		},
+		{
+			id: 'reserve_3',
+			category: { uk: 'Тварини й вольєри', en: 'Animals and enclosures' },
+			text: {
+				uk: 'Придивіться до тварин у вольєрах: у них мусять бути голова, лапи й хвіст, і різні види мусять бути різними на вигляд — не однаковими капсулами.',
+				en: 'Look closely at the animals in the enclosures: they must have a head, legs and a tail, and different species must look different — not like identical capsules.'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'reserve_4',
+			category: { uk: 'Тварини й вольєри', en: 'Animals and enclosures' },
+			text: {
+				uk: 'Порівняйте, скільки місця у вольєрі займають слон, орел і мишка. Різниця мусить бути помітна на око, і жодна тварина не мусить губитися точкою у своєму вольєрі.',
+				en: 'Compare how much of an enclosure an elephant, an eagle and a mouse take up. The difference must be visible to the eye, and no animal may shrink to a dot inside its own enclosure.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/components/reserve/anatomy.test.ts'
+		},
+		{
+			id: 'reserve_5',
+			category: { uk: 'Тварини й вольєри', en: 'Animals and enclosures' },
+			text: {
+				uk: 'Натисніть на тварину. Її вікно мусить відкритися ПОВЕРХ нижньої смуги й мінікарти, і його мусить бути чим закрити.',
+				en: 'Click an animal. Its window must open ON TOP of the bottom bar and the minimap, and there must be a way to close it.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-card-close-btn'
+		},
+		{
+			id: 'reserve_6',
+			category: { uk: 'Тварини й вольєри', en: 'Animals and enclosures' },
+			text: {
+				uk: 'Натисніть на ПОРОЖНІЙ вольєр. Мусить відкритися вікно самого вольєра — з його станом і кнопками — а не вікно тварини й не нічого.',
+				en: 'Click an EMPTY enclosure. The enclosure window must open — with its condition and its buttons — not an animal window and not nothing at all.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-enclosure-vacant-text'
+		},
+		{
+			id: 'reserve_7',
+			category: { uk: 'Показники й гроші', en: 'Numbers and money' },
+			text: {
+				uk: 'Натисніть на показник у шапці, щоб побачити історію. Кожен рядок мусить називати ПРИЧИНУ: зарплату, корм, ремонт — а не просто число.',
+				en: 'Click a number in the header to see its history. Every row must name a REASON — wages, feed, repairs — not just an amount.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/reserve/ledger.test.ts',
+			testid: 'reserve-history-tooltip'
+		},
+		{
+			id: 'reserve_8',
+			category: { uk: 'Показники й гроші', en: 'Numbers and money' },
+			text: {
+				uk: 'Складіть суми в історії показника. Вони мусять дати саму зміну показника, а рядка «Інше» з великою сумою в списку бути не мусить.',
+				en: 'Add up the amounts in a numbers history. They must equal the change in that number, and there must be no «Other» row carrying a large amount.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/reserve/ledger.test.ts',
+			negative: true
+		},
+		{
+			id: 'reserve_9',
+			category: { uk: 'Показники й гроші', en: 'Numbers and money' },
+			text: {
+				uk: 'Наведіть курсор на відкрите вікно історії й потримайте. Воно не мусить закриватися саме, поки курсор усередині.',
+				en: 'Move the cursor onto an open history window and hold it there. The window must not close by itself while the cursor is inside.'
+			},
+			coverage: 'manual',
+			negative: true
+		},
+		{
+			id: 'reserve_10',
+			category: { uk: 'Показники й гроші', en: 'Numbers and money' },
+			text: {
+				uk: 'Лишіть тварині незакриту потребу на кілька днів і наймайте персонал. Стрес мусить лишатися помітним: жодна кількість працівників не опускає його до нуля, поки потреба відкрита.',
+				en: 'Leave an animal with an unmet need for a few days and keep hiring staff. Stress must stay visible: no amount of staff brings it to zero while the need is open.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/reserve/care.test.ts',
+			negative: true
+		},
+		{
+			id: 'reserve_11',
+			category: { uk: 'Збереження', en: 'Saving' },
+			text: {
+				uk: 'Перезавантажте сторінку посеред партії. Тварини, гроші й номер дня мусять лишитися ті самі.',
+				en: 'Reload the page in the middle of a game. The animals, the money and the day number must stay the same.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/reserve/save.test.ts'
+		},
+		{
+			id: 'reserve_12',
+			category: { uk: 'Збереження', en: 'Saving' },
+			text: {
+				uk: 'Натисніть «Почати все заново», тоді перезавантажте сторінку. Гроші мусять бути початковими, а вольєри порожніми — стара партія не мусить повернутися.',
+				en: 'Press «Start over», then reload the page. The money must be back to its starting amount and the enclosures empty — the old game must not come back.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/controllers/reserve.svelte.test.ts',
+			negative: true
+		},
+		{
+			id: 'reserve_13',
+			category: { uk: 'Мінікарта й камера', en: 'Minimap and camera' },
+			text: {
+				uk: 'Відкрийте мінікарту, тоді натисніть на тварину. Вікно тварини мусить бути поверх мінікарти, і мінікарту мусить бути чим закрити.',
+				en: 'Open the minimap, then click an animal. The animal window must sit above the minimap, and there must be a way to close the minimap.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-minimap-panel'
+		},
+		{
+			id: 'reserve_14',
+			category: { uk: 'Мінікарта й камера', en: 'Minimap and camera' },
+			text: {
+				uk: 'На телефоні поводіть по заповіднику пальцем і зведіть двома пальцями. Сцена мусить рухатися й масштабуватися, а сторінка під нею — не прокручуватися.',
+				en: 'On a phone drag across the reserve with one finger and pinch with two. The scene must pan and zoom while the page underneath must not scroll.'
+			},
+			coverage: 'manual',
+			negative: true
+		}
+	]
+};

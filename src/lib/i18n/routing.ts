@@ -97,10 +97,33 @@ export const LANGUAGE_ROUTES = {
 	'reserve/forest': '/[[lang=lang]]/reserve/forest',
 	'reserve/tundra': '/[[lang=lang]]/reserve/tundra',
 	'reserve/savanna': '/[[lang=lang]]/reserve/savanna',
-	'reserve/rainforest': '/[[lang=lang]]/reserve/rainforest'
+	'reserve/rainforest': '/[[lang=lang]]/reserve/rainforest',
+	/**
+	 * Чеклист бета-тестування. Сторінка є в кожній мові, але НЕ в індексі — див.
+	 * `HIDDEN_ROUTES` нижче.
+	 */
+	'beta-test': '/[[lang=lang]]/beta-test'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;
+
+/**
+ * Сторінки, яких немає в пошуку й у sitemap.
+ *
+ * «Приховано» тут означає рівно те, що означає: немає в меню, немає в sitemap,
+ * `noindex` у самій сторінці. НЕ означає «неможливо знайти»: сайт статичний і
+ * лежить в відкритому репозиторії, тож будувати з цього таємницю було б
+ * самообманом. Адреса працює завжди — її дають посиланням тому, хто згодився
+ * допомогти.
+ *
+ * Політика адрес живе в ОДНОМУ модулі (AGENTS.md), тож і цей перелік тут, а не
+ * в layout: canonical, hreflang і sitemap читають його разом.
+ */
+export const HIDDEN_ROUTES: readonly RouteRest[] = ['beta-test'];
+
+/** Чи ця сторінка поза індексом. `null` (невідомий маршрут) — ні. */
+export const isHiddenRoute = (rest: RouteRest | null): boolean =>
+	rest !== null && HIDDEN_ROUTES.includes(rest);
 
 export function isLanguage(value: unknown): value is Language {
 	return typeof value === 'string' && (LANGUAGES as readonly string[]).includes(value);
