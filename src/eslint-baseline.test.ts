@@ -30,6 +30,12 @@ const BASELINE = [
 	// забороняє `console.*` текстом, і поки правило вимкнене, заборона тримається
 	// лише на тому, що текст прочитають.
 	'no-console',
+	// STORAGE-NAMESPACE-v8, Крок 3, CRITICAL. Origin спільний із шістьма сусідніми
+	// застосунками, тож ключ повз фасад — це чужі дані під `clear()`. Правил два, і
+	// друге не зайве: `no-restricted-globals` НЕ ловить `window.localStorage`, а
+	// саме ця форма й трапилася в сусідньому проєкті тричі поспіль.
+	'no-restricted-globals',
+	'no-restricted-properties',
 	'@typescript-eslint/no-explicit-any',
 	'@typescript-eslint/no-unused-vars',
 	'@typescript-eslint/ban-ts-comment',
