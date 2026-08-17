@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.216",
+	"version": "0.6.217",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -48,6 +48,7 @@
 	},
 	"dependencies": {
 		"@threlte/core": "^8.5.16",
+		"firebase": "^12.17.1",
 		"lucide-svelte": "^1.0.1",
 		"three": "^0.185.1"
 	}

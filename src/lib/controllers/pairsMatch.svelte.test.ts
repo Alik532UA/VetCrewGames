@@ -1,0 +1,326 @@
+import { describe, expect, it, vi } from 'vitest';
+import { LocalRoom } from '$lib/net/localRoom';
+import type { Member, RoomInfo } from '$lib/net/roomTypes';
+
+/*
+ * Налаштування підмінені, як і в решті тестів контролерів: справжній синглтон у
+ * конструкторі питає `window.matchMedia`, якого в jsdom немає.
+ */
+const addScore = vi.fn();
+vi.mock('$lib/services/settings.svelte', () => ({ settings: { addScore } }));
+
+const { PairsMatch } = await import('./pairsMatch.svelte');
+
+/**
+ * Спільна партія «Знайди пару» — на двох учасниках в одному процесі.
+ *
+ * Головне, що тут доводиться: **стан партії є чистою функцією від (зерно, склад,
+ * журнал)**. Саме на цьому тримається рішення «авторитету немає ні в кого»: якщо
+ * двоє з того самого журналу отримують ту саму дошку, сервер для узгодження не
+ * потрібен. Перевіряється це не описом, а порівнянням двох дошок після кожного
+ * ходу.
+ *
+ * Транспорт підставний (`LocalRoom`) — і це не спрощення. Із живою базою кожна
+ * перевірка вимагала б мережі й ключів, і мережевий шар лишився б без тестів
+ * узагалі: рівно так, як у MindStep, де про це сказано в комментарі до правил.
+ */
+
+const HOST = 'uid-host';
+const GUEST = 'uid-guest';
+const WATCHER = 'uid-watcher';
+
+const info = (over: Partial<RoomInfo> = {}): RoomInfo => ({
+	gameId: 'pairs',
+	rulesVersion: 1,
+	seed: 20260817,
+	status: 'playing',
+	hostUid: HOST,
+	// Чотири пари — партія коротка, але всі переходи в ній є.
+	config: { pairs: 4, cols: 4 },
+	...over
+});
+
+const members = (): Member[] => [
+	{ uid: HOST, name: 'Господар', role: 'player', order: 1 },
+	{ uid: GUEST, name: 'Гість', role: 'player', order: 2 }
+];
+
+/** Кімната з двома гравцями й двома підключеними пристроями. */
+function table(extra: Member[] = []) {
+	const room = new LocalRoom(info(), [...members(), ...extra]);
+	const host = new PairsMatch(HOST, room.transport());
+	const guest = new PairsMatch(GUEST, room.transport());
+	const stop = [host.listen(), guest.listen()];
+	return { room, host, guest, stop: () => stop.forEach((off) => off()) };
+}
+
+/** Як виглядає дошка: цього досить, щоб два стани збіглися або ні. */
+const board = (match: { game: { slots: unknown[]; currentPlayerIndex: number } }) =>
+	JSON.stringify({
+		slots: match.game.slots,
+		turn: match.game.currentPlayerIndex
+	});
+
+type Slot = { card: { pairKey: string }; takenBy: string | null };
+type Board = { game: { slots: Slot[] } };
+
+/**
+ * Індекси двох карток, що складають пару, — серед тих, що ЩЕ НА ДОШЦІ.
+ *
+ * `takenBy === null` тут не дрібниця: перша версія цієї помічної функції шукала
+ * серед усіх карток і після кожної забраної пари повертала ту саму. Ходи йшли в
+ * журнал, дошка не рухалася, і перевірка кінця партії падала — на помилці тесту,
+ * а не гри.
+ */
+function findPair(match: Board): [number, number] {
+	const slots = match.game.slots;
+	for (let i = 0; i < slots.length; i++) {
+		if (slots[i].takenBy !== null) continue;
+		for (let j = i + 1; j < slots.length; j++) {
+			if (slots[j].takenBy !== null) continue;
+			if (slots[i].card.pairKey === slots[j].card.pairKey) return [i, j];
+		}
+	}
+	throw new Error('пари немає — дошка не роздана');
+}
+
+/** Два індекси, що НЕ складають пари, — серед тих, що ще на дошці. */
+function findMismatch(match: Board): [number, number] {
+	const slots = match.game.slots;
+	for (let i = 0; i < slots.length; i++) {
+		if (slots[i].takenBy !== null) continue;
+		for (let j = i + 1; j < slots.length; j++) {
+			if (slots[j].takenBy !== null) continue;
+			if (slots[i].card.pairKey !== slots[j].card.pairKey) return [i, j];
+		}
+	}
+	throw new Error('усі картки однакові — дошка не роздана');
+}
+
+describe('партія роздається з кімнати', () => {
+	it('перевірка жива: обидва бачать дошку, а не порожнє місце', () => {
+		const { host, guest, stop } = table();
+		expect(host.game.slots).toHaveLength(8);
+		expect(guest.game.slots).toHaveLength(8);
+		stop();
+	});
+
+	it('те саме зерно — та сама розкладка в обох', () => {
+		const { host, guest, stop } = table();
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('перший хід — за тим, хто зайшов першим, а не за тим, хто натиснув', () => {
+		const { host, stop } = table();
+		expect(host.actor?.id).toBe(HOST);
+		expect(host.myTurn).toBe(true);
+		stop();
+	});
+
+	it('доки кімната в лобі, дошка нічия', () => {
+		const room = new LocalRoom(info({ status: 'lobby' }), members());
+		const match = new PairsMatch(HOST, room.transport());
+		const off = match.listen();
+		expect(match.status).toBe('lobby');
+		expect(match.actor, 'у лобі ходити нема кому').toBeNull();
+		off();
+	});
+});
+
+describe('хід їде журналом', () => {
+	it('клік не малює нічого сам — малює хід, що приїхав', async () => {
+		const { host, guest, stop } = table();
+		const [first] = findPair(host);
+
+		await host.flip(first);
+
+		expect(host.game.slots[first].faceUp, 'у того, хто клікнув').toBe(true);
+		expect(guest.game.slots[first].faceUp, 'і в сусіда — з того самого журналу').toBe(true);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('зібрана пара лишає хід тому самому гравцеві', async () => {
+		const { host, guest, stop } = table();
+		const [a, b] = findPair(host);
+
+		await host.flip(a);
+		await host.flip(b);
+
+		expect(host.game.slots[a].takenBy).toBe(HOST);
+		expect(host.actor?.id, 'влучив — грає далі').toBe(HOST);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('невдала пара передає хід — але лише коли її оголосили', async () => {
+		const { host, guest, stop } = table();
+		const [a, b] = findMismatch(host);
+
+		await host.flip(a);
+		await host.flip(b);
+		expect(host.actor?.id, 'дошка чекає на оголошення').toBe(HOST);
+		expect(host.game.awaitingPeek).toBe(true);
+
+		await host.resolve();
+		expect(host.actor?.id).toBe(GUEST);
+		expect(guest.myTurn, 'сусід дізнався про це з журналу').toBe(true);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('перегортання оголошує ТОЙ САМИЙ гравець, а не чужий таймер', async () => {
+		/*
+		 * У соло паузу міряє таймер сторінки. Якби кожен пристрій міряв свою, дошки
+		 * розійшлися б на той час, поки один уже перегорнув, а другий ще ні.
+		 */
+		const { host, guest, stop } = table();
+		const [a, b] = findMismatch(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		await guest.resolve();
+		expect(host.actor?.id, 'чуже оголошення нічого не змінило').toBe(HOST);
+		stop();
+	});
+});
+
+describe('чужі ходи нікого не розводять', () => {
+	it('хід не в свою черга не означає нічого — і однаково в обох', async () => {
+		const { host, guest, stop } = table();
+		const before = board(host);
+		const [first] = findPair(host);
+
+		await guest.flip(first);
+
+		expect(board(host), 'дошка не ворухнулася').toBe(before);
+		expect(board(guest)).toBe(before);
+		stop();
+	});
+
+	it('навіть дописаний напряму позачерговий хід відкидають ОБИДВА', async () => {
+		// Клієнт міг би обійти перевірку в `flip()` і написати в журнал сам. Правила
+		// застосування однакові в усіх, тож такий хід просто нічого не означає.
+		const { room, host, guest, stop } = table();
+		const before = board(host);
+
+		const written = await room
+			.transport()
+			.append({ seq: 1, by: GUEST, type: 'flip', payload: { index: 0 } });
+
+		expect(written, 'база такий запис приймає').toBe(true);
+		expect(board(host), 'а правила — ні').toBe(before);
+		expect(board(guest)).toBe(before);
+		stop();
+	});
+
+	it('номер ходу зайнятий — другий хід зникає', async () => {
+		const { room, host, stop } = table();
+		const [first] = findPair(host);
+
+		expect(
+			await room.transport().append({ seq: 1, by: HOST, type: 'flip', payload: { index: first } })
+		).toBe(true);
+		expect(
+			await room.transport().append({ seq: 1, by: HOST, type: 'flip', payload: { index: 3 } }),
+			'той самий номер удруге не пишеться'
+		).toBe(false);
+		expect(room.moves).toHaveLength(1);
+		stop();
+	});
+});
+
+describe('глядач', () => {
+	const watcher = (): Member => ({
+		uid: WATCHER,
+		name: 'Глядач',
+		role: 'spectator',
+		order: 3
+	});
+
+	it('бачить ту саму дошку, що й гравці', async () => {
+		const { room, host, stop } = table([watcher()]);
+		const eye = new PairsMatch(WATCHER, room.transport());
+		const off = eye.listen();
+		const [a] = findPair(host);
+
+		await host.flip(a);
+
+		expect(board(eye)).toBe(board(host));
+		expect(eye.iAmSpectator).toBe(true);
+		off();
+		stop();
+	});
+
+	it('у черзі не стоїть і дописати не може', async () => {
+		const { room, host, stop } = table([watcher()]);
+		const eye = new PairsMatch(WATCHER, room.transport());
+		const off = eye.listen();
+
+		expect(eye.players.map((player) => player.uid)).toEqual([HOST, GUEST]);
+		expect(eye.myTurn).toBe(false);
+
+		await eye.flip(0);
+		expect(room.moves, 'журнал не поповнився').toHaveLength(0);
+		expect(board(eye)).toBe(board(host));
+		off();
+		stop();
+	});
+});
+
+describe('пізній учасник відтворює, а не отримує', () => {
+	it('той, хто підключився посеред партії, доганяє журналом', async () => {
+		const { room, host, stop } = table();
+		const [a, b] = findPair(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		// Третій пристрій підключається лише зараз — стану йому ніхто не надсилав.
+		const late = new PairsMatch(GUEST, room.transport());
+		const off = late.listen();
+
+		expect(board(late)).toBe(board(host));
+		expect(late.applied).toBe(2);
+		off();
+		stop();
+	});
+
+	it('склад гравців змінився — дошка роздається заново', async () => {
+		/*
+		 * Черга рахується зі складу, тож новий гравець посеред партії означає іншу
+		 * партію. Це не «оптимізація на потім»: без переroзданої дошки двоє
+		 * рахували б чергу від різних списків.
+		 */
+		const { room, host, stop } = table();
+		const [a] = findPair(host);
+		await host.flip(a);
+		expect(host.applied).toBe(1);
+
+		room.setMembers([...members(), { uid: 'uid-third', name: 'Третій', role: 'player', order: 3 }]);
+
+		expect(host.applied, 'журнал прокручується спочатку').toBe(1);
+		expect(host.players).toHaveLength(3);
+		stop();
+	});
+});
+
+describe('кінець партії', () => {
+	it('усі пари зібрано — ходити більше нема кому', async () => {
+		const { host, guest, stop } = table();
+
+		// Забираємо пари одну за одною: влучний хід лишається за тим самим гравцем,
+		// тож усю партію грає господар.
+		for (let taken = 0; taken < 4; taken++) {
+			const [a, b] = findPair(host);
+			await host.flip(a);
+			await host.flip(b);
+		}
+
+		expect(host.game.gameOver).toBe(true);
+		expect(host.actor, 'партія скінчилася').toBeNull();
+		expect(host.game.takenPairs).toBe(4);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+});
