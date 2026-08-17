@@ -100,7 +100,8 @@ describe('годинник партії', () => {
 		fast.speed = 5;
 		fast.advance(100);
 		expect(fast.state.ticks).toBe(5);
-		expect(fast.day, 'день так само 300 тіків').toBe(0);
+		// Партія досі в першому дні: швидкість множить тіки, а не коротшає добу.
+		expect(fast.day, 'день так само 300 тіків').toBe(1);
 	});
 
 	it('пауза спиняє час, але не втрачає партію', () => {
@@ -189,7 +190,8 @@ describe('партія і сховище', () => {
 		const second = new ReserveController('forest');
 		second.start();
 		expect(second.state.staff.keeper).toBe(1);
-		expect(second.day).toBe(2);
+		// Дві доби прожито — іде третя.
+		expect(second.day).toBe(3);
 		expect(second.restoreProblem).toBeNull();
 	});
 

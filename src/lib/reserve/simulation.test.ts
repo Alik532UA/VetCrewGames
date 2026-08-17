@@ -471,7 +471,8 @@ describe('випуск у дику природу', () => {
 
 		expect(execute(state, { type: 'release', animalId: 1 })).toEqual({ ok: true });
 		expect(state.animals[0].stage).toBe('released');
-		expect(state.animals[0].releasedOnDay, 'день випуску не записано').toBe(7);
+		// Сім діб прожито — випуск стався на восьмий день, і саме він записаний.
+		expect(state.animals[0].releasedOnDay, 'день випуску не записано').toBe(8);
 	});
 
 	it('хвору не випустити', () => {
@@ -646,12 +647,14 @@ describe('умова програшу', () => {
 });
 
 describe('час', () => {
+	/** Перший день — ПЕРШИЙ: партія починається в дні 1, а не в дні 0. */
 	it('день настає рівно на межі тіків', () => {
 		const state = createReserve(1);
+		expect(dayOf(state), 'партія починається з першого дня').toBe(1);
 		tick(state, TICKS_PER_DAY - 1);
-		expect(dayOf(state)).toBe(0);
-		tick(state, 1);
 		expect(dayOf(state)).toBe(1);
+		tick(state, 1);
+		expect(dayOf(state)).toBe(2);
 	});
 });
 
@@ -1027,7 +1030,12 @@ describe('контракти зі спонсорами', () => {
 
 		const contract = state.contracts[0];
 		const reputation = state.reputation;
-		day(state, contract.dueDay - dayOf(state) + 1);
+		/*
+		 * Доба вважається пропущеною лише тоді, коли вона СКІНЧИЛАСЯ: прострочення
+		 * рахує кінець доби, а `dayOf` каже, який день іде. Звідси й друга доба —
+		 * дожити до дедлайну недосить, треба його перейти.
+		 */
+		day(state, contract.dueDay - dayOf(state) + 2);
 
 		expect(state.contracts, 'прострочений контракт лишився в списку').toEqual([]);
 		expect(state.reputation).toBeLessThan(reputation - contract.penalty + 1);

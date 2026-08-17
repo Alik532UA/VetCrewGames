@@ -169,7 +169,8 @@ export class PopulationGameController {
 		}
 
 		const home = this.initialSourceAnimals.findIndex((a) => a?.id === animal.id);
-		const target = home !== -1 && this.sourceAnimals[home] === null ? home : this.sourceAnimals.indexOf(null);
+		const target =
+			home !== -1 && this.sourceAnimals[home] === null ? home : this.sourceAnimals.indexOf(null);
 		if (target === -1) return;
 
 		this.isSwapping = false;
@@ -182,7 +183,8 @@ export class PopulationGameController {
 		if (this.checked) return;
 
 		const slotIndex = this.slots.findIndex((a) => a?.id === animal.id);
-		const sourceIndex = slotIndex === -1 ? this.sourceAnimals.findIndex((a) => a?.id === animal.id) : -1;
+		const sourceIndex =
+			slotIndex === -1 ? this.sourceAnimals.findIndex((a) => a?.id === animal.id) : -1;
 
 		const from: Place | null =
 			slotIndex !== -1

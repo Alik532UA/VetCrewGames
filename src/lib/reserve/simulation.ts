@@ -179,8 +179,17 @@ export function tick(state: ReserveState, count = 1): void {
 
 export { effectiveQuality } from './day';
 
-/** Скільки повних ігрових днів минуло. */
-export const dayOf = (state: ReserveState): number => Math.floor(state.ticks / TICKS_PER_DAY);
+/**
+ * Який день партії ЙДЕ зараз. Перший день — перший, а не нульовий.
+ *
+ * Було «скільки повних днів минуло», і на екрані стояло «День 0» — але річ не в
+ * тому, що нуль негарний. Кінець доби рахує день як `ticks / TICKS_PER_DAY` уже
+ * ПІСЛЯ приросту, тобто перша доба закривається як перша: за цією шкалою живуть
+ * дедлайни контрактів, дні нальотів і рядки журналу. Шапка ж показувала шкалу на
+ * день молодшу — і панель завдань казала «до дня 12», коли до нього лишалося на
+ * добу менше, ніж виглядало.
+ */
+export const dayOf = (state: ReserveState): number => Math.floor(state.ticks / TICKS_PER_DAY) + 1;
 
 /** Мешканці заповідника — без випущених. Це те, що показує меню «Мешканці». */
 export const residents = present;

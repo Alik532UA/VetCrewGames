@@ -44,11 +44,10 @@ describe('PopulationGameController', () => {
 
 		expect(board(game.sourceAnimals)).toBe('ant,bee,cat');
 		expect(board(game.slots)).toBe('.,.,.');
-		expect(game.correctOrder.map((a) => a.id), 'від найменшої популяції').toEqual([
-			'cat',
-			'bee',
-			'ant'
-		]);
+		expect(
+			game.correctOrder.map((a) => a.id),
+			'від найменшої популяції'
+		).toEqual(['cat', 'bee', 'ant']);
 		expect(game.checked).toBe(false);
 	});
 

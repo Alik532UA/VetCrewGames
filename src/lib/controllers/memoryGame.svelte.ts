@@ -103,7 +103,12 @@ export class MemoryGameController {
 	 * Почати партію за її описом. Один обʼєкт, а не три аргументи: це те саме,
 	 * що колись прийде з мережі одним повідомленням.
 	 */
-	start({ seed, pairs = this.pairs, cols = this.cols, players = [{ ...SOLO_PLAYER }] }: MemoryParty): void {
+	start({
+		seed,
+		pairs = this.pairs,
+		cols = this.cols,
+		players = [{ ...SOLO_PLAYER }]
+	}: MemoryParty): void {
 		this.pairs = pairs;
 		this.cols = cols;
 		this.slots = buildDeck(seed, pairs).map((card) => ({

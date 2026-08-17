@@ -1,12 +1,7 @@
 import { existsSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { animals } from '$lib/config/population-game';
-import {
-	BIOMES,
-	CONTINENTS,
-	buildHabitatRound,
-	habitatEntries
-} from '$lib/config/habitat-game';
+import { BIOMES, CONTINENTS, buildHabitatRound, habitatEntries } from '$lib/config/habitat-game';
 import { uk } from '$lib/i18n/translations/uk';
 
 const settingsMock = { addScore: vi.fn() };

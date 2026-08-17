@@ -21,7 +21,8 @@ describe('дані «Що їмо?»', () => {
 	it('кожна тварина й кожна страва набору існують', () => {
 		const missing: string[] = [];
 		for (const set of feedingSets) {
-			for (const id of set.animalIds) if (!animalIds.has(id)) missing.push(`${set.id}: тварина ${id}`);
+			for (const id of set.animalIds)
+				if (!animalIds.has(id)) missing.push(`${set.id}: тварина ${id}`);
 			for (const id of set.foodIds) if (!foodIds.has(id)) missing.push(`${set.id}: страва ${id}`);
 		}
 		expect(missing, missing.join('\n')).toEqual([]);

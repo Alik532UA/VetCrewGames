@@ -81,9 +81,7 @@ export class FeedingGameController {
 	 * і випадковий дотик коштує раунду. Відповідь «усе троє в смітник» при цьому
 	 * лишається доступною — її просто треба висловити смітником.
 	 */
-	canFeed = $derived(
-		!this.fed && this.round !== null && this.unplaced.length < this.foodsPerRound
-	);
+	canFeed = $derived(!this.fed && this.round !== null && this.unplaced.length < this.foodsPerRound);
 
 	/** Розбір кожної страви. Порожній, доки не натиснуто «Погодувати». */
 	verdicts = $derived.by<FeedingVerdict[]>(() => {

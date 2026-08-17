@@ -23,7 +23,9 @@ describe('набори «Хто з іншої родини?»', () => {
 
 	it('кожна тварина набору є в каталозі', () => {
 		const missing = familyPuzzles.flatMap((puzzle) =>
-			[...puzzle.groupIds, puzzle.oddId].filter((id) => !ids.has(id)).map((id) => `${puzzle.id}: ${id}`)
+			[...puzzle.groupIds, puzzle.oddId]
+				.filter((id) => !ids.has(id))
+				.map((id) => `${puzzle.id}: ${id}`)
 		);
 		expect(missing, `тварин немає в population-game.ts:\n${missing.join('\n')}`).toEqual([]);
 	});

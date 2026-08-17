@@ -26,7 +26,7 @@ describe('MythGameController', () => {
 		settingsMock.addScore.mockReset();
 	});
 
-	it("start() дає перше питання й запамʼятовує його як показане", () => {
+	it('start() дає перше питання й запамʼятовує його як показане', () => {
 		const game = new MythGameController();
 
 		game.start();
@@ -90,7 +90,7 @@ describe('MythGameController', () => {
 		expect(game.current, 'екран підсумку не має показувати картку').toBeNull();
 	});
 
-	it("reset() повертає партію до початку, зберігаючи памʼять про показані", () => {
+	it('reset() повертає партію до початку, зберігаючи памʼять про показані', () => {
 		const game = new MythGameController(2);
 		game.start();
 		game.answer(game.current!.isTrue);
@@ -112,7 +112,7 @@ describe('MythGameController', () => {
 	 * про попередні сесії скидається, інакше гра мовчки лишилася б без питань —
 	 * і гравець побачив би порожній екран без жодної помилки.
 	 */
-	it("коли всі питання вже показувалися, памʼять про сесії скидається", () => {
+	it('коли всі питання вже показувалися, памʼять про сесії скидається', () => {
 		storageMock.getJSON.mockReturnValue(myths.map((m) => m.id));
 		const game = new MythGameController();
 

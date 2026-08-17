@@ -24,7 +24,10 @@ describe('колода «Знайди пару»', () => {
 		const counts = new Map<string, number>();
 		for (const card of deck) counts.set(card.pairKey, (counts.get(card.pairKey) ?? 0) + 1);
 		expect(counts.size, 'різних тварин рівно стільки, скільки пар').toBe(MEMORY_PAIRS);
-		expect([...counts.values()].every((n) => n === 2), 'кожна двічі').toBe(true);
+		expect(
+			[...counts.values()].every((n) => n === 2),
+			'кожна двічі'
+		).toBe(true);
 	});
 
 	it('id карток унікальні', () => {
@@ -38,7 +41,10 @@ describe('колода «Знайди пару»', () => {
 	 * розбіжність вилізла б аж посеред гри.
 	 */
 	it('те саме зерно дає ту саму колоду, різні — різну', () => {
-		const ids = (seed: number) => buildDeck(seed).map((card) => card.id).join(',');
+		const ids = (seed: number) =>
+			buildDeck(seed)
+				.map((card) => card.id)
+				.join(',');
 		expect(ids(42)).toBe(ids(42));
 		expect(ids(42)).not.toBe(ids(43));
 	});
@@ -286,10 +292,7 @@ describe('MemoryGameController', () => {
 		game.flip(q);
 		expect(game.currentPlayerIndex, 'збіг — хід лишається').toBe(1);
 		expect(game.players[1].score).toBe(1);
-		expect(
-			settingsMock.addScore,
-			'чужі очки в загальний рахунок не йдуть'
-		).not.toHaveBeenCalled();
+		expect(settingsMock.addScore, 'чужі очки в загальний рахунок не йдуть').not.toHaveBeenCalled();
 	});
 
 	it('партія завершується, коли зібрано всі пари', () => {
