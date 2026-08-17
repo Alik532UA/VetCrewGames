@@ -167,11 +167,6 @@ class Settings {
 		storage.set('theme', theme);
 	}
 
-	toggleTheme(): void {
-		const next = (THEMES.indexOf(this.theme) + 1) % THEMES.length;
-		this.setTheme(THEMES[next]);
-	}
-
 	/**
 	 * Мова, яку диктує АДРЕСА. У сховище не пишеться: сегмент шляху — це запит
 	 * на конкретну сторінку, а не вибір користувача (I18N-v8 § 3.3, порядок

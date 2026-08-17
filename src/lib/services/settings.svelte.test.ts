@@ -107,17 +107,6 @@ describe('settings', () => {
 		);
 	});
 
-	it('toggleTheme обходить усі чотири теми по колу', async () => {
-		const { settings } = await load();
-		const seen = [settings.theme];
-		for (let i = 0; i < 4; i++) {
-			settings.toggleTheme();
-			seen.push(settings.theme);
-		}
-		expect(new Set(seen.slice(0, 4)).size, 'кожна тема має траплятися рівно раз').toBe(4);
-		expect(seen[4], 'після четвертого перемикання цикл замикається').toBe(seen[0]);
-	});
-
 	/**
 	 * Мову диктує АДРЕСА, і `applyRouteLocale()` навмисно НЕ пише у сховище:
 	 * сегмент шляху — це запит на конкретну сторінку, а не вибір користувача

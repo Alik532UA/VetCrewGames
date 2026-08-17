@@ -91,12 +91,14 @@ smoke-тести можна писати проти живого сайту бе
 ```typescript
 class SettingsService {
 	theme = $state<'dark' | 'light-green' | 'winter' | 'orange-purple'>('dark');
-	private themes: Theme[] = ['dark', 'light-green', 'winter', 'orange-purple'];
 
-	toggleTheme() {
-		const currentIndex = this.themes.indexOf(this.theme);
-		const nextIndex = (currentIndex + 1) % this.themes.length;
-		this.theme = this.themes[nextIndex];
+	// Тема ЗАДАЄТЬСЯ, а не «перемикається»: у шапці стоїть список чотирьох тем із
+	// позначеною поточною, і людина вибирає з нього. Циклічний `toggleTheme()` тут
+	// колись був, і його прибрано — доти цей приклад показував саме його, і чеклист
+	// бета-тестування отримав через це пункт про логіку, якої вже 46 комітів немає.
+	setTheme(theme: Theme) {
+		this.theme = theme;
+		storage.set('theme', theme); // наскрізний запис у мутаторі, а не в $effect
 	}
 }
 export const settings = new SettingsService();
