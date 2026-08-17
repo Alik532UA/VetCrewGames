@@ -11,6 +11,18 @@ import type { Animal, Enclosure } from '$lib/reserve/types';
 
 export const CELL = CELL_WORLD;
 
+/** Наскільки паркан відступає всередину клітинки, щоб сусідні не злипалися. */
+export const FENCE_INSET = 0.15;
+
+/**
+ * Скільки землі лишається ВСЕРЕДИНІ паркана.
+ *
+ * Живе тут, а не в самому паркані, бо на це число дивляться двоє: паркан, який
+ * його малює, і силует мешканця, який має в нього вміститися. Розписане двічі
+ * воно розійшлося б на першій же правці відступу.
+ */
+export const innerSpan = (size: number) => size * CELL - 2 * FENCE_INSET;
+
 export interface Placed {
 	enclosure: Enclosure;
 	/** Хто тут живе; `null` — вольєр порожній. */

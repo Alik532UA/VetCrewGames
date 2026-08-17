@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { T } from '@threlte/core';
-	import { CELL } from './sceneLayout';
+	import { CELL, innerSpan } from './sceneLayout';
+	import AnimalFigure from './AnimalFigure.svelte';
 	import type { Animal } from '$lib/reserve/types';
 
 	/**
@@ -26,7 +27,7 @@
 	let { hasWater, animal, x, z, span, selected }: Props = $props();
 
 	/** Півсторона паркана у світових одиницях, із невеликим відступом усередину. */
-	const half = $derived((span * CELL) / 2 - 0.15);
+	const half = $derived(innerSpan(span) / 2);
 	/** Центр сліду: клітинка — це його ЛІВИЙ ВЕРХНІЙ кут, а не середина. */
 	const shift = $derived(((span - 1) * CELL) / 2);
 
@@ -91,10 +92,6 @@
 	{/if}
 
 	{#if animal}
-		<!-- Мешканець: капсула, а не модель — зображень тварин агент не вигадує. -->
-		<T.Mesh position={[0, 0.55, 0]}>
-			<T.CapsuleGeometry args={[0.28, 0.5, 4, 8]} />
-			<T.MeshStandardMaterial color={animal.stage === 'healthy' ? '#4caf50' : '#c98a3c'} />
-		</T.Mesh>
+		<AnimalFigure {animal} />
 	{/if}
 </T.Group>
