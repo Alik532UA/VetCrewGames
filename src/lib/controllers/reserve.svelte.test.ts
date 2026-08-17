@@ -312,3 +312,69 @@ describe('вибір на карті', () => {
 		expect(controller.selectedEnclosure).toBeNull();
 	});
 });
+
+describe('«почати всі заново»', () => {
+	/**
+	 * Дефект був такий: кнопка стирала СХОВИЩЕ, а фонд лишався в памʼяті.
+	 *
+	 * Контролер — синглтон, і другий `start()` нічого не піднімає, тож після
+	 * скидання шапка показувала стару партію, а перший же запис повертав її й у
+	 * сховище. Тому тут перевіряються ОБИДВІ половини: і память, і запис.
+	 */
+	const played = () => {
+		const controller = fresh();
+		controller.state.budget = 900_000;
+		controller.state.reputation = 60;
+		controller.run({ type: 'build', size: 3, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+		controller.run(
+			{ type: 'acquire', origin: 'rescue', speciesId: 'fox', enclosureId: 1 },
+			'forest'
+		);
+		controller.selectAnimal(1);
+		runFor(controller, DAY_MS);
+		return controller;
+	};
+
+	it('скидання прибирає партію з ПАМʼЯТІ, а не лише зі сховища', () => {
+		const controller = played();
+		expect(controller.isFresh, 'партія мусила початися').toBe(false);
+
+		controller.reset(7);
+
+		expect(controller.isFresh).toBe(true);
+		expect(controller.state.sites.forest.enclosures).toEqual([]);
+		expect(controller.state.sites.forest.animals).toEqual([]);
+		expect(controller.selected, 'вибране теж не переживає скидання').toBeNull();
+	});
+
+	it('у сховищі після скидання лежить НОВИЙ фонд', () => {
+		const controller = played();
+		controller.reset(7);
+
+		expect(written().state.sites.forest.animals).toEqual([]);
+		expect(written().state.ticks).toBe(0);
+	});
+
+	it('стара партія не повертається ні часом, ні ходом', () => {
+		// Саме так дефект і виявлявся: заповідник «пам'ятав» себе після скидання.
+		const controller = played();
+		controller.reset(7);
+
+		runFor(controller, DAY_MS);
+		controller.run({ type: 'campaign' }, 'forest');
+
+		expect(controller.state.sites.forest.animals).toEqual([]);
+		expect(written().state.sites.forest.animals).toEqual([]);
+	});
+
+	it('після скидання партія жива: ходи проходять', () => {
+		const controller = played();
+		controller.reset(7);
+		controller.state.budget = 500_000;
+		controller.state.reputation = 60;
+
+		expect(
+			controller.run({ type: 'build', size: 2, quality: 1, cell: { x: 2, z: 2 } }, 'forest')
+		).toEqual({ ok: true });
+	});
+});

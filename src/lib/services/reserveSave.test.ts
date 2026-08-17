@@ -163,13 +163,4 @@ describe('сейв заповідника у сховищі', () => {
 		expect(raw.getItem('vetcrewgames_reserve.savanna')).toBeNull();
 	});
 
-	it('видалення прибирає збереження', async () => {
-		const raw = makeStorage();
-		vi.stubGlobal('localStorage', raw);
-		const { saveReserve, dropReserve, loadReserve } = await import('./reserveSave');
-
-		saveReserve(played());
-		dropReserve();
-		expect(loadReserve()).toEqual({ ok: false, reason: 'empty' });
-	});
 });

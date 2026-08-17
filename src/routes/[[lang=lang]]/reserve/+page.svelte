@@ -6,7 +6,6 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
-	import { dropReserve } from '$lib/services/reserveSave';
 	import BiomePicker from '$lib/components/reserve/BiomePicker.svelte';
 	import ReserveHud from '$lib/components/reserve/ReserveHud.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
@@ -67,7 +66,12 @@
 			confirming = true;
 			return;
 		}
-		dropReserve();
+		/*
+		 * Через КОНТРОЛЕР, а не через сховище. Прибрати лише запис — саме той дефект,
+		 * який тут був: фонд лишався в памʼяті синглтона, шапка показувала стару
+		 * партію, а перший же запис повертав її назад у сховище.
+		 */
+		game.reset();
 		confirming = false;
 		toast.success('reserve.restartAllDone');
 	}

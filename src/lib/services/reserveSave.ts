@@ -64,6 +64,3 @@ export function loadReserve(): RestoreResult {
 	return restore(parsed);
 }
 
-export function dropReserve(): void {
-	storage.remove(KEY);
-}
