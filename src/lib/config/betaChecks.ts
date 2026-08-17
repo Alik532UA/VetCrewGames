@@ -138,7 +138,7 @@ export const BETA_TABS: readonly BetaTab[] = [
  * всередині цього ж інструмента нічого не додають: людина відкрила сторінку,
  * отже сторінка відкривається.
  */
-export const BETA_UNCOVERED_ROUTES: readonly RouteRest[] = ['beta-test'];
+export const BETA_UNCOVERED_ROUTES: readonly RouteRest[] = ['beta-test-checklists'];
 
 /** Усі пункти підряд — для інваріантів і для звіту. */
 export const allBetaChecks = (): BetaCheck[] => BETA_TABS.flatMap((tab) => [...tab.checks]);

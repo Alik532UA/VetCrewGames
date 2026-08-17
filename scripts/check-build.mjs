@@ -116,10 +116,10 @@ const EXPECTED_PAGES = [
  * будь-яку іншу, і мовчазне зникнення трьох із них теж дефект.
  */
 const HIDDEN_PAGES = [
-	'beta-test/index.html',
-	'en/beta-test/index.html',
-	'de/beta-test/index.html',
-	'nl/beta-test/index.html'
+	'beta-test-checklists/index.html',
+	'en/beta-test-checklists/index.html',
+	'de/beta-test-checklists/index.html',
+	'nl/beta-test-checklists/index.html'
 ];
 
 /**

@@ -1,8 +1,8 @@
 # allow crawling everything by default
 User-agent: *
-Disallow: /VetCrewGames/beta-test/
-Disallow: /VetCrewGames/en/beta-test/
-Disallow: /VetCrewGames/de/beta-test/
-Disallow: /VetCrewGames/nl/beta-test/
+Disallow: /VetCrewGames/beta-test-checklists/
+Disallow: /VetCrewGames/en/beta-test-checklists/
+Disallow: /VetCrewGames/de/beta-test-checklists/
+Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 Sitemap: https://alik532ua.github.io/VetCrewGames/sitemap.xml

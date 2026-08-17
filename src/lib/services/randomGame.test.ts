@@ -11,7 +11,7 @@ describe('випадкова гра', () => {
 	const MENUS = ['', 'quiz', 'quiz/play', 'pairs', 'game-habitat'];
 	const OWN_SECTION = ['game-memory'];
 	/** Службові сторінки: чеклист бета-тестування — не гра й не меню. */
-	const SERVICE = ['beta-test'];
+	const SERVICE = ['beta-test-checklists'];
 
 	it('це всі маршрути, крім меню, розділів із власною грою й службових', () => {
 		const games = Object.keys(LANGUAGE_ROUTES).filter(

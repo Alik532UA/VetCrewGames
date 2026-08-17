@@ -22,8 +22,8 @@ import { LANGUAGE_ROUTES, type RouteRest } from '$lib/i18n/routing';
  *    (`game-habitat/continents` і `.../biomes`) у переліку є й випадають;
  *  * `game-memory` — окремий розділ зі своєю спільною партією, і «Випадкова
  *    гра» живе всередині вікторини, тобто пропонує саме її п'ятірку;
- *  * `beta-test` — службова сторінка. «Випадкова гра», яка приводить у чеклист
- *    перевірок, — це не жарт, а зламана обіцянка кнопки.
+ *  * `beta-test-checklists` — службова сторінка. «Випадкова гра», яка привела б у
+ *    чеклист перевірок, — це не жарт, а зламана обіцянка кнопки.
  */
 const NOT_A_GAME = new Set<RouteRest>([
 	'',
@@ -32,7 +32,7 @@ const NOT_A_GAME = new Set<RouteRest>([
 	'pairs',
 	'game-habitat',
 	'game-memory',
-	'beta-test'
+	'beta-test-checklists'
 ]);
 
 export const PLAYABLE_ROUTES = (Object.keys(LANGUAGE_ROUTES) as RouteRest[]).filter(

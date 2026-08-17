@@ -102,7 +102,7 @@ export const LANGUAGE_ROUTES = {
 	 * Чеклист бета-тестування. Сторінка є в кожній мові, але НЕ в індексі — див.
 	 * `HIDDEN_ROUTES` нижче.
 	 */
-	'beta-test': '/[[lang=lang]]/beta-test'
+	'beta-test-checklists': '/[[lang=lang]]/beta-test-checklists'
 } as const;
 
 export type RouteRest = keyof typeof LANGUAGE_ROUTES;
@@ -119,7 +119,7 @@ export type RouteRest = keyof typeof LANGUAGE_ROUTES;
  * Політика адрес живе в ОДНОМУ модулі (AGENTS.md), тож і цей перелік тут, а не
  * в layout: canonical, hreflang і sitemap читають його разом.
  */
-export const HIDDEN_ROUTES: readonly RouteRest[] = ['beta-test'];
+export const HIDDEN_ROUTES: readonly RouteRest[] = ['beta-test-checklists'];
 
 /** Чи ця сторінка поза індексом. `null` (невідомий маршрут) — ні. */
 export const isHiddenRoute = (rest: RouteRest | null): boolean =>
