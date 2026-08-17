@@ -22,6 +22,11 @@ export const ui = {
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
 	'pairs.over': 'Het spel is voorbij',
+	'pairs.won': 'Gewonnen',
+	'pairs.draw': 'Gelijkspel',
+	'pairs.rematch': 'Nog eens spelen',
+	'pairs.closeRoom': 'Ruimte sluiten',
+	'pairs.actionFailed': 'De server heeft deze actie geweigerd.',
 	'pairs.createRoom': 'Ruimte maken',
 	'pairs.joinRoom': 'Meedoen met code',
 	'pairs.roomCode': 'Ruimtecode',

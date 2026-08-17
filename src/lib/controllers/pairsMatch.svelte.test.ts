@@ -429,3 +429,55 @@ describe('швидкий клік не грає за суперника', () => 
 		stop();
 	});
 });
+
+describe('господар — той, кого назвала кімната', () => {
+	it('господар лишається господарем, навіть коли не перший у складі', () => {
+		/*
+		 * Дефект живого прогону: сторінка рахувала господаря як «перший у списку», а
+		 * база віддає склад за алфавітом ключів. Щойно заходив хтось із меншим `uid`,
+		 * кнопка «Почати» зникала — у самого господаря.
+		 */
+		const room = new LocalRoom(info({ status: 'lobby' }), [
+			{ uid: 'aaa-guest', name: 'Гість', role: 'player', order: 2 },
+			{ uid: HOST, name: 'Господар', role: 'player', order: 1 }
+		]);
+		const match = new PairsMatch(HOST, room.transport());
+		const off = match.listen();
+
+		expect(match.members[0].uid, 'у складі він НЕ перший').not.toBe(HOST);
+		expect(match.hostUid).toBe(HOST);
+		off();
+	});
+
+	it('черга рахується за входом, а не за порядком у списку', () => {
+		const room = new LocalRoom(info(), [
+			{ uid: 'aaa-guest', name: 'Гість', role: 'player', order: 2 },
+			{ uid: HOST, name: 'Господар', role: 'player', order: 1 }
+		]);
+		const match = new PairsMatch(HOST, room.transport());
+		const off = match.listen();
+
+		expect(match.players.map((player) => player.uid)).toEqual([HOST, 'aaa-guest']);
+		expect(match.actor?.id, 'перший хід у того, хто зайшов першим').toBe(HOST);
+		off();
+	});
+});
+
+describe('нова партія в тій самій кімнаті', () => {
+	it('нове зерно роздає іншу колоду й стирає журнал', async () => {
+		const { room, host, guest, stop } = table();
+		const [a, b] = findPair(host);
+		await host.flip(a);
+		await host.flip(b);
+		const before = board(host);
+
+		await room.transport().restart(777);
+
+		expect(room.moves, 'журнал порожній').toHaveLength(0);
+		expect(host.applied).toBe(0);
+		expect(board(host), 'колода інша').not.toBe(before);
+		expect(board(guest), 'і однакова в обох').toBe(board(host));
+		expect(host.actor?.id, 'перший хід знову за першим').toBe(HOST);
+		stop();
+	});
+});

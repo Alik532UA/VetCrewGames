@@ -23,6 +23,12 @@
 	let { code, members, online, me, amHost, myRole, onRole, onStart }: Props = $props();
 
 	const players = $derived(members.filter((member) => member.role === 'player'));
+	/*
+	 * Порядок у списку — за входом, а не за тим, як його віддала база (за алфавітом
+	 * ключів). Черга ходів іде саме за входом, і список мусить показувати те саме,
+	 * інакше «хто перший» читається з екрана неправильно.
+	 */
+	const shown = $derived([...members].sort((a, b) => a.order - b.order));
 </script>
 
 <div class="lobby">
@@ -32,7 +38,7 @@
 	</p>
 
 	<ul class="lobby__list text-panel" data-testid="pairs-members-list">
-		{#each members as member (member.uid)}
+		{#each shown as member (member.uid)}
 			<li
 				class="lobby__member"
 				class:lobby__member--away={!online.includes(member.uid)}

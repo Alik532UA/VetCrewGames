@@ -22,6 +22,11 @@ export const ui = {
 
 	// Shared game of Find a Pair: lobby, role, turn.
 	'pairs.over': 'The game is over',
+	'pairs.won': 'Winner',
+	'pairs.draw': 'A draw',
+	'pairs.rematch': 'Play again',
+	'pairs.closeRoom': 'Close the room',
+	'pairs.actionFailed': 'The server refused this action.',
 	'pairs.createRoom': 'Create a room',
 	'pairs.joinRoom': 'Join with a code',
 	'pairs.roomCode': 'Room code',

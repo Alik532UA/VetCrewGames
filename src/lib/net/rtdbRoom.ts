@@ -107,18 +107,41 @@ export async function createRoom(options: NewRoom): Promise<string> {
 	throw new Error('room-code-taken');
 }
 
-/** Зайти в кімнату. Порядок входу рахується з наявного складу. */
-export async function joinRoom(code: string, name: string, role: Member['role']): Promise<void> {
+/**
+ * Зайти в кімнату — або повернутися в неї.
+ *
+ * `role` без значення означає «лишити як було»: після перезавантаження сторінка
+ * заходить знову, і глядач, якого мовчки перевели в гравці, змінив би СКЛАД —
+ * тобто перероздав би дошку всім. Роль міняється лише тоді, коли її справді
+ * натиснули.
+ */
+export async function joinRoom(code: string, name: string, role?: Member['role']): Promise<void> {
 	const { uid, db } = await connect();
 	const { get, ref, set } = await import('firebase/database');
 
 	const snapshot = await get(ref(db, `rooms/${code}/members`));
 	const existing = (snapshot.val() ?? {}) as Record<string, Member>;
-	// Свій порядок не переписуємо: повернувшись після обриву, гравець мусить
-	// лишитися на своєму місці в черзі, інакше дошку перероздасть.
+	// Свій порядок не переписуємо з тієї самої причини: черга рахується зі складу.
 	const order = existing[uid]?.order ?? Object.keys(existing).length + 1;
 
-	await set(ref(db, `rooms/${code}/members/${uid}`), { name, role, order });
+	await set(ref(db, `rooms/${code}/members/${uid}`), {
+		name,
+		role: role ?? existing[uid]?.role ?? 'player',
+		order
+	});
+}
+
+/**
+ * Знести кімнату. Дозволено лише господареві — правилом, а не домовленістю.
+ *
+ * Кличеться, коли господар іде зі скінченої партії: інакше кімнати
+ * накопичувалися б назавжди. Покинута кімната важить близько кілобайта, тож це
+ * не про місце — про те, щоб код можна було видати комусь іще.
+ */
+export async function closeRoom(code: string): Promise<void> {
+	const { db } = await connect();
+	const { ref, remove } = await import('firebase/database');
+	await remove(ref(db, `rooms/${code}`));
 }
 
 /** Чи є така кімната і чи та сама в неї гра. */
@@ -132,7 +155,7 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */
 export async function roomTransport(code: string): Promise<RoomTransport> {
 	const { db } = await connect();
-	const { off, onValue, ref, set } = await import('firebase/database');
+	const { off, onValue, ref, set, update } = await import('firebase/database');
 	const room = ref(db, `rooms/${code}`);
 
 	return {
@@ -182,6 +205,18 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 
 		async setStatus(status: RoomStatus) {
 			await set(ref(db, `rooms/${code}/info/status`), status);
+		},
+
+		async restart(seed: number) {
+			/*
+			 * `update` кількома шляхами — саме щоб проміжку не було.
+			 *
+			 * Стерти журнал і поставити нове зерно двома записами означало б мить, у
+			 * яку колода вже нова, а ходи ще старі: усі програли б чужу партію на
+			 * новій дошці. Правило дозволяє господареві і зміну `info`, і знесення
+			 * всього журналу — окремі ходи в ньому лишаються незмінними назавжди.
+			 */
+			await update(ref(db, `rooms/${code}`), { 'info/seed': seed, moves: null });
 		}
 	};
 }

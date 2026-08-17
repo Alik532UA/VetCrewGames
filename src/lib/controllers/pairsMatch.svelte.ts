@@ -27,6 +27,15 @@ export class PairsMatch {
 	/** Стан кімнати: доки не `playing`, дошки немає. */
 	status = $state<'lobby' | 'playing' | 'over'>('lobby');
 	members = $state<Member[]>([]);
+	/**
+	 * Хто господар — з КІМНАТИ, а не з порядку у списку.
+	 *
+	 * Саме для цього поле й існує в `info`. Спершу сторінка рахувала господаря як
+	 * «перший у складі» — і кнопка «Почати» зникала в нього, щойно заходив хтось із
+	 * «меншим» `uid`: база віддає склад за алфавітом ключів, а не за входом.
+	 * Знайдено живим прогоном із трьома учасниками.
+	 */
+	hostUid = $state('');
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -122,6 +131,7 @@ export class PairsMatch {
 	#apply(snapshot: RoomSnapshot): void {
 		this.members = snapshot.members;
 		this.status = snapshot.info.status;
+		this.hostUid = snapshot.info.hostUid;
 
 		/*
 		 * Опис партії — рядок, і порівнюється він цілком.

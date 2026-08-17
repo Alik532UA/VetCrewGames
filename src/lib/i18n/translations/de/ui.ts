@@ -22,6 +22,11 @@ export const ui = {
 
 	// Gemeinsame Runde von Finde ein Paar: Lobby, Rolle, Zug.
 	'pairs.over': 'Die Runde ist zu Ende',
+	'pairs.won': 'Gewonnen',
+	'pairs.draw': 'Unentschieden',
+	'pairs.rematch': 'Nochmal spielen',
+	'pairs.closeRoom': 'Raum schließen',
+	'pairs.actionFailed': 'Der Server hat diese Aktion abgelehnt.',
 	'pairs.createRoom': 'Raum erstellen',
 	'pairs.joinRoom': 'Mit Code beitreten',
 	'pairs.roomCode': 'Raumcode',

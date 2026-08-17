@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { storage } from '$lib/services/storage';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -46,10 +47,46 @@
 	const myRole = $derived<Role>(
 		match?.members.find((member) => member.uid === me)?.role ?? 'player'
 	);
-	const amHost = $derived(match?.members.length ? match.members[0]?.uid === me : false);
+	/*
+	 * Господар — той, кого назвала КІМНАТА. Не «перший у списку»: база віддає склад
+	 * за алфавітом ключів, і кнопка «Почати» зникала в господаря, щойно заходив
+	 * хтось із меншим `uid`.
+	 */
+	const amHost = $derived(Boolean(me) && match?.hostUid === me);
 
 	/** Імʼя за замовчуванням: людину не мусять просити його вигадати. */
 	const guessName = () => `${t('memory.you')} ${Math.floor(Math.random() * 900 + 100)}`;
+
+	/**
+	 * Імʼя пам'ятається між заходами.
+	 *
+	 * Не зручність: сторінка заходить у кімнату заново після перезавантаження, і без
+	 * збереженого імені гравець перетворювався б на «Ти 417» — сам для себе й для
+	 * суперника, посеред партії.
+	 */
+	const NAME_KEY = 'pairs.name';
+
+	/**
+	 * Код кімнати живе в АДРЕСІ, а не лише в памʼяті.
+	 *
+	 * Дві причини, і друга важливіша. Перезавантаження сторінки більше не викидає з
+	 * партії — а воно трапляється саме тоді, коли найдорожче: гра оновилася, зникла
+	 * мережа, натиснули «назад». І посилання стає запрошенням: замість диктувати
+	 * пʼять літер, його надсилають.
+	 *
+	 * Читається під `browser`: `page.url.searchParams` під час prerender КИДАЄ, і
+	 * збірка впала б, а не сторінка.
+	 */
+	const roomFromUrl = () => (browser ? (page.url.searchParams.get('room') ?? '') : '');
+
+	function rememberInUrl(value: string) {
+		if (!browser) return;
+		const url = new URL(page.url);
+		url.searchParams.set('room', value);
+		// `replaceState`, а не `goto`: це та сама сторінка, і крок в історії тут
+		// означав би, що «назад» веде в порожню кімнату.
+		replaceState(url, {});
+	}
 
 	async function enter(action: 'create' | 'join') {
 		if (busy) return;
@@ -57,6 +94,7 @@
 		try {
 			const net = await import('$lib/net/rtdbRoom');
 			const who = name.trim() || guessName();
+			storage.set(NAME_KEY, who);
 			const layout = layoutForViewport();
 
 			if (action === 'create') {
@@ -88,8 +126,11 @@
 					return;
 				}
 				code = joinCode.trim().toUpperCase();
-				await net.joinRoom(code, who, 'player');
+				// Роль НЕ передаємо: повернувшись у кімнату, глядач мусить лишитися
+				// глядачем, інакше склад зміниться й дошку перероздасть усім.
+				await net.joinRoom(code, who);
 			}
+			rememberInUrl(code);
 
 			const transport = await net.roomTransport(code);
 			const connection = await import('$lib/net/firebase').then((m) => m.connect());
@@ -132,6 +173,49 @@
 	}
 
 	/**
+	 * Закрити кімнату — ЯВНОЮ кнопкою, а не при виході зі сторінки.
+	 *
+	 * Відрізнити «пішов назовсім» від «перезавантажив» на клієнті неможливо, а
+	 * видалити кімнату, у якій ще хотіли зіграти ще раз, гірше за кілобайт сміття в
+	 * базі. Тому рішення лишається за господарем — і воно видиме.
+	 */
+	async function close() {
+		if (!match || !amHost) return;
+		try {
+			const net = await import('$lib/net/rtdbRoom');
+			await net.closeRoom(code);
+			await goto(langPath(lang, 'pairs'));
+		} catch (error) {
+			hostActionFailed(error);
+		}
+	}
+
+	/** Нова партія в тій самій кімнаті. Роздає господар: зерно одне на всіх. */
+	async function rematch() {
+		if (!match || !amHost) return;
+		try {
+			const net = await import('$lib/net/rtdbRoom');
+			const transport = await net.roomTransport(code);
+			await transport.restart(Math.floor(Math.random() * 2 ** 31));
+		} catch (error) {
+			hostActionFailed(error);
+		}
+	}
+
+	/**
+	 * Дія господаря не вдалася — і людина мусить про це почути.
+	 *
+	 * Виміряно на живій базі: «Зіграти ще» впиралося в `PERMISSION_DENIED` (правила
+	 * в консолі були старіші за код), і кнопка МОВЧАЛА — помилка лишалася
+	 * необробленою обіцянкою в консолі. Натиснути й не дізнатися нічого гірше, ніж
+	 * почути «сервер не дозволив»: у другому випадку зрозуміло хоч куди дивитися.
+	 */
+	function hostActionFailed(error: unknown) {
+		toast.error('pairs.actionFailed');
+		logService.error('network', 'host action denied', error);
+	}
+
+	/**
 	 * Пауза після невдалої пари — і тільки на пристрої того, чия черга.
 	 *
 	 * `$effect`, а не таймер у кліку: перегорнути треба й тоді, коли пару відкрив
@@ -146,6 +230,15 @@
 
 	onMount(() => {
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
+
+		name = storage.get(NAME_KEY) ?? '';
+		const saved = roomFromUrl();
+		if (saved) {
+			// Повертаємося самі: код в адресі означає «я вже був у цій кімнаті».
+			joinCode = saved;
+			void enter('join');
+		}
+
 		return () => {
 			for (const stop of stops) stop();
 			stops = [];
@@ -211,7 +304,13 @@
 			onStart={start}
 		/>
 	{:else}
-		<OnlineRoom {match} {me} {online} />
+		<OnlineRoom
+			{match}
+			{me}
+			{online}
+			onRematch={amHost ? rematch : undefined}
+			onClose={amHost ? close : undefined}
+		/>
 	{/if}
 </div>
 

@@ -22,6 +22,11 @@ export const ui = {
 
 	// Спільна партія «Знайди пару»: лобі, роль, черга.
 	'pairs.over': 'Партія скінчилася',
+	'pairs.won': 'Перемога',
+	'pairs.draw': 'Нічия',
+	'pairs.rematch': 'Зіграти ще',
+	'pairs.closeRoom': 'Закрити кімнату',
+	'pairs.actionFailed': 'Сервер не дозволив цю дію.',
 	'pairs.createRoom': 'Створити кімнату',
 	'pairs.joinRoom': 'Зайти за кодом',
 	'pairs.roomCode': 'Код кімнати',

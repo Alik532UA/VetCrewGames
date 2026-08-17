@@ -15,9 +15,29 @@
 		me: string;
 		/** Хто зараз на звʼязку. Присутність — окрема гілка бази. */
 		online: string[];
+		/** Нова партія; `undefined` — я не господар, і роздавати не мені. */
+		onRematch?: () => void;
+		/** Закрити кімнату назовсім. Так само лише господар. */
+		onClose?: () => void;
 	}
 
-	let { match, me, online }: Props = $props();
+	let { match, me, online, onRematch, onClose }: Props = $props();
+
+	/** Скільки пар зібрав кожен: рахунок живе в правилах, не в кімнаті. */
+	const scoreOf = (uid: string) => match.game.players.find((p) => p.id === uid)?.score ?? 0;
+
+	/**
+	 * Хто переміг. `null` — нічия, і це не рідкість: пар парна кількість.
+	 *
+	 * Рахується з дошки, а не пишеться в базу: усі мають ті самі ходи, тож усі
+	 * отримають ту саму відповідь — а ще одне поле в кімнаті було б другим
+	 * джерелом правди про те саме.
+	 */
+	const winner = $derived.by(() => {
+		const best = Math.max(...match.players.map((player) => scoreOf(player.uid)));
+		const top = match.players.filter((player) => scoreOf(player.uid) === best);
+		return top.length === 1 ? top[0] : null;
+	});
 
 	const rows = $derived(Math.ceil(match.game.slots.length / match.game.cols));
 </script>
@@ -37,6 +57,42 @@
 		{/if}
 	</p>
 
+	{#if match.game.gameOver}
+		<!--
+			Підсумок замість зникнення дошки: картки лишаються на місці, бо після
+			партії на них дивляться — «а де ж була та друга сова».
+		-->
+		<div class="board__over text-panel" data-testid="pairs-result-panel">
+			<b data-testid="pairs-result-text">
+				{#if winner}
+					<!--
+						«Перемога: Аня», а не «Аня перемогла»: імʼя тут вільний рядок, і роду
+						ми не знаємо. Перша версія писала «Аня — переміг», тобто вгадувала —
+						і вгадувала неправильно рівно в половині випадків.
+					-->
+					{@html formatFont(t('pairs.won'))}: {winner.name}{winner.uid === me ? ' •' : ''}
+				{:else}
+					{@html formatFont(t('pairs.draw'))}
+				{/if}
+			</b>
+			{#if onRematch}
+				<button
+					type="button"
+					class="btn-primary"
+					onclick={onRematch}
+					data-testid="pairs-rematch-btn"
+				>
+					{@html formatFont(t('pairs.rematch'))}
+				</button>
+				<button type="button" class="chip" onclick={onClose} data-testid="pairs-close-btn">
+					{@html formatFont(t('pairs.closeRoom'))}
+				</button>
+			{:else}
+				<span class="board__wait">{@html formatFont(t('pairs.waitingHost'))}</span>
+			{/if}
+		</div>
+	{/if}
+
 	<div class="board__score text-panel">
 		{#each match.players as player (player.uid)}
 			<span
@@ -45,9 +101,7 @@
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
-				{player.name}{player.uid === me ? ' •' : ''}: {match.game.players.find(
-					(p) => p.id === player.uid
-				)?.score ?? 0}
+				{player.name}{player.uid === me ? ' •' : ''}: {scoreOf(player.uid)}
 			</span>
 		{/each}
 		<span class="board__moves" data-testid="pairs-moves-value">
@@ -83,6 +137,29 @@
 		align-items: center;
 		gap: var(--space-sm);
 		width: 100%;
+	}
+
+	.board__over {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-md);
+		align-items: center;
+		justify-content: center;
+	}
+
+	.chip {
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.board__wait {
+		font-size: var(--font-size-sm);
+		opacity: 0.75;
 	}
 
 	.board__turn {

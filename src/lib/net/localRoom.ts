@@ -63,6 +63,13 @@ export class LocalRoom {
 			setStatus: async (status) => {
 				this.#info = { ...this.#info, status };
 				this.#emit();
+			},
+
+			restart: async (seed) => {
+				// Обидві половини одночасно, як і в справжній базі.
+				this.#moves = [];
+				this.#info = { ...this.#info, seed, status: 'playing' };
+				this.#emit();
 			}
 		};
 	}
