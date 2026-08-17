@@ -2,7 +2,7 @@ import { ENCLOSURE_IMPACT, QUALITIES, reserveHalf } from './constants';
 import { placementProblem } from './placement';
 import { enclosurePrice, repairPrice, upgradePrice } from './prices';
 import { ENCLOSURE_SIZES } from './species';
-import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
+import type { Animal, CommandResult, ReserveCommand, ReserveState, Site } from './types';
 
 /**
  * Ходи про БУДІВЛІ: збудувати, полагодити, підняти якість, знести.
@@ -16,8 +16,9 @@ import type { Animal, CommandResult, ReserveCommand, ReserveState } from './type
  */
 export function buildings(
 	state: ReserveState,
+	site: Site,
 	command: ReserveCommand,
-	occupant: (state: ReserveState, enclosureId: number) => Animal | undefined
+	occupant: (site: Site, enclosureId: number) => Animal | undefined
 ): CommandResult {
 	switch (command.type) {
 		case 'build': {
@@ -32,7 +33,7 @@ export function buildings(
 			 * парканом.
 			 */
 			const problem = placementProblem(
-				state.enclosures,
+				site.enclosures,
 				command.cell,
 				command.size,
 				reserveHalf(state.reputation)
@@ -47,7 +48,7 @@ export function buildings(
 			// зайнята, жодної врятованої тварини. Публіка ж розділилася — хтось
 			// бачить благі наміри, хтось піар, — і репутація не рухається взагалі.
 			state.impact += ENCLOSURE_IMPACT;
-			state.enclosures.push({
+			site.enclosures.push({
 				id: state.nextEnclosureId++,
 				cell: command.cell,
 				size: command.size,
@@ -58,7 +59,7 @@ export function buildings(
 		}
 
 		case 'repair': {
-			const enclosure = state.enclosures.find((e) => e.id === command.enclosureId);
+			const enclosure = site.enclosures.find((e) => e.id === command.enclosureId);
 			if (!enclosure) return { ok: false, reason: 'no-such-enclosure' };
 			// Ремонтувати цілий вольєр — це витратити гроші ні на що, і гра має
 			// сказати про це, а не мовчки взяти плату.
@@ -73,7 +74,7 @@ export function buildings(
 		}
 
 		case 'upgrade': {
-			const enclosure = state.enclosures.find((e) => e.id === command.enclosureId);
+			const enclosure = site.enclosures.find((e) => e.id === command.enclosureId);
 			if (!enclosure) return { ok: false, reason: 'no-such-enclosure' };
 			if (!QUALITIES.includes(command.quality)) return { ok: false, reason: 'bad-quality' };
 			// Униз якість не «покращують»: це був би спосіб повернути гроші.
@@ -90,13 +91,13 @@ export function buildings(
 		}
 
 		case 'demolish': {
-			const index = state.enclosures.findIndex((e) => e.id === command.enclosureId);
+			const index = site.enclosures.findIndex((e) => e.id === command.enclosureId);
 			if (index === -1) return { ok: false, reason: 'no-such-enclosure' };
 			// Знести вольєр разом із мешканцем не можна: це не «звільнити місце»,
 			// це вигнати тварину, яку взялися лікувати.
-			if (occupant(state, command.enclosureId)) return { ok: false, reason: 'enclosure-taken' };
+			if (occupant(site, command.enclosureId)) return { ok: false, reason: 'enclosure-taken' };
 
-			state.enclosures.splice(index, 1);
+			site.enclosures.splice(index, 1);
 			return { ok: true };
 		}
 

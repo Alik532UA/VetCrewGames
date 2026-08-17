@@ -20,28 +20,33 @@
 	let { game }: Props = $props();
 
 	function answer(tactic: RaidTactic) {
-		const targetId = game.state.raid?.animalId;
-		const rangers = game.state.staff.ranger;
+		const raid = game.state.raid;
+		if (!raid) return;
+		const rangers = game.state.sites[raid.biome].staff.ranger;
 
-		const result = game.run({ type: 'raid', tactic });
+		// Хід адресується тій ділянці, на яку прийшли, а не тій, де стоїть гравець.
+		const result = game.run({ type: 'raid', tactic }, raid.biome);
 		if (!result.ok) {
 			toast.error(`reserve.reject.${result.reason}` as const);
 			return;
 		}
 
-		if (game.state.animals.some((animal) => animal.id === targetId)) {
+		const site = game.state.sites[raid.biome];
+		if (site.animals.some((animal) => animal.id === raid.animalId)) {
 			toast.success('reserve.raid.saved');
 		} else {
 			toast.error('reserve.raid.lost');
 		}
-		if (game.state.staff.ranger < rangers) toast.warn('reserve.raid.injured');
+		if (site.staff.ranger < rangers) toast.warn('reserve.raid.injured');
 	}
 </script>
 
 {#if game.state.raid}
 	<RaidModal
-		target={game.state.animals.find((a) => a.id === game.state.raid?.animalId) ?? null}
-		hasRanger={game.state.staff.ranger > 0}
+		target={game.state.sites[game.state.raid.biome].animals.find(
+			(a) => a.id === game.state.raid?.animalId
+		) ?? null}
+		hasRanger={game.state.sites[game.state.raid.biome].staff.ranger > 0}
 		budget={game.state.budget}
 		onTactic={answer}
 	/>

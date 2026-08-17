@@ -6,9 +6,15 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
-	import { ReserveController, type Speed } from '$lib/controllers/reserve.svelte';
+	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
 	import { reserveHalf, type Quality } from '$lib/reserve/constants';
-	import { freeEnclosures, released, residents } from '$lib/reserve/simulation';
+	import {
+		freeEnclosures,
+		populatedSites,
+		released,
+		residents,
+		residentsAt
+	} from '$lib/reserve/simulation';
 	import type { ReserveCommand } from '$lib/reserve/types';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { RouteRest } from '$lib/i18n/routing';
@@ -24,11 +30,12 @@
 	import ReserveBar, { type Panel } from './ReserveBar.svelte';
 
 	/**
-	 * Партія заповідника в ОДНОМУ біомі.
+	 * Одна ДІЛЯНКА фонду: земля під ногами й керування нею.
 	 *
-	 * Біом приходить пропсом від маршруту, а не вибирається тут: кожна ділянка живе
-	 * за власною адресою й у власному збереженні, тож партії тривають ПАРАЛЕЛЬНО.
-	 * Доти вибір біома був станом цієї сторінки — і стирав попередній заповідник.
+	 * Фонд один на всі чотири адреси — каса, шкали й годинник спільні, — а ця
+	 * сторінка показує ту землю, яку назвав маршрут. Тому карта, вольєри й персонал
+	 * тут місцеві, а показники в шапці — фондові: витрати савани з'їдають ліс, і
+	 * бачити це треба з будь-якої ділянки.
 	 *
 	 * Правила — у `$lib/reserve/`, час — у контролері, тут лише показ і введення
 	 * (SVELTE-CORE-v8 § 3.1). Сторінка не викликає `tick()` напряму й не рахує
@@ -46,12 +53,8 @@
 
 	let { biome, backTo }: Props = $props();
 
-	/*
-	 * Біом читається РАЗ: партія привʼязана до ділянки на весь свій вік, а перехід
-	 * у савану створює новий компонент — не підмінює біом під відіграною партією.
-	 */
-	// svelte-ignore state_referenced_locally
-	const game = new ReserveController(biome);
+	/** Фонд — синглтон: сторінка не заводить свою партію, вона в неї заходить. */
+	const game = reserve;
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	let panel = $state<Panel | null>(null);
@@ -103,14 +106,14 @@
 	 * лева в тундру не привезти, у мінусі не розширитися.
 	 */
 	function command(cmd: ReserveCommand) {
-		const result = game.run(cmd);
+		const result = game.run(cmd, biome);
 		if (!result.ok) toast.error(`reserve.reject.${result.reason}` as const);
 	}
 
 	/** Тап по землі в режимі розміщення: ставимо замовлений вольєр і виходимо. */
 	function placeAt(cell: { x: number; z: number }) {
 		if (!pending) return;
-		const result = game.run({ type: 'build', ...pending, cell });
+		const result = game.run({ type: 'build', ...pending, cell }, biome);
 		if (!result.ok) {
 			toast.error(`reserve.reject.${result.reason}` as const);
 			return;
@@ -120,16 +123,19 @@
 		pending = null;
 	}
 
-	/** «Почати заново» перезапускає САМЕ цю ділянку, не чіпаючи інших. */
+	/** «Почати заново» після кінця партії: фонд один, тож і новий він один. */
 	function startOver() {
-		game.reset(undefined, biome);
+		game.reset();
 		panel = null;
 		pending = null;
 	}
 
-	const here = $derived(residents(game.state));
+	/** Мешканці ЦІЄЇ землі: їх малює сцена й показує список. */
+	const here = $derived(residentsAt(game.state, biome));
+	/** А ці два — по всьому фонду: показники спільні, отже й лічильники. */
+	const inReserve = $derived(residents(game.state).length);
 	const wild = $derived(released(game.state));
-	const free = $derived(freeEnclosures(game.state));
+	const free = $derived(freeEnclosures(game.state, biome));
 	const occupied = $derived(new Set(here.map((animal) => animal.enclosureId)));
 </script>
 
@@ -144,8 +150,9 @@
 		budget={game.state.budget}
 		impact={game.state.impact}
 		reputation={game.state.reputation}
-		inReserve={here.length}
+		{inReserve}
 		inWild={wild.length}
+		manySites={populatedSites(game.state) > 1}
 		journal={game.state.journal}
 		dayStart={game.state.dayStart}
 		speed={game.speed}
@@ -168,9 +175,9 @@
 
 		<ReserveStage
 			plotHalf={reserveHalf(game.state.reputation)}
-			biome={game.state.biome}
+			{biome}
 			seed={game.state.seed}
-			enclosures={game.state.enclosures}
+			enclosures={game.state.sites[biome].enclosures}
 			animals={here}
 			selectedId={game.selectedId}
 			onSelect={(id: number) => (game.selectedId = id)}
@@ -192,7 +199,7 @@
 
 		<!-- Службове меню. У продакшні `dev` — false, і гілки в збірці не лишається. -->
 		{#if dev && devPanel.open}
-			<DevPanel {game} />
+			<DevPanel {game} at={biome} />
 		{/if}
 
 		<ReserveRaid {game} />
@@ -208,6 +215,7 @@
 		{#if panel}
 			<ReserveSheet
 				{panel}
+				at={biome}
 				state={game.state}
 				day={game.day}
 				residents={here}

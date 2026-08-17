@@ -10,6 +10,8 @@ import {
 } from './constants';
 import { enclosurePrice } from './prices';
 import type { ReserveState } from './types';
+import type { ReserveBiome } from './species';
+import type { ReserveCommand } from './types';
 
 /**
  * Історія показників по днях.
@@ -21,11 +23,23 @@ import type { ReserveState } from './types';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
 
+/**
+ * Хід на ділянці. Типова земля — «savanna»: там живе більшість перевірок цього файлу.
+ *
+ * Де важлива інша земля, вона названа третім аргументом: перевірка «вид не з цього
+ * біома» без цього не мала б сенсу.
+ */
+const move = (state: ReserveState, command: ReserveCommand, at: ReserveBiome = 'savanna') =>
+	execute(state, command, at);
+
+/** Земля, на якій ідуть перевірки: тварини, вольєри й штат живуть саме тут. */
+const home = (state: ReserveState, at: ReserveBiome = 'savanna') => state.sites[at];
+
 function playing() {
-	const state = createReserve(1, 'savanna');
+	const state = createReserve(1);
 	state.budget = 1_000_000;
 	state.reputation = 40;
-	state.staff.vet = 1;
+	home(state).staff.vet = 1;
 	/*
 	 * Зріз доби доводиться освіжити, і це не обхід перевірки, а її умова.
 	 *
@@ -65,12 +79,12 @@ describe('журнал показників', () => {
 		const state = playing();
 		const start = metricsOf(state);
 
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		day(state, 3);
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
-		execute(state, { type: 'campaign' });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		move(state, { type: 'campaign' });
 		day(state, 2);
-		execute(state, { type: 'hire', role: 'keeper' });
+		move(state, { type: 'hire', role: 'keeper' });
 		day(state);
 
 		const sum = state.journal.reduce((total, entry) => total + entry.budget, 0);
@@ -80,16 +94,16 @@ describe('журнал показників', () => {
 
 	it('прийом і випуск видно в лічильниках', () => {
 		const state = playing();
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 		day(state);
 
 		expect(state.journal[0].inReserve, 'приїзд тварини не помічено').toBe(1);
 
-		state.animals[0].stage = 'healthy';
-		state.animals[0].releasable = true;
-		state.animals[0].stress = 0;
-		execute(state, { type: 'release', animalId: 1 });
+		home(state).animals[0].stage = 'healthy';
+		home(state).animals[0].releasable = true;
+		home(state).animals[0].stress = 0;
+		move(state, { type: 'release', animalId: 1 });
 		day(state);
 
 		const last = state.journal[1];
@@ -114,7 +128,7 @@ describe('журнал показників', () => {
 
 		const state = playing();
 		const before = state.reputation;
-		execute(state, { type: 'campaign' });
+		move(state, { type: 'campaign' });
 		day(state);
 
 		// Спад репутації за добу теж у цій різниці — тому порівнюємо з фактом.
@@ -140,7 +154,7 @@ describe('журнал показників', () => {
 		const one = playing();
 		const two = playing();
 		for (const state of [one, two]) {
-			execute(state, { type: 'build', size: 3, quality: 1, cell: { x: 1, z: 1 } });
+			move(state, { type: 'build', size: 3, quality: 1, cell: { x: 1, z: 1 } });
 			day(state, 4);
 		}
 		expect(JSON.stringify(one)).toBe(JSON.stringify(two));

@@ -13,7 +13,8 @@ import { TICKS_PER_DAY } from '$lib/reserve/constants';
 
 const DAY_MS = TICKS_PER_DAY * TICK_MS;
 /** Ключ ділянки, у якій ведуться ці тести: сховище розділене по біомах. */
-const KEY = 'vetcrewgames_reserve.forest';
+/** Ключ фонду: один документ на всі чотири ділянки. */
+const KEY = 'vetcrewgames_reserve.fund';
 
 /** Сховище підставляється явно: jsdom тут `localStorage` не дає. */
 function makeStorage(): Storage {
@@ -38,7 +39,7 @@ beforeEach(() => {
 });
 
 function fresh(): ReserveController {
-	const controller = new ReserveController('forest');
+	const controller = new ReserveController();
 	controller.reset(42);
 	return controller;
 }
@@ -161,42 +162,45 @@ describe('партія і сховище', () => {
 
 	it('хід зберігається одразу, не чекаючи кінця доби', () => {
 		const controller = fresh();
-		controller.run({ type: 'hire', role: 'vet' });
-		expect(written().state.staff.vet).toBe(1);
+		controller.run({ type: 'hire', role: 'vet' }, 'forest');
+		expect(written().state.sites.forest.staff.vet).toBe(1);
 	});
 
 	it('відхилений хід нічого не зберігає', () => {
 		const controller = fresh();
 		// Вольєр є, тож відмова буде саме через гроші, а не через відсутнє місце.
-		controller.run({ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		controller.run({ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
 		controller.state.budget = 0;
 		const before = store.getItem(KEY);
 
-		const result = controller.run({
-			type: 'acquire',
-			origin: 'official',
-			speciesId: 'wolf',
-			enclosureId: 1
-		});
+		const result = controller.run(
+			{
+				type: 'acquire',
+				origin: 'official',
+				speciesId: 'wolf',
+				enclosureId: 1
+			},
+			'forest'
+		);
 		expect(result).toEqual({ ok: false, reason: 'no-money' });
 		expect(store.getItem(KEY)).toBe(before);
 	});
 
 	it('початок піднімає збережену партію, а не починає нову', () => {
 		const first = fresh();
-		first.run({ type: 'hire', role: 'keeper' });
+		first.run({ type: 'hire', role: 'keeper' }, 'forest');
 		runFor(first, DAY_MS * 2);
 
-		const second = new ReserveController('forest');
+		const second = new ReserveController();
 		second.start();
-		expect(second.state.staff.keeper).toBe(1);
+		expect(second.state.sites.forest.staff.keeper).toBe(1);
 		// Дві доби прожито — іде третя.
 		expect(second.day).toBe(3);
 		expect(second.restoreProblem).toBeNull();
 	});
 
 	it('порожнє сховище — це новий заповідник, а не помилка', () => {
-		const controller = new ReserveController('forest');
+		const controller = new ReserveController();
 		controller.start();
 		expect(controller.restoreProblem).toBeNull();
 		expect(controller.state.ticks).toBe(0);
@@ -208,7 +212,7 @@ describe('партія і сховище', () => {
 	 */
 	it('побитий сейв дає нову партію І причину для екрана', () => {
 		store.setItem(KEY, '{"version":1,"state":{"ticks":');
-		const controller = new ReserveController('forest');
+		const controller = new ReserveController();
 		controller.start();
 
 		expect(controller.restoreProblem?.reason).toBe('malformed');
@@ -219,7 +223,7 @@ describe('партія і сховище', () => {
 		const seeds = new Set<number>();
 		for (const time of [1_000_000, 2_000_000]) {
 			vi.spyOn(Date, 'now').mockReturnValue(time);
-			const controller = new ReserveController('forest');
+			const controller = new ReserveController();
 			controller.reset();
 			seeds.add(controller.state.seed);
 		}
@@ -231,12 +235,15 @@ describe('партія і сховище', () => {
 describe('вибрана тварина', () => {
 	it('картка йде за тваринкою, а не за копією її стану', () => {
 		const controller = fresh();
-		controller.run({ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		controller.run({ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 });
+		controller.run({ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+		controller.run(
+			{ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 },
+			'forest'
+		);
 		controller.selectedId = 1;
 
 		expect(controller.selected?.stage).toBe('recovering');
-		controller.state.animals[0].stage = 'healthy';
+		controller.state.sites.forest.animals[0].stage = 'healthy';
 		expect(controller.selected?.stage, 'картка показує застиглий знімок').toBe('healthy');
 	});
 

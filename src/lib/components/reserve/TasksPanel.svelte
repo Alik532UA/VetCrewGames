@@ -2,6 +2,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import ContractsBlock from './ContractsBlock.svelte';
 	import type { ReserveCommand, ReserveState } from '$lib/reserve/types';
+	import { RESERVE_BIOMES } from '$lib/reserve/species';
 
 	/**
 	 * Навчальні цілі — те, що веде новачка за руку перших кілька днів.
@@ -22,20 +23,42 @@
 
 	let { state, day, onCommand }: Props = $props();
 
+	/**
+	 * Кроки зараховуються по ВСЬОМУ фонду.
+	 *
+	 * Це список «чого ти ще не робив у цій грі», а не «на цій землі»: побудувавши
+	 * перший вольєр у лісі, гравець уже знає, як будувати, і повторювати підказку в
+	 * савані означало б вважати його забудькуватим.
+	 */
+	const sites = $derived(RESERVE_BIOMES.map((biome) => state.sites[biome]));
+	const herd = $derived(sites.flatMap((site) => site.animals));
+
 	const goals = $derived([
-		{ id: 'build', key: 'reserve.goal.build' as const, done: state.enclosures.length > 0 },
-		{ id: 'vet', key: 'reserve.goal.vet' as const, done: state.staff.vet > 0 },
-		{ id: 'keeper', key: 'reserve.goal.keeper' as const, done: state.staff.keeper > 0 },
-		{ id: 'take', key: 'reserve.goal.take' as const, done: state.animals.length > 0 },
+		{
+			id: 'build',
+			key: 'reserve.goal.build' as const,
+			done: sites.some((site) => site.enclosures.length > 0)
+		},
+		{
+			id: 'vet',
+			key: 'reserve.goal.vet' as const,
+			done: sites.some((site) => site.staff.vet > 0)
+		},
+		{
+			id: 'keeper',
+			key: 'reserve.goal.keeper' as const,
+			done: sites.some((site) => site.staff.keeper > 0)
+		},
+		{ id: 'take', key: 'reserve.goal.take' as const, done: herd.length > 0 },
 		{
 			id: 'heal',
 			key: 'reserve.goal.heal' as const,
-			done: state.animals.some((a) => a.stage !== 'recovering')
+			done: herd.some((a) => a.stage !== 'recovering')
 		},
 		{
 			id: 'release',
 			key: 'reserve.goal.release' as const,
-			done: state.animals.some((a) => a.stage === 'released')
+			done: herd.some((a) => a.stage === 'released')
 		}
 	]);
 

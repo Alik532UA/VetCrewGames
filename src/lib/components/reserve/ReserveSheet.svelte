@@ -3,6 +3,7 @@
 	import type { Quality } from '$lib/reserve/constants';
 	import { effectiveQuality } from '$lib/reserve/simulation';
 	import type { Animal, Enclosure, ReserveCommand, ReserveState } from '$lib/reserve/types';
+	import type { ReserveBiome } from '$lib/reserve/species';
 	import BottomSheet from './BottomSheet.svelte';
 	import AnimalsPanel from './AnimalsPanel.svelte';
 	import EnclosurePanel from './EnclosurePanel.svelte';
@@ -20,6 +21,8 @@
 	 */
 	interface Props {
 		panel: Panel;
+		/** Ділянка, на якій стоїть гравець: панелі керують нею, а не фондом. */
+		at: ReserveBiome;
 		state: ReserveState;
 		day: number;
 		residents: Animal[];
@@ -41,6 +44,7 @@
 
 	let {
 		panel,
+		at,
 		state,
 		day,
 		residents,
@@ -70,11 +74,11 @@
 <BottomSheet title={t(TITLE[panel])} {onClose}>
 	{#if panel === 'animals'}
 		<AnimalsPanel
-			biome={state.biome}
+			biome={at}
 			{residents}
 			{released}
 			{freeEnclosures}
-			hasVet={state.staff.vet > 0}
+			hasVet={state.sites[at].staff.vet > 0}
 			{selectedId}
 			{onSelect}
 			{onCommand}
@@ -82,7 +86,7 @@
 		/>
 	{:else if panel === 'enclosures'}
 		<EnclosurePanel
-			enclosures={state.enclosures}
+			enclosures={state.sites[at].enclosures}
 			{occupied}
 			effectiveQualityOf={effectiveQuality}
 			initialSize={buildSize}
@@ -90,7 +94,7 @@
 			{onCommand}
 		/>
 	{:else if panel === 'staff'}
-		<StaffPanel staff={state.staff} subsidy={state.subsidy} {onCommand} />
+		<StaffPanel staff={state.sites[at].staff} subsidy={state.subsidy} {onCommand} />
 	{:else}
 		<TasksPanel {state} {day} {onCommand} />
 	{/if}

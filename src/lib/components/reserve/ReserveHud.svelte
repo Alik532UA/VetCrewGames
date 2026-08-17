@@ -27,6 +27,14 @@
 		reputation: number;
 		inReserve: number;
 		inWild: number;
+		/**
+		 * Чи заселено більше однієї ділянки.
+		 *
+		 * Від цього залежить лише підпис: «У заповіднику» проти «У заповідниках».
+		 * Множина зʼявляється тоді, коли вона ПРАВДИВА, а не тоді, коли ділянок
+		 * чотири: у фонду з однією заселеною землею заповідник справді один.
+		 */
+		manySites: boolean;
 		/** Історія змін по днях — саме її показує підказка над показником. */
 		journal: JournalDay[];
 		/** Зріз на початку доби: різниця з живими числами і є «сьогодні». */
@@ -42,6 +50,7 @@
 		reputation,
 		inReserve,
 		inWild,
+		manySites,
 		journal,
 		dayStart,
 		speed,
@@ -103,7 +112,9 @@
 		},
 		{
 			id: 'inreserve',
-			labelKey: 'reserve.inReserve' as const,
+			labelKey: (manySites ? 'reserve.inReserves' : 'reserve.inReserve') as
+				| 'reserve.inReserve'
+				| 'reserve.inReserves',
 			value: String(inReserve),
 			bad: false,
 			metric: 'inReserve' as const

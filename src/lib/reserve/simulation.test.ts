@@ -36,8 +36,21 @@ import { enclosurePrice, repairPrice } from './prices';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
 import { cellsOf, worldOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
+import type { ReserveBiome } from './species';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
+
+/**
+ * Хід на ділянці. Типова земля — «savanna»: там живе більшість перевірок цього файлу.
+ *
+ * Де важлива інша земля, вона названа третім аргументом: перевірка «вид не з цього
+ * біома» без цього не мала б сенсу.
+ */
+const move = (state: ReserveState, command: ReserveCommand, at: ReserveBiome = 'savanna') =>
+	execute(state, command, at);
+
+/** Земля, на якій ідуть перевірки: тварини, вольєри й штат живуть саме тут. */
+const home = (state: ReserveState, at: ReserveBiome = 'savanna') => state.sites[at];
 const snapshot = (state: ReserveState) => JSON.stringify(state);
 
 /** Лев із технічного завдання: мінімум 3, рекомендований 4. */
@@ -59,18 +72,19 @@ const KNOWN = 40;
  */
 function withLion(size: number, origin: keyof typeof ORIGINS = 'rescue') {
 	// Лев живе в савані — заповідник має бути саме там, інакше його не приймуть.
-	const state = createReserve(1, 'savanna');
+	const state = createReserve(1);
 	state.budget = 1_000_000;
 	state.reputation = KNOWN;
-	execute(state, { type: 'build', size, quality: 2, cell: { x: 0, z: 0 } });
-	const result = execute(state, { type: 'acquire', origin, speciesId: 'lion', enclosureId: 1 });
+	move(state, { type: 'build', size, quality: 2, cell: { x: 0, z: 0 } });
+	const result = move(state, { type: 'acquire', origin, speciesId: 'lion', enclosureId: 1 });
 	return { state, result };
 }
 
 /** Партія з кількох ходів — щоб детермінізм перевірявся не на порожньому стані. */
 function play(seed: number, commands: ReserveCommand[], ticks: number): ReserveState {
 	const state = createReserve(seed);
-	for (const command of commands) execute(state, command);
+	// Сценарій грає в ЛІСІ: вовк і лисиця живуть саме там.
+	for (const command of commands) move(state, command, 'forest');
 	tick(state, ticks);
 	return state;
 }
@@ -98,8 +112,8 @@ describe('детермінізм', () => {
 	 */
 	it('перевірка жива: партія справді щось змінює', () => {
 		const state = play(1, SCRIPT, 10_000);
-		expect(state.animals.length).toBe(2);
-		expect(state.enclosures.length).toBe(2);
+		expect(home(state, 'forest').animals.length).toBe(2);
+		expect(home(state, 'forest').enclosures.length).toBe(2);
 		expect(state.impact, 'будівництво коштує користі').toBeLessThan(0);
 		expect(state.gameOver, 'без жодного випуску заповідник не виживає').toBe(true);
 		expect(state.ticks).toBe(COLLAPSE_DAYS * TICKS_PER_DAY);
@@ -124,10 +138,10 @@ describe('детермінізм', () => {
 	it('зерно вирішує долю тварини', () => {
 		const fates = new Set<boolean>();
 		for (let seed = 1; seed <= 50; seed++) {
-			const state = createReserve(seed, 'savanna');
-			execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
-			fates.add(state.animals[0].releasable);
+			const state = createReserve(seed);
+			move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+			fates.add(home(state).animals[0].releasable);
 		}
 		expect(fates).toEqual(new Set([true, false]));
 	});
@@ -158,10 +172,10 @@ describe('детермінізм', () => {
 describe('вольєри', () => {
 	it('перевірка жива: вольєр будується й коштує грошей', () => {
 		const state = createReserve(1);
-		expect(execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
+		expect(move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: true
 		});
-		expect(state.enclosures).toEqual([
+		expect(home(state).enclosures).toEqual([
 			{ id: 1, cell: { x: 0, z: 0 }, size: 4, quality: 2, durability: 1 }
 		]);
 		expect(state.budget).toBe(STARTING_BUDGET - enclosurePrice(4, 2));
@@ -177,15 +191,15 @@ describe('вольєри', () => {
 
 	it('розміру поза шкалою не існує', () => {
 		const state = createReserve(1);
-		expect(execute(state, { type: 'build', size: 11, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
+		expect(move(state, { type: 'build', size: 11, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: false,
 			reason: 'bad-size'
 		});
-		expect(execute(state, { type: 'build', size: 0, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
+		expect(move(state, { type: 'build', size: 0, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: false,
 			reason: 'bad-size'
 		});
-		expect(state.enclosures).toEqual([]);
+		expect(home(state).enclosures).toEqual([]);
 	});
 
 	/**
@@ -196,17 +210,17 @@ describe('вольєри', () => {
 	 * не про натискання кнопки «купити».
 	 */
 	it('без вольєра тварину не прийняти', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		expect(
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
+			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
 		).toEqual({ ok: false, reason: 'no-such-enclosure' });
-		expect(state.animals).toEqual([]);
+		expect(home(state).animals).toEqual([]);
 	});
 
 	it('у зайнятий вольєр другу тварину не поселити', () => {
 		const { state } = withLion(4);
 		expect(
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 1 })
+			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 1 })
 		).toEqual({ ok: false, reason: 'enclosure-taken' });
 	});
 
@@ -217,7 +231,7 @@ describe('вольєри', () => {
 	it('у вольєр, менший за мінімум виду, тварину не прийняти взагалі', () => {
 		const { result, state } = withLion(LION.minSize - 1);
 		expect(result).toEqual({ ok: false, reason: 'enclosure-too-small' });
-		expect(state.animals).toEqual([]);
+		expect(home(state).animals).toEqual([]);
 	});
 
 	it('рівно мінімальний вольєр уже годиться', () => {
@@ -226,33 +240,38 @@ describe('вольєри', () => {
 	});
 
 	it('невідомого виду не буває', () => {
-		const state = createReserve(1, 'savanna');
-		execute(state, { type: 'build', size: 10, quality: 2, cell: { x: 0, z: 0 } });
+		const state = createReserve(1);
+		move(state, { type: 'build', size: 10, quality: 2, cell: { x: 0, z: 0 } });
 		expect(
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'дракон', enclosureId: 1 })
+			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'дракон', enclosureId: 1 })
 		).toEqual({ ok: false, reason: 'no-such-species' });
 	});
 
 	it('порожній вольєр можна знести, зайнятий — ні', () => {
 		const { state } = withLion(4);
-		execute(state, { type: 'build', size: 2, quality: 2, cell: { x: 4, z: 0 } });
+		move(state, { type: 'build', size: 2, quality: 2, cell: { x: 4, z: 0 } });
 
-		expect(execute(state, { type: 'demolish', enclosureId: 1 })).toEqual({
+		expect(move(state, { type: 'demolish', enclosureId: 1 })).toEqual({
 			ok: false,
 			reason: 'enclosure-taken'
 		});
-		expect(execute(state, { type: 'demolish', enclosureId: 2 })).toEqual({ ok: true });
-		expect(state.enclosures.map((e) => e.id)).toEqual([1]);
+		expect(move(state, { type: 'demolish', enclosureId: 2 })).toEqual({ ok: true });
+		expect(home(state).enclosures.map((e) => e.id)).toEqual([1]);
 	});
 
 	it('випуск звільняє вольєр', () => {
 		const { state } = withLion(4);
-		expect(freeEnclosures(state)).toEqual([]);
+		expect(freeEnclosures(state, 'savanna')).toEqual([]);
 
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
-		execute(state, { type: 'release', animalId: 1 });
+		Object.assign(home(state).animals[0], {
+			stage: 'healthy',
+			recovery: 1,
+			stress: 0,
+			releasable: true
+		});
+		move(state, { type: 'release', animalId: 1 });
 
-		expect(freeEnclosures(state).map((e) => e.id)).toEqual([1]);
+		expect(freeEnclosures(state, 'savanna').map((e) => e.id)).toEqual([1]);
 	});
 });
 
@@ -306,9 +325,9 @@ describe('простір і швидкість', () => {
 	it('у просторішому вольєрі тварина одужує швидше', () => {
 		const results = [LION.recSize, 10].map((size) => {
 			const { state } = withLion(size);
-			state.staff.vet = 1;
+			home(state).staff.vet = 1;
 			day(state, 3);
-			return state.animals[0].recovery;
+			return home(state).animals[0].recovery;
 		});
 		expect(results[1]).toBeGreaterThan(results[0]);
 	});
@@ -316,10 +335,10 @@ describe('простір і швидкість', () => {
 	it('у тісноті стрес сходить повільніше', () => {
 		const results = [LION.minSize, 10].map((size) => {
 			const { state } = withLion(size);
-			state.staff.keeper = 1;
-			state.animals[0].stress = 1;
+			home(state).staff.keeper = 1;
+			home(state).animals[0].stress = 1;
 			day(state);
-			return state.animals[0].stress;
+			return home(state).animals[0].stress;
 		});
 		expect(results[0]).toBeGreaterThan(results[1]);
 	});
@@ -359,13 +378,13 @@ describe('економіка надходження', () => {
 	});
 
 	it('без грошей тварина не зʼявляється', () => {
-		const state = createReserve(1, 'savanna');
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		const state = createReserve(1);
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		state.budget = 100;
 		expect(
-			execute(state, { type: 'acquire', origin: 'official', speciesId: 'lion', enclosureId: 1 })
+			move(state, { type: 'acquire', origin: 'official', speciesId: 'lion', enclosureId: 1 })
 		).toEqual({ ok: false, reason: 'no-money' });
-		expect(state.animals).toHaveLength(0);
+		expect(home(state).animals).toHaveLength(0);
 	});
 });
 
@@ -394,24 +413,24 @@ describe('репутація', () => {
 	});
 
 	it('із ветеринаром докору немає', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
 		state.reputation = KNOWN;
-		execute(state, { type: 'hire', role: 'vet' });
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		move(state, { type: 'hire', role: 'vet' });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 		expect(state.reputation).toBe(KNOWN + ORIGINS.rescue.reputation);
 	});
 
 	it('чорний ринок бʼє і по репутації, і по «Користі планеті»', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
 		// Без імені мінус двадцять пʼять просто вперся б у нуль, і перевірка міряла б
 		// підлогу шкали замість ціни чорного ринку.
 		state.reputation = KNOWN;
-		execute(state, { type: 'hire', role: 'vet' });
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
+		move(state, { type: 'hire', role: 'vet' });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
 
 		expect(state.reputation).toBe(KNOWN + ORIGINS['black-market'].reputation);
 		expect(state.impact).toBe(ENCLOSURE_IMPACT + ORIGINS['black-market'].impact);
@@ -425,26 +444,36 @@ describe('репутація', () => {
 	 */
 	it('випуск підіймає обидві шкали', () => {
 		const { state } = withLion(4);
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
+		Object.assign(home(state).animals[0], {
+			stage: 'healthy',
+			recovery: 1,
+			stress: 0,
+			releasable: true
+		});
 		const before = { impact: state.impact, reputation: state.reputation };
 
-		execute(state, { type: 'release', animalId: 1 });
+		move(state, { type: 'release', animalId: 1 });
 
 		expect(state.impact - before.impact).toBe(RELEASE_IMPACT);
 		expect(state.reputation - before.reputation).toBe(RELEASE_REPUTATION);
 	});
 
 	it('репутація не виходить за 0 і 100', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 10_000_000;
 		state.reputation = 2;
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
 		expect(state.reputation).toBe(0);
 
 		state.reputation = 98;
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
-		execute(state, { type: 'release', animalId: 1 });
+		Object.assign(home(state).animals[0], {
+			stage: 'healthy',
+			recovery: 1,
+			stress: 0,
+			releasable: true
+		});
+		move(state, { type: 'release', animalId: 1 });
 		expect(state.reputation).toBe(100);
 	});
 
@@ -461,7 +490,7 @@ describe('репутація', () => {
 describe('випуск у дику природу', () => {
 	const readyToRelease = (releasable: boolean) => {
 		const { state } = withLion(4);
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable });
+		Object.assign(home(state).animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable });
 		return state;
 	};
 
@@ -469,16 +498,16 @@ describe('випуск у дику природу', () => {
 		const state = readyToRelease(true);
 		day(state, 7);
 
-		expect(execute(state, { type: 'release', animalId: 1 })).toEqual({ ok: true });
-		expect(state.animals[0].stage).toBe('released');
+		expect(move(state, { type: 'release', animalId: 1 })).toEqual({ ok: true });
+		expect(home(state).animals[0].stage).toBe('released');
 		// Сім діб прожито — випуск стався на восьмий день, і саме він записаний.
-		expect(state.animals[0].releasedOnDay, 'день випуску не записано').toBe(8);
+		expect(home(state).animals[0].releasedOnDay, 'день випуску не записано').toBe(8);
 	});
 
 	it('хвору не випустити', () => {
 		const state = readyToRelease(true);
-		state.animals[0].stage = 'recovering';
-		expect(execute(state, { type: 'release', animalId: 1 })).toEqual({
+		home(state).animals[0].stage = 'recovering';
+		expect(move(state, { type: 'release', animalId: 1 })).toEqual({
 			ok: false,
 			reason: 'not-healthy'
 		});
@@ -486,7 +515,7 @@ describe('випуск у дику природу', () => {
 
 	it('народжену в неволі не випустити, хоч би якою здоровою вона була', () => {
 		const state = readyToRelease(false);
-		expect(execute(state, { type: 'release', animalId: 1 })).toEqual({
+		expect(move(state, { type: 'release', animalId: 1 })).toEqual({
 			ok: false,
 			reason: 'not-releasable'
 		});
@@ -494,8 +523,8 @@ describe('випуск у дику природу', () => {
 
 	it('заляканої не випустити: у природі вона не виживе', () => {
 		const state = readyToRelease(true);
-		state.animals[0].stress = 1;
-		expect(execute(state, { type: 'release', animalId: 1 })).toEqual({
+		home(state).animals[0].stress = 1;
+		expect(move(state, { type: 'release', animalId: 1 })).toEqual({
 			ok: false,
 			reason: 'too-stressed'
 		});
@@ -511,14 +540,19 @@ describe('два списки замість одного', () => {
 	 */
 	it('випущений залишає список мешканців і потрапляє в окремий', () => {
 		const { state } = withLion(4);
-		execute(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
+		move(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
 
 		expect(residents(state)).toHaveLength(2);
 		expect(released(state)).toEqual([]);
 
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
-		execute(state, { type: 'release', animalId: 1 });
+		Object.assign(home(state).animals[0], {
+			stage: 'healthy',
+			recovery: 1,
+			stress: 0,
+			releasable: true
+		});
+		move(state, { type: 'release', animalId: 1 });
 
 		expect(residents(state).map((a) => a.id)).toEqual([2]);
 		expect(released(state).map((a) => a.id)).toEqual([1]);
@@ -526,8 +560,13 @@ describe('два списки замість одного', () => {
 
 	it('випущені не їдять і не займають місця', () => {
 		const { state } = withLion(4);
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
-		execute(state, { type: 'release', animalId: 1 });
+		Object.assign(home(state).animals[0], {
+			stage: 'healthy',
+			recovery: 1,
+			stress: 0,
+			releasable: true
+		});
+		move(state, { type: 'release', animalId: 1 });
 
 		// Репутація знімається ДО доби: наприкінці кожної вона спадає на 0.5, а
 		// пожертви рахуються з неї — інакше два заповідники порівнювалися б із
@@ -537,10 +576,10 @@ describe('два списки замість одного', () => {
 		day(state);
 		const withReleased = before - state.budget;
 
-		const empty = createReserve(1, 'savanna');
+		const empty = createReserve(1);
 		empty.budget = 1_000_000;
 		empty.reputation = reputation;
-		execute(empty, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(empty, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		const emptyBefore = empty.budget;
 		day(empty);
 
@@ -577,16 +616,16 @@ describe('банкрутство', () => {
 			{ type: 'hire', role: 'vet' },
 			{ type: 'build', size: 1, quality: 2, cell: { x: 0, z: 0 } }
 		] as ReserveCommand[]) {
-			expect(execute(state, command), command.type).toEqual({ ok: false, reason: 'subsidy-mode' });
+			expect(move(state, command), command.type).toEqual({ ok: false, reason: 'subsidy-mode' });
 		}
 	});
 
 	it('але не глушить виживання: час іде, тварини лікуються', () => {
 		const state = broke();
-		state.staff.vet = 1;
-		const before = state.animals[0].recovery;
+		home(state).staff.vet = 1;
+		const before = home(state).animals[0].recovery;
 		day(state);
-		expect(state.animals[0].recovery).toBeGreaterThan(before);
+		expect(home(state).animals[0].recovery).toBeGreaterThan(before);
 	});
 
 	it('вихід у плюс знімає режим', () => {
@@ -637,7 +676,7 @@ describe('умова програшу', () => {
 		const state = inTheRed(COLLAPSE_DAYS);
 		const before = snapshot(state);
 
-		expect(execute(state, { type: 'build', size: 1, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
+		expect(move(state, { type: 'build', size: 1, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: false,
 			reason: 'game-over'
 		});
@@ -671,21 +710,26 @@ describe('біом вирішує, кого сюди привозять', () => 
 	 * чого гра робиться.
 	 */
 	it('вид, який тут не живе, не приймають', () => {
-		const state = createReserve(1, 'tundra');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 10, quality: 3, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 10, quality: 3, cell: { x: 0, z: 0 } }, 'tundra');
 
+		// Ділянка названа ЯВНО: саме в ній і суть — лева привозять не туди.
 		expect(
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
+			move(
+				state,
+				{ type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 },
+				'tundra'
+			)
 		).toEqual({ ok: false, reason: 'wrong-biome' });
 	});
 
 	it('той самий вид у своєму біомі проходить', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		expect(
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
+			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
 		).toEqual({ ok: true });
 	});
 
@@ -700,16 +744,16 @@ describe('біом вирішує, кого сюди привозять', () => 
 
 describe('якість вольєра', () => {
 	const built = (quality: Quality) => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
-		state.staff.vet = 1;
+		move(state, { type: 'build', size: 4, quality, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		home(state).staff.vet = 1;
 		return state;
 	};
 
 	it('перевірка жива: якість записується у вольєр', () => {
-		expect(built(3).enclosures[0]).toMatchObject({ quality: 3, durability: 1 });
+		expect(home(built(3)).enclosures[0]).toMatchObject({ quality: 3, durability: 1 });
 	});
 
 	it('дорожча якість коштує дорожче', () => {
@@ -725,7 +769,7 @@ describe('якість вольєра', () => {
 		const speeds = ([1, 2, 3] as Quality[]).map((q) => {
 			const state = built(q);
 			day(state, 3);
-			return state.animals[0].recovery;
+			return home(state).animals[0].recovery;
 		});
 		expect(speeds[1]).toBeGreaterThan(speeds[0]);
 		expect(speeds[2]).toBeGreaterThan(speeds[1]);
@@ -734,7 +778,7 @@ describe('якість вольєра', () => {
 	it('якості поза шкалою не буває', () => {
 		const state = createReserve(1);
 		expect(
-			execute(state, { type: 'build', size: 4, quality: 9 as Quality, cell: { x: 0, z: 0 } })
+			move(state, { type: 'build', size: 4, quality: 9 as Quality, cell: { x: 0, z: 0 } })
 		).toEqual({
 			ok: false,
 			reason: 'bad-quality'
@@ -743,10 +787,10 @@ describe('якість вольєра', () => {
 
 	it('якість можна підняти, але не опустити', () => {
 		const state = built(1);
-		expect(execute(state, { type: 'upgrade', enclosureId: 1, quality: 3 })).toEqual({ ok: true });
-		expect(state.enclosures[0].quality).toBe(3);
+		expect(move(state, { type: 'upgrade', enclosureId: 1, quality: 3 })).toEqual({ ok: true });
+		expect(home(state).enclosures[0].quality).toBe(3);
 
-		expect(execute(state, { type: 'upgrade', enclosureId: 1, quality: 1 })).toEqual({
+		expect(move(state, { type: 'upgrade', enclosureId: 1, quality: 1 })).toEqual({
 			ok: false,
 			reason: 'not-an-upgrade'
 		});
@@ -755,25 +799,25 @@ describe('якість вольєра', () => {
 
 describe('знос і ремонт', () => {
 	const aged = (days: number) => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 3, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 4, quality: 3, cell: { x: 0, z: 0 } });
 		day(state, days);
 		return state;
 	};
 
 	it('перевірка жива: новий вольєр цілий', () => {
-		expect(aged(0).enclosures[0].durability).toBe(1);
+		expect(home(aged(0)).enclosures[0].durability).toBe(1);
 	});
 
 	it('вольєр зношується щодня', () => {
-		expect(aged(10).enclosures[0].durability).toBeCloseTo(1 - 10 * WEAR_PER_DAY);
+		expect(home(aged(10)).enclosures[0].durability).toBeCloseTo(1 - 10 * WEAR_PER_DAY);
 	});
 
 	it('порожній вольєр зношується так само: він стоїть під дощем', () => {
 		const state = aged(10);
-		expect(state.animals).toHaveLength(0);
-		expect(state.enclosures[0].durability).toBeLessThan(1);
+		expect(home(state).animals).toHaveLength(0);
+		expect(home(state).enclosures[0].durability).toBeLessThan(1);
 	});
 
 	/**
@@ -782,7 +826,7 @@ describe('знос і ремонт', () => {
 	 */
 	it('зношений вольєр падає в якості', () => {
 		const state = aged(0);
-		const enclosure = state.enclosures[0];
+		const enclosure = home(state).enclosures[0];
 
 		enclosure.durability = 0.8;
 		expect(effectiveQuality(enclosure), 'цілий — повна якість').toBe(3);
@@ -796,46 +840,46 @@ describe('знос і ремонт', () => {
 
 	it('нижче першої якості не падає', () => {
 		const state = aged(0);
-		state.enclosures[0].quality = 1;
-		state.enclosures[0].durability = 0;
-		expect(effectiveQuality(state.enclosures[0])).toBe(1);
+		home(state).enclosures[0].quality = 1;
+		home(state).enclosures[0].durability = 0;
+		expect(effectiveQuality(home(state).enclosures[0])).toBe(1);
 	});
 
 	it('ремонт повертає міцність і коштує тим більше, чим гірший стан', () => {
 		const state = aged(20);
-		const worn = state.enclosures[0].durability;
+		const worn = home(state).enclosures[0].durability;
 		const before = state.budget;
 
-		expect(execute(state, { type: 'repair', enclosureId: 1 })).toEqual({ ok: true });
-		expect(state.enclosures[0].durability).toBe(1);
+		expect(move(state, { type: 'repair', enclosureId: 1 })).toEqual({ ok: true });
+		expect(home(state).enclosures[0].durability).toBe(1);
 		expect(before - state.budget).toBe(repairPrice(4, 3, worn));
 	});
 
 	it('цілий вольєр ремонтувати нема сенсу, і гра про це каже', () => {
 		const state = aged(0);
-		expect(execute(state, { type: 'repair', enclosureId: 1 })).toEqual({
+		expect(move(state, { type: 'repair', enclosureId: 1 })).toEqual({
 			ok: false,
 			reason: 'already-sound'
 		});
 	});
 
 	it('підняття якості заразом оновлює вольєр', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 1, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 4, quality: 1, cell: { x: 0, z: 0 } });
 		day(state, 20);
-		expect(state.enclosures[0].durability).toBeLessThan(1);
+		expect(home(state).enclosures[0].durability).toBeLessThan(1);
 
-		execute(state, { type: 'upgrade', enclosureId: 1, quality: 3 });
-		expect(state.enclosures[0].durability).toBe(1);
+		move(state, { type: 'upgrade', enclosureId: 1, quality: 3 });
+		expect(home(state).enclosures[0].durability).toBe(1);
 	});
 });
 
 describe('дві шкали розходяться саме там, де це щось означає', () => {
 	const savanna = () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		state.staff.vet = 1;
+		home(state).staff.vet = 1;
 		// Фонд із іменем: «у сумі нуль» і «сама спадає» від нуля не перевіряються.
 		state.reputation = KNOWN;
 		return state;
@@ -850,7 +894,7 @@ describe('дві шкали розходяться саме там, де це щ
 	 */
 	it('вольєр забирає користь і не дає репутації', () => {
 		const state = savanna();
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 
 		expect(state.impact).toBe(ENCLOSURE_IMPACT);
 		expect(state.reputation, 'публіка розділилася — у сумі нуль').toBe(KNOWN);
@@ -861,7 +905,7 @@ describe('дві шкали розходяться саме там, де це щ
 		const state = savanna();
 		const impact = state.impact;
 
-		expect(execute(state, { type: 'campaign' })).toEqual({ ok: true });
+		expect(move(state, { type: 'campaign' })).toEqual({ ok: true });
 		expect(state.impact, 'допис нікого не врятував').toBe(impact);
 		expect(state.reputation).toBe(KNOWN + CAMPAIGN_REPUTATION);
 	});
@@ -870,24 +914,24 @@ describe('дві шкали розходяться саме там, де це щ
 		const state = savanna();
 		const before = state.budget;
 
-		execute(state, { type: 'campaign' });
+		move(state, { type: 'campaign' });
 		expect(before - state.budget).toBe(CAMPAIGN_PRICE);
-		expect(execute(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'campaign-done' });
+		expect(move(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'campaign-done' });
 
 		day(state);
-		expect(execute(state, { type: 'campaign' }), 'новий день — новий привід').toEqual({ ok: true });
+		expect(move(state, { type: 'campaign' }), 'новий день — новий привід').toEqual({ ok: true });
 	});
 
 	it('одужання дає мало користі й багато репутації', () => {
 		const state = savanna();
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 
 		const before = { impact: state.impact, reputation: state.reputation };
-		state.animals[0].recovery = 0.99;
+		home(state).animals[0].recovery = 0.99;
 		day(state);
 
-		expect(state.animals[0].stage).toBe('healthy');
+		expect(home(state).animals[0].stage).toBe('healthy');
 		expect(state.impact - before.impact).toBe(HEAL_IMPACT);
 		// Спад репутації за ту саму добу теж треба врахувати.
 		expect(state.reputation - before.reputation).toBeCloseTo(
@@ -915,17 +959,22 @@ describe('дві шкали розходяться саме там, де це щ
 
 describe('перемога', () => {
 	const ready = () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
-		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+		Object.assign(home(state).animals[0], {
+			stage: 'healthy',
+			recovery: 1,
+			stress: 0,
+			releasable: true
+		});
 		return state;
 	};
 
 	it('перевірка жива: звичайний випуск перемоги не дає', () => {
 		const state = ready();
-		execute(state, { type: 'release', animalId: 1 });
+		move(state, { type: 'release', animalId: 1 });
 		expect(state.victory).toBe(false);
 	});
 
@@ -936,7 +985,7 @@ describe('перемога', () => {
 	it('поріг користі завершує партію перемогою', () => {
 		const state = ready();
 		state.impact = IMPACT_TO_WIN - RELEASE_IMPACT;
-		execute(state, { type: 'release', animalId: 1 });
+		move(state, { type: 'release', animalId: 1 });
 
 		expect(state.impact).toBeGreaterThanOrEqual(IMPACT_TO_WIN);
 		expect(state.victory).toBe(true);
@@ -947,13 +996,13 @@ describe('перемога', () => {
 		const state = ready();
 		state.impact = IMPACT_TO_WIN;
 		state.victory = true;
-		expect(execute(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'game-over' });
+		expect(move(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'game-over' });
 	});
 });
 
 describe('контракти зі спонсорами', () => {
 	const running = () => {
-		const state = createReserve(1, 'forest');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
 		return state;
 	};
@@ -982,7 +1031,7 @@ describe('контракти зі спонсорами', () => {
 		const offer = state.offered!;
 		state.reputation = 70;
 
-		expect(execute(state, { type: 'accept', contractId: offer.id })).toEqual({ ok: true });
+		expect(move(state, { type: 'accept', contractId: offer.id })).toEqual({ ok: true });
 		const taken = state.contracts[0];
 		expect(doneOf(state, taken), 'контракт прийшов частково виконаним').toBe(0);
 	});
@@ -990,9 +1039,9 @@ describe('контракти зі спонсорами', () => {
 	it('невиконаний контракт нагороди не дає', () => {
 		const state = running();
 		day(state, CONTRACT_INTERVAL_DAYS);
-		execute(state, { type: 'accept', contractId: state.offered!.id });
+		move(state, { type: 'accept', contractId: state.offered!.id });
 
-		expect(execute(state, { type: 'claim', contractId: state.contracts[0].id })).toEqual({
+		expect(move(state, { type: 'claim', contractId: state.contracts[0].id })).toEqual({
 			ok: false,
 			reason: 'contract-unfinished'
 		});
@@ -1001,14 +1050,14 @@ describe('контракти зі спонсорами', () => {
 	it('виконаний контракт платить і зникає', () => {
 		const state = running();
 		day(state, CONTRACT_INTERVAL_DAYS);
-		execute(state, { type: 'accept', contractId: state.offered!.id });
+		move(state, { type: 'accept', contractId: state.offered!.id });
 
 		const contract = state.contracts[0];
 		// Доводимо умову до виконання прямо, хоч би що вона міряла.
 		contract.startedAt = progressOf(state, contract.goal) - contract.amount;
 		const before = state.budget;
 
-		expect(execute(state, { type: 'claim', contractId: contract.id })).toEqual({ ok: true });
+		expect(move(state, { type: 'claim', contractId: contract.id })).toEqual({ ok: true });
 		expect(state.budget - before).toBe(contract.reward);
 		expect(state.contracts).toEqual([]);
 	});
@@ -1026,7 +1075,7 @@ describe('контракти зі спонсорами', () => {
 		// виконана обіцянка, і перевірка сперечалася б сама з собою.
 		state.reputation = KNOWN;
 		day(state, CONTRACT_INTERVAL_DAYS);
-		execute(state, { type: 'accept', contractId: state.offered!.id });
+		move(state, { type: 'accept', contractId: state.offered!.id });
 
 		const contract = state.contracts[0];
 		const reputation = state.reputation;
@@ -1045,7 +1094,7 @@ describe('контракти зі спонсорами', () => {
 		const state = running();
 		for (let i = 0; i < MAX_ACTIVE_CONTRACTS; i++) {
 			day(state, CONTRACT_INTERVAL_DAYS);
-			execute(state, { type: 'accept', contractId: state.offered!.id });
+			move(state, { type: 'accept', contractId: state.offered!.id });
 		}
 		expect(state.contracts).toHaveLength(MAX_ACTIVE_CONTRACTS);
 
@@ -1053,7 +1102,7 @@ describe('контракти зі спонсорами', () => {
 		// місця немає, спонсори й не приходять — а перший контракт тим часом
 		// устиг би прострочитися й звільнити місце.
 		state.offered = { ...state.contracts[0], id: 999, dueDay: 9999 };
-		expect(execute(state, { type: 'accept', contractId: 999 })).toEqual({
+		expect(move(state, { type: 'accept', contractId: 999 })).toEqual({
 			ok: false,
 			reason: 'too-many-contracts'
 		});
@@ -1062,7 +1111,7 @@ describe('контракти зі спонсорами', () => {
 	it('контракти переживають збереження', () => {
 		const state = running();
 		day(state, CONTRACT_INTERVAL_DAYS);
-		execute(state, { type: 'accept', contractId: state.offered!.id });
+		move(state, { type: 'accept', contractId: state.offered!.id });
 
 		const copy = JSON.parse(JSON.stringify(state));
 		expect(copy.contracts).toHaveLength(1);
@@ -1072,13 +1121,13 @@ describe('контракти зі спонсорами', () => {
 
 describe('межа ділянки', () => {
 	const rich = () => {
-		const state = createReserve(1, 'forest');
+		const state = createReserve(1);
 		state.budget = 100_000_000;
 		return state;
 	};
 
 	const buildAt = (state: ReserveState, x: number, z: number) =>
-		execute(state, { type: 'build', size: 1, quality: 1, cell: { x, z } });
+		move(state, { type: 'build', size: 1, quality: 1, cell: { x, z } });
 
 	it('перевірка жива: у центрі ділянки будувати можна', () => {
 		expect(buildAt(rich(), 0, 0)).toEqual({ ok: true });
@@ -1092,7 +1141,7 @@ describe('межа ділянки', () => {
 		const state = rich();
 		// Клітинка 100 — це 220 світових одиниць, тобто далеко за парканом.
 		expect(buildAt(state, 100, 0)).toEqual({ ok: false, reason: 'out-of-bounds' });
-		expect(state.enclosures).toEqual([]);
+		expect(home(state).enclosures).toEqual([]);
 	});
 
 	/**
@@ -1105,9 +1154,10 @@ describe('межа ділянки', () => {
 		// Одиничка на самому краю проходить…
 		expect(buildAt(state, edge, 0).ok, 'край не тримає навіть одиничку').toBe(true);
 		// …а десятка з тим самим кутом уже ні: її слід — чотири клітинки.
-		expect(
-			execute(state, { type: 'build', size: 10, quality: 1, cell: { x: edge, z: 0 } })
-		).toEqual({ ok: false, reason: 'out-of-bounds' });
+		expect(move(state, { type: 'build', size: 10, quality: 1, cell: { x: edge, z: 0 } })).toEqual({
+			ok: false,
+			reason: 'out-of-bounds'
+		});
 	});
 
 	it('на зайняту клітинку другий вольєр не поставити', () => {
@@ -1119,7 +1169,7 @@ describe('межа ділянки', () => {
 	/** Слід великого вольєра теж зайнятий увесь, а не лише його кут. */
 	it('сусідня клітинка під слідом великого вольєра теж зайнята', () => {
 		const state = rich();
-		execute(state, { type: 'build', size: 9, quality: 1, cell: { x: 0, z: 0 } });
+		move(state, { type: 'build', size: 9, quality: 1, cell: { x: 0, z: 0 } });
 		expect(cellsOf({ x: 0, z: 0 }, 9).length, 'слід великого вольєра завузький').toBeGreaterThan(1);
 		expect(buildAt(state, 1, 1)).toEqual({ ok: false, reason: 'cell-taken' });
 	});
@@ -1130,7 +1180,7 @@ describe('межа ділянки', () => {
 
 		// Межа КВАДРАТНА: перевіряємо кожну вісь окремо, як це робить і ядро.
 		const half = reserveHalf(state.reputation);
-		for (const enclosure of state.enclosures) {
+		for (const enclosure of home(state).enclosures) {
 			const spot = worldOf(enclosure.cell);
 			expect(Math.max(Math.abs(spot.x), Math.abs(spot.z))).toBeLessThanOrEqual(half);
 		}
@@ -1152,5 +1202,95 @@ describe('межа ділянки', () => {
 		const known = rich();
 		known.reputation = 100;
 		expect(buildAt(known, far, 0), "ім'я не розширило ділянку").toEqual({ ok: true });
+	});
+});
+
+/**
+ * Фонд: одна каса, одні шкали, один годинник — і чотири землі.
+ *
+ * Це найдорожча властивість нової моделі, і перевіряти її треба саме тут: усе
+ * решта в цьому файлі дивиться на ОДНУ ділянку й тому не побачило б, якби три
+ * інші стояли в минулому.
+ */
+describe('фонд і його ділянки', () => {
+	/** Фонд, у якого по вольєру на двох різних землях. */
+	const twoLands = () => {
+		const state = createReserve(1);
+		state.budget = 1_000_000;
+		move(state, { type: 'build', size: 3, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+		move(state, { type: 'build', size: 3, quality: 2, cell: { x: 0, z: 0 } }, 'savanna');
+		return state;
+	};
+
+	it('перевірка жива: землі не діляться вольєрами', () => {
+		const state = twoLands();
+		expect(home(state, 'forest').enclosures).toHaveLength(1);
+		expect(home(state, 'savanna').enclosures).toHaveLength(1);
+		expect(home(state, 'tundra').enclosures, 'вольєр приїхав не на свою землю').toHaveLength(0);
+	});
+
+	/**
+	 * Каса СПІЛЬНА, і це те, що робить четверту ділянку рішенням.
+	 *
+	 * Якби кожна земля мала свій гаманець, розширення нічого не коштувало б —
+	 * достатньо було б відкрити нову й отримати ще п'ятдесят тисяч.
+	 */
+	it('будівництво на одній землі забирає гроші в усього фонду', () => {
+		const state = createReserve(1);
+		const before = state.budget;
+
+		move(state, { type: 'build', size: 3, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+		const afterFirst = state.budget;
+		expect(afterFirst).toBeLessThan(before);
+
+		move(state, { type: 'build', size: 3, quality: 2, cell: { x: 0, z: 0 } }, 'savanna');
+		expect(state.budget, 'друга земля платила з іншої каси').toBeLessThan(afterFirst);
+	});
+
+	/**
+	 * Критерій етапу 15: життя йде й на тих землях, куди гравець не заходив.
+	 *
+	 * Знос — найпростіший свідок: він не залежить ні від тварин, ні від персоналу,
+	 * тож якщо в другій ділянці вольєр цілий, значить її доба не прожита.
+	 */
+	it('доба проходить на ВСІХ землях, а не лише на відкритій', () => {
+		const state = twoLands();
+		day(state, 5);
+
+		const forest = home(state, 'forest').enclosures[0].durability;
+		const savanna = home(state, 'savanna').enclosures[0].durability;
+		expect(forest).toBeCloseTo(1 - 5 * WEAR_PER_DAY);
+		expect(savanna, 'ділянка, у яку не заходили, стоїть у минулому').toBeCloseTo(forest);
+	});
+
+	it('утримання беруть за кожну землю, а не за одну', () => {
+		const one = createReserve(1);
+		one.budget = 1_000_000;
+		move(one, { type: 'build', size: 3, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+
+		const two = twoLands();
+		const spentOne = one.budget;
+		const spentTwo = two.budget;
+
+		day(one);
+		day(two);
+		const dayCostOne = spentOne - one.budget;
+		const dayCostTwo = spentTwo - two.budget;
+		expect(dayCostTwo, 'друга земля утримується безкоштовно').toBeGreaterThan(dayCostOne);
+	});
+
+	/** Репутація одна, тож і межа забудови рухається на всіх землях однаково. */
+	it('репутація розширює ділянки одразу всюди', () => {
+		const state = createReserve(1);
+		state.budget = 1_000_000;
+		state.reputation = 100;
+		const far = Math.floor(reserveHalf(100) / 2.2);
+
+		for (const at of RESERVE_BIOMES) {
+			expect(
+				move(state, { type: 'build', size: 1, quality: 1, cell: { x: far, z: 0 } }, at),
+				at
+			).toEqual({ ok: true });
+		}
 	});
 });

@@ -84,6 +84,7 @@ export const reserve = {
 	'reserve.noneReleased': 'Er is nog niemand teruggebracht naar de natuur.',
 	'reserve.reputation': 'Reputatie',
 	'reserve.inReserve': 'In het reservaat',
+	'reserve.inReserves': 'In de reservaten',
 	'reserve.inWild': 'In de natuur',
 	'reserve.noVetWarning':
 		'Er is geen dierenarts: het dier wordt opgenomen, maar het fonds krijgt er kritiek op.',

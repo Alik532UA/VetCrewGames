@@ -3,7 +3,7 @@
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { TICKS_PER_DAY } from '$lib/reserve/constants';
 	import { dayOf } from '$lib/reserve/simulation';
-	import { speciesOfBiome } from '$lib/reserve/species';
+	import { speciesOfBiome, type ReserveBiome } from '$lib/reserve/species';
 	import type { ReserveController } from '$lib/controllers/reserve.svelte';
 
 	/**
@@ -22,9 +22,13 @@
 	 */
 	interface Props {
 		game: ReserveController;
+		/** Ділянка, чий штат і мешканців правимо: показники ж фондові. */
+		at: ReserveBiome;
 	}
 
-	let { game }: Props = $props();
+	let { game, at }: Props = $props();
+
+	const site = $derived(game.state.sites[at]);
 
 	/**
 	 * Показники як поля: читання зі стану, запис — прямо в нього.
@@ -65,20 +69,20 @@
 		{
 			id: 'vet',
 			label: 'Ветеринари',
-			get: () => game.state.staff.vet,
-			set: (v) => (game.state.staff.vet = Math.max(0, v))
+			get: () => site.staff.vet,
+			set: (v) => (site.staff.vet = Math.max(0, v))
 		},
 		{
 			id: 'keeper',
 			label: 'Доглядачі',
-			get: () => game.state.staff.keeper,
-			set: (v) => (game.state.staff.keeper = Math.max(0, v))
+			get: () => site.staff.keeper,
+			set: (v) => (site.staff.keeper = Math.max(0, v))
 		},
 		{
 			id: 'ranger',
 			label: 'Рейнджери',
-			get: () => game.state.staff.ranger,
-			set: (v) => (game.state.staff.ranger = Math.max(0, v))
+			get: () => site.staff.ranger,
+			set: (v) => (site.staff.ranger = Math.max(0, v))
 		}
 	];
 
@@ -98,13 +102,13 @@
 	 * означало б вигадати двох тварин без виду, вольєра й історії.
 	 */
 	function addResident() {
-		const species = speciesOfBiome(game.state.biome)[0];
-		const free = game.state.enclosures.find(
-			(e) => !game.state.animals.some((a) => a.enclosureId === e.id && a.stage !== 'released')
+		const species = speciesOfBiome(at)[0];
+		const free = site.enclosures.find(
+			(e) => !site.animals.some((a) => a.enclosureId === e.id && a.stage !== 'released')
 		);
 		if (!species || !free) return;
 
-		game.state.animals.push({
+		site.animals.push({
 			id: game.state.nextAnimalId++,
 			speciesId: species.id,
 			origin: 'rescue',
@@ -119,7 +123,7 @@
 	}
 
 	function healAll() {
-		for (const animal of game.state.animals) {
+		for (const animal of site.animals) {
 			if (animal.stage === 'recovering') {
 				animal.stage = 'healthy';
 				animal.recovery = 1;
@@ -130,9 +134,9 @@
 	}
 
 	function callRaid() {
-		const victim = game.state.animals.find((a) => a.stage !== 'released');
+		const victim = site.animals.find((a) => a.stage !== 'released');
 		if (!victim) return;
-		game.state.raid = { animalId: victim.id, day: dayOf(game.state) };
+		game.state.raid = { animalId: victim.id, biome: at, day: dayOf(game.state) };
 		game.save();
 	}
 </script>

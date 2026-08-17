@@ -1,7 +1,7 @@
 import { NO_VET_REPUTATION, ORIGINS } from './constants';
 import { addReputation, roll } from './roll';
-import { speciesById } from './species';
-import type { CommandResult, ReserveCommand, ReserveState } from './types';
+import { speciesById, type ReserveBiome } from './species';
+import type { CommandResult, ReserveCommand, ReserveState, Site } from './types';
 
 /**
  * Прийом тварини: звідки вона, куди її, і чого це коштує.
@@ -14,8 +14,10 @@ import type { CommandResult, ReserveCommand, ReserveState } from './types';
  */
 export function intake(
 	state: ReserveState,
+	site: Site,
+	at: ReserveBiome,
 	command: Extract<ReserveCommand, { type: 'acquire' }>,
-	occupant: (state: ReserveState, enclosureId: number) => unknown
+	occupant: (site: Site, enclosureId: number) => unknown
 ): CommandResult {
 	const species = speciesById(command.speciesId);
 	if (!species) return { ok: false, reason: 'no-such-species' };
@@ -24,11 +26,11 @@ export function intake(
 	 * складності. Заповідник у тундрі, куди привезли лева, навчав би
 	 * рівно протилежного тому, заради чого гра робиться.
 	 */
-	if (!species.biomes.includes(state.biome)) return { ok: false, reason: 'wrong-biome' };
+	if (!species.biomes.includes(at)) return { ok: false, reason: 'wrong-biome' };
 
-	const enclosure = state.enclosures.find((e) => e.id === command.enclosureId);
+	const enclosure = site.enclosures.find((e) => e.id === command.enclosureId);
 	if (!enclosure) return { ok: false, reason: 'no-such-enclosure' };
-	if (occupant(state, enclosure.id)) return { ok: false, reason: 'enclosure-taken' };
+	if (occupant(site, enclosure.id)) return { ok: false, reason: 'enclosure-taken' };
 	/*
 	 * Замалий вольєр — ВІДМОВА, а не штраф. Лев у їжачій клітці не
 	 * «повільніше одужує»: він там не живе. Саме тому це найголовніша
@@ -63,9 +65,9 @@ export function intake(
 	 * з біди краще, ніж лишити там. Але це те, за що фонд критикують, —
 	 * звідси мінус репутації, а не заборона.
 	 */
-	if (state.staff.vet === 0) addReputation(state, NO_VET_REPUTATION);
+	if (site.staff.vet === 0) addReputation(state, NO_VET_REPUTATION);
 
-	state.animals.push({
+	site.animals.push({
 		id: state.nextAnimalId++,
 		speciesId: species.id,
 		origin: command.origin,

@@ -22,8 +22,8 @@ import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } f
 import { closeDay } from './journal';
 import { expireRaid, maybeRaid } from './raids';
 import { addReputation } from './roll';
-import { comfortOf, speciesById } from './species';
-import type { Animal, Enclosure, ReserveState } from './types';
+import { comfortOf, speciesById, RESERVE_BIOMES } from './species';
+import type { Animal, Enclosure, ReserveState, Site } from './types';
 
 /**
  * Кінець ігрової доби: гроші, знос, одужання, стрес, підсумок.
@@ -34,9 +34,8 @@ import type { Animal, Enclosure, ReserveState } from './types';
  * вони й розходяться без жодного спільного стану.
  */
 
-/** Тварини, які ще в заповіднику: випущені не їдять і не займають місця. */
-const present = (state: ReserveState): Animal[] =>
-	state.animals.filter((a) => a.stage !== 'released');
+/** Тварини ділянки, які ще на місці: випущені не їдять і не займають вольєра. */
+const presentAt = (site: Site): Animal[] => site.animals.filter((a) => a.stage !== 'released');
 
 /**
  * Яка якість у вольєра НАСПРАВДІ, з поправкою на знос.
@@ -58,9 +57,9 @@ export function effectiveQuality(enclosure: Enclosure): Quality {
  * тут узагалі поміститься; якість — наскільки йому тут добре. Дешевий великий
  * вольєр і дорогий тісний мають відчуватися по-різному.
  */
-function comfortFor(state: ReserveState, animal: Animal): number {
+function comfortFor(site: Site, animal: Animal): number {
 	const species = speciesById(animal.speciesId);
-	const enclosure = state.enclosures.find((e) => e.id === animal.enclosureId);
+	const enclosure = site.enclosures.find((e) => e.id === animal.enclosureId);
 	// Вид або вольєр могли зникнути лише через зіпсований сейв. Базова
 	// швидкість тут безпечніша за нуль: тварина, яка НІКОЛИ не одужає,
 	// виглядає як поламана гра, а не як наслідок тісноти.
@@ -101,31 +100,33 @@ function settleContracts(state: ReserveState, day: number): void {
 	}
 }
 
-export function endOfDay(state: ReserveState): void {
-	const here = present(state);
-	const day = Math.floor(state.ticks / TICKS_PER_DAY);
-
+/**
+ * Доба однієї ділянки: знос, витрати, одужання, стрес.
+ *
+ * Гроші лишаються ФОНДОВІ — витрати всіх ділянок ідуть з однієї каси, і саме це
+ * робить четверту землю рішенням, а не безкоштовним додатком. А от ветеринар
+ * лікує лише своїх: штат належить землі.
+ */
+function siteDay(state: ReserveState, site: Site): void {
 	// Вольєри зношуються щодня — незалежно від того, живе там хтось чи ні.
 	// Порожній вольєр, який стоїть п'ятдесят днів, теж потребує ремонту.
-	for (const enclosure of state.enclosures) {
+	for (const enclosure of site.enclosures) {
 		enclosure.durability = Math.max(0, enclosure.durability - WEAR_PER_DAY);
 	}
 
-	// Пожертви йдуть за РЕПУТАЦІЄЮ, а не за «Користю планеті»: перша — це те,
-	// що про фонд знають, друга — те, що він насправді зробив.
-	state.budget += state.reputation * DONATION_PER_REPUTATION;
+	const here = presentAt(site);
 	state.budget -= here.length * UPKEEP_PER_ANIMAL;
-	state.budget -= state.enclosures.reduce((sum, e) => sum + e.size * UPKEEP_PER_SIZE, 0);
-	state.budget -= state.staff.vet * WAGES.vet + state.staff.keeper * WAGES.keeper;
-	state.subsidy = state.budget < 0;
+	state.budget -= site.enclosures.reduce((sum, e) => sum + e.size * UPKEEP_PER_SIZE, 0);
+	state.budget -= site.staff.vet * WAGES.vet + site.staff.keeper * WAGES.keeper;
+	state.budget -= site.staff.ranger * WAGES.ranger;
 
 	const recovering = here.filter((a) => a.stage === 'recovering');
 	if (recovering.length > 0) {
 		// Зусилля ветеринарів ділиться порівну: черги в MVP немає.
-		const perAnimal = (state.staff.vet * RECOVERY_PER_VET_DAY) / recovering.length;
+		const perAnimal = (site.staff.vet * RECOVERY_PER_VET_DAY) / recovering.length;
 		for (const animal of recovering) {
 			// Стрес не спиняє одужання, а гальмує його; тіснота множить те, що лишилося.
-			const rate = perAnimal * (1 - animal.stress / 2) * comfortFor(state, animal);
+			const rate = perAnimal * (1 - animal.stress / 2) * comfortFor(site, animal);
 			animal.recovery = Math.min(1, animal.recovery + rate);
 			if (animal.recovery >= 1) {
 				animal.stage = 'healthy';
@@ -137,14 +138,34 @@ export function endOfDay(state: ReserveState): void {
 		}
 	}
 
-	const cared = state.staff.keeper * ANIMALS_PER_KEEPER;
+	const cared = site.staff.keeper * ANIMALS_PER_KEEPER;
 	for (const [index, animal] of here.entries()) {
 		// Простір заспокоює, тіснота — ні. Тому множник діє лише на спад:
 		// у тісноті стрес росте з тією самою швидкістю, а сходить уп'ятеро довше.
 		const change =
-			index < cared ? -STRESS_RELIEF_PER_DAY * comfortFor(state, animal) : STRESS_PER_DAY;
+			index < cared ? -STRESS_RELIEF_PER_DAY * comfortFor(site, animal) : STRESS_PER_DAY;
 		animal.stress = Math.min(1, Math.max(0, animal.stress + change));
 	}
+}
+
+export function endOfDay(state: ReserveState): void {
+	const day = Math.floor(state.ticks / TICKS_PER_DAY);
+
+	// Пожертви йдуть за РЕПУТАЦІЄЮ, а не за «Користю планеті»: перша — це те,
+	// що про фонд знають, друга — те, що він насправді зробив. Одні на весь фонд.
+	state.budget += state.reputation * DONATION_PER_REPUTATION;
+
+	/*
+	 * Життя йде на ВСІХ чотирьох землях, а не лише на відкритій.
+	 *
+	 * Це й є та властивість, заради якої зʼявився фонд: повернувшись у ліс, гравець
+	 * має знайти його таким, яким його зробили тридцять прожитих днів, а не таким,
+	 * яким він його покинув. Ділянка, у яку не заходили, теж їсть, зношується й
+	 * лікує.
+	 */
+	for (const biome of RESERVE_BIOMES) siteDay(state, state.sites[biome]);
+
+	state.subsidy = state.budget < 0;
 
 	/*
 	 * Програш — лише за «Користю планеті», і лише за ПОСПІЛЬ прожиті дні в

@@ -83,6 +83,7 @@ export const reserve = {
 	'reserve.noneReleased': 'Nobody has been returned to the wild yet.',
 	'reserve.reputation': 'Reputation',
 	'reserve.inReserve': 'In the reserve',
+	'reserve.inReserves': 'In the reserves',
 	'reserve.inWild': 'In the wild',
 	'reserve.noVetWarning':
 		'There is no vet: the animal will be taken in, but the fund will be criticised for it.',

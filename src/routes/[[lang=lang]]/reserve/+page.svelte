@@ -8,7 +8,10 @@
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { dropReserve } from '$lib/services/reserveSave';
 	import BiomePicker from '$lib/components/reserve/BiomePicker.svelte';
-	import { RESERVE_BIOMES, type ReserveBiome } from '$lib/reserve/species';
+	import ReserveHud from '$lib/components/reserve/ReserveHud.svelte';
+	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
+	import { populatedSites, released, residents } from '$lib/reserve/simulation';
+	import type { ReserveBiome } from '$lib/reserve/species';
 
 	/**
 	 * Вибір локації — окремий екран з окремою адресою.
@@ -21,10 +24,32 @@
 	 * «Почати заново» теж переїхало сюди, і не заради місця на смузі кнопок:
 	 * усередині партії воно означало «стерти цю», а тут — усі. Сторінка, з якої
 	 * видно всі чотири, і є єдине місце, де таке рішення взагалі має сенс.
+	 *
+	 * Показники фонду стоять і ТУТ — ті самі, що на карті. Каса, шкали й годинник
+	 * спільні, тож питання «скільки в мене грошей» не залежить від того, на якій
+	 * землі ти стоїш; а вибирати наступну ділянку, не бачивши бюджету, означало б
+	 * вибирати навмання.
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
+	const game = reserve;
 
-	onMount(() => settings.claimHeader('reserve.title', () => goto(langPath(lang, ''))));
+	onMount(() => {
+		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, '')));
+		game.start();
+
+		/*
+		 * Годинник іде й на цій сторінці.
+		 *
+		 * Фонд живе, поки відкрита будь-яка сторінка розділу: інакше час спинявся б
+		 * щоразу, коли гравець вибирає, куди піти, — і «вибір локації» став би
+		 * безкоштовною паузою.
+		 */
+		const stop = game.startClock();
+		return () => {
+			stop();
+			release();
+		};
+	});
 
 	const open = (biome: ReserveBiome) => goto(langPath(lang, `reserve/${biome}` as const));
 
@@ -42,13 +67,27 @@
 			confirming = true;
 			return;
 		}
-		for (const biome of RESERVE_BIOMES) dropReserve(biome);
+		dropReserve();
 		confirming = false;
 		toast.success('reserve.restartAllDone');
 	}
 </script>
 
 <div class="menu-page">
+	<ReserveHud
+		day={game.day}
+		budget={game.state.budget}
+		impact={game.state.impact}
+		reputation={game.state.reputation}
+		inReserve={residents(game.state).length}
+		inWild={released(game.state).length}
+		manySites={populatedSites(game.state) > 1}
+		journal={game.state.journal}
+		dayStart={game.state.dayStart}
+		speed={game.speed}
+		onSpeed={(value: Speed) => (game.speed = value)}
+	/>
+
 	<BiomePicker onPick={open} />
 
 	<button

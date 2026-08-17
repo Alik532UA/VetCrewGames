@@ -11,13 +11,29 @@ import {
 } from './constants';
 import { buildings } from './buildings';
 import { contractMove } from './contractMoves';
-import type { ReserveBiome } from './species';
+import { RESERVE_BIOMES, type ReserveBiome } from './species';
 import { startMetrics } from './journal';
 import { intake } from './intake';
 import { DRONE_PRICE, resolveRaid } from './raids';
 import { addReputation } from './roll';
 import { endOfDay } from './day';
-import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
+import { occupant } from './readers';
+import type { CommandResult, ReserveCommand, ReserveState, Site } from './types';
+
+/*
+ * Читання фонду живе в `readers.ts`, а реекспорт стоїть тут: для решти коду
+ * «симуляція» — одні двері. Розсилати імпорти по двох модулях означало б
+ * пам'ятати, у якому з них лежить `residents`, — а це саме те, що забувається.
+ */
+export {
+	freeEnclosures,
+	populatedSites,
+	released,
+	releasedAt,
+	residents,
+	residentsAt,
+	sitesOf
+} from './readers';
 
 /**
  * Ядро симуляції заповідника.
@@ -38,16 +54,13 @@ import type { Animal, CommandResult, ReserveCommand, ReserveState } from './type
  *  3. **Єдиний шлях зміни — `execute()`.** Хід виражений даними, тож той самий
  *     обʼєкт може прийти й з мережі.
  */
-export function createReserve(seed: number, biome: ReserveBiome = 'forest'): ReserveState {
+export function createReserve(seed: number): ReserveState {
 	return {
-		biome,
 		ticks: 0,
 		budget: STARTING_BUDGET,
 		impact: 0,
 		reputation: STARTING_REPUTATION,
-		animals: [],
-		enclosures: [],
-		staff: { vet: 0, keeper: 0, ranger: 0 },
+		sites: emptySites(),
 		collapseDays: 0,
 		gameOver: false,
 		victory: false,
@@ -67,18 +80,33 @@ export function createReserve(seed: number, biome: ReserveBiome = 'forest'): Res
 	};
 }
 
+/** Чотири порожні землі. Ділянка існує завжди — просто буває незабудованою. */
+function emptySites(): Record<ReserveBiome, Site> {
+	const sites = {} as Record<ReserveBiome, Site>;
+	for (const biome of RESERVE_BIOMES) {
+		sites[biome] = { animals: [], enclosures: [], staff: staffOf() };
+	}
+	return sites;
+}
+
+/** Порожній штат. Окремою функцією, щоб чотири ділянки не поділили один обʼєкт. */
+const staffOf = () => ({ vet: 0, keeper: 0, ranger: 0 });
+
 /** Ходи, які розширюють заповідник. Саме їх глушить антикризовий режим. */
 const EXPANDS = new Set<ReserveCommand['type']>(['acquire', 'hire', 'build']);
 
-/** Тварини, які ще в заповіднику: випущені не їдять і не займають місця. */
-const present = (state: ReserveState): Animal[] =>
-	state.animals.filter((a) => a.stage !== 'released');
-
-/** Чи хтось уже живе в цьому вольєрі. */
-const occupant = (state: ReserveState, enclosureId: number) =>
-	present(state).find((a) => a.enclosureId === enclosureId);
-
-export function execute(state: ReserveState, command: ReserveCommand): CommandResult {
+/**
+ * Виконати хід на заданій ділянці.
+ *
+ * `at` — АДРЕСА ходу, а не його поле: «побудувати» без місця не має сенсу, а
+ * кампанія в соцмережах не буває лісовою. У мережу колись піде саме ця пара.
+ */
+export function execute(
+	state: ReserveState,
+	command: ReserveCommand,
+	at: ReserveBiome
+): CommandResult {
+	const site = state.sites[at];
 	// Партія скінчилася — байдуже, перемогою чи поразкою: ходів більше немає.
 	if (state.gameOver || state.victory) return { ok: false, reason: 'game-over' };
 
@@ -94,13 +122,13 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 		case 'repair':
 		case 'upgrade':
 		case 'demolish':
-			return buildings(state, command, occupant);
+			return buildings(state, site, command, occupant);
 
 		case 'acquire':
-			return intake(state, command, occupant);
+			return intake(state, site, at, command, occupant);
 
 		case 'release': {
-			const animal = state.animals.find((a) => a.id === command.animalId);
+			const animal = site.animals.find((a) => a.id === command.animalId);
 			if (!animal || animal.stage === 'released') return { ok: false, reason: 'no-such-animal' };
 			if (animal.stage !== 'healthy') return { ok: false, reason: 'not-healthy' };
 			if (!animal.releasable) return { ok: false, reason: 'not-releasable' };
@@ -117,7 +145,8 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 		}
 
 		case 'hire':
-			state.staff[command.role] += 1;
+			// Штат — ділянки: ветеринар із савани не лікує ведмедя в лісі.
+			site.staff[command.role] += 1;
 			return { ok: true };
 
 		case 'campaign': {
@@ -145,7 +174,8 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 		 */
 		case 'raid': {
 			if (!state.raid) return { ok: false, reason: 'no-raid' };
-			if (command.tactic === 'ambush' && state.staff.ranger === 0)
+			// Засідку влаштовує патруль ТІЄЇ ділянки, на яку прийшли.
+			if (command.tactic === 'ambush' && state.sites[state.raid.biome].staff.ranger === 0)
 				return { ok: false, reason: 'no-ranger' };
 			if (command.tactic === 'drone' && state.budget < DRONE_PRICE)
 				return { ok: false, reason: 'no-money' };
@@ -155,8 +185,8 @@ export function execute(state: ReserveState, command: ReserveCommand): CommandRe
 		}
 
 		case 'dismiss':
-			if (state.staff[command.role] === 0) return { ok: false, reason: 'nobody-to-dismiss' };
-			state.staff[command.role] -= 1;
+			if (site.staff[command.role] === 0) return { ok: false, reason: 'nobody-to-dismiss' };
+			site.staff[command.role] -= 1;
 			return { ok: true };
 	}
 }
@@ -190,14 +220,3 @@ export { effectiveQuality } from './day';
  * добу менше, ніж виглядало.
  */
 export const dayOf = (state: ReserveState): number => Math.floor(state.ticks / TICKS_PER_DAY) + 1;
-
-/** Мешканці заповідника — без випущених. Це те, що показує меню «Мешканці». */
-export const residents = present;
-
-/** Ті, кого вже повернули в природу. Окремий список, окрема кнопка. */
-export const released = (state: ReserveState): Animal[] =>
-	state.animals.filter((a) => a.stage === 'released');
-
-/** Вольєри, у яких зараз нікого немає, — саме туди можна прийняти тварину. */
-export const freeEnclosures = (state: ReserveState) =>
-	state.enclosures.filter((e) => !occupant(state, e.id));

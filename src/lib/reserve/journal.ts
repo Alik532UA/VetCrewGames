@@ -1,3 +1,4 @@
+import { RESERVE_BIOMES } from './species';
 import type { MetricSet, ReserveState } from './types';
 
 /**
@@ -28,9 +29,11 @@ export const JOURNAL_DAYS = 14;
 export function metricsOf(state: ReserveState): MetricSet {
 	let inReserve = 0;
 	let inWild = 0;
-	for (const animal of state.animals) {
-		if (animal.stage === 'released') inWild++;
-		else inReserve++;
+	for (const biome of RESERVE_BIOMES) {
+		for (const animal of state.sites[biome].animals) {
+			if (animal.stage === 'released') inWild++;
+			else inReserve++;
+		}
 	}
 	return {
 		budget: state.budget,

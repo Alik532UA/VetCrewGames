@@ -1,8 +1,4 @@
 import { ORIGINS, QUALITIES, REPUTATION_MAX, REPUTATION_MIN, WAGES } from './constants';
-import { MIGRATIONS } from './migrations';
-
-// Реекспорт: для решти коду формат збереження — одні двері, а не дві.
-export { MIGRATIONS };
 import { ENCLOSURE_SIZES, RESERVE_BIOMES, speciesById } from './species';
 import type { ReserveState } from './types';
 
@@ -26,8 +22,25 @@ import type { ReserveState } from './types';
  * Піднімається щоразу, коли `ReserveState` змінює форму так, що старий сейв
  * читається неправильно. **Разом із номером додається сходинка в `MIGRATIONS`** —
  * без неї підйом версії просто викидає чужу партію.
+ *
+ * Відлік почався заново з появою ФОНДУ. Доти документ описував одну ділянку й
+ * дожив до сьомої версії сімома сходинками; фонд — інший документ, під іншим
+ * ключем (`reserve.fund`), і зливати чотири незалежні партії в одну означало б
+ * вигадати минуле, якого не було: чотири стартові бюджети, чотири репутації й
+ * жодної історії, як вони стали одним. Тому старі записи не піднімаються, а
+ * прибираються — див. `LEGACY_KEYS` у `services/reserveSave.ts`.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 1;
+
+/**
+ * Сходинки міграції: `MIGRATIONS[n]` піднімає сейв версії `n` до `n + 1`.
+ *
+ * Порожній, бо формат фонду щойно народився. Механізм при цьому лишається на
+ * місці, і саме тому він тут: перша ж зміна форми фонду вимагатиме сходинки, і
+ * тоді її буде куди покласти. Реєстр, який зʼявляється разом із потребою, завжди
+ * зʼявляється пізно.
+ */
+export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {};
 
 export interface SaveFile {
 	version: number;
@@ -110,11 +123,6 @@ function checkEnclosure(value: unknown, index: number): string | null {
 function checkState(value: unknown): string | null {
 	if (!isObject(value)) return 'стан не обʼєкт';
 
-	// Біом вирішує, які види тут узагалі бувають: чужа назва зробила б
-	// заповідник таким, куди не приймають нікого.
-	if (typeof value.biome !== 'string' || !RESERVE_BIOMES.includes(value.biome as never))
-		return `biome = ${String(value.biome)}`;
-
 	for (const field of [
 		'ticks',
 		'budget',
@@ -155,19 +163,40 @@ function checkState(value: unknown): string | null {
 	for (const field of ['budget', 'impact', 'reputation', 'inReserve', 'inWild'])
 		if (!isNumber(value.dayStart[field])) return `dayStart.${field}`;
 
-	if (!isObject(value.staff)) return 'staff';
-	for (const role of Object.keys(WAGES)) if (!isNumber(value.staff[role])) return `staff.${role}`;
-
-	if (!Array.isArray(value.enclosures)) return 'enclosures';
-	for (const [index, enclosure] of value.enclosures.entries()) {
-		const problem = checkEnclosure(enclosure, index);
+	/*
+	 * Ділянки перевіряються ВСІ ЧОТИРИ, і кожна — окремо.
+	 *
+	 * Загублена ділянка — не дрібниця: `state.sites[biome]` без неї дає
+	 * `undefined`, і перший же тік валиться на `site.animals`. Дешевше сказати про
+	 * це тут, ніж на тридцятому кадрі.
+	 */
+	if (!isObject(value.sites)) return 'sites';
+	for (const biome of RESERVE_BIOMES) {
+		const problem = checkSite(value.sites[biome], biome);
 		if (problem) return problem;
 	}
 
-	if (!Array.isArray(value.animals)) return 'animals';
+	return null;
+}
+
+/** Одна ділянка: штат, вольєри, мешканці. */
+function checkSite(value: unknown, biome: string): string | null {
+	if (!isObject(value)) return `sites.${biome}`;
+
+	if (!isObject(value.staff)) return `sites.${biome}.staff`;
+	for (const role of Object.keys(WAGES))
+		if (!isNumber(value.staff[role])) return `sites.${biome}.staff.${role}`;
+
+	if (!Array.isArray(value.enclosures)) return `sites.${biome}.enclosures`;
+	for (const [index, enclosure] of value.enclosures.entries()) {
+		const problem = checkEnclosure(enclosure, index);
+		if (problem) return `sites.${biome}.${problem}`;
+	}
+
+	if (!Array.isArray(value.animals)) return `sites.${biome}.animals`;
 	for (const [index, animal] of value.animals.entries()) {
 		const problem = checkAnimal(animal, index);
-		if (problem) return problem;
+		if (problem) return `sites.${biome}.${problem}`;
 	}
 
 	return null;

@@ -20,7 +20,6 @@ export type Font = 'inglobal' | 'e-ukraine';
 /** Яку смугу прокрутки малювати: системну чи власну (SCROLLBAR-v8 § 2.2). */
 export type ScrollbarMode = 'standard' | 'custom';
 
-
 const LOCALES: readonly Locale[] = LANGUAGES;
 const FONTS: readonly Font[] = ['inglobal', 'e-ukraine'];
 const SCROLLBAR_MODES: readonly ScrollbarMode[] = ['standard', 'custom'];
@@ -242,7 +241,6 @@ class Settings {
 			this.headerBack = null;
 		};
 	}
-
 }
 
 export const settings = new Settings();

@@ -2,19 +2,27 @@
 // Формат збереження нічого не знає про сховище — і перевірка теж не має знати.
 import { describe, expect, it } from 'vitest';
 import { MIGRATIONS, restore, SCHEMA_VERSION, serialize } from './save';
-import { metricsOf } from './journal';
 import { createReserve, execute, tick } from './simulation';
-import { STARTING_REPUTATION, TICKS_PER_DAY } from './constants';
-import { speciesById } from './species';
-import type { ReserveState } from './types';
+import { TICKS_PER_DAY } from './constants';
+import type { ReserveBiome } from './species';
+import type { ReserveCommand, ReserveState } from './types';
+
+/**
+ * Хід на ділянці. Типова земля — савана: там живе лев, на якому все й перевіряють.
+ */
+const move = (state: ReserveState, command: ReserveCommand, at: ReserveBiome = 'savanna') =>
+	execute(state, command, at);
+
+/** Земля, на якій ідуть перевірки: тварини, вольєри й штат живуть саме тут. */
+const home = (state: ReserveState, at: ReserveBiome = 'savanna') => state.sites[at];
 
 /** Партія, у якій уже щось сталося: порожній стан приховав би половину полів. */
 function played(): ReserveState {
 	// Савана: лев живе саме там, інакше заповідник його не прийме.
-	const state = createReserve(42, 'savanna');
-	execute(state, { type: 'hire', role: 'vet' });
-	execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-	execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+	const state = createReserve(42);
+	move(state, { type: 'hire', role: 'vet' });
+	move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+	move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 	tick(state, TICKS_PER_DAY * 3);
 	return state;
 }
@@ -23,8 +31,8 @@ describe('формат збереження', () => {
 	it('перевірка жива: партія справді має що зберігати', () => {
 		const state = played();
 		expect(state.ticks).toBe(900);
-		expect(state.animals).toHaveLength(1);
-		expect(state.enclosures).toHaveLength(1);
+		expect(home(state).animals).toHaveLength(1);
+		expect(home(state).enclosures).toHaveLength(1);
 	});
 
 	it('сейв несе номер версії схеми', () => {
@@ -54,144 +62,25 @@ describe('формат збереження', () => {
 		if (!saved.ok) return;
 
 		for (const state of [straight, saved.state]) {
-			execute(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
-			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
+			move(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
+			move(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
 			tick(state, TICKS_PER_DAY * 5);
 		}
 		expect(JSON.stringify(saved.state)).toBe(JSON.stringify(straight));
 	});
 });
 
-/**
- * Справжній сейв версії 1, записаний до того, як зʼявилися вольєри, види й
- * репутація. Це не вигадка «як воно могло виглядати» — це рівно та форма, яку
- * писала гра вчора.
+/*
+ * Перевірок старої драбини тут більше немає — разом із самою драбиною.
+ *
+ * До появи фонду документ описував ОДНУ ділянку й дожив до сьомої версії сімома
+ * сходинками. Фонд — інший документ під іншим ключем, і зливати чотири незалежні
+ * партії в одну означало б вигадати минуле, якого не було. Перевіряти сходинки,
+ * якими вже нікому не підніматися, — це тримати зелений гейт над мертвим кодом.
+ *
+ * Механізм при цьому лишився: нижче він перевіряється на ПІДРОБЛЕНІЙ драбині, і
+ * саме тому перша ж зміна форми фонду знайде і робочий підйом, і його перевірку.
  */
-const SAVE_V1 = {
-	version: 1,
-	state: {
-		ticks: 900,
-		budget: 44_000,
-		impact: 10,
-		animals: [
-			{
-				id: 1,
-				origin: 'rescue',
-				stage: 'recovering',
-				recovery: 0.3,
-				stress: 0.16,
-				releasable: true
-			},
-			{ id: 2, origin: 'official', stage: 'healthy', recovery: 1, stress: 0, releasable: false }
-		],
-		staff: { vet: 1, keeper: 0 },
-		collapseDays: 0,
-		gameOver: false,
-		subsidy: false,
-		seed: 208_075_745,
-		rolls: 2,
-		nextAnimalId: 3
-	}
-};
-
-describe('справжня міграція 1 → 2', () => {
-	const migrated = () => restore(structuredClone(SAVE_V1));
-
-	it('перевірка жива: сейв версії 1 не проходить перевірку форми версії 2', () => {
-		// Без сходинки той самий обʼєкт відкинуло б: у нього немає ні вольєрів,
-		// ні репутації, ні виду тварини.
-		expect(restore(structuredClone(SAVE_V1), {})).toMatchObject({ ok: false });
-	});
-
-	it('партія переживає оновлення гри', () => {
-		const result = migrated();
-		expect(result.ok, result.ok === false ? result.reason : '').toBe(true);
-		if (!result.ok) return;
-
-		expect(result.state.ticks).toBe(900);
-		expect(result.state.budget).toBe(44_000);
-		expect(result.state.animals).toHaveLength(2);
-	});
-
-	it('кожна тварина отримує вид і власний вольєр', () => {
-		const result = migrated();
-		if (!result.ok) throw new Error('міграція не пройшла');
-
-		for (const animal of result.state.animals) {
-			expect(speciesById(animal.speciesId), animal.speciesId).toBeDefined();
-			const home = result.state.enclosures.find((e) => e.id === animal.enclosureId);
-			expect(home, `тварині ${animal.id} не дали вольєра`).toBeDefined();
-		}
-		// Два вольєри на дві тварини: спільного житла не буває.
-		expect(new Set(result.state.animals.map((a) => a.enclosureId)).size).toBe(2);
-	});
-
-	/**
-	 * Вольєр дається РЕКОМЕНДОВАНОГО розміру.
-	 *
-	 * Мінімальний сповільнив би вп'ятеро те, що досі йшло на повній швидкості,
-	 * — тобто покарав би гравця за оновлення гри.
-	 */
-	it('вольєр не тісний: швидкості лишаються базовими', () => {
-		const result = migrated();
-		if (!result.ok) throw new Error('міграція не пройшла');
-
-		for (const animal of result.state.animals) {
-			const species = speciesById(animal.speciesId)!;
-			const home = result.state.enclosures.find((e) => e.id === animal.enclosureId)!;
-			expect(home.size).toBe(species.recSize);
-		}
-	});
-
-	/**
-	 * Вид виводиться з `id` і зерна, а НЕ кидком генератора: кидок зсунув би
-	 * `rolls`, і партія після відновлення розгорталася б інакше, ніж
-	 * розгорталася б без збереження.
-	 */
-	it('міграція не чіпає стан генератора', () => {
-		const result = migrated();
-		if (!result.ok) throw new Error('міграція не пройшла');
-		expect(result.state.rolls).toBe(SAVE_V1.state.rolls);
-		expect(result.state.seed).toBe(SAVE_V1.state.seed);
-	});
-
-	it('одна й та сама стара партія завжди дає той самий новий світ', () => {
-		const a = migrated();
-		const b = migrated();
-		expect(JSON.stringify(a)).toBe(JSON.stringify(b));
-	});
-
-	/**
-	 * День випуску лишається невідомим — у версії 1 його ніде не було.
-	 * Вигаданий нуль читався б як «випустили в перший день», тобто був би
-	 * брехнею; прочерк чесніший.
-	 */
-	it('день випуску не вигадується', () => {
-		const result = migrated();
-		if (!result.ok) throw new Error('міграція не пройшла');
-		expect(result.state.animals.every((a) => a.releasedOnDay === null)).toBe(true);
-	});
-
-	it('репутація старої партії така сама, як у нової', () => {
-		const result = migrated();
-		if (!result.ok) throw new Error('міграція не пройшла');
-		expect(result.state.reputation).toBe(STARTING_REPUTATION);
-	});
-
-	/**
-	 * Історії за минулі дні взяти НІЗВІДКИ, і вигадувати її не можна.
-	 *
-	 * Стан зберігає підсумок, а не шлях до нього. Порожній журнал означає «ще не
-	 * знаємо» — а вигадані рядки означали б цифри, яких не було, і гравець звіряв
-	 * би за ними свої рішення.
-	 */
-	it('стара партія отримує порожню історію й відлік від сьогодні', () => {
-		const result = migrated();
-		if (!result.ok) throw new Error('міграція не пройшла');
-		expect(result.state.journal).toEqual([]);
-		expect(result.state.dayStart).toEqual(metricsOf(result.state));
-	});
-});
 
 describe('драбина міграцій', () => {
 	it('реєстр містить рівно ті сходинки, яких потребує поточна версія', () => {
@@ -267,8 +156,9 @@ describe('сейв, якому не можна вірити', () => {
 		['стан не обʼєкт', { version: SCHEMA_VERSION, state: 'нічого' }],
 		['поле загубилося', { version: SCHEMA_VERSION, state: { ...played(), budget: undefined } }],
 		['NaN замість числа', { version: SCHEMA_VERSION, state: { ...played(), budget: NaN } }],
-		['персонал зник', { version: SCHEMA_VERSION, state: { ...played(), staff: {} } }],
-		['тварини не масив', { version: SCHEMA_VERSION, state: { ...played(), animals: {} } }],
+		['персонал зник', { version: SCHEMA_VERSION, state: withSite({ staff: {} }) }],
+		['тварини не масив', { version: SCHEMA_VERSION, state: withSite({ animals: {} }) }],
+		['ділянка зникла', { version: SCHEMA_VERSION, state: withoutSite() }],
 		['чуже походження', { version: SCHEMA_VERSION, state: withAnimal({ origin: 'зоопарк' }) }],
 		['чужа стадія', { version: SCHEMA_VERSION, state: withAnimal({ stage: 'мертва' }) }],
 		['стрес рядком', { version: SCHEMA_VERSION, state: withAnimal({ stress: 'високий' }) }]
@@ -279,8 +169,27 @@ describe('сейв, якому не можна вірити', () => {
 	});
 });
 
+/** Фонд, у якому саванну ділянку зіпсовано заданим чином. */
+function withSite(broken: Record<string, unknown>) {
+	const state = played();
+	return { ...state, sites: { ...state.sites, savanna: { ...home(state), ...broken } } };
+}
+
+/**
+ * Фонд без однієї землі.
+ *
+ * Найдорожча з поломок: `state.sites[biome]` дає `undefined`, і перший же тік
+ * валиться на `site.animals` — уже після того, як сейв визнали добрим.
+ */
+function withoutSite() {
+	const state = played();
+	const sites = { ...state.sites } as Record<string, unknown>;
+	delete sites.tundra;
+	return { ...state, sites };
+}
+
 /** Партія, у якій одну тварину зіпсовано заданим чином. */
 function withAnimal(broken: Record<string, unknown>) {
 	const state = played();
-	return { ...state, animals: [{ ...state.animals[0], ...broken }] };
+	return withSite({ animals: [{ ...home(state).animals[0], ...broken }] });
 }

@@ -1,4 +1,5 @@
 import { addReputation, roll } from './roll';
+import { RESERVE_BIOMES, type ReserveBiome } from './species';
 import type { Animal, RaidTactic, ReserveState } from './types';
 
 /**
@@ -75,9 +76,19 @@ export const RAID_LOST_REPUTATION = -8;
  */
 export const RAID_PATIENCE_DAYS = 1;
 
-/** Тварини, яких можна вкрасти: випущені вже на волі, їх наліт не стосується. */
-const present = (state: ReserveState): Animal[] =>
-	state.animals.filter((a) => a.stage !== 'released');
+/**
+ * Кого можна вкрасти — по всьому фонду, разом із адресою ділянки.
+ *
+ * Випущені не рахуються: вони вже на волі, і браконьєрів там ніхто не викликає.
+ * Пара «біом + тварина» потрібна тому, що вікно нальоту мусить назвати МІСЦЕ, а
+ * рішення «засідка» спирається на патруль саме тієї землі.
+ */
+const targets = (state: ReserveState): Array<{ biome: ReserveBiome; animal: Animal }> =>
+	RESERVE_BIOMES.flatMap((biome) =>
+		state.sites[biome].animals
+			.filter((a) => a.stage !== 'released')
+			.map((animal) => ({ biome, animal }))
+	);
 
 /**
  * Чи трапився наліт цієї доби — і на кого.
@@ -90,14 +101,21 @@ export function maybeRaid(state: ReserveState, day: number): void {
 	// Один наліт за раз: другий поверх невирішеного першого нікому не зрозумілий.
 	if (state.raid || day < RAID_FIRST_DAY) return;
 
-	const targets = present(state);
-	if (targets.length === 0) return;
+	const prey = targets(state);
+	if (prey.length === 0) return;
 
-	const chance = RAID_CHANCE_PER_DAY * (state.staff.ranger > 0 ? 1 - RANGER_PROTECTION : 1);
+	/*
+	 * Захист рахується по ФОНДУ: досить одного патруля на будь-якій ділянці.
+	 *
+	 * Інакше рейнджера довелося б наймати чотири рази, щоб отримати обіцяні ТЗ 90%,
+	 * — а обіцяно було за патруль, не за кожен гектар.
+	 */
+	const guarded = RESERVE_BIOMES.some((biome) => state.sites[biome].staff.ranger > 0);
+	const chance = RAID_CHANCE_PER_DAY * (guarded ? 1 - RANGER_PROTECTION : 1);
 	if (roll(state) >= chance) return;
 
-	const victim = targets[Math.floor(roll(state) * targets.length)];
-	state.raid = { animalId: victim.id, day };
+	const victim = prey[Math.floor(roll(state) * prey.length)];
+	state.raid = { animalId: victim.animal.id, biome: victim.biome, day };
 }
 
 /**
@@ -114,23 +132,23 @@ export function resolveRaid(state: ReserveState, tactic: RaidTactic): boolean {
 		if (state.budget < DRONE_PRICE) return false;
 		state.budget -= DRONE_PRICE;
 	}
-	// Засідку влаштовує патруль. Без патруля її нема кому влаштовувати.
-	if (tactic === 'ambush' && state.staff.ranger === 0) return false;
+	// Засідку влаштовує патруль ТІЄЇ ділянки, на яку прийшли.
+	const site = state.sites[raid.biome];
+	if (tactic === 'ambush' && site.staff.ranger === 0) return false;
 
 	const success = roll(state) < successOf(tactic);
 
 	if (tactic === 'ambush' && roll(state) < AMBUSH_INJURY) {
 		// Поранення трапляється незалежно від того, чи затримали браконьєрів:
 		// засідка небезпечна сама по собі, а не лише коли не вдалася.
-		state.staff.ranger -= 1;
+		site.staff.ranger -= 1;
 		state.budget -= INJURY_PRICE;
 	}
 
 	if (success) {
 		addReputation(state, RAID_SAVED_REPUTATION);
 	} else {
-		const victim = state.animals.find((a) => a.id === raid.animalId);
-		if (victim) state.animals = state.animals.filter((a) => a.id !== victim.id);
+		site.animals = site.animals.filter((a) => a.id !== raid.animalId);
 		state.impact += RAID_LOST_IMPACT;
 		addReputation(state, RAID_LOST_REPUTATION);
 	}

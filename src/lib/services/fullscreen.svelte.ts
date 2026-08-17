@@ -24,8 +24,7 @@ interface FullscreenHTMLElement extends HTMLElement {
 
 const FAKE_ATTRIBUTE = 'data-fake-fullscreen';
 
-const isIOS = () =>
-	browser && /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isIOS = () => browser && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 class FullscreenState {
 	/** Чи зараз повний екран — справжній або підроблений. */

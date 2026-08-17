@@ -1,4 +1,4 @@
-import { createReserve, dayOf, execute, tick } from '$lib/reserve/simulation';
+import { createReserve, dayOf, execute, residents, sitesOf, tick } from '$lib/reserve/simulation';
 import type { CommandResult, ReserveCommand, ReserveState } from '$lib/reserve/types';
 import { loadReserve, saveReserve } from '$lib/services/reserveSave';
 import type { RestoreFailure } from '$lib/reserve/save';
@@ -36,26 +36,7 @@ export type Speed = (typeof SPEEDS)[number];
 const MAX_CATCH_UP_MS = 250;
 
 export class ReserveController {
-	/**
-	 * Біом задається при створенні й далі не міняється: він визначає і адресу
-	 * сторінки, і ключ у сховищі. Контролер без біома не знав би, яку саме з
-	 * чотирьох партій він веде.
-	 */
-	readonly biome: ReserveBiome;
-
-	/*
-	 * Заглушка тут не косметична: ініціалізатори полів виконуються ДО тіла
-	 * конструктора, а `day` і `isFresh` нижче читають `state`. Поле без значення
-	 * зробило б їх читанням `undefined` — саме це й ловить перевірка типів.
-	 */
 	state = $state<ReserveState>(createReserve(1));
-
-	constructor(biome: ReserveBiome) {
-		this.biome = biome;
-		// Справжня стартова партія — уже з біомом. `start()` перезапише її сейвом,
-		// якщо він є, але до того моменту сцена мусить бачити правильний біом.
-		this.state = createReserve(1, biome);
-	}
 	speed = $state<Speed>(1);
 	/** Яку тварину показує картка; `null` — картки немає. */
 	selectedId = $state<number | null>(null);
@@ -70,10 +51,19 @@ export class ReserveController {
 	 * контролер зберігається одразу при створенні, тож сейв є завжди — уже
 	 * через мілісекунду після першого заходу.
 	 */
-	isFresh = $derived(
-		this.state.ticks === 0 && this.state.animals.length === 0 && this.state.enclosures.length === 0
+	isFresh = $derived(this.state.ticks === 0 && residents(this.state).length === 0);
+	/**
+	 * Вибрана тварина шукається по ВСЬОМУ фонду.
+	 *
+	 * Ділянку тут питати нема в кого: картку відкриває сцена однієї землі, але
+	 * `id` унікальні на весь фонд, тож пошук по всіх дає ту саму відповідь і не
+	 * вимагає тягнути біом у контролер.
+	 */
+	selected = $derived(
+		sitesOf(this.state)
+			.flatMap(([, site]) => site.animals)
+			.find((a) => a.id === this.selectedId) ?? null
 	);
-	selected = $derived(this.state.animals.find((a) => a.id === this.selectedId) ?? null);
 
 	/** Недокручені мілісекунди: те, що не дотягнуло до цілого тіку. */
 	#carry = 0;
@@ -81,6 +71,8 @@ export class ReserveController {
 	#last = 0;
 	/** День, яким партія лежить у сховищі. Різниця — привід зберегти. */
 	#savedDay = 0;
+	/** Чи фонд уже піднято зі сховища. Синглтон, а сторінок — пʼять. */
+	#started = false;
 
 	/**
 	 * Почати партію: відновити збережену або створити нову.
@@ -90,7 +82,12 @@ export class ReserveController {
 	 * колись вистачить переслати одне число замість усього світу.
 	 */
 	start(): void {
-		const restored = loadReserve(this.biome);
+		// Двічі не піднімаємо: сторінки ділянок і сторінка вибору тримають ОДИН фонд,
+		// і другий `start()` затер би те, що перша сторінка вже награла.
+		if (this.#started) return;
+		this.#started = true;
+
+		const restored = loadReserve();
 		if (restored.ok) {
 			this.state = restored.state;
 			this.#savedDay = dayOf(restored.state);
@@ -101,8 +98,8 @@ export class ReserveController {
 		}
 	}
 
-	reset(seed = Date.now() >>> 0, biome: ReserveBiome = this.biome): void {
-		this.state = createReserve(seed, biome);
+	reset(seed = Date.now() >>> 0): void {
+		this.state = createReserve(seed);
 		this.selectedId = null;
 		this.#carry = 0;
 		this.#savedDay = 0;
@@ -132,9 +129,11 @@ export class ReserveController {
 		if (this.day !== this.#savedDay) this.save();
 	}
 
-	/** Єдиний шлях зміни партії. Той самий обʼєкт колись прийде мережею. */
-	run(command: ReserveCommand): CommandResult {
-		const result = execute(this.state, command);
+	/**
+	 * Єдиний шлях зміни фонду. Пара «де + що» колись прийде мережею саме такою.
+	 */
+	run(command: ReserveCommand, at: ReserveBiome): CommandResult {
+		const result = execute(this.state, command, at);
 		if (result.ok) this.save();
 		return result;
 	}
@@ -162,3 +161,12 @@ export class ReserveController {
 		};
 	}
 }
+
+/**
+ * Фонд ОДИН на весь застосунок.
+ *
+ * Синглтон, а не інстанс на сторінку: каса, шкали й годинник спільні, тож два
+ * контролери писали б у той самий ключ і затирали один одного. Заразом це те, що
+ * дає сторінці вибору ділянки показувати ті самі показники, які бачить карта.
+ */
+export const reserve = new ReserveController();

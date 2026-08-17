@@ -1,6 +1,16 @@
 import { seededRandom } from '$lib/utils/seededRandom';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
-import type { Contract, ReserveState } from './types';
+import { RESERVE_BIOMES } from './species';
+import type { Animal, Contract, ReserveState } from './types';
+
+/**
+ * Усі тварини фонду одним списком.
+ *
+ * Своя функція, а не імпорт із `simulation`: той імпортує `day`, а `day` —
+ * контракти, і вийшло б коло з трьох модулів. Два рядки дешевші за коло.
+ */
+const herd = (state: ReserveState): Animal[] =>
+	RESERVE_BIOMES.flatMap((biome) => state.sites[biome].animals);
 
 /**
  * Контракти зі спонсорами: обіцянка з дедлайном.
@@ -72,10 +82,17 @@ export const MAX_ACTIVE_CONTRACTS = 2;
 /** Поточне значення того, що міряє контракт. */
 export function progressOf(state: ReserveState, goal: ContractGoal): number {
 	switch (goal) {
+		/*
+		 * Ціль рахується по ВСЬОМУ фонду, а не по одній ділянці.
+		 *
+		 * Спонсор дає грант фондові, і йому байдуже, з якої землі приїхала рись:
+		 * «випустити трьох» означає трьох, а не трьох у савані. Заразом це знімає
+		 * питання, чий контракт зараховувати, коли гравець ходить між ділянками.
+		 */
 		case 'release':
-			return state.animals.filter((a) => a.stage === 'released').length;
+			return herd(state).filter((a) => a.stage === 'released').length;
 		case 'heal':
-			return state.animals.filter((a) => a.stage !== 'recovering').length;
+			return herd(state).filter((a) => a.stage !== 'recovering').length;
 		case 'reputation':
 			return state.reputation;
 	}

@@ -15,6 +15,8 @@ import {
 	resolveRaid
 } from './raids';
 import type { ReserveState } from './types';
+import type { ReserveBiome } from './species';
+import type { ReserveCommand } from './types';
 
 /**
  * Браконьєри: подія, ціна рішень і те, за що платять рейнджерам.
@@ -27,14 +29,26 @@ import type { ReserveState } from './types';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
 
+/**
+ * Хід на ділянці. Типова земля — «savanna»: там живе більшість перевірок цього файлу.
+ *
+ * Де важлива інша земля, вона названа третім аргументом: перевірка «вид не з цього
+ * біома» без цього не мала б сенсу.
+ */
+const move = (state: ReserveState, command: ReserveCommand, at: ReserveBiome = 'savanna') =>
+	execute(state, command, at);
+
+/** Земля, на якій ідуть перевірки: тварини, вольєри й штат живуть саме тут. */
+const home = (state: ReserveState, at: ReserveBiome = 'savanna') => state.sites[at];
+
 /** Заповідник із однією твариною, у якого досить грошей на будь-яку тактику. */
 function withAnimal(seed: number, rangers = 0) {
-	const state = createReserve(seed, 'savanna');
+	const state = createReserve(seed);
 	state.budget = 1_000_000;
-	state.staff.vet = 1;
-	state.staff.ranger = rangers;
-	execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
-	execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
+	home(state).staff.vet = 1;
+	home(state).staff.ranger = rangers;
+	move(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
+	move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 	return state;
 }
 
@@ -99,7 +113,7 @@ describe('браконьєри', () => {
 	});
 
 	it('у порожньому заповіднику крати нікого', () => {
-		const state = createReserve(1, 'savanna');
+		const state = createReserve(1);
 		state.budget = 1_000_000;
 		day(state, RAID_FIRST_DAY + 20);
 		expect(state.raid).toBeNull();
@@ -109,14 +123,14 @@ describe('браконьєри', () => {
 	it('дрон коштує грошей', () => {
 		const state = raided(1);
 		const before = state.budget;
-		expect(execute(state, { type: 'raid', tactic: 'drone' })).toEqual({ ok: true });
+		expect(move(state, { type: 'raid', tactic: 'drone' })).toEqual({ ok: true });
 		expect(before - state.budget).toBe(DRONE_PRICE);
 		expect(state.raid).toBeNull();
 	});
 
 	it('засідку без патруля влаштувати нікому', () => {
 		const state = raided(1);
-		expect(execute(state, { type: 'raid', tactic: 'ambush' })).toEqual({
+		expect(move(state, { type: 'raid', tactic: 'ambush' })).toEqual({
 			ok: false,
 			reason: 'no-ranger'
 		});
@@ -126,7 +140,7 @@ describe('браконьєри', () => {
 
 	it('без нальоту вирішувати нічого', () => {
 		const state = withAnimal(1);
-		expect(execute(state, { type: 'raid', tactic: 'ignore' })).toEqual({
+		expect(move(state, { type: 'raid', tactic: 'ignore' })).toEqual({
 			ok: false,
 			reason: 'no-raid'
 		});
@@ -145,9 +159,9 @@ describe('браконьєри', () => {
 			state.reputation = 40;
 			const impact = state.impact;
 			const reputation = state.reputation;
-			execute(state, { type: 'raid', tactic: 'drone' });
+			move(state, { type: 'raid', tactic: 'drone' });
 
-			if (state.animals.length === 1) {
+			if (home(state).animals.length === 1) {
 				saved++;
 				expect(state.impact, 'відбитий наліт додав користі').toBe(impact);
 				expect(state.reputation).toBe(reputation + RAID_SAVED_REPUTATION);
@@ -162,9 +176,9 @@ describe('браконьєри', () => {
 			const state = raided(seed);
 			state.reputation = 40;
 			const impact = state.impact;
-			execute(state, { type: 'raid', tactic: 'ignore' });
+			move(state, { type: 'raid', tactic: 'ignore' });
 
-			if (state.animals.length === 0) {
+			if (home(state).animals.length === 0) {
 				lost++;
 				expect(state.impact).toBe(impact + RAID_LOST_IMPACT);
 				expect(state.reputation).toBeLessThan(40);
@@ -179,8 +193,8 @@ describe('браконьєри', () => {
 		const runs = 400;
 		for (let seed = 1; seed <= runs; seed++) {
 			const state = raided(seed);
-			execute(state, { type: 'raid', tactic: 'ignore' });
-			if (state.animals.length === 0) lost++;
+			move(state, { type: 'raid', tactic: 'ignore' });
+			if (home(state).animals.length === 0) lost++;
 		}
 		expect(lost / runs).toBeGreaterThan(IGNORE_LOSS - 0.06);
 		expect(lost / runs).toBeLessThan(IGNORE_LOSS + 0.06);
@@ -191,8 +205,8 @@ describe('браконьєри', () => {
 		const runs = 400;
 		for (let seed = 1; seed <= runs; seed++) {
 			const state = raided(seed, 1);
-			execute(state, { type: 'raid', tactic: 'ambush' });
-			if (state.staff.ranger === 0) injured++;
+			move(state, { type: 'raid', tactic: 'ambush' });
+			if (home(state).staff.ranger === 0) injured++;
 		}
 		expect(injured / runs).toBeGreaterThan(AMBUSH_INJURY - 0.06);
 		expect(injured / runs).toBeLessThan(AMBUSH_INJURY + 0.06);
@@ -227,8 +241,8 @@ describe('браконьєри', () => {
 		state.offered = { ...state.contracts[0], id: 2 };
 
 		// Клітинка близька до центру: у фонду без імені ділянка найменша.
-		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 3, z: 0 } });
-		execute(state, {
+		move(state, { type: 'build', size: 4, quality: 2, cell: { x: 3, z: 0 } });
+		move(state, {
 			type: 'acquire',
 			origin: 'black-market',
 			speciesId: 'leopard',

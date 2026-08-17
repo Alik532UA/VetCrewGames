@@ -85,6 +85,7 @@ export const reserve = {
 	'reserve.noneReleased': 'Noch niemand wurde in die Wildnis zurückgebracht.',
 	'reserve.reputation': 'Ruf',
 	'reserve.inReserve': 'Im Reservat',
+	'reserve.inReserves': 'In den Reservaten',
 	'reserve.inWild': 'In Freiheit',
 	'reserve.noVetWarning':
 		'Es gibt keinen Tierarzt: Das Tier wird aufgenommen, aber der Fonds wird dafür kritisiert.',

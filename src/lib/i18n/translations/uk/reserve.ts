@@ -89,6 +89,7 @@ export const reserve = {
 	'reserve.noneReleased': 'Поки що нікого не повернули в природу.',
 	'reserve.reputation': 'Репутація',
 	'reserve.inReserve': 'У заповіднику',
+	'reserve.inReserves': 'У заповідниках',
 	'reserve.inWild': 'На волі',
 	'reserve.noVetWarning': 'Ветеринара немає: тварину візьмуть, але фонд за це критикуватимуть.',
 	'reserve.reject.no-such-species': 'Такого виду заповідник не приймає.',
