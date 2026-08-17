@@ -29,7 +29,23 @@ function walk(dir: string, out: string[] = []): string[] {
 const all = walk('src');
 const sources = all.filter((f) => /\.(ts|svelte)$/.test(f));
 const isTest = (f: string) => /\.(test|spec)\.ts$/.test(f);
-const read = (f: string) => readFileSync(f, 'utf8');
+/**
+ * Кожен файл читається з диска ОДИН раз.
+ *
+ * Перевірка осиротілих компонентів звіряє кожен компонент із кожним джерелом —
+ * це десятки тисяч читань того самого тексту. Під повним прогоном вона впиралася
+ * в пʼятисекундну межу vitest і падала через таймаут, хоч нічого поганого в
+ * проєкті не було: перевірка ставала повільнішою просто від того, що файлів
+ * побільшало. Гейт, який падає від зростання проєкту, гірший за відсутній.
+ */
+const cache = new Map<string, string>();
+const read = (f: string) => {
+	const cached = cache.get(f);
+	if (cached !== undefined) return cached;
+	const text = readFileSync(f, 'utf8');
+	cache.set(f, text);
+	return text;
+};
 
 /**
  * Межа § 7 умикається після того, як чинні перевищення розібрані; доти вони

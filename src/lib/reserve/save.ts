@@ -27,7 +27,7 @@ import type { ReserveState } from './types';
  * читається неправильно. **Разом із номером додається сходинка в `MIGRATIONS`** —
  * без неї підйом версії просто викидає чужу партію.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export interface SaveFile {
 	version: number;
@@ -144,6 +144,13 @@ function checkState(value: unknown): string | null {
 
 	for (const field of ['gameOver', 'victory', 'subsidy'])
 		if (typeof value[field] !== 'boolean') return field;
+
+	// Журнал перевіряється на форму, а не на вміст: він ні на що не впливає, а
+	// зіпсований день історії — не привід викидати заповідник.
+	if (!Array.isArray(value.journal)) return 'journal';
+	if (!isObject(value.dayStart)) return 'dayStart';
+	for (const field of ['budget', 'impact', 'reputation', 'inReserve', 'inWild'])
+		if (!isNumber(value.dayStart[field])) return `dayStart.${field}`;
 
 	if (!isObject(value.staff)) return 'staff';
 	for (const role of Object.keys(WAGES)) if (!isNumber(value.staff[role])) return `staff.${role}`;

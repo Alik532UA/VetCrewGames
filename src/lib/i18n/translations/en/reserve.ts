@@ -140,5 +140,8 @@ export const reserve = {
 	'reserve.minimap': 'Minimap',
 	'reserve.zoom': 'Zoom',
 	'reserve.history': 'Change history',
+	'reserve.today': 'Today',
+	'reserve.historyQuiet': 'Nothing has changed',
+	'reserve.historyNew': 'The game has just begun',
 	'reserve.noHistory': 'No changes yet.'
 } as const;

@@ -141,5 +141,8 @@ export const reserve = {
 	'reserve.minimap': 'Minikaart',
 	'reserve.zoom': 'Zoom',
 	'reserve.history': 'Wijzigingsgeschiedenis',
+	'reserve.today': 'Vandaag',
+	'reserve.historyQuiet': 'Er is niets veranderd',
+	'reserve.historyNew': 'Het spel is net begonnen',
 	'reserve.noHistory': 'Nog geen wijzigingen.'
 } as const;

@@ -144,5 +144,8 @@ export const reserve = {
 	'reserve.minimap': 'Мінікарта',
 	'reserve.zoom': 'Масштаб',
 	'reserve.history': 'Історія змін',
+	'reserve.today': 'Сьогодні',
+	'reserve.historyQuiet': 'Нічого не змінювалося',
+	'reserve.historyNew': 'Партія щойно почалася',
 	'reserve.noHistory': 'Змін ще не було.'
 } as const;

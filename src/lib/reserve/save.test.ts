@@ -2,6 +2,7 @@
 // Формат збереження нічого не знає про сховище — і перевірка теж не має знати.
 import { describe, expect, it } from 'vitest';
 import { MIGRATIONS, restore, SCHEMA_VERSION, serialize } from './save';
+import { metricsOf } from './journal';
 import { createReserve, execute, tick } from './simulation';
 import { STARTING_REPUTATION, TICKS_PER_DAY } from './constants';
 import { speciesById } from './species';
@@ -171,10 +172,24 @@ describe('справжня міграція 1 → 2', () => {
 		expect(result.state.animals.every((a) => a.releasedOnDay === null)).toBe(true);
 	});
 
-	it('репутація починається з середини шкали', () => {
+	it('репутація старої партії така сама, як у нової', () => {
 		const result = migrated();
 		if (!result.ok) throw new Error('міграція не пройшла');
 		expect(result.state.reputation).toBe(STARTING_REPUTATION);
+	});
+
+	/**
+	 * Історії за минулі дні взяти НІЗВІДКИ, і вигадувати її не можна.
+	 *
+	 * Стан зберігає підсумок, а не шлях до нього. Порожній журнал означає «ще не
+	 * знаємо» — а вигадані рядки означали б цифри, яких не було, і гравець звіряв
+	 * би за ними свої рішення.
+	 */
+	it('стара партія отримує порожню історію й відлік від сьогодні', () => {
+		const result = migrated();
+		if (!result.ok) throw new Error('міграція не пройшла');
+		expect(result.state.journal).toEqual([]);
+		expect(result.state.dayStart).toEqual(metricsOf(result.state));
 	});
 });
 

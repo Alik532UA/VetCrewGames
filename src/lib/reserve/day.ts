@@ -21,6 +21,7 @@ import {
 	type Quality
 } from './constants';
 import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
+import { closeDay } from './journal';
 import { comfortOf, speciesById } from './species';
 import type { Animal, Enclosure, ReserveState } from './types';
 
@@ -158,4 +159,7 @@ export function endOfDay(state: ReserveState): void {
 
 	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
 	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;
+
+	// Журнал — ОСТАННІМ рядком: він міряє добу, тож мусить бачити її всю.
+	closeDay(state, day);
 }

@@ -17,6 +17,7 @@ import {
 import { buildings } from './buildings';
 import { contractMove } from './contractMoves';
 import { speciesById, type ReserveBiome } from './species';
+import { startMetrics } from './journal';
 import { endOfDay } from './day';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
 
@@ -59,6 +60,8 @@ export function createReserve(seed: number, biome: ReserveBiome = 'forest'): Res
 		subsidy: false,
 		seed,
 		rolls: 0,
+		journal: [],
+		dayStart: startMetrics(STARTING_BUDGET, STARTING_REPUTATION),
 		nextAnimalId: 1,
 		nextEnclosureId: 1,
 		nextContractId: 1

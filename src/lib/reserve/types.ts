@@ -72,6 +72,23 @@ export interface Contract {
 	penalty: number;
 }
 
+/**
+ * Показники, які показує шапка. Зріз, а не події: журнал міряє РІЗНИЦЮ між двома
+ * зрізами, тому обидва мусять мати однакову форму.
+ */
+export interface MetricSet {
+	budget: number;
+	impact: number;
+	reputation: number;
+	inReserve: number;
+	inWild: number;
+}
+
+/** Один день історії: на скільки змінився кожен показник. */
+export interface JournalDay extends MetricSet {
+	day: number;
+}
+
 export interface ReserveState {
 	/**
 	 * Біом заповідника. Обирається ОДИН раз, на початку партії, і далі не
@@ -117,6 +134,16 @@ export interface ReserveState {
 	offered: Contract | null;
 	/** Якого дня востаннє пропонували контракт. */
 	lastOfferDay: number;
+	/**
+	 * Історія змін по днях — для підказок над показниками, не для правил.
+	 *
+	 * У стані, а не в контролері: інакше вона зникала б при перезавантаженні, а
+	 * властивість «те саме зерно й ті самі ходи дають той самий стан» перестала б
+	 * охоплювати те, що гравець бачить.
+	 */
+	journal: JournalDay[];
+	/** Зріз показників на початку поточної доби. З ним порівнюється кінець. */
+	dayStart: MetricSet;
 	/** Наступні вільні `id`. */
 	nextAnimalId: number;
 	nextEnclosureId: number;

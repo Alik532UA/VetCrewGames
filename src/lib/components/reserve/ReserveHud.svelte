@@ -2,7 +2,10 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import { IMPACT_TO_WIN } from '$lib/reserve/constants';
+	import { deltaOf } from '$lib/reserve/journal';
+	import type { JournalDay, MetricSet } from '$lib/reserve/types';
 	import { SPEEDS, type Speed } from '$lib/controllers/reserve.svelte';
+	import HudHistory from './HudHistory.svelte';
 
 	/**
 	 * Показники партії й керування часом.
@@ -24,11 +27,35 @@
 		reputation: number;
 		inReserve: number;
 		inWild: number;
+		/** Історія змін по днях — саме її показує підказка над показником. */
+		journal: JournalDay[];
+		/** Зріз на початку доби: різниця з живими числами і є «сьогодні». */
+		dayStart: MetricSet;
 		speed: Speed;
 		onSpeed: (speed: Speed) => void;
 	}
 
-	let { day, budget, impact, reputation, inReserve, inWild, speed, onSpeed }: Props = $props();
+	let {
+		day,
+		budget,
+		impact,
+		reputation,
+		inReserve,
+		inWild,
+		journal,
+		dayStart,
+		speed,
+		onSpeed
+	}: Props = $props();
+
+	/**
+	 * Показник, чия історія розкрита. Один за раз: дві підказки поруч перекрили б
+	 * і карту, і одна одну.
+	 */
+	let open = $state<keyof MetricSet | null>(null);
+
+	/** Зміна за поточну добу — та, якої ще немає в журналі. */
+	const today = $derived(deltaOf({ budget, impact, reputation, inReserve, inWild }, dayStart));
 
 	/** Підпис для читалки: пауза називається дією, а не значком. */
 	const speedLabel = (value: Speed) =>
@@ -45,45 +72,95 @@
 	 * Значення форматувати не треба: це числа, а цифри в шрифті є.
 	 */
 	const stats = $derived([
-		{ id: 'day', labelKey: 'reserve.day' as const, value: String(day), bad: false },
+		{
+			id: 'day',
+			labelKey: 'reserve.day' as const,
+			value: String(day),
+			bad: false,
+			metric: null
+		},
 		{
 			id: 'budget',
 			labelKey: 'reserve.budget' as const,
 			value: budget.toLocaleString(settings.locale),
-			bad: budget < 0
+			bad: budget < 0,
+			metric: 'budget' as const
 		},
 		{
 			id: 'impact',
 			labelKey: 'reserve.impact' as const,
 			// Показник і мета поруч: інакше «34» нічого не каже про те, чи це багато.
 			value: `${impact} / ${IMPACT_TO_WIN.toLocaleString(settings.locale)}`,
-			bad: impact < 0
+			bad: impact < 0,
+			metric: 'impact' as const
 		},
 		{
 			id: 'reputation',
 			labelKey: 'reserve.reputation' as const,
 			value: String(reputation),
-			bad: false
+			bad: false,
+			metric: 'reputation' as const
 		},
 		{
 			id: 'inreserve',
 			labelKey: 'reserve.inReserve' as const,
 			value: String(inReserve),
-			bad: false
+			bad: false,
+			metric: 'inReserve' as const
 		},
-		{ id: 'inwild', labelKey: 'reserve.inWild' as const, value: String(inWild), bad: false }
+		{
+			id: 'inwild',
+			labelKey: 'reserve.inWild' as const,
+			value: String(inWild),
+			bad: false,
+			metric: 'inWild' as const
+		}
 	]);
 </script>
 
 <header class="hud" data-testid="reserve-hud-header">
-	<dl class="hud__stats">
+	<!--
+		Показники — КНОПКИ, а не список визначень.
+		
+		Кожен із них тепер відкриває історію, тобто це орган керування, а не підпис.
+		Наведення мишею й фокус роблять одне й те саме: на телефоні наведення не
+		існує, а тап дає саме фокус.
+	-->
+	<div class="hud__stats">
 		{#each stats as stat (stat.id)}
-			<div class="hud__stat">
-				<dt>{@html formatFont(t(stat.labelKey))}</dt>
-				<dd class:hud__value--bad={stat.bad} data-testid="reserve-{stat.id}-value">{stat.value}</dd>
+			<div class="hud__cell">
+				{#if stat.metric}
+					{@const metric = stat.metric}
+					<button
+						type="button"
+						class="hud__stat hud__stat--probe"
+						aria-expanded={open === metric}
+						onmouseenter={() => (open = metric)}
+						onmouseleave={() => (open = null)}
+						onfocus={() => (open = metric)}
+						onblur={() => (open = null)}
+						data-testid="reserve-{stat.id}-history-btn"
+					>
+						<span class="hud__label">{@html formatFont(t(stat.labelKey))}</span>
+						<span
+							class="hud__value"
+							class:hud__value--bad={stat.bad}
+							data-testid="reserve-{stat.id}-value">{stat.value}</span
+						>
+					</button>
+
+					{#if open === metric}
+						<HudHistory {metric} {journal} today={today[metric]} {day} />
+					{/if}
+				{:else}
+					<div class="hud__stat">
+						<span class="hud__label">{@html formatFont(t(stat.labelKey))}</span>
+						<span class="hud__value" data-testid="reserve-{stat.id}-value">{stat.value}</span>
+					</div>
+				{/if}
 			</div>
 		{/each}
-	</dl>
+	</div>
 
 	<div class="hud__speeds" role="group" aria-label={t('reserve.speed.x1')}>
 		{#each SPEEDS as value (value)}
@@ -128,19 +205,35 @@
 		margin: 0;
 	}
 
+	/* Клітинка тримає підказку: та висить абсолютно й чіпляється саме за неї. */
+	.hud__cell {
+		position: relative;
+	}
+
 	.hud__stat {
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+		width: 100%;
+		text-align: left;
 	}
 
-	.hud__stat dt {
+	/* Кнопка не має виглядати кнопкою: це показник, у якого є що розповісти. */
+	.hud__stat--probe {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: help;
+	}
+
+	.hud__label {
 		font-size: var(--font-size-sm);
 		opacity: 0.75;
 	}
 
-	.hud__stat dd {
-		margin: 0;
+	.hud__value {
 		font-weight: var(--font-weight-bold);
 		font-variant-numeric: tabular-nums;
 	}

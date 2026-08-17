@@ -128,9 +128,36 @@ export function migrateV4toV5(raw: unknown): unknown {
 	};
 }
 
+/**
+ * Версія 5 → 6: показники дістали історію по днях.
+ *
+ * Історії за минулі дні взяти НІЗВІДКИ: стан зберігає підсумок, а не шлях до
+ * нього. Тому журнал починається порожнім, а відлік — від сьогоднішніх чисел:
+ * підказка буде правдива з наступної ж доби. Вигадати минуле було б гірше за
+ * його відсутність — гравець побачив би цифри, яких не було.
+ */
+export function migrateV5toV6(raw: unknown): unknown {
+	if (!isObject(raw)) return raw;
+	const animals = Array.isArray(raw.animals) ? raw.animals : [];
+	const released = animals.filter((a) => isObject(a) && a.stage === 'released').length;
+
+	return {
+		...raw,
+		journal: [],
+		dayStart: {
+			budget: isNumber(raw.budget) ? raw.budget : 0,
+			impact: isNumber(raw.impact) ? raw.impact : 0,
+			reputation: isNumber(raw.reputation) ? raw.reputation : 0,
+			inReserve: animals.length - released,
+			inWild: released
+		}
+	};
+}
+
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 	1: migrateV1toV2,
 	2: migrateV2toV3,
 	3: migrateV3toV4,
-	4: migrateV4toV5
+	4: migrateV4toV5,
+	5: migrateV5toV6
 };

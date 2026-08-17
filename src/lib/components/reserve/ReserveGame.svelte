@@ -136,6 +136,8 @@
 		reputation={game.state.reputation}
 		inReserve={here.length}
 		inWild={wild.length}
+		journal={game.state.journal}
+		dayStart={game.state.dayStart}
 		speed={game.speed}
 		onSpeed={(value: Speed) => (game.speed = value)}
 	/>
