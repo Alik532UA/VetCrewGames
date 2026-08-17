@@ -37,8 +37,49 @@ export function spiralCell(index: number): { x: number; z: number } {
 	return { x, z };
 }
 
-/** Світові координати вольєра за його `id`. */
-export const placeOf = (id: number) => {
+/**
+ * Світові координати клітинки, яку колись давала СПІРАЛЬ за `id`.
+ *
+ * Лишається лише для міграції старих сейвів: доти вольєри ставилися автоматично
+ * по спіралі, а тепер їх ставить гравець. Для нових партій ця функція не
+ * викликається — саме тому вона й не називається `placeOf`.
+ */
+export const spiralPlaceOf = (id: number) => {
 	const cell = spiralCell(id - 1);
 	return { x: cell.x * CELL_WORLD, z: cell.z * CELL_WORLD };
 };
+
+/** Світові координати центру клітинки. */
+export const worldOf = (cell: Cell) => ({ x: cell.x * CELL_WORLD, z: cell.z * CELL_WORLD });
+
+/** Клітинка, у яку влучає точка світу. */
+export const cellOf = (x: number, z: number): Cell => ({
+	x: Math.round(x / CELL_WORLD),
+	z: Math.round(z / CELL_WORLD)
+});
+
+export interface Cell {
+	x: number;
+	z: number;
+}
+
+/**
+ * Скільки клітинок займає вольєр цього розміру.
+ *
+ * Великий вольєр мусить і НА КАРТІ бути великим: інакше розмір лишався б числом
+ * у списку, а не рішенням про землю. Один крок на три розміри — щоб десятка не
+ * з'їдала половину ділянки.
+ */
+export const footprintOf = (size: number) => 1 + Math.floor(size / 3);
+
+/** Усі клітинки, які накриває вольєр, поставлений у `cell`. */
+export function cellsOf(cell: Cell, size: number): Cell[] {
+	const side = footprintOf(size);
+	const out: Cell[] = [];
+	for (let dx = 0; dx < side; dx++) {
+		for (let dz = 0; dz < side; dz++) out.push({ x: cell.x + dx, z: cell.z + dz });
+	}
+	return out;
+}
+
+export const cellKey = (cell: Cell) => `${cell.x},${cell.z}`;

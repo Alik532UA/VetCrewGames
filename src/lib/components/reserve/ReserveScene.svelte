@@ -21,14 +21,18 @@
 		animals: Animal[];
 		selectedId: number | null;
 		onSelect: (id: number) => void;
+		/** Режим розміщення: тап по землі повертає клітинку, а не вибирає тварину. */
+		placing: boolean;
+		onGround: (cell: { x: number; z: number }) => void;
 	}
 
-	let { biome, seed, enclosures, animals, selectedId, onSelect }: Props = $props();
+	let { biome, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
+		$props();
 </script>
 
 <div class="scene" data-testid="reserve-scene-panel">
 	<Canvas>
-		<SceneBody {biome} {seed} {enclosures} {animals} {selectedId} {onSelect} />
+		<SceneBody {biome} {seed} {enclosures} {animals} {selectedId} {onSelect} {placing} {onGround} />
 	</Canvas>
 </div>
 

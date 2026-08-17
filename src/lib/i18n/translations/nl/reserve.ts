@@ -132,5 +132,14 @@ export const reserve = {
 	'reserve.reject.too-many-contracts': 'Meer contracten kunnen niet tegelijk.',
 
 	'reserve.reject.out-of-bounds': 'Het perceel eindigt hier — daarachter is niet jouw land.',
-	'reserve.plot': 'Perceelgrens'
+	'reserve.plot': 'Perceelgrens',
+
+	'reserve.reject.cell-taken': 'Hier staat al iets.',
+	'reserve.place': 'Kies een plek op de kaart',
+	'reserve.placing': 'Tik op de kaart om het verblijf te plaatsen',
+	'reserve.cancel': 'Annuleren',
+	'reserve.minimap': 'Minikaart',
+	'reserve.zoom': 'Zoom',
+	'reserve.history': 'Wijzigingsgeschiedenis',
+	'reserve.noHistory': 'Nog geen wijzigingen.'
 } as const;

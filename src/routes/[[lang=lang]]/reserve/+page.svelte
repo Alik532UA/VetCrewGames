@@ -7,6 +7,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { ReserveController, type Speed } from '$lib/controllers/reserve.svelte';
+	import type { Quality } from '$lib/reserve/constants';
 	import { effectiveQuality, freeEnclosures, released, residents } from '$lib/reserve/simulation';
 	import type { ReserveCommand } from '$lib/reserve/types';
 	import type { ReserveBiome } from '$lib/reserve/species';
@@ -18,6 +19,7 @@
 	import BottomSheet from '$lib/components/reserve/BottomSheet.svelte';
 	import BiomePicker from '$lib/components/reserve/BiomePicker.svelte';
 	import TasksPanel from '$lib/components/reserve/TasksPanel.svelte';
+	import ReserveBar, { type Panel } from '$lib/components/reserve/ReserveBar.svelte';
 
 	/**
 	 * Заповідник: єдина гра проєкту, що триває, а не складається з раундів.
@@ -45,11 +47,19 @@
 		null
 	);
 
-	type Panel = 'animals' | 'enclosures' | 'staff' | 'tasks';
 	let panel = $state<Panel | null>(null);
 
 	/** Партія ще не почалася: спершу треба обрати біом. */
 	let choosing = $state(false);
+
+	/**
+	 * Замовлення на вольєр, яке чекає МІСЦЯ.
+	 *
+	 * Розмір і якість гравець вибирає в панелі, а місце тицяє на карті — тому між
+	 * двома кроками потрібен стан. `null` означає звичайний режим, де тап по
+	 * вольєру вибирає мешканця.
+	 */
+	let pending = $state<{ size: number; quality: Quality } | null>(null);
 
 	onMount(() => {
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, '')));
@@ -95,6 +105,19 @@
 		choosing = false;
 	}
 
+	/** Тап по землі в режимі розміщення: ставимо замовлений вольєр і виходимо. */
+	function placeAt(cell: { x: number; z: number }) {
+		if (!pending) return;
+		const result = game.run({ type: 'build', ...pending, cell });
+		if (!result.ok) {
+			toast.error(`reserve.reject.${result.reason}` as const);
+			return;
+		}
+		// Вийшло — режим знімається. Ставити десять вольєрів поспіль ніхто не
+		// просив, а забутий режим ловив би наступні тапи.
+		pending = null;
+	}
+
 	function startOver() {
 		choosing = true;
 		panel = null;
@@ -104,16 +127,6 @@
 	const wild = $derived(released(game.state));
 	const free = $derived(freeEnclosures(game.state));
 	const occupied = $derived(new Set(here.map((animal) => animal.enclosureId)));
-
-	const BUTTONS: Array<{
-		id: Panel;
-		key: 'reserve.animals' | 'reserve.enclosures' | 'reserve.staff' | 'reserve.tasks';
-	}> = [
-		{ id: 'animals', key: 'reserve.animals' },
-		{ id: 'enclosures', key: 'reserve.enclosures' },
-		{ id: 'staff', key: 'reserve.staff' },
-		{ id: 'tasks', key: 'reserve.tasks' }
-	];
 
 	const PANEL_TITLE: Record<
 		Panel,
@@ -196,6 +209,8 @@
 						animals={here}
 						selectedId={game.selectedId}
 						onSelect={(id: number) => (game.selectedId = id)}
+						placing={pending !== null}
+						onGround={placeAt}
 					/>
 				{/if}
 			</div>
@@ -203,41 +218,14 @@
 			<!-- Розпірка тримає смугу кнопок унизу, поки карта лежить під усім. -->
 			<div class="reserve-fill"></div>
 
-			<nav class="reserve-bar" aria-label={t('reserve.title')}>
-				{#each BUTTONS as item (item.id)}
-					<button
-						type="button"
-						class="reserve-bar__btn"
-						class:reserve-bar__btn--on={panel === item.id}
-						aria-pressed={panel === item.id}
-						onclick={() => (panel = panel === item.id ? null : item.id)}
-						data-testid="reserve-panel-{item.id}-btn"
-					>
-						{@html formatFont(t(item.key))}
-					</button>
-				{/each}
-				<!--
-					Кампанія — окрема кнопка просто на смузі, бо це ХІД, а не список:
-					ховати її в панель означало б два кліки на дію, яку роблять щодня.
-				-->
-				<button
-					type="button"
-					class="reserve-bar__btn"
-					title={t('reserve.campaignHint')}
-					onclick={() => command({ type: 'campaign' })}
-					data-testid="reserve-campaign-btn"
-				>
-					{@html formatFont(t('reserve.campaign'))}
-				</button>
-				<button
-					type="button"
-					class="reserve-bar__btn"
-					onclick={startOver}
-					data-testid="reserve-startover-btn"
-				>
-					{@html formatFont(t('reserve.restart'))}
-				</button>
-			</nav>
+			<ReserveBar
+				{panel}
+				placing={pending !== null}
+				onPanel={(id) => (panel = panel === id ? null : id)}
+				onCampaign={() => command({ type: 'campaign' })}
+				onCancel={() => (pending = null)}
+				onRestart={startOver}
+			/>
 
 			{#if game.selected}
 				<AnimalCard
@@ -265,6 +253,10 @@
 							enclosures={game.state.enclosures}
 							{occupied}
 							effectiveQualityOf={effectiveQuality}
+							onPlace={(size: number, quality: Quality) => {
+								pending = { size, quality };
+								panel = null;
+							}}
 							onCommand={command}
 						/>
 					{:else if panel === 'staff'}
@@ -316,28 +308,6 @@
 		flex: 1;
 		/* Порожня розпірка не має ловити жести: вони належать карті під нею. */
 		pointer-events: none;
-	}
-
-	.reserve-bar {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-sm);
-	}
-
-	.reserve-bar__btn {
-		flex: 1 1 6rem;
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-panel);
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.reserve-bar__btn--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 
 	.reserve-warning {

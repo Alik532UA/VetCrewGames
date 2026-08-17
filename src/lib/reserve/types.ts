@@ -14,6 +14,14 @@ export type AnimalStage = 'recovering' | 'healthy' | 'released';
 
 export interface Enclosure {
 	id: number;
+	/**
+	 * Де стоїть, у клітинках сітки. Ставить ГРАВЕЦЬ, а не гра.
+	 *
+	 * Доти місце визначалося `id` по спіралі, і питання «де будувати» просто не
+	 * існувало. Тепер земля — обмежений ресурс, а біля річки місце цінніше за
+	 * місце в глухому куті.
+	 */
+	cell: { x: number; z: number };
 	/** 1–10. Від нього залежить і ціна, і кого сюди можна поселити. */
 	size: number;
 	/** 1–3. Розмір вирішує ХТО поміститься, якість — наскільки йому тут добре. */
@@ -116,7 +124,7 @@ export interface ReserveState {
 }
 
 export type ReserveCommand =
-	| { type: 'build'; size: number; quality: Quality }
+	| { type: 'build'; size: number; quality: Quality; cell: { x: number; z: number } }
 	| { type: 'demolish'; enclosureId: number }
 	| { type: 'repair'; enclosureId: number }
 	| { type: 'upgrade'; enclosureId: number; quality: Quality }
@@ -151,6 +159,8 @@ export type RejectReason =
 	| 'campaign-done'
 	/** Наступне місце в сітці випало б за межу ділянки. */
 	| 'out-of-bounds'
+	/** Клітинка вже під іншим вольєром. */
+	| 'cell-taken'
 	| 'no-such-contract'
 	| 'contract-unfinished'
 	| 'too-many-contracts';

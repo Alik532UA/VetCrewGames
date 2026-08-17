@@ -166,7 +166,7 @@ describe('партія і сховище', () => {
 	it('відхилений хід нічого не зберігає', () => {
 		const controller = fresh();
 		// Вольєр є, тож відмова буде саме через гроші, а не через відсутнє місце.
-		controller.run({ type: 'build', size: 4, quality: 2 });
+		controller.run({ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		controller.state.budget = 0;
 		const before = store.getItem(KEY);
 
@@ -228,7 +228,7 @@ describe('партія і сховище', () => {
 describe('вибрана тварина', () => {
 	it('картка йде за тваринкою, а не за копією її стану', () => {
 		const controller = fresh();
-		controller.run({ type: 'build', size: 4, quality: 2 });
+		controller.run({ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		controller.run({ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 });
 		controller.selectedId = 1;
 

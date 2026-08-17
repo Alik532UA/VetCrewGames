@@ -135,5 +135,14 @@ export const reserve = {
 	'reserve.reject.too-many-contracts': 'Більше контрактів одночасно не беруть.',
 
 	'reserve.reject.out-of-bounds': 'Ділянка скінчилася — далі не ваша земля.',
-	'reserve.plot': 'Межа ділянки'
+	'reserve.plot': 'Межа ділянки',
+
+	'reserve.reject.cell-taken': 'Тут уже щось стоїть.',
+	'reserve.place': 'Оберіть місце на карті',
+	'reserve.placing': 'Натисніть на карту, щоб поставити вольєр',
+	'reserve.cancel': 'Скасувати',
+	'reserve.minimap': 'Мінікарта',
+	'reserve.zoom': 'Масштаб',
+	'reserve.history': 'Історія змін',
+	'reserve.noHistory': 'Змін ще не було.'
 } as const;

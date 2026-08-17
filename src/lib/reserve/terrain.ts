@@ -1,7 +1,8 @@
 import { seededRandom } from '$lib/utils/seededRandom';
 import { RESERVE_RADIUS } from './constants';
 import { CELL_WORLD, spiralCell } from './grid';
-import { lake, river } from './water';
+import { PALETTE, SCATTERED } from './palette';
+import { lake, river, type RiverPath } from './water';
 import type { ReserveBiome } from './species';
 
 /**
@@ -71,72 +72,6 @@ const RESERVED_CELLS = 24;
 /** Запас між рослиною й водою: корінь не має мокнути. */
 const WATER_CLEARANCE = 0.6;
 
-interface Palette {
-	rivers: number;
-	lakes: number;
-	spruce: number;
-	broadleaf: number;
-	palm: number;
-	bush: number;
-	pebble: number;
-	boulder: number;
-	cliff: number;
-}
-
-/**
- * Кожен біом — це свій НАБІР порід, а не той самий набір у різній кількості.
- *
- * У тундрі не росте пальма, у тропіках немає ялини, а скелі бувають там, де
- * земля піднімається. Саме через це «всі дерева однакові» було вадою, а не
- * стилем: біом мусить пізнаватися з першого погляду.
- */
-const PALETTE: Record<ReserveBiome, Palette> = {
-	forest: {
-		rivers: 1,
-		lakes: 2,
-		spruce: 20,
-		broadleaf: 16,
-		palm: 0,
-		bush: 18,
-		pebble: 8,
-		boulder: 4,
-		cliff: 1
-	},
-	tundra: {
-		rivers: 1,
-		lakes: 4,
-		spruce: 5,
-		broadleaf: 0,
-		palm: 0,
-		bush: 7,
-		pebble: 16,
-		boulder: 10,
-		cliff: 3
-	},
-	savanna: {
-		rivers: 1,
-		lakes: 1,
-		spruce: 0,
-		broadleaf: 9,
-		palm: 4,
-		bush: 12,
-		pebble: 8,
-		boulder: 5,
-		cliff: 2
-	},
-	rainforest: {
-		rivers: 2,
-		lakes: 3,
-		spruce: 0,
-		broadleaf: 24,
-		palm: 14,
-		bush: 24,
-		pebble: 4,
-		boulder: 2,
-		cliff: 0
-	}
-};
-
 /** Місця під забудову: там нічого не ставимо, щоб не росло крізь будівлю. */
 function buildSites(): Set<string> {
 	const out = new Set<string>();
@@ -186,25 +121,38 @@ function scatter(
 	return out;
 }
 
-const SCATTERED: Array<keyof Palette> = [
-	'spruce',
-	'broadleaf',
-	'palm',
-	'bush',
-	'pebble',
-	'boulder',
-	'cliff'
-];
+export interface Terrain {
+	/** Річки — смугами: у них є вісь і ширина, а не набір плям. */
+	rivers: RiverPath[];
+	/** Водойми, рослини, каміння — усе, що стоїть у точці. */
+	items: DecorItem[];
+}
 
-export function terrainOf(biome: ReserveBiome, seed: number): DecorItem[] {
+export function terrainOf(biome: ReserveBiome, seed: number): Terrain {
 	const random = seededRandom(seed ^ 0x5eed);
 	const palette = PALETTE[biome];
 	const sites = buildSites();
 
 	// СПЕРШУ вода: усе інше обходить її, а не навпаки.
+	const rivers = Array.from({ length: palette.rivers }, () => river(random, WORLD_RADIUS));
 	const water: DecorItem[] = [];
-	for (let i = 0; i < palette.rivers; i++) water.push(...river(random, WORLD_RADIUS));
 	for (let i = 0; i < palette.lakes; i++) water.push(...lake(random, WORLD_RADIUS));
+
+	/*
+	 * Русло теж мусить відганяти дерева, хоч і малюється смугою. Для перевірки
+	 * воно розкладається на плями по осі — саме тому `inWater` і далі працює з
+	 * плямами: одна функція, два джерела.
+	 */
+	const riverBlots: DecorItem[] = rivers.flatMap((path) =>
+		path.points.map((point) => ({
+			kind: 'water' as const,
+			x: point.x,
+			z: point.z,
+			scale: path.width / 2 / 1.5,
+			turn: 0
+		}))
+	);
+	const blocking = [...water, ...riverBlots];
 
 	/*
 	 * Кожен рід сіється двічі: густо в межах ділянки й рідше за нею. Один прохід
@@ -216,11 +164,11 @@ export function terrainOf(biome: ReserveBiome, seed: number): DecorItem[] {
 		const total = palette[key];
 		const wild = Math.round(total * WILD_SHARE);
 		return [
-			...scatter(random, kind, total - wild, water, sites, 0, RESERVE_RADIUS),
-			...scatter(random, kind, wild, water, sites, RESERVE_RADIUS, WORLD_RADIUS)
+			...scatter(random, kind, total - wild, blocking, sites, 0, RESERVE_RADIUS),
+			...scatter(random, kind, wild, blocking, sites, RESERVE_RADIUS, WORLD_RADIUS)
 		];
 	});
-	return [...water, ...rest];
+	return { rivers, items: [...water, ...rest] };
 }
 
 /**
@@ -232,10 +180,18 @@ export function terrainOf(biome: ReserveBiome, seed: number): DecorItem[] {
  */
 export const NEAR_WATER_DISTANCE = 4;
 
-export function nearWater(terrain: DecorItem[], x: number, z: number): boolean {
-	return terrain.some(
+export function nearWater(terrain: Terrain, x: number, z: number): boolean {
+	const lakes = terrain.items.some(
 		(item) =>
 			item.kind === 'water' &&
 			Math.hypot(item.x - x, item.z - z) <= waterRadius(item.scale) + NEAR_WATER_DISTANCE
+	);
+	if (lakes) return true;
+
+	// Річка теж вода: вольєр на її березі штучної водойми не потребує.
+	return terrain.rivers.some((path) =>
+		path.points.some(
+			(point) => Math.hypot(point.x - x, point.z - z) <= path.width / 2 + NEAR_WATER_DISTANCE
+		)
 	);
 }

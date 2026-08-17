@@ -2,13 +2,20 @@
 // Розкладка й рельєф — чиста арифметика, DOM їм не потрібен.
 import { describe, expect, it } from 'vitest';
 import { CELL, placeEnclosures } from './sceneLayout';
-import { placeOf, spiralCell } from '$lib/reserve/grid';
+import { spiralCell, worldOf } from '$lib/reserve/grid';
 import { inWater, nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
 import { RESERVE_BIOMES } from '$lib/reserve/species';
 import { DEFAULT_ZOOM } from './isoCamera';
 import type { Animal, Enclosure } from '$lib/reserve/types';
 
-const enclosure = (id: number, size = 3): Enclosure => ({ id, size, quality: 2, durability: 1 });
+const enclosure = (id: number, size = 3): Enclosure => ({
+	id,
+	// Місце тепер належить вольєру: ставимо по спіралі, щоб не накладалися.
+	cell: spiralCell(id - 1),
+	size,
+	quality: 2,
+	durability: 1
+});
 
 const animal = (
 	id: number,
@@ -50,8 +57,8 @@ describe('сітка заповідника', () => {
 	});
 
 	it('клітинки розсунуті на крок сітки', () => {
-		const a = placeOf(1);
-		const b = placeOf(2);
+		const a = worldOf(spiralCell(0));
+		const b = worldOf(spiralCell(1));
 		expect(Math.hypot(b.x - a.x, b.z - a.z)).toBeCloseTo(CELL);
 	});
 
@@ -79,7 +86,7 @@ describe('сітка заповідника', () => {
 describe('рельєф біома', () => {
 	it('перевірка жива: у кожному біомі щось є', () => {
 		for (const biome of RESERVE_BIOMES) {
-			expect(terrainOf(biome, 1).length, biome).toBeGreaterThan(5);
+			expect(terrainOf(biome, 1).items.length, biome).toBeGreaterThan(5);
 		}
 	});
 
@@ -101,12 +108,12 @@ describe('рельєф біома', () => {
 
 	it('біоми виглядають по-різному: у тропіках зелені більше, ніж у тундрі', () => {
 		const plants = (biome: 'rainforest' | 'tundra') =>
-			terrainOf(biome, 7).filter((item) => GREENERY.has(item.kind)).length;
+			terrainOf(biome, 7).items.filter((item) => GREENERY.has(item.kind)).length;
 		expect(plants('rainforest')).toBeGreaterThan(plants('tundra'));
 	});
 
 	it('у тундрі каміння більше, ніж зелені', () => {
-		const terrain = terrainOf('tundra', 7);
+		const terrain = terrainOf('tundra', 7).items;
 		const count = (set: Set<string>) => terrain.filter((item) => set.has(item.kind)).length;
 		expect(count(STONES)).toBeGreaterThan(count(GREENERY));
 	});
@@ -131,7 +138,7 @@ describe('рельєф біома', () => {
 			})
 		);
 		for (const biome of RESERVE_BIOMES) {
-			for (const item of terrainOf(biome, 3)) {
+			for (const item of terrainOf(biome, 3).items) {
 				if (item.kind === 'water') continue;
 				const cell = `${Math.round(item.x / CELL)},${Math.round(item.z / CELL)}`;
 				expect(reserved.has(cell), `${biome}: ${item.kind} стоїть на місці вольєра`).toBe(false);
@@ -145,7 +152,7 @@ describe('рельєф біома', () => {
 	 */
 	it('близькість до води залежить від місця, а не від настрою', () => {
 		const terrain = terrainOf('rainforest', 11);
-		const water = terrain.find((item) => item.kind === 'water');
+		const water = terrain.items.find((item) => item.kind === 'water');
 		expect(water, 'у тропіках немає води — перевірка мертва').toBeDefined();
 		if (!water) return;
 
@@ -171,7 +178,7 @@ describe('рельєф справді потрапляє в кадр', () => {
 	const CANVAS = { width: 1264, height: 630 };
 
 	const visible = (biome: (typeof RESERVE_BIOMES)[number], zoom: number) =>
-		terrainOf(biome, 42).filter((item) => {
+		terrainOf(biome, 42).items.filter((item) => {
 			const { px, py } = project(item.x, item.z, zoom);
 			return Math.abs(px) <= CANVAS.width / 2 && Math.abs(py) <= CANVAS.height / 2;
 		}).length;
@@ -192,7 +199,7 @@ describe('рельєф справді потрапляє в кадр', () => {
 	 */
 	it('при типовому масштабі видно щонайменше третину рельєфу', () => {
 		for (const biome of RESERVE_BIOMES) {
-			const total = terrainOf(biome, 42).length;
+			const total = terrainOf(biome, 42).items.length;
 			const inFrame = visible(biome, DEFAULT_ZOOM);
 			expect(inFrame, `${biome}: у кадрі ${inFrame} із ${total}`).toBeGreaterThan(total / 3);
 		}
@@ -208,7 +215,7 @@ describe('рельєф справді потрапляє в кадр', () => {
 		// Земля — 80×80, тобто ±40. Декор мусить лишатися на ній, інакше дерева
 		// висіли б у пустоті.
 		for (const biome of RESERVE_BIOMES) {
-			for (const item of terrainOf(biome, 42)) {
+			for (const item of terrainOf(biome, 42).items) {
 				expect(Math.abs(item.x), biome).toBeLessThan(40);
 				expect(Math.abs(item.z), biome).toBeLessThan(40);
 			}
@@ -227,7 +234,7 @@ describe('генерація рельєфу', () => {
 	it('на воді нічого не росте й не лежить', () => {
 		for (const biome of RESERVE_BIOMES) {
 			for (const seed of [1, 42, 777]) {
-				const terrain = terrainOf(biome, seed);
+				const terrain = terrainOf(biome, seed).items;
 				const water = terrain.filter((item) => item.kind === 'water');
 				const onLand = terrain.filter((item) => item.kind !== 'water');
 
@@ -239,7 +246,7 @@ describe('генерація рельєфу', () => {
 
 	/** Рельєф заповнює світ, а не купку в центрі — це теж було видно оком. */
 	it('рельєф розкиданий по всій карті, а не в центрі', () => {
-		const terrain = terrainOf('forest', 42).filter((i) => i.kind !== 'water');
+		const terrain = terrainOf('forest', 42).items.filter((i) => i.kind !== 'water');
 		const far = terrain.filter((i) => Math.hypot(i.x, i.z) > WORLD_RADIUS * 0.6);
 		expect(far.length, 'усе збилося ближче за 60% радіуса').toBeGreaterThan(terrain.length * 0.2);
 
@@ -249,25 +256,44 @@ describe('генерація рельєфу', () => {
 		expect(quadrants.size, 'рельєф не в усіх четвертях').toBe(4);
 	});
 
-	it('річка перетинає карту, а не лежить калюжею', () => {
+	/**
+	 * Річка тепер СМУГА, а не ланцюг плям: у неї є вісь і ширина. Ланцюг читався
+	 * на екрані намистом — рівні півкола на берегах і стрибки ширини на стиках.
+	 */
+	it('річка — суцільний шлях від краю до краю', () => {
 		for (const biome of RESERVE_BIOMES) {
-			const water = terrainOf(biome, 42).filter((i) => i.kind === 'water');
-			const reach = Math.max(...water.map((i) => Math.hypot(i.x, i.z)));
-			// Русло починається за краєм світу — отже, доходить до нього.
-			expect(reach, biome).toBeGreaterThanOrEqual(WORLD_RADIUS * 0.9);
+			const { rivers } = terrainOf(biome, 42);
+			expect(rivers.length, biome).toBeGreaterThan(0);
+
+			for (const path of rivers) {
+				expect(path.points.length, 'русло з двох точок — це відрізок').toBeGreaterThan(20);
+				expect(path.width, 'русло без ширини').toBeGreaterThan(0);
+
+				const reach = Math.max(...path.points.map((p) => Math.hypot(p.x, p.z)));
+				expect(reach, biome).toBeGreaterThanOrEqual(WORLD_RADIUS * 0.9);
+
+				// Сусідні точки стоять щільно: розрив читався б як обрив русла.
+				for (let i = 1; i < path.points.length; i++) {
+					const step = Math.hypot(
+						path.points[i].x - path.points[i - 1].x,
+						path.points[i].z - path.points[i - 1].z
+					);
+					expect(step, 'розрив у руслі').toBeLessThan(2);
+				}
+			}
 		}
 	});
 
 	/** Один конус різного розміру — це не ліс, а копії. */
 	it('у лісі росте кілька різних порід і є кусти', () => {
-		const kinds = new Set(terrainOf('forest', 42).map((i) => i.kind));
+		const kinds = new Set(terrainOf('forest', 42).items.map((i) => i.kind));
 		expect(kinds.has('spruce')).toBe(true);
 		expect(kinds.has('broadleaf')).toBe(true);
 		expect(kinds.has('bush')).toBe(true);
 	});
 
 	it('каміння теж різне: камінці, валуни й скелі', () => {
-		const kinds = new Set(terrainOf('tundra', 42).map((i) => i.kind));
+		const kinds = new Set(terrainOf('tundra', 42).items.map((i) => i.kind));
 		expect(kinds.has('pebble')).toBe(true);
 		expect(kinds.has('boulder')).toBe(true);
 		expect(kinds.has('cliff')).toBe(true);
@@ -279,7 +305,7 @@ describe('генерація рельєфу', () => {
 	 */
 	it('породи не збігаються між біомами', () => {
 		const of = (biome: (typeof RESERVE_BIOMES)[number]) =>
-			new Set(terrainOf(biome, 42).map((i) => i.kind));
+			new Set(terrainOf(biome, 42).items.map((i) => i.kind));
 		expect(of('tundra').has('palm'), 'пальма в тундрі').toBe(false);
 		expect(of('rainforest').has('spruce'), 'ялина в тропіках').toBe(false);
 		expect(of('rainforest').has('palm')).toBe(true);
@@ -287,7 +313,7 @@ describe('генерація рельєфу', () => {
 
 	it('кожна фігура має власний поворот — інакше це текстура, а не ліс', () => {
 		const turns = terrainOf('forest', 42)
-			.filter((i) => KINDS.includes(i.kind as (typeof KINDS)[number]))
+			.items.filter((i) => KINDS.includes(i.kind as (typeof KINDS)[number]))
 			.map((i) => i.turn);
 		expect(new Set(turns).size, 'усі фігури повернуті однаково').toBeGreaterThan(
 			turns.length * 0.9

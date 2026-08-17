@@ -1,4 +1,5 @@
 import { STARTING_REPUTATION } from './constants';
+import { spiralCell } from './grid';
 import { SPECIES } from './species';
 
 /**
@@ -106,8 +107,30 @@ export function migrateV3toV4(raw: unknown): unknown {
 	return { ...raw, contracts: [], offered: null, lastOfferDay: 0, nextContractId: 1 };
 }
 
+/**
+ * Версія 4 → 5: вольєри отримали МІСЦЕ, бо тепер їх ставить гравець.
+ *
+ * Доти місце виводилося з `id` по спіралі — і саме цю спіраль міграція й
+ * застосовує останній раз, щоб уже збудований заповідник лишився на вигляд тим
+ * самим. Гравець не має прокинутися з переставленими будівлями.
+ */
+export function migrateV4toV5(raw: unknown): unknown {
+	if (!isObject(raw)) return raw;
+	const enclosures = Array.isArray(raw.enclosures) ? raw.enclosures : [];
+
+	return {
+		...raw,
+		enclosures: enclosures.map((enclosure, index) => {
+			if (!isObject(enclosure)) return enclosure;
+			const id = isNumber(enclosure.id) ? enclosure.id : index + 1;
+			return { ...enclosure, cell: spiralCell(id - 1) };
+		})
+	};
+}
+
 export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 	1: migrateV1toV2,
 	2: migrateV2toV3,
-	3: migrateV3toV4
+	3: migrateV3toV4,
+	4: migrateV4toV5
 };

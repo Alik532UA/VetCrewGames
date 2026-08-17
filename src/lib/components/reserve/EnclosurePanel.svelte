@@ -8,25 +8,32 @@
 		upgradePrice,
 		type Quality
 	} from '$lib/reserve/constants';
+	import { footprintOf } from '$lib/reserve/grid';
 	import { ENCLOSURE_SIZES } from '$lib/reserve/species';
 	import type { Enclosure, ReserveCommand } from '$lib/reserve/types';
 
 	/**
-	 * Вольєри: побудувати, полагодити, підняти якість, знести.
+	 * Вольєри: вибрати розмір і якість, потім поставити на карту.
 	 *
-	 * Два виміри — розмір і якість — показані як дві шкали, а не як тридцять
-	 * кнопок. Розмір вирішує, ХТО тут поміститься; якість — наскільки йому тут
-	 * добре. Ціна перераховується одразу, бо саме вона й робить вибір рішенням.
+	 * Розмір — КНОПКИ, а не повзунок. Повзунок годиться для величини, у якої
+	 * важлива тенденція; тут кожне з десяти значень — окреме рішення з окремою
+	 * ціною і окремим списком тих, кого воно вміщає. Ловити третину піксельного
+	 * ходу, щоб трапити в «четвірку для лева», — не той жест.
+	 *
+	 * Сама будівля звідси НЕ ставиться: панель лише готує замовлення, а місце
+	 * гравець тицяє на карті. Тому кнопка й називається «оберіть місце».
 	 */
 	interface Props {
 		enclosures: Enclosure[];
 		/** `id` вольєрів, у яких хтось живе: їх не можна знести. */
 		occupied: Set<number>;
 		effectiveQualityOf: (enclosure: Enclosure) => Quality;
+		/** Замовлення прийнято — далі гравець вибирає місце на карті. */
+		onPlace: (size: number, quality: Quality) => void;
 		onCommand: (command: ReserveCommand) => void;
 	}
 
-	let { enclosures, occupied, effectiveQualityOf, onCommand }: Props = $props();
+	let { enclosures, occupied, effectiveQualityOf, onPlace, onCommand }: Props = $props();
 
 	let size = $state(3);
 	let quality = $state<Quality>(2);
@@ -36,20 +43,27 @@
 </script>
 
 <div class="build">
-	<h3 class="build__title">{@html formatFont(t('reserve.build'))}</h3>
+	<h3 class="build__title">{@html formatFont(t('reserve.size'))}</h3>
+	<div class="build__row" role="group" aria-label={t('reserve.size')}>
+		{#each ENCLOSURE_SIZES as value (value)}
+			<button
+				type="button"
+				class="chip chip--size"
+				class:chip--on={size === value}
+				aria-pressed={size === value}
+				onclick={() => (size = value)}
+				data-testid="reserve-size-{value}-btn"
+			>
+				{value}
+			</button>
+		{/each}
+	</div>
+	<!-- Слід у клітинках: розмір — це не лише ціна, а й зайнята земля. -->
+	<p class="build__note">{footprintOf(size)}×{footprintOf(size)}</p>
 
-	<label class="build__row">
-		<span>{@html formatFont(t('reserve.size'))}: <b>{size}</b></span>
-		<input
-			type="range"
-			min={ENCLOSURE_SIZES[0]}
-			max={ENCLOSURE_SIZES[ENCLOSURE_SIZES.length - 1]}
-			bind:value={size}
-			data-testid="reserve-build-size-slider"
-		/>
-	</label>
+	<h3 class="build__title">{@html formatFont(t('reserve.quality'))}</h3>
 
-	<div class="build__qualities" role="group" aria-label={t('reserve.quality')}>
+	<div class="build__row" role="group" aria-label={t('reserve.quality')}>
 		{#each QUALITIES as value (value)}
 			<button
 				type="button"
@@ -67,10 +81,10 @@
 	<button
 		type="button"
 		class="btn-primary build__go"
-		onclick={() => onCommand({ type: 'build', size, quality })}
+		onclick={() => onPlace(size, quality)}
 		data-testid="reserve-build-btn"
 	>
-		{@html formatFont(t('reserve.build'))} — {money(enclosurePrice(size, quality))}
+		{@html formatFont(t('reserve.place'))} — {money(enclosurePrice(size, quality))}
 	</button>
 </div>
 
@@ -151,19 +165,7 @@
 		opacity: 0.7;
 	}
 
-	.build__row {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.build__row input {
-		width: 100%;
-		/* Повзунок теж має бути ціллю для пальця (ACCESSIBILITY-v8). */
-		min-height: 44px;
-	}
-
-	.build__qualities,
+	.build__row,
 	.card__actions {
 		display: flex;
 		flex-wrap: wrap;
@@ -182,6 +184,20 @@
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
+	}
+
+	/* Десять розмірів мусять уміститися в два рядки навіть на 320px. */
+	.chip--size {
+		min-width: 44px;
+		padding: 0;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.build__note {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		font-variant-numeric: tabular-nums;
+		opacity: 0.7;
 	}
 
 	.chip--on {

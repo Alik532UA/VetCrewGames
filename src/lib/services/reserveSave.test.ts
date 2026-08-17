@@ -30,7 +30,7 @@ const KEY = 'vetcrewgames_reserve';
 
 function played() {
 	const state = createReserve(42, 'savanna');
-	execute(state, { type: 'build', size: 4, quality: 2 });
+	execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 	execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 	tick(state, 900);
 	return state;

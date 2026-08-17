@@ -6,7 +6,7 @@ import {
 	RESERVE_RADIUS,
 	upgradePrice
 } from './constants';
-import { placeOf } from './grid';
+import { cellKey, cellsOf, worldOf } from './grid';
 import { ENCLOSURE_SIZES } from './species';
 import type { Animal, CommandResult, ReserveCommand, ReserveState } from './types';
 
@@ -32,13 +32,21 @@ export function buildings(
 			if (!QUALITIES.includes(command.quality)) return { ok: false, reason: 'bad-quality' };
 
 			/*
-			 * Ділянка має межі, і вони не декоративні. Місце визначає `id`, тож
-			 * перевіряти треба саме те, куди СТАНЕ наступний вольєр, а не де є
-			 * вільно: сітка заповнюється спіраллю від центру.
+			 * Місце вибрав ГРАВЕЦЬ, тож перевіряємо саме його — і КОЖНУ клітинку
+			 * сліду, а не лише кут. Вольєр на десять займає чотири клітинки в
+			 * ширину, і його кут може бути в межах ділянки, коли протилежний уже
+			 * за парканом.
 			 */
-			const spot = placeOf(state.nextEnclosureId);
-			if (Math.hypot(spot.x, spot.z) > RESERVE_RADIUS)
-				return { ok: false, reason: 'out-of-bounds' };
+			const footprint = cellsOf(command.cell, command.size);
+			for (const cell of footprint) {
+				const spot = worldOf(cell);
+				if (Math.hypot(spot.x, spot.z) > RESERVE_RADIUS)
+					return { ok: false, reason: 'out-of-bounds' };
+			}
+
+			const busy = new Set(state.enclosures.flatMap((e) => cellsOf(e.cell, e.size).map(cellKey)));
+			if (footprint.some((cell) => busy.has(cellKey(cell))))
+				return { ok: false, reason: 'cell-taken' };
 
 			const cost = enclosurePrice(command.size, command.quality);
 			if (state.budget < cost) return { ok: false, reason: 'no-money' };
@@ -50,6 +58,7 @@ export function buildings(
 			state.impact += ENCLOSURE_IMPACT;
 			state.enclosures.push({
 				id: state.nextEnclosureId++,
+				cell: command.cell,
 				size: command.size,
 				quality: command.quality,
 				durability: 1

@@ -12,7 +12,7 @@ function played(): ReserveState {
 	// Савана: лев живе саме там, інакше заповідник його не прийме.
 	const state = createReserve(42, 'savanna');
 	execute(state, { type: 'hire', role: 'vet' });
-	execute(state, { type: 'build', size: 4, quality: 2 });
+	execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 	execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 	tick(state, TICKS_PER_DAY * 3);
 	return state;
@@ -53,7 +53,7 @@ describe('формат збереження', () => {
 		if (!saved.ok) return;
 
 		for (const state of [straight, saved.state]) {
-			execute(state, { type: 'build', size: 5, quality: 2 });
+			execute(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
 			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
 			tick(state, TICKS_PER_DAY * 5);
 		}

@@ -132,5 +132,14 @@ export const reserve = {
 	'reserve.reject.too-many-contracts': 'Mehr Verträge gehen nicht gleichzeitig.',
 
 	'reserve.reject.out-of-bounds': 'Das Grundstück endet hier — dahinter ist nicht dein Land.',
-	'reserve.plot': 'Grundstücksgrenze'
+	'reserve.plot': 'Grundstücksgrenze',
+
+	'reserve.reject.cell-taken': 'Hier steht schon etwas.',
+	'reserve.place': 'Wähle einen Platz auf der Karte',
+	'reserve.placing': 'Tippe auf die Karte, um das Gehege zu setzen',
+	'reserve.cancel': 'Abbrechen',
+	'reserve.minimap': 'Minikarte',
+	'reserve.zoom': 'Zoom',
+	'reserve.history': 'Änderungsverlauf',
+	'reserve.noHistory': 'Noch keine Änderungen.'
 } as const;

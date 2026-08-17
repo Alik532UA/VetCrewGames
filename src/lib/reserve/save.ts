@@ -27,7 +27,7 @@ import type { ReserveState } from './types';
  * читається неправильно. **Разом із номером додається сходинка в `MIGRATIONS`** —
  * без неї підйом версії просто викидає чужу партію.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export interface SaveFile {
 	version: number;
@@ -95,6 +95,8 @@ function checkEnclosure(value: unknown, index: number): string | null {
 		return `enclosures[${index}].quality = ${String(value.quality)}`;
 	if (!isNumber(value.durability) || value.durability < 0 || value.durability > 1)
 		return `enclosures[${index}].durability = ${String(value.durability)}`;
+	if (!isObject(value.cell) || !isNumber(value.cell.x) || !isNumber(value.cell.z))
+		return `enclosures[${index}].cell`;
 	return null;
 }
 

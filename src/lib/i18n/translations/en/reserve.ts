@@ -131,5 +131,14 @@ export const reserve = {
 	'reserve.reject.too-many-contracts': 'No more contracts can be taken at once.',
 
 	'reserve.reject.out-of-bounds': 'The plot ends here — beyond is not your land.',
-	'reserve.plot': 'Plot boundary'
+	'reserve.plot': 'Plot boundary',
+
+	'reserve.reject.cell-taken': 'Something already stands here.',
+	'reserve.place': 'Pick a spot on the map',
+	'reserve.placing': 'Tap the map to place the enclosure',
+	'reserve.cancel': 'Cancel',
+	'reserve.minimap': 'Minimap',
+	'reserve.zoom': 'Zoom',
+	'reserve.history': 'Change history',
+	'reserve.noHistory': 'No changes yet.'
 } as const;

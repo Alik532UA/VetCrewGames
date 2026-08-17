@@ -16,7 +16,12 @@ import type { DecorItem } from './terrain';
  * Звивина гасне на обох кінцях (`sin(t·π)`), тож річка приходить із-за краю
  * карти й виходить за нього, а не починається калюжею посеред поля.
  */
-export function river(random: () => number, worldRadius: number): DecorItem[] {
+export interface RiverPath {
+	points: Array<{ x: number; z: number }>;
+	width: number;
+}
+
+export function river(random: () => number, worldRadius: number): RiverPath {
 	const angle = random() * Math.PI * 2;
 	const from = { x: Math.cos(angle) * worldRadius, z: Math.sin(angle) * worldRadius };
 	const to = { x: -from.x + (random() * 2 - 1) * 8, z: -from.z + (random() * 2 - 1) * 8 };
@@ -32,20 +37,17 @@ export function river(random: () => number, worldRadius: number): DecorItem[] {
 	const nx = -dz / length;
 	const nz = dx / length;
 
-	const steps = Math.max(20, Math.round(length / 1.2));
-	const out: DecorItem[] = [];
+	// Кроків більше, ніж було: смуга згинається по вершинах, тож частіші точки
+	// дають плавніший берег — а плям їх кількість більше не множить.
+	const steps = Math.max(40, Math.round(length / 0.6));
+	const points: Array<{ x: number; z: number }> = [];
 	for (let i = 0; i <= steps; i++) {
 		const t = i / steps;
 		const bend = Math.sin(t * Math.PI * 2 + phase) * bendAmount * Math.sin(t * Math.PI);
-		out.push({
-			kind: 'water',
-			x: from.x + dx * t + nx * bend,
-			z: from.z + dz * t + nz * bend,
-			scale: width,
-			turn: 0
-		});
+		points.push({ x: from.x + dx * t + nx * bend, z: from.z + dz * t + nz * bend });
 	}
-	return out;
+	// Ширина в світових одиницях, а не множник радіуса плями.
+	return { points, width: 1.6 + width * 1.4 };
 }
 
 /**

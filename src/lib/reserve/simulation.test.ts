@@ -35,7 +35,7 @@ import {
 	type Quality
 } from './constants';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
-import { placeOf } from './grid';
+import { cellsOf, worldOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
@@ -52,7 +52,7 @@ function withLion(size: number, origin: keyof typeof ORIGINS = 'rescue') {
 	// Лев живе в савані — заповідник має бути саме там, інакше його не приймуть.
 	const state = createReserve(1, 'savanna');
 	state.budget = 1_000_000;
-	execute(state, { type: 'build', size, quality: 2 });
+	execute(state, { type: 'build', size, quality: 2, cell: { x: 0, z: 0 } });
 	const result = execute(state, { type: 'acquire', origin, speciesId: 'lion', enclosureId: 1 });
 	return { state, result };
 }
@@ -68,8 +68,9 @@ function play(seed: number, commands: ReserveCommand[], ticks: number): ReserveS
 const SCRIPT: ReserveCommand[] = [
 	{ type: 'hire', role: 'vet' },
 	{ type: 'hire', role: 'keeper' },
-	{ type: 'build', size: 4, quality: 2 },
-	{ type: 'build', size: 2, quality: 2 },
+	// Різні клітинки: два вольєри на одному місці більше не ставляться.
+	{ type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } },
+	{ type: 'build', size: 2, quality: 2, cell: { x: 3, z: 0 } },
 	// Обидва види лісові: партія за замовчуванням розгортається в лісі.
 	{ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 },
 	{ type: 'acquire', origin: 'rescue', speciesId: 'fox', enclosureId: 2 }
@@ -111,7 +112,7 @@ describe('детермінізм', () => {
 		const fates = new Set<boolean>();
 		for (let seed = 1; seed <= 50; seed++) {
 			const state = createReserve(seed, 'savanna');
-			execute(state, { type: 'build', size: 4, quality: 2 });
+			execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 			fates.add(state.animals[0].releasable);
 		}
@@ -144,8 +145,12 @@ describe('детермінізм', () => {
 describe('вольєри', () => {
 	it('перевірка жива: вольєр будується й коштує грошей', () => {
 		const state = createReserve(1);
-		expect(execute(state, { type: 'build', size: 4, quality: 2 })).toEqual({ ok: true });
-		expect(state.enclosures).toEqual([{ id: 1, size: 4, quality: 2, durability: 1 }]);
+		expect(execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
+			ok: true
+		});
+		expect(state.enclosures).toEqual([
+			{ id: 1, cell: { x: 0, z: 0 }, size: 4, quality: 2, durability: 1 }
+		]);
 		expect(state.budget).toBe(STARTING_BUDGET - enclosurePrice(4, 2));
 	});
 
@@ -159,11 +164,11 @@ describe('вольєри', () => {
 
 	it('розміру поза шкалою не існує', () => {
 		const state = createReserve(1);
-		expect(execute(state, { type: 'build', size: 11, quality: 2 })).toEqual({
+		expect(execute(state, { type: 'build', size: 11, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: false,
 			reason: 'bad-size'
 		});
-		expect(execute(state, { type: 'build', size: 0, quality: 2 })).toEqual({
+		expect(execute(state, { type: 'build', size: 0, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: false,
 			reason: 'bad-size'
 		});
@@ -209,7 +214,7 @@ describe('вольєри', () => {
 
 	it('невідомого виду не буває', () => {
 		const state = createReserve(1, 'savanna');
-		execute(state, { type: 'build', size: 10, quality: 2 });
+		execute(state, { type: 'build', size: 10, quality: 2, cell: { x: 0, z: 0 } });
 		expect(
 			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'дракон', enclosureId: 1 })
 		).toEqual({ ok: false, reason: 'no-such-species' });
@@ -217,7 +222,7 @@ describe('вольєри', () => {
 
 	it('порожній вольєр можна знести, зайнятий — ні', () => {
 		const { state } = withLion(4);
-		execute(state, { type: 'build', size: 2, quality: 2 });
+		execute(state, { type: 'build', size: 2, quality: 2, cell: { x: 4, z: 0 } });
 
 		expect(execute(state, { type: 'demolish', enclosureId: 1 })).toEqual({
 			ok: false,
@@ -342,7 +347,7 @@ describe('економіка надходження', () => {
 
 	it('без грошей тварина не зʼявляється', () => {
 		const state = createReserve(1, 'savanna');
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		state.budget = 100;
 		expect(
 			execute(state, { type: 'acquire', origin: 'official', speciesId: 'lion', enclosureId: 1 })
@@ -373,7 +378,7 @@ describe('репутація', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
 		execute(state, { type: 'hire', role: 'vet' });
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 		expect(state.reputation).toBe(STARTING_REPUTATION + ORIGINS.rescue.reputation);
 	});
@@ -382,7 +387,7 @@ describe('репутація', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
 		execute(state, { type: 'hire', role: 'vet' });
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
 
 		expect(state.reputation).toBe(STARTING_REPUTATION + ORIGINS['black-market'].reputation);
@@ -410,7 +415,7 @@ describe('репутація', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 10_000_000;
 		state.reputation = 2;
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'black-market', speciesId: 'lion', enclosureId: 1 });
 		expect(state.reputation).toBe(0);
 
@@ -482,7 +487,7 @@ describe('два списки замість одного', () => {
 	 */
 	it('випущений залишає список мешканців і потрапляє в окремий', () => {
 		const { state } = withLion(4);
-		execute(state, { type: 'build', size: 5, quality: 2 });
+		execute(state, { type: 'build', size: 5, quality: 2, cell: { x: 4, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 2 });
 
 		expect(residents(state)).toHaveLength(2);
@@ -511,7 +516,7 @@ describe('два списки замість одного', () => {
 		const empty = createReserve(1, 'savanna');
 		empty.budget = 1_000_000;
 		empty.reputation = reputation;
-		execute(empty, { type: 'build', size: 4, quality: 2 });
+		execute(empty, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		const emptyBefore = empty.budget;
 		day(empty);
 
@@ -546,7 +551,7 @@ describe('банкрутство', () => {
 		for (const command of [
 			{ type: 'acquire', origin: 'rescue', speciesId: 'leopard', enclosureId: 1 },
 			{ type: 'hire', role: 'vet' },
-			{ type: 'build', size: 1, quality: 2 }
+			{ type: 'build', size: 1, quality: 2, cell: { x: 0, z: 0 } }
 		] as ReserveCommand[]) {
 			expect(execute(state, command), command.type).toEqual({ ok: false, reason: 'subsidy-mode' });
 		}
@@ -608,7 +613,7 @@ describe('умова програшу', () => {
 		const state = inTheRed(COLLAPSE_DAYS);
 		const before = snapshot(state);
 
-		expect(execute(state, { type: 'build', size: 1, quality: 2 })).toEqual({
+		expect(execute(state, { type: 'build', size: 1, quality: 2, cell: { x: 0, z: 0 } })).toEqual({
 			ok: false,
 			reason: 'game-over'
 		});
@@ -642,7 +647,7 @@ describe('біом вирішує, кого сюди привозять', () => 
 	it('вид, який тут не живе, не приймають', () => {
 		const state = createReserve(1, 'tundra');
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 10, quality: 3 });
+		execute(state, { type: 'build', size: 10, quality: 3, cell: { x: 0, z: 0 } });
 
 		expect(
 			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
@@ -652,7 +657,7 @@ describe('біом вирішує, кого сюди привозять', () => 
 	it('той самий вид у своєму біомі проходить', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		expect(
 			execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 })
 		).toEqual({ ok: true });
@@ -671,7 +676,7 @@ describe('якість вольєра', () => {
 	const built = (quality: Quality) => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality });
+		execute(state, { type: 'build', size: 4, quality, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 		state.staff.vet = 1;
 		return state;
@@ -702,7 +707,9 @@ describe('якість вольєра', () => {
 
 	it('якості поза шкалою не буває', () => {
 		const state = createReserve(1);
-		expect(execute(state, { type: 'build', size: 4, quality: 9 as Quality })).toEqual({
+		expect(
+			execute(state, { type: 'build', size: 4, quality: 9 as Quality, cell: { x: 0, z: 0 } })
+		).toEqual({
 			ok: false,
 			reason: 'bad-quality'
 		});
@@ -724,7 +731,7 @@ describe('знос і ремонт', () => {
 	const aged = (days: number) => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 3 });
+		execute(state, { type: 'build', size: 4, quality: 3, cell: { x: 0, z: 0 } });
 		day(state, days);
 		return state;
 	};
@@ -789,7 +796,7 @@ describe('знос і ремонт', () => {
 	it('підняття якості заразом оновлює вольєр', () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 1 });
+		execute(state, { type: 'build', size: 4, quality: 1, cell: { x: 0, z: 0 } });
 		day(state, 20);
 		expect(state.enclosures[0].durability).toBeLessThan(1);
 
@@ -815,7 +822,7 @@ describe('дві шкали розходяться саме там, де це щ
 	 */
 	it('вольєр забирає користь і не дає репутації', () => {
 		const state = savanna();
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 
 		expect(state.impact).toBe(ENCLOSURE_IMPACT);
 		expect(state.reputation, 'публіка розділилася — у сумі нуль').toBe(STARTING_REPUTATION);
@@ -845,7 +852,7 @@ describe('дві шкали розходяться саме там, де це щ
 
 	it('одужання дає мало користі й багато репутації', () => {
 		const state = savanna();
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 
 		const before = { impact: state.impact, reputation: state.reputation };
@@ -882,7 +889,7 @@ describe('перемога', () => {
 	const ready = () => {
 		const state = createReserve(1, 'savanna');
 		state.budget = 1_000_000;
-		execute(state, { type: 'build', size: 4, quality: 2 });
+		execute(state, { type: 'build', size: 4, quality: 2, cell: { x: 0, z: 0 } });
 		execute(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 		Object.assign(state.animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
 		return state;
@@ -1031,50 +1038,60 @@ describe('межа ділянки', () => {
 		return state;
 	};
 
-	it('перевірка жива: у межах ділянки будувати можна', () => {
-		const state = rich();
-		expect(execute(state, { type: 'build', size: 1, quality: 1 })).toEqual({ ok: true });
+	const buildAt = (state: ReserveState, x: number, z: number) =>
+		execute(state, { type: 'build', size: 1, quality: 1, cell: { x, z } });
+
+	it('перевірка жива: у центрі ділянки будувати можна', () => {
+		expect(buildAt(rich(), 0, 0)).toEqual({ ok: true });
 	});
 
 	/**
-	 * Ділянка має межі, і вони не декоративні. Без цієї перевірки спіраль росла
-	 * б у безкінечність, а пунктир на карті означав би рівно нічого.
+	 * Ділянка має межі, і вони не декоративні. Без цієї перевірки гравець ставив
+	 * би вольєри де завгодно, а пунктир на карті означав би рівно нічого.
 	 */
 	it('за межею ділянки будувати не дають', () => {
 		const state = rich();
-		let built = 0;
-		let refusal: unknown = null;
+		// Клітинка 100 — це 220 світових одиниць, тобто далеко за парканом.
+		expect(buildAt(state, 100, 0)).toEqual({ ok: false, reason: 'out-of-bounds' });
+		expect(state.enclosures).toEqual([]);
+	});
 
-		// Будуємо, доки не впремося. Межа мусить настати — інакше цикл сам це й
-		// покаже, вичерпавши стелю.
-		for (let i = 0; i < 400; i++) {
-			const result = execute(state, { type: 'build', size: 1, quality: 1 });
-			if (result.ok) {
-				built++;
-				continue;
-			}
-			refusal = result;
-			break;
-		}
+	/**
+	 * Перевіряється КОЖНА клітинка сліду, а не лише кут: великий вольєр кутом
+	 * може стояти в межах, коли протилежний бік уже за парканом.
+	 */
+	it('великий вольєр не звисає за межу кутом', () => {
+		const state = rich();
+		const edge = Math.floor(RESERVE_RADIUS / 2.2);
+		// Одиничка на самому краю проходить…
+		expect(buildAt(state, edge, 0).ok, 'край не тримає навіть одиничку').toBe(true);
+		// …а десятка з тим самим кутом уже ні: її слід — чотири клітинки.
+		expect(
+			execute(state, { type: 'build', size: 10, quality: 1, cell: { x: edge, z: 0 } })
+		).toEqual({ ok: false, reason: 'out-of-bounds' });
+	});
 
-		expect(refusal, `межа не настала після ${built} вольєрів`).toEqual({
-			ok: false,
-			reason: 'out-of-bounds'
-		});
-		// Ділянка радіусом 14 при кроці 2.2 вміщає десятки вольєрів: межа існує,
-		// але тісною не почувається.
-		expect(built).toBeGreaterThan(30);
+	it('на зайняту клітинку другий вольєр не поставити', () => {
+		const state = rich();
+		expect(buildAt(state, 2, 2)).toEqual({ ok: true });
+		expect(buildAt(state, 2, 2)).toEqual({ ok: false, reason: 'cell-taken' });
+	});
+
+	/** Слід великого вольєра теж зайнятий увесь, а не лише його кут. */
+	it('сусідня клітинка під слідом великого вольєра теж зайнята', () => {
+		const state = rich();
+		execute(state, { type: 'build', size: 9, quality: 1, cell: { x: 0, z: 0 } });
+		expect(cellsOf({ x: 0, z: 0 }, 9).length, 'слід великого вольєра завузький').toBeGreaterThan(1);
+		expect(buildAt(state, 1, 1)).toEqual({ ok: false, reason: 'cell-taken' });
 	});
 
 	it('усі збудовані вольєри стоять у межах', () => {
 		const state = rich();
-		for (let i = 0; i < 60; i++) execute(state, { type: 'build', size: 1, quality: 1 });
+		for (let cx = -5; cx <= 5; cx++) buildAt(state, cx, 0);
 
 		for (const enclosure of state.enclosures) {
-			const spot = placeOf(enclosure.id);
-			expect(Math.hypot(spot.x, spot.z), `вольєр ${enclosure.id} за межею`).toBeLessThanOrEqual(
-				RESERVE_RADIUS
-			);
+			const spot = worldOf(enclosure.cell);
+			expect(Math.hypot(spot.x, spot.z)).toBeLessThanOrEqual(RESERVE_RADIUS);
 		}
 	});
 });

@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { T, useThrelte } from '@threlte/core';
-	import { OrthographicCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
+	import { OrthographicCamera, Plane, Raycaster, Vector2, Vector3, type Object3D } from 'three';
 	import { DEFAULT_ZOOM, isoControls } from './isoCamera';
 	import { placeEnclosures } from './sceneLayout';
 	import { RESERVE_RADIUS } from '$lib/reserve/constants';
+	import { cellOf } from '$lib/reserve/grid';
 	import { nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
 	import DecorPiece from './DecorPiece.svelte';
+	import EnclosureShape from './EnclosureShape.svelte';
+	import RiverRibbon from './RiverRibbon.svelte';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
 
@@ -18,6 +21,9 @@
 	 */
 	interface Props {
 		biome: ReserveBiome;
+		/** Увімкнено режим розміщення: наступний тап по землі ставить вольєр. */
+		placing: boolean;
+		onGround: (cell: { x: number; z: number }) => void;
 		seed: number;
 		enclosures: Enclosure[];
 		animals: Animal[];
@@ -25,7 +31,8 @@
 		onSelect: (id: number) => void;
 	}
 
-	let { biome, seed, enclosures, animals, selectedId, onSelect }: Props = $props();
+	let { biome, seed, enclosures, animals, selectedId, onSelect, placing, onGround }: Props =
+		$props();
 
 	const { invalidate, renderer, scene } = useThrelte();
 
@@ -50,6 +57,8 @@
 	 */
 	const raycaster = new Raycaster();
 	const pointer = new Vector2();
+	/** Площина землі: промінь шукає перетин саме з нею, а не з мешем. */
+	const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), 0);
 
 	/** Мешканця несе ГРУПА, а промінь влучає в меш — шукаємо вгору по батьках. */
 	function animalIdAt(object: Object3D): number | null {
@@ -62,6 +71,16 @@
 
 	function pick(clientX: number, clientY: number) {
 		if (!camera) return;
+
+		/*
+		 * У режимі розміщення тап означає МІСЦЕ, а не вибір. Дві різні відповіді
+		 * на один жест — саме те, чого гравець і чекає: спершу «куди», потім «кого».
+		 */
+		if (placing) {
+			const cell = groundCellAt(clientX, clientY);
+			if (cell) onGround(cell);
+			return;
+		}
 		const box = renderer.domElement.getBoundingClientRect();
 		pointer.x = ((clientX - box.left) / box.width) * 2 - 1;
 		pointer.y = -((clientY - box.top) / box.height) * 2 + 1;
@@ -83,6 +102,23 @@
 	 * різновид помилки: сцена малюється, повідомлень немає, просто нічого не
 	 * рухається й не натискається.
 	 */
+	/**
+	 * Куди на землі влучив палець, у клітинках сітки.
+	 *
+	 * Промінь перетинається з площиною y = 0, а не з мешем землі: земля — тонка
+	 * коробка, і промінь, що прийшов збоку, влучив би в її бік, а не у верх.
+	 */
+	function groundCellAt(clientX: number, clientY: number) {
+		if (!camera) return null;
+		const box = renderer.domElement.getBoundingClientRect();
+		pointer.x = ((clientX - box.left) / box.width) * 2 - 1;
+		pointer.y = -((clientY - box.top) / box.height) * 2 + 1;
+		raycaster.setFromCamera(pointer, camera);
+
+		const hit = raycaster.ray.intersectPlane(GROUND_PLANE, new Vector3());
+		return hit ? cellOf(hit.x, hit.z) : null;
+	}
+
 	$effect(() => {
 		if (!camera) return;
 		const controls = isoControls(renderer.domElement, camera, target, invalidate, pick);
@@ -130,9 +166,6 @@
 		savanna: '#c2a95f',
 		rainforest: '#4c7a43'
 	};
-
-	/** Колір мешканця каже про стан: одужує — теплий, здорова — зелена. */
-	const colorOf = (animal: Animal) => (animal.stage === 'healthy' ? '#4caf50' : '#c98a3c');
 </script>
 
 <T.OrthographicCamera
@@ -176,37 +209,21 @@
 	Кожна фігура малюється `DecorPiece`: вісім родів замість одного конуса
 	різного розміру.
 -->
-{#each terrain as item, index (`${item.kind}-${index}`)}
+{#each terrain.rivers as path, index (index)}
+	<RiverRibbon {path} color="#3f7fa8" />
+{/each}
+
+{#each terrain.items as item, index (`${item.kind}-${index}`)}
 	<DecorPiece {item} {biome} />
 {/each}
 
-{#each placed as { enclosure, animal, x, z } (enclosure.id)}
-	{@const side = 0.6 + enclosure.size * 0.16}
-	<T.Group position={[x, 0, z]} userData={{ animalId: animal?.id }}>
-		<!-- Підлога вольєра: що більший розмір, то ширша. -->
-		<T.Mesh position={[0, 0.1, 0]}>
-			<T.BoxGeometry args={[side, 0.2, side]} />
-			<T.MeshStandardMaterial color={animal && animal.id === selectedId ? '#ffd54f' : '#9a7b4f'} />
-		</T.Mesh>
-
-		<!--
-			Штучна водойма. Ставиться лише тоді, коли поруч НЕМАЄ природної: у цьому
-			й сенс того, що рельєф не декорація — місце під вольєр не байдуже, і
-			видно це просто на карті.
-		-->
-		{#if !nearWater(terrain, x, z)}
-			<T.Mesh position={[side * 0.28, 0.21, side * 0.28]}>
-				<T.CylinderGeometry args={[side * 0.16, side * 0.16, 0.06, 10]} />
-				<T.MeshStandardMaterial color="#4a9ec4" />
-			</T.Mesh>
-		{/if}
-
-		{#if animal}
-			<!-- Мешканець: капсула, а не модель. Див. докблок файлу. -->
-			<T.Mesh position={[0, 0.65, 0]}>
-				<T.CapsuleGeometry args={[0.28, 0.5, 4, 8]} />
-				<T.MeshStandardMaterial color={colorOf(animal)} />
-			</T.Mesh>
-		{/if}
-	</T.Group>
+{#each placed as spot (spot.enclosure.id)}
+	<EnclosureShape
+		hasWater={nearWater(terrain, spot.x, spot.z)}
+		animal={spot.animal}
+		x={spot.x}
+		z={spot.z}
+		span={spot.span}
+		selected={spot.animal !== null && spot.animal.id === selectedId}
+	/>
 {/each}

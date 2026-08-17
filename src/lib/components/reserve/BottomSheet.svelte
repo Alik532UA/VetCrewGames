@@ -56,9 +56,22 @@
 
 	.sheet {
 		position: fixed;
-		right: 0;
-		bottom: 0;
-		left: 0;
+		/*
+		 * НАД смугою кнопок, а не під нею.
+		 *
+		 * Доти панель стояла в `bottom: 0` і накривала ту саму смугу, з якої її
+		 * відкрили: гравець тиснув «Вольєри» й переставав бачити, що натиснув.
+		 * Відступ у 4rem — висота смуги плюс проміжок.
+		 */
+		bottom: 4.5rem;
+		/*
+		 * Не на всю ширину: панель зі списком у три слова, розтягнута на 1900px,
+		 * читається як помилка розкладки. Ліворуч лишається видною карта.
+		 */
+		left: 50%;
+		width: min(34rem, calc(100% - 2 * var(--space-sm)));
+		transform: translateX(-50%);
+		border-radius: var(--radius-md);
 		z-index: 21;
 		display: flex;
 		flex-direction: column;
@@ -66,10 +79,9 @@
 		 * Не більше 70% висоти: над панеллю має лишатися видно карту, інакше
 		 * вона нічим не відрізняється від модального вікна.
 		 */
-		max-height: 70dvh;
-		border-radius: var(--radius-md) var(--radius-md) 0 0;
+		max-height: 62dvh;
 		background: var(--color-bg-panel);
-		box-shadow: 0 -8px 24px rgb(0 0 0 / 35%);
+		box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
 	}
 
 	.sheet__head {
