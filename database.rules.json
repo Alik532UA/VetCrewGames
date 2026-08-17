@@ -1,0 +1,78 @@
+// Правила Realtime Database. Джерело правди — цей файл, а не консоль: правило,
+// яке живе лише у вебінтерфейсі, неможливо ні звірити з кодом, ні побачити в
+// історії змін.
+//
+// Викладати руками: Firebase Console → Realtime Database → Rules → вставити →
+// Publish. CLI тут навмисно не заводимо: одна дія раз на кілька тижнів не варта
+// ще одного інструмента в проєкті.
+//
+// ЩО ВОНО ЗАХИЩАЄ. Публічний конфіг Firebase за побудовою лежить у бандлі, тобто
+// адресу бази знає кожен. Тому типова відповідь — заборона, а дозволи стоять
+// рівно там, де застосунок справді пише, і кожен звужений до того, хто пише.
+//
+// ГОЛОВНЕ ПРАВИЛО — «лише створити» для ходів. Хід не можна ні перезаписати, ні
+// підписати чужим імʼям. Саме це й дає порядок і одноразовість без сервера:
+// повторний запис того самого номера відкидає база, а не клієнт. У MindStep
+// кімната — один документ, який пишуть обидва гравці, і там у комментарі до
+// правил прямо сказано, що звузити це неможливо без переписування синхронізації.
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        // Читають усі авторизовані: код кімнати й є її «пароль». Перелічити
+        // кімнати при цьому не можна — читання дозволене лише на конкретній.
+        ".read": "auth != null",
+
+        "info": {
+          // Створити може будь-хто авторизований, але тільки назвавши господарем
+          // СЕБЕ. Далі міняти — лише господареві: він починає партію.
+          ".write": "auth != null && (data.exists() ? data.child('hostUid').val() === auth.uid : newData.child('hostUid').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid'])",
+          "status": {
+            ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'over')"
+          },
+          "seed": { ".validate": "newData.isNumber()" },
+          "rulesVersion": { ".validate": "newData.isNumber()" }
+        },
+
+        "members": {
+          "$uid": {
+            // Кожен пише лише про себе — і про себе ж може піти.
+            ".write": "auth != null && $uid === auth.uid",
+            ".validate": "newData.hasChildren(['name', 'role', 'order'])",
+            "role": {
+              ".validate": "newData.val() === 'player' || newData.val() === 'spectator'"
+            },
+            "name": { ".validate": "newData.isString() && newData.val().length <= 24" },
+            "order": { ".validate": "newData.isNumber()" }
+          }
+        },
+
+        "moves": {
+          "$seq": {
+            // ЛИШЕ створити, і лише від себе. Дві властивості за один рядок:
+            // журнал не переписати, і хід не підписати чужим uid.
+            ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid",
+            ".validate": "newData.hasChildren(['seq', 'by', 'type'])",
+            "seq": { ".validate": "newData.isNumber()" },
+            "type": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "payload": {
+              "$field": { ".validate": "newData.isNumber()" }
+            }
+          }
+        }
+      }
+    },
+
+    "presence": {
+      "$code": {
+        ".read": "auth != null",
+        "$uid": {
+          // Присутність гасне сама: `onDisconnect` виконує сервер, коли клієнт
+          // зник. Саме через цей механізм тут RTDB, а не Firestore.
+          ".write": "auth != null && $uid === auth.uid"
+        }
+      }
+    }
+  }
+}

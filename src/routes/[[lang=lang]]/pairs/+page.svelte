@@ -15,5 +15,9 @@
 </script>
 
 <div class="menu-page">
-	<ModeMenu playHref={langPath(lang, 'game-memory')} testId="pairs" />
+	<ModeMenu
+		playHref={langPath(lang, 'game-memory')}
+		onlineHref={langPath(lang, 'pairs/online')}
+		testId="pairs"
+	/>
 </div>

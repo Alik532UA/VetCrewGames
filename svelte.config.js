@@ -23,7 +23,9 @@ import { readFileSync } from 'node:fs';
  * джерелах цього не бачить. Знайдено тут-таки: спершу цей рядок був без
  * `replace`, і Chrome попросив рівно той хеш, який дає нормалізований текст.
  */
-const inlineScripts = [...readFileSync('src/app.html', 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)];
+const inlineScripts = [
+	...readFileSync('src/app.html', 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)
+];
 if (inlineScripts.length !== 1) {
 	throw new Error(
 		`app.html: очікувався рівно один інлайн-скрипт, знайдено ${inlineScripts.length}. ` +
@@ -81,7 +83,23 @@ const config = {
 					'https://*.sentry.io',
 					'https://www.googletagmanager.com',
 					'https://*.google-analytics.com',
-					'https://*.analytics.google.com'
+					'https://*.analytics.google.com',
+					/*
+					 * Спільна гра. Три записи, і кожен потрібен окремо:
+					 *
+					 *  * `wss://*.firebasedatabase.app` — Realtime Database тримає ПОСТІЙНЕ
+					 *    зʼєднання вебсокетом, а не окремі запити. Без цього кімната
+					 *    просто не відкривається, і в консолі стоїть відмова CSP;
+					 *  * `https://*.firebasedatabase.app` — той самий шлях довгим
+					 *    опитуванням: SDK сам падає на нього там, де вебсокет не пройшов
+					 *    (корпоративні мережі, старі проксі);
+					 *  * `https://*.googleapis.com` — анонімний вхід. Він іде звичайним
+					 *    запитом до `identitytoolkit`, і без цього рядка кімната
+					 *    відмовляла б у правах, хоч сама база була б доступна.
+					 */
+					'wss://*.firebasedatabase.app',
+					'https://*.firebasedatabase.app',
+					'https://*.googleapis.com'
 				],
 				// `data:` — для інлайнових SVG-іконок і піктограм, вбудованих у CSS.
 				// Власних зовнішніх джерел зображень проєкт не має.

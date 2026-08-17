@@ -208,7 +208,7 @@ export const reserve = {
 	'reserve.module.water.byWater': 'Вода поруч',
 	'reserve.unmet': 'Незакрита потреба — тварина в стресі.',
 	'reserve.why.feed': 'Корм для тварин',
-	'reserve.why.eaten': 'Тварини з\'їли',
+	'reserve.why.eaten': "Тварини з'їли",
 	'reserve.why.module': 'Обладнання вольєра',
 	'reserve.reject.already-equipped': 'Це у вольєрі вже стоїть.',
 	'reserve.reject.water-nearby': 'Поруч природна вода — копати нема сенсу.',
