@@ -12,6 +12,10 @@ node_modules/
 .netlify/
 .wrangler/
 
+# Звіт покриття. Пишеться при кожному `npm test` (900 КБ HTML і JSON) — рівно
+# те, що PROJECT-STRUCTURE-v8 § 1 називає артефактом, який не комітиться.
+coverage/
+
 # Логи
 npm-debug.log*
 yarn-debug.log*
