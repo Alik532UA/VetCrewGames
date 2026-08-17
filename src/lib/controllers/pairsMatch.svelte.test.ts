@@ -367,3 +367,65 @@ describe('хід їде транспортом, а не лише в памʼят
 		stop();
 	});
 });
+
+describe('швидкий клік не грає за суперника', () => {
+	/**
+	 * Дефект, який знайшов гравець.
+	 *
+	 * У соло третя картка навмисно гортає невдалу пару одразу — хто вже все
+	 * запамʼятав, не мусить чекати таймера. У спільній партії те саме правило
+	 * оберталося на дірку: перегортання передає хід суперникові, і та сама третя
+	 * картка ставала ЙОГО першою — вибраною мною.
+	 */
+	it('клік по третій картці перегортає, а не відкриває суперникові його першу', async () => {
+		const { host, guest, stop } = table();
+		const [a, b] = findMismatch(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		const third = host.game.slots.findIndex(
+			(slot, index) => index !== a && index !== b && !slot.faceUp
+		);
+		await host.flip(third);
+
+		expect(host.actor?.id, 'хід перейшов').toBe(GUEST);
+		expect(host.game.slots[third].faceUp, 'третя картка НЕ відкрита').toBe(false);
+		expect(
+			host.game.slots.filter((slot) => slot.faceUp),
+			'дошка чиста'
+		).toHaveLength(0);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('дописаний напряму хід через паузу відкидають обидва', async () => {
+		// Той самий обхід, але вручну: перевірку в `flip()` можна обійти записом.
+		const { room, host, guest, stop } = table();
+		const [a, b] = findMismatch(host);
+		await host.flip(a);
+		await host.flip(b);
+		const before = board(host);
+
+		const third = host.game.slots.findIndex(
+			(slot, index) => index !== a && index !== b && !slot.faceUp
+		);
+		await room.transport().append({ seq: 3, by: HOST, type: 'flip', payload: { index: third } });
+
+		expect(board(host), 'дошка не ворухнулася').toBe(before);
+		expect(board(guest)).toBe(before);
+		stop();
+	});
+
+	it('після влучної пари клік і далі відкриває — швидкість не загубилася', async () => {
+		const { host, stop } = table();
+		const [a, b] = findPair(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		const next = host.game.slots.findIndex((slot) => slot.takenBy === null);
+		await host.flip(next);
+
+		expect(host.game.slots[next].faceUp, 'влучив — грає далі й без паузи').toBe(true);
+		stop();
+	});
+});
