@@ -132,10 +132,13 @@
 		 * ширина ряду (див. `.cards-grid`): при співвідношенні 3/4 висота
 		 * диктує ширину, а не навпаки.
 		 *
-		 * `dvh`, а не `vh`: на мобільних `vh` не враховує згортання панелі
-		 * браузера (FLUID-SIZING-v8 § 2).
+		 * `svh`, а не `dvh`: сторінку масштабує `fitToViewport`, а динамічна висота
+		 * на телефоні МІНЯЄТЬСЯ, коли ховається адресний рядок — розкладка повзе,
+		 * масштаб перераховується, і гра смикається сама собою. `svh` — «найменше
+		 * вікно», стала за будь-якого стану панелей; на настільному екрані вони
+		 * тотожні (FLUID-SIZING-v8 § 2).
 		 */
-		--card-image-h: clamp(110px, 26dvh, 260px);
+		--card-image-h: clamp(110px, 26svh, 260px);
 
 		display: flex;
 		flex-direction: column;
@@ -143,10 +146,10 @@
 		flex: 1;
 		width: 95%;
 		max-width: 560px;
-		/* Верхній відступ теж від екрана: на низькому вікні 4dvh — це ті самі
+		/* Верхній відступ теж від екрана: на низькому вікні 4svh — це ті самі
 		   кілька рядків, яких бракує поясненню (FLUID-SIZING-v8 § 6). */
-		padding: clamp(var(--space-sm), 3dvh, var(--space-xl)) 0 var(--space-lg);
-		gap: clamp(var(--space-xs), 2dvh, var(--space-lg));
+		padding: clamp(var(--space-sm), 3svh, var(--space-xl)) 0 var(--space-lg);
+		gap: clamp(var(--space-xs), 2svh, var(--space-lg));
 		margin: 0 auto;
 		box-sizing: border-box;
 	}

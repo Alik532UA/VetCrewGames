@@ -168,8 +168,8 @@
 		flex: 1;
 		width: 95%;
 		max-width: 560px;
-		padding: 4dvh 0 var(--space-lg);
-		gap: clamp(var(--space-xs), 2dvh, var(--space-md));
+		padding: 4svh 0 var(--space-lg);
+		gap: clamp(var(--space-xs), 2svh, var(--space-md));
 		margin: 0 auto;
 		box-sizing: border-box;
 	}
@@ -188,7 +188,7 @@
 	}
 
 	.animal__image {
-		width: clamp(96px, 22dvh, 168px);
+		width: clamp(96px, 22svh, 168px);
 		aspect-ratio: 3 / 4;
 		height: auto;
 		object-fit: cover;

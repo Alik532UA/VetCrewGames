@@ -111,7 +111,7 @@
 		flex: 1;
 		width: 95%;
 		max-width: 560px;
-		padding: 3dvh 0 var(--space-lg);
+		padding: 3svh 0 var(--space-lg);
 		gap: var(--space-sm);
 		margin: 0 auto;
 		box-sizing: border-box;

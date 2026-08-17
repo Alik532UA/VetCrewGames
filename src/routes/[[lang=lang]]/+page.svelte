@@ -1,17 +1,28 @@
 <script lang="ts">
+	import { dev } from '$app/environment';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
+	import { MENU_GAMES } from '$lib/config/menu-games';
+	import { MENU_POOL } from '$lib/services/randomGame';
+	import FlatGameMenu from '$lib/components/FlatGameMenu.svelte';
 
 	/**
-	 * Головне меню: три розділи замість переліку ігор.
+	 * Головне меню — РІЗНЕ в роботі й у збірці для людей.
 	 *
-	 * Доти тут лежали всі шість ігор поспіль, і список ріс із кожною новою.
-	 * Тепер меню називає ВИДИ занять, а не їхню кількість: заповідник —
-	 * симулятор, вікторина — п'ять міні-ігор, «Знайди пару» — окрема гра зі
-	 * своєю спільною партією.
+	 * У робочій версії тут три розділи: заповідник, вікторина, «Знайди пару». Це
+	 * та структура, до якої гра йде, — з режимами «грати з друзями» й «грати
+	 * онлайн» усередині кожного.
 	 *
-	 * Адреси самих ігор не змінилися: змінився шлях кліками, а не URL.
+	 * У збірці для людей — плоский перелік: випадкова гра й шість готових ігор.
+	 * Причина не в естетиці: режимів, які обіцяють розділи, ще немає, і кожен
+	 * зайвий рівень вкладеності відводить від того, що працює. Гість, який
+	 * прийшов пограти, не мусить проходити через меню, за яким два вимкнені
+	 * пункти й тост «скоро буде».
+	 *
+	 * Адреси при цьому НЕ змінюються: розділи лишаються за своїми URL і в
+	 * продакшні — просто на них не ведуть кнопки. Прибирати маршрути означало б
+	 * ламати посилання, які вже могли комусь піти.
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
 
@@ -28,31 +39,35 @@
 </script>
 
 <div class="menu-page">
-	<nav class="menu-grid">
-		<a
-			href={langPath(lang, 'reserve')}
-			class="menu-btn menu-btn--game anim-stagger-1"
-			data-testid="menu-reserve-link"
-		>
-			{@html formatFont(t('menu.reserve'))}
-		</a>
+	{#if dev}
+		<nav class="menu-grid">
+			<a
+				href={langPath(lang, 'reserve')}
+				class="menu-btn menu-btn--game anim-stagger-1"
+				data-testid="menu-reserve-link"
+			>
+				{@html formatFont(t('menu.reserve'))}
+			</a>
 
-		<a
-			href={langPath(lang, 'quiz')}
-			class="menu-btn menu-btn--game anim-stagger-2"
-			data-testid="menu-quiz-link"
-		>
-			{@html formatFont(t('menu.quiz'))}
-		</a>
+			<a
+				href={langPath(lang, 'quiz')}
+				class="menu-btn menu-btn--game anim-stagger-2"
+				data-testid="menu-quiz-link"
+			>
+				{@html formatFont(t('menu.quiz'))}
+			</a>
 
-		<a
-			href={langPath(lang, 'pairs')}
-			class="menu-btn menu-btn--game anim-stagger-3"
-			data-testid="menu-pairs-link"
-		>
-			{@html formatFont(t('menu.game.memory'))}
-		</a>
-	</nav>
+			<a
+				href={langPath(lang, 'pairs')}
+				class="menu-btn menu-btn--game anim-stagger-3"
+				data-testid="menu-pairs-link"
+			>
+				{@html formatFont(t('menu.game.memory'))}
+			</a>
+		</nav>
+	{:else}
+		<FlatGameMenu {lang} games={MENU_GAMES} pool={MENU_POOL} />
+	{/if}
 
 	<div class="menu-links">
 		{#each links as link (link.key)}

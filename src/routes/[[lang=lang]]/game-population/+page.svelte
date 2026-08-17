@@ -539,7 +539,7 @@
 		width: 95%;
 		max-width: 600px;
 		padding: var(--space-md) 0;
-		gap: clamp(var(--space-xs), 2dvh, var(--space-lg));
+		gap: clamp(var(--space-xs), 2svh, var(--space-lg));
 		margin: 0 auto;
 	}
 	@media (min-width: 769px) {

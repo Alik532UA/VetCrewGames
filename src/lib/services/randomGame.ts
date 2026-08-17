@@ -36,6 +36,26 @@ export const PLAYABLE_ROUTES = (Object.keys(LANGUAGE_ROUTES) as RouteRest[]).fil
 	(route): route is Exclude<RouteRest, ''> => !NOT_A_GAME.has(route)
 );
 
-export function pickRandomRoute(random: () => number = Math.random): Exclude<RouteRest, ''> {
-	return PLAYABLE_ROUTES[Math.floor(random() * PLAYABLE_ROUTES.length)];
+/**
+ * Те саме плюс «Знайди пару» — для головного меню збірки для людей.
+ *
+ * Там усі шість ігор стоять рівними пунктами, тож і випадкова гра мусить давати
+ * будь-яку з шести. Усередині вікторини «Знайди пару» лишається за межами: у неї
+ * власний розділ.
+ */
+export const MENU_POOL: readonly Exclude<RouteRest, ''>[] = [...PLAYABLE_ROUTES, 'game-memory'];
+
+/**
+ * Набір — ПАРАМЕТР, а не модульна стала.
+ *
+ * У вікторині випадкова гра пропонує її пʼятірку; у головному меню збірки для
+ * людей — усі шість, разом зі «Знайди пару», бо там вона стоїть поруч рівним
+ * пунктом. Один список на два різні обіцяння давав би або зайву гру, або
+ * відсутню.
+ */
+export function pickRandomRoute(
+	random: () => number = Math.random,
+	pool: readonly Exclude<RouteRest, ''>[] = PLAYABLE_ROUTES
+): Exclude<RouteRest, ''> {
+	return pool[Math.floor(random() * pool.length)];
 }
