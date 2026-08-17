@@ -19,9 +19,16 @@
 		onRematch?: () => void;
 		/** Закрити кімнату назовсім. Так само лише господар. */
 		onClose?: () => void;
+		/**
+		 * Забрати чергу в того, хто зник. `undefined` — ще не час або не мені.
+		 *
+		 * Кнопка з'являється лише коли межа очікування вийшла: доки суперник на
+		 * звʼязку, нікого не підганяють.
+		 */
+		onYield?: () => void;
 	}
 
-	let { match, me, online, onRematch, onClose }: Props = $props();
+	let { match, me, online, onRematch, onClose, onYield }: Props = $props();
 
 	/** Скільки пар зібрав кожен: рахунок живе в правилах, не в кімнаті. */
 	const scoreOf = (uid: string) => match.game.players.find((p) => p.id === uid)?.score ?? 0;
@@ -56,6 +63,24 @@
 			{@html formatFont(t('pairs.waitingFor'))}: {match.actor?.name ?? '—'}
 		{/if}
 	</p>
+
+	<!--
+		«Суперник відпав» — кнопка, а не автоматика.
+
+		Присутність гасне сама, але вона НЕ лежить у журналі ходів, отже не має права
+		змінювати стан партії: інакше дошки розійшлися б залежно від того, чий сокет
+		обірвався першим. Тому забрати чергу — це звичайний хід, який робить людина
+		й однаково перевіряють усі. Підпис називає причину: людина мусить розуміти,
+		чому ця кнопка взагалі є.
+	-->
+	{#if onYield}
+		<div class="board__stall text-panel" data-testid="pairs-stall-panel">
+			<span>{@html formatFont(t('pairs.opponentGone'))}</span>
+			<button type="button" class="chip" onclick={onYield} data-testid="pairs-yield-btn">
+				{@html formatFont(t('pairs.takeTurn'))}
+			</button>
+		</div>
+	{/if}
 
 	{#if match.game.gameOver}
 		<!--
@@ -137,6 +162,15 @@
 		align-items: center;
 		gap: var(--space-sm);
 		width: 100%;
+	}
+
+	.board__stall {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
+		font-size: var(--font-size-sm);
 	}
 
 	.board__over {

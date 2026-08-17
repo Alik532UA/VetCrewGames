@@ -42,6 +42,8 @@ export const ui = {
 	'pairs.oldVersion': 'Das Spiel wurde aktualisiert. Ladet die Seite neu — beide.',
 	'pairs.rulesMissing': 'Gemeinsames Spielen ist auf dem Server noch nicht aktiviert.',
 	'pairs.netFailed': 'Beitritt zum Raum fehlgeschlagen. Bitte erneut versuchen.',
+	'pairs.opponentGone': 'Die Gegenseite spielt schon lange nicht.',
+	'pairs.takeTurn': 'Zug übernehmen',
 	'menu.comingSoon': 'Noch in Arbeit',
 	'menu.game.population': 'Wer ist häufiger?',
 	'menu.game.habitat': 'Wo leben sie?',

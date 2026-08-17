@@ -17,10 +17,28 @@ export class LocalRoom {
 	#members: Member[];
 	#moves: Move[] = [];
 	#listeners = new Set<(snapshot: RoomSnapshot) => void>();
+	/**
+	 * «Серверний» час кімнати. Не `Date.now()`: правило межі очікування залежить
+	 * від часу, а перевірка, яка залежить від справжнього годинника, або чекає
+	 * реальні секунди, або зеленіє випадково. Тест рухає час `tick()`.
+	 */
+	#now: number;
 
-	constructor(info: RoomInfo, members: Member[]) {
+	constructor(info: RoomInfo, members: Member[], startAt = 1_000_000) {
 		this.#info = info;
 		this.#members = members;
+		this.#now = startAt;
+		// Партія, яка вже `playing`, мусить мати позначку початку — інакше межа
+		// очікування першого ходу не має від чого рахуватися.
+		if (info.status === 'playing' && info.startedAt === undefined) {
+			this.#info = { ...info, startedAt: startAt };
+		}
+	}
+
+	/** Просунути «серверний» час кімнати. Повертає нове значення. */
+	tick(ms: number): number {
+		this.#now += ms;
+		return this.#now;
 	}
 
 	/**
@@ -54,21 +72,27 @@ export class LocalRoom {
 					if (value === undefined) throw new Error(`move.${key} is undefined`);
 				}
 				if (this.#moves.some((existing) => existing.seq === move.seq)) return false;
-				this.#moves.push(move);
+				// Час ставить «сервер», а не той, хто надіслав хід, — рівно як
+				// правило бази, що вимагає позначку у вікні навколо серверного часу.
+				// Тому підроблений `at` тут так само нічого не означає.
+				this.#moves.push({ ...move, at: this.#now });
 				this.#moves.sort((a, b) => a.seq - b.seq);
 				this.#emit();
 				return true;
 			},
 
 			setStatus: async (status) => {
-				this.#info = { ...this.#info, status };
+				this.#info =
+					status === 'playing'
+						? { ...this.#info, status, startedAt: this.#now }
+						: { ...this.#info, status };
 				this.#emit();
 			},
 
 			restart: async (seed) => {
 				// Обидві половини одночасно, як і в справжній базі.
 				this.#moves = [];
-				this.#info = { ...this.#info, seed, status: 'playing' };
+				this.#info = { ...this.#info, seed, status: 'playing', startedAt: this.#now };
 				this.#emit();
 			}
 		};

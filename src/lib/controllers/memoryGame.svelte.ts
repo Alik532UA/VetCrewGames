@@ -176,9 +176,30 @@ export class MemoryGameController {
 	 */
 	resolvePeek(): void {
 		if (!this.awaitingPeek) return;
+		this.#hidePeek();
+		this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+	}
+
+	/**
+	 * Передати хід, не розігравши його.
+	 *
+	 * Потрібне лише спільній партії: той, чия черга, зник, і межа очікування
+	 * вийшла. Правила часу не знають — межу відміряв журнал ходів, а тут лишається
+	 * сам перехід.
+	 *
+	 * **Відкрите закривається.** Гравець, який пішов, міг устигнути відкрити одну
+	 * картку — і вона лежала б відкритою для суперника задарма. Тобто очікування
+	 * стало б способом підглянути.
+	 */
+	passTurn(): void {
+		if (this.gameOver || this.players.length < 2) return;
+		this.#hidePeek();
+		this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+	}
+
+	#hidePeek(): void {
 		for (const index of this.#peek) this.slots[index].faceUp = false;
 		this.#peek = [];
-		this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
 	}
 
 	#takePair(first: number, second: number): void {

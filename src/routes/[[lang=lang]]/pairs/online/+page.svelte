@@ -4,7 +4,7 @@
 	import { browser } from '$app/environment';
 	import { storage } from '$lib/services/storage';
 	import { page } from '$app/state';
-	import { t, formatFont } from '$lib/i18n';
+	import { t } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
@@ -12,6 +12,7 @@
 	import { layoutForViewport } from '$lib/config/memory-game';
 	import { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 	import type { Role } from '$lib/net/roomTypes';
+	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 
@@ -32,8 +33,23 @@
 	/** Скільки видно невдалу пару, перш ніж її оголосять закритою. */
 	const PEEK_MS = 1200;
 
-	/** Версія ПРАВИЛ цієї гри. Різні версії в кімнату не пускають. */
-	const RULES_VERSION = 1;
+	/**
+	 * Версія ПРАВИЛ цієї гри. Різні версії в кімнату не пускають.
+	 *
+	 * 1 → 2: у ході з'явився серверний час (`at`), у кімнаті — позначка початку
+	 * партії (`startedAt`), і на них стоїть межа очікування. Стара збірка пише ходи
+	 * без часу — правило бази їх відкидає, тож змішувати версії не можна, і саме
+	 * для цього поле й існує: відмова зайти замість тихо зламаної партії.
+	 */
+	const RULES_VERSION = 2;
+
+	/**
+	 * Як часто оновлювати годинник для межі очікування.
+	 *
+	 * Секунда тут не про плавність, а про те, що інтервал існує ЛИШЕ поки хтось
+	 * чекає на чужий хід (див. `$effect` нижче): у решту часу таймера немає взагалі.
+	 */
+	const CLOCK_MS = 1000;
 
 	let match = $state<PairsMatch | null>(null);
 	let code = $state('');
@@ -43,6 +59,10 @@
 	let online = $state<string[]>([]);
 	let busy = $state(false);
 	let stops: Array<() => void> = [];
+	/** Годинник сторінки. Контролер часу не питає — йому його передають. */
+	let clock = $state(Date.now());
+	/** Скасувати домовленість «зникла вкладка господаря — зникла кімната». */
+	let releaseHold: (() => void) | null = null;
 
 	const myRole = $derived<Role>(
 		match?.members.find((member) => member.uid === me)?.role ?? 'player'
@@ -138,8 +158,27 @@
 
 			const started = new PairsMatch(me, transport);
 			stops.push(started.listen());
-			stops.push(await net.trackPresence(code));
-			stops.push(await net.watchPresence(code, (uids) => (online = uids)));
+
+			// Присутність — окремий модуль: інша природа записів (їх прибирає сервер),
+			// і в кімнаті вони не живуть навмисно.
+			const live = await import('$lib/net/presence');
+			stops.push(await live.trackPresence(code));
+			stops.push(await live.watchPresence(code, (uids) => (online = uids)));
+
+			/*
+			 * Кімната, у яку ніхто не зайшов, зникає разом із вкладкою господаря.
+			 *
+			 * Це закриває найчастіший випадок покинутого сміття: створив кімнату, нікого
+			 * не дочекався, закрив вкладку. Прибирає сервер (`onDisconnect`), і нових
+			 * прав для цього не потрібно — господар і так може знести свою кімнату. Тому
+			 * тут немає «зачистки старих кімнат при вході», яка вимагала б права
+			 * видаляти ЧУЖЕ (CLOUD-DATABASE-v8 § 9.3).
+			 */
+			if (action === 'create') {
+				releaseHold = await live.holdRoom(code);
+				stops.push(() => releaseHold?.());
+			}
+
 			match = started;
 		} catch (error) {
 			/*
@@ -170,6 +209,30 @@
 		}
 		const net = await import('$lib/net/rtdbRoom');
 		await (await net.roomTransport(code)).setStatus('playing');
+		/*
+		 * Партія почалася — домовленість «зникла вкладка, зникла кімната»
+		 * скасовується. Обрив звʼязку посеред гри не має нищити партію, у яку ще
+		 * хочуть повернутися.
+		 */
+		releaseHold?.();
+		releaseHold = null;
+	}
+
+	/**
+	 * Забрати чергу в того, хто зник.
+	 *
+	 * Час беремо з годинника сторінки, а контролер уже перевіряє, чи вийшла межа.
+	 * Остаточне слово однаково не за сторінкою: законність цього ходу перевіряють
+	 * усі учасники за серверними позначками з журналу.
+	 */
+	async function takeTurn() {
+		if (!match) return;
+		try {
+			await match.yieldTurn(Date.now());
+		} catch (error) {
+			toast.error('pairs.actionFailed');
+			logService.error('network', 'yield failed', error);
+		}
 	}
 
 	/**
@@ -228,6 +291,23 @@
 		return () => clearTimeout(timer);
 	});
 
+	/**
+	 * Годинник — лише поки на нього чекають.
+	 *
+	 * `yieldReadyAt` віддає `null`, коли межа очікування незастосовна (моя черга,
+	 * глядач, партія скінчилася), — і тоді інтервалу немає взагалі. Секундний
+	 * таймер, що цокає всю партію, тут був би витратою батареї на нічого.
+	 */
+	$effect(() => {
+		if (!browser || match?.yieldReadyAt === null || match?.yieldReadyAt === undefined) return;
+		clock = Date.now();
+		const timer = setInterval(() => (clock = Date.now()), CLOCK_MS);
+		return () => clearInterval(timer);
+	});
+
+	/** Кнопка «забрати чергу» існує лише коли межа вже вийшла. */
+	const canTakeTurn = $derived(Boolean(match?.canYieldAt(clock)));
+
 	onMount(() => {
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
@@ -249,49 +329,13 @@
 
 <div class="online-page">
 	{#if !match}
-		<div class="gate">
-			<label class="gate__field">
-				<span>{@html formatFont(t('pairs.yourName'))}</span>
-				<input
-					type="text"
-					bind:value={name}
-					maxlength="24"
-					placeholder={t('memory.you')}
-					data-testid="pairs-name-input"
-				/>
-			</label>
-
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={() => enter('create')}
-				aria-disabled={busy}
-				data-testid="pairs-create-btn"
-			>
-				{@html formatFont(t('pairs.createRoom'))}
-			</button>
-
-			<label class="gate__field">
-				<span>{@html formatFont(t('pairs.roomCode'))}</span>
-				<input
-					type="text"
-					bind:value={joinCode}
-					maxlength="5"
-					class="gate__code"
-					data-testid="pairs-code-input"
-				/>
-			</label>
-
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={() => enter('join')}
-				aria-disabled={busy || joinCode.trim().length < 5}
-				data-testid="pairs-join-btn"
-			>
-				{@html formatFont(t('pairs.joinRoom'))}
-			</button>
-		</div>
+		<OnlineGate
+			bind:name
+			bind:joinCode
+			{busy}
+			onCreate={() => enter('create')}
+			onJoin={() => enter('join')}
+		/>
 	{:else if match.status === 'lobby'}
 		<OnlineLobby
 			{code}
@@ -310,6 +354,7 @@
 			{online}
 			onRematch={amHost ? rematch : undefined}
 			onClose={amHost ? close : undefined}
+			onYield={canTakeTurn ? takeTurn : undefined}
 		/>
 	{/if}
 </div>
@@ -328,37 +373,4 @@
 		box-sizing: border-box;
 	}
 
-	.gate {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		width: 100%;
-		max-width: 22rem;
-		padding: var(--space-lg);
-		border-radius: var(--radius-md);
-		background: var(--color-bg-panel);
-	}
-
-	.gate__field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-xs);
-		font-size: var(--font-size-sm);
-	}
-
-	.gate__field input {
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--color-border);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-	}
-
-	/* Код диктують уголос і вводять великими: так його й показуємо. */
-	.gate__code {
-		text-transform: uppercase;
-		letter-spacing: 0.25em;
-	}
 </style>

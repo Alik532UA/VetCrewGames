@@ -42,6 +42,8 @@ export const ui = {
 	'pairs.oldVersion': 'The game has been updated. Reload the page — both of you.',
 	'pairs.rulesMissing': 'Shared play is not enabled on the server yet.',
 	'pairs.netFailed': 'Could not join the room. Please try again.',
+	'pairs.opponentGone': 'Your opponent has been idle for a while.',
+	'pairs.takeTurn': 'Take the turn',
 	'menu.comingSoon': 'Still in the works',
 	'menu.game.population': 'Who is more?',
 	'menu.game.habitat': 'Where do they live?',

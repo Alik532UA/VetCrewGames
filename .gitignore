@@ -18,6 +18,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Артефакти емулятора Firebase (npm run check:rules, npm run emulators).
+# Пишуться в корінь при кожному прогоні — і це рівно те, що PROJECT-STRUCTURE-v8
+# § 1 називає артефактом, який не комітиться.
+*-debug.log
+.firebase/
+firebase-debug.*.log
+
 # Системні файли
 .DS_Store
 Thumbs.db

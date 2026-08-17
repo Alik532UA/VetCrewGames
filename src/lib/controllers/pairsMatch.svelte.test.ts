@@ -10,6 +10,7 @@ const addScore = vi.fn();
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { addScore } }));
 
 const { PairsMatch } = await import('./pairsMatch.svelte');
+const { TURN_LIMIT_MS } = await import('./turnLimit');
 
 /**
  * Спільна партія «Знайди пару» — на двох учасниках в одному процесі.
@@ -478,6 +479,158 @@ describe('нова партія в тій самій кімнаті', () => {
 		expect(board(host), 'колода інша').not.toBe(before);
 		expect(board(guest), 'і однакова в обох').toBe(board(host));
 		expect(host.actor?.id, 'перший хід знову за першим').toBe(HOST);
+		stop();
+	});
+});
+
+/**
+ * Межа очікування: суперник зник, і партія не мусить висіти назавжди.
+ *
+ * Головне, що тут доводиться, — **присутність не впливає на стан партії**.
+ * Присутність гасне сама (`onDisconnect`) і не лежить у журналі, тож вона лише
+ * вмикає кнопку. Змінює стан рівно один хід — `yield`, — і його законність усі
+ * учасники перевіряють однаково, за серверними позначками часу з журналу.
+ *
+ * Час тут «серверний» і рухається `room.tick()`. Не `Date.now()`: перевірка, що
+ * залежить від справжнього годинника, або чекає реальні секунди, або зеленіє
+ * випадково.
+ */
+describe('суперник відпав', () => {
+	/** Трохи більше за межу — щоб перетин був однозначним. */
+	const PAST_LIMIT = TURN_LIMIT_MS + 1000;
+
+	it('до часу забрати чергу не можна — і кнопки немає', async () => {
+		const { room, host, guest, stop } = table();
+		// Хід за господарем, чекає гість.
+		expect(host.actor?.id).toBe(HOST);
+
+		room.tick(TURN_LIMIT_MS - 1000);
+		expect(guest.canYieldAt(room.tick(0)), 'межа ще не вийшла').toBe(false);
+
+		await guest.yieldTurn(room.tick(0));
+		expect(room.moves, 'зарано — ходу немає').toHaveLength(0);
+		expect(host.actor?.id, 'черга не зрушила').toBe(HOST);
+		stop();
+	});
+
+	it('після межі чергу забирають — і однаково в обох', async () => {
+		const { room, host, guest, stop } = table();
+
+		const now = room.tick(PAST_LIMIT);
+		expect(guest.canYieldAt(now), 'межа вийшла').toBe(true);
+
+		await guest.yieldTurn(now);
+
+		expect(host.actor?.id, 'черга перейшла до того, хто чекав').toBe(GUEST);
+		expect(guest.actor?.id, 'і так само в другого').toBe(GUEST);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('свою чергу віддати не можна: це був би спосіб пропустити невигідний хід', async () => {
+		const { room, host, stop } = table();
+		const now = room.tick(PAST_LIMIT);
+
+		expect(host.canYieldAt(now), 'моя черга — кнопки немає').toBe(false);
+		await host.yieldTurn(now);
+		expect(room.moves).toHaveLength(0);
+		stop();
+	});
+
+	it('дописаний напряму yield до часу відкидають обидва', async () => {
+		// Кнопки немає, але запис у журнал можна зробити руками. Правила
+		// застосування мусять відкинути такий хід у ВСІХ, а не лише в UI.
+		const { room, host, guest, stop } = table();
+		room.tick(1000);
+
+		await room.transport().append({ seq: 1, by: GUEST, type: 'yield' });
+
+		expect(host.actor?.id, 'черга не зрушила').toBe(HOST);
+		expect(guest.actor?.id).toBe(HOST);
+		expect(host.applied, 'номер журналу зайнято — хід просто нічого не означає').toBe(1);
+		stop();
+	});
+
+	it('глядач чергу не забирає', async () => {
+		const watcher: Member = { uid: WATCHER, name: 'Глядач', role: 'spectator', order: 3 };
+		const { room, host, stop } = table([watcher]);
+		const eye = new PairsMatch(WATCHER, room.transport());
+		const off = eye.listen();
+
+		const now = room.tick(PAST_LIMIT);
+		expect(eye.canYieldAt(now), 'глядач у черзі не стоїть').toBe(false);
+
+		await room.transport().append({ seq: 1, by: WATCHER, type: 'yield' });
+		expect(host.actor?.id, 'черга не зрушила').toBe(HOST);
+
+		off();
+		stop();
+	});
+
+	it('відкрита картка того, хто пішов, закривається — очікування не спосіб підглянути', async () => {
+		const { room, host, guest, stop } = table();
+		const [a] = findMismatch(host);
+		await host.flip(a);
+		expect(host.game.slots[a].faceUp, 'картку відкрито').toBe(true);
+
+		await guest.yieldTurn(room.tick(PAST_LIMIT));
+
+		expect(host.game.slots[a].faceUp, 'і закрито разом із передачею черги').toBe(false);
+		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	it('сміттєві ходи НЕ подовжують очікування', async () => {
+		/*
+		 * Дірка, яку це закриває. Номер у журналі займає будь-який учасник: правило
+		 * бази дозволяє створити хід, підписаний своїм uid, а законність перевіряють
+		 * уже правила гри. Якби відлік зсував кожен доданий хід, глядач міг би
+		 * дописувати сміття раз на хвилину — і той, чий партнер зник, не забрав би
+		 * чергу НІКОЛИ.
+		 */
+		const watcher: Member = { uid: WATCHER, name: 'Глядач', role: 'spectator', order: 3 };
+		const { room, guest, stop } = table([watcher]);
+
+		room.tick(PAST_LIMIT - 1000);
+		// Глядач дописує щось своє — законним ходом це не є.
+		await room.transport().append({ seq: 1, by: WATCHER, type: 'flip', payload: { index: 0 } });
+		const now = room.tick(1000);
+
+		expect(guest.canYieldAt(now), 'межа все одно вийшла').toBe(true);
+		await guest.yieldTurn(now);
+		expect(guest.actor?.id, 'чергу забрано').toBe(GUEST);
+		stop();
+	});
+
+	it('відлік першої черги йде від початку партії, а не від нуля', async () => {
+		// Суперник, який зайшов у кімнату й одразу зник, інакше тримав би першу
+		// чергу назавжди: межі очікування не було б від чого рахувати.
+		const { room, guest, stop } = table();
+		expect(guest.turnSince, 'позначка початку партії є').not.toBeNull();
+		expect(guest.yieldReadyAt).toBe((guest.turnSince ?? 0) + TURN_LIMIT_MS);
+		expect(guest.canYieldAt(room.tick(PAST_LIMIT))).toBe(true);
+		stop();
+	});
+
+	it('після власного ходу відлік починається заново', async () => {
+		const { room, host, guest, stop } = table();
+		room.tick(PAST_LIMIT);
+
+		// Господар усе-таки зіграв — отже, він на місці.
+		const [a, b] = findPair(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		expect(guest.canYieldAt(room.tick(0)), 'відлік зсунувся на щойно зроблений хід').toBe(false);
+		stop();
+	});
+
+	it('у кімнаті партія скінчилася — забирати нічого', async () => {
+		const { room, host, guest, stop } = table();
+		await room.transport().setStatus('over');
+		expect(guest.yieldReadyAt, 'межа незастосовна').toBeNull();
+		expect(guest.canYieldAt(room.tick(PAST_LIMIT))).toBe(false);
+		expect(host.status).toBe('over');
 		stop();
 	});
 });

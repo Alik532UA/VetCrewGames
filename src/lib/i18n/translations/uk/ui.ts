@@ -42,6 +42,8 @@ export const ui = {
 	'pairs.oldVersion': 'Гра оновилася. Перезавантажте сторінку — і ви, і суперник.',
 	'pairs.rulesMissing': 'Спільна гра ще не ввімкнена на сервері.',
 	'pairs.netFailed': 'Не вдалося зайти в кімнату. Спробуйте ще раз.',
+	'pairs.opponentGone': 'Суперник довго не грає.',
+	'pairs.takeTurn': 'Забрати хід',
 	'menu.comingSoon': 'Ще в розробці',
 	'menu.game.population': 'Кого більше?',
 	'menu.game.habitat': 'Де живем?',

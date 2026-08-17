@@ -1,5 +1,6 @@
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
 import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import { isYieldLegal, yieldReadyAt, type TurnState } from './turnLimit';
 
 /**
  * Спільна партія «Знайди пару»: журнал ходів → правила гри.
@@ -36,6 +37,16 @@ export class PairsMatch {
 	 * Знайдено живим прогоном із трьома учасниками.
 	 */
 	hostUid = $state('');
+
+	/**
+	 * Серверний час, від якого йде відлік поточної черги.
+	 *
+	 * Це `at` останнього застосованого ходу, а на початку партії — `startedAt`
+	 * кімнати. Обидві позначки ставить сервер, тож усі учасники рахують межу
+	 * очікування від того самого числа. `null` означає «межі ще немає»: партія не
+	 * почалася або кімнату створила збірка, старша за це поле.
+	 */
+	turnSince = $state<number | null>(null);
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -111,7 +122,41 @@ export class PairsMatch {
 		await this.#send('peek');
 	}
 
-	async #send(type: string, payload?: Record<string, number>): Promise<void> {
+	/** Стан черги для `turnLimit`: одне джерело і для кнопки, і для застосування. */
+	get #turnState(): TurnState {
+		return {
+			actorId: this.actor?.id,
+			playerIds: this.players.map((player) => player.uid),
+			turnSince: this.turnSince
+		};
+	}
+
+	/** Коли чергу можна буде забрати — серверним часом; `null` — не можна. */
+	get yieldReadyAt(): number | null {
+		return yieldReadyAt(this.#me, this.#turnState);
+	}
+
+	/** Чи вже можна забрати чергу, якщо на годиннику `now`. */
+	canYieldAt(now: number): boolean {
+		const ready = this.yieldReadyAt;
+		return ready !== null && now >= ready;
+	}
+
+	/**
+	 * Забрати чергу в того, хто зник.
+	 *
+	 * **Це ХІД, а не місцева дія, і саме тому воно працює.** Присутність гасне сама
+	 * (`onDisconnect`), але вона не лежить у журналі — отже, не має права впливати
+	 * на стан партії, інакше дошки розійшлися б залежно від того, чий сокет
+	 * обірвався першим. «Суперник відпав» не змінює нічого сам: він лише вмикає
+	 * кнопку. Умови законності — у `turnLimit.ts`.
+	 */
+	async yieldTurn(now: number): Promise<void> {
+		if (!this.canYieldAt(now)) return;
+		await this.#send('yield');
+	}
+
+	async #send(type: string, payload?: Record<string, number | string>): Promise<void> {
 		/*
 		 * Поля `payload` НЕМАЄ, коли даних немає, — а не `undefined`.
 		 *
@@ -156,8 +201,18 @@ export class PairsMatch {
 			// Пропуск у нумерації означає, що хід ще не приїхав. Чекаємо: застосувати
 			// наступний означало б зіграти партію в іншому порядку, ніж сусід.
 			if (move.seq !== this.applied + 1) break;
-			this.#play(move);
+			const changed = this.#play(move);
 			this.applied = move.seq;
+			/*
+			 * Відлік черги зсуває лише хід, який СПРАВДІ щось змінив.
+			 *
+			 * Це не оптимізація, а закриття дірки. Номер у журналі займає будь-який
+			 * учасник, включно з глядачем: правило бази дозволяє створити хід,
+			 * підписаний своїм uid, а законність його вже перевіряють правила гри. Якби
+			 * відлік зсував кожен доданий хід, глядач міг би дописувати сміття раз на
+			 * хвилину — і суперник, чий партнер зник, не забрав би чергу НІКОЛИ.
+			 */
+			if (changed && move.at !== undefined) this.turnSince = move.at;
 		}
 	}
 
@@ -180,6 +235,12 @@ export class PairsMatch {
 			players: players.length > 0 ? players : undefined
 		});
 		this.applied = 0;
+		/*
+		 * Відлік першої черги — від позначки початку партії, поставленої сервером.
+		 * Без неї суперник, який зайшов у кімнату й одразу зник, тримав би першу
+		 * чергу назавжди: межа очікування не мала б від чого рахуватися.
+		 */
+		this.turnSince = snapshot.info.startedAt ?? null;
 		this.#dealt = JSON.stringify({
 			seed: snapshot.info.seed,
 			config: snapshot.info.config,
@@ -187,10 +248,25 @@ export class PairsMatch {
 		});
 	}
 
-	/** Застосувати один хід. Тут — і тільки тут — міняється дошка. */
-	#play(move: Move): void {
+	/**
+	 * Застосувати один хід. Тут — і тільки тут — міняється дошка.
+	 *
+	 * Повертає `true`, якщо хід справді щось змінив. За цим — і лише за цим —
+	 * зсувається відлік черги: інакше сміттєвий хід від будь-кого в кімнаті
+	 * подовжував би очікування (див. `#apply`).
+	 */
+	#play(move: Move): boolean {
+		// `yield` — єдиний хід, який робить НЕ той, чия черга, тож він стоїть вище
+		// загальної перевірки. Умови законності — у `turnLimit.ts`, і вони спираються
+		// лише на журнал, тож рішення в усіх учасників збігається.
+		if (move.type === 'yield') {
+			if (!isYieldLegal(move, this.#turnState)) return false;
+			this.game.passTurn();
+			return true;
+		}
+
 		// Хід не від того, чия черга, не означає нічого — однаково в усіх.
-		if (move.by !== this.game.current?.id) return;
+		if (move.by !== this.game.current?.id) return false;
 
 		/*
 		 * Відкриття, коли дошка чекає на перегортання, не означає нічого — і це не
@@ -201,12 +277,18 @@ export class PairsMatch {
 		 * дісталася б уже СУПЕРНИКОВІ. Дописати такий хід у журнал може будь-хто
 		 * напряму, тож відкидати його мусять усі однаково.
 		 */
-		if (move.type === 'flip' && this.game.awaitingPeek) return;
+		if (move.type === 'flip' && this.game.awaitingPeek) return false;
 
 		if (move.type === 'flip' && typeof move.payload?.index === 'number') {
-			this.game.flip(move.payload.index);
-			return;
+			return this.game.flip(move.payload.index);
 		}
-		if (move.type === 'peek') this.game.resolvePeek();
+		if (move.type === 'peek') {
+			if (!this.game.awaitingPeek) return false;
+			this.game.resolvePeek();
+			return true;
+		}
+		// Невідомий тип ходу — від новішої збірки або від чужих рук. Нічого не
+		// означає, і відлік черги не зсуває.
+		return false;
 	}
 }

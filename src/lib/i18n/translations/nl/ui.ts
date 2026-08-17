@@ -42,6 +42,8 @@ export const ui = {
 	'pairs.oldVersion': 'Het spel is bijgewerkt. Herlaad de pagina — jullie beiden.',
 	'pairs.rulesMissing': 'Samen spelen is nog niet ingeschakeld op de server.',
 	'pairs.netFailed': 'Kon niet in de ruimte komen. Probeer het opnieuw.',
+	'pairs.opponentGone': 'De tegenstander speelt al een tijd niet.',
+	'pairs.takeTurn': 'Zet overnemen',
 	'menu.comingSoon': 'Nog in ontwikkeling',
 	'menu.game.population': 'Wie komt vaker voor?',
 	'menu.game.habitat': 'Waar wonen ze?',

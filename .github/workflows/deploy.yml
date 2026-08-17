@@ -77,6 +77,51 @@ jobs:
         with:
           path: 'build/'
 
+  # Правила доступу до бази — ЄДИНА межа безпеки спільної гри, і єдина частина
+  # проєкту, стан якої не видно ні в `src/`, ні у `build/`: вони виконуються на
+  # боці Firebase (CLOUD-DATABASE-v8 § 3.4). Тому окремий джоб із емулятором:
+  # решта гейтів проходить однаково і на правильних правилах, і на «дозволити
+  # все».
+  #
+  # Окремий джоб, а не крок у `build_site`, із двох причин: емулятор вимагає Java
+  # (тобто ще один setup у критичному шляху деплою) і йому не потрібна збірка.
+  # Так деплой не чекає на емулятор, а правила все одно перевіряються на кожному
+  # пуші.
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # Емулятор Realtime Database — java-процес. Без цього кроку `emulators:exec`
+      # падає з «java not found», і це виглядає як зламані правила.
+      - name: Install Java for the database emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Половина випадків «дозволено», половина «заборонено»: правила «дозволити
+      # все» валять другу половину, «заборонити все» — першу. Скрипт сам падає,
+      # якщо один із наборів спорожнів, тобто перевірка не може виродитися в
+      # нічого.
+      #
+      # `firebase-tools` тут НЕ з devDependencies, а приїжджає через npx — див.
+      # причину в scripts/firebase-cli.mjs: його транзитивна залежність
+      # `superstatic` не приймає сучасний Node, а в проєкті стоїть
+      # `engine-strict=true`, тож devDependency ламала б `npm install` цілком.
+      - name: Check database rules
+        run: npm run check:rules
+
   deploy:
     needs: build_site
     runs-on: ubuntu-latest

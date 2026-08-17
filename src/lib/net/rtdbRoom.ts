@@ -7,22 +7,20 @@ import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } 
  * Форма даних:
  *
  * ```
- * rooms/{code}/info      { gameId, rulesVersion, seed, status, hostUid, config }
+ * rooms/{code}/info      { gameId, rulesVersion, seed, status, hostUid, config, startedAt }
  * rooms/{code}/members/{uid}  { name, role, order }
- * rooms/{code}/moves/{seq}    { seq, by, type, payload }
- * presence/{code}/{uid}       { at }      ← прибирається onDisconnect
+ * rooms/{code}/moves/{seq}    { seq, by, type, at, payload }
  * ```
  *
- * **Склад НЕ прибирається при обриві звʼязку.** Присутність — окрема гілка, і
- * саме вона гасне сама. Роздача колоди залежить від складу гравців, тож
- * прибрати учасника означало б перероздати дошку посеред партії — тобто
- * покарати всіх за чужий тунель у метро.
+ * **Склад НЕ прибирається при обриві звʼязку.** Присутність — окрема гілка й
+ * окремий модуль (`net/presence.ts`), і саме вона гасне сама. Роздача колоди
+ * залежить від складу гравців, тож прибрати учасника означало б перероздати
+ * дошку посеред партії — тобто покарати всіх за чужий тунель у метро.
  *
- * **Чому RTDB, а не Firestore.** Через `onDisconnect()`: вбудований механізм,
- * який сам гасить присутність, коли вкладку закрили. У грі на двох питання
- * «суперник вийшов чи просто думає» вирішує, чи партія зависне назавжди; у
- * Firestore такого немає, і офіційна порада — підключити поруч RTDB. Тобто
- * Firestore тут закінчився б ДВОМА базами.
+ * **`at` і `startedAt` ставить СЕРВЕР.** На цих двох позначках стоїть межа
+ * очікування чужого ходу (`controllers/turnLimit.ts`), і правило бази не дає
+ * записати час поза вікном навколо серверного. Інакше гравець оголошував би чужий
+ * хід простроченим коли завгодно й забирав чергу.
  */
 
 /** Літери коду: без 0/O і 1/I — їх диктують по телефону з помилками. */
@@ -155,7 +153,7 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */
 export async function roomTransport(code: string): Promise<RoomTransport> {
 	const { db } = await connect();
-	const { off, onValue, ref, set, update } = await import('firebase/database');
+	const { off, onValue, ref, serverTimestamp, set, update } = await import('firebase/database');
 	const room = ref(db, `rooms/${code}`);
 
 	return {
@@ -187,7 +185,15 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				// Ключ із нулями попереду: RTDB упорядковує рядки лексикографічно, і при
 				// однаковій довжині це те саме, що за числом. Без вирівнювання «10» став
 				// би між «1» і «2».
-				await set(ref(db, `rooms/${code}/moves/${String(move.seq).padStart(6, '0')}`), move);
+				//
+				// `at` ставить СЕРВЕР, і правило бази вимагає, щоб позначка лягла у вікно
+				// навколо серверного часу. Тому межу очікування ходу неможливо обійти
+				// підробленим числом: без цього гравець оголошував би чужий хід
+				// простроченим коли завгодно.
+				await set(ref(db, `rooms/${code}/moves/${String(move.seq).padStart(6, '0')}`), {
+					...move,
+					at: serverTimestamp()
+				});
 				return true;
 			} catch (error) {
 				/*
@@ -204,6 +210,18 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 		},
 
 		async setStatus(status: RoomStatus) {
+			/*
+			 * Початок партії — це ДВА поля й ОДИН запис.
+			 *
+			 * `startedAt` — те, від чого рахується очікування першого ходу. Двома
+			 * записами існувала б мить, у яку партія вже `playing`, а межі очікування
+			 * ще немає, — і суперник, який зник саме тоді, тримав би першу чергу
+			 * назавжди.
+			 */
+			if (status === 'playing') {
+				await update(ref(db, `rooms/${code}/info`), { status, startedAt: serverTimestamp() });
+				return;
+			}
 			await set(ref(db, `rooms/${code}/info/status`), status);
 		},
 
@@ -219,31 +237,4 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			await update(ref(db, `rooms/${code}`), { 'info/seed': seed, moves: null });
 		}
 	};
-}
-
-/**
- * Тримати присутність: поки вкладка жива — запис є, зникла — Firebase прибере
- * його сам. Це і є та причина, через яку тут RTDB, а не Firestore.
- */
-export async function trackPresence(code: string): Promise<() => void> {
-	const { uid, db } = await connect();
-	const { onDisconnect, ref, remove, serverTimestamp, set } = await import('firebase/database');
-	const mine = ref(db, `presence/${code}/${uid}`);
-
-	await onDisconnect(mine).remove();
-	await set(mine, { at: serverTimestamp() });
-
-	return () => void remove(mine);
-}
-
-/** Хто зараз на звʼязку. Підписка, бо це найшвидша частина стану. */
-export async function watchPresence(
-	code: string,
-	onChange: (online: string[]) => void
-): Promise<() => void> {
-	const { db } = await connect();
-	const { off, onValue, ref } = await import('firebase/database');
-	const branch = ref(db, `presence/${code}`);
-	const handler = onValue(branch, (snapshot) => onChange(Object.keys(snapshot.val() ?? {})));
-	return () => off(branch, 'value', handler);
 }
