@@ -13,9 +13,18 @@ import { cellOf, type Cell } from '$lib/reserve/grid';
  * Камера приходить ФУНКЦІЄЮ, а не значенням: `<Canvas>` створює її не одночасно з
  * розміткою, і посилання, взяте один раз, лишилося б `undefined` назавжди.
  */
+/**
+ * Що саме вибрано тапом.
+ *
+ * Двоє, а не одне: у вольєра тепер своє меню — міцність, ремонт, покращення, — і
+ * тицьнути в нього треба вміти НЕ через тварину. Доти промінь шукав лише
+ * тварину, тож порожній вольєр був на карті нічим: його видно, а взяти не можна.
+ */
+export type Pick = { kind: 'animal' | 'enclosure'; id: number };
+
 export interface Picker {
-	/** `id` тварини під точкою вікна; `null` — там її немає. */
-	animalAt(clientX: number, clientY: number): number | null;
+	/** Що під точкою вікна: тварина, вольєр або нічого. */
+	at(clientX: number, clientY: number): Pick | null;
 	/** Клітинка землі під точкою вікна; `null` — камери ще немає. */
 	cellAt(clientX: number, clientY: number): Cell | null;
 }
@@ -41,21 +50,30 @@ export function createPicker(
 		return lens;
 	};
 
-	/** Мешканця несе ГРУПА, а промінь влучає в меш — шукаємо вгору по батьках. */
-	const animalIdAt = (object: Object3D): number | null => {
+	/**
+	 * Мітку несе ГРУПА, а промінь влучає в меш — шукаємо вгору по батьках.
+	 *
+	 * Тварина ВСЕРЕДИНІ вольєра, тож її мітка трапляється раніше за вольєрну — і
+	 * саме тому тап по звірові дає звіра, а тап по паркану чи землі всередині дає
+	 * вольєр. Порядок перевірок у циклі тут ні до чого: жоден вузол не має обох
+	 * міток, вирішує глибина.
+	 */
+	const pickOf = (object: Object3D): Pick | null => {
 		for (let node: Object3D | null = object; node; node = node.parent) {
-			const id = node.userData?.animalId;
-			if (typeof id === 'number') return id;
+			const animal = node.userData?.animalId;
+			if (typeof animal === 'number') return { kind: 'animal', id: animal };
+			const pen = node.userData?.enclosureId;
+			if (typeof pen === 'number') return { kind: 'enclosure', id: pen };
 		}
 		return null;
 	};
 
 	return {
-		animalAt(clientX, clientY) {
+		at(clientX, clientY) {
 			if (!aim(clientX, clientY)) return null;
 			for (const hit of raycaster.intersectObjects(scene.children, true)) {
-				const id = animalIdAt(hit.object);
-				if (id !== null) return id;
+				const found = pickOf(hit.object);
+				if (found) return found;
 			}
 			return null;
 		},

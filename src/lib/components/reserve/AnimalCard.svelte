@@ -1,10 +1,17 @@
 <script lang="ts">
-	import { t, formatFont } from '$lib/i18n';
+	import { t, td, formatFont } from '$lib/i18n';
 	import { STRESS_BLOCKS_RELEASE } from '$lib/reserve/constants';
+	import { speciesById } from '$lib/reserve/species';
 	import type { Animal, ReserveCommand } from '$lib/reserve/types';
+	import MapCard from './MapCard.svelte';
 
 	/**
-	 * Картка мешканця: звідки він, як одужує, чи можна випустити.
+	 * Картка мешканця: хто це, звідки він, як одужує, чи можна випустити.
+	 *
+	 * У заголовку тепер ВИД, а не походження. Доти там стояло «Забрати з біди», і
+	 * картка не відповідала на перше питання, яке виникає в гравця: кого я тицьнув.
+	 * Відколи на карті стоять силуети, а не однакові капсули, назва виду — єдиний
+	 * спосіб звірити те, що видно, з тим, що написано.
 	 *
 	 * Кнопка випуску не ховається, коли випустити не можна. Заборона — це і є
 	 * урок гри: народжену в неволі не повернути, і людина має ПОБАЧИТИ, що така
@@ -13,28 +20,30 @@
 	interface Props {
 		animal: Animal;
 		onCommand: (command: ReserveCommand) => void;
+		/** Перейти до картки вольєра, у якому він живе. */
+		onEnclosure: (enclosureId: number) => void;
 		onClose: () => void;
 	}
 
-	let { animal, onCommand, onClose }: Props = $props();
+	let { animal, onCommand, onEnclosure, onClose }: Props = $props();
 
 	const percent = (value: number) => `${Math.round(value * 100)}%`;
 	const blocked = $derived(
 		animal.stage !== 'healthy' || !animal.releasable || animal.stress > STRESS_BLOCKS_RELEASE
 	);
+	/** Назва виду зі спільного словника: другий список імен розійшовся б із першим. */
+	const name = $derived(speciesById(animal.speciesId)?.nameKey);
 </script>
 
-<aside class="card" data-testid="reserve-animal-card">
-	<div class="card__head">
-		<h2 class="card__title">{@html formatFont(t(`reserve.origin.${animal.origin}` as const))}</h2>
-		<button
-			type="button"
-			class="card__close"
-			aria-label={t('common.close')}
-			onclick={onClose}
-			data-testid="reserve-card-close-btn">×</button
-		>
-	</div>
+<MapCard
+	title={name ? td(name) : t('reserve.animals')}
+	id="card:animal"
+	testid="reserve-animal-card"
+	{onClose}
+>
+	<p class="card__from" data-testid="reserve-card-origin-text">
+		{@html formatFont(t(`reserve.origin.${animal.origin}` as const))}
+	</p>
 
 	<p class="card__stage" data-testid="reserve-card-stage">
 		{@html formatFont(t(`reserve.stage.${animal.stage}` as const))}
@@ -60,6 +69,21 @@
 	{/if}
 
 	{#if animal.stage !== 'released'}
+		<!--
+			Шлях до сусідньої картки — в один тап. Вибір один на двох вікон, тож без
+			цієї кнопки дорога до міцності вольєра йшла б через тап по паркану, і ще
+			треба здогадатися, що він клікабельний.
+		-->
+		<button
+			type="button"
+			class="chip"
+			onclick={() => onEnclosure(animal.enclosureId)}
+			data-testid="reserve-card-enclosure-btn"
+		>
+			{@html formatFont(t('reserve.enclosure'))}
+			{animal.enclosureId}
+		</button>
+
 		<button
 			type="button"
 			class="btn-primary card__release"
@@ -71,43 +95,17 @@
 			{@html formatFont(t('reserve.release'))}
 		</button>
 	{/if}
-</aside>
+</MapCard>
 
 <style>
-	.card {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
-		width: 100%;
-		padding: var(--space-md);
-		border-radius: var(--radius-md);
-		background: var(--color-bg-panel);
-	}
-
-	.card__head {
-		display: flex;
-		gap: var(--space-sm);
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.card__title {
-		margin: 0;
-		font-size: var(--font-size-lg);
-	}
-
-	.card__close {
-		min-width: 44px;
-		min-height: 44px;
-		border-radius: var(--radius-sm);
-		color: inherit;
-		font-size: var(--font-size-lg);
-		cursor: pointer;
-	}
-
+	.card__from,
 	.card__stage {
 		margin: 0;
 		opacity: 0.8;
+	}
+
+	.card__from {
+		font-size: var(--font-size-sm);
 	}
 
 	.card__bars {
@@ -139,6 +137,16 @@
 		margin: 0;
 		color: var(--color-error);
 		font-size: var(--font-size-sm);
+	}
+
+	.chip {
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
 	}
 
 	.card__release {

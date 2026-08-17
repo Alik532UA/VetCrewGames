@@ -103,6 +103,8 @@ export const reserve = {
 	'reserve.map': 'Karte',
 	'reserve.quality': 'Qualität',
 	'reserve.durability': 'Zustand',
+	'reserve.resident': 'Bewohner',
+	'reserve.vacant': 'Dieses Gehege ist leer.',
 	'reserve.repair': 'Reparieren',
 	'reserve.upgrade': 'Qualität erhöhen',
 	'reserve.restart': 'Neu beginnen',

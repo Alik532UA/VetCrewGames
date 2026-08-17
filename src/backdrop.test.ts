@@ -47,7 +47,12 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	'src/lib/components/reserve/EnclosurePanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
 	'src/lib/components/reserve/StaffPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
 	'src/lib/components/reserve/TasksPanel.svelte': 'вміст висувної панелі, фон дає BottomSheet',
-	'src/lib/components/reserve/ContractsBlock.svelte': 'вміст висувної панелі, фон дає BottomSheet'
+	'src/lib/components/reserve/ContractsBlock.svelte': 'вміст висувної панелі, фон дає BottomSheet',
+	// Обидві картки вибраного на карті — це ВМІСТ `MapCard`, і фон дає він. У
+	// кожній з них `<MapCard>` — корінь розмітки, тож обіцянку видно з першого
+	// рядка шаблону, а не з чужого файлу.
+	'src/lib/components/reserve/AnimalCard.svelte': 'вміст картки на карті, фон дає MapCard',
+	'src/lib/components/reserve/EnclosureCard.svelte': 'вміст картки на карті, фон дає MapCard'
 };
 
 /** Глобальний клас підкладки з `lib/styles/global.css`. */

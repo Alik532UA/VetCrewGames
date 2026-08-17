@@ -16,6 +16,8 @@
 	interface Props {
 		/** Чи поруч є ПРИРОДНА вода: якщо ні, усередині доводиться копати свою. */
 		hasWater: boolean;
+		/** `id` самої будівлі: тап по паркану чи землі всередині відкриває ЇЇ меню. */
+		enclosureId: number;
 		animal: Animal | null;
 		x: number;
 		z: number;
@@ -24,7 +26,7 @@
 		selected: boolean;
 	}
 
-	let { hasWater, animal, x, z, span, selected }: Props = $props();
+	let { hasWater, enclosureId, animal, x, z, span, selected }: Props = $props();
 
 	/** Півсторона паркана у світових одиницях, із невеликим відступом усередину. */
 	const half = $derived(innerSpan(span) / 2);
@@ -40,7 +42,13 @@
 	const colour = $derived(selected ? '#ffd54f' : POST);
 </script>
 
-<T.Group position={[x + shift, 0, z + shift]} userData={{ animalId: animal?.id }}>
+<!--
+	Мітка вольєра — на цій групі, мітка тварини — на її власній, усередині.
+	Промінь шукає вгору по батьках і знаходить глибшу першою, тому тап по звірові
+	дає звіра, а тап по паркану — вольєр. Доти мітка тут була ОДНА (`animalId`), і
+	порожній вольєр не можна було вибрати взагалі.
+-->
+<T.Group position={[x + shift, 0, z + shift]} userData={{ enclosureId }}>
 	<!--
 		Невидима площина для влучання променем.
 		

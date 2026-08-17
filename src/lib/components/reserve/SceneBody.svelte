@@ -6,24 +6,23 @@
 	import { CELL, placeEnclosures } from './sceneLayout';
 	import { placementProblem, type PlacementProblem } from '$lib/reserve/placement';
 	import { createPicker } from './picking';
-	import { growInBatches } from './growInBatches.svelte';
-	import PlotBorder from './PlotBorder.svelte';
-
 	import { footprintOf, worldOf, type Cell } from '$lib/reserve/grid';
-	import { nearWater, terrainOf, WORLD_RADIUS } from '$lib/reserve/terrain';
-	import { GROUND_COLOR } from '$lib/reserve/palette';
-	import DecorPiece from './DecorPiece.svelte';
+	import { nearWater, terrainOf } from '$lib/reserve/terrain';
 	import EnclosureShape from './EnclosureShape.svelte';
-	import RiverRibbon from './RiverRibbon.svelte';
+	import SceneWorld from './SceneWorld.svelte';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
 
 	/**
-	 * Вміст сцени: земля біома, рельєф, вольєри — і жодної моделі тварини.
+	 * Те, з чим гравець ПРАЦЮЄ: камера, тапи, вольєри, привид майбутньої будівлі.
 	 *
-	 * Фігури тут ПРИМІТИВИ навмисно, і це не заглушка з ліні: проєкт забороняє
-	 * агентові вигадувати зображення тварин. Куб-вольєр і капсула на ньому чесно
-	 * кажуть «тут живе мешканець», нічого не вдаючи з себе.
+	 * Земля, річки й рельєф переїхали в `SceneWorld` — там немає жодного
+	 * оброблювача, і саме за цією ознакою пройшов розріз. Рельєф лишається тут
+	 * пропсом для обох: він потрібен і щоб намалювати ліс, і щоб знати, чи є біля
+	 * вольєра вода.
+	 *
+	 * Усі фігури — ПРИМІТИВИ: проєкт забороняє агентові вигадувати зображення
+	 * тварин. Силует мешканця складають конус, куля й циліндр — див. `anatomy.ts`.
 	 */
 	interface Props {
 		biome: ReserveBiome;
@@ -51,8 +50,15 @@
 		seed: number;
 		enclosures: Enclosure[];
 		animals: Animal[];
+		/** `id` вибраної тварини; підсвічує її вольєр. */
 		selectedId: number | null;
-		onSelect: (id: number) => void;
+		/** `id` вибраного ВОЛЬЄРА: у нього тепер своє меню, і його теж видно. */
+		selectedEnclosureId: number | null;
+		/**
+		 * Тап по карті. Вибір один на двох: узяти водночас і вольєр, і його мешканця
+		 * означало б два вікна на тому самому місці, і одне з них — під іншим.
+		 */
+		onSelect: (kind: 'animal' | 'enclosure', id: number) => void;
 	}
 
 	let {
@@ -63,6 +69,7 @@
 		enclosures,
 		animals,
 		selectedId,
+		selectedEnclosureId,
 		onSelect,
 		placingSize,
 		onGround,
@@ -110,8 +117,8 @@
 			if (cell) onGround(cell);
 			return;
 		}
-		const id = picker.animalAt(clientX, clientY);
-		if (id !== null) onSelect(id);
+		const found = picker.at(clientX, clientY);
+		if (found) onSelect(found.kind, found.id);
 	}
 
 	/*
@@ -191,15 +198,6 @@
 		};
 	});
 
-	/**
-	 * Рельєф виростає ПОРЦІЯМИ: шістсот сімдесят фігур одним махом блокували
-	 * головний потік на дві з половиною секунди — див. `growInBatches`.
-	 */
-	const growth = growInBatches(
-		() => terrain.items.length,
-		(done) => onProgress(done)
-	);
-
 	const placed = $derived(placeEnclosures(enclosures, animals));
 
 	/** Слід привида у світі: центр і сторона рахуються як у справжнього вольєра. */
@@ -217,15 +215,6 @@
 		};
 	});
 	const terrain = $derived(terrainOf(biome, seed));
-
-	/**
-	 * Земля рівно така, щоб укрити рельєф із запасом на два кроки.
-	 *
-	 * Удвічі більша за радіус рельєфу навмисно: карта не має ОБРИВАТИСЯ на око.
-	 * Природа не закінчується там, де закінчується твоя ділянка, — вона просто
-	 * стає рідшою, а далі йде рівна земля до горизонту.
-	 */
-	const GROUND_SIDE = WORLD_RADIUS * 4;
 </script>
 
 <T.OrthographicCamera
@@ -236,40 +225,7 @@
 	near={-200}
 />
 
-<T.AmbientLight intensity={1.4} />
-<T.DirectionalLight position={[8, 14, 6]} intensity={2.2} />
-
-<!--
-	Земля — тонка коробка, а не площина: у площини немає боків, і на ізометрії
-	заповідник виглядав би наліпкою, а не місцем.
--->
-<T.Mesh position={[0, -0.55, 0]}>
-	<T.BoxGeometry args={[GROUND_SIDE, 1, GROUND_SIDE]} />
-	<T.MeshStandardMaterial color={GROUND_COLOR[biome]} />
-</T.Mesh>
-
-<!--
-	Межа ділянки — пунктиром. Не паркан і не стіна: гравець мусить бачити, де
-	закінчуються його права на забудову, і водночас бачити, що земля тягнеться далі.
--->
-<PlotBorder half={plotHalf} />
-
-<!--
-	Рельєф біома. Детермінований: та сама партія — той самий краєвид.
-	Кожна фігура малюється `DecorPiece`: вісім родів замість одного конуса
-	різного розміру.
--->
-{#each terrain.rivers as path, index (index)}
-	<RiverRibbon {path} color="#3f7fa8" />
-{/each}
-
-<!--
-	Рельєф з'являється порціями — див. `shown`. Ключ від індексу лишається чинним:
-	зріз тільки РОСТЕ, тож у вже поставленої фігури індекс не змінюється.
--->
-{#each terrain.items.slice(0, growth.shown) as item, index (`${item.kind}-${index}`)}
-	<DecorPiece {item} {biome} />
-{/each}
+<SceneWorld {biome} {terrain} {plotHalf} {onProgress} />
 
 <!--
 	Привид майбутнього вольєра.
@@ -292,6 +248,8 @@
 		x={spot.x}
 		z={spot.z}
 		span={spot.span}
-		selected={spot.animal !== null && spot.animal.id === selectedId}
+		selected={spot.enclosure.id === selectedEnclosureId ||
+			(spot.animal !== null && spot.animal.id === selectedId)}
+		enclosureId={spot.enclosure.id}
 	/>
 {/each}

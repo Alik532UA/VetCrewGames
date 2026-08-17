@@ -101,6 +101,8 @@ export const reserve = {
 	'reserve.map': 'Map',
 	'reserve.quality': 'Quality',
 	'reserve.durability': 'Condition',
+	'reserve.resident': 'Resident',
+	'reserve.vacant': 'This enclosure is empty.',
 	'reserve.repair': 'Repair',
 	'reserve.upgrade': 'Upgrade quality',
 	'reserve.restart': 'Start over',

@@ -56,7 +56,7 @@
 	const alive = $derived(animal.stage === 'healthy');
 </script>
 
-<T.Group rotation.y={turn}>
+<T.Group rotation.y={turn} userData={{ animalId: animal.id }}>
 	<!--
 		Кільце стану лежить на землі, а не висить над твариною: підпис у повітрі
 		довелося б повертати за камерою, а кільце з будь-якого боку однакове.

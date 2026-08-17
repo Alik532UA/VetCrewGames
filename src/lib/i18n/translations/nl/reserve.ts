@@ -102,6 +102,8 @@ export const reserve = {
 	'reserve.map': 'Kaart',
 	'reserve.quality': 'Kwaliteit',
 	'reserve.durability': 'Staat',
+	'reserve.resident': 'Bewoner',
+	'reserve.vacant': 'Dit verblijf is leeg.',
 	'reserve.repair': 'Repareren',
 	'reserve.upgrade': 'Kwaliteit verhogen',
 	'reserve.restart': 'Opnieuw beginnen',

@@ -20,8 +20,15 @@
 		seed: number;
 		enclosures: Enclosure[];
 		animals: Animal[];
+		/** `id` вибраної тварини; підсвічує її вольєр. */
 		selectedId: number | null;
-		onSelect: (id: number) => void;
+		/** `id` вибраного ВОЛЬЄРА: у нього тепер своє меню, і його теж видно. */
+		selectedEnclosureId: number | null;
+		/**
+		 * Тап по карті. Вибір один на двох: узяти водночас і вольєр, і його мешканця
+		 * означало б два вікна на тому самому місці, і одне з них — під іншим.
+		 */
+		onSelect: (kind: 'animal' | 'enclosure', id: number) => void;
 		/** Розмір вольєра, який чекає місця; `null` — звичайний режим. */
 		placingSize: number | null;
 		onGround: (cell: { x: number; z: number }) => void;
@@ -37,6 +44,7 @@
 		enclosures,
 		animals,
 		selectedId,
+		selectedEnclosureId,
 		onSelect,
 		placingSize,
 		onGround,
@@ -90,6 +98,7 @@
 			{enclosures}
 			{animals}
 			{selectedId}
+			{selectedEnclosureId}
 			{onSelect}
 			{placingSize}
 			{onGround}

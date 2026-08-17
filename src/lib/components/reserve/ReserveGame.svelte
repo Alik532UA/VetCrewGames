@@ -23,7 +23,7 @@
 	import ReserveStage from './ReserveStage.svelte';
 	import ReserveOutcome from './ReserveOutcome.svelte';
 	import ReserveSheet from './ReserveSheet.svelte';
-	import AnimalCard from './AnimalCard.svelte';
+	import MapSelection from './MapSelection.svelte';
 	import ReserveRaid from './ReserveRaid.svelte';
 	import DevPanel from './DevPanel.svelte';
 	import { devPanel } from '$lib/services/devPanel.svelte';
@@ -190,7 +190,9 @@
 			enclosures={game.state.sites[biome].enclosures}
 			animals={here}
 			selectedId={game.selectedId}
-			onSelect={(id: number) => (game.selectedId = id)}
+			selectedEnclosureId={game.selectedEnclosureId}
+			onSelect={(kind, id) =>
+				kind === 'animal' ? game.selectAnimal(id) : game.selectEnclosure(id)}
 			placingSize={pending?.size ?? null}
 			onGround={placeAt}
 			showMinimap={!panel}
@@ -217,13 +219,7 @@
 
 		<ReserveRaid {game} />
 
-		{#if game.selected}
-			<AnimalCard
-				animal={game.selected}
-				onCommand={command}
-				onClose={() => (game.selectedId = null)}
-			/>
-		{/if}
+		<MapSelection {game} residents={here} onCommand={command} />
 
 		{#if panel}
 			<ReserveSheet
@@ -237,7 +233,7 @@
 				freeEnclosures={free}
 				{occupied}
 				selectedId={game.selectedId}
-				onSelect={(id: number) => (game.selectedId = id)}
+				onSelect={(id: number) => game.selectAnimal(id)}
 				onCommand={command}
 				{buildSize}
 				onBuildFor={(size: number) => {

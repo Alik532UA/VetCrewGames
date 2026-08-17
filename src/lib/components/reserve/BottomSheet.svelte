@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { dragWindow } from './dragWindow.svelte';
 
 	/**
@@ -47,7 +47,8 @@
 >
 	<!-- Заголовок — ручка вікна: за нього його й тягнуть. -->
 	<header class="sheet__head">
-		<h2 class="sheet__title">{title}</h2>
+		<!-- Через `formatFont`: у «Вольєри» кирилична «і», якої немає в шрифті. -->
+		<h2 class="sheet__title">{@html formatFont(title)}</h2>
 		<button
 			type="button"
 			class="sheet__close"

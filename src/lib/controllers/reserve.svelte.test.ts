@@ -251,3 +251,64 @@ describe('вибрана тварина', () => {
 		expect(fresh().selected).toBeNull();
 	});
 });
+
+describe('вибір на карті', () => {
+	/** Партія з одним вольєром і вовком у ньому. */
+	const withWolf = () => {
+		const controller = fresh();
+		controller.run({ type: 'build', size: 5, quality: 2, cell: { x: 0, z: 0 } }, 'forest');
+		controller.run(
+			{ type: 'acquire', origin: 'rescue', speciesId: 'wolf', enclosureId: 1 },
+			'forest'
+		);
+		return controller;
+	};
+
+	it('вольєр вибирається сам по собі, без мешканця', () => {
+		// Саме це й було зламано: порожній вольєр на карті бачили, а взяти не могли.
+		const controller = fresh();
+		controller.run({ type: 'build', size: 2, quality: 1, cell: { x: 3, z: 3 } }, 'forest');
+		controller.selectEnclosure(1);
+
+		expect(controller.selectedEnclosure?.size).toBe(2);
+		expect(controller.selected, 'тварини немає — і картки тварини теж').toBeNull();
+	});
+
+	it('одне вікно за раз: тварина знімає вольєр і навпаки', () => {
+		/*
+		 * Обидві картки спливають над тим самим кутом карти. Два відкритих вікна
+		 * означали б одне під іншим — рівно той дефект, через який мінікарта
+		 * накривала картку мешканця й закрити її було нічим.
+		 */
+		const controller = withWolf();
+
+		controller.selectEnclosure(1);
+		expect(controller.selectedEnclosureId).toBe(1);
+
+		controller.selectAnimal(1);
+		expect(controller.selectedId).toBe(1);
+		expect(controller.selectedEnclosureId).toBeNull();
+
+		controller.selectEnclosure(1);
+		expect(controller.selectedId).toBeNull();
+	});
+
+	it('закриття прибирає обидві мітки', () => {
+		const controller = withWolf();
+		controller.selectAnimal(1);
+		controller.clearSelection();
+
+		expect(controller.selected).toBeNull();
+		expect(controller.selectedEnclosure).toBeNull();
+	});
+
+	it('знесений вольєр не лишає по собі відкритої картки', () => {
+		// Картка читає стан, а не знімок: після знесення показувати нічого.
+		const controller = fresh();
+		controller.run({ type: 'build', size: 2, quality: 1, cell: { x: 6, z: 6 } }, 'forest');
+		controller.selectEnclosure(1);
+		controller.run({ type: 'demolish', enclosureId: 1 }, 'forest');
+
+		expect(controller.selectedEnclosure).toBeNull();
+	});
+});

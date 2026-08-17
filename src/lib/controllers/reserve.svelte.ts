@@ -40,6 +40,13 @@ export class ReserveController {
 	speed = $state<Speed>(1);
 	/** Яку тварину показує картка; `null` — картки немає. */
 	selectedId = $state<number | null>(null);
+	/**
+	 * Який ВОЛЬЄР показує картка; `null` — не показує.
+	 *
+	 * Друга мітка, а не одна на двох: у вольєра своя картка (міцність, ремонт,
+	 * покращення), у мешканця своя. Але ВИБІР один — див. `selectAnimal`.
+	 */
+	selectedEnclosureId = $state<number | null>(null);
 	/** Чому не вдалося відновити партію. Показує екран, вирішує людина. */
 	restoreProblem = $state<RestoreFailure | null>(null);
 
@@ -64,6 +71,36 @@ export class ReserveController {
 			.flatMap(([, site]) => site.animals)
 			.find((a) => a.id === this.selectedId) ?? null
 	);
+
+	/** Вибраний вольєр — так само по всьому фонду й з тієї самої причини. */
+	selectedEnclosure = $derived(
+		sitesOf(this.state)
+			.flatMap(([, site]) => site.enclosures)
+			.find((e) => e.id === this.selectedEnclosureId) ?? null
+	);
+
+	/*
+	 * Вибір ОДИН, хоч міток дві.
+	 *
+	 * Обидві картки спливають над тим самим кутом карти, тож два відкритих вікна
+	 * означали б одне під іншим — саме той дефект, який щойно виправляли з
+	 * мінікартою. Тому взяти тварину знімає вольєр, і навпаки; переходи між ними
+	 * дають кнопки в самих картках, і шлях туди-назад лишається в один тап.
+	 */
+	selectAnimal(id: number): void {
+		this.selectedId = id;
+		this.selectedEnclosureId = null;
+	}
+
+	selectEnclosure(id: number): void {
+		this.selectedEnclosureId = id;
+		this.selectedId = null;
+	}
+
+	clearSelection(): void {
+		this.selectedId = null;
+		this.selectedEnclosureId = null;
+	}
 
 	/** Недокручені мілісекунди: те, що не дотягнуло до цілого тіку. */
 	#carry = 0;
@@ -100,7 +137,7 @@ export class ReserveController {
 
 	reset(seed = Date.now() >>> 0): void {
 		this.state = createReserve(seed);
-		this.selectedId = null;
+		this.clearSelection();
 		this.#carry = 0;
 		this.#savedDay = 0;
 		this.save();

@@ -106,6 +106,8 @@ export const reserve = {
 	'reserve.map': 'Карта',
 	'reserve.quality': 'Якість',
 	'reserve.durability': 'Міцність',
+	'reserve.resident': 'Мешканець',
+	'reserve.vacant': 'Вольєр вільний.',
 	'reserve.repair': 'Відремонтувати',
 	'reserve.upgrade': 'Підняти якість',
 	'reserve.restart': 'Почати заново',
