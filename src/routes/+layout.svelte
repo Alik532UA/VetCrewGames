@@ -9,6 +9,7 @@
 	import Toast from '$lib/components/Toast.svelte';
 	import ScrollbarContextMenu from '$lib/components/ScrollbarContextMenu.svelte';
 	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
+	import AppVersion from '$lib/components/AppVersion.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import ErrorFallback from '$lib/components/ErrorFallback.svelte';
 	import { onMount } from 'svelte';
@@ -71,15 +72,6 @@
 	// client-side move between the games. trackPageView initialises analytics
 	// itself, so there is no ordering to get wrong against onMount.
 	afterNavigate(() => trackPageView());
-
-	// Версія інжектується Vite на етапі збірки (VERSIONING-v8 § 2, підхід A):
-	// нуль мережевих запитів, синхронний доступ, і номер той самий, що у звіті
-	// логів та в `release` Sentry.
-	//
-	// Доти тут стояло `let appVersion = $state('')`, якому ніхто нічого не
-	// присвоював, — тобто блок нижче не рендерився ніколи, а виглядав як
-	// реалізований показ версії.
-	const appVersion = __APP_VERSION__;
 
 	// Handle transition direction
 	let transitionDirection = $state(1);
@@ -235,9 +227,7 @@
 	</main>
 </div>
 
-<div class="app-version text-panel text-panel--tight" data-testid="app-version-value">
-	{appVersion}
-</div>
+<AppVersion />
 
 <Toast />
 <PageScrollbar />
@@ -283,16 +273,5 @@
 		top: 0;
 		left: 0;
 		overflow-y: auto;
-	}
-
-	.app-version {
-		position: fixed;
-		bottom: 4px;
-		right: 8px;
-		font-size: 10px;
-		color: var(--color-text-muted);
-		opacity: 0.5;
-		pointer-events: none;
-		z-index: 1000;
 	}
 </style>

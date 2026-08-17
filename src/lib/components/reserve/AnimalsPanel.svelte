@@ -20,6 +20,8 @@
 		selectedId: number | null;
 		onSelect: (id: number) => void;
 		onCommand: (command: ReserveCommand) => void;
+		/** Перейти до будівництва з підставленим розміром під вибраний вид. */
+		onBuildFor: (size: number) => void;
 	}
 
 	let {
@@ -30,7 +32,8 @@
 		hasVet,
 		selectedId,
 		onSelect,
-		onCommand
+		onCommand,
+		onBuildFor
 	}: Props = $props();
 
 	type Tab = 'here' | 'wild' | 'take';
@@ -119,7 +122,7 @@
 		</ul>
 	{/if}
 {:else}
-	<AcquireTab {biome} {freeEnclosures} {hasVet} {onCommand} />
+	<AcquireTab {biome} {freeEnclosures} {hasVet} {onCommand} {onBuildFor} />
 {/if}
 
 <style>

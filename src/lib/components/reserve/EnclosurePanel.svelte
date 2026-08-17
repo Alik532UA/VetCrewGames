@@ -25,12 +25,30 @@
 		effectiveQualityOf: (enclosure: Enclosure) => Quality;
 		/** Замовлення прийнято — далі гравець вибирає місце на карті. */
 		onPlace: (size: number, quality: Quality) => void;
+		/**
+		 * Розмір, з яким панель ВІДКРИЛАСЯ.
+		 *
+		 * Приходить, коли сюди привело попередження «немає вільного вольєра»: у
+		 * гравця вже є вибраний вид, і рекомендований для нього розмір — саме те, що
+		 * він збирався побудувати. Панель створюється заново на кожне відкриття, тож
+		 * значення й діє як початкове, а далі його можна змінити кнопками.
+		 */
+		initialSize?: number;
 		onCommand: (command: ReserveCommand) => void;
 	}
 
-	let { enclosures, occupied, effectiveQualityOf, onPlace, onCommand }: Props = $props();
+	let { enclosures, occupied, effectiveQualityOf, onPlace, onCommand, initialSize }: Props =
+		$props();
 
-	let size = $state(3);
+	/*
+	 * Захоплюється саме ПОЧАТКОВЕ значення — і це не недогляд.
+	 *
+	 * Панель створюється заново на кожне відкриття, тож «початкове» тут означає
+	 * «те, з яким відкрили». Слідкувати за пропсом далі було б гірше: гравець
+	 * натиснув «5», а зовнішнє число повернуло б «6» на першому ж перемальовуванні.
+	 */
+	// svelte-ignore state_referenced_locally
+	let size = $state(initialSize ?? 3);
 	let quality = $state<Quality>(2);
 
 	const money = (value: number) => value.toLocaleString(settings.locale);

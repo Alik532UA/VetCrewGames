@@ -32,6 +32,10 @@
 		onCommand: (command: ReserveCommand) => void;
 		/** Замовлення на вольєр прийнято — місце гравець тицяє вже на карті. */
 		onPlace: (size: number, quality: Quality) => void;
+		/** Перейти від прийому тварини до будівництва потрібного вольєра. */
+		onBuildFor: (size: number) => void;
+		/** Розмір, з яким відкрилася панель вольєрів; `undefined` — типовий. */
+		buildSize?: number;
 		onClose: () => void;
 	}
 
@@ -47,6 +51,8 @@
 		onSelect,
 		onCommand,
 		onPlace,
+		onBuildFor,
+		buildSize,
 		onClose
 	}: Props = $props();
 
@@ -72,12 +78,14 @@
 			{selectedId}
 			{onSelect}
 			{onCommand}
+			{onBuildFor}
 		/>
 	{:else if panel === 'enclosures'}
 		<EnclosurePanel
 			enclosures={state.enclosures}
 			{occupied}
 			effectiveQualityOf={effectiveQuality}
+			initialSize={buildSize}
 			{onPlace}
 			{onCommand}
 		/>

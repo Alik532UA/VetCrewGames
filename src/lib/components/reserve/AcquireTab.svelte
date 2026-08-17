@@ -1,26 +1,37 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
-	import { settings } from '$lib/services/settings.svelte';
-	import { ORIGINS, type AnimalOrigin } from '$lib/reserve/constants';
+	import OriginChoice from './OriginChoice.svelte';
 	import { comfortOf, speciesById, speciesOfBiome, type ReserveBiome } from '$lib/reserve/species';
 	import type { Enclosure, ReserveCommand } from '$lib/reserve/types';
 
 	/**
 	 * Прийом тварини: кого, куди й яким каналом.
 	 *
-	 * Три рішення в одному екрані, і всі три показані з наслідками ДО кліку.
-	 * Вид несе свої вимоги до вольєра, вольєр — множник швидкості для цього
-	 * виду, канал — ціну й плату «Користю планеті». У цьому вся гра: чорний
-	 * ринок дешевший грошима і дорожчий усім іншим.
+	 * Три рішення в одному екрані, і всі три показані з наслідками ДО кліку. Вид
+	 * несе свої вимоги до вольєра, вольєр — множник швидкості для цього виду,
+	 * канал — ціну й плату обома шкалами. У цьому вся гра: чорний ринок дешевший
+	 * грошима і дорожчий усім іншим.
+	 *
+	 * Вид вибирається КНОПКАМИ, а не списком. Випадний список приховує вибір за
+	 * кліком і показує наслідки лише того рядка, на який уже натиснули; тут же
+	 * кожен вид — окреме рішення з окремими вимогами до вольєра. Той самий висновок
+	 * уже застосований до розміру вольєра.
+	 *
+	 * Попередження не просто попереджають, а ведуть: «немає вільного вольєра»
+	 * відкриває будівництво з уже підставленим рекомендованим розміром, «немає
+	 * ветеринара» наймає ветеринара. Текст, який називає перешкоду й лишає гравця
+	 * її шукати, — це половина роботи.
 	 */
 	interface Props {
 		biome: ReserveBiome;
 		freeEnclosures: Enclosure[];
 		hasVet: boolean;
 		onCommand: (command: ReserveCommand) => void;
+		/** Перейти до будівництва з підставленим розміром під вибраний вид. */
+		onBuildFor: (size: number) => void;
 	}
 
-	let { biome, freeEnclosures, hasVet, onCommand }: Props = $props();
+	let { biome, freeEnclosures, hasVet, onCommand, onBuildFor }: Props = $props();
 
 	/** Кого можна взяти: лише види цього біома. Лева в тундру не привозять. */
 	const options = $derived(speciesOfBiome(biome));
@@ -40,29 +51,35 @@
 	);
 	/** Куди селимо: якщо вибране вже не підходить, беремо перший придатний. */
 	const home = $derived(fitting.find((e) => e.id === enclosureId) ?? fitting[0]);
-
-	const money = (value: number) => value.toLocaleString(settings.locale);
 </script>
 
 <div class="take">
-	<label class="take__row">
-		<span>{@html formatFont(t('reserve.pickSpecies'))}</span>
-		<select
-			value={picked?.id ?? ''}
-			onchange={(event) => (speciesId = event.currentTarget.value)}
-			data-testid="reserve-species-select"
-		>
-			{#each options as species (species.id)}
-				<option value={species.id}>
-					{@html formatFont(t(species.nameKey))} — {@html formatFont(t('reserve.needsMin'))}
-					{species.minSize}, {@html formatFont(t('reserve.needsRec'))}
-					{species.recSize}
-				</option>
-			{/each}
-		</select>
-	</label>
+	<h3 class="take__title">{@html formatFont(t('reserve.pickSpecies'))}</h3>
+	<div class="take__row" role="group" aria-label={t('reserve.pickSpecies')}>
+		{#each options as species (species.id)}
+			<button
+				type="button"
+				class="chip"
+				class:chip--on={picked?.id === species.id}
+				aria-pressed={picked?.id === species.id}
+				onclick={() => (speciesId = species.id)}
+				data-testid="reserve-species-{species.id}-btn"
+			>
+				{@html formatFont(t(species.nameKey))}
+			</button>
+		{/each}
+	</div>
 
-	<label class="take__row">
+	{#if picked}
+		<!-- Вимоги ВИБРАНОГО виду: у кнопці їм не місце, а знати їх треба. -->
+		<p class="take__note" data-testid="reserve-species-needs-text">
+			{@html formatFont(t('reserve.needsMin'))}
+			{picked.minSize} · {@html formatFont(t('reserve.needsRec'))}
+			{picked.recSize}
+		</p>
+	{/if}
+
+	<label class="take__field">
 		<span>{@html formatFont(t('reserve.pickEnclosure'))}</span>
 		<select
 			value={home?.id ?? 0}
@@ -82,63 +99,100 @@
 	</label>
 
 	{#if fitting.length === 0}
-		<p class="warn" data-testid="reserve-no-free-text">
-			{@html formatFont(t('reserve.noFreeEnclosure'))}
-		</p>
+		<div class="warn" data-testid="reserve-no-free-text">
+			<span>{@html formatFont(t('reserve.noFreeEnclosure'))}</span>
+			<button
+				type="button"
+				class="warn__do"
+				onclick={() => onBuildFor(picked?.recSize ?? 3)}
+				data-testid="reserve-build-for-species-btn"
+			>
+				{@html formatFont(t('reserve.build'))}
+			</button>
+		</div>
 	{/if}
 
 	<!--
-		Ветеринара немає — попереджаємо, але НЕ забороняємо. Забрати тварину з
-		біди краще, ніж лишити її там; за це просто критикують, і мінус
-		репутації нараховує ядро.
+		Ветеринара немає — попереджаємо, але НЕ забороняємо. Забрати тварину з біди
+		краще, ніж лишити її там; за це просто критикують, і мінус репутації
+		нараховує ядро. Кнопка поруч — щоб виправити це тут, а не шукати меню.
 	-->
 	{#if !hasVet}
-		<p class="warn" data-testid="reserve-no-vet-text">
-			{@html formatFont(t('reserve.noVetWarning'))}
-		</p>
-	{/if}
-
-	<div class="take__origins">
-		{#each Object.entries(ORIGINS) as [id, terms] (id)}
+		<div class="warn" data-testid="reserve-no-vet-text">
+			<span>{@html formatFont(t('reserve.noVetWarning'))}</span>
 			<button
 				type="button"
-				class="origin"
-				title={t(`reserve.origin.${id as AnimalOrigin}.hint` as const)}
-				onclick={() =>
-					onCommand({
-						type: 'acquire',
-						origin: id as AnimalOrigin,
-						speciesId: picked?.id ?? '',
-						enclosureId: home?.id ?? 0
-					})}
-				data-testid="reserve-acquire-{id}-btn"
+				class="warn__do"
+				onclick={() => onCommand({ type: 'hire', role: 'vet' })}
+				data-testid="reserve-hire-vet-now-btn"
 			>
-				<b>{@html formatFont(t(`reserve.origin.${id as AnimalOrigin}` as const))}</b>
-				<span class="origin__meta">
-					−{money(terms.price + terms.logistics)}
-					<span class:origin__bad={terms.impact < 0}>
-						{terms.impact > 0 ? '+' : ''}{terms.impact}
-					</span>
-				</span>
+				{@html formatFont(t('reserve.hire'))}
 			</button>
-		{/each}
-	</div>
+		</div>
+	{/if}
+
+	<OriginChoice
+		onPick={(origin) =>
+			onCommand({
+				type: 'acquire',
+				origin,
+				speciesId: picked?.id ?? '',
+				enclosureId: home?.id ?? 0
+			})}
+	/>
 </div>
 
 <style>
 	.take {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-md);
+		gap: var(--space-sm);
+	}
+
+	.take__title {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		opacity: 0.7;
 	}
 
 	.take__row {
 		display: flex;
-		flex-direction: column;
-		gap: 4px;
+		flex-wrap: wrap;
+		gap: var(--space-sm);
 	}
 
-	.take__row select {
+	.chip {
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.chip--on {
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
+	}
+
+	.take__note {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		font-variant-numeric: tabular-nums;
+		opacity: 0.75;
+	}
+
+	.take__field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-top: var(--space-sm);
+	}
+
+	.take__field select {
 		min-height: 44px;
 		padding: 0 var(--space-sm);
 		border-radius: var(--radius-sm);
@@ -147,43 +201,28 @@
 		font: inherit;
 	}
 
-	.take__origins {
+	.warn {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--space-sm);
-	}
-
-	.origin {
-		display: flex;
-		flex: 1 1 8rem;
-		flex-direction: column;
-		gap: 2px;
-		align-items: flex-start;
-		min-height: 44px;
-		padding: var(--space-sm);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-		text-align: left;
-		cursor: pointer;
-	}
-
-	.origin__meta {
-		font-size: var(--font-size-sm);
-		font-variant-numeric: tabular-nums;
-		opacity: 0.8;
-	}
-
-	.origin__bad {
-		color: var(--color-error);
-	}
-
-	.warn {
+		align-items: center;
+		justify-content: space-between;
 		margin: 0;
 		padding: var(--space-sm);
 		border-radius: var(--radius-sm);
 		background: color-mix(in srgb, var(--color-error), transparent 85%);
 		font-size: var(--font-size-sm);
+	}
+
+	/* Кнопка в попередженні — вихід із нього, тому виглядає як дія, а не як текст. */
+	.warn__do {
+		flex: 0 0 auto;
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-panel);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
 	}
 </style>

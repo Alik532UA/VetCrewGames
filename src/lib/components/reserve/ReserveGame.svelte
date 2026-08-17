@@ -9,7 +9,7 @@
 	import { ReserveController, type Speed } from '$lib/controllers/reserve.svelte';
 	import { reserveHalf, type Quality } from '$lib/reserve/constants';
 	import { freeEnclosures, released, residents } from '$lib/reserve/simulation';
-	import type { RaidTactic, ReserveCommand } from '$lib/reserve/types';
+	import type { ReserveCommand } from '$lib/reserve/types';
 	import type { ReserveBiome } from '$lib/reserve/species';
 	import type { RouteRest } from '$lib/i18n/routing';
 	import ReserveHud from './ReserveHud.svelte';
@@ -17,7 +17,10 @@
 	import ReserveOutcome from './ReserveOutcome.svelte';
 	import ReserveSheet from './ReserveSheet.svelte';
 	import AnimalCard from './AnimalCard.svelte';
-	import RaidModal from './RaidModal.svelte';
+	import ReserveRaid from './ReserveRaid.svelte';
+	import DevPanel from './DevPanel.svelte';
+	import { devPanel } from '$lib/services/devPanel.svelte';
+	import { dev } from '$app/environment';
 	import ReserveBar, { type Panel } from './ReserveBar.svelte';
 
 	/**
@@ -32,9 +35,8 @@
 	 * гроші: інакше та сама арифметика жила б у двох місцях, і мультиплеєр
 	 * довелося б писати проти обох.
 	 *
-	 * Розкладка: карта на всю доступну висоту, знизу смуга кнопок, панелі
-	 * висуваються поверх карти. Карта — це і є гра; списки й ціни приходять на
-	 * вимогу й ідуть геть, коли не потрібні.
+	 * Розкладка: карта на всю площу, керування поверх неї. Карта — це і є гра;
+	 * списки й ціни приходять на вимогу й ідуть геть, коли не потрібні.
 	 */
 	interface Props {
 		biome: ReserveBiome;
@@ -45,10 +47,8 @@
 	let { biome, backTo }: Props = $props();
 
 	/*
-	 * Біом читається РАЗ і назавжди — і це не недогляд, а умова задачі: партія
-	 * привʼязана до ділянки на весь свій вік. Кожна ділянка живе за власною
-	 * адресою, тож перехід у савану створює новий компонент замість того, щоб
-	 * підмінити біом під уже наполовину відіграною лісовою партією.
+	 * Біом читається РАЗ: партія привʼязана до ділянки на весь свій вік, а перехід
+	 * у савану створює новий компонент — не підмінює біом під відіграною партією.
 	 */
 	// svelte-ignore state_referenced_locally
 	const game = new ReserveController(biome);
@@ -64,6 +64,15 @@
 	 * вольєру вибирає мешканця.
 	 */
 	let pending = $state<{ size: number; quality: Quality } | null>(null);
+
+	/**
+	 * Розмір, з яким відкриється панель вольєрів: приходить із прийому тварини.
+	 *
+	 * Гравець уже вибрав вид, і рекомендований для нього розмір — саме те, що він
+	 * збирався поставити. Пропонувати вибрати число, яке гра щойно назвала, було б
+	 * перекладанням своєї роботи на нього.
+	 */
+	let buildSize = $state<number | undefined>(undefined);
 
 	onMount(() => {
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, backTo)));
@@ -96,32 +105,6 @@
 	function command(cmd: ReserveCommand) {
 		const result = game.run(cmd);
 		if (!result.ok) toast.error(`reserve.reject.${result.reason}` as const);
-	}
-
-	/**
-	 * Наліт: рішення ухвалене — і людина мусить дізнатися, чим воно скінчилося.
-	 *
-	 * Без цього тактика виглядала б однаково при будь-якому результаті: вікно
-	 * закрилося, а що сталося з твариною й патрулем — шукай очима. Тому наслідок
-	 * читається зі СТАНУ після ходу, а не з тактики: тактика — це намір, а
-	 * повідомляти треба факт.
-	 */
-	function answerRaid(tactic: RaidTactic) {
-		const targetId = game.state.raid?.animalId;
-		const rangers = game.state.staff.ranger;
-
-		const result = game.run({ type: 'raid', tactic });
-		if (!result.ok) {
-			toast.error(`reserve.reject.${result.reason}` as const);
-			return;
-		}
-
-		if (game.state.animals.some((animal) => animal.id === targetId)) {
-			toast.success('reserve.raid.saved');
-		} else {
-			toast.error('reserve.raid.lost');
-		}
-		if (game.state.staff.ranger < rangers) toast.warn('reserve.raid.injured');
 	}
 
 	/** Тап по землі в режимі розміщення: ставимо замовлений вольєр і виходимо. */
@@ -207,14 +190,12 @@
 			onCancel={() => (pending = null)}
 		/>
 
-		{#if game.state.raid}
-			<RaidModal
-				target={game.state.animals.find((a) => a.id === game.state.raid?.animalId) ?? null}
-				hasRanger={game.state.staff.ranger > 0}
-				budget={game.state.budget}
-				onTactic={answerRaid}
-			/>
+		<!-- Службове меню. У продакшні `dev` — false, і гілки в збірці не лишається. -->
+		{#if dev && devPanel.open}
+			<DevPanel {game} />
 		{/if}
+
+		<ReserveRaid {game} />
 
 		{#if game.selected}
 			<AnimalCard
@@ -236,9 +217,15 @@
 				selectedId={game.selectedId}
 				onSelect={(id: number) => (game.selectedId = id)}
 				onCommand={command}
+				{buildSize}
+				onBuildFor={(size: number) => {
+					buildSize = size;
+					panel = 'enclosures';
+				}}
 				onPlace={(size: number, quality: Quality) => {
 					pending = { size, quality };
 					panel = null;
+					buildSize = undefined;
 				}}
 				onClose={() => (panel = null)}
 			/>
