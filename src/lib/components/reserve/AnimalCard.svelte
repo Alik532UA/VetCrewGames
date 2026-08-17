@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { STRESS_BLOCKS_RELEASE } from '$lib/reserve/constants';
 	import type { Animal, ReserveCommand } from '$lib/reserve/types';
 
@@ -26,7 +26,7 @@
 
 <aside class="card" data-testid="reserve-animal-card">
 	<div class="card__head">
-		<h2 class="card__title">{t(`reserve.origin.${animal.origin}` as const)}</h2>
+		<h2 class="card__title">{@html formatFont(t(`reserve.origin.${animal.origin}` as const))}</h2>
 		<button
 			type="button"
 			class="card__close"
@@ -37,16 +37,16 @@
 	</div>
 
 	<p class="card__stage" data-testid="reserve-card-stage">
-		{t(`reserve.stage.${animal.stage}` as const)}
+		{@html formatFont(t(`reserve.stage.${animal.stage}` as const))}
 	</p>
 
 	<dl class="card__bars">
-		<dt>{t('reserve.recovery')}</dt>
+		<dt>{@html formatFont(t('reserve.recovery'))}</dt>
 		<dd>
 			<progress value={animal.recovery} max="1" data-testid="reserve-card-recovery"></progress>
 			<span>{percent(animal.recovery)}</span>
 		</dd>
-		<dt>{t('reserve.stress')}</dt>
+		<dt>{@html formatFont(t('reserve.stress'))}</dt>
 		<dd>
 			<progress value={animal.stress} max="1" data-testid="reserve-card-stress"></progress>
 			<span>{percent(animal.stress)}</span>
@@ -54,7 +54,9 @@
 	</dl>
 
 	{#if !animal.releasable}
-		<p class="card__note" data-testid="reserve-card-captive">{t('reserve.captiveBorn')}</p>
+		<p class="card__note" data-testid="reserve-card-captive">
+			{@html formatFont(t('reserve.captiveBorn'))}
+		</p>
 	{/if}
 
 	{#if animal.stage !== 'released'}
@@ -66,7 +68,7 @@
 			onclick={() => onCommand({ type: 'release', animalId: animal.id })}
 			data-testid="reserve-release-btn"
 		>
-			{t('reserve.release')}
+			{@html formatFont(t('reserve.release'))}
 		</button>
 	{/if}
 </aside>

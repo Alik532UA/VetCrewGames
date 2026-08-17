@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { speciesById, type ReserveBiome } from '$lib/reserve/species';
 	import AcquireTab from './AcquireTab.svelte';
 	import type { Animal, Enclosure, ReserveCommand } from '$lib/reserve/types';
@@ -36,7 +36,14 @@
 	type Tab = 'here' | 'wild' | 'take';
 	let tab = $state<Tab>('here');
 
-	const nameOf = (animal: Animal) => t(speciesById(animal.speciesId)?.nameKey ?? 'reserve.animals');
+	/**
+	 * Повертає КЛЮЧ, а не готовий рядок.
+	 *
+	 * Форматування мусить лишатися в розмітці: інваріант у `src/i18n-font.test.ts`
+	 * читає саме її, і підпис, зібраний у скрипті, проходив би крізь нього
+	 * непоміченим — рівно так і зʼявилася ця помилка вперше.
+	 */
+	const nameKeyOf = (animal: Animal) => speciesById(animal.speciesId)?.nameKey ?? 'reserve.animals';
 
 	const TABS: Array<{ id: Tab; key: 'reserve.animals' | 'reserve.released' | 'reserve.acquire' }> =
 		[
@@ -57,14 +64,14 @@
 			onclick={() => (tab = item.id)}
 			data-testid="reserve-tab-{item.id}-btn"
 		>
-			{t(item.key)}
+			{@html formatFont(t(item.key))}
 		</button>
 	{/each}
 </div>
 
 {#if tab === 'here'}
 	{#if residents.length === 0}
-		<p class="empty" data-testid="reserve-empty-text">{t('reserve.empty')}</p>
+		<p class="empty" data-testid="reserve-empty-text">{@html formatFont(t('reserve.empty'))}</p>
 	{:else}
 		<ul class="list">
 			{#each residents as animal (animal.id)}
@@ -77,9 +84,11 @@
 						onclick={() => onSelect(animal.id)}
 						data-testid="reserve-animal-{animal.id}-btn"
 					>
-						<b>{nameOf(animal)}</b>
+						<b>{@html formatFont(t(nameKeyOf(animal)))}</b>
 						<span class="row__meta">
-							{t(`reserve.stage.${animal.stage}` as const)} · {t('reserve.enclosure')}
+							{@html formatFont(t(`reserve.stage.${animal.stage}` as const))} · {@html formatFont(
+								t('reserve.enclosure')
+							)}
 							{animal.enclosureId}
 						</span>
 					</button>
@@ -89,17 +98,21 @@
 	{/if}
 {:else if tab === 'wild'}
 	{#if released.length === 0}
-		<p class="empty" data-testid="reserve-none-released-text">{t('reserve.noneReleased')}</p>
+		<p class="empty" data-testid="reserve-none-released-text">
+			{@html formatFont(t('reserve.noneReleased'))}
+		</p>
 	{:else}
 		<ul class="list">
 			{#each released as animal (animal.id)}
 				<li class="row" data-testid="reserve-released-{animal.id}-item">
-					<b>{nameOf(animal)}</b>
+					<b>{@html formatFont(t(nameKeyOf(animal)))}</b>
 					<span class="row__meta">
 						<!-- Прочерк, а не нуль: у сейвах версії 1 дня випуску не існувало. -->
-						{animal.releasedOnDay === null
-							? t('reserve.releasedUnknown')
-							: `${t('reserve.releasedOn')} ${animal.releasedOnDay}`}
+						{@html formatFont(
+							animal.releasedOnDay === null
+								? t('reserve.releasedUnknown')
+								: `${t('reserve.releasedOn')} ${animal.releasedOnDay}`
+						)}
 					</span>
 				</li>
 			{/each}

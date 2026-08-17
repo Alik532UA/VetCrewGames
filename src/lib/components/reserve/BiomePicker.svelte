@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import { enclosurePrice } from '$lib/reserve/constants';
 	import { RESERVE_BIOMES, speciesOfBiome, type ReserveBiome } from '$lib/reserve/species';
@@ -30,8 +30,8 @@
 </script>
 
 <section class="picker" data-testid="reserve-biome-picker-section">
-	<h2 class="picker__title">{t('reserve.pickBiome')}</h2>
-	<p class="picker__hint">{t('reserve.pickBiomeHint')}</p>
+	<h2 class="picker__title">{@html formatFont(t('reserve.pickBiome'))}</h2>
+	<p class="picker__hint">{@html formatFont(t('reserve.pickBiomeHint'))}</p>
 
 	<div class="picker__grid">
 		{#each RESERVE_BIOMES as biome (biome)}
@@ -42,17 +42,17 @@
 				onclick={() => onPick(biome)}
 				data-testid="reserve-biome-{biome}-btn"
 			>
-				<span class="biome__name">{t(`habitat.biome.${biome}` as const)}</span>
+				<span class="biome__name">{@html formatFont(t(`habitat.biome.${biome}` as const))}</span>
 				<span class="biome__facts">
 					{species.length}
-					{t('reserve.speciesHere')}
+					{@html formatFont(t('reserve.speciesHere'))}
 				</span>
 				<span class="biome__facts">
-					{t('reserve.fromPrice')}
+					{@html formatFont(t('reserve.fromPrice'))}
 					{entryCost(biome).toLocaleString(settings.locale)}
 				</span>
 				<span class="biome__species">
-					{species.map((s) => t(s.nameKey)).join(', ')}
+					{@html formatFont(species.map((s) => t(s.nameKey)).join(', '))}
 				</span>
 			</button>
 		{/each}

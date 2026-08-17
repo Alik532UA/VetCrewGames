@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import ContractsBlock from './ContractsBlock.svelte';
 	import type { ReserveCommand, ReserveState } from '$lib/reserve/types';
 
@@ -44,19 +44,21 @@
 
 <ContractsBlock {state} {day} {onCommand} />
 
-<h4 class="section">{t('reserve.goals')}</h4>
+<h4 class="section">{@html formatFont(t('reserve.goals'))}</h4>
 
 {#if left.length === 0}
-	<p class="done-all" data-testid="reserve-no-tasks-text">{t('reserve.noTasks')}</p>
+	<p class="done-all" data-testid="reserve-no-tasks-text">
+		{@html formatFont(t('reserve.noTasks'))}
+	</p>
 {/if}
 
 <ul class="goals">
 	{#each goals as goal (goal.id)}
 		<li class="goal" class:goal--done={goal.done} data-testid="reserve-goal-{goal.id}-item">
 			<span class="goal__mark" aria-hidden="true">{goal.done ? '✓' : '○'}</span>
-			<span>{t(goal.key)}</span>
+			<span>{@html formatFont(t(goal.key))}</span>
 			{#if goal.done}
-				<span class="goal__done">{t('reserve.taskDone')}</span>
+				<span class="goal__done">{@html formatFont(t('reserve.taskDone'))}</span>
 			{/if}
 		</li>
 	{/each}

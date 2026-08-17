@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '$lib/styles/global.css';
 	import '$lib/styles/animations.css';
-	import { t, formatPlain } from '$lib/i18n/index';
+	import { t, formatFont } from '$lib/i18n/index';
 	import { logService } from '$lib/services/logService.svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
@@ -209,9 +209,7 @@
 </svelte:head>
 
 <div class="app-container">
-	<a href="#main-content" class="skip-link"
-		>{formatPlain(t('common.skipLink') || 'Перейти до основного вмісту')}</a
-	>
+	<a href="#main-content" class="skip-link">{@html formatFont(t('common.skipLink'))}</a>
 	<GameHeader />
 
 	<main class="app-shell" id="main-content">
@@ -237,7 +235,9 @@
 	</main>
 </div>
 
-<div class="app-version text-panel text-panel--tight" data-testid="app-version-value">{appVersion}</div>
+<div class="app-version text-panel text-panel--tight" data-testid="app-version-value">
+	{appVersion}
+</div>
 
 <Toast />
 <PageScrollbar />

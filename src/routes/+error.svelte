@@ -10,7 +10,7 @@
 	<div class="error-card">
 		<h1 class="error-status">{page.status}</h1>
 		<h2 class="error-title">{@html formatFont(t('error.title'))}</h2>
-		<p class="error-message">{page.error?.message ?? t('error.message')}</p>
+		<p class="error-message">{@html formatFont(page.error?.message ?? t('error.message'))}</p>
 
 		<div class="error-actions">
 			<button class="btn-retry" onclick={() => window.location.reload()}>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import { IMPACT_TO_WIN } from '$lib/reserve/constants';
 	import { SPEEDS, type Speed } from '$lib/controllers/reserve.svelte';
@@ -34,24 +34,44 @@
 	const speedLabel = (value: Speed) =>
 		value === 0 ? t('reserve.speed.pause') : t(`reserve.speed.x${value}` as const);
 
+	/**
+	 * Показники несуть КЛЮЧ підпису, а не готовий рядок.
+	 *
+	 * Так треба, бо інваріант у `src/i18n-font.test.ts` читає розмітку: підпис,
+	 * зібраний тут через `t()`, проходив би крізь перевірку непоміченим — і саме
+	 * так тут спершу й опинилася кирилична «і», яку шрифт не має чим малювати.
+	 * Форматування лишається в розмітці навмисно.
+	 *
+	 * Значення форматувати не треба: це числа, а цифри в шрифті є.
+	 */
 	const stats = $derived([
-		{ id: 'day', label: t('reserve.day'), value: String(day), bad: false },
+		{ id: 'day', labelKey: 'reserve.day' as const, value: String(day), bad: false },
 		{
 			id: 'budget',
-			label: t('reserve.budget'),
+			labelKey: 'reserve.budget' as const,
 			value: budget.toLocaleString(settings.locale),
 			bad: budget < 0
 		},
 		{
 			id: 'impact',
-			label: t('reserve.impact'),
+			labelKey: 'reserve.impact' as const,
 			// Показник і мета поруч: інакше «34» нічого не каже про те, чи це багато.
 			value: `${impact} / ${IMPACT_TO_WIN.toLocaleString(settings.locale)}`,
 			bad: impact < 0
 		},
-		{ id: 'reputation', label: t('reserve.reputation'), value: String(reputation), bad: false },
-		{ id: 'inreserve', label: t('reserve.inReserve'), value: String(inReserve), bad: false },
-		{ id: 'inwild', label: t('reserve.inWild'), value: String(inWild), bad: false }
+		{
+			id: 'reputation',
+			labelKey: 'reserve.reputation' as const,
+			value: String(reputation),
+			bad: false
+		},
+		{
+			id: 'inreserve',
+			labelKey: 'reserve.inReserve' as const,
+			value: String(inReserve),
+			bad: false
+		},
+		{ id: 'inwild', labelKey: 'reserve.inWild' as const, value: String(inWild), bad: false }
 	]);
 </script>
 
@@ -59,7 +79,7 @@
 	<dl class="hud__stats">
 		{#each stats as stat (stat.id)}
 			<div class="hud__stat">
-				<dt>{stat.label}</dt>
+				<dt>{@html formatFont(t(stat.labelKey))}</dt>
 				<dd class:hud__value--bad={stat.bad} data-testid="reserve-{stat.id}-value">{stat.value}</dd>
 			</div>
 		{/each}

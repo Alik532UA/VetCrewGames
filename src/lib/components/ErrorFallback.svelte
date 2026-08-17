@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatPlain } from '$lib/i18n';
+	import { t, formatPlain, formatFont } from '$lib/i18n';
 	import { langPath, type Language } from '$lib/i18n/routing';
 
 	/**
@@ -27,14 +27,14 @@
 
 <!-- `assertive`, бо це не інформація, а поломка того, що людина зараз робила. -->
 <div class="error-fallback" role="alert" aria-live="assertive" data-testid="render-error-message">
-	<h2>{formatPlain(t('error.title'))}</h2>
-	<p>{formatPlain(t('error.message'))}</p>
+	<h2>{@html formatFont(formatPlain(t('error.title')))}</h2>
+	<p>{@html formatFont(formatPlain(t('error.message')))}</p>
 	<div class="error-fallback__actions">
 		<button type="button" onclick={onretry} data-testid="render-error-retry-btn">
-			{formatPlain(t('error.retry'))}
+			{@html formatFont(formatPlain(t('error.retry')))}
 		</button>
 		<a href={langPath(lang)} data-testid="render-error-home-link">
-			{formatPlain(t('error.goHome'))}
+			{@html formatFont(formatPlain(t('error.goHome')))}
 		</a>
 	</div>
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import { doneOf, isDone } from '$lib/reserve/contracts';
 	import type { ReserveCommand, ReserveState } from '$lib/reserve/types';
@@ -26,12 +26,12 @@
 {#if state.offered}
 	{@const offer = state.offered}
 	<article class="card card--offer" data-testid="reserve-offer-card">
-		<h4 class="card__title">{t('reserve.offer')}</h4>
-		<p class="card__what">{t(offer.titleKey)}</p>
+		<h4 class="card__title">{@html formatFont(t('reserve.offer'))}</h4>
+		<p class="card__what">{@html formatFont(t(offer.titleKey))}</p>
 		<p class="card__terms">
-			{t('reserve.dueDay')}
-			{offer.dueDay} · {t('reserve.reward')}
-			{money(offer.reward)} · {t('reserve.penalty')} −{offer.penalty}
+			{@html formatFont(t('reserve.dueDay'))}
+			{offer.dueDay} · {@html formatFont(t('reserve.reward'))}
+			{money(offer.reward)} · {@html formatFont(t('reserve.penalty'))} −{offer.penalty}
 		</p>
 		<button
 			type="button"
@@ -39,23 +39,25 @@
 			onclick={() => onCommand({ type: 'accept', contractId: offer.id })}
 			data-testid="reserve-accept-btn"
 		>
-			{t('reserve.accept')}
+			{@html formatFont(t('reserve.accept'))}
 		</button>
 	</article>
 {/if}
 
 {#if state.contracts.length === 0 && !state.offered}
-	<p class="empty" data-testid="reserve-no-contracts-text">{t('reserve.noContracts')}</p>
+	<p class="empty" data-testid="reserve-no-contracts-text">
+		{@html formatFont(t('reserve.noContracts'))}
+	</p>
 {/if}
 
 {#each state.contracts as contract (contract.id)}
 	{@const done = isDone(state, contract)}
 	{@const late = day > contract.dueDay}
 	<article class="card" data-testid="reserve-contract-{contract.id}-card">
-		<p class="card__what">{t(contract.titleKey)}</p>
+		<p class="card__what">{@html formatFont(t(contract.titleKey))}</p>
 		<p class="card__terms" class:card__terms--late={late}>
-			{doneOf(state, contract)} / {contract.amount} · {t('reserve.dueDay')}
-			{contract.dueDay} · {t('reserve.reward')}
+			{doneOf(state, contract)} / {contract.amount} · {@html formatFont(t('reserve.dueDay'))}
+			{contract.dueDay} · {@html formatFont(t('reserve.reward'))}
 			{money(contract.reward)}
 		</p>
 		{#if done}
@@ -65,7 +67,7 @@
 				onclick={() => onCommand({ type: 'claim', contractId: contract.id })}
 				data-testid="reserve-claim-{contract.id}-btn"
 			>
-				{t('reserve.claim')}
+				{@html formatFont(t('reserve.claim'))}
 			</button>
 		{/if}
 	</article>

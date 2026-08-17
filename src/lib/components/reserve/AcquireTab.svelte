@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import { ORIGINS, type AnimalOrigin } from '$lib/reserve/constants';
 	import { comfortOf, speciesById, speciesOfBiome, type ReserveBiome } from '$lib/reserve/species';
@@ -46,7 +46,7 @@
 
 <div class="take">
 	<label class="take__row">
-		<span>{t('reserve.pickSpecies')}</span>
+		<span>{@html formatFont(t('reserve.pickSpecies'))}</span>
 		<select
 			value={picked?.id ?? ''}
 			onchange={(event) => (speciesId = event.currentTarget.value)}
@@ -54,8 +54,8 @@
 		>
 			{#each options as species (species.id)}
 				<option value={species.id}>
-					{t(species.nameKey)} — {t('reserve.needsMin')}
-					{species.minSize}, {t('reserve.needsRec')}
+					{@html formatFont(t(species.nameKey))} — {@html formatFont(t('reserve.needsMin'))}
+					{species.minSize}, {@html formatFont(t('reserve.needsRec'))}
 					{species.recSize}
 				</option>
 			{/each}
@@ -63,7 +63,7 @@
 	</label>
 
 	<label class="take__row">
-		<span>{t('reserve.pickEnclosure')}</span>
+		<span>{@html formatFont(t('reserve.pickEnclosure'))}</span>
 		<select
 			value={home?.id ?? 0}
 			onchange={(event) => (enclosureId = Number(event.currentTarget.value))}
@@ -71,9 +71,9 @@
 		>
 			{#each fitting as enclosure (enclosure.id)}
 				<option value={enclosure.id}>
-					{t('reserve.enclosure')}
-					{enclosure.id} · {t('reserve.size')}
-					{enclosure.size} · {t('reserve.comfort')} ×{picked
+					{@html formatFont(t('reserve.enclosure'))}
+					{enclosure.id} · {@html formatFont(t('reserve.size'))}
+					{enclosure.size} · {@html formatFont(t('reserve.comfort'))} ×{picked
 						? comfortOf(picked, enclosure.size).toFixed(1)
 						: '1'}
 				</option>
@@ -82,7 +82,9 @@
 	</label>
 
 	{#if fitting.length === 0}
-		<p class="warn" data-testid="reserve-no-free-text">{t('reserve.noFreeEnclosure')}</p>
+		<p class="warn" data-testid="reserve-no-free-text">
+			{@html formatFont(t('reserve.noFreeEnclosure'))}
+		</p>
 	{/if}
 
 	<!--
@@ -91,7 +93,9 @@
 		репутації нараховує ядро.
 	-->
 	{#if !hasVet}
-		<p class="warn" data-testid="reserve-no-vet-text">{t('reserve.noVetWarning')}</p>
+		<p class="warn" data-testid="reserve-no-vet-text">
+			{@html formatFont(t('reserve.noVetWarning'))}
+		</p>
 	{/if}
 
 	<div class="take__origins">
@@ -109,7 +113,7 @@
 					})}
 				data-testid="reserve-acquire-{id}-btn"
 			>
-				<b>{t(`reserve.origin.${id as AnimalOrigin}` as const)}</b>
+				<b>{@html formatFont(t(`reserve.origin.${id as AnimalOrigin}` as const))}</b>
 				<span class="origin__meta">
 					−{money(terms.price + terms.logistics)}
 					<span class:origin__bad={terms.impact < 0}>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
 	import {
 		enclosurePrice,
@@ -36,10 +36,10 @@
 </script>
 
 <div class="build">
-	<h3 class="build__title">{t('reserve.build')}</h3>
+	<h3 class="build__title">{@html formatFont(t('reserve.build'))}</h3>
 
 	<label class="build__row">
-		<span>{t('reserve.size')}: <b>{size}</b></span>
+		<span>{@html formatFont(t('reserve.size'))}: <b>{size}</b></span>
 		<input
 			type="range"
 			min={ENCLOSURE_SIZES[0]}
@@ -59,7 +59,7 @@
 				onclick={() => (quality = value)}
 				data-testid="reserve-quality-{value}-btn"
 			>
-				{t(`reserve.quality.${value}` as const)}
+				{@html formatFont(t(`reserve.quality.${value}` as const))}
 			</button>
 		{/each}
 	</div>
@@ -70,7 +70,7 @@
 		onclick={() => onCommand({ type: 'build', size, quality })}
 		data-testid="reserve-build-btn"
 	>
-		{t('reserve.build')} — {money(enclosurePrice(size, quality))}
+		{@html formatFont(t('reserve.build'))} — {money(enclosurePrice(size, quality))}
 	</button>
 </div>
 
@@ -79,15 +79,17 @@
 		{@const worn = effectiveQualityOf(enclosure) < enclosure.quality}
 		<li class="card" data-testid="reserve-enclosure-{enclosure.id}-item">
 			<div class="card__head">
-				<b>{t('reserve.enclosure')} {enclosure.id}</b>
+				<b>{@html formatFont(t('reserve.enclosure'))} {enclosure.id}</b>
 				<span class="card__meta">
-					{t('reserve.size')}
-					{enclosure.size} · {t(`reserve.quality.${effectiveQualityOf(enclosure)}` as const)}
+					{@html formatFont(t('reserve.size'))}
+					{enclosure.size} · {@html formatFont(
+						t(`reserve.quality.${effectiveQualityOf(enclosure)}` as const)
+					)}
 				</span>
 			</div>
 
 			<div class="card__meta" class:card__meta--bad={worn}>
-				{t('reserve.durability')}: {percent(enclosure.durability)}
+				{@html formatFont(t('reserve.durability'))}: {percent(enclosure.durability)}
 			</div>
 
 			<div class="card__actions">
@@ -98,7 +100,7 @@
 						onclick={() => onCommand({ type: 'repair', enclosureId: enclosure.id })}
 						data-testid="reserve-repair-{enclosure.id}-btn"
 					>
-						{t('reserve.repair')} — {money(
+						{@html formatFont(t('reserve.repair'))} — {money(
 							repairPrice(enclosure.size, enclosure.quality, enclosure.durability)
 						)}
 					</button>
@@ -112,7 +114,9 @@
 						onclick={() => onCommand({ type: 'upgrade', enclosureId: enclosure.id, quality: next })}
 						data-testid="reserve-upgrade-{enclosure.id}-btn"
 					>
-						{t('reserve.upgrade')} — {money(upgradePrice(enclosure.size, enclosure.quality, next))}
+						{@html formatFont(t('reserve.upgrade'))} — {money(
+							upgradePrice(enclosure.size, enclosure.quality, next)
+						)}
 					</button>
 				{/if}
 
@@ -123,7 +127,7 @@
 						onclick={() => onCommand({ type: 'demolish', enclosureId: enclosure.id })}
 						data-testid="reserve-demolish-{enclosure.id}-btn"
 					>
-						{t('reserve.demolish')}
+						{@html formatFont(t('reserve.demolish'))}
 					</button>
 				{/if}
 			</div>

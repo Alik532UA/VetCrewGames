@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { WAGES, type StaffRole } from '$lib/reserve/constants';
 	import type { ReserveCommand } from '$lib/reserve/types';
 
@@ -23,9 +23,11 @@
 <ul class="list">
 	{#each roles as role (role)}
 		<li class="crew" data-testid="reserve-crew-{role}-row">
-			<span class="crew__name">{t(`reserve.staff.${role}` as const)}</span>
+			<span class="crew__name">{@html formatFont(t(`reserve.staff.${role}` as const))}</span>
 			<span class="crew__count" data-testid="reserve-crew-{role}-count">{staff[role]}</span>
-			<span class="crew__wage">−{WAGES[role]}/{t('reserve.day').toLowerCase()}</span>
+			<span class="crew__wage"
+				>−{WAGES[role]}/{@html formatFont(t('reserve.day').toLowerCase())}</span
+			>
 
 			<div class="crew__buttons">
 				<button

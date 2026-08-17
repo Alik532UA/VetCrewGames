@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
@@ -148,31 +148,33 @@
 
 		{#if game.state.victory}
 			<section class="reserve-over" data-testid="reserve-victory-section">
-				<p>{t('reserve.victory')}</p>
+				<p>{@html formatFont(t('reserve.victory'))}</p>
 				<p class="reserve-over__score">
-					{t('reserve.impact')}: {game.state.impact} · {t('reserve.day')}: {game.day}
+					{@html formatFont(t('reserve.impact'))}: {game.state.impact} · {@html formatFont(
+						t('reserve.day')
+					)}: {game.day}
 				</p>
 				<button
 					type="button"
 					class="btn-primary"
 					onclick={startOver}
-					data-testid="reserve-victory-restart-btn">{t('reserve.newGame')}</button
+					data-testid="reserve-victory-restart-btn">{@html formatFont(t('reserve.newGame'))}</button
 				>
 			</section>
 		{:else if game.state.gameOver}
 			<section class="reserve-over" data-testid="reserve-game-over-section">
-				<p>{t('reserve.gameOver')}</p>
+				<p>{@html formatFont(t('reserve.gameOver'))}</p>
 				<button
 					type="button"
 					class="btn-primary"
 					onclick={startOver}
-					data-testid="reserve-restart-btn">{t('reserve.newGame')}</button
+					data-testid="reserve-restart-btn">{@html formatFont(t('reserve.newGame'))}</button
 				>
 			</section>
 		{:else}
 			{#if game.state.subsidy}
 				<p class="reserve-warning" role="status" data-testid="reserve-subsidy-status">
-					{t('reserve.subsidy')}
+					{@html formatFont(t('reserve.subsidy'))}
 				</p>
 			{/if}
 
@@ -200,7 +202,7 @@
 						onclick={() => (panel = panel === item.id ? null : item.id)}
 						data-testid="reserve-panel-{item.id}-btn"
 					>
-						{t(item.key)}
+						{@html formatFont(t(item.key))}
 					</button>
 				{/each}
 				<!--
@@ -214,7 +216,7 @@
 					onclick={() => command({ type: 'campaign' })}
 					data-testid="reserve-campaign-btn"
 				>
-					{t('reserve.campaign')}
+					{@html formatFont(t('reserve.campaign'))}
 				</button>
 				<button
 					type="button"
@@ -222,7 +224,7 @@
 					onclick={startOver}
 					data-testid="reserve-startover-btn"
 				>
-					{t('reserve.restart')}
+					{@html formatFont(t('reserve.restart'))}
 				</button>
 			</nav>
 

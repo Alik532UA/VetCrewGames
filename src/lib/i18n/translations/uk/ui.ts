@@ -11,15 +11,15 @@ export const ui = {
 	'menu.game.feeding': 'Що їмо?',
 	'menu.game.memory': 'Знайди пару',
 	'menu.game.random': 'Випадкова гра',
-	'menu.reserve': 'Заповiдник',
-	'menu.quiz': 'Вiкторина',
+	'menu.reserve': 'Заповідник',
+	'menu.quiz': 'Вікторина',
 
 	// Підписи трьох пунктів, однакових для «Вікторини» й «Знайди пару»: різниця
 	// лише в тому, куди веде «Грати».
 	'menu.play': 'Грати',
 	'menu.playWithFriends': 'Грати з друзями',
 	'menu.playOnline': 'Грати онлайн',
-	'menu.comingSoon': 'Ще в розробцi',
+	'menu.comingSoon': 'Ще в розробці',
 	'menu.game.population': 'Кого більше?',
 	'menu.game.habitat': 'Де живем?',
 	'menu.game.mythbusters': 'Правда чи міф?',
@@ -41,7 +41,7 @@ export const ui = {
 	'memory.you': 'Ти',
 	'memory.rival': 'Суперник',
 	'memory.moves': 'Ходів',
-	'memory.resized': 'Розмiр екрана змiнився. Розкладка лишилася тою, з якою починалася партiя.',
+	'memory.resized': 'Розмір екрана змінився. Розкладка лишилася тою, з якою починалася партія.',
 	'memory.relayout': 'Перерозкласти',
 	'memory.found': 'Знайдено',
 	'memory.turn': 'Ходить',
@@ -69,9 +69,9 @@ export const ui = {
 	// пунктами списку. Названі тим, що видно, а не значенням у сховищі:
 	// «orange-purple» нікому нічого не каже, а «Осіння» каже все.
 	'theme.dark': 'Темна',
-	'theme.light-green': 'Свiтло-зелена',
+	'theme.light-green': 'Світло-зелена',
 	'theme.winter': 'Зимова',
-	'theme.orange-purple': 'Осiння',
+	'theme.orange-purple': 'Осіння',
 
 	// Кнопка збору логів. У продакшні вмикається debug-режимом.
 	'debug.copyLogs': 'Скопіювати звіт логів',
