@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PERFECT_BONUS } from '$lib/config/scoring';
 import type { Animal } from '$lib/config/population-game';
 
 /**
@@ -132,8 +133,9 @@ describe('PopulationGameController', () => {
 		game.check();
 
 		expect(game.slotResults).toEqual([true, true, true]);
-		expect(game.sessionScore).toBe(3);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(3);
+		// Повний ряд дістає надбавку понад очко за слот (config/scoring.ts).
+		expect(game.sessionScore).toBe(3 + PERFECT_BONUS);
+		expect(settingsMock.addScore).toHaveBeenCalledWith(3 + PERFECT_BONUS);
 		expect(game.roundResults).toEqual(['correct']);
 	});
 
@@ -165,7 +167,9 @@ describe('PopulationGameController', () => {
 		game.check();
 
 		expect(board(game.slots)).toBe(frozen);
-		expect(game.sessionScore, 'повторна перевірка не має нараховувати вдруге').toBe(3);
+		expect(game.sessionScore, 'повторна перевірка не має нараховувати вдруге').toBe(
+			3 + PERFECT_BONUS
+		);
 		expect(game.roundResults).toHaveLength(1);
 	});
 

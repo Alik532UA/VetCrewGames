@@ -1,6 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 import { settings } from '$lib/services/settings.svelte';
+import { roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -233,8 +234,10 @@ export class PopulationGameController {
 		this.roundResults.push(outcome);
 
 		if (correctCount > 0) {
-			this.sessionScore += correctCount;
-			settings.addScore(correctCount);
+			// По очку за слот, надбавка за повний ряд (config/scoring.ts).
+			const points = roundPoints(correctCount, this.slotCount);
+			this.sessionScore += points;
+			settings.addScore(points);
 		}
 	}
 

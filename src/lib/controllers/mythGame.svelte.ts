@@ -1,6 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
 import { settings } from '$lib/services/settings.svelte';
+import { roundPoints } from '$lib/config/scoring';
 import { storage } from '$lib/services/storage';
 import type { RoundOutcome } from '$lib/types/game';
 
@@ -93,8 +94,11 @@ export class MythGameController {
 		this.roundResults.push(question.isCorrect ? 'correct' : 'incorrect');
 
 		if (question.isCorrect) {
-			this.sessionScore++;
-			settings.addScore(1);
+			// Бінарний раунд коштує три очки: одиниця була б несумірна з раундом,
+			// де відповідей три (config/scoring.ts).
+			const points = roundPoints(1, 1);
+			this.sessionScore += points;
+			settings.addScore(points);
 		}
 	}
 

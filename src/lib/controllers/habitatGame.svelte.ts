@@ -6,6 +6,7 @@ import {
 	type HabitatRound
 } from '$lib/config/habitat-game';
 import { settings } from '$lib/services/settings.svelte';
+import { roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -102,9 +103,27 @@ export class HabitatGameController {
 		const outcome = this.outcome ?? 'incorrect';
 		this.roundResults.push(outcome);
 
-		if (outcome === 'correct') {
-			this.sessionScore++;
-			settings.addScore(1);
+		/*
+		 * Частковий успіх ТЕЖ коштує очок — і це головна зміна в цій грі.
+		 *
+		 * Доти зараховувався лише бездоганний раунд, тобто гравець, який назвав
+		 * чотири зони з пʼяти, діставав рівно те саме, що й той, хто не назвав
+		 * жодної. Для гри, яка НАВЧАЄ, це найгірша з можливих відповідей: вона
+		 * не відрізняє «майже знаю» від «не знаю».
+		 *
+		 * Зайвий вибір ВІДНІМАЄ влучний. Інакше найкращою стратегією було б
+		 * тицьнути всі зони підряд і зібрати повний бал за незнання. Через це
+		 * надбавка за бездоганність приходить рівно тоді, коли влучено все й
+		 * зайвого немає, — саме її й рахує `roundPoints`.
+		 */
+		const correct = this.round?.correct ?? [];
+		const hits = this.selected.filter((option) => correct.includes(option)).length;
+		const extras = this.selected.length - hits;
+		const points = roundPoints(hits - extras, correct.length);
+
+		if (points > 0) {
+			this.sessionScore += points;
+			settings.addScore(points);
 		}
 	}
 

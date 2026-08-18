@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BINARY_POINTS } from '$lib/config/scoring';
 import { myths } from '$lib/config/myth-game';
 
 /**
@@ -42,14 +43,14 @@ describe('MythGameController', () => {
 
 		game.answer(game.current!.isTrue);
 
-		expect(game.sessionScore).toBe(1);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(1);
+		expect(game.sessionScore).toBe(BINARY_POINTS);
+		expect(settingsMock.addScore).toHaveBeenCalledWith(BINARY_POINTS);
 		expect(game.roundResults).toEqual(['correct']);
 
 		game.nextRound();
 		game.answer(!game.current!.isTrue);
 
-		expect(game.sessionScore, 'помилка не має додавати очок').toBe(1);
+		expect(game.sessionScore, 'помилка не має додавати очок').toBe(BINARY_POINTS);
 		expect(settingsMock.addScore).toHaveBeenCalledTimes(1);
 		expect(game.roundResults).toEqual(['correct', 'incorrect']);
 	});
@@ -61,7 +62,7 @@ describe('MythGameController', () => {
 		game.answer(game.current!.isTrue);
 		game.answer(game.current!.isTrue);
 
-		expect(game.sessionScore, 'подвійний клік не має подвоювати рахунок').toBe(1);
+		expect(game.sessionScore, 'подвійний клік не має подвоювати рахунок').toBe(BINARY_POINTS);
 		expect(game.roundResults).toHaveLength(1);
 	});
 

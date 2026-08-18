@@ -9,6 +9,7 @@ import {
 	type Target
 } from '$lib/config/feeding-game';
 import { settings } from '$lib/services/settings.svelte';
+import { roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -186,8 +187,11 @@ export class FeedingGameController {
 		this.roundResults.push(outcome);
 
 		if (correct > 0) {
-			this.sessionScore += correct;
-			settings.addScore(correct);
+			// По очку за страву й надбавка за раунд без жодної помилки: три з трьох
+			// це не «на одну краще, ніж дві» (config/scoring.ts).
+			const points = roundPoints(correct, this.foodsPerRound);
+			this.sessionScore += points;
+			settings.addScore(points);
 		}
 	}
 

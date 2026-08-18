@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BINARY_POINTS } from '$lib/config/scoring';
 import { animals } from '$lib/config/population-game';
 import { buildRound, familyPuzzles } from '$lib/config/family-game';
 import { uk } from '$lib/i18n/translations/uk';
@@ -93,14 +94,14 @@ describe('FamilyGameController', () => {
 
 		game.choose(odd(game));
 		expect(game.isCorrect).toBe(true);
-		expect(game.sessionScore).toBe(1);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(1);
+		expect(game.sessionScore).toBe(BINARY_POINTS);
+		expect(settingsMock.addScore).toHaveBeenCalledWith(BINARY_POINTS);
 		expect(game.roundResults).toEqual(['correct']);
 
 		game.nextRound();
 		game.choose(notOdd(game));
 		expect(game.isCorrect).toBe(false);
-		expect(game.sessionScore, 'помилка не додає очок').toBe(1);
+		expect(game.sessionScore, 'помилка не додає очок').toBe(BINARY_POINTS);
 		expect(game.roundResults).toEqual(['correct', 'incorrect']);
 	});
 

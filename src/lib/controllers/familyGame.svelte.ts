@@ -2,6 +2,7 @@ import { randomFor } from '$lib/utils/seededRandom';
 import { buildRound, getNextPuzzle, type FamilyRound } from '$lib/config/family-game';
 import type { Animal } from '$lib/config/population-game';
 import { settings } from '$lib/services/settings.svelte';
+import { roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -72,8 +73,10 @@ export class FamilyGameController {
 		this.roundResults.push(correct ? 'correct' : 'incorrect');
 
 		if (correct) {
-			this.sessionScore++;
-			settings.addScore(1);
+			// Бінарний раунд: три очки за правильну відповідь (config/scoring.ts).
+			const points = roundPoints(1, 1);
+			this.sessionScore += points;
+			settings.addScore(points);
 		}
 	}
 

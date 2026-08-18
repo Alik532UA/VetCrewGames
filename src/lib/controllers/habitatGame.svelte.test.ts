@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { roundPoints } from '$lib/config/scoring';
 import { animals } from '$lib/config/population-game';
 import { BIOMES, CONTINENTS, buildHabitatRound, habitatEntries } from '$lib/config/habitat-game';
 import { uk } from '$lib/i18n/translations/uk';
@@ -128,15 +129,25 @@ describe('HabitatGameController', () => {
 		expect(game.selected).toEqual([]);
 	});
 
-	it('точна відповідь дає очко', () => {
+	it('точна відповідь дає повний бал раунду', () => {
 		const game = started();
 		game.round!.correct.forEach((option) => game.toggle(option));
 
 		game.check();
 
 		expect(game.outcome).toBe('correct');
-		expect(game.sessionScore).toBe(1);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(1);
+		/*
+		 * Очікування рахується ТИМ САМИМ правилом, що й гра.
+		 *
+		 * Раунд тут буває двох форм: із кількома правильними зонами (тоді очко за
+		 * кожну плюс надбавка) і з ОДНІЄЮ (тоді це бінарний раунд, і він коштує
+		 * три). Число, вписане в тест руками, збіглося б лише з однією з двох —
+		 * саме на цьому перша редакція й упала.
+		 */
+		expect(game.sessionScore).toBe(
+			roundPoints(game.round!.correct.length, game.round!.correct.length)
+		);
+		expect(settingsMock.addScore).toHaveBeenCalledWith(game.sessionScore);
 		expect(game.roundResults).toEqual(['correct']);
 	});
 
@@ -145,7 +156,7 @@ describe('HabitatGameController', () => {
 	 * гравець не помилився, він не дорахував. Очка за неї немає, але й
 	 * «не там» вона не заслуговує.
 	 */
-	it('неповна відповідь дає partial і не дає очка', () => {
+	it('неповна відповідь дає partial і очки за влучене', () => {
 		const game = started();
 		const multi = () => game.round!.correct.length > 1;
 		// Знаходимо раунд, де правильних відповідей більше однієї.
@@ -157,8 +168,9 @@ describe('HabitatGameController', () => {
 		game.check();
 
 		expect(game.outcome).toBe('partial');
-		expect(game.sessionScore).toBe(0);
-		expect(settingsMock.addScore).not.toHaveBeenCalled();
+		// Одна влучна зона — одне очко. Надбавки немає: раунд не бездоганний.
+		expect(game.sessionScore).toBe(1);
+		expect(settingsMock.addScore).toHaveBeenCalledWith(1);
 	});
 
 	it('зайвий варіант робить відповідь неправильною', () => {
@@ -170,7 +182,9 @@ describe('HabitatGameController', () => {
 		game.check();
 
 		expect(game.outcome).toBe('incorrect');
-		expect(game.sessionScore).toBe(0);
+		// Зайвий вибір ВІДНІМАЄ влучний: інакше найкращою стратегією було б
+		// тицьнути всі зони підряд і зібрати повний бал за незнання.
+		expect(game.sessionScore).toBe(game.round!.correct.length - 1);
 	});
 
 	it('після перевірки вибір заморожується', () => {

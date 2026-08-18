@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { PERFECT_BONUS } from '$lib/config/scoring';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { animals } from '$lib/config/population-game';
 import { BIN, correctTarget, feedingSets, foods } from '$lib/config/feeding-game';
@@ -274,8 +275,10 @@ describe('FeedingGameController', () => {
 		game.feed();
 
 		expect(game.verdicts.every((v) => v.isCorrect)).toBe(true);
-		expect(game.sessionScore).toBe(3);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(3);
+		// Бездоганний раунд дістає надбавку: три страви з трьох це інша якість
+		// відповіді, ніж дві (config/scoring.ts).
+		expect(game.sessionScore).toBe(3 + PERFECT_BONUS);
+		expect(settingsMock.addScore).toHaveBeenCalledWith(3 + PERFECT_BONUS);
 		expect(game.roundResults).toEqual(['correct']);
 	});
 
@@ -296,6 +299,7 @@ describe('FeedingGameController', () => {
 		game.feed();
 
 		expect(game.roundResults).toEqual(['partial']);
+		// Дві з трьох — рівно два очки: надбавки за частковий раунд немає.
 		expect(game.sessionScore).toBe(2);
 	});
 
