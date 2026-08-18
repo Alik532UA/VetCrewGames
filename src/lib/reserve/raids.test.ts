@@ -6,7 +6,9 @@ import {
 	AMBUSH_INJURY,
 	DRONE_PRICE,
 	IGNORE_LOSS,
-	RAID_CHANCE_PER_DAY,
+	raidChanceOn,
+	RAID_CHANCE_MAX,
+	RAID_CHANCE_START,
 	RAID_FIRST_DAY,
 	RAID_LOST_IMPACT,
 	RAID_PATIENCE_DAYS,
@@ -80,8 +82,9 @@ function raidRate(runs: number, days: number, rangers: number, skip = RAID_FIRST
 
 describe('браконьєри', () => {
 	it('перевірка жива: наліт таки трапляється', () => {
-		// Від першого дня партії: пільговий період усередині, і наліт усе одно буває.
-		expect(raidRate(200, 12, 0, 0)).toBeGreaterThan(0.2);
+		// Довгий обрій навмисно: перші декади коштують 1% за добу, тож на короткому
+		// відрізку наліт майже не трапляється — і це саме те, чого від рампи й хотіли.
+		expect(raidRate(200, 120, 0, 0)).toBeGreaterThan(0.2);
 	});
 
 	/**
@@ -96,9 +99,11 @@ describe('браконьєри', () => {
 		const bare = raidRate(5_000, days, 0);
 		const guarded = raidRate(5_000, days, 1);
 
-		// Очікування рахуємо з тих самих констант, з яких грає гра.
-		const expectBare = 1 - (1 - RAID_CHANCE_PER_DAY) ** days;
-		const expectGuarded = 1 - (1 - RAID_CHANCE_PER_DAY * (1 - RANGER_PROTECTION)) ** days;
+		// Очікування рахуємо з тієї самої функції, з якої грає гра. Обрій короткий і
+		// цілком усередині першої декади, тож шанс на всіх трьох добах однаковий.
+		const chance = raidChanceOn(0);
+		const expectBare = 1 - (1 - chance) ** days;
+		const expectGuarded = 1 - (1 - chance * (1 - RANGER_PROTECTION)) ** days;
 
 		expect(bare).toBeGreaterThan(expectBare - 0.03);
 		expect(bare).toBeLessThan(expectBare + 0.03);
@@ -108,6 +113,24 @@ describe('браконьєри', () => {
 		expect(guarded).toBeLessThan(bare / 5);
 	});
 
+	/**
+	 * Рампа: +1% за декаду до стелі.
+	 *
+	 * Перевіряється сама функція, а не частка партій: тут ідеться про форму кривої,
+	 * і 10 000 кидків на кожну точку коштували б секунд заради того, що видно
+	 * точно.
+	 */
+	it('шанс росте на відсоток за декаду й спиняється на стелі', () => {
+		expect(raidChanceOn(0)).toBeCloseTo(RAID_CHANCE_START);
+		expect(raidChanceOn(9)).toBeCloseTo(RAID_CHANCE_START);
+		expect(raidChanceOn(10)).toBeCloseTo(0.02);
+		expect(raidChanceOn(25)).toBeCloseTo(0.03);
+		// Стеля не пробивається навіть через триста діб.
+		expect(raidChanceOn(300)).toBe(RAID_CHANCE_MAX);
+		// Крива тільки росте: жодна пізніша доба не безпечніша за ранішу.
+		for (let d = 1; d < 200; d++)
+			expect(raidChanceOn(d)).toBeGreaterThanOrEqual(raidChanceOn(d - 1));
+	});
 	it('до восьмого дня браконьєрів немає зовсім', () => {
 		expect(raidRate(300, RAID_FIRST_DAY - 1, 0, 0)).toBe(0);
 	});
