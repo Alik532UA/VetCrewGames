@@ -81,7 +81,7 @@ const info = (hostUid) => ({
 	hostUid,
 	config: { pairs: 8, cols: 4 }
 });
-const member = { name: 'Тест', role: 'player', order: 1 };
+const member = { name: 'Тест', role: 'player', order: 2 };
 
 /**
  * `at` — серверна позначка часу, і саме такою її вимагає правило. REST розуміє
@@ -138,9 +138,28 @@ const CASES = [
 			)
 	},
 	{
+		// `at` серверний, як і в `net/presence.ts`. Клієнтське число тут доти
+		// проходило, бо форма присутності не перевірялася зовсім.
 		name: 'учасник тримає СВОЮ присутність',
 		allowed: true,
-		run: () => write(`presence/${CODE}/${guest.uid}`, { at: 1 }, guest.token)
+		run: () => write(`presence/${CODE}/${guest.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		// Повторний вхід пише той самий рядок складу з тим САМИМ порядком —
+		// саме це й мусить лишитися дозволеним попри незмінність `order`.
+		name: 'повторний вхід із тим самим порядком',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/members/${guest.uid}`, member, guest.token)
+	},
+	{
+		name: 'господар веде індекс СВОїх кімнат',
+		allowed: true,
+		run: () => write(`myRooms/${host.uid}/${CODE}`, { at: SERVER_TIME }, host.token)
+	},
+	{
+		name: 'господар читає свій індекс кімнат',
+		allowed: true,
+		run: () => read(`myRooms/${host.uid}`, host.token)
 	},
 
 	// --- сторонній не мусить цього могти ---
@@ -220,7 +239,85 @@ const CASES = [
 	{
 		name: 'чужа присутність',
 		allowed: false,
-		run: () => write(`presence/${CODE}/${host.uid}`, { at: 1 }, guest.token)
+		run: () => write(`presence/${CODE}/${host.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		// Присутність без обовʼязкового поля. Доти форма цього вузла не
+		// перевірялася зовсім: свій вузол можна було набити чим завгодно.
+		name: 'присутність без обовʼязкових полів',
+		allowed: false,
+		run: () => write(`presence/${CODE}/${guest.uid}`, { online: true }, guest.token)
+	},
+	{
+		name: 'присутність із ПІДРОБЛЕНИМ часом',
+		allowed: false,
+		run: () => write(`presence/${CODE}/${guest.uid}`, { at: 1 }, guest.token)
+	},
+	{
+		/*
+		 * ЗМІНА СВОГО ПОРЯДКУ ПІСЛЯ ВХОДУ — і це найтихіший із закритих дефектів.
+		 *
+		 * Із неї учасник, уже впущений у кімнату, забирав першу чергу в господаря:
+		 * `order` перевірявся лише на `isNumber`, а черга ходів рахується саме з
+		 * нього. Не дірка в даних, а зміна правил гри посеред партії.
+		 */
+		name: 'ЗМІНА свого порядку входу після входу',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/members/${guest.uid}`, { ...member, order: 1 }, guest.token)
+	},
+	{
+		name: 'порядок входу поза діапазоном (нуль)',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/members/${host.uid}`, { ...member, order: 0 }, host.token)
+	},
+	{
+		// Невідоме поле — те, що ловить `$other: false`. Без нього `.validate`
+		// перевіряє лише НАЗВАНІ поля, і розсинхрон імені між кодом і правилом
+		// лишається тихим (CLOUD-DATABASE-v8 § 4.6).
+		name: 'невідоме поле в рядку складу',
+		allowed: false,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, isAdmin: true }, guest.token)
+	},
+	{
+		name: 'невідоме поле в ході',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000012`,
+				{ ...move(guest.uid, 12), score: 999 },
+				guest.token
+			)
+	},
+	{
+		name: 'невідоме поле в info',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/isRanked`, true, host.token)
+	},
+	{
+		name: 'невідома гілка всередині кімнати',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/chat/msg1`, { text: 'привіт' }, host.token)
+	},
+	{
+		name: 'нечислове значення в config',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/config/mode`, 'hard', host.token)
+	},
+	{
+		name: 'ЧУЖИЙ індекс кімнат — читання',
+		allowed: false,
+		run: () => read(`myRooms/${host.uid}`, guest.token)
+	},
+	{
+		name: 'ЧУЖИЙ індекс кімнат — запис',
+		allowed: false,
+		run: () => write(`myRooms/${host.uid}/ZZZZZ`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'перелічити ВСІ індекси кімнат',
+		allowed: false,
+		run: () => read('myRooms', host.token)
 	},
 	{
 		name: 'перелічити ВСІ кімнати одним читанням',

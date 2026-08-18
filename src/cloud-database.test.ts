@@ -134,8 +134,119 @@ describe('хмарна база', () => {
 	it('SDK не імпортується у .svelte.ts (§ 10.4)', () => {
 		const bad = sources
 			.filter((file) => file.endsWith('.svelte.ts'))
-			.filter((file) => /from\s+['"]firebase\//.test(readFileSync(file, 'utf8')));
+			// `import type` зникає при компіляції — це не мережа в модулі. Регекс без
+			// цього виключення звинувачував би правильний код; саме таким його й
+			// постачав канон до ревізії 8.4.
+			.filter((file) =>
+				/^\s*import\s+(?!type\b)[^;]*from\s+['"]firebase\//m.test(readFileSync(file, 'utf8'))
+			);
 		expect(bad, `Firebase у реактивному модулі:\n${bad.join('\n')}`).toEqual([]);
+	});
+
+	it('невідомі поля відкидаються, а не ігноруються (§ 4.6)', () => {
+		/*
+		 * `.validate` перевіряє лише ті поля, які НАЗВАНІ. Без `$other` перелік
+		 * вище — перевірка частини форми, і головне: розсинхрон імені поля між
+		 * кодом і правилом лишається тихим. У сусідньому `Slovko` правило
+		 * валідувало `last_changed`, код писав `lastChanged`, і захист від
+		 * підробленого часу не діяв ні на що.
+		 */
+		const validates = [...rulesCode.matchAll(/"\.validate"/g)].length;
+		expect(validates, 'форма записів ніде не перевіряється').toBeGreaterThan(0);
+		const others = [...rulesCode.matchAll(/"\$other"\s*:\s*\{\s*"\.validate"\s*:\s*false/g)].length;
+		// По одному на кожен вузол із відомою формою: info, members/$uid,
+		// moves/$seq, rooms/$code, myRooms/$uid/$code, presence/$code/$uid.
+		expect(others, 'вузли з відомою формою не закриті "$other"').toBeGreaterThanOrEqual(6);
+	});
+
+	it('порядок входу незмінний після першого запису (§ 4.6)', () => {
+		// Із нього рахується черга ходів. Доти перевірявся лише `isNumber` — тобто
+		// учасник, уже впущений у кімнату, забирав першу чергу в господаря.
+		const order = rulesCode.match(/"order"\s*:\s*\{\s*"\.validate"\s*:\s*"([^"]+)"/);
+		expect(order, 'правила для members/$uid/order не знайдено').not.toBeNull();
+		expect(order?.[1], 'зміну порядку не заборонено').toMatch(
+			/!data\.exists\(\)\s*\|\|\s*newData\.val\(\)\s*===\s*data\.val\(\)/
+		);
+		expect(order?.[1], 'діапазон порядку не обмежений').toMatch(/>=\s*1/);
+	});
+
+	it('черга ходів має детермінований тайбрейк (§ 8.3)', () => {
+		/*
+		 * Правило бази вміє заборонити ЗМІНУ порядку, але не вміє порахувати
+		 * склад: у RTDB немає примітива «скільки дітей». Отже однакові `order`
+		 * можливі — і без тайбрейка `sort` лишає порядок, у якому елементи
+		 * приїхали з обʼєкта, тобто РІЗНИЙ на різних пристроях. Кожен вважає, що
+		 * зараз хід іншого, і партія завмирає без жодної помилки.
+		 */
+		const text = readFileSync('src/lib/controllers/pairsMatch.svelte.ts', 'utf8');
+		const sort = text.match(/\.sort\(\([^)]*\)\s*=>\s*([^;]+?)\);/);
+		expect(sort, 'сортування гравців не знайдено').not.toBeNull();
+		expect(sort?.[1], 'сортування за order без тайбрейка за uid').toMatch(/uid/);
+	});
+
+	it('присутність перевіряється на форму й серверний час (§ 4.6)', () => {
+		const presence = rulesCode.match(/"presence"\s*:\s*\{[\s\S]*?"\$uid"\s*:\s*\{([\s\S]*?)\n\s{8}\}/);
+		expect(presence, 'правила для presence/$code/$uid не знайдено').not.toBeNull();
+		expect(presence?.[1], 'форма присутності не перевіряється').toContain('".validate"');
+		expect(presence?.[1], 'час присутності не серверний').toContain('now');
+	});
+
+	it('кожен шлях із коду має випадок у гейті (§ 3.5)', () => {
+		/*
+		 * Напрямок тут зворотний до § 3.3, і він ловить інший клас дефекту: шлях,
+		 * у який застосунок пише, а правил для нього немає, забирає catch-all — і
+		 * функція просто не працює. У сусідньому `Slovko` так пролежала зламана
+		 * форма відгуку, у `MindStep` — кінець партії.
+		 */
+		const gate = readFileSync('scripts/check-rules.mjs', 'utf8');
+		const paths = new Set<string>();
+		for (const file of sources) {
+			for (const m of readFileSync(file, 'utf8').matchAll(
+				/\bref\s*\(\s*[^,)]+,\s*[`'"]\/?([a-z_][\w-]*)/gi
+			)) {
+				paths.add(m[1]);
+			}
+		}
+		expect(paths.size, 'шляхів до бази не знайдено — перевірка мертва').toBeGreaterThan(0);
+		const uncovered = [...paths].filter((p) => !gate.includes(p));
+		expect(uncovered, `шлях без випадку в гейті:\n${uncovered.join('\n')}`).toEqual([]);
+	});
+
+	it('кожен orderByChild має ".indexOn" на своїй гілці (§ 7.4)', () => {
+		// RTDB не відмовляє без індексу — вона віддає ГІЛКУ ЦІЛКОМ і сортує на
+		// клієнті, лишивши попередження в консолі браузера. Тобто це тихо
+		// зростаючий рахунок, а не помилка.
+		const bad: string[] = [];
+		for (const file of sources) {
+			for (const m of readFileSync(file, 'utf8').matchAll(/orderByChild\s*\(\s*['"]([\w.]+)['"]/g)) {
+				if (!new RegExp(`"\\.indexOn"\\s*:\\s*(?:"${m[1]}"|\\[[^\\]]*"${m[1]}")`).test(rulesCode)) {
+					bad.push(`${file}: orderByChild('${m[1]}') без ".indexOn"`);
+				}
+			}
+		}
+		expect(bad, `RTDB віддасть гілку цілком:\n${bad.join('\n')}`).toEqual([]);
+	});
+
+	it('покинуте прибирає власник, а не той, хто відкрив список (§ 9.3)', () => {
+		/*
+		 * Щоб прибирати ЧУЖЕ, потрібне право видаляти чуже — тобто дірка, яка
+		 * заразом є примітивом «видалити всі кімнати». Тому збирач тут ходить за
+		 * власним індексом `myRooms/{uid}` і користується правом, яке господар мав
+		 * і без нього. Перевіряємо, що індекс справді свій і що збирач не читає
+		 * переліку кімнат.
+		 */
+		expect(rulesCode, 'гілки myRooms у правилах немає').toContain('"myRooms"');
+		const index = rulesCode.match(/"myRooms"\s*:\s*\{\s*"\$uid"\s*:\s*\{\s*"\.read"\s*:\s*"([^"]+)"/);
+		expect(index, 'правила для myRooms/$uid не знайдено').not.toBeNull();
+		expect(index?.[1], 'чужий індекс кімнат читається').toContain('$uid === auth.uid');
+
+		const room = readFileSync('src/lib/net/rtdbRoom.ts', 'utf8');
+		expect(room, 'збирача власних кімнат немає').toMatch(/pruneOwnRooms/);
+		// Читання переліку кімнат відкрило б усі коди одним запитом — рівно те, що
+		// правила забороняють. Збирач мусить ходити за індексом, а не за `rooms`.
+		expect(room, 'збирач перелічує кімнати замість власного індексу').not.toMatch(
+			/orderByChild\(['"]info\/hostUid/
+		);
 	});
 
 	it('SDK не ініціалізується в тілі модуля (§ 10.1)', () => {

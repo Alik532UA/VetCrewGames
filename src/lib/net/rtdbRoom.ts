@@ -1,4 +1,5 @@
 import { connect } from './firebase';
+import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } from './roomTypes';
 
 /**
@@ -7,15 +8,15 @@ import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } 
  * Форма даних:
  *
  * ```
- * rooms/{code}/info      { gameId, rulesVersion, seed, status, hostUid, config, startedAt }
+ * rooms/{code}/info      { gameId, rulesVersion, seed, status, hostUid, config, createdAt, startedAt }
  * rooms/{code}/members/{uid}  { name, role, order }
  * rooms/{code}/moves/{seq}    { seq, by, type, at, payload }
  * ```
+ * Індекс власних кімнат і прибирання за собою — окремо, у `net/ownRooms.ts`.
  *
  * **Склад НЕ прибирається при обриві звʼязку.** Присутність — окрема гілка й
- * окремий модуль (`net/presence.ts`), і саме вона гасне сама. Роздача колоди
- * залежить від складу гравців, тож прибрати учасника означало б перероздати
- * дошку посеред партії — тобто покарати всіх за чужий тунель у метро.
+ * окремий модуль (`net/presence.ts`), і саме вона гасне сама. Роздача залежить
+ * від складу, тож прибрати учасника означало б перероздати дошку посеред партії.
  *
  * **`at` і `startedAt` ставить СЕРВЕР.** На цих двох позначках стоїть межа
  * очікування чужого ходу (`controllers/turnLimit.ts`), і правило бази не дає
@@ -63,6 +64,9 @@ export async function createRoom(options: NewRoom): Promise<string> {
 	const { get, ref, set, serverTimestamp } = await import('firebase/database');
 	const random = options.random ?? Math.random;
 
+	// Спершу прибираємо СВОЄ покинуте: вивільнений код одразу вертається в обіг.
+	await pruneOwnRooms();
+
 	for (let attempt = 0; attempt < CODE_TRIES; attempt++) {
 		const code = makeCode(random);
 
@@ -99,6 +103,10 @@ export async function createRoom(options: NewRoom): Promise<string> {
 			role: 'player',
 			order: 1
 		});
+
+		// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
+		await rememberOwnRoom(code);
+
 		return code;
 	}
 
@@ -140,6 +148,7 @@ export async function closeRoom(code: string): Promise<void> {
 	const { db } = await connect();
 	const { ref, remove } = await import('firebase/database');
 	await remove(ref(db, `rooms/${code}`));
+	await forgetOwnRoom(code);
 }
 
 /** Чи є така кімната і чи та сама в неї гра. */

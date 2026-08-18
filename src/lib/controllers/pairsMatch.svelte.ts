@@ -63,11 +63,16 @@ export class PairsMatch {
 		return this.#transport.watch((snapshot) => this.#apply(snapshot));
 	}
 
-	/** Гравці партії — у порядку входу. Глядачі в черзі не стоять. */
+	/**
+	 * Гравці партії — у порядку входу; глядачі в черзі не стоять.
+	 * **Тайбрейк за `uid` обовʼязковий:** однакові `order` правило бази виключити
+	 * не вміє, а без тайбрейка порядок різниться між пристроями — чому це страшніше
+	 * за вкрадену чергу, розписано в `src/cloud-database.test.ts`.
+	 */
 	get players(): Member[] {
 		return this.members
 			.filter((member) => member.role === 'player')
-			.sort((a, b) => a.order - b.order);
+			.sort((a, b) => a.order - b.order || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
 	}
 
 	get iAmSpectator(): boolean {
