@@ -202,20 +202,12 @@
 		<link rel="alternate" hreflang="x-default" href={langUrl(DEFAULT_LANGUAGE, routeRest)} />
 	{/if}
 
-	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={canonical} />
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={seoDescription} />
 	<meta property="og:image" content={ogImage} />
-	<!--
-		`og:locale` — мова ЦІЄЇ сторінки, решта мов — `og:locale:alternate`
-		(SEO-v8 § 4). Значення бере таблиця мов, а не умова тут: доти стояло
-		`routeLanguage === 'uk' ? 'uk_UA' : 'en_US'`, і після ввімкнення `de` та
-		`nl` німецька й нідерландська сторінки оголошували себе англійськими.
-		Дефект того самого класу, що вже виправлений для `<html lang>`: на екрані
-		все правильно, бо текст іде зі словника, а машина читає інше.
-	-->
+	<!-- Локаль — із таблиці мов (SEO-v8 § 4); умова на дві мови робила de/nl англійськими. -->
 	<meta property="og:locale" content={ogLocale(routeLanguage)} />
 	{#each INDEXED_LANGUAGES.filter((lang) => lang !== routeLanguage) as lang (lang)}
 		<meta property="og:locale:alternate" content={ogLocale(lang)} />

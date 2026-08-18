@@ -76,11 +76,22 @@
 		</div>
 
 		<div class="animal text-panel">
+			<!--
+				Головне зображення раунду, тобто LCP: `eager`, а не `lazy`
+				(PERFORMANCE-v8 § 3.1 — «типова помилка з добрих намірів»). Розмітку
+				створює вже гідрований застосунок, тож у момент вставки зображення
+				ЗАВЖДИ у видимій області, і `lazy` додавав лише перевірку перетину
+				перед запитом — на кожному раунді, а не раз. `fetchpriority` діє
+				слабше, ніж для статичного hero, але діє: за канал із ним конкурують
+				шрифт і фонове зображення теми.
+			-->
 			<img
 				src={game.round.animal.image}
 				alt={formatPlain(td(game.round.animal.nameKey))}
 				class="animal__image"
-				loading="lazy"
+				loading="eager"
+				fetchpriority="high"
+				decoding="async"
 				width="300"
 				height="400"
 			/>
