@@ -31,7 +31,7 @@ import type { ReserveState } from './types';
  * жодної історії, як вони стали одним. Тому старі записи не піднімаються, а
  * прибираються — див. `LEGACY_KEYS` у `services/reserveSave.ts`.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export interface SaveFile {
 	version: number;
@@ -145,7 +145,7 @@ function checkState(value: unknown): string | null {
 	if (!Array.isArray(value.contracts)) return 'contracts';
 	if (value.offered !== null && !isObject(value.offered)) return 'offered';
 
-	for (const field of ['gameOver', 'victory', 'subsidy'])
+	for (const field of ['gameOver', 'subsidy'])
 		if (typeof value[field] !== 'boolean') return field;
 
 	// Наліт або є, або його немає: третього стану подія не має.

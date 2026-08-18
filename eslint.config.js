@@ -221,7 +221,7 @@ export default ts.config(
 		 * й відмовляється розбирати будь-що взагалі — 378 помилок на рівному
 		 * місці, жодна з яких не стосується коду.
 		 */
-		ignores: ['build/', '.svelte-kit/', 'dist/', '.claude/']
+		ignores: ['build/', '.svelte-kit/', 'dist/', '.claude/', 'coverage/']
 	},
 
 	/**

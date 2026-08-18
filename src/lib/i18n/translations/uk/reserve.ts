@@ -55,6 +55,7 @@ export const reserve = {
 
 	'reserve.subsidy': 'Субсидія: годування й ліки тривають, розширення заблоковане.',
 	'reserve.gameOver': 'Заповідник шкодить більше, ніж допомагає. Партію завершено.',
+	'reserve.milestone': 'Віха! Заповідник зробив планеті ще більше добра.',
 	'reserve.newGame': 'Почати заново',
 	'reserve.saveBroken': 'Збереження не вдалося прочитати — почато нову партію.',
 	'reserve.saveFuture': 'Збереження з новішої версії гри. Оновіть сторінку.',
@@ -136,7 +137,6 @@ export const reserve = {
 	'reserve.reject.campaign-done': 'Сьогодні кампанія вже була.',
 	'reserve.campaign': 'Кампанія в соцмережах',
 	'reserve.campaignHint': 'Розповісти про заповідник. Природі — нуль, репутації — плюс.',
-	'reserve.victory': 'Мету досягнуто! Заповідник змінив планету.',
 	'reserve.toWin': 'До перемоги',
 
 	'reserve.contract.release': 'Повернути двох тварин у природу',

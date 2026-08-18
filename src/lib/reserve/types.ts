@@ -155,8 +155,6 @@ export interface ReserveState {
 	 */
 	collapseDays: number;
 	gameOver: boolean;
-	/** Партія виграна: набрано поріг «Користі планеті». Час зупиняється так само. */
-	victory: boolean;
 	/** Якого дня востаннє була кампанія. −1 — жодної. Тримає межу «раз на день». */
 	lastCampaignDay: number;
 	/**

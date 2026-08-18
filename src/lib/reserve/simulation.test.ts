@@ -26,7 +26,6 @@ import {
 	ENCLOSURE_IMPACT,
 	HEAL_IMPACT,
 	HEAL_REPUTATION,
-	IMPACT_TO_WIN,
 	REPUTATION_DECAY_RATE,
 	REPUTATION_MIN,
 	WAGES,
@@ -38,6 +37,7 @@ import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './specie
 import { CELL_WORLD, cellsOf, worldOf } from './grid';
 import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
 import { reserveHalf } from './plot';
+import { IMPACT_MILESTONES, milestonesReached } from './milestones';
 import { MAX_ENCLOSURE_SIZE, type ReserveBiome } from './species';
 
 const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
@@ -1074,30 +1074,49 @@ describe('перемога', () => {
 		return state;
 	};
 
-	it('перевірка жива: звичайний випуск перемоги не дає', () => {
+	it('перевірка жива: звичайний випуск додає користі', () => {
 		const state = ready();
+		const before = state.impact;
 		move(state, { type: 'release', animalId: 1 });
-		expect(state.victory).toBe(false);
+		expect(state.impact - before).toBe(RELEASE_IMPACT);
 	});
 
 	/**
-	 * Перемога настає лише за «Користю планеті» — не за грошима й не за
-	 * репутацією. Гроші й слава тут засоби, а не мета.
+	 * Віха НЕ спиняє час — у цьому вся зміна.
+	 *
+	 * Доти поріг `IMPACT_TO_WIN` завершував партію перемогою, і при випуску в +50
+	 * це означало двісті повернених тварин — фініш, до якого не доходив ніхто.
+	 * Тепер заповідник це пісочниця: віха відзначає зроблене, а гра триває далі.
 	 */
-	it('поріг користі завершує партію перемогою', () => {
+	it('перетин віхи не завершує партію', () => {
 		const state = ready();
-		state.impact = IMPACT_TO_WIN - RELEASE_IMPACT;
+		state.impact = IMPACT_MILESTONES[0] - RELEASE_IMPACT;
+		expect(milestonesReached(state.impact), 'до випуску віхи ще немає').toBe(0);
+
 		move(state, { type: 'release', animalId: 1 });
 
-		expect(state.impact).toBeGreaterThanOrEqual(IMPACT_TO_WIN);
-		expect(state.victory).toBe(true);
-		expect(state.gameOver, 'перемога — не поразка').toBe(false);
+		expect(state.impact).toBeGreaterThanOrEqual(IMPACT_MILESTONES[0]);
+		expect(milestonesReached(state.impact), 'віху взято').toBe(1);
+		expect(state.gameOver, 'віха — не кінець гри').toBe(false);
 	});
 
-	it('після перемоги ходів більше немає', () => {
+	/**
+	 * Ходи лишаються доступними після будь-якої віхи — навіть після останньої.
+	 *
+	 * Це та властивість, заради якої поле `victory` й прибрано: доки воно було,
+	 * набрана користь ЗАМИКАЛА гру, і «нескінченна пісочниця» закінчувалася б
+	 * рівно тоді, коли гравець у ній нарешті розібрався.
+	 */
+	it('після найбільшої віхи ходи не зникають', () => {
 		const state = ready();
-		state.impact = IMPACT_TO_WIN;
-		state.victory = true;
+		state.impact = IMPACT_MILESTONES[IMPACT_MILESTONES.length - 1];
+		expect(milestonesReached(state.impact)).toBe(IMPACT_MILESTONES.length);
+		expect(move(state, { type: 'campaign' })).toEqual({ ok: true });
+	});
+
+	it('крах ходи забирає — це єдиний кінець, що лишився', () => {
+		const state = ready();
+		state.gameOver = true;
 		expect(move(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'game-over' });
 	});
 });

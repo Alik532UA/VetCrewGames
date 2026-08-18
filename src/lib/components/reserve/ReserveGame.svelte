@@ -6,6 +6,7 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
+	import { createMilestoneWatch } from '$lib/reserve/milestones.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
 	import type { Quality } from '$lib/reserve/constants';
 	import { reserveHalf } from '$lib/reserve/plot';
@@ -86,6 +87,10 @@
 	 * кнопки, якої гравець не тиснув, було б брехнею про причину.
 	 */
 	let anchorX = $state<number | null>(null);
+
+	/** Віха — єдина нагорода, яку гра оголошує сама; логіка у `milestones.svelte.ts`. */
+	const watchMilestones = createMilestoneWatch();
+	$effect(() => void (watchMilestones(game.state.impact) && toast.success('reserve.milestone')));
 
 	onMount(() => {
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, backTo)));
@@ -171,13 +176,8 @@
 		onSpeed={(value: Speed) => (game.speed = value)}
 	/>
 
-	{#if game.state.victory || game.state.gameOver}
-		<ReserveOutcome
-			victory={game.state.victory}
-			impact={game.state.impact}
-			day={game.day}
-			onRestart={startOver}
-		/>
+	{#if game.state.gameOver}
+		<ReserveOutcome impact={game.state.impact} day={game.day} onRestart={startOver} />
 	{:else}
 		{#if game.state.subsidy}
 			<p class="reserve-warning" role="status" data-testid="reserve-subsidy-status">

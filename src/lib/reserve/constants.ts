@@ -92,9 +92,6 @@ export const RELEASE_IMPACT = 50;
  */
 export const ENCLOSURE_IMPACT = -2;
 
-/** Скільки «Користі планеті» треба набрати, щоб виграти партію. */
-export const IMPACT_TO_WIN = 10_000;
-
 /**
  * Репутація — друга шкала, вона керує ГРІШМИ, і дно в неї НИЖЧЕ нуля.
  *

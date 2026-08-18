@@ -52,6 +52,7 @@ export const reserve = {
 
 	'reserve.subsidy': 'Subvention: Futter und Medizin laufen weiter, Ausbau ist gesperrt.',
 	'reserve.gameOver': 'Das Reservat schadet mehr, als es hilft. Das Spiel ist vorbei.',
+	'reserve.milestone': 'Meilenstein erreicht! Das Reservat hat dem Planeten noch mehr Gutes getan.',
 	'reserve.newGame': 'Neu beginnen',
 	'reserve.saveBroken': 'Der Spielstand war nicht lesbar — ein neues Spiel hat begonnen.',
 	'reserve.saveFuture': 'Dieser Spielstand stammt aus einer neueren Version. Lade die Seite neu.',
@@ -133,7 +134,6 @@ export const reserve = {
 	'reserve.reject.campaign-done': 'Heute gab es bereits eine Kampagne.',
 	'reserve.campaign': 'Social-Media-Kampagne',
 	'reserve.campaignHint': 'Vom Reservat erzählen. Für die Natur nichts, für den Ruf ein Plus.',
-	'reserve.victory': 'Ziel erreicht! Das Reservat hat den Planeten verändert.',
 	'reserve.toWin': 'Bis zum Sieg',
 
 	'reserve.contract.release': 'Zwei Tiere in die Wildnis zurückbringen',

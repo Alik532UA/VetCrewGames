@@ -1,4 +1,4 @@
-import { IMPACT_TO_WIN } from '$lib/reserve/constants';
+import { nextMilestone } from '$lib/reserve/milestones';
 import type { MetricSet } from '$lib/reserve/types';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -38,6 +38,7 @@ export function hudStats(
 	locale: string
 ): Chip[] {
 	const { day, budget, feed, impact, reputation, inReserve, inWild, manySites } = numbers;
+	const next = nextMilestone(impact);
 
 	return [
 		{ id: 'day', labelKey: 'reserve.day', value: String(day), bad: false, metric: null },
@@ -59,8 +60,15 @@ export function hudStats(
 		{
 			id: 'impact',
 			labelKey: 'reserve.impact',
-			// Показник і мета поруч: інакше «34» нічого не каже про те, чи це багато.
-			value: `${impact} / ${IMPACT_TO_WIN.toLocaleString(locale)}`,
+			/*
+			 * Показник і НАСТУПНА ВІХА поруч: інакше «34» нічого не каже про те, чи
+			 * це багато. Доти тут стояла мета 10 000 — двісті випусків, тобто
+			 * величина, до якої не доходив ніхто, і шкала читалася як «0%» усю партію.
+			 *
+			 * Коли взято все, другої половини немає зовсім: показувати недосяжну мету
+			 * тому, хто вже до неї дійшов, — це рядок, який бреше.
+			 */
+			value: next === null ? String(impact) : `${impact} / ${next.toLocaleString(locale)}`,
 			bad: impact < 0,
 			metric: 'impact'
 		},

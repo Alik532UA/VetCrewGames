@@ -1,7 +1,6 @@
 import {
 	CAMPAIGN_PRICE,
 	CAMPAIGN_REPUTATION,
-	IMPACT_TO_WIN,
 	RELEASE_IMPACT,
 	RELEASE_REPUTATION,
 	STARTING_BUDGET,
@@ -66,7 +65,6 @@ export function createReserve(seed: number): ReserveState {
 		sites: emptySites(),
 		collapseDays: 0,
 		gameOver: false,
-		victory: false,
 		lastCampaignDay: -1,
 		contracts: [],
 		offered: null,
@@ -111,8 +109,9 @@ export function execute(
 	at: ReserveBiome
 ): CommandResult {
 	const site = state.sites[at];
-	// Партія скінчилася — байдуже, перемогою чи поразкою: ходів більше немає.
-	if (state.gameOver || state.victory) return { ok: false, reason: 'game-over' };
+	// Партія скінчилася крахом — ходів більше немає. Перемоги як стану не існує:
+	// заповідник це пісочниця з віхами, а не забіг до фінішу (`milestones.ts`).
+	if (state.gameOver) return { ok: false, reason: 'game-over' };
 
 	/*
 	 * Субсидія покриває виживання, а не зростання. Заборона стоїть ТУТ, одним
@@ -142,8 +141,7 @@ export function execute(
 			animal.stage = 'released';
 			animal.releasedOnDay = dayOf(state);
 			addImpact(state, RELEASE_IMPACT, 'release');
-			if (state.impact >= IMPACT_TO_WIN) state.victory = true;
-			// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
+				// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
 			// суто оборонною — плюс до умови програшу й жодної копійки.
 			addReputation(state, RELEASE_REPUTATION, 'release');
 			countAnimal(state, 'inReserve', -1, 'release');

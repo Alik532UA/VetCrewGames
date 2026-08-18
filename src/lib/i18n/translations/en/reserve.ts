@@ -51,6 +51,7 @@ export const reserve = {
 
 	'reserve.subsidy': 'Subsidy: food and medicine continue, expansion is blocked.',
 	'reserve.gameOver': 'The reserve harms more than it helps. The game is over.',
+	'reserve.milestone': 'Milestone reached! The reserve has done the planet even more good.',
 	'reserve.newGame': 'Start over',
 	'reserve.saveBroken': 'The save could not be read — a new game has started.',
 	'reserve.saveFuture': 'This save comes from a newer version of the game. Reload the page.',
@@ -132,7 +133,6 @@ export const reserve = {
 	'reserve.campaign': 'Social media campaign',
 	'reserve.campaignHint':
 		'Tell people about the reserve. Nothing for nature, a plus for reputation.',
-	'reserve.victory': 'Goal reached! The reserve has changed the planet.',
 	'reserve.toWin': 'To victory',
 
 	'reserve.contract.release': 'Return two animals to the wild',

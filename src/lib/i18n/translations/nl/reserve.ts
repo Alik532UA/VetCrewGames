@@ -51,6 +51,7 @@ export const reserve = {
 
 	'reserve.subsidy': 'Subsidie: voer en medicijnen gaan door, uitbreiden is geblokkeerd.',
 	'reserve.gameOver': 'Het reservaat schaadt meer dan het helpt. Het spel is voorbij.',
+	'reserve.milestone': 'Mijlpaal bereikt! Het reservaat heeft de planeet nog meer goed gedaan.',
 	'reserve.newGame': 'Opnieuw beginnen',
 	'reserve.saveBroken': 'De opgeslagen partij was onleesbaar — een nieuw spel is begonnen.',
 	'reserve.saveFuture': 'Deze opgeslagen partij komt uit een nieuwere versie. Herlaad de pagina.',
@@ -133,7 +134,6 @@ export const reserve = {
 	'reserve.campaign': 'Socialemediacampagne',
 	'reserve.campaignHint':
 		'Vertel over het reservaat. Niets voor de natuur, een plus voor de reputatie.',
-	'reserve.victory': 'Doel bereikt! Het reservaat heeft de planeet veranderd.',
 	'reserve.toWin': 'Tot de overwinning',
 
 	'reserve.contract.release': 'Twee dieren terugbrengen naar de natuur',
