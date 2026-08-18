@@ -86,7 +86,20 @@ export function addImpact(state: ReserveState, delta: number, reason: LedgerReas
  */
 export function addReputation(state: ReserveState, delta: number, reason: LedgerReason): void {
 	const before = state.reputation;
-	state.reputation = Math.min(REPUTATION_MAX, Math.max(REPUTATION_MIN, before + delta));
+	/*
+	 * Сама репутація округлюється до сотих — так само, як записи реєстру.
+	 *
+	 * Доти вона була кратна 0.5 (спад був рівний), і питання не виникало. Відколи
+	 * спад ПРОПОРЦІЙНИЙ, значення стало довільним дробом: 40 × 0.99⁷ — це
+	 * 37.20...86 з хвостом, який не має точного двійкового вигляду. Записи при
+	 * цьому вже округлювалися, а стан ні — і сума рядків розходилася з виміряною
+	 * різницею на кожній наступній добі, вилазячи в підказку рядком «Інше».
+	 *
+	 * Округлювати треба саме СТАН, а не звірку: два джерела правди про одне число
+	 * мусять бути однієї точності, інакше розбіжність повертається при першій же
+	 * зміні форми спаду.
+	 */
+	state.reputation = round(Math.min(REPUTATION_MAX, Math.max(REPUTATION_MIN, before + delta)));
 	note(state, 'reputation', state.reputation - before, reason);
 }
 

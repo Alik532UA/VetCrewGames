@@ -1,7 +1,7 @@
 import {
 	COLLAPSE_DAYS,
 	DONATION_PER_REPUTATION,
-	REPUTATION_DECAY_PER_DAY,
+	REPUTATION_DECAY_RATE,
 	TICKS_PER_DAY
 } from './constants';
 import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
@@ -73,7 +73,16 @@ export function endOfDay(state: ReserveState): void {
 	 * просто нічого не приносить. Відʼємні пожертви читалися б як штраф, якого ніхто
 	 * не оголошував.
 	 */
-	earn(state, Math.max(0, state.reputation) * DONATION_PER_REPUTATION, 'donations');
+	/*
+	 * Округлення до цілого — не косметика, а умова того, щоб каса лишалася касою.
+	 *
+	 * Решта грошей у грі цілі: зарплати, утримання, ціни вольєрів, порція корму.
+	 * Відколи репутація стала дробовою, пожертви перестали бути — 39.6 × 4 дає
+	 * 158.4, і бюджет переставав бути цілим числом назавжди. У шапці це виглядало
+	 * б як «−321.79999999998836», а в підказці — як розбіжність між сумою рядків
+	 * і виміряною різницею.
+	 */
+	earn(state, Math.round(Math.max(0, state.reputation) * DONATION_PER_REPUTATION), 'donations');
 
 	/*
 	 * Життя йде на ВСІХ чотирьох землях, а не лише на відкритій.
@@ -100,9 +109,20 @@ export function endOfDay(state: ReserveState): void {
 	 */
 	settleContracts(state, day);
 
-	// Публіка забуває: без щоденного спаду шкала насичується за десять хвилин
-	// і перестає бути рішенням.
-	addReputation(state, -REPUTATION_DECAY_PER_DAY, 'decay');
+	/*
+	 * Публіка забуває — але тільки про те, що знала.
+	 *
+	 * Спад ПРОПОРЦІЙНИЙ і не переступає нуля. Умова `> 0` тут несе всю різницю:
+	 * без неї відʼємна репутація «спадала» б у бік нуля, тобто час сам би змивав
+	 * наслідки чорного ринку й зірваних контрактів. Нижче нуля веде лише вчинок,
+	 * і повертатися звідти теж треба вчинком — випуском, одужанням, кампанією.
+	 *
+	 * Множник менший за одиницю, тож відняте ніколи не перевищує наявне: окремий
+	 * `Math.min` тут був би захистом від того, чого не буває.
+	 */
+	if (state.reputation > 0) {
+		addReputation(state, -state.reputation * REPUTATION_DECAY_RATE, 'decay');
+	}
 
 	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
 	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;

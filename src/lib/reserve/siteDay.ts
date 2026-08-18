@@ -1,5 +1,6 @@
 import {
 	ANIMALS_PER_KEEPER,
+	ANIMALS_PER_VET,
 	QUALITY_SPEED,
 	RECOVERY_PER_VET_DAY,
 	STRESS_PER_DAY,
@@ -109,9 +110,20 @@ export function siteDay(state: ReserveState, site: Site, hungry: number): number
 
 	const recovering = here.filter((a) => a.stage === 'recovering');
 	if (recovering.length > 0) {
-		// Зусилля ветеринарів ділиться порівну: черги в MVP немає.
-		const perAnimal = (site.staff.vet * RECOVERY_PER_VET_DAY) / recovering.length;
-		for (const animal of recovering) {
+		/*
+		 * Ветеринар має ЄМНІСТЬ, а не ділить себе між усіма.
+		 *
+		 * Доти було `(vet × 0.1) / recovering.length` — і одужання сповільнювалося
+		 * квадратично від того, що фонд росте: один ветеринар на трьох витягував
+		 * кожну тридцять днів замість десяти. Порядок фіксований (перші в списку), як
+		 * і в доглядача та в роздачі корму: кому пощастило, не може вирішувати кидок,
+		 * інакше та сама партія розгорнеться в двох учасників по-різному.
+		 */
+		const treated = site.staff.vet * ANIMALS_PER_VET;
+		for (const [place, animal] of recovering.entries()) {
+			// Понад ємність не лікують зовсім — так само, як понад ємність доглядача
+			// стрес не спадає, а росте.
+			const perAnimal = place < treated ? RECOVERY_PER_VET_DAY : 0;
 			/*
 			 * Голод спиняє одужання ПОВНІСТЮ, а не гальмує.
 			 *

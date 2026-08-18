@@ -27,7 +27,7 @@ import {
 	HEAL_IMPACT,
 	HEAL_REPUTATION,
 	IMPACT_TO_WIN,
-	REPUTATION_DECAY_PER_DAY,
+	REPUTATION_DECAY_RATE,
 	REPUTATION_MIN,
 	WAGES,
 	WEAR_PER_DAY,
@@ -108,13 +108,19 @@ const SCRIPT: ReserveCommand[] = [
 
 describe('детермінізм', () => {
 	/**
-	 * Заразом ця перевірка показує, що тиск нової економіки справжній: два
-	 * вольєри дають −4 до «Користі планеті», порятунок не компенсує нічого, і
-	 * партія, у якій нікого не випустили, ЗАКІНЧУЄТЬСЯ на тридцятий день. Саме
-	 * тому час зупиняється раніше за 10 000 тіків.
+	 * Заразом ця перевірка показує, що тиск економіки справжній: два вольєри
+	 * дають −4 до «Користі планеті», порятунок не компенсує нічого, і партія, у
+	 * якій нікого не випустили, ЗАКІНЧУЄТЬСЯ на `COLLAPSE_DAYS`-ту добу. Саме
+	 * тому час зупиняється раніше за відпущені тіки.
+	 *
+	 * Тіків відпускається на десять діб більше за межу краху, а не рівно стільки:
+	 * при рівній кількості перевірка перестала б відрізняти «гра скінчилася
+	 * вчасно» від «тіки просто вичерпалися». Число виводиться з константи —
+	 * інакше наступна зміна межі знову зробить цей тест хибно-червоним, як уже
+	 * сталося при переїзді з 30 на 45.
 	 */
 	it('перевірка жива: партія справді щось змінює', () => {
-		const state = play(1, SCRIPT, 10_000);
+		const state = play(1, SCRIPT, (COLLAPSE_DAYS + 10) * TICKS_PER_DAY);
 		expect(home(state, 'forest').animals.length).toBe(2);
 		expect(home(state, 'forest').enclosures.length).toBe(2);
 		expect(state.impact, 'будівництво коштує користі').toBeLessThan(0);
@@ -977,10 +983,10 @@ describe('дві шкали розходяться саме там, де це щ
 
 		expect(home(state).animals[0].stage).toBe('healthy');
 		expect(state.impact - before.impact).toBe(HEAL_IMPACT);
-		// Спад репутації за ту саму добу теж треба врахувати.
-		expect(state.reputation - before.reputation).toBeCloseTo(
-			HEAL_REPUTATION - REPUTATION_DECAY_PER_DAY
-		);
+		// Спад репутації за ту саму добу теж треба врахувати. Він ПРОПОРЦІЙНИЙ і
+		// рахується вже від піднятого одужанням значення.
+		const raised = before.reputation + HEAL_REPUTATION;
+		expect(state.reputation).toBeCloseTo(raised - raised * REPUTATION_DECAY_RATE);
 	});
 
 	/**
@@ -990,10 +996,31 @@ describe('дві шкали розходяться саме там, де це щ
 	it('репутація сама спадає, поки нічого не відбувається', () => {
 		const state = savanna();
 		day(state, 4);
-		expect(state.reputation).toBeCloseTo(KNOWN - 4 * REPUTATION_DECAY_PER_DAY);
+		// Спад — ЧАСТКА від поточної, тож чотири доби це множення, а не віднімання.
+		expect(state.reputation).toBeCloseTo(KNOWN * (1 - REPUTATION_DECAY_RATE) ** 4);
 	});
 
-	it('спад не заганяє репутацію нижче дна шкали', () => {
+	/**
+	 * Нуль — це підлога СПАДУ, а не дно шкали.
+	 *
+	 * Доти спад був рівний і тягнув репутацію в мінус сам собою: фонд, про який
+	 * ніхто не чув, щодня ставав відомим гірше, ніж ніяк, і за сто днів лягав на
+	 * дно. Тепер час не карає — карає лише вчинок.
+	 */
+	it('спад спиняється на нулі, а не переходить у мінус', () => {
+		const state = savanna();
+		state.reputation = 0;
+		day(state, 30);
+		expect(state.reputation).toBe(0);
+	});
+
+	/**
+	 * Мінус, зароблений ВЧИНКОМ, час не змиває.
+	 *
+	 * Якби спад діяв і нижче нуля, він тягнув би репутацію вгору — до нуля, — і
+	 * чорний ринок ставав би безкоштовним через тиждень очікування.
+	 */
+	it('спад не чіпає мінус, зароблений вчинком', () => {
 		const state = savanna();
 		state.reputation = REPUTATION_MIN;
 		day(state, 5);
