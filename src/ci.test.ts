@@ -107,6 +107,41 @@ describe('CI', () => {
 		);
 	});
 
+	/**
+	 * Зворотний бік перевірки нижче, і саме він тут двічі був потрібен.
+	 *
+	 * «Кожен скрипт із workflow існує» ловить перейменування. Протилежного воно
+	 * НЕ ловить: гейт лежить у `package.json`, його ніхто не кличе, і зелена
+	 * галочка CI означає рівно те, що виконали решту. У цьому проєкті так уже
+	 * було двічі — `npm run lint` існував і в CI не викликався, а `GATE-DEPS`
+	 * існував лише в `canon.json`. Обидва рази дефект виглядав як «гейт є»
+	 * (AI-AGENT-PITFALLS-v8 § 3: файл є, отже працює).
+	 *
+	 * Перелічувати нічого не треба: гейти тут звуться `check*`, тож перелік
+	 * виводиться зі самого `package.json` і росте разом із ним. Виняток один і
+	 * за ІМЕНЕМ, а не за виглядом команди: `:watch` — інструмент розробника, і
+	 * та сама умова стоїть у сусідній перевірці для `test:watch`.
+	 */
+	it('кожен гейт `check*` із package.json викликається в CI', () => {
+		const gates = Object.keys(scripts).filter(
+			(name) => /^check(:|$)/.test(name) && !name.endsWith(':watch')
+		);
+		expect(
+			gates.length,
+			'у package.json немає жодного скрипта `check*` — перевіряти нема що'
+		).toBeGreaterThan(0);
+
+		// Коментарі відрізані: пояснення у workflow цитують назви гейтів, і
+		// перевірка по сирому тексту знаходила б власну документацію замість
+		// виклику.
+		const called = new Set([...directives.matchAll(/npm run ([\w:-]+)/g)].map((m) => m[1]));
+		const uncalled = gates.filter((name) => !called.has(name));
+		expect(
+			uncalled,
+			`гейт є в package.json і не викликається в CI — зелений прогін про нього нічого не каже: ${uncalled.join(', ')}`
+		).toEqual([]);
+	});
+
 	it('кожен npm-скрипт із workflow існує в package.json', () => {
 		const referenced = [...all.matchAll(/run:\s*npm run ([\w:-]+)/g)].map((m) => m[1]);
 		const missing = [...new Set(referenced)].filter((name) => !(name in scripts));
