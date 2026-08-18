@@ -115,7 +115,7 @@
 			origin: 'rescue',
 			stage: 'recovering',
 			enclosureId: free.id,
-			recovery: 0,
+			health: 0,
 			stress: 0,
 			releasable: true,
 			releasedOnDay: null
@@ -127,7 +127,7 @@
 		for (const animal of site.animals) {
 			if (animal.stage === 'recovering') {
 				animal.stage = 'healthy';
-				animal.recovery = 1;
+				animal.health = 1;
 				animal.stress = 0;
 			}
 		}

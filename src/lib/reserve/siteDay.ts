@@ -1,6 +1,11 @@
 import {
 	ANIMALS_PER_KEEPER,
 	ANIMALS_PER_VET,
+	DEATH_IMPACT,
+	DEATH_REPUTATION,
+	HEALTH_DECAY_PER_DAY,
+	HEALTH_SELF_RECOVERY_ABOVE,
+	HEALTH_SELF_RECOVERY_PER_DAY,
 	QUALITY_SPEED,
 	RECOVERY_PER_VET_DAY,
 	STRESS_PER_DAY,
@@ -15,7 +20,7 @@ import {
 	WEAR_TWO_STEPS,
 	type Quality
 } from './constants';
-import { addImpact, addReputation, spend } from './ledger';
+import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { HEAL_IMPACT, HEAL_REPUTATION } from './constants';
 import { comfortOf, speciesById } from './species';
 import { unmetNeeds } from './modules';
@@ -120,10 +125,16 @@ export function siteDay(state: ReserveState, site: Site, hungry: number): number
 		 * інакше та сама партія розгорнеться в двох учасників по-різному.
 		 */
 		const treated = site.staff.vet * ANIMALS_PER_VET;
+		/*
+		 * Померлих збираємо, а не видаляємо на місці: масив саме зараз перебирається,
+		 * і виривати з нього елемент означало б пропустити наступного.
+		 */
+		const dead: number[] = [];
+
 		for (const [place, animal] of recovering.entries()) {
 			// Понад ємність не лікують зовсім — так само, як понад ємність доглядача
 			// стрес не спадає, а росте.
-			const perAnimal = place < treated ? RECOVERY_PER_VET_DAY : 0;
+			const cared = place < treated;
 			/*
 			 * Голод спиняє одужання ПОВНІСТЮ, а не гальмує.
 			 *
@@ -133,15 +144,46 @@ export function siteDay(state: ReserveState, site: Site, hungry: number): number
 			 */
 			const fasting = starving.has(animal.id) ? 0 : 1;
 			// Стрес не спиняє одужання, а гальмує його; тіснота множить те, що лишилося.
-			const rate = perAnimal * fasting * (1 - animal.stress / 2) * comfortFor(site, animal);
-			animal.recovery = Math.min(1, animal.recovery + rate);
-			if (animal.recovery >= 1) {
+			const modifiers = fasting * (1 - animal.stress / 2) * comfortFor(site, animal);
+
+			/*
+			 * Три гілки, і межа між ними — головне число нової шкали.
+			 *
+			 * Лікують — росте швидко. Не лікують, але здоровʼя вище межі — організм
+			 * дає раду сам, уп’ятеро повільніше. Не лікують і межу не пройдено —
+			 * ГАСНЕ, і на нулі тварина помирає.
+			 *
+			 * Спад НЕ множиться на голод, стрес і тісноту навмисно. Ті три множники
+			 * описують, наскільки добре лікується; спад — це відсутність лікування
+			 * взагалі, і робити занедбану тварину «менш занедбаною» від того, що вона
+			 * сита, означало б винагороджувати половину догляду за цілий.
+			 */
+			if (cared) {
+				animal.health = Math.min(1, animal.health + RECOVERY_PER_VET_DAY * modifiers);
+			} else if (animal.health > HEALTH_SELF_RECOVERY_ABOVE) {
+				animal.health = Math.min(1, animal.health + HEALTH_SELF_RECOVERY_PER_DAY * modifiers);
+			} else {
+				animal.health = Math.max(0, animal.health - HEALTH_DECAY_PER_DAY);
+			}
+
+			if (animal.health <= 0) {
+				dead.push(animal.id);
+				continue;
+			}
+			if (animal.health >= 1) {
 				animal.stage = 'healthy';
 				// Вилікувана тварина в неволі допомагає природі мало (+1), а от
 				// публіці видно саме одужання (+5).
 				addImpact(state, HEAL_IMPACT, 'heal');
 				addReputation(state, HEAL_REPUTATION, 'heal');
 			}
+		}
+
+		if (dead.length > 0) {
+			site.animals = site.animals.filter((animal) => !dead.includes(animal.id));
+			addImpact(state, DEATH_IMPACT * dead.length, 'death');
+			addReputation(state, DEATH_REPUTATION * dead.length, 'death');
+			countAnimal(state, 'inReserve', -dead.length, 'death');
 		}
 	}
 

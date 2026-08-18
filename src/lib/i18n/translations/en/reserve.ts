@@ -44,7 +44,7 @@ export const reserve = {
 	'reserve.stage.recovering': 'Recovering',
 	'reserve.stage.healthy': 'Healthy',
 	'reserve.stage.released': 'In the wild',
-	'reserve.recovery': 'Recovery',
+	'reserve.health': 'Health',
 	'reserve.stress': 'Stress',
 	'reserve.captiveBorn': 'Born in captivity',
 	'reserve.release': 'Release into the wild',
@@ -188,6 +188,7 @@ export const reserve = {
 	'reserve.why.decay': 'Public attention fading',
 	'reserve.why.raidSaved': 'Poachers stopped',
 	'reserve.why.raidLost': 'Animal taken by poachers',
+	'reserve.why.death': 'Animal died',
 	'reserve.why.other': 'Other',
 
 	// Етап 13: корм у коморі й суб-модулі вольєра.

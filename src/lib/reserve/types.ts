@@ -59,7 +59,7 @@ export interface Animal {
 	 */
 	enclosureId: number;
 	/** 0 → 1. Дійшовши до одиниці, тварина стає здоровою. */
-	recovery: number;
+	health: number;
 	/** 0 → 1. Вище за поріг випуск блокується. */
 	stress: number;
 	/**

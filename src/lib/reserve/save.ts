@@ -31,7 +31,7 @@ import type { ReserveState } from './types';
  * жодної історії, як вони стали одним. Тому старі записи не піднімаються, а
  * прибираються — див. `LEGACY_KEYS` у `services/reserveSave.ts`.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export interface SaveFile {
 	version: number;
@@ -80,7 +80,7 @@ function checkAnimal(value: unknown, index: number): string | null {
 	if (typeof value.stage !== 'string' || !STAGES.includes(value.stage))
 		return `animals[${index}].stage = ${String(value.stage)}`;
 	if (!isNumber(value.enclosureId)) return `animals[${index}].enclosureId`;
-	if (!isNumber(value.recovery)) return `animals[${index}].recovery`;
+	if (!isNumber(value.health)) return `animals[${index}].health`;
 	if (!isNumber(value.stress)) return `animals[${index}].stress`;
 	if (typeof value.releasable !== 'boolean') return `animals[${index}].releasable`;
 	// `null` тут законний і означає «ще в заповіднику» — або «день невідомий»,
@@ -145,8 +145,7 @@ function checkState(value: unknown): string | null {
 	if (!Array.isArray(value.contracts)) return 'contracts';
 	if (value.offered !== null && !isObject(value.offered)) return 'offered';
 
-	for (const field of ['gameOver', 'subsidy'])
-		if (typeof value[field] !== 'boolean') return field;
+	for (const field of ['gameOver', 'subsidy']) if (typeof value[field] !== 'boolean') return field;
 
 	// Наліт або є, або його немає: третього стану подія не має.
 	if (value.raid !== null && !isObject(value.raid)) return 'raid';

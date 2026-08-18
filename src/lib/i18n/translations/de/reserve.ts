@@ -45,7 +45,7 @@ export const reserve = {
 	'reserve.stage.recovering': 'Erholt sich',
 	'reserve.stage.healthy': 'Gesund',
 	'reserve.stage.released': 'In Freiheit',
-	'reserve.recovery': 'Genesung',
+	'reserve.health': 'Gesundheit',
 	'reserve.stress': 'Stress',
 	'reserve.captiveBorn': 'In Gefangenschaft geboren',
 	'reserve.release': 'In die Wildnis entlassen',
@@ -189,6 +189,7 @@ export const reserve = {
 	'reserve.why.decay': 'Das Reservat wird vergessen',
 	'reserve.why.raidSaved': 'Wilderer gestoppt',
 	'reserve.why.raidLost': 'Tier von Wilderern geraubt',
+	'reserve.why.death': 'Tier gestorben',
 	'reserve.why.other': 'Sonstiges',
 
 	// Етап 13: корм у коморі й суб-модулі вольєра.

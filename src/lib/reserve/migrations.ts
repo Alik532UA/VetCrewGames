@@ -92,5 +92,44 @@ export const MIGRATIONS: Record<number, (state: unknown) => unknown> = {
 		// навмисно відкидається, і директива придушення тут була б зайвою.
 		const { victory: _dropped, ...rest } = state;
 		return rest;
+	},
+
+	/**
+	 * 4 → 5: «одужання» стало ЗДОРОВʼЯМ, і шкала поїхала в обидва боки.
+	 *
+	 * Доти `recovery` лише росло від нуля до одиниці: тварина або лікувалася,
+	 * або стояла на місці. Тепер це здоровʼя — воно ще й ПАДАЄ, а на нулі тварина
+	 * помирає (`care.ts`).
+	 *
+	 * Число переноситься як є, і це не спрощення. У старій шкалі одиниця означала
+	 * «вилікувана», нуль — «щойно привезена»; у новій одиниця означає «здорова»,
+	 * нуль — «мертва». Збіг на верхньому кінці точний, а на нижньому — ні, тож
+	 * прибулим із нулем ставиться межа самоодужання: інакше кожна тварина в
+	 * старому сейві померла б за десять діб після оновлення, за правилом, якого
+	 * в тій партії не існувало.
+	 */
+	4: (state) => {
+		if (!isObject(state)) return state;
+		const sites = isObject(state.sites) ? state.sites : {};
+		const upgraded: Record<string, unknown> = {};
+
+		for (const [biome, raw] of Object.entries(sites)) {
+			if (!isObject(raw)) {
+				upgraded[biome] = raw;
+				continue;
+			}
+			const animals = Array.isArray(raw.animals) ? raw.animals : [];
+			upgraded[biome] = {
+				...raw,
+				animals: animals.map((animal) => {
+					if (!isObject(animal)) return animal;
+					const { recovery, ...rest } = animal;
+					const value = typeof recovery === 'number' ? recovery : 0;
+					return { ...rest, health: Math.max(0.5, value) };
+				})
+			};
+		}
+
+		return { ...state, sites: upgraded };
 	}
 };

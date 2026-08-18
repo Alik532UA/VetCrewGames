@@ -64,10 +64,10 @@
 	</p>
 
 	<dl class="card__bars">
-		<dt>{@html formatFont(t('reserve.recovery'))}</dt>
+		<dt>{@html formatFont(t('reserve.health'))}</dt>
 		<dd>
-			<progress value={animal.recovery} max="1" data-testid="reserve-card-recovery"></progress>
-			<span>{percent(animal.recovery)}</span>
+			<progress value={animal.health} max="1" data-testid="reserve-card-health"></progress>
+			<span>{percent(animal.health)}</span>
 		</dd>
 		<dt>{@html formatFont(t('reserve.stress'))}</dt>
 		<dd>

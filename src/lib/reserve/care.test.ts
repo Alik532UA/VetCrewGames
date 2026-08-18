@@ -104,6 +104,14 @@ describe('потреби вольєра', () => {
 		const move = (command: ReserveCommand) => execute(state, command, 'forest');
 		move({ type: 'build', size: 3, quality: 2, cell: { x: 20, z: 20 } });
 		move({ type: 'acquire', origin: 'rescue', speciesId: 'fox', enclosureId: 1 });
+		/*
+		 * Ветеринар тут ОБОВʼЯЗКОВИЙ, хоч перевірка й не про лікування.
+		 *
+		 * Врятована приїжджає з здоровʼям до 50% і без лікаря гасне на 5% за добу —
+		 * тобто за десять діб просто помирає, і перевіряти стрес було б уже нікому.
+		 * Ізолювати треба саме стрес, а не влаштовувати гонку двох шкал.
+		 */
+		move({ type: 'hire', role: 'vet' });
 		day(state, 10);
 
 		expect(state.sites.forest.animals[0].stress).toBeGreaterThan(STRESS_BLOCKS_RELEASE);
@@ -164,14 +172,24 @@ describe('корм', () => {
 		 */
 		const fed = withFox(true);
 		fed.move({ type: 'hire', role: 'vet' });
+		const fedBefore = fed.fox().health;
 		day(fed.state);
-		expect(fed.fox().recovery, 'із кормом лікування йде').toBeGreaterThan(0);
+		expect(fed.fox().health, 'із кормом лікування йде').toBeGreaterThan(fedBefore);
 
 		const hungry = withFox(true);
 		hungry.move({ type: 'hire', role: 'vet' });
 		hungry.state.feed = 0;
+		const hungryBefore = hungry.fox().health;
 		day(hungry.state);
-		expect(hungry.fox().recovery).toBe(0);
+		/*
+		 * Порівнюється зі СТАНОМ ПРИБУТТЯ, а не з нулем.
+		 *
+		 * Відколи тварина приїжджає з випадковим здоровʼям (`ORIGINS`), нуль тут
+		 * означав би смерть, а не «не лікували». Голод спиняє саме ЛІКУВАННЯ: із
+		 * ветеринаром поруч здоровʼя не росте ані на крихту, і це те, що треба
+		 * довести.
+		 */
+		expect(hungry.fox().health, 'голод спиняє лікування повністю').toBe(hungryBefore);
 	});
 
 	it('голод дорожчий за будь-яку іншу причину стресу', () => {
@@ -241,7 +259,7 @@ describe('корм', () => {
 		const { state, fox } = withFox(true);
 		// `releasable` кидається кісткою при надходженні, тож для цієї перевірки його
 		// ставлять прямо: питання тут про корм, а не про те, кому пощастило.
-		Object.assign(fox(), { stage: 'healthy', recovery: 1, stress: 0, releasable: true });
+		Object.assign(fox(), { stage: 'healthy', health: 1, stress: 0, releasable: true });
 		expect(mouthsOf(state)).toBe(1);
 		execute(state, { type: 'release', animalId: 1 }, 'forest');
 		expect(mouthsOf(state)).toBe(0);

@@ -48,7 +48,7 @@ export const reserve = {
 	'reserve.stage.recovering': 'Одужує',
 	'reserve.stage.healthy': 'Здорова',
 	'reserve.stage.released': 'На волі',
-	'reserve.recovery': 'Одужання',
+	'reserve.health': 'Здоровʼя',
 	'reserve.stress': 'Стрес',
 	'reserve.captiveBorn': 'Народжена в неволі',
 	'reserve.release': 'Випустити в природу',
@@ -193,6 +193,7 @@ export const reserve = {
 	'reserve.why.decay': 'Про заповідник забувають',
 	'reserve.why.raidSaved': 'Браконьєрів зупинено',
 	'reserve.why.raidLost': 'Тварину забрали браконьєри',
+	'reserve.why.death': 'Тварина померла',
 	'reserve.why.other': 'Інше',
 
 	// Етап 13: корм у коморі й суб-модулі вольєра.

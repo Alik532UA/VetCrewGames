@@ -30,7 +30,7 @@ const animal = (
 	origin: 'rescue',
 	stage,
 	enclosureId,
-	recovery: 0,
+	health: 0,
 	stress: 0,
 	releasable: true,
 	releasedOnDay: stage === 'released' ? 1 : null

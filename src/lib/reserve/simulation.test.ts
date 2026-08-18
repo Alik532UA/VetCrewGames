@@ -298,7 +298,7 @@ describe('вольєри', () => {
 
 		Object.assign(home(state).animals[0], {
 			stage: 'healthy',
-			recovery: 1,
+			health: 1,
 			stress: 0,
 			releasable: true
 		});
@@ -360,7 +360,7 @@ describe('простір і швидкість', () => {
 			const { state } = withLion(size);
 			home(state).staff.vet = 1;
 			day(state, 3);
-			return home(state).animals[0].recovery;
+			return home(state).animals[0].health;
 		});
 		expect(results[1]).toBeGreaterThan(results[0]);
 	});
@@ -479,7 +479,7 @@ describe('репутація', () => {
 		const { state } = withLion(4);
 		Object.assign(home(state).animals[0], {
 			stage: 'healthy',
-			recovery: 1,
+			health: 1,
 			stress: 0,
 			releasable: true
 		});
@@ -508,7 +508,7 @@ describe('репутація', () => {
 		state.reputation = 98;
 		Object.assign(home(state).animals[0], {
 			stage: 'healthy',
-			recovery: 1,
+			health: 1,
 			stress: 0,
 			releasable: true
 		});
@@ -540,7 +540,7 @@ describe('випуск у дику природу', () => {
 		const { state } = withLion(4);
 		move(state, { type: 'hire', role: 'keeper' });
 		move(state, { type: 'equip', enclosureId: 1, module: 'shelter' });
-		Object.assign(home(state).animals[0], { stage: 'healthy', recovery: 1, stress: 0, releasable });
+		Object.assign(home(state).animals[0], { stage: 'healthy', health: 1, stress: 0, releasable });
 		return state;
 	};
 
@@ -598,7 +598,7 @@ describe('два списки замість одного', () => {
 
 		Object.assign(home(state).animals[0], {
 			stage: 'healthy',
-			recovery: 1,
+			health: 1,
 			stress: 0,
 			releasable: true
 		});
@@ -612,7 +612,7 @@ describe('два списки замість одного', () => {
 		const { state } = withLion(4);
 		Object.assign(home(state).animals[0], {
 			stage: 'healthy',
-			recovery: 1,
+			health: 1,
 			stress: 0,
 			releasable: true
 		});
@@ -673,9 +673,9 @@ describe('банкрутство', () => {
 	it('але не глушить виживання: час іде, тварини лікуються', () => {
 		const state = broke();
 		home(state).staff.vet = 1;
-		const before = home(state).animals[0].recovery;
+		const before = home(state).animals[0].health;
 		day(state);
-		expect(home(state).animals[0].recovery).toBeGreaterThan(before);
+		expect(home(state).animals[0].health).toBeGreaterThan(before);
 	});
 
 	it('вихід у плюс знімає режим', () => {
@@ -819,7 +819,7 @@ describe('якість вольєра', () => {
 		const speeds = ([1, 2, 3] as Quality[]).map((q) => {
 			const state = built(q);
 			day(state, 3);
-			return home(state).animals[0].recovery;
+			return home(state).animals[0].health;
 		});
 		expect(speeds[1]).toBeGreaterThan(speeds[0]);
 		expect(speeds[2]).toBeGreaterThan(speeds[1]);
@@ -978,7 +978,7 @@ describe('дві шкали розходяться саме там, де це щ
 		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 
 		const before = { impact: state.impact, reputation: state.reputation };
-		home(state).animals[0].recovery = 0.99;
+		home(state).animals[0].health = 0.99;
 		day(state);
 
 		expect(home(state).animals[0].stage).toBe('healthy');
@@ -1067,7 +1067,7 @@ describe('перемога', () => {
 		move(state, { type: 'acquire', origin: 'rescue', speciesId: 'lion', enclosureId: 1 });
 		Object.assign(home(state).animals[0], {
 			stage: 'healthy',
-			recovery: 1,
+			health: 1,
 			stress: 0,
 			releasable: true
 		});

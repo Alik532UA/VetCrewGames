@@ -141,7 +141,7 @@ export function execute(
 			animal.stage = 'released';
 			animal.releasedOnDay = dayOf(state);
 			addImpact(state, RELEASE_IMPACT, 'release');
-				// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
+			// Обидві шкали, і це навмисно: інакше найбільша нагорода гри була б
 			// суто оборонною — плюс до умови програшу й жодної копійки.
 			addReputation(state, RELEASE_REPUTATION, 'release');
 			countAnimal(state, 'inReserve', -1, 'release');

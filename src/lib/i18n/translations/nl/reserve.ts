@@ -44,7 +44,7 @@ export const reserve = {
 	'reserve.stage.recovering': 'Herstelt',
 	'reserve.stage.healthy': 'Gezond',
 	'reserve.stage.released': 'In de vrije natuur',
-	'reserve.recovery': 'Herstel',
+	'reserve.health': 'Gezondheid',
 	'reserve.stress': 'Stress',
 	'reserve.captiveBorn': 'In gevangenschap geboren',
 	'reserve.release': 'Vrijlaten in de natuur',
@@ -189,6 +189,7 @@ export const reserve = {
 	'reserve.why.decay': 'Het reservaat wordt vergeten',
 	'reserve.why.raidSaved': 'Stropers gestopt',
 	'reserve.why.raidLost': 'Dier meegenomen door stropers',
+	'reserve.why.death': 'Dier gestorven',
 	'reserve.why.other': 'Overig',
 
 	// Етап 13: корм у коморі й суб-модулі вольєра.
