@@ -14,6 +14,7 @@
 	import ErrorFallback from '$lib/components/ErrorFallback.svelte';
 	import { onMount } from 'svelte';
 	import { asset } from '$app/paths';
+	import { ogLocale } from '$lib/i18n/languages';
 	import { page } from '$app/state';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { trackPageView } from '$lib/services/analytics';
@@ -207,7 +208,18 @@
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={seoDescription} />
 	<meta property="og:image" content={ogImage} />
-	<meta property="og:locale" content={routeLanguage === 'uk' ? 'uk_UA' : 'en_US'} />
+	<!--
+		`og:locale` — мова ЦІЄЇ сторінки, решта мов — `og:locale:alternate`
+		(SEO-v8 § 4). Значення бере таблиця мов, а не умова тут: доти стояло
+		`routeLanguage === 'uk' ? 'uk_UA' : 'en_US'`, і після ввімкнення `de` та
+		`nl` німецька й нідерландська сторінки оголошували себе англійськими.
+		Дефект того самого класу, що вже виправлений для `<html lang>`: на екрані
+		все правильно, бо текст іде зі словника, а машина читає інше.
+	-->
+	<meta property="og:locale" content={ogLocale(routeLanguage)} />
+	{#each INDEXED_LANGUAGES.filter((lang) => lang !== routeLanguage) as lang (lang)}
+		<meta property="og:locale:alternate" content={ogLocale(lang)} />
+	{/each}
 
 	<!-- Twitter -->
 	<meta property="twitter:card" content="summary_large_image" />

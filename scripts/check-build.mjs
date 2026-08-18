@@ -28,6 +28,21 @@ const SITE_BASE = '/VetCrewGames';
  * зловити випадок, коли `entries()` віддав менше, ніж мов оголошено. Вивести
  * його з того самого джерела означало б звіряти джерело саме з собою.
  */
+/**
+ * Мова → локаль Open Graph, у тому самому порядку, що й `LANGUAGES`.
+ *
+ * Перелік ЯВНИЙ, з тієї самої причини, що й `EXPECTED_PAGES` нижче: він для
+ * того й існує, щоб зловити випадок, коли застосунок віддав менше мов або чужу
+ * локаль. Виведений із `src/lib/i18n/languages.ts`, він звіряв би джерело саме
+ * з собою — і саме таким чином дефект `de → en_US` жив непоміченим.
+ */
+const OG_LOCALES = new Map([
+	['uk', 'uk_UA'],
+	['en', 'en_US'],
+	['de', 'de_DE'],
+	['nl', 'nl_NL']
+]);
+
 const EXPECTED_PAGES = [
 	['index.html', 'uk'],
 	['quiz/index.html', 'uk'],
@@ -305,9 +320,36 @@ for (const [relative, expectedLang] of EXPECTED_PAGES) {
 		fail(`${relative}: canonical не дорівнює ${expectedCanonical}`);
 
 	// Набір hreflang однаковий на всіх мовних версіях і взаємний (SEO-v8 § 2.2).
-	for (const hreflang of ['uk', 'en', 'x-default']) {
+	//
+	// Перелік був `['uk', 'en', 'x-default']` і застиг на двох мовах: `de` й `nl`
+	// увімкнули 2026-08-16, і з того дня зникнення німецького hreflang не впало б
+	// нікуди. Сторінки при цьому перевіряються всі — вони в EXPECTED_PAGES.
+	for (const hreflang of [...OG_LOCALES.keys(), 'x-default']) {
 		if (!new RegExp(`rel="alternate"[^>]+hreflang="${hreflang}"`).test(html))
 			fail(`${relative}: немає hreflang="${hreflang}"`);
+	}
+
+	/*
+	 * `og:locale` — мова САМОЇ сторінки, решта мов — `og:locale:alternate`
+	 * (SEO-v8 § 4).
+	 *
+	 * Перевіряється тут, а не інваріантом по джерелах, бо дефект був саме цього
+	 * класу: у layout стояла умова на дві мови, і в джерелах вона виглядала
+	 * нормальною. Побачити, що німецька сторінка оголошує себе `en_US`, можна
+	 * лише в `build/de/index.html`.
+	 */
+	const expectedOg = OG_LOCALES.get(expectedLang);
+	if (!expectedOg) {
+		fail(`${relative}: мову "${expectedLang}" не описано в OG_LOCALES — перевірка мертва`);
+	} else {
+		if (!html.includes(`property="og:locale" content="${expectedOg}"`))
+			fail(`${relative}: og:locale не дорівнює "${expectedOg}" — сторінка оголошує чужу мову`);
+
+		for (const [lang, locale] of OG_LOCALES) {
+			if (lang === expectedLang) continue;
+			if (!html.includes(`property="og:locale:alternate" content="${locale}"`))
+				fail(`${relative}: немає og:locale:alternate="${locale}"`);
+		}
 	}
 }
 
