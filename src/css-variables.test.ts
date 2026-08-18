@@ -65,7 +65,26 @@ function walk(dir: string, keep: (name: string) => boolean, out: string[] = []):
 	return out;
 }
 
-const read = (p: string) => readFileSync(p, "utf8");
+/**
+ * Reads a file with comments stripped — the same discipline the sibling
+ * invariants in this project already follow (`ci.test.ts`, `security.test.ts`,
+ * `test-runners.test.ts`): a check that searches raw text finds its own
+ * documentation and reports it as a defect.
+ *
+ * It was not hypothetical. `src/contrast.test.ts` documents its resolver with
+ * "exactly one var() and nothing else: `var(--a)` or `var(--a, fallback)`", and
+ * this check reported `--a` as an undeclared variable in a TypeScript file that
+ * declares no styles at all.
+ *
+ * Line comments are only stripped when they START a line. A blanket `//` strip
+ * would eat the rest of any line containing `https://` — including `url()` in a
+ * `@font-face`, where the declarations this check needs actually live.
+ */
+const read = (p: string) =>
+	readFileSync(p, "utf8")
+		.replace(/\/\*[\s\S]*?\*\//g, "")
+		.replace(/<!--[\s\S]*?-->/g, "")
+		.replace(/^\s*\/\/.*$/gm, "");
 
 /** Declarations of the form `--name:` — in CSS, in a component `<style>`, in an inline `style`. */
 function declarations(source: string): Set<string> {
