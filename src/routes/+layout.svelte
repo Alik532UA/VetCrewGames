@@ -8,8 +8,7 @@
 	import PageScrollbar from '$lib/components/PageScrollbar.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import ScrollbarContextMenu from '$lib/components/ScrollbarContextMenu.svelte';
-	import LogCopyButton from '$lib/components/LogCopyButton.svelte';
-	import AppVersion from '$lib/components/AppVersion.svelte';
+	import ServiceBadge from '$lib/components/ServiceBadge.svelte';
 	import GameHeader from '$lib/components/GameHeader.svelte';
 	import ErrorFallback from '$lib/components/ErrorFallback.svelte';
 	import { onMount } from 'svelte';
@@ -248,7 +247,8 @@
 	</main>
 </div>
 
-<AppVersion />
+<!-- Службове табло: версія, лічильник помилок і збір звіту в одному елементі. -->
+<ServiceBadge />
 
 <Toast />
 <PageScrollbar />
@@ -257,7 +257,6 @@
      якби воно було всередині неї. -->
 <ScrollbarContextMenu />
 
-<LogCopyButton />
 
 <style>
 	:global(body) {
