@@ -162,14 +162,16 @@ ONLINE: ${navigator.onLine}
 		aria-label={`${t('debug.copyLogs')} — ${appVersion}`}
 		data-testid="app-version-value"
 	>
+		<!-- Номер версії — поза гілками: лічильник ДОДАЄТЬСЯ до нього, а не заміняє
+		     його. Інакше на dev, де помилка буває майже завжди, версії не видно. -->
 		{#if copied}
-			<Check class="badge-icon" />
+			<Check class="badge-icon badge-icon--hint" />
 		{:else if logService.errorCount > 0}
-			<span class="error-count">{logService.errorCount > 99 ? '!' : logService.errorCount}</span>
+			<span class="error-count">{logService.errorCount > 99 ? '99+' : logService.errorCount}</span>
 		{:else}
 			<Copy class="badge-icon badge-icon--hint" />
-			<span class="version">{appVersion}</span>
 		{/if}
+		<span class="version">{appVersion}</span>
 	</button>
 {/if}
 
@@ -231,17 +233,10 @@ ONLINE: ${navigator.onLine}
 	}
 
 	/*
-	 * Помилки — кружок, а не капсула: у цьому стані важлива не версія, а те, що
-	 * щось сталося. Номер версії лишається у звіті, який копіює цей самий клік.
+	 * Форма НЕ змінюється між станами: капсула лишається капсулою, бо номер версії
+	 * лишається на місці. Доти помилки перетворювали табло на кружок 32px — зникала
+	 * не лише версія, а й упізнаваність елемента: у куті з'являлося щось інше.
 	 */
-	.service-badge.has-errors,
-	.service-badge.copied {
-		width: 32px;
-		min-height: 32px;
-		padding: 0;
-		border-radius: 50%;
-		justify-content: center;
-	}
 
 	/*
 	 * Червоний темніший за #ef4444 — за WCAG AA, не за смаком: білий текст на
@@ -259,9 +254,19 @@ ONLINE: ${navigator.onLine}
 		border-color: #7f1d1d;
 	}
 
+	/*
+	 * Лічильник — плашка ПЕРЕД номером, а не текст замість нього. Темніший червоний
+	 * за тло капсули (#7f1d1d на #c92a2a): білий текст дає на ньому 10:1, і плашка
+	 * читається як окремий елемент, а не як пляма.
+	 */
 	.error-count {
 		font-weight: bold;
-		font-size: 0.9rem;
+		font-size: 0.75rem;
+		line-height: 1;
+		padding: 2px 5px;
+		border-radius: 8px;
+		background-color: #7f1d1d;
+		color: white;
 	}
 
 	/*
@@ -274,12 +279,6 @@ ONLINE: ${navigator.onLine}
 			min-height: 44px;
 			padding: 0 12px;
 			border-radius: 22px;
-		}
-
-		.service-badge.has-errors,
-		.service-badge.copied {
-			width: 44px;
-			padding: 0;
 		}
 
 		.service-badge :global(.badge-icon) {
