@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, slide, fly } from 'svelte/transition';
 	import { flyAndSlide } from '$lib/utils/transitions';
-	import { t, td, formatFont, formatPlain } from '$lib/i18n';
+	import { t, td, formatFont } from '$lib/i18n';
 	import { CheckCircle2, XCircle } from 'lucide-svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
 	import type { ActiveQuestion } from '$lib/controllers/mythGame.svelte';
@@ -47,7 +47,7 @@
 			-->
 			<img
 				src={question.animal.image}
-				alt={formatPlain(td(question.animal.nameKey))}
+				alt={td(question.animal.nameKey)}
 				class="myth-card__image"
 				loading="eager"
 				fetchpriority="high"

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { settings, type ScrollbarMode } from '$lib/services/settings.svelte';
 	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
 	import { SCROLLBAR_MODES } from '$lib/config/scrollbar-modes';
@@ -73,7 +73,7 @@
 		style="left: {position.left}px; top: {position.top}px; width: {WIDTH}px;"
 		role="menu"
 		tabindex="-1"
-		aria-label={formatPlain(t('scrollbar.title'))}
+		aria-label={t('scrollbar.title')}
 		data-testid="scrollbar-context-menu"
 		onkeydown={(e) => {
 			if (e.key === 'Escape') scrollbar.closeMenu();

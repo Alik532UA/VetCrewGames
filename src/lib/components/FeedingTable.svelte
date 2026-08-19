@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import type { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
 	import FeedingDish, { type QuickTarget } from './FeedingDish.svelte';
 
@@ -33,7 +33,7 @@
 		class:table--active={game.picked !== null && !game.fed}
 		role="button"
 		tabindex="0"
-		aria-label={formatPlain(t('feeding.table'))}
+		aria-label={t('feeding.table')}
 		data-testid="feeding-table-container"
 		onclick={returnToTable}
 		onkeydown={(e) => {

@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
-	import { t, td, formatFont, formatPlain, formatPopulation } from '$lib/i18n/index';
+	import { t, td, formatFont, formatPopulation } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
 	import { PopulationGameController, type Place } from '$lib/controllers/populationGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
@@ -360,7 +360,7 @@
 								<div class="game-card__img-container">
 									<img
 										src={animal.image}
-										alt={formatPlain(td(animal.nameKey))}
+										alt={td(animal.nameKey)}
 										class="game-card__img"
 										draggable="false"
 										loading="lazy"
@@ -469,7 +469,7 @@
 											<div class="game-card__img-container">
 												<img
 													src={animal.image}
-													alt={formatPlain(td(animal.nameKey))}
+													alt={td(animal.nameKey)}
 													class="game-card__img"
 													draggable="false"
 													loading="lazy"
@@ -502,7 +502,7 @@
 								<div class="result-card__left">
 									<img
 										src={animal.image}
-										alt={formatPlain(td(animal.nameKey))}
+										alt={td(animal.nameKey)}
 										class="result-card__img-small"
 										loading="lazy"
 										width="70"

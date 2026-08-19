@@ -144,7 +144,7 @@
 </button>
 
 <HeaderMenu
-	label={formatPlain(t('header.toggleTheme'))}
+	label={t('header.toggleTheme')}
 	keyshortcuts={settings.shortcutsEnabled ? 'T' : undefined}
 	testId="header-theme"
 	items={THEME_OPTIONS.map((theme) => ({
@@ -169,7 +169,7 @@
 </HeaderMenu>
 
 <HeaderMenu
-	label={formatPlain(t('header.toggleLocale'))}
+	label={t('header.toggleLocale')}
 	keyshortcuts={settings.shortcutsEnabled ? 'L' : undefined}
 	testId="header-locale"
 	items={LANGUAGE_META.map((meta) => ({

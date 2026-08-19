@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Trash2 } from 'lucide-svelte';
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import type { Food, Target } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -78,7 +78,7 @@
 					e.stopPropagation();
 					onsend(target.id);
 				}}
-				aria-label={formatPlain(t(target.labelKey))}
+				aria-label={t(target.labelKey)}
 				data-testid="feeding-quick-btn-{food.id}-{target.id}"
 			>
 				{#if target.image}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Trash2 } from 'lucide-svelte';
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import FeedingPlated from './FeedingPlated.svelte';
@@ -97,7 +97,7 @@
 	class:zone--done={disabled}
 	role="button"
 	tabindex="0"
-	aria-label={formatPlain(t(labelKey))}
+	aria-label={t(labelKey)}
 	data-testid={testId}
 	onclick={() => !disabled && onplace()}
 	onkeydown={(e) => {
@@ -121,7 +121,7 @@
 		{#if image}
 			<img
 				src={image}
-				alt={formatPlain(t(labelKey))}
+				alt={t(labelKey)}
 				class="zone__image"
 				loading="lazy"
 				width="300"

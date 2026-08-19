@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatPlain } from '$lib/i18n';
+	import { t } from '$lib/i18n';
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -34,7 +34,7 @@
 				e.stopPropagation();
 				onpick(food);
 			}}
-			aria-label={formatPlain(t(food.nameKey as TranslationKey))}
+			aria-label={t(food.nameKey as TranslationKey)}
 			data-testid="{zoneTestId}-hint-btn-{food.id}"
 		>
 			<img src={food.image} alt="" class="hint__image" loading="lazy" width="300" height="400" />

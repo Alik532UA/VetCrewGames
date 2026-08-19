@@ -3,7 +3,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { toast } from '$lib/controllers/toast.svelte';
-	import { t, formatFont, formatPlain } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 
 	/**
 	 * Показ тостів. Один екземпляр на весь сайт, у кореневому layout.
@@ -67,7 +67,7 @@
 			<button
 				type="button"
 				class="toast__close"
-				aria-label={formatPlain(t('common.close'))}
+				aria-label={t('common.close')}
 				onclick={() => toast.remove(message.id)}
 				data-testid="toast-close-btn"
 			>

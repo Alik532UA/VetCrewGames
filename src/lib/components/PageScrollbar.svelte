@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { Spring } from 'svelte/motion';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { t, formatPlain } from '$lib/i18n';
+	import { t } from '$lib/i18n';
 	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
 	import { readMetrics, watchScroller } from '$lib/utils/scrollMetrics';
 
@@ -215,7 +215,7 @@
 		class:page-scrollbar--hidden={presence.current < 0.01}
 		style="top: {trackTop}px; height: {clientHeight}px; width: {width}px;
 			opacity: {presence.current}; transform: translateX({(1 - presence.current) * width}px);"
-		aria-label={formatPlain(t('scrollbar.title'))}
+		aria-label={t('scrollbar.title')}
 		data-testid="page-scrollbar-container"
 		oncontextmenu={(e) => {
 			e.preventDefault();

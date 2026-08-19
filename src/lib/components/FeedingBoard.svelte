@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, td, formatPlain } from '$lib/i18n';
+	import { t, td } from '$lib/i18n';
 	import type { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { BIN } from '$lib/config/feeding-game';
@@ -47,7 +47,7 @@
 				<FeedingVerdicts
 					verdicts={verdictsFor(round.animals[0].id)}
 					animals={round.animals}
-					label={formatPlain(td(round.animals[0].nameKey))}
+					label={td(round.animals[0].nameKey)}
 					testId="feeding-verdicts-animal-0-list"
 				/>
 			</div>
@@ -92,7 +92,7 @@
 				<FeedingVerdicts
 					verdicts={verdictsFor(round.animals[1].id)}
 					animals={round.animals}
-					label={formatPlain(td(round.animals[1].nameKey))}
+					label={td(round.animals[1].nameKey)}
 					testId="feeding-verdicts-animal-1-list"
 				/>
 			</div>
@@ -122,7 +122,7 @@
 			<FeedingVerdicts
 				verdicts={verdictsFor(BIN)}
 				animals={round.animals}
-				label={formatPlain(t('feeding.bin'))}
+				label={t('feeding.bin')}
 				reveal
 				testId="feeding-verdicts-bin-list"
 			/>

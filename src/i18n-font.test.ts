@@ -200,4 +200,60 @@ describe('український текст на екрані', () => {
 			`кирилиця з латиницею в одному слові — ламає пошук, копіювання й читалку:\n${problems.join('\n')}`
 		).toEqual([]);
 	});
+	/**
+	 * Друга половина того самого правила: те, що читає МАШИНА, не форматується.
+	 *
+	 * Docблок цього файлу стверджував це від початку — «атрибути свідомо
+	 * лишаються за межами: `aria-label` і `title` читає машина, і латинська „i“
+	 * всередині українського слова змусила б читалку вимовити його неправильно».
+	 * Стверджував — і не перевіряв, тож правило порушувалося у ДВАДЦЯТИ ОДНОМУ
+	 * місці: `aria-label={formatPlain(t('header.toggleTheme'))}` давав читалці
+	 * «Змiнити тему» з латинською i, і так само були зіпсовані всі `alt` до фото
+	 * тварин — тобто саме той текст, який чує людина, що не бачить зображення.
+	 *
+	 * `label` тут теж перелічений, бо в цьому проєкті він доходить до
+	 * `aria-label` компонента (`HeaderMenu`, `FeedingVerdicts`). Якщо колись
+	 * зʼявиться компонент, який `label` МАЛЮЄ, форматувати його треба всередині
+	 * компонента, а не на місці виклику: хто малює, той і знає, що це показ, а
+	 * не оголошення.
+	 */
+	it('машинні підписи НЕ проходять через форматери шрифту', () => {
+		const MACHINE_READ = ['aria-label', 'alt', 'title', 'placeholder', 'label'];
+		const FONT_FORMATTERS = ['formatPlain(', 'formatFont(', 'formatPopulation('];
+
+		const problems: string[] = [];
+		let seen = 0;
+
+		for (const file of components) {
+			const source = readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+			for (const attribute of MACHINE_READ) {
+				// Саме `attr={`, а не `attr:` — щоб не зачепити поле обʼєкта, яке
+				// цілком законно малюється (пункти меню тем).
+				const needle = `${attribute}={`;
+				let from = 0;
+				for (;;) {
+					const at = source.indexOf(needle, from);
+					if (at === -1) break;
+					from = at + needle.length;
+					// `data-label={`, `xyz-label={` — інші атрибути, не цей.
+					const before = source[at - 1] ?? ' ';
+					if (/[\w$-]/.test(before)) continue;
+					seen++;
+					const value = source.slice(from, from + 40);
+					const formatter = FONT_FORMATTERS.find((f) => value.startsWith(f));
+					if (formatter) {
+						problems.push(`${file}: ${attribute}={${formatter}…}`);
+					}
+				}
+			}
+		}
+
+		// Canary: змінена розмітка або зламаний обхід дали б нуль знахідок і зелений тест.
+		expect(seen, 'машинних підписів не знайдено — шукали не там').toBeGreaterThan(20);
+		expect(
+			problems,
+			`читалка вимовить це покручем — кирилиця мусить лишитися кирилицею.\n` +
+				`Прибрати форматер; він потрібен лише тому, що МАЛЮЄТЬСЯ:\n${problems.join('\n')}`
+		).toEqual([]);
+	});
 });

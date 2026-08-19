@@ -4,7 +4,7 @@
 	import { fade, fly, slide } from 'svelte/transition';
 	import { CheckCircle2, XCircle } from 'lucide-svelte';
 	import { page } from '$app/state';
-	import { t, td, formatFont, formatPlain } from '$lib/i18n';
+	import { t, td, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { FamilyGameController } from '$lib/controllers/familyGame.svelte';
@@ -66,7 +66,7 @@
 						<div class="animal-card__image-wrap">
 							<img
 								src={animal.image}
-								alt={formatPlain(td(animal.nameKey))}
+								alt={td(animal.nameKey)}
 								class="animal-card__image"
 								loading="lazy"
 								width="300"

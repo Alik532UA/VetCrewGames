@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatPlain } from '$lib/i18n';
+	import { t } from '$lib/i18n';
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -53,7 +53,7 @@
 			e.dataTransfer.effectAllowed = 'move';
 		}
 	}}
-	aria-label={formatPlain(t(food.nameKey as TranslationKey))}
+	aria-label={t(food.nameKey as TranslationKey)}
 	data-testid={testId}
 >
 	<img src={food.image} alt="" class="plated__image" loading="lazy" width="390" height="520" />

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import { td, formatPlain } from '$lib/i18n/index';
+	import { td } from '$lib/i18n/index';
 	import type { Animal } from '$lib/config/population-game';
 
 	/**
@@ -33,7 +33,7 @@
 				onpick(animal);
 			}}
 			onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && onpick(animal)}
-			aria-label={formatPlain(td(animal.nameKey))}
+			aria-label={td(animal.nameKey)}
 		>
 			<img
 				src={animal.image}

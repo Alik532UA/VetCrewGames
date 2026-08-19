@@ -3,7 +3,7 @@
 	import { slide } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { t, td, formatFont, formatPlain } from '$lib/i18n';
+	import { t, td, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
@@ -87,7 +87,7 @@
 			-->
 			<img
 				src={game.round.animal.image}
-				alt={formatPlain(td(game.round.animal.nameKey))}
+				alt={td(game.round.animal.nameKey)}
 				class="animal__image"
 				loading="eager"
 				fetchpriority="high"
