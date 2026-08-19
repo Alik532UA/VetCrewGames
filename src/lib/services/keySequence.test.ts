@@ -1,7 +1,8 @@
 // @vitest-environment node
 // Логіка чиста — DOM потрібен лише для `closest`, і його підставляє сам тест.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createKeySequence, isTypingTarget, type KeyStroke } from './keySequence';
+import { createKeySequence, type KeyStroke } from './keySequence';
+import { isTypingTarget } from './keyboard';
 
 /**
  * Захисти службового жесту.
@@ -70,6 +71,28 @@ describe('серія натискань', () => {
 		sequence.handle(inField);
 
 		expect(onComplete, 'слово «ррр» у пошуку не є службовим жестом').not.toHaveBeenCalled();
+	});
+
+	it('МОДИФІКАТОРИ не рахуються: Ctrl+V — це вставлення, а не крок серії', () => {
+		// Без цього вставлення поза полем вводу набирало б жест показу табла, а
+		// `Ctrl+R` — жест скидання (HOTKEYS-v8 § 2.1). Це та сама вимога, яку канон
+		// ставить усім обробникам, і тут вона доти не виконувалася.
+		const onComplete = vi.fn();
+		const sequence = createKeySequence({ code: 'KeyR', threshold: 3, onComplete });
+
+		for (let i = 0; i < 10; i++) sequence.handle(press({ ctrlKey: true }));
+		for (let i = 0; i < 10; i++) sequence.handle(press({ metaKey: true }));
+		for (let i = 0; i < 10; i++) sequence.handle(press({ altKey: true }));
+
+		expect(onComplete).not.toHaveBeenCalled();
+		expect(sequence.count, 'комбінації не додають і не скидають').toBe(0);
+	});
+
+	it('комбінація не скидає вже набране', () => {
+		const sequence = createKeySequence({ code: 'KeyR', threshold: 5, onComplete: vi.fn() });
+		sequence.handle(press());
+		sequence.handle(press({ ctrlKey: true }));
+		expect(sequence.count).toBe(1);
 	});
 
 	it('натискання в полі не скидає вже набране', () => {

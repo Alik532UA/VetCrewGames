@@ -20,17 +20,25 @@
  *     якого не робила.
  *  4. Будь-яка інша клавіша скидає лічильник. Це те, що робить жест саме
  *     СЕРІЄЮ, а не сумою.
+ *  5. Модифікатори. `Ctrl+V` — це вставлення, а не крок серії; `Ctrl+R` —
+ *     перезавантаження. Без цієї перевірки вставлення поза полем вводу набирало
+ *     б жест показу табла (HOTKEYS-v8 § 2.1).
  *
  * Поріг і вікно задає той, хто створює послідовність: ціна випадкового
  * спрацювання в різних жестів різна, і однакове число для них було б збігом, а
  * не рішенням.
  */
 
+import { isPlainKey, isTypingTarget } from './keyboard';
+
 /** Мінімум того, що потрібно від події. Тест не мусить будувати справжній `KeyboardEvent`. */
 export interface KeyStroke {
 	code: string;
 	repeat?: boolean;
 	target?: EventTarget | null;
+	ctrlKey?: boolean;
+	metaKey?: boolean;
+	altKey?: boolean;
 }
 
 export interface KeySequenceOptions {
@@ -59,21 +67,6 @@ export interface KeySequence {
 	reset(): void;
 }
 
-/**
- * Чи друкує людина зараз у полі.
- *
- * `closest`, а не порівняння `tagName`: фокус може стояти на елементі всередині
- * `contenteditable`, і тоді сам `tagName` — це `SPAN`. `MindStep` перевіряє саме
- * `tagName`, тож редаговані блоки там не захищені.
- */
-export function isTypingTarget(target: EventTarget | null | undefined): boolean {
-	const element = target as HTMLElement | null | undefined;
-	if (!element || typeof element.closest !== 'function') return false;
-	return element.closest(
-		'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
-	) !== null;
-}
-
 export function createKeySequence(options: KeySequenceOptions): KeySequence {
 	const windowMs = options.windowMs ?? 2000;
 	let count = 0;
@@ -93,10 +86,14 @@ export function createKeySequence(options: KeySequenceOptions): KeySequence {
 		},
 		reset,
 		handle(stroke: KeyStroke): void {
-			// Автоповтор і набір тексту не рахуються — але й не скидають лічильник:
-			// натиснути потрібну клавішу, зачепивши поле вводу, і втратити вже
-			// набране було б поведінкою, якої ніхто не пояснить.
+			/*
+			 * Автоповтор, набір тексту й комбінації не рахуються — але й НЕ скидають
+			 * лічильник: натиснути потрібну клавішу, зачепивши поле вводу або
+			 * втримавши `Ctrl`, і втратити вже набране було б поведінкою, якої ніхто
+			 * не пояснить.
+			 */
 			if (stroke.repeat) return;
+			if (!isPlainKey(stroke)) return;
 			if (isTypingTarget(stroke.target)) return;
 
 			if (stroke.code !== options.code) {

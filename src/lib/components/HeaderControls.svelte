@@ -2,6 +2,8 @@
 	import { Sun, Moon, Snowflake, Leaf } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, formatPlain } from '$lib/i18n';
+	import { fullscreen } from '$lib/services/fullscreen.svelte';
+	import { acceptsShortcut } from '$lib/services/keyboard';
 	import { settings } from '$lib/services/settings.svelte';
 	import { LANGUAGE_META, flagSrc, languageLabel } from '$lib/i18n/languages';
 	import { langPath, languageFromParam, routeRestFromId, type Language } from '$lib/i18n/routing';
@@ -55,7 +57,56 @@
 		window.addEventListener('click', close);
 		return () => window.removeEventListener('click', close);
 	});
+
+	/**
+	 * Гарячі клавіші: `T` — тема, `L` — меню мов, `Esc` — закрити (HOTKEYS-v8 § 1.1).
+	 *
+	 * **Обробник живе тут, а не в кореневому layout, і це не випадково.** Обидві
+	 * дії потребують стану, яким володіє саме цей компонент: `openMenu`. Підняти
+	 * його в окремий модуль заради клавіші означало б завести ДРУГОГО власника
+	 * стану, і розходження між кнопкою й клавішею стало б питанням часу. Шапка
+	 * рендериться на кожній сторінці, тож `svelte:window` тут має ту саму
+	 * досяжність, що й у layout, і знімається сам разом із компонентом.
+	 *
+	 * **`T` перемикає по колу, `L` відкриває МЕНЮ.** Різниця не в смаку: тему
+	 * задає `settings.setTheme`, тобто дія суто клієнтська й миттєва. Мову ж
+	 * перемикає НАВІГАЦІЯ (`langPath` — це `href`), і «наступна мова» по колу
+	 * означала б до трьох перезавантажень, щоб дійти до потрібної. Тому клавіша
+	 * робить те саме, що кнопка: відкриває список.
+	 */
+	function handleShortcut(event: KeyboardEvent) {
+		if (!acceptsShortcut(event)) return;
+
+		if (event.code === 'Escape') {
+			if (openMenu === null) return;
+			openMenu = null;
+			event.preventDefault();
+			return;
+		}
+
+		if (event.code === 'KeyT') {
+			const order = THEME_OPTIONS.map((option) => option.id);
+			const next = order[(order.indexOf(settings.theme) + 1) % order.length];
+			settings.setTheme(next as Theme);
+			// `preventDefault` лише після того, як дія відбулася (HOTKEYS-v8 § 2.4).
+			event.preventDefault();
+			return;
+		}
+
+		if (event.code === 'KeyL') {
+			openMenu = openMenu === 'lang' ? null : 'lang';
+			event.preventDefault();
+			return;
+		}
+
+		if (event.code === 'KeyF') {
+			void fullscreen.toggle();
+			event.preventDefault();
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleShortcut} />
 
 <HeaderMenu
 	label={formatPlain(t('header.toggleTheme'))}
