@@ -116,9 +116,7 @@ describe('службове табло', () => {
 		);
 
 		const service = readFileSync('src/lib/services/debugMode.svelte.ts', 'utf8');
-		expect(service, 'ховання завжди дешеве').toMatch(
-			/if \(this\.enabled\) return HIDE_PRESSES/
-		);
+		expect(service, 'ховання завжди дешеве').toMatch(/if \(this\.enabled\) return HIDE_PRESSES/);
 		expect(service, 'у dev показати теж дешево — заради скріншота').toMatch(
 			/return dev \? HIDE_PRESSES : SHOW_PRESSES_PROD/
 		);
@@ -132,11 +130,20 @@ describe('службове табло', () => {
 		);
 	});
 
-	it('5. клік копіює звіт, і звіт несе версію та стан мережі', () => {
+	it('5. клік копіює звіт, і звіт збирається тим, що має тест', () => {
 		expect(badge).toMatch(/onclick=\{copyReport\}/);
-		// DEBUGGING-v8 § 2.3: без цих двох рядків половина звітів нічого не пояснює.
-		expect(badge, 'VERSION у заголовку').toMatch(/VERSION: \$\{logService\.appVersion\}/);
-		expect(badge, 'ONLINE у заголовку').toMatch(/ONLINE: \$\{navigator\.onLine\}/);
+		/*
+		 * Шапка звіту лежала тут-таки, і цей пункт читав її реґексом по джерелу:
+		 * `VERSION: ${logService.appVersion}`. Текст звіту переїхав у `logReport.ts`, де
+		 * його перевіряє `logReport.test.ts` — і перевіряє ПОВЕДІНКУ, а не
+		 * наявність рядка: `ONLINE: false` там справді збирається, а не лише
+		 * згадується в шаблоні. Тут лишається єдине, чого той файл бачити не
+		 * може: чи кличе його табло й чи віддає йому обидва рядки, без яких
+		 * половина звітів нічого не пояснює (DEBUGGING-v8 § 2.3).
+		 */
+		expect(badge, 'звіт складає `logReport`').toMatch(/buildLogReport\(logService\.getLogs\(\)/);
+		expect(badge, 'VERSION передана').toMatch(/version: logService\.appVersion/);
+		expect(badge, 'ONLINE переданий').toMatch(/online: navigator\.onLine/);
 	});
 
 	it('6. помилки міняють вигляд на червоний лічильник — ПОРУЧ із номером версії', () => {
@@ -164,9 +171,7 @@ describe('службове табло', () => {
 	});
 
 	it('7 і 8. скидання: 5 натискань у dev, 55 у проді', async () => {
-		const { RESET_PRESSES_DEV, RESET_PRESSES_PROD } = await import(
-			'$lib/services/resetService'
-		);
+		const { RESET_PRESSES_DEV, RESET_PRESSES_PROD } = await import('$lib/services/resetService');
 		expect(RESET_PRESSES_DEV).toBe(5);
 		expect(RESET_PRESSES_PROD).toBe(55);
 		expect(badge, 'поріг мусить залежати від середовища').toMatch(
@@ -190,9 +195,10 @@ describe('службове табло', () => {
 		expect(badge, 'власного лічильника натискань у компоненті бути не має').not.toMatch(
 			/\+\+\s*;?\s*$|PressCount/m
 		);
-		expect(existsSync('src/lib/services/keySequence.test.ts'), 'захисти без тестів — побажання').toBe(
-			true
-		);
+		expect(
+			existsSync('src/lib/services/keySequence.test.ts'),
+			'захисти без тестів — побажання'
+		).toBe(true);
 	});
 
 	it('таймери й слухачі знімаються при знищенні', () => {

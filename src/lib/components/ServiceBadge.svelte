@@ -7,6 +7,7 @@
 	import { debugMode } from '$lib/services/debugMode.svelte';
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { createKeySequence } from '$lib/services/keySequence';
+	import { buildLogReport } from '$lib/services/logReport';
 	import { logService } from '$lib/services/logService.svelte';
 	import { hardReset, RESET_PRESSES_DEV, RESET_PRESSES_PROD } from '$lib/services/resetService';
 
@@ -105,33 +106,18 @@
 		resetSequence.reset();
 	});
 
+	/** Складання самого тексту живе в `logReport.ts` — там його перевіряє тест. */
 	async function copyReport() {
-		const logs = logService.getLogs();
-
-		// ISO, а не toLocaleString(): звіт читає той, хто розбирає збій, а не
-		// відвідувач, який його скопіював. Голий toLocaleString() рендериться в
-		// локалі СИСТЕМИ відвідувача — 03.08 чи 08.03 залежно від того, де він
-		// живе, і розрізнити їх у звіті нема по чому (I18N-v8 § 4.3).
-		//
-		// ONLINE — не прикраса: половина звітів «нічого не працює» пояснюється
-		// саме цим рядком (DEBUGGING-v8 § 2.3).
-		const header = `--- REPORT from service badge ---
-DATE: ${new Date().toISOString()}
-URL: ${window.location.href}
-DEVICE: ${navigator.userAgent}
-VERSION: ${logService.appVersion}
-ONLINE: ${navigator.onLine}
-------------------------
-`;
-		const logText = logs
-			.map(
-				(l) =>
-					`[${l.timestamp}] [${l.level.toUpperCase()}] [${l.category.toUpperCase()}] ${l.message} ${l.data ? JSON.stringify(l.data) : ''}`
-			)
-			.join('\n');
+		const report = buildLogReport(logService.getLogs(), {
+			version: logService.appVersion,
+			url: window.location.href,
+			userAgent: navigator.userAgent,
+			online: navigator.onLine,
+			takenAt: new Date().toISOString()
+		});
 
 		try {
-			await navigator.clipboard.writeText(header + logText);
+			await navigator.clipboard.writeText(report);
 			copied = true;
 			copyTimer = setTimeout(() => {
 				copied = false;
