@@ -91,6 +91,10 @@ export const ui = {
 	'header.exitFullscreen': 'Volledig scherm uit',
 	'header.score': 'Totaalscore',
 
+	// Schakelaar voor sneltoetsen met één teken (WCAG SC 2.1.4, niveau A).
+	'header.shortcutsOn': 'Sneltoetsen uitschakelen',
+	'header.shortcutsOff': 'Sneltoetsen inschakelen',
+
 	// De namen van de thema's staan als tekst op het scherm, niet als
 	// voorleestekst: het zijn de items van een lijst. Genoemd naar wat je ziet
 	// — „orange-purple” zegt niemand iets, „Herfst” zegt alles.
@@ -128,5 +132,6 @@ export const ui = {
 	'beta.copy': 'Rapport kopiëren',
 	'beta.copied': 'Rapport gekopieerd',
 	'beta.clear': 'Markeringen wissen',
-	'beta.copyFailed': 'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.'
+	'beta.copyFailed':
+		'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.'
 } as const;

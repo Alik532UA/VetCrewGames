@@ -102,6 +102,7 @@
 				class="header-btn"
 				onclick={() => fullscreen.toggle()}
 				aria-label={t(fullscreen.active ? 'header.exitFullscreen' : 'header.toggleFullscreen')}
+				aria-keyshortcuts={settings.shortcutsEnabled ? 'F' : undefined}
 				data-testid="header-fullscreen-btn"
 			>
 				{#if fullscreen.active}

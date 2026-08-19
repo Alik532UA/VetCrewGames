@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sun, Moon, Snowflake, Leaf } from 'lucide-svelte';
+	import { Sun, Moon, Snowflake, Leaf, Keyboard, KeyboardOff } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, formatPlain } from '$lib/i18n';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
@@ -59,7 +59,13 @@
 	});
 
 	/**
-	 * Гарячі клавіші: `T` — тема, `L` — меню мов, `Esc` — закрити (HOTKEYS-v8 § 1.1).
+	 * Гарячі клавіші: `T` — тема, `L` — меню мов, `F` — на весь екран, `Esc` —
+	 * закрити (HOTKEYS-v8 § 1.1).
+	 *
+	 * **Три з чотирьох — одиночні літери, тож діють вони лише поки увімкнено
+	 * `settings.shortcutsEnabled`** (WCAG SC 2.1.4, рівень A). Прапорець іде в
+	 * `acceptsShortcut` параметром, і параметр цей обовʼязковий: забути про
+	 * вимикач у новому обробнику не можна — не збереться.
 	 *
 	 * **Обробник живе тут, а не в кореневому layout, і це не випадково.** Обидві
 	 * дії потребують стану, яким володіє саме цей компонент: `openMenu`. Підняти
@@ -75,7 +81,7 @@
 	 * робить те саме, що кнопка: відкриває список.
 	 */
 	function handleShortcut(event: KeyboardEvent) {
-		if (!acceptsShortcut(event)) return;
+		if (!acceptsShortcut(event, settings.shortcutsEnabled)) return;
 
 		if (event.code === 'Escape') {
 			if (openMenu === null) return;
@@ -108,8 +114,38 @@
 
 <svelte:window onkeydown={handleShortcut} />
 
+<!--
+	Вимикач гарячих клавіш — виконання WCAG SC 2.1.4 (рівень A) і водночас те, що
+	робить самі скорочення виявними: доти про них не було написано ніде
+	(HOTKEYS-v8 § 5).
+
+	Стан несе `aria-pressed`, а не підпис: підпис називає ДІЮ, яку виконає натиск.
+	Значок так само показує, що станеться, а не що є, — інакше кнопка й підпис
+	говорили б різне.
+
+	`aria-label` — БЕЗ `formatPlain()`: та функція міняє кириличну «і» на
+	латинську «i», щоб літера була у шрифті inglobal. Для того, що малюється, це
+	правильно; для того, що читає машина, — ні, бо «Вимкнути гарячi клавiшi» з
+	латинською i вимовляється покручем (AGENTS.md, конвенції).
+-->
+<button
+	type="button"
+	class="header-btn"
+	onclick={() => settings.setShortcutsEnabled(!settings.shortcutsEnabled)}
+	aria-pressed={settings.shortcutsEnabled}
+	aria-label={t(settings.shortcutsEnabled ? 'header.shortcutsOn' : 'header.shortcutsOff')}
+	data-testid="header-shortcuts-toggle"
+>
+	{#if settings.shortcutsEnabled}
+		<Keyboard size={20} />
+	{:else}
+		<KeyboardOff size={20} />
+	{/if}
+</button>
+
 <HeaderMenu
 	label={formatPlain(t('header.toggleTheme'))}
+	keyshortcuts={settings.shortcutsEnabled ? 'T' : undefined}
 	testId="header-theme"
 	items={THEME_OPTIONS.map((theme) => ({
 		id: theme.id,
@@ -134,6 +170,7 @@
 
 <HeaderMenu
 	label={formatPlain(t('header.toggleLocale'))}
+	keyshortcuts={settings.shortcutsEnabled ? 'L' : undefined}
 	testId="header-locale"
 	items={LANGUAGE_META.map((meta) => ({
 		id: meta.code,

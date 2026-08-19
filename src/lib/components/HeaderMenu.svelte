@@ -26,6 +26,15 @@
 	interface Props {
 		/** Назва кнопки для читалок. */
 		label: string;
+		/**
+		 * Клавіша, якою кнопку можна натиснути з клавіатури, — у форматі
+		 * `aria-keyshortcuts` (напр. `'T'`).
+		 *
+		 * Скорочення, про яке ніде не написано, існує лише для автора
+		 * (HOTKEYS-v8 § 5). `undefined` — коли скорочення зараз не діє: вимкнене
+		 * скорочення, оголошене читалці, гірше за неоголошене.
+		 */
+		keyshortcuts?: string;
 		/** Основа `data-testid`: `header-locale` дає `header-locale-btn`. */
 		testId: string;
 		items: HeaderMenuItem[];
@@ -36,7 +45,8 @@
 		itemVisual?: Snippet<[HeaderMenuItem]>;
 	}
 
-	let { label, testId, items, open, onToggle, onselect, trigger, itemVisual }: Props = $props();
+	let { label, keyshortcuts, testId, items, open, onToggle, onselect, trigger, itemVisual }: Props =
+		$props();
 
 	/**
 	 * Escape закриває й вертає фокус на кнопку, стрілки ходять по списку, Home і
@@ -98,6 +108,7 @@
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-label={label}
+		aria-keyshortcuts={keyshortcuts}
 		data-testid="{testId}-btn"
 	>
 		{@render trigger()}

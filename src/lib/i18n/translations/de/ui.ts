@@ -93,6 +93,10 @@ export const ui = {
 	'header.exitFullscreen': 'Vollbild beenden',
 	'header.score': 'Gesamtpunktzahl',
 
+	// Schalter für Einzeltasten-Kürzel (WCAG SC 2.1.4, Stufe A).
+	'header.shortcutsOn': 'Tastenkürzel ausschalten',
+	'header.shortcutsOff': 'Tastenkürzel einschalten',
+
 	// Die Namen der Designs stehen als Text auf dem Bildschirm, nicht als
 	// Vorlesetext: Sie sind die Einträge einer Liste. Benannt nach dem, was man
 	// sieht — „orange-purple“ sagt niemandem etwas, „Herbst“ sagt alles.
@@ -130,5 +134,6 @@ export const ui = {
 	'beta.copy': 'Bericht kopieren',
 	'beta.copied': 'Bericht kopiert',
 	'beta.clear': 'Markierungen löschen',
-	'beta.copyFailed': 'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.'
+	'beta.copyFailed':
+		'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.'
 } as const;

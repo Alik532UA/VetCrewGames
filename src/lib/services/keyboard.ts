@@ -26,6 +26,11 @@
  * Пропущене — це відсутня функція, а не забута клавіша. Щойно функція
  * зʼявиться, клавіша береться з канонічної карти (HOTKEYS-v8 § 1.1), а не
  * вигадується.
+ *
+ * **Усі п'ять діючих скорочень — одиночні літери, тож на них поширюється WCAG
+ * SC 2.1.4 (рівень A).** Обраний шлях — вимикач `settings.shortcutsEnabled`,
+ * кнопка якого стоїть у шапці поруч із темою й мовою. Він приходить сюди
+ * ПАРАМЕТРОМ `acceptsShortcut`, а не імпортом, і причина — нижче.
  */
 
 /**
@@ -39,9 +44,8 @@ export function isTypingTarget(target: EventTarget | null | undefined): boolean 
 	const element = target as HTMLElement | null | undefined;
 	if (!element || typeof element.closest !== 'function') return false;
 	return (
-		element.closest(
-			'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
-		) !== null
+		element.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') !==
+		null
 	);
 }
 
@@ -62,14 +66,30 @@ export function isPlainKey(event: {
 }
 
 /**
- * Обидва захисти разом — те, що потрібно обробникові на вікні.
+ * Усі захисти разом — те, що потрібно обробникові на вікні.
  *
- * `Escape` — єдиний виняток із захисту полів: панель, яку відкрили клавішею,
- * може забрати фокус у своє поле, і тоді літера, якою її відкрили, законно
- * зʼїдається полем. Закрити панель зсередини більше нічим (HOTKEYS-v8 § 2.2).
+ * `Escape` — єдиний виняток одразу з двох перевірок: і з захисту полів, і з
+ * вимикача. Панель, яку відкрили клавішею, може забрати фокус у своє поле, і
+ * тоді літера, якою її відкрили, законно зʼїдається полем; закрити панель
+ * зсередини більше нічим (HOTKEYS-v8 § 2.2). А під WCAG SC 2.1.4 `Escape` не
+ * потрапляє взагалі: критерій говорить про літери, цифри й символи, тобто про
+ * те, що з'являється при диктуванні. Вимикач, який глушить і `Escape`, лишив би
+ * відкрите меню без виходу з клавіатури — тобто полагодив би одну вимогу
+ * доступності, зламавши іншу.
+ *
+ * **`shortcutsEnabled` — обовʼязковий параметр, а не значення за замовчуванням.**
+ * Типове `true` означало б, що місце виклику, яке про вимикач не знає, мовчки
+ * лишається поза ним — а це рівно той спосіб, яким вимога рівня A перестає
+ * виконуватися після наступного нового скорочення. Тут про нього ЗАБУТИ не
+ * можна: TypeScript вимагає відповіді на кожному виклику.
+ *
+ * Прапорець приходить параметром, а не імпортом `settings`: цей модуль читають
+ * юніт-тести під `environment: node`, а конструктор `settings` торкається
+ * `document`. Чистота тут — умова того, що захисти взагалі перевіряються.
  */
-export function acceptsShortcut(event: KeyboardEvent): boolean {
+export function acceptsShortcut(event: KeyboardEvent, shortcutsEnabled: boolean): boolean {
 	if (!isPlainKey(event)) return false;
 	if (event.code === 'Escape') return true;
+	if (!shortcutsEnabled) return false;
 	return !isTypingTarget(event.target);
 }

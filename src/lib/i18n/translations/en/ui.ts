@@ -89,6 +89,13 @@ export const ui = {
 	'header.exitFullscreen': 'Exit fullscreen',
 	'header.score': 'Total score',
 
+	// Switch for single-character shortcuts (WCAG SC 2.1.4, level A). The label
+	// names the ACTION the press performs, not the current state: the state comes
+	// from `aria-pressed`, and repeating it in the label would tell the user the
+	// opposite of what is about to happen.
+	'header.shortcutsOn': 'Turn keyboard shortcuts off',
+	'header.shortcutsOff': 'Turn keyboard shortcuts on',
+
 	// Theme names are text on screen, not screen-reader labels: they are the
 	// items of a list. Named by what you see rather than by the stored value —
 	// "orange-purple" tells nobody anything, "Autumn" tells them everything.
@@ -118,8 +125,7 @@ export const ui = {
 	'beta.coverage.testable': 'No automated test yet',
 	'beta.coverage.covered': 'Covered by a test',
 	'beta.coverage.manualHint': 'No machine checks this — your own eyes are what is needed here.',
-	'beta.coverage.testableHint':
-		'This could be checked automatically, but no such test exists yet.',
+	'beta.coverage.testableHint': 'This could be checked automatically, but no such test exists yet.',
 	'beta.coverage.coveredHint':
 		'An automated test already watches this. If you find a bug here, the test is wrong — and that is especially valuable to us.',
 	'beta.stale': 'marked on a different version',

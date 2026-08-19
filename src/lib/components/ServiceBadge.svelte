@@ -10,6 +10,7 @@
 	import { buildLogReport } from '$lib/services/logReport';
 	import { logService } from '$lib/services/logService.svelte';
 	import { hardReset, RESET_PRESSES_DEV, RESET_PRESSES_PROD } from '$lib/services/resetService';
+	import { settings } from '$lib/services/settings.svelte';
 
 	/**
 	 * Службове табло: номер версії, лічильник помилок і збір звіту — ОДИН елемент.
@@ -95,7 +96,21 @@
 		onComplete: () => void hardReset(!dev)
 	});
 
+	/**
+	 * `V` і `R` — теж одиночні літери, тож і вони під вимикачем гарячих клавіш
+	 * (WCAG SC 2.1.4; чому саме так — у `settings.shortcutsEnabled`). Вимикач, що
+	 * лишає живою саме `R` — серію, яка стирає весь місцевий прогрес, — був
+	 * би вимикачем лише на вигляд. Вхід у табло не зникає: `?debug=1`
+	 * клавіатури не потребує взагалі (DEBUGGING-v8 § 3.1). Серії СКИДАЮТЬСЯ, а
+	 * не ігноруються: набране до вимкнення не має чекати на повторне
+	 * ввімкнення, щоб раптом спрацювати.
+	 */
 	function handleKeydown(event: KeyboardEvent) {
+		if (!settings.shortcutsEnabled) {
+			versionSequence.reset();
+			resetSequence.reset();
+			return;
+		}
 		versionSequence.handle(event);
 		resetSequence.handle(event);
 	}
