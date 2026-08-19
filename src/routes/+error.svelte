@@ -10,7 +10,24 @@
 	<div class="error-card">
 		<h1 class="error-status">{page.status}</h1>
 		<h2 class="error-title">{@html formatFont(t('error.title'))}</h2>
-		<p class="error-message">{@html formatFont(page.error?.message ?? t('error.message'))}</p>
+		<!--
+			Текст — зі СЛОВНИКА, а не з `page.error.message`, і причин дві.
+
+			Перша — безпека. Це `{@html}`, а `page.error.message` — єдине значення на
+			сторінці, яке приходить не зі словника: його складає або фреймворк, або
+			виклик `error(status, message)` у `load`. Інваріант у `src/security.test.ts`
+			цього не ловив: він дивився лише на те, чи ПОЧИНАЄТЬСЯ вираз із
+			форматера словника, а `formatFont(page.error?.message)` саме так і починався.
+
+			Друга — це взагалі не те, що треба показувати. `err.message` у UI
+			заборонений прямо (ERROR-HANDLING-v8 § 4.1), і тут це ще й англійське
+			«Not Found» посеред української сторінки (§ 4.3). Діагностика від цього
+			не губиться: `handleError` у `hooks.client.ts` пише саме `message` у
+			`logService`, звідки воно йде в звіт службового табла.
+
+			Номер статусу лишається: це число, і воно говорить більше за текст.
+		-->
+		<p class="error-message">{@html formatFont(t('error.message'))}</p>
 
 		<div class="error-actions">
 			<button class="btn-retry" onclick={() => window.location.reload()}>
