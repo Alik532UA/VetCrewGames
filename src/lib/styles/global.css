@@ -592,20 +592,50 @@ img {
 	font-family: 'Comfortaa', cursive;
 }
 
-/* ===== Fullscreen Fallback for iOS ===== */
+/*
+ * ===== Запасний повний екран (iOS і будь-яка відмова Fullscreen API) =====
+ *
+ * Цей режим ВМИКАЄТЬСЯ ЧАСТІШЕ, ніж здається з назви «for iOS». `fullscreen.toggle()`
+ * ставить `data-fake-fullscreen` не лише на iPhone, а й щоразу, коли справжній
+ * `requestFullscreen()` відхилено — а відхиляють його буденно: у вкладеному
+ * фреймі без `allow="fullscreen"`, без жесту, який браузер визнає своїм, за
+ * політикою сторінки. Тобто це не рідкісна гілка для одного пристрою.
+ *
+ * ЩО ТУТ БУЛО НЕ ТАК. `.app-shell` отримував `background-color: var(--color-bg)` —
+ * НЕПРОЗОРИЙ колір — на коробці `position: fixed; inset: 0; z-index: 9999`. Фонове
+ * фото теми лежить псевдоелементами з `z-index: -1`, тобто ПІД усім. Непрозора
+ * коробка на весь екран поверх них давала рівно те, що видно очима: замість
+ * фотографії однотонна заливка. Плюс `z-index: 9999` перекривав ще й шапку
+ * (`--z-header: 100`), яку сусіднє правило нижче спеціально робить видимою.
+ *
+ * А `display: none` на власних псевдоелементах `.app-shell` був обґрунтований
+ * коментарем «бо вона вже є в body::before/after» — і коментар неправдивий.
+ * Шарів чотири, по одному на тему, і вони РІЗНІ:
+ *     body::before       — light-green
+ *     body::after        — dark
+ *     .app-shell::before — winter
+ *     .app-shell::after  — orange-purple
+ * Тобто winter і orange-purple втрачали фотографію взагалі, а не «дублювали» її.
+ *
+ * Заміряно в браузері на зібраному сайті: `.app-shell` тло `rgb(26,26,26)`
+ * (справжнє значення каскаду, з клона без переходу), `z-index: 9999` проти
+ * `100` у шапки, обидва псевдоелементи `display: none`.
+ */
 [data-fake-fullscreen='true'] .app-shell {
 	position: fixed;
 	inset: 0;
-	z-index: 9999;
-	background-color: var(--color-bg);
+	/*
+	 * Нижче за шапку (`--z-header: 100`) навмисно: поле гри розтягується на весь
+	 * екран, але шапка мусить лишатися над ним — інакше з режиму нема виходу
+	 * кнопкою.
+	 */
+	z-index: 1;
 	overflow-y: auto;
-	transition: background-color 1s ease;
-}
-
-/* Прибираємо картинку з .app-shell, бо вона вже є в body::before/after */
-[data-fake-fullscreen='true'] .app-shell::before,
-[data-fake-fullscreen='true'] .app-shell::after {
-	display: none;
+	/*
+	 * Тла НЕМА, і це головна правка. Фон дає фотографія теми під сподом; те, що
+	 * лежить під нею, — `background-color` на `html`, а не тут. Непрозоре тло тут
+	 * означало б «повний екран без фону».
+	 */
 }
 
 [data-fake-fullscreen='true'] .game-header {

@@ -96,12 +96,23 @@ const VOID_TAGS = new Set([
  * Службові блоки Svelte не малюють нічого: `{#each}`, `{:else}`, `{/if}` — це
  * керування, `{@const}` і `{@debug}` — оголошення. А от `{@html …}` малює, і
  * саме ним тут виводять майже всі підписи, тож він мусить рахуватися текстом.
+ *
+ * `{@render …}` — теж НЕ текст, і з'ясувалося це дефектом: `{@render children()}`
+ * у кореневому layout вважався голим текстом на `.page-transition-wrapper`.
+ * Сніпет малює те, що дала дитина, — так само, як компонент із великої літери,
+ * якого перевірка вже пропускає з тією самою причиною: його розмітка живе у
+ * власному файлі, там її й перевірять.
+ *
+ * Доти це не спливало, бо `.app-shell` вважався підкладкою — через правило
+ * `[data-fake-fullscreen] .app-shell { background-color: … }`. Тобто перевірка
+ * зараховувала УМОВНИЙ фон, який у звичайному стані не діє, як безумовний, і
+ * була зелена з неправильної причини.
  */
 function isVisibleText(chunk: string): boolean {
 	let out = '';
 	for (let i = 0; i < chunk.length; i++) {
 		const rest = chunk.slice(i);
-		const control = rest.match(/^\{(?:[#/:]|@(?:const|debug)\b)/);
+		const control = rest.match(/^\{(?:[#/:]|@(?:const|debug|render)\b)/);
 		if (!control) {
 			out += chunk[i];
 			continue;
@@ -253,6 +264,65 @@ describe('текст на підкладці', () => {
 			problems,
 			`текст лежить просто на тлі сторінки. Додати ".${PANEL_CLASS}" йому чи предку:\n${problems.join('\n')}`
 		).toEqual([]);
+	});
+
+	/**
+	 * Фонову ФОТОГРАФІЮ ніхто не гасить і нічим не накриває.
+	 *
+	 * Додано після дефекту, який знайшов користувач: натиск на кнопку повного
+	 * екрана заливав фон однотонним кольором. У запасному режимі повного екрана
+	 * `.app-shell` отримував `position: fixed; inset: 0; z-index: 9999` РАЗОМ із
+	 * непрозорим `background-color: var(--color-bg)` — тобто коробку на весь
+	 * екран поверх фото, яке лежить під сподом (`z-index: -1`). А власні
+	 * псевдоелементи `.app-shell` те саме правило гасило `display: none` під
+	 * коментарем «вона вже є в body::before/after» — неправдивим: шарів чотири,
+	 * по одному на тему, і на `.app-shell` живуть саме `winter` та
+	 * `orange-purple`.
+	 *
+	 * Перевіряються обидві половини дефекту окремо, бо кожна ламає фон сама.
+	 *
+	 * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): повернути в блок
+	 * `[data-fake-fullscreen]` рядок `background-color: var(--color-bg)` — перша
+	 * перевірка червона; повернути `display: none` на псевдоелементи — друга.
+	 */
+	/** Файли, у яких живуть шари фону й режим повного екрана. */
+	const globalCss: Array<[string, string]> = [
+		'src/lib/styles/global.css',
+		'src/lib/styles/animations.css'
+	].map((file) => [file, readFileSync(file, 'utf8')] as [string, string]);
+
+	const LAYER_SELECTOR = /\.app-shell::(before|after)|body::(before|after)/;
+
+	it('жодне правило не гасить шар фонової фотографії', () => {
+		const guilty: string[] = [];
+		for (const [file, css] of globalCss) {
+			// Правила без вкладення: `селектор { тіло }`.
+			for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+				const selector = m[1].trim().replace(/\s+/g, ' ');
+				if (!LAYER_SELECTOR.test(selector)) continue;
+				if (/display\s*:\s*none/.test(m[2])) {
+					guilty.push(`${file}: ${selector} — display: none гасить фото теми`);
+				}
+			}
+		}
+		expect(guilty, guilty.join('\n')).toEqual([]);
+	});
+
+	it('запасний повний екран не накриває фото непрозорим тлом', () => {
+		const guilty: string[] = [];
+		for (const [file, css] of globalCss) {
+			for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+				const selector = m[1].trim().replace(/\s+/g, ' ');
+				if (!selector.includes('data-fake-fullscreen')) continue;
+				const body = m[2];
+				// Прозоре тло законне; будь-яке інше накриє фото, бо коробка на весь екран.
+				const bg = /background(?:-color)?\s*:\s*([^;]+)/.exec(body)?.[1]?.trim();
+				if (bg && !/^(transparent|none|rgba\([^)]*,\s*0\s*\))$/.test(bg)) {
+					guilty.push(`${file}: ${selector} — тло «${bg}» поверх фотографії теми`);
+				}
+			}
+		}
+		expect(guilty, guilty.join('\n')).toEqual([]);
 	});
 
 	it('у списку «фон дає батько» немає зайвих файлів', () => {
