@@ -64,11 +64,12 @@ export const commonTab: BetaTab = {
 			id: 'common_4',
 			category: { uk: 'Мова', en: 'Language' },
 			text: {
-				uk: 'Змініть мову на англійську. В адресі мусить зʼявитися /en/, а кнопка «назад» у браузері — повернути українську версію тієї самої сторінки.',
-				en: 'Switch the language to English. The address must gain /en/, and the browser Back button must return the Ukrainian version of the same page.'
+				uk: 'Натисніть прапор у шапці й виберіть англійську. В адресі мусить зʼявитися /en/, а кнопка «назад» у браузері — повернути українську версію тієї самої сторінки.',
+				en: 'Press the flag in the header and pick English. The address must gain /en/, and the browser Back button must return the Ukrainian version of the same page.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/i18n/routing.test.ts'
+			test: 'src/lib/i18n/routing.test.ts',
+			testid: 'header-locale-btn'
 		},
 		{
 			id: 'common_5',
@@ -125,10 +126,11 @@ export const commonTab: BetaTab = {
 			id: 'common_10',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Стрілка «назад» у шапці з гри мусить вести в той розділ, з якого гра відкрилася, а не на головну через голову розділу.',
-				en: 'The back arrow in the header must lead to the section the game was opened from, not straight to the home page over that section.'
+				uk: 'Натисніть стрілку «назад» у шапці всередині гри. Вона мусить вести в той розділ, з якого гра відкрилася, а не на головну через голову розділу.',
+				en: 'Press the back arrow in the header inside a game. It must lead to the section the game was opened from, not straight to the home page over that section.'
 			},
-			coverage: 'manual'
+			coverage: 'manual',
+			testid: 'header-back-link'
 		},
 		{
 			id: 'common_11',
@@ -169,6 +171,58 @@ export const commonTab: BetaTab = {
 			},
 			coverage: 'manual',
 			negative: true
+		},
+		/*
+		 * Три пункти, дописані 2026-08-19 після дефекту, знайденого ОКОМ, а не
+		 * гейтом: при наведенні на кнопку повного екрана фон під шапкою ставав
+		 * однотонною заливкою — фотографія теми зникала.
+		 *
+		 * Причина, чому цього не було в чеклисті, важливіша за сам дефект. Кнопки
+		 * повного екрана не згадував жоден пункт узагалі, і слова «наведіть» у
+		 * чеклисті не було НІ РАЗУ — тобто цілий клас станів (`:hover`) не просили
+		 * перевіряти ніде. Інваріант § 5.1 цього не бачить за побудовою: він
+		 * вимагає, щоб кожен МАРШРУТ був заявлений вкладкою, а шапка стоїть на
+		 * кожному маршруті — тобто «заявлено» вона завжди.
+		 */
+		{
+			id: 'common_18',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Із будь-якої гри натисніть назву сайту в шапці. Мусить відкритися головна тією самою мовою, якою ви грали.',
+				en: 'From inside any game press the site name in the header. The home page must open in the same language you were playing in.'
+			},
+			coverage: 'manual',
+			testid: 'header-home-link'
+		},
+		{
+			id: 'common_15',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Натисніть кнопку розгортання на весь екран у шапці. Сторінка мусить зайняти весь екран, значок — змінитися на протилежний, а повторне натискання мусить повернути як було.',
+				en: 'Press the full-screen button in the header. The page must fill the screen, the icon must switch to its opposite, and pressing it again must bring back the previous view.'
+			},
+			coverage: 'manual',
+			testid: 'header-fullscreen-btn'
+		},
+		{
+			id: 'common_16',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Мишею наведіть на кожну кнопку в шапці по черзі й приберіть курсор. Підсвічуватися мусить САМА кнопка; тло сторінки за шапкою при цьому НЕ мусить мінятися — ні кольором, ні зникненням фотографії.',
+				en: 'With a mouse, hover each header button in turn and move away. The button itself must highlight; the page background behind the header must NOT change — neither its colour nor by losing the photograph.'
+			},
+			coverage: 'manual',
+			testid: 'header-fullscreen-btn',
+			negative: true
+		},
+		{
+			id: 'common_17',
+			category: { uk: 'Теми', en: 'Themes' },
+			text: {
+				uk: 'У кожній із чотирьох тем подивіться на фонову фотографію за шапкою й за картками: вона мусить бути видною крізь них, а не заміненою на суцільний колір.',
+				en: 'In each of the four themes look at the background photograph behind the header and behind the cards: it must stay visible through them rather than being replaced by a solid colour.'
+			},
+			coverage: 'manual'
 		}
 	]
 };
