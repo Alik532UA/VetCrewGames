@@ -5,14 +5,32 @@ import { readFileSync } from 'fs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
+/**
+ * Плагін Sentry вмикається лише разом із DSN.
+ *
+ * Він робить дві речі, і без DSN жодна з них не має сенсу: вивантажує мапи (для
+ * чого потрібен ще й `SENTRY_AUTH_TOKEN`, якого немає) і авто-інструментує
+ * функції `load`. Друга річ не безкоштовна — у звіті збірки це
+ * `sentry-auto-instrumentation load, 4186 викликів`, — і інструментує вона код
+ * під трекер, який нікуди не пише.
+ *
+ * Умова та сама, що в `src/hooks.client.ts`: увімкнути трекер — це задати одну
+ * змінну середовища, і плагін повертається разом із ним.
+ */
+const sentryEnabled = Boolean(process.env.PUBLIC_SENTRY_DSN);
+
 export default defineConfig({
 	plugins: [
-		sentrySvelteKit({
-			sourceMapsUploadOptions: {
-				org: 'vetcrewgames',
-				project: 'vetcrewgames'
-			}
-		}),
+		...(sentryEnabled
+			? [
+					sentrySvelteKit({
+						sourceMapsUploadOptions: {
+							org: 'vetcrewgames',
+							project: 'vetcrewgames'
+						}
+					})
+				]
+			: []),
 		sveltekit()
 	],
 	build: {
