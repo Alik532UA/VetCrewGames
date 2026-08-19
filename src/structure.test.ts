@@ -70,10 +70,19 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// → 987 після винесення `parkDraggedCard`, → 986 після зняття обгортки без
 	// жодного правила, +2 на підключення `fitToViewport` (число міряється ПІСЛЯ
 	// правки, заради якої борг гасили, — див. докблок вище).
-	'src/routes/[[lang=lang]]/game-population/+page.svelte': 998,
-	// 520 → 438 після винесення логіки партії в `controllers/mythGame.svelte.ts`,
-	// 438 → 409 після винесення `flyAndSlide`, +1 на імпорт `revealScroll`.
-	'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte': 418
+	'src/routes/[[lang=lang]]/game-population/+page.svelte': 998
+	/*
+	 * `game-mythbusters/+page.svelte` СТОЯВ ТУТ на 418, і його прибрано, а не
+	 * зменшено: 520 → 438 після винесення логіки партії в
+	 * `controllers/mythGame.svelte.ts`, 438 → 409 після винесення `flyAndSlide`,
+	 * далі +9 на дрібні правки — і 418 → 187 після винесення картки питання в
+	 * `components/MythCard.svelte`. Тобто борг закритий, а не переоцінений.
+	 *
+	 * Причина, чому це робилося саме тепер, лежить у самому гейті: список може
+	 * лише СКОРОЧУВАТИСЯ, тож будь-яка правка в цьому файлі впиралася в межу. На
+	 * цьому вже відкотилася правка LCP-зображення (три рядки атрибутів давали
+	 * 421), і вона тепер живе в компоненті.
+	 */
 };
 
 /**
