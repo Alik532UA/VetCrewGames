@@ -26,6 +26,15 @@ const isConfigured = /^G-[A-Z0-9]{6,}$/.test(GA_ID) && GA_ID !== GA_ID_PLACEHOLD
 // `dev` keeps local work from landing in the same property as real traffic.
 const enabled = () => browser && !dev && isConfigured;
 
+export type AnalyticsEvent =
+	| 'language_change'
+	| 'theme_change'
+	| 'section_view'
+	| 'game_select'
+	| 'game_start'
+	| 'game_finish'
+	| 'service_badge_click';
+
 type EventParams = Record<string, string | number | boolean>;
 
 declare global {
@@ -71,7 +80,7 @@ export function trackPageView() {
 	window.gtag?.('event', 'page_view', { page_location: `${origin}${pathname}` });
 }
 
-export function track(event: string, params: EventParams = {}) {
+export function track(event: AnalyticsEvent, params: EventParams = {}) {
 	if (!enabled()) return;
 	initAnalytics();
 	window.gtag?.('event', event, params);

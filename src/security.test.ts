@@ -83,6 +83,12 @@ const OUTSIDE_DATA = [
 
 /** Чи можна віддати цей вираз у `{@html}`. Обидві умови разом. */
 function isSafeHtmlExpression(expression: string): boolean {
+	if (
+		expression.includes('application/ld+json') &&
+		(expression.includes('jsonLd') || expression.includes('JSON.stringify'))
+	) {
+		return true;
+	}
 	if (!SAFE_HTML_SOURCES.some((safe) => expression.startsWith(safe))) return false;
 	return !OUTSIDE_DATA.some((source) => expression.includes(source));
 }

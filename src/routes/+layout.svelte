@@ -17,6 +17,7 @@
 	import { page } from '$app/state';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { trackPageView } from '$lib/services/analytics';
+	import { webVitals } from '$lib/controllers/webVitals.svelte';
 	import { fly } from 'svelte/transition';
 	import {
 		INDEXED_LANGUAGES,
@@ -79,6 +80,27 @@
 	 */
 	let hidden = $derived(isHiddenRoute(routeRest));
 	let ogImage = $derived(`${SITE_ORIGIN}${SITE_BASE}/images/VetCrewGames_logo_v1.png`);
+
+	let jsonLd = $derived(
+		JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'WebApplication',
+			name: 'VetCrewGames',
+			url: canonical,
+			description: seoDescription,
+			applicationCategory: 'GameApplication',
+			operatingSystem: 'Any',
+			image: ogImage,
+			inLanguage: routeLanguage,
+			author: {
+				'@type': 'Organization',
+				name: 'Vet Crew'
+			}
+		})
+	);
+
+	// Start RUM Core Web Vitals collection (OBSERVABILITY-v8 § 2.1)
+	$effect(() => webVitals.start());
 
 	// Fires on the initial load too, so this covers the first view and each
 	// client-side move between the games. trackPageView initialises analytics
@@ -218,6 +240,10 @@
 	<meta property="twitter:title" content={pageTitle} />
 	<meta property="twitter:description" content={seoDescription} />
 	<meta property="twitter:image" content={ogImage} />
+
+	<!-- Structured Data (SEO-v8 § 3.2) -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html `<script type="application/ld+json">${jsonLd}<\/script>`}
 </svelte:head>
 
 <div class="app-container">
