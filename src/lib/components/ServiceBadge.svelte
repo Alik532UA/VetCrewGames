@@ -136,9 +136,9 @@
 			copied = true;
 			copyTimer = setTimeout(() => {
 				copied = false;
-			}, 1000);
+			}, 1500);
 		} catch (err) {
-			logService.error('ui', 'Failed to copy logs', { error: err });
+			logService.warn('ui', 'Failed to copy logs', { error: err });
 		}
 	}
 
@@ -253,6 +253,14 @@
 		background-color: #c92a2a;
 		color: white;
 		border-color: #7f1d1d;
+	}
+
+	/* Зелений — за тим самим правилом: #2f9e44 давав під білим 3.45:1, #237a35 дає 5.38:1. */
+	.service-badge.copied {
+		background-color: #237a35;
+		color: white;
+		border-color: #1b5e20;
+		box-shadow: 0 4px 12px rgba(35, 122, 53, 0.4);
 	}
 
 	/*
