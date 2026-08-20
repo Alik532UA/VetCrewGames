@@ -66,11 +66,8 @@ const read = (f: string) => {
 const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	// Три екрани, у яких логіка живе просто в маршруті. Розбирати їх треба
 	// винесенням стану в контролери `.svelte.ts` — це окрема робота, не правка.
-	// 1086 → 1016 після винесення `createCrossfade` у `utils/transitions.ts`,
-	// → 987 після винесення `parkDraggedCard`, → 986 після зняття обгортки без
-	// жодного правила, +2 на підключення `fitToViewport` (число міряється ПІСЛЯ
-	// правки, заради якої борг гасили, — див. докблок вище).
-	'src/routes/[[lang=lang]]/game-population/+page.svelte': 998
+	// Орієнтир у SLOC: 881 рядок чистого коду (без коментарів і порожніх рядків).
+	'src/routes/[[lang=lang]]/game-population/+page.svelte': 885
 	/*
 	 * `game-mythbusters/+page.svelte` СТОЯВ ТУТ на 418, і його прибрано, а не
 	 * зменшено: 520 → 438 після винесення логіки партії в
@@ -486,12 +483,18 @@ ${guilty.join(String.fromCharCode(10))}`
 			[/\.ts$/, 250]
 		];
 
-		const lines = (f: string) => read(f).split('\n').length;
+		const countSloc = (f: string) =>
+			read(f)
+				.replace(/<!--[\s\S]*?-->/g, '')
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.replace(/^\s*\/\/.*$/gm, '')
+				.split(/\r?\n/)
+				.filter((l) => l.trim().length > 0).length;
 		const measured = sources
 			.filter((f) => !isTest(f) && !DATA_FILE.test(f))
 			.map((f) => ({
 				file: f,
-				lines: lines(f),
+				lines: countSloc(f),
 				limit: LIMITS.find(([re]) => re.test(f))?.[1] ?? Infinity
 			}));
 
