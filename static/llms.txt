@@ -1,0 +1,29 @@
+# VetCrewGames — Casual Web Games & Mini-Games Portal
+
+> Free web gaming collection and casual mini-games portal by VetCrew. Play lightweight, accessible games directly in the browser across desktop and mobile devices.
+
+## Main Pages
+
+- [Game Portal Home](https://alik532ua.github.io/VetCrewGames/): Browse the full catalog of playable mini-games, high score leaderboards, and achievements.
+- [English Version](https://alik532ua.github.io/VetCrewGames/en/): English catalog and interface.
+- [Deutsche Version](https://alik532ua.github.io/VetCrewGames/de/): Deutsche Spielesammlung.
+- [Nederlandse Versie](https://alik532ua.github.io/VetCrewGames/nl/): Nederlandse spelcollectie.
+
+## Key Features
+
+- Browser-first Instant Play: No downloads, installations, or app store requirements.
+- Responsive & Touch-friendly: Optimized for mobile, tablet, and desktop gameplay.
+- Multilingual Support: Ukrainian, English, German, and Dutch localized interfaces.
+- Offline Capability: Playable offline via Progressive Web App (PWA) caching.
+- Accessibility: Full keyboard navigation, customizable themes, and sound settings.
+
+## Technical Details
+
+- Built with SvelteKit 2 and Svelte 5 runes.
+- Fully static prerendered HTML with zero latency start.
+- Generative Engine Optimization (GEO/LLMO) & Schema.org JSON-LD WebApplication schema.
+
+## Resources
+
+- GitHub Repository: https://github.com/Alik532UA/VetCrewGames
+- [Sitemap](https://alik532ua.github.io/VetCrewGames/sitemap.xml): XML index of public game routes.
