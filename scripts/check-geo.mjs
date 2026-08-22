@@ -71,11 +71,18 @@ function htmlFiles(dir, out = []) {
 
 /**
  * @param {string} buildDir каталог зібраного сайту
- * @param {{ expectsLlmsTxt?: boolean, searchAgents?: string[], robotsMeta?: boolean }} options
+ * @param {{ expectsLlmsTxt?: boolean, searchAgents?: string[], robotsMeta?: boolean, spaFallback?: boolean }} options
  * @returns {string[]} перелік проблем; порожній — усе гаразд
  */
 export function checkGeo(buildDir, options = {}) {
-	const { expectsLlmsTxt = true, searchAgents = SEARCH_AGENTS, robotsMeta = true } = options;
+	const {
+		expectsLlmsTxt = true,
+		searchAgents = SEARCH_AGENTS,
+		robotsMeta = true,
+		// `true` для профілю, де `adapter-static` віддає фолбек на всі адреси:
+		// власного HTML у маршруту там немає за побудовою.
+		spaFallback = false
+	} = options;
 	const problems = [];
 
 	// --- рівно ОДИН <meta name="robots"> на сторінку (§ 7.3) ---
@@ -115,6 +122,49 @@ export function checkGeo(buildDir, options = {}) {
 		const dupes = [...new Set(urls.filter((u, i) => urls.indexOf(u) !== i))];
 		if (dupes.length) {
 			problems.push(`llms.txt: одна адреса під різними назвами: ${dupes.join(', ')}`);
+		}
+
+		// Кожна ВЛАСНА адреса мусить існувати в `build/`.
+		//
+		// Дублікат — це коли сторінку назвали двічі; тут гірше: сторінки немає
+		// зовсім, і модель віддає користувачеві посилання на 404. Корінь сайту
+		// береться з `canonical` головної, а не з константи, щоб перевірка не
+		// потребувала налаштування й не розходилася з тим, що справді зібрано.
+		//
+		// На сайтах із SPA-фолбеком (`adapter-static` із `fallback`) перевірка
+		// вимкнена прапорцем: там власного HTML у маршруту немає за побудовою,
+		// сервер віддає фолбек, і адреса працює. Вмикати її там означало б
+		// позначати справні сторінки як неіснуючі.
+		const home = join(buildDir, 'index.html');
+		const siteUrl = existsSync(home)
+			? (readFileSync(home, 'utf8').match(/<link[^>]+rel="canonical"[^>]+href="([^"]+)"/)?.[1] ??
+				'')
+			: '';
+		if (spaFallback) {
+			// нічого: адресу обслуговує фолбек, файлу для неї не існує й не має існувати
+		} else if (!siteUrl) {
+			problems.push('llms.txt: не вдалося знайти canonical головної — адреси нема з чим звіряти');
+		} else {
+			const root = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
+			const isFile = (p) => existsSync(p) && statSync(p).isFile();
+			for (const url of new Set(urls)) {
+				// Чужі домени (репозиторій, соцмережі) не наша відповідальність.
+				if (!url.startsWith(root)) continue;
+				const rel = url
+					.slice(root.length)
+					.replace(/[?#].*$/, '')
+					.replace(/\/$/, '');
+				// `isFile`, а не `existsSync`: каталог `departments/` існує через
+				// підсторінки, але сторінки `/departments` при цьому немає, і
+				// саме таке посилання вже стояло в одному з файлів.
+				const exists =
+					rel === ''
+						? true
+						: isFile(join(buildDir, rel, 'index.html')) ||
+							isFile(join(buildDir, `${rel}.html`)) ||
+							isFile(join(buildDir, rel));
+				if (!exists) problems.push(`llms.txt: адреси немає в build/ — ${url}`);
+			}
 		}
 	}
 
