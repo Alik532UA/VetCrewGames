@@ -42,11 +42,13 @@ jobs:
         run: npm run check
 
       - name: Test
+        if: ${{ !cancelled() }}
         run: npm run test
 
       # eslint був у проєкті, а гейта не було: `npm run lint` існував і в CI не
       # викликався (CODE-QUALITY-v8 § 6.5).
       - name: Lint
+        if: ${{ !cancelled() }}
         run: npm run lint
 
       # GATE-I18N-PARITY. Той самий клас дефекту, що рядком вище: скрипт лежав у
@@ -59,12 +61,14 @@ jobs:
       # диску й питає «чи не розійшовся словник, який ще не ввімкнули». Саме так
       # тут і жили `de` з `nl` до 2026-08-16 — теками без рядка в `LANGUAGES`.
       - name: Check i18n parity
+        if: ${{ !cancelled() }}
         run: npm run check:i18n
 
       # Поріг high, а не moderate: після оновлення лишилися лише 4 low, але
       # moderate-поріг довелося б вимкнути на першому ж транзитивному
       # попередженні, а вимкнений гейт гірший за відсутній.
       - name: Audit dependencies
+        if: ${{ !cancelled() }}
         run: npm audit --audit-level=high
 
       - name: Build

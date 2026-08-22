@@ -151,3 +151,120 @@ describe('CI', () => {
 		).toEqual([]);
 	});
 });
+
+/**
+ * Впала перевірка не забирає звіт у решти (CI-CD-AND-TOOLS-v8 § 1.8).
+ *
+ * ## Що саме ловить ця перевірка
+ *
+ * GitHub за замовчуванням НЕ запускає кроки після впалого. Job із рядка
+ * `check → lint → test → audit` при червоному `lint` дає один рядок у звіті —
+ * і про тести з аудитом відомо не «зелені» й не «червоні», а НІЧОГО.
+ *
+ * Це не гіпотеза. У `teatralo4ka` крок `Lint` падав на 26 помилках, і `gh run
+ * list` показував `failure` на шести послідовних пушах; три наступні гейти
+ * (`Unit tests`, `Audit`, `Validate content`) за ці дві доби не виконалися ані
+ * разу. Червоне при цьому стало звичним фоном — тобто гірше за зелену галочку
+ * без прогону, бо виглядає як чесне падіння.
+ *
+ * ## Межа правила
+ *
+ * Під нього підпадають лише НЕЗАЛЕЖНІ СТАТИЧНІ гейти — ті, яким потрібні самі
+ * `node_modules`: типи, lint, юніт-тести, аудит, валідація вмісту, паритет мов.
+ * Кроки з побічним ефектом (`build`, `deploy`, `upload-pages-artifact`) і кроки,
+ * що залежать від `build/` або від браузерів (`check:build`, `check:bundle`,
+ * Playwright, Lighthouse), `!cancelled()` НЕ отримують: запускати їх після
+ * впалої збірки означає не звіт, а шум.
+ *
+ * Гейт визначається за КОМАНДОЮ, а не за назвою кроку: назви в проєктах різні
+ * («Lint» / «Linting», «Unit Tests» / «Run unit tests»), команди однакові.
+ *
+ * Перший гейт у job `if` не потребує: до нього ще ніщо не падало.
+ */
+const INDEPENDENT_GATE =
+	/npm run check(?![:\w])|npm run check:(worker|i18n)\b|npm run lint(?![:\w])|npm (run )?test(?!:(e2e|watch))(:\w+)?(?!\S)|npm audit\b|npm run validate-content\b/;
+/** Виглядає гейтом, але залежить від збірки чи браузерів. */
+const BUILD_DEPENDENT = /check:build|check:bundle|check:rules|playwright|lhci|npm run build/;
+
+/**
+ * Кроки одного workflow у порядку появи, з розбиттям на job.
+ *
+ * Розбір регуляркою, а не YAML-парсером: `js-yaml` є не в кожному проєкті, а
+ * додавати залежність заради однієї перевірки дорожче за розбір рівнів відступу.
+ * Ціна — перевірка «розбір живий» нижче, без якої порожній результат читався б
+ * як «порушень немає».
+ */
+function stepsOf(text: string): { job: string; name: string; body: string }[] {
+	const steps: { job: string; name: string; body: string }[] = [];
+	const lines = text.split('\n');
+	let job = '(поза job)';
+	for (let i = 0; i < lines.length; i++) {
+		const jobLine = /^ {2}([A-Za-z0-9_.-]+):\s*$/.exec(lines[i]);
+		if (jobLine) {
+			job = jobLine[1];
+			continue;
+		}
+		const stepLine = /^(\s+)- name: (.*)$/.exec(lines[i]);
+		if (!stepLine) continue;
+		const [, indent, name] = stepLine;
+		let j = i + 1;
+		// Коментар на рівні кроку належить НАСТУПНОМУ кроку: інакше рядок
+		// «# playwright install без кешу…» приліплюється до `Audit dependencies`
+		// і виключає його як залежний від браузерів.
+		while (
+			j < lines.length &&
+			!new RegExp(`^${indent}- `).test(lines[j]) &&
+			!new RegExp(`^${indent}#`).test(lines[j])
+		) {
+			j++;
+		}
+		steps.push({ job, name: name.trim(), body: lines.slice(i, j).join('\n') });
+	}
+	return steps;
+}
+
+describe('гейти не ховають один одного (CI-CD-AND-TOOLS-v8 § 1.8)', () => {
+	// Свій перелік файлів, а не спільний `all`: назва файлу потрібна в тексті
+	// помилки, а склеєний вміст її втрачає.
+	const gates = files.flatMap((file) =>
+		stepsOf(readFileSync(`${DIR}/${file}`, 'utf8'))
+			.filter((s) => INDEPENDENT_GATE.test(s.body) && !BUILD_DEPENDENT.test(s.body))
+			.map((s) => ({ ...s, file }))
+	);
+
+	it('розбір живий: незалежні статичні гейти знайдено', () => {
+		expect(
+			gates.length,
+			'у workflow не знайдено жодного кроку з `npm run check/lint/test/audit` — ' +
+				'або розбір зламався, або гейтів справді немає; обидва випадки червоні'
+		).toBeGreaterThan(0);
+	});
+
+	it('кожен гейт після першого в job несе `if: !cancelled()`', () => {
+		const seen = new Set<string>();
+		const offenders: string[] = [];
+		for (const gate of gates) {
+			const key = `${gate.file}::${gate.job}`;
+			const isFirst = !seen.has(key);
+			seen.add(key);
+			if (isFirst) continue;
+			if (!/!cancelled\(\)/.test(gate.body)) {
+				offenders.push(`${gate.file} → ${gate.job} → «${gate.name}»`);
+			}
+		}
+		expect(
+			offenders,
+			`перший червоний гейт забере звіт у цих кроків:\n${offenders.join('\n')}`
+		).toEqual([]);
+	});
+
+	it('`continue-on-error` не стоїть на гейтах', () => {
+		// `continue-on-error: true` — не альтернатива `!cancelled()`, а
+		// протилежність: job зеленіє при червоному гейті. Це рівно те, що § 1.6
+		// забороняє.
+		const lax = gates
+			.filter((g) => /continue-on-error:\s*true/.test(g.body))
+			.map((g) => `${g.file} → «${g.name}»`);
+		expect(lax, `гейт, який не валить job:\n${lax.join('\n')}`).toEqual([]);
+	});
+});
