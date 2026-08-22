@@ -17,7 +17,7 @@
  * а ВІДКРИВАЄ шлях саме названому боту. У чотирьох майже однакових блоках
  * очима цього не видно — тут це рядок звіту.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** Агенти, від яких залежить видимість у відповідях AI (SEO-v8 § 7.2). */
@@ -59,14 +59,41 @@ export function parseRobots(text) {
 	return groups;
 }
 
+/** Усі .html у зібраному сайті. */
+function htmlFiles(dir, out = []) {
+	for (const entry of readdirSync(dir)) {
+		const full = join(dir, entry);
+		if (statSync(full).isDirectory()) htmlFiles(full, out);
+		else if (entry.endsWith('.html')) out.push(full);
+	}
+	return out;
+}
+
 /**
  * @param {string} buildDir каталог зібраного сайту
- * @param {{ expectsLlmsTxt?: boolean, searchAgents?: string[] }} options
+ * @param {{ expectsLlmsTxt?: boolean, searchAgents?: string[], robotsMeta?: boolean }} options
  * @returns {string[]} перелік проблем; порожній — усе гаразд
  */
 export function checkGeo(buildDir, options = {}) {
-	const { expectsLlmsTxt = true, searchAgents = SEARCH_AGENTS } = options;
+	const { expectsLlmsTxt = true, searchAgents = SEARCH_AGENTS, robotsMeta = true } = options;
 	const problems = [];
+
+	// --- рівно ОДИН <meta name="robots"> на сторінку (§ 7.3) ---
+	//
+	// `<svelte:head>` ДОПИСУЄ до `<head>`, а не заміщує в ньому. Тег в
+	// `app.html` і тег зі сторінки співіснують, і два теги з протилежним
+	// змістом («index, follow» і «noindex») — це не помилка збірки й не
+	// попередження: що переможе, вирішує краулер. Саме так `noindex` службової
+	// сторінки одного разу вже поїхав у прод разом із дозволом на індексацію.
+	if (robotsMeta) {
+		for (const file of htmlFiles(buildDir)) {
+			const tags = readFileSync(file, 'utf8').match(/<meta[^>]+name="robots"/g) ?? [];
+			if (tags.length > 1) {
+				const rel = file.split(/[\\/]/).join('/');
+				problems.push(`${rel}: <meta name="robots"> знайдено ${tags.length} разів, очікується 1`);
+			}
+		}
+	}
 
 	// --- llms.txt (§ 7.1) ---
 	const llmsPath = join(buildDir, 'llms.txt');
