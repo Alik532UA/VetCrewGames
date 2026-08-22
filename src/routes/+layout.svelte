@@ -210,7 +210,10 @@
 	{#if hidden}
 		<meta name="robots" content="noindex, nofollow" />
 	{:else}
-		<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+		<meta
+			name="robots"
+			content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+		/>
 		<link rel="canonical" href={canonical} />
 
 		<!--
@@ -242,9 +245,16 @@
 	<meta property="twitter:description" content={seoDescription} />
 	<meta property="twitter:image" content={ogImage} />
 
-	<!-- Structured Data (SEO-v8 § 3.2) -->
+	<!--
+		Structured Data (SEO-v8 § 3.2).
+
+		`</` + `script>` замість `<\/script>`: усередині шаблонного рядка екран
+		зайвий, і `no-useless-escape` ловить його як ПОМИЛКУ — саме на цьому
+		рядку конвеєр стояв. Розрив дає те саме, що давав би екран: у джерелі
+		немає послідовності, яку парсер міг би прийняти за кінець тега.
+	-->
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html `<script type="application/ld+json">${jsonLd}<\/script>`}
+	{@html `<script type="application/ld+json">${jsonLd}</` + `script>`}
 </svelte:head>
 
 <div class="app-container">
@@ -283,7 +293,6 @@
 <!-- Меню в корені: після перемикання на системну смуга зникає — разом із меню,
      якби воно було всередині неї. -->
 <ScrollbarContextMenu />
-
 
 <style>
 	:global(body) {
