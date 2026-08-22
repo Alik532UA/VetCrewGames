@@ -50,3 +50,6 @@ vite.config.ts.timestamp-*
 gitignore/
 .private/
 .read_for_AI/
+
+# Звіти Lighthouse CI — артефакт прогону, а не джерело.
+.lighthouseci/
