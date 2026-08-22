@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { checkGeo } from './check-geo.mjs';
 
 const BUILD = 'build';
 const SITE_ORIGIN = 'https://alik532ua.github.io';
@@ -552,6 +553,16 @@ const leaked = allFiles
 if (leaked.length) fail(`схоже на секрет у бандлі: ${leaked.join(', ')}`);
 
 // ----------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// SEO-v8 § 7.5 — артефакти AI-пошуку (llms.txt і групи robots.txt).
+//
+// Розбір живе в `check-geo`, бо він робить власний парсер `robots.txt`:
+// краулер, що збігся з іменованою групою, ігнорує `User-agent: *` цілком, тож
+// пропущений там `Disallow` не «наслідується», а ВІДКРИВАЄ шлях саме цьому
+// боту. У кількох майже однакових блоках очима така дірка не видно.
+for (const msg of checkGeo(BUILD)) fail(msg);
+
 if (problems.length) {
 	console.error(`check-build: перевірка не пройдена (${problems.length}):`);
 	for (const problem of problems) console.error(`  - ${problem}`);
