@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import { ONLINE_GAMES } from '$lib/config/quizOnline';
-	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 	/**
 	 * Які ігри попадатимуться в цій кімнаті.
@@ -60,7 +59,7 @@
 				onclick={() => toggle(game.id)}
 				data-testid="quiz-game-{game.id}-toggle"
 			>
-				{@html formatFont(t(game.nameKey as TranslationKey))}
+				{@html formatFont(t(game.nameKey))}
 			</button>
 		{/each}
 	</div>

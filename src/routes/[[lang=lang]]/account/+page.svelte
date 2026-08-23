@@ -4,7 +4,6 @@
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
 	import { loadAccountText } from '$lib/i18n/account';
-	import type { Translate } from '$lib/config/crewNames';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { Account } from '$lib/controllers/account.svelte';
@@ -54,15 +53,22 @@
 	 * важили 2 КБ gzip у першому payload КОЖНОГО відвідувача, а відкриє цю
 	 * сторінку далеко не кожен.
 	 *
-	 * До приїзду словника функція віддає сам ключ — тобто на екрані на мить
-	 * видно «account.title». Це видимий стан, а не порожнеча: чанк локальний і
-	 * приїжджає за один такт, а порожні підписи читалися б як зламана сторінка.
+	 * До приїзду словника перекладач віддає сам ключ — тобто на екрані на мить
+	 * видно «account.signInTitle». Це видимий стан, а не порожнеча: чанк
+	 * локальний і приїжджає за один такт, а порожні підписи читалися б як
+	 * зламана сторінка.
+	 *
+	 * У стані лежить СЛОВНИК, а перекладач похідний. Перша редакція тримала в
+	 * `$state` саму функцію — і екран не оновлювався: словник приїжджав, а
+	 * підписи лишалися ключами. Заміряно в браузері; той самий взірець
+	 * (обʼєкт у стані, функція похідна) уже стоїть в іменах команди.
 	 */
-	let text = $state<Translate>((key) => key);
+	let dict = $state<Record<string, string>>({});
+	const text = $derived((key: string) => dict[key] ?? key);
 
 	onMount(() => {
 		const release = settings.claimHeader('account.title', () => goto(langPath(lang, '')));
-		void loadAccountText(settings.locale).then((loaded) => (text = loaded));
+		void loadAccountText(settings.locale).then((loaded) => (dict = loaded));
 		void account.load().then(() => {
 			// Поля форми заповнюються З ПРОФІЛЮ, а не лишаються порожніми: порожнє
 			// поле поруч із наявним профілем читається як «профілю немає».

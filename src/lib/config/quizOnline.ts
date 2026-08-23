@@ -1,4 +1,5 @@
 import { randomFor } from '$lib/utils/seededRandom';
+import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 /**
  * СПІЛЬНА ВІКТОРИНА: які ігри в кімнаті й у якому порядку вони йдуть.
@@ -49,15 +50,24 @@ import { randomFor } from '$lib/utils/seededRandom';
 export interface OnlineGame {
 	/** Ключ у налаштуваннях кімнати. Коротко, бо їде в `info.config`. */
 	id: string;
-	/** Ключ назви у словнику — той самий, що в меню. */
-	nameKey: string;
+	/**
+	 * Ключ назви у словнику — той самий, що в меню.
+	 *
+	 * `TranslationKey`, а не `string`, і це не педантизм. Перша редакція мала
+	 * тут `string`, а компонент писав `t(game.nameKey as TranslationKey)` — і
+	 * приведення сховало помилку: у ключах стояло `menu.mythbusters` замість
+	 * `menu.game.mythbusters`. `svelte-check` промовчав (його ж і обійшли),
+	 * `check:i18n` теж (ключ у словнику є, просто інший), і на екрані
+	 * замість назв ігор стояли самі ключі. Знайдено оком у браузері.
+	 */
+	nameKey: TranslationKey;
 	/** Скільки раундів цієї гри в одному кроці програми. */
 	rounds: number;
 }
 
 export const ONLINE_GAMES: readonly OnlineGame[] = [
-	{ id: 'myths', nameKey: 'menu.mythbusters', rounds: 5 },
-	{ id: 'feeding', nameKey: 'menu.feeding', rounds: 5 }
+	{ id: 'myths', nameKey: 'menu.game.mythbusters', rounds: 5 },
+	{ id: 'feeding', nameKey: 'menu.game.feeding', rounds: 5 }
 ];
 
 /**

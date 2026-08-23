@@ -1,5 +1,3 @@
-import type { Translate } from '$lib/config/crewNames';
-
 /**
  * Словник сторінки акаунта — ДОВАНТАЖУЄТЬСЯ.
  *
@@ -19,10 +17,18 @@ import type { Translate } from '$lib/config/crewNames';
 
 const loaded = new Map<string, Record<string, string>>();
 
-/** Порожній словник для невідомої мови: ключ на екрані видно одразу. */
-export async function loadAccountText(locale: string): Promise<Translate> {
+/**
+ * Словник для мови. Порожній — невідома мова, і тоді ключ видно на екрані.
+ *
+ * Віддається САМ СЛОВНИК, а не готова функція-перекладач, і це не деталь
+ * смаку. Сторінка тримає результат у `$state`, а функція в `$state` не
+ * оновлювала екран: рядки лишалися ключами, хоч словник і приїхав —
+ * заміряно в браузері. Звичайний обʼєкт реактивний як усе інше, а
+ * перекладач із нього виводиться `$derived`.
+ */
+export async function loadAccountText(locale: string): Promise<Record<string, string>> {
 	const cached = loaded.get(locale);
-	if (cached) return (key: string) => cached[key] ?? key;
+	if (cached) return cached;
 
 	/*
 	 * Явний `switch`, а не `import(\`./${locale}.ts\`)`: динамічний імпорт зі
@@ -46,5 +52,5 @@ export async function loadAccountText(locale: string): Promise<Translate> {
 	}
 
 	loaded.set(locale, dict);
-	return (key: string) => dict[key] ?? key;
+	return dict;
 }
