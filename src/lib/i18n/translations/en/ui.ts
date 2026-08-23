@@ -56,7 +56,7 @@ export const ui = {
 	'pairs.enter': 'Enter',
 	'pairs.quickGame': 'Quick game',
 	'pairs.quickGameHint': 'We will join a free room, or create a new open one if there is none.',
-	'pairs.shown': 'Showing',
+	'pairs.shownNewest': 'Showing the newest — there are more',
 	'pairs.startingIn': 'Starting in',
 	'pairs.seconds': 's',
 	'pairs.cancelStart': 'Not yet',

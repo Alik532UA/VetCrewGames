@@ -56,7 +56,7 @@ export const ui = {
 	'pairs.enter': 'Meedoen',
 	'pairs.quickGame': 'Snel spel',
 	'pairs.quickGameHint': 'We stappen in een vrije kamer, of maken een nieuwe open kamer.',
-	'pairs.shown': 'Weergegeven',
+	'pairs.shownNewest': 'Nieuwste weergegeven — er zijn meer',
 	'pairs.startingIn': 'Start over',
 	'pairs.seconds': 's',
 	'pairs.cancelStart': 'Nog niet',

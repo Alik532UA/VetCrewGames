@@ -62,6 +62,20 @@ async function write(path, value, token) {
 }
 
 /**
+ * Читання ЗАПИТОМ: `orderBy` і `limitToLast` у REST — те саме, що
+ * `orderByChild()`/`limitToLast()` у SDK. Потрібне там, де правило вимагає
+ * обмеженого читання, а не читання гілки.
+ *
+ * @param {string} path
+ * @param {string} params сира частина рядка запиту, напр. `orderBy="at"&limitToLast=20`
+ * @param {string | null} token
+ */
+async function readQuery(path, params, token) {
+	const auth = token ? `&auth=${token}` : '';
+	return (await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}&${params}${auth}`)).status;
+}
+
+/**
  * @param {string} path
  * @param {string | null} token
  */
@@ -210,16 +224,38 @@ const CASES = [
 		run: () => read(`__rulesVersion/${RULES_STAMP}`, guest.token)
 	},
 	{
+		// Перелік читається лише ОБМЕЖЕНИМ запитом — та сама межа, що в `MindStep`
+		// стоїть як `request.query.limit <= 50`.
+		name: 'перелік кімнат читається обмеженим запитом',
+		allowed: true,
+		run: () => readQuery('lobby', 'orderBy=%22at%22&limitToLast=21', guest.token)
+	},
+	{
+		/*
+		 * ВИПАДОК, ЯКИЙ ЗЛОВИВ БИ СПРАВЖНІЙ ДЕФЕКТ, і його тут не було.
+		 *
+		 * `publishRoom` спершу реєструє `onDisconnect().remove()`, а вже потім пише
+		 * запис. Firebase перевіряє права на `onDisconnect` САМЕ ПРИ РЕЄСТРАЦІЇ,
+		 * тобто оцінює видалення вузла, якого ще НЕМА. REST такого API не має, але
+		 * перевірка прав там ідентична — видалення відсутнього запису.
+		 *
+		 * Доти правило шукало власника лише в самому записі, тож у продакшні
+		 * створення публічної кімнати падало з `PERMISSION_DENIED` (заміряно в
+		 * консолі браузера на кімнаті 9HMVK), а гейт лишався зеленим: він перевіряв
+		 * `set`, але не реєстрацію.
+		 *
+		 * СТОЇТЬ ПЕРЕД публікацією — у тому самому порядку, що й у застосунку.
+		 */
+		name: 'господар знімає ЩЕ НЕІСНУЮЧИЙ запис (як onDisconnect при реєстрації)',
+		allowed: true,
+		run: () => write(`lobby/${CODE}`, null, host.token)
+	},
+	{
 		name: 'господар публікує СВОЮ кімнату в переліку',
 		allowed: true,
 		run: () => write(`lobby/${CODE}`, lobbyEntry(host.uid), host.token)
 	},
-	{
-		// Саме це й неможливо для `rooms`, і саме заради цього гілка існує.
-		name: 'будь-хто ЧИТАЄ ПЕРЕЛІК публічних кімнат',
-		allowed: true,
-		run: () => read('lobby', guest.token)
-	},
+
 	{
 		// Кількість гравців веде господар: він єдиний, хто бачить склад і має
 		// право писати сюди.
@@ -314,6 +350,25 @@ const CASES = [
 		name: 'рядок складу без обовʼязкових полів',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/members/${guest.uid}`, { name: 'Без ролі' }, guest.token)
+	},
+	{
+		// Без межі один запит вивантажує гілку ЦІЛКОМ. Доти стеля жила лише в
+		// клієнті, тобто була ввічливим проханням.
+		name: 'перелік кімнат читають БЕЗ обмеження',
+		allowed: false,
+		run: () => read('lobby', guest.token)
+	},
+	{
+		name: 'перелік кімнат читають із ЗАВЕЛИКОЮ межею',
+		allowed: false,
+		run: () => readQuery('lobby', 'orderBy=%22at%22&limitToLast=500', guest.token)
+	},
+	{
+		// Межа названа разом із порядком: без `orderBy` індекс не діє, і база
+		// однаково віддала б гілку цілком.
+		name: 'перелік кімнат читають з межею, але без orderBy',
+		allowed: false,
+		run: () => readQuery('lobby', 'limitToLast=10', guest.token)
 	},
 	{
 		// Головне обмеження цієї гілки: публічною кімнату робить ЇЇ господар, а не

@@ -56,7 +56,7 @@ export const ui = {
 	'pairs.enter': 'Зайти',
 	'pairs.quickGame': 'Швидка гра',
 	'pairs.quickGameHint': 'Зайдемо у вільну кімнату, а якщо таких немає — створимо нову, відкриту.',
-	'pairs.shown': 'Показано',
+	'pairs.shownNewest': 'Показано найновіші — є ще',
 	'pairs.startingIn': 'Починаємо за',
 	'pairs.seconds': 'с',
 	'pairs.cancelStart': 'Не починати',

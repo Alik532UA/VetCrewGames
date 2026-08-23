@@ -89,8 +89,8 @@
 	let isPrivate = $state(false);
 	/** Перелік відкритих кімнат. Порожній і поки не підписалися, і коли їх немає. */
 	let rooms = $state<LobbyRoom[]>([]);
-	/** Скільки їх УСЬОГО: список обрізаний, і обрізку треба показати. */
-	let roomsTotal = $state(0);
+	/** Чи лишилося щось за межею запиту: обрізку треба показати, а не сховати. */
+	let roomsHasMore = $state(false);
 	/**
 	 * Перелік не читається — майже завжди «правила ще не викладені».
 	 *
@@ -474,9 +474,9 @@
 			try {
 				const list = await import('$lib/net/lobby');
 				const off = await list.watchLobby({
-					onRooms: (next, total) => {
+					onRooms: (next, more) => {
 						rooms = next;
-						roomsTotal = total;
+						roomsHasMore = more;
 						roomsUnavailable = false;
 					},
 					// Порожній список і недоступний список — РІЗНІ повідомлення. Доти
@@ -484,7 +484,7 @@
 					// як «ніхто не створив кімнату».
 					onUnavailable: () => {
 						rooms = [];
-						roomsTotal = 0;
+						roomsHasMore = false;
 						roomsUnavailable = true;
 					}
 				});
@@ -643,7 +643,7 @@
 				-->
 				<RoomList
 					{rooms}
-					total={roomsTotal}
+					hasMore={roomsHasMore}
 					unavailable={roomsUnavailable}
 					{busy}
 					onEnter={(chosen) => {

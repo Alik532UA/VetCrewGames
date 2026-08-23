@@ -38,8 +38,14 @@
 	 */
 	interface Props {
 		rooms: LobbyRoom[];
-		/** Скільки кімнат у переліку взагалі — щоб обрізку було видно. */
-		total: number;
+		/**
+		 * Чи лишилося щось за межею запиту.
+		 *
+		 * Не «усього N»: запит обмежений правилом бази, тож повної кількості не знає
+		 * навіть клієнт (див. `net/lobby.ts`). На питання «чи все я бачу» цього
+		 * досить, а числа, якого ніхто не знає, тут не вигадується.
+		 */
+		hasMore: boolean;
 		/** Перелік не читається (правила не викладені). Показуємо чому, а не порожнечу. */
 		unavailable: boolean;
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
@@ -47,15 +53,15 @@
 		onEnter: (code: string) => void;
 	}
 
-	let { rooms, total, unavailable, busy, onEnter }: Props = $props();
+	let { rooms, hasMore, unavailable, busy, onEnter }: Props = $props();
 
-	/**
+	/*
 	 * Обрізку видно РЯДКОМ, а не мовчки (NO-SILENT-CAPS).
 	 *
 	 * Список без цього рядка читався б як «це всі кімнати», і людина, яка не
-	 * знайшла потрібну, вирішила б, що її немає.
+	 * знайшла потрібну, вирішила б, що її немає. Тепер це `hasMore` із мережевого
+	 * шару — обчислювати тут нічого.
 	 */
-	const hidden = $derived(Math.max(0, total - rooms.length));
 </script>
 
 <section class="rooms">
@@ -110,9 +116,9 @@
 			{/each}
 		</ul>
 
-		{#if hidden > 0}
+		{#if hasMore}
 			<p class="rooms__hint" data-testid="pairs-rooms-trimmed-hint">
-				{@html formatFont(t('pairs.shown'))}: {rooms.length} / {total}
+				{@html formatFont(t('pairs.shownNewest'))}: {rooms.length}
 			</p>
 		{/if}
 	{/if}
