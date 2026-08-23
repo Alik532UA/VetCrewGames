@@ -202,6 +202,9 @@ jobs:
     needs: rules
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # Токен GITHUB_TOKEN цій роботі не потрібен ні для чого: вона нічого не пише
+    # в репозиторій. Порожній перелік прав — найдешевше звуження, яке взагалі є.
+    permissions: {}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -215,16 +218,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Сервісний акаунт — єдиний секрет, який ця робота вимагає. Створити:
-      # Firebase Console → Project settings → Service accounts → Generate new
-      # private key, і вміст JSON покласти в секрет FIREBASE_SERVICE_ACCOUNT.
+      # Зрозуміла відмова замість незрозумілої: без секрету `firebase deploy`
+      # падає з «not logged in», і причина виглядає як поломка інструмента.
+      - name: Service account is configured
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Немає секрету FIREBASE_SERVICE_ACCOUNT. Firebase Console → Project settings → Service accounts → Generate new private key, і вміст JSON цілком у Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      # СЕКРЕТ ПРИХОДИТЬ ЧЕРЕЗ `env`, А НЕ ЧЕРЕЗ `${{ }}` У ТІЛІ СКРИПТА.
+      #
+      # Різниця не косметична, і це прямо описане в посібнику GitHub із
+      # безпеки: вираз `${{ ... }}` підставляється в текст команди ДО запуску
+      # оболонки. Тобто значення секрету стає частиною командного рядка, і
+      # будь-який символ у ньому тлумачиться оболонкою — від зламаних лапок до
+      # виконання чужої команди. Через `env` значення передається окремо й для
+      # оболонки лишається просто рядком.
+      #
+      # `printf '%s' "$VAR"` у лапках — з тієї самої причини: без лапок оболонка
+      # розбила б JSON по пробілах.
+      #
+      # `trap` замість `rm` останнім рядком: у Actions кроки виконуються з
+      # `bash -e`, тож при впалому деплої останній рядок НЕ виконався б і файл із
+      # ключем лишився б на диску. Раннер одноразовий, але покладатися на це —
+      # значить покладатися на чужу обіцянку.
+      #
+      # ЩО БУЛО Б НАДІЙНІШЕ: Workload Identity Federation
+      # (`google-github-actions/auth`) — тоді довготривалого ключа не існує
+      # взагалі, а `firebase-tools` так само читає `GOOGLE_APPLICATION_CREDENTIALS`.
+      # Не зроблено тут, бо це вимагає налаштування пулу на боці Google Cloud, а
+      # не в репозиторії; варіант із ключем працює без жодних змін у GCP.
       - name: Deploy database rules
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
         run: |
-          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          trap 'rm -f "$GOOGLE_APPLICATION_CREDENTIALS"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
           npm run rules:deploy
-          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
 
       # Перевірка ПІСЛЯ викладання: чи справді в базі тепер та редакція.
       - name: Verify deployed rules

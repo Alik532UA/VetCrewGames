@@ -58,3 +58,15 @@ gitignore/
 playwright-report/
 test-results/
 blob-report/
+
+# КЛЮЧ СЕРВІСНОГО АКАУНТА FIREBASE — НІКОЛИ В РЕПОЗИТОРІЙ.
+#
+# Це не публічний конфіг із бандла (той — ідентифікатор і лежить у джерелах
+# навмисно), а приватний ключ із повним доступом до проєкту: він ОБХОДИТЬ усі
+# правила безпеки. Firebase віддає його файлом на кшталт
+# `vet-crew-games-firebase-adminsdk-fbsvc-a1b2c3.json`, і кладеться він у
+# Downloads — але одне перетягування в теку проєкту плюс `git add -A`, і ключ у
+# git назавжди. Місце ключа — секрет репозиторію, більше ніде.
+service-account*.json
+*firebase-adminsdk*.json
+*-service-account.json
