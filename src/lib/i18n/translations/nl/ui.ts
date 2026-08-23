@@ -29,6 +29,8 @@ export const ui = {
 	'pairs.createRoom': 'Ruimte maken',
 	'pairs.joinRoom': 'Meedoen met code',
 	'pairs.roomCode': 'Ruimtecode',
+	'pairs.qrHint': 'Richt een camera erop om mee te doen',
+	'pairs.qrLabel': 'QR-code voor deze kamer',
 	'pairs.yourName': 'Hoe heet je?',
 	'pairs.rolePlayer': 'Speler',
 	'pairs.roleSpectator': 'Kijker',

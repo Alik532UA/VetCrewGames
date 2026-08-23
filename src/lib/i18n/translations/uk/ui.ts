@@ -29,6 +29,8 @@ export const ui = {
 	'pairs.createRoom': 'Створити кімнату',
 	'pairs.joinRoom': 'Зайти за кодом',
 	'pairs.roomCode': 'Код кімнати',
+	'pairs.qrHint': 'Наведіть камеру, щоб зайти',
+	'pairs.qrLabel': 'QR-код на цю кімнату',
 	'pairs.yourName': 'Як вас звати?',
 	'pairs.rolePlayer': 'Гравець',
 	'pairs.roleSpectator': 'Глядач',

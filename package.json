@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.306",
+	"version": "0.6.307",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -60,6 +60,7 @@
 		"@threlte/core": "^8.5.16",
 		"firebase": "^12.17.1",
 		"lucide-svelte": "^1.0.1",
+		"qrcode-generator": "2.0.4",
 		"three": "^0.185.1"
 	}
 }

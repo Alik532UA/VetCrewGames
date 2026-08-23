@@ -4,6 +4,7 @@
 	import type { Member, Role } from '$lib/net/roomTypes';
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
+	import RoomQr from '$lib/components/pairs/RoomQr.svelte';
 
 	/**
 	 * Лобі кімнати: код, склад, роль і кнопка «почати».
@@ -14,6 +15,13 @@
 	 */
 	interface Props {
 		code: string;
+		/**
+		 * Повне посилання на кімнату — для QR-коду.
+		 *
+		 * Приходить готовим, бо адресу знає сторінка: тут немає ні `page`, ні
+		 * `base`, і саме тому компонент лишається перевірним без роутера.
+		 */
+		joinUrl: string;
 		members: Member[];
 		online: string[];
 		me: string;
@@ -42,6 +50,7 @@
 
 	let {
 		code,
+		joinUrl,
 		members,
 		online,
 		me,
@@ -110,6 +119,17 @@
 		{@html formatFont(t('pairs.roomCode'))}:
 		<b class="lobby__value" data-testid="pairs-room-code-value">{code}</b>
 	</p>
+
+	<!--
+		QR СТОЇТЬ ПОРУЧ ІЗ КОДОМ, а не окремим екраном.
+	
+		Це два способи передати те саме, і вибір між ними залежить від того, де
+		співрозмовник: код диктують у слухавку, QR показують тому, хто сидить
+		навпроти. Поруч вони не конкурують — видно обидва шляхи одразу.
+	-->
+	<div class="lobby__invite text-panel">
+		<RoomQr url={joinUrl} />
+	</div>
 
 	<ul class="lobby__list text-panel" data-testid="pairs-members-list">
 		{#each shown as member (member.uid)}
@@ -232,6 +252,12 @@
 		gap: var(--space-md);
 		width: 100%;
 		max-width: 26rem;
+	}
+
+	/* Панель під QR: біле поле коду мусить лежати на чомусь, а не на фотографії. */
+	.lobby__invite {
+		display: flex;
+		justify-content: center;
 	}
 
 	.lobby__code {

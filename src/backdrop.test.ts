@@ -51,6 +51,9 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	// (`.board__score.text-panel`) і рядок переможця (`.board__over.text-panel`).
 	// Власний фон тут був би кольоровою плямою посеред рядка тексту.
 	'src/lib/components/ui/YouTag.svelte': 'позначка в рядку імені, фон дає панель зі списком',
+	// QR має ВЛАСНЕ біле поле (сканеру потрібне саме воно), а підпис під ним лежить
+	// на `.lobby__invite.text-panel` у лобі — предку з іншого файлу.
+	'src/lib/components/pairs/RoomQr.svelte': 'QR у лобі, фон дає .lobby__invite',
 	'src/lib/components/ErrorFallback.svelte': 'екран помилки — суцільна картка',
 	// Панелі заповідника малюються ЛИШЕ всередині `BottomSheet`, і фон дає він.
 	// Свій фон тут був би панеллю на панелі — двома шарами того самого кольору
