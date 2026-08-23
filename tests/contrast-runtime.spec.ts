@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readdirSync } from 'node:fs';
+import { reduceMotion, settlePage } from './support/settle';
 
 /**
  * КОНТРАСТ У РАНТАЙМІ: чотири теми × усі сторінки, з реальним складанням шарів.
@@ -89,6 +90,14 @@ const PAGES = [
 	'/VetCrewGames/quiz/',
 	'/VetCrewGames/reserve/',
 	'/VetCrewGames/pairs/',
+	/*
+	 * Вкладена сторінка, і в списку вона НЕ через повноту маршрутів (перевірка
+	 * нижче дивиться лише на верхній рівень), а тому, що на ній живе найщільніша
+	 * форма проєкту: поля, кнопки полів, прапорець, підказка, список кімнат.
+	 * Посилання на неї стоїть під `{#if dev}`, тобто у збірці до неї не дійти
+	 * кліком — і саме тому автоматичний замір тут єдиний, хто на неї дивиться.
+	 */
+	'/VetCrewGames/pairs/online/',
 	'/VetCrewGames/beta-test-checklists/'
 ] as const;
 
@@ -200,8 +209,35 @@ async function measure(page: Page, theme: string): Promise<Report> {
 		let checked = 0;
 		let skippedDisabled = 0;
 
+		/**
+		 * ЗНАЧОК У ГРІ ЛИШЕ ТОДІ, КОЛИ ВІН ЄДИНЕ, ЩО НАЗИВАЄ КНОПКУ.
+		 *
+		 * WCAG 1.4.11 говорить про «візуальну інформацію, потрібну, щоб РОЗПІЗНАТИ
+		 * елемент керування», і прямо звільняє суто оздобне. Тобто в межах правила —
+		 * значок у кнопці без підпису (кнопки шапки: тема, мова, «назад»), а не
+		 * будь-який SVG на сторінці.
+		 *
+		 * Без цієї межі перевірка ловила 84 вузли на `game-memory`: відпечаток лапки
+		 * на ЗВОРОТІ картки, `color-mix(--color-accent, transparent 35%)`, 1.00:1.
+		 * Він і оздоба (грань позначена `aria-hidden="true"`), і взагалі не видний
+		 * (`backface-visibility: hidden` на неперегорнутій картці), а «сорочка»
+		 * картки читається тлом грані, не лапкою.
+		 *
+		 * Умова «немає ні тексту, ні картинки» відрізняє одне від одного точно:
+		 * кнопка шапки містить лише `svg`, а картка пам'яті — ще й `img` лицевої
+		 * грані, тобто розпізнається не значком.
+		 */
+		function isMeaningfulIcon(el: Element): boolean {
+			const control = el.closest(
+				'button, a, [role="button"], [role="menuitem"], summary, label'
+			);
+			if (!control) return false;
+			if ((control.textContent ?? '').trim() !== '') return false;
+			return control.querySelector('img, picture, video') === null;
+		}
+
 		for (const el of Array.from(document.querySelectorAll('*'))) {
-			const isIcon = el.tagName === 'svg';
+			const isIcon = el.tagName === 'svg' && isMeaningfulIcon(el);
 			const ownsText = Array.from(el.childNodes).some(
 				(n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== ''
 			);
@@ -212,10 +248,6 @@ async function measure(page: Page, theme: string): Promise<Report> {
 
 			const cs = getComputedStyle(el);
 			if (cs.visibility === 'hidden' || cs.display === 'none') continue;
-			// Напівпрозорий елемент — це приглушений стан, а не пара кольорів: його
-			// справжній колір залежить від того, що під ним, і рахувати його як текст
-			// означало б вигадувати дефекти.
-			if (parseFloat(cs.opacity) < 0.9) continue;
 
 			/*
 			 * Неактивні елементи керування — той самий виняток, що в
@@ -229,13 +261,36 @@ async function measure(page: Page, theme: string): Promise<Report> {
 			}
 
 			const ink = toRgba(cs.color);
-			// Напівпрозорий текст складати ні з чим: він і є приглушеним станом.
-			if (!ink || ink[3] < 0.9) continue;
+			if (!ink) continue;
+
+			/*
+			 * ПРОЗОРІСТЬ СКЛАДАЄТЬСЯ, А НЕ ПРОПУСКАЄТЬСЯ.
+			 *
+			 * Перша редакція просто оминала все з `opacity < 0.9` під приводом «це
+			 * приглушений стан, а не пара кольорів». Дірку знайшов той самий комміт,
+			 * що й додав цю перевірку: `opacity: 0.75` на підказці в `OnlineGate`
+			 * давало 3.75:1 — і гейт мовчав, бо сам себе туди не пускав. Тобто
+			 * найпростіший спосіб приглушити текст був заразом способом сховати його
+			 * від перевірки.
+			 *
+			 * `opacity` множиться по всьому ланцюжку батьків: приглушує як власна
+			 * прозорість, так і успадкована від контейнера, і на екрані вони
+			 * перемножуються.
+			 *
+			 * Повністю прозоре (`0`) пропускається: читати там нічого, і жодна пара
+			 * кольорів цього не змінить.
+			 */
+			let alpha = ink[3];
+			for (let node: Element | null = el; node; node = node.parentElement) {
+				alpha *= parseFloat(getComputedStyle(node).opacity);
+			}
+			if (alpha <= 0) continue;
 
 			const { bg, photo } = effectiveBackground(el);
 			checked += 1;
 
-			const ratio = contrast(ink, bg);
+			const shown = composite([ink[0], ink[1], ink[2], Math.min(alpha, 1)], bg);
+			const ratio = contrast(shown, bg);
 			const need = required(cs, isIcon);
 			if (ratio >= need) continue;
 
@@ -243,7 +298,9 @@ async function measure(page: Page, theme: string): Promise<Report> {
 				theme: activeTheme,
 				sel: describe(el),
 				text: (el.textContent ?? '').trim().slice(0, 24),
-				fg: cs.color,
+				// Колір ПІСЛЯ складання прозорості: у звіті мусить стояти те, що видно
+				// на екрані, інакше числа не сходяться з оголошеним у CSS.
+				fg: alpha < 0.999 ? `rgb(${shown.map(Math.round).join(', ')})` : cs.color,
 				bg: `rgb(${bg.map(Math.round).join(', ')})`,
 				ratio: Math.round(ratio * 100) / 100,
 				need,
@@ -270,9 +327,16 @@ async function measure(page: Page, theme: string): Promise<Report> {
  */
 async function openIn(page: Page, url: string, theme: string) {
 	await page.goto(url);
-	await expect(page.locator('h1').first()).toHaveCSS('opacity', '1');
-	// Шрифт міняє метрики, а з ними й те, який текст вважається великим.
-	await page.evaluate(() => document.fonts.ready);
+	/*
+	 * Умова спокою — спільна з `a11y.spec.ts` і зібрана в `support/settle.ts`.
+	 *
+	 * Саме її бракувало, коли замір почав складати прозорість: перший прогін дав
+	 * 281 «дефект» у всіх чотирьох темах, усі з однаковою прикметою — колір
+	 * тексту, складений майже точно в колір тла, тобто прозорість близько 0.05.
+	 * Це були кадри анімацій входу, а не порушення контрасту. Там же описано
+	 * знайдений дефект: `reducedMotion` із конфігу до сторінки не доходив узагалі.
+	 */
+	await settlePage(page);
 	await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 }
 
@@ -290,6 +354,9 @@ for (const theme of THEMES) {
 			([key, value]) => window.localStorage.setItem(key, value),
 			['vetcrewgames_theme', theme] as const
 		);
+		// Емуляція ставиться ДО першого `goto`: анімації входу починаються з першим
+		// кадром, і настройка, увімкнена пізніше, вже нічого не гасить.
+		await reduceMotion(page);
 
 		const findings: Finding[] = [];
 		let checked = 0;

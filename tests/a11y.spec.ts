@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { A11Y_BASELINE, A11Y_KNOWN } from './a11y-baseline';
+import { reduceMotion, settlePage } from './support/settle';
 
 /**
  * Машинно-виявні порушення WCAG (ACCESSIBILITY-v8 § 10, `GATE-A11Y-AXE`).
@@ -33,6 +34,27 @@ import { A11Y_BASELINE, A11Y_KNOWN } from './a11y-baseline';
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag22aa'];
 
 /**
+ * ЕМУЛЯЦІЯ ЗМЕНШЕНОГО РУХУ — ЯВНО, бо з конфігу вона НЕ ДІЄ.
+ *
+ * Докблок нижче називає `reducedMotion: 'reduce'` із `playwright.config.ts`
+ * «не „щоб швидше“, а умовою ДОСТОВІРНОСТІ заміру» і прямо каже, що без неї
+ * гейт плаваючий. Заміряно на Playwright 1.62.1: до сторінки ця настройка не
+ * доходить ні з конфігу, ні з `test.use` — `matchMedia` віддає `false` в обох
+ * випадках і `true` лише після явного `page.emulateMedia()`.
+ *
+ * Тобто умова достовірності весь цей час була оголошенням, і зелений результат
+ * axe означав «на цій машині цього разу пощастило». Подробиці й числа —
+ * у `support/settle.ts`.
+ *
+ * `beforeEach`, а не рядок у кожному тесті: настройка мусить діяти ДО `goto`,
+ * бо анімації входу починаються з першим кадром, і забути її в новому тесті
+ * означало б тихо повернути плаваючий гейт.
+ */
+test.beforeEach(async ({ page }) => {
+	await reduceMotion(page);
+});
+
+/**
  * Заголовок дограв появу — обов'язкова умова перед заміром.
  *
  * `GameHeader` показує `<h1>` через `in:fade` під `{#key activeTitleKey}`, а це
@@ -53,7 +75,14 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag22aa'];
  * падала саме з таймауту, нічого не сказавши про доступність.
  */
 async function waitForTitleShown(page: Page) {
-	await expect(page.locator('h1').first()).toHaveCSS('opacity', '1');
+	/*
+	 * Тепер це ПОВНА умова спокою зі `support/settle.ts`, спільна із заміром
+	 * контрасту. Очікування лише на `h1` тут було замало з двох причин, і обидві
+	 * заміряні: заголовок згасає ДВІЧІ (`claimHeader` в `onMount` міняє ключ
+	 * `{#key}`), а обгортка сторінки під ним тримає власний `in:fly` — тобто axe
+	 * міг рахувати контраст крізь напівпрозору обгортку.
+	 */
+	await settlePage(page);
 }
 
 async function audit(page: Page, key: string) {

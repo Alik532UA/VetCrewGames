@@ -4,13 +4,14 @@
 	import { browser } from '$app/environment';
 	import { storage } from '$lib/services/storage';
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { layoutForViewport } from '$lib/config/memory-game';
 	import { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
+	import { td } from '$lib/i18n';
+	import { randomCrewName } from '$lib/config/crewNames';
 	import type { Role } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
@@ -55,6 +56,14 @@
 	let code = $state('');
 	let joinCode = $state('');
 	let name = $state('');
+	/**
+	 * Чи ховати створювану кімнату зі списку.
+	 *
+	 * Типово `false` — відкрита. Кімната поза списком потребує, щоб код комусь
+	 * передали; кімната в списку не потребує нічого, тож саме вона й типова.
+	 * Приватність — вибір для того, хто грає з конкретною людиною.
+	 */
+	let isPrivate = $state(false);
 	let me = $state('');
 	let online = $state<string[]>([]);
 	let busy = $state(false);
@@ -74,8 +83,15 @@
 	 */
 	const amHost = $derived(Boolean(me) && match?.hostUid === me);
 
-	/** Імʼя за замовчуванням: людину не мусять просити його вигадати. */
-	const guessName = () => `${t('memory.you')} ${Math.floor(Math.random() * 900 + 100)}`;
+	/**
+	 * Імʼя за замовчуванням: людину не мусять просити його вигадати.
+	 *
+	 * Було `` `${t('memory.you')} ${Math.floor(Math.random() * 900 + 100)}` `` —
+	 * «Ти 417». У лобі стоять двоє, і обидва «Ти» з різними числами: підпис не
+	 * називав нікого. Тепер це готова фраза зі списку команди — чому саме такий
+	 * список і чому фрази цілі, написано в `config/crewNames.ts`.
+	 */
+	const guessName = () => randomCrewName(td, Math.random);
 
 	/**
 	 * Імʼя пам'ятається між заходами.
@@ -311,7 +327,14 @@
 	onMount(() => {
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
-		name = storage.get(NAME_KEY) ?? '';
+		/*
+		 * Поле імені НЕ буває порожнім: або збережене, або кинуте з списку команди.
+		 *
+		 * Порожнє поле — це прохання вигадати, а вигадувати нікого не просили: імʼя
+		 * тут лише для того, щоб суперник розумів, хто ходить. Кому підставлене не
+		 * до душі, той натисне кубик або впише своє.
+		 */
+		name = storage.get(NAME_KEY) ?? randomCrewName(td, Math.random);
 		const saved = roomFromUrl();
 		if (saved) {
 			// Повертаємося самі: код в адресі означає «я вже був у цій кімнаті».
@@ -332,6 +355,7 @@
 		<OnlineGate
 			bind:name
 			bind:joinCode
+			bind:isPrivate
 			{busy}
 			onCreate={() => enter('create')}
 			onJoin={() => enter('join')}

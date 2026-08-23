@@ -734,13 +734,24 @@
 		border-color: var(--color-accent) !important;
 		background-color: var(--color-accent-shadow) !important;
 	}
+	/*
+	 * ПІДПИС СЛОТА — ВКАЗІВКА, А НЕ ВОДЯНИЙ ЗНАК, тож приглушувати його не можна.
+	 *
+	 * Тут стояло `opacity: 0.5`, і воно давало 2.44:1 при потрібних 4.5 (заміряно
+	 * `tests/contrast-runtime.spec.ts`, усі чотири теми). А текст цей каже, ЩО
+	 * саме кладуть у порожній слот — «найменше», «середнє», «найбільше»: не
+	 * оздоба, а єдина підказка про правило гри на самій дошці.
+	 *
+	 * Ієрархія лишається за кеглем, накресленням і великими літерами: `xs`, жирний,
+	 * uppercase. Прозорість із цього набору просто зайва — вона єдина коштувала
+	 * читабельності.
+	 */
 	.game-container__label {
 		grid-area: 1 / 1;
 		font-size: var(--font-size-xs);
 		font-weight: var(--font-weight-bold);
 		color: var(--color-text);
 		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-		opacity: 0.5;
 		text-transform: uppercase;
 		text-align: center;
 		padding: 0 4px;

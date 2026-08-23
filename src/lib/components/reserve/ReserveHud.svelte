@@ -221,9 +221,9 @@
 		cursor: help;
 	}
 
+	/* `opacity: 0.75` давало 3.95:1 — див. `.biome__facts` у `BiomePicker`. */
 	.hud__label {
 		font-size: var(--font-size-sm);
-		opacity: 0.75;
 	}
 
 	.hud__value {
