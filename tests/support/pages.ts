@@ -1,0 +1,61 @@
+import { expect } from '@playwright/test';
+import { readdirSync } from 'node:fs';
+
+/**
+ * УСІ сторінки застосунку — один перелік на всі браузерні перевірки.
+ *
+ * ## Чому список, а не «показові сторінки»
+ *
+ * Саме вибірковість була причиною найдорожчого дефекту контрасту в цьому проєкті:
+ * axe ходив на ДВІ сторінки з одинадцяти, там зашитий білий колір виправили, а на
+ * сторінках ігор той самий колір прожив далі. «Виправлено там, де подивилися»
+ * читалося як «виправлено».
+ *
+ * ## Чому в окремому модулі
+ *
+ * Перелік потрібен двом перевіркам — контрасту (`contrast-runtime.spec.ts`) і
+ * унікальності локаторів (`testid.spec.ts`). Дві копії розійшлися б на першій же
+ * новій сторінці, і розійшлися б ТИХО: обидві лишалися б зеленими, просто одна
+ * дивилася б на меншу частину застосунку.
+ */
+export const APP_PAGES = [
+	'/VetCrewGames/',
+	'/VetCrewGames/game-family/',
+	'/VetCrewGames/game-feeding/',
+	'/VetCrewGames/game-habitat/',
+	'/VetCrewGames/game-memory/',
+	'/VetCrewGames/game-mythbusters/',
+	'/VetCrewGames/game-population/',
+	'/VetCrewGames/quiz/',
+	'/VetCrewGames/reserve/',
+	'/VetCrewGames/pairs/',
+	/*
+	 * Вкладена сторінка, і в переліку вона НЕ через повноту маршрутів (перевірка
+	 * нижче дивиться лише на верхній рівень), а тому, що на ній живе найщільніша
+	 * форма проєкту: поля, кнопки полів, прапорець, підказка, список кімнат.
+	 * Посилання на неї стоїть під `{#if dev}`, тобто у збірці до неї не дійти
+	 * кліком — і саме тому автоматичний прогін тут єдиний, хто на неї дивиться.
+	 */
+	'/VetCrewGames/pairs/online/',
+	'/VetCrewGames/beta-test-checklists/'
+] as const;
+
+/**
+ * Повнота переліку — окремим твердженням, і воно мусить стояти в тесті.
+ *
+ * Без нього перелік тихо старіє: нова сторінка просто не потрапляє в прогін, і
+ * зелений результат означає «перевірено те, що вписали», а не «перевірено все».
+ */
+export function expectAllRoutesListed() {
+	const routes = readdirSync('src/routes/[[lang=lang]]', { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name);
+
+	expect(routes.length, 'маршрутів не знайдено — перевірка дивиться не туди').toBeGreaterThan(5);
+
+	const missing = routes.filter((route) => !APP_PAGES.some((p) => p.includes(`/${route}/`)));
+	expect(
+		missing,
+		`маршрути без браузерної перевірки: ${missing.join(', ')} — додати в APP_PAGES або назвати причину`
+	).toEqual([]);
+}

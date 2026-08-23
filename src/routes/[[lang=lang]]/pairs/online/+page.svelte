@@ -631,6 +631,7 @@
 			{busy}
 			onCreate={() => enter('create')}
 			onJoin={() => enter('join')}
+			onQuickGame={quickGame}
 		>
 			{#snippet roomList()}
 				<!--
@@ -649,7 +650,6 @@
 						joinCode = chosen;
 						void enter('join');
 					}}
-					onQuickGame={quickGame}
 				/>
 			{/snippet}
 		</OnlineGate>

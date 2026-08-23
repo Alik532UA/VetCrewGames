@@ -36,13 +36,36 @@
 
 	/** Повторне натискання того самого стану знімає позначку. */
 	const press = (vote: Vote) => betaProgress.vote(check.id, mine === vote ? 'none' : vote);
+
+	/**
+	 * ДИСКРИМІНАТОР ЛОКАТОРА — з `check.id`, а не з номера в списку.
+	 *
+	 * Доти всі локатори цього рядка були СТАЛИМИ, тобто на сторінці чеклиста
+	 * повторювалися по 24 рази: `beta-check-item`, `beta-check-text`, усі три
+	 * кнопки голосу. Знайшов це рантайм-інваріант
+	 * `tests/testid.spec.ts` (§ 1.9.2 канону TESTID-AND-NAMING-v8) — статична
+	 * перевірка такого не бачить за визначенням: у ФАЙЛІ кожен локатор
+	 * унікальний, а скільки разів компонент відрендерено, джерела не знають.
+	 *
+	 * І це не теорія: `e2e`-перевірка доступності вже мусила писати `.first()`
+	 * із коментарем «`beta-checks-list` тут ТРИ», інакше Playwright падав зі
+	 * `strict mode violation` — тобто дублікати вже одного разу вкусили.
+	 *
+	 * `_` → `-`, бо § 1.2 вимагає kebab-case: id пункту в даних — `common_1`, а
+	 * в локаторі стає `common-1`. Заміна повна й однозначна в обидва боки.
+	 *
+	 * Значення, а не порядковий номер, — прямо за § 1.6: `common-1` переживає
+	 * зміну порядку пунктів, а `beta-check-7-item` при вставці нового пункту
+	 * починає означати інший рядок.
+	 */
+	const tid = $derived(check.id.replace(/_/g, '-'));
 </script>
 
-<li class="row" class:row--marked={mine !== 'none'} data-testid="beta-check-item">
-	<p class="category" data-testid="beta-check-category-text">
+<li class="row" class:row--marked={mine !== 'none'} data-testid="beta-check-{tid}-item">
+	<p class="category" data-testid="beta-check-{tid}-category-text">
 		{index}. {@html formatFont(category)}
 	</p>
-	<p class="text" data-testid="beta-check-text">{@html formatFont(text)}</p>
+	<p class="text" data-testid="beta-check-{tid}-text">{@html formatFont(text)}</p>
 
 	<div class="votes" role="group" aria-label={t('beta.progress')}>
 		{#each VOTES as option (option.vote)}
@@ -52,7 +75,7 @@
 				class:vote--active={mine === option.vote}
 				aria-pressed={mine === option.vote}
 				onclick={() => press(option.vote)}
-				data-testid="beta-vote-{option.key}-btn"
+				data-testid="beta-vote-{tid}-{option.key}-btn"
 			>
 				{@html formatFont(t(option.label))}
 			</button>

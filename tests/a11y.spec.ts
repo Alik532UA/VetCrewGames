@@ -148,10 +148,11 @@ test('сторінка чеклиста не має машинно-виявни�
 	// вміст, і замір на ній ловив три `color-contrast`, яких на дограній сторінці
 	// немає жодного — тобто гейт червонів би від швидкості машини. Перший
 	// видимий пункт означає, що список уже відмальований.
-	// `.first()` обов'язковий: `beta-checks-list` тут ТРИ — по одному на кожен
-	// рівень покриття (covered / testable / manual). Без нього Playwright падає
-	// зі strict mode violation, а не з порушенням доступності.
-	await expect(page.getByTestId('beta-checks-list').first()).toBeVisible();
-	await expect(page.getByTestId('beta-check-item').first()).toBeVisible();
+	// Локатор називає РІВЕНЬ, і `.first()` більше не потрібен: доти всі три
+	// списки (covered / testable / manual) звалися однаково, і без `.first()`
+	// Playwright падав зі strict mode violation замість порушення доступності.
+	// Дублікати прибрано разом із появою рантайм-інваріанта `tests/testid.spec.ts`.
+	await expect(page.getByTestId('beta-covered-checks-list')).toBeVisible();
+	await expect(page.locator('[data-testid$="-item"]').first()).toBeVisible();
 	await audit(page, 'betaChecklist');
 });

@@ -142,7 +142,13 @@
 			<section class="level" data-testid="beta-level-{level.coverage}-section">
 				<h2 class="level-title text-panel">{@html formatFont(t(level.title))}</h2>
 				<p class="level-hint text-panel text-panel--tight">{@html formatFont(t(level.hint))}</p>
-				<ul class="checks" data-testid="beta-checks-list">
+				<!--
+					Списків на сторінці ТРИ — по одному на рівень покриття, тож локатор
+					мусить називати рівень. Доти всі три звалися однаково, і перевірка
+					доступності мусила писати `.first()`, щоб не впасти зі `strict mode
+					violation`.
+				-->
+				<ul class="checks" data-testid="beta-{level.coverage}-checks-list">
 					{#each items as check, position (check.id)}
 						<BetaCheckRow {check} index={position + 1} {uk} />
 					{/each}

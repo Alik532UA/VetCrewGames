@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { readdirSync } from 'node:fs';
+import { APP_PAGES, expectAllRoutesListed } from './support/pages';
 import { reduceMotion, settlePage } from './support/settle';
 
 /**
@@ -71,35 +71,6 @@ import { reduceMotion, settlePage } from './support/settle';
 /** Порядок як у `src/contrast.test.ts`, щоб звіти двох перевірок читалися разом. */
 const THEMES = ['dark', 'light-green', 'winter', 'orange-purple'] as const;
 
-/**
- * УСІ сторінки застосунку, а не «показові».
- *
- * Саме вибірковість і була причиною дефекту: axe ходить на дві сторінки, і рівно
- * поза ними зашитий білий вижив. Список складено з `src/routes/[[lang=lang]]/`;
- * нова сторінка без рядка тут — це знову «перевірено там, де подивилися», тому
- * повнота списку окремо стверджується тестом нижче.
- */
-const PAGES = [
-	'/VetCrewGames/',
-	'/VetCrewGames/game-family/',
-	'/VetCrewGames/game-feeding/',
-	'/VetCrewGames/game-habitat/',
-	'/VetCrewGames/game-memory/',
-	'/VetCrewGames/game-mythbusters/',
-	'/VetCrewGames/game-population/',
-	'/VetCrewGames/quiz/',
-	'/VetCrewGames/reserve/',
-	'/VetCrewGames/pairs/',
-	/*
-	 * Вкладена сторінка, і в списку вона НЕ через повноту маршрутів (перевірка
-	 * нижче дивиться лише на верхній рівень), а тому, що на ній живе найщільніша
-	 * форма проєкту: поля, кнопки полів, прапорець, підказка, список кімнат.
-	 * Посилання на неї стоїть під `{#if dev}`, тобто у збірці до неї не дійти
-	 * кліком — і саме тому автоматичний замір тут єдиний, хто на неї дивиться.
-	 */
-	'/VetCrewGames/pairs/online/',
-	'/VetCrewGames/beta-test-checklists/'
-] as const;
 
 /** Те, що бачить замір усередині сторінки: про адресу він не знає. */
 type PageFinding = {
@@ -362,7 +333,7 @@ for (const theme of THEMES) {
 		let checked = 0;
 		let disabled = 0;
 
-		for (const url of PAGES) {
+		for (const url of APP_PAGES) {
 			await openIn(page, url, theme);
 			const report = await measure(page, theme);
 			checked += report.checked;
@@ -393,22 +364,9 @@ for (const theme of THEMES) {
 }
 
 /**
- * Повнота списку сторінок — окремим твердженням.
- *
- * Без цього перевірка тихо старіє: нова сторінка просто не потрапляє в прогін, і
- * зелений результат означає «перевірено те, що вписали», а не «перевірено все».
- * Рівно цей клас і привів сюди — axe ходив на дві сторінки з одинадцяти.
+ * Повнота переліку живе у `support/pages.ts` разом із самим переліком: інакше
+ * два тести стверджували б її окремо, і кожен — про свою копію списку.
  */
 test('перелік сторінок покриває всі маршрути', () => {
-	const routes = readdirSync('src/routes/[[lang=lang]]', { withFileTypes: true })
-		.filter((entry) => entry.isDirectory())
-		.map((entry) => entry.name);
-
-	expect(routes.length, 'маршрутів не знайдено — перевірка дивиться не туди').toBeGreaterThan(5);
-
-	const missing = routes.filter((route) => !PAGES.some((p) => p.includes(`/${route}/`)));
-	expect(
-		missing,
-		`маршрути без заміру контрасту: ${missing.join(', ')} — додати в PAGES або назвати причину`
-	).toEqual([]);
+	expectAllRoutesListed();
 });

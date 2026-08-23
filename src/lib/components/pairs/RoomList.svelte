@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Users, Zap } from 'lucide-svelte';
+	import { Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import type { LobbyRoom } from '$lib/net/lobby';
 
@@ -45,10 +45,9 @@
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
 		onEnter: (code: string) => void;
-		onQuickGame: () => void;
 	}
 
-	let { rooms, total, unavailable, busy, onEnter, onQuickGame }: Props = $props();
+	let { rooms, total, unavailable, busy, onEnter }: Props = $props();
 
 	/**
 	 * Обрізку видно РЯДКОМ, а не мовчки (NO-SILENT-CAPS).
@@ -63,24 +62,12 @@
 	<h2 class="rooms__title">{@html formatFont(t('pairs.rooms'))}</h2>
 
 	<!--
-		ШВИДКА ГРА стоїть НАД списком, а не в ньому.
-
-		Вона робить те саме, що й список, тільки без вибору: заходить у першу вільну
-		кімнату, а якщо таких немає — створює нову відкриту. Тому вона перша: тому,
-		хто просто хоче зіграти, читати список не треба взагалі.
+		ШВИДКОЇ ГРИ ТУТ БІЛЬШЕ НЕМА — вона переїхала на самий верх форми входу й
+		лишилася без панелі (`OnlineGate`). Причина в тому, що вона не є одним із
+		рівноправних варіантів: вона робить те саме, що всі блоки разом, тільки без
+		вибору. Усередині панелі зі списком вона читалася б як «спосіб зайти в
+		кімнату зі списку», хоч вона й кімнату створить, коли списку немає.
 	-->
-	<button
-		type="button"
-		class="rooms__quick"
-		onclick={onQuickGame}
-		aria-disabled={busy}
-		data-testid="pairs-quick-btn"
-	>
-		<Zap size={20} aria-hidden="true" />
-		{@html formatFont(t('pairs.quickGame'))}
-	</button>
-	<p class="rooms__hint">{@html formatFont(t('pairs.quickGameHint'))}</p>
-
 	{#if unavailable}
 		<p class="rooms__hint" data-testid="pairs-rooms-unavailable-hint">
 			{@html formatFont(t('pairs.roomsUnavailable'))}
@@ -144,27 +131,6 @@
 		font-weight: var(--font-weight-bold);
 		color: var(--color-text-on-panel);
 		text-transform: uppercase;
-	}
-
-	.rooms__quick {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-sm);
-		min-height: 44px;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font: inherit;
-		font-weight: var(--font-weight-bold);
-		cursor: pointer;
-	}
-
-	@media (hover: hover) {
-		.rooms__quick:hover {
-			background: var(--color-accent-hover);
-		}
 	}
 
 	/*
