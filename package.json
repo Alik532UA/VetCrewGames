@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.284",
+	"version": "0.6.285",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -21,10 +21,13 @@
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"test": "vitest run --coverage",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"test:e2e": "playwright test"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "^4.13.0",
 		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.62.1",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.57.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",

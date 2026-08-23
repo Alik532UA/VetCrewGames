@@ -224,6 +224,70 @@ export const commonTab: BetaTab = {
 				en: 'In each of the four themes look at the background photograph behind the header and behind the cards: it must stay visible through them rather than being replaced by a solid colour.'
 			},
 			coverage: 'manual'
+		},
+
+		/*
+		 * ─── ДОСТУПНІСТЬ: РІВНО ТЕ, ЧОГО axe НЕ БАЧИТЬ ───────────────────────
+		 *
+		 * З 2026-08-23 у проєкті є `tests/a11y.spec.ts` — axe над зібраним сайтом,
+		 * головна й чеклист, у світлій і темній темі. Він ловить приблизно третину
+		 * проблем доступності: те, що видно з атрибутів і обчислених кольорів.
+		 *
+		 * Пункти нижче — друга половина, і вони не «про всяк випадок». Кожен
+		 * названий саме тому, що axe його НЕ ПОБАЧИТЬ у принципі:
+		 *   • порядок фокуса — це послідовність, а не атрибут;
+		 *   • осмисленість підпису — це мова, а не наявність рядка;
+		 *   • працездатність focus trap — це поведінка при натисканні;
+		 *   • стан під анімацією — axe міряє після неї свідомо (`reducedMotion`),
+		 *     бо інакше гейт плаває.
+		 *
+		 * Рівень `manual` тут не «ще не покрито», а «машина цього не вміє».
+		 */
+		{
+			id: 'common_19',
+			category: { uk: 'Доступність', en: 'Accessibility' },
+			text: {
+				uk: 'Не торкаючись мишки, пройдіть головну лише клавішею Tab від початку до кінця. Рамка фокуса мусить бути видною на КОЖНОМУ кроці, а порядок — іти зверху вниз, як читається сторінка, без стрибків назад.',
+				en: 'Without touching the mouse, walk the home page with Tab alone from start to finish. The focus ring must be visible at EVERY step, and the order must go top to bottom the way the page reads, without jumping back.'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'common_20',
+			category: { uk: 'Доступність', en: 'Accessibility' },
+			text: {
+				uk: 'Відкрийте будь-яке модальне вікно й пройдіть Tab-ом п’ять-шість кроків. Фокус мусить лишатися ВСЕРЕДИНІ вікна й не виходити на сторінку під ним; Escape мусить закривати вікно й повертати фокус на кнопку, якою його відкрили.',
+				en: 'Open any modal and walk five or six Tab steps. Focus must stay INSIDE the dialog and never reach the page behind it; Escape must close it and return focus to the button that opened it.'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'common_21',
+			category: { uk: 'Доступність', en: 'Accessibility' },
+			text: {
+				uk: 'Увімкніть екранний читач (Windows: Ctrl+Win+Enter) і пройдіть шапку. Кожна кнопка мусить називатися тим, що вона робить — «Тема», «Мова», «На весь екран». Назви виду «кнопка», «зображення» або сам символ іконки означають дефект.',
+				en: 'Turn on a screen reader (Windows: Ctrl+Win+Enter) and go through the header. Each button must be announced by what it does — «Theme», «Language», «Full screen». Announcements like «button», «image» or the icon character itself mean a defect.'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'common_22',
+			category: { uk: 'Доступність', en: 'Accessibility' },
+			text: {
+				uk: 'Увімкніть у системі «зменшити рух» (Windows: Параметри → Спеціальні можливості → Візуальні ефекти → Анімаційні ефекти вимкнути) і перезавантажте головну. Картки мусять з’явитися ОДРАЗУ, без наростання й розмиття. Це той самий режим, у якому міряє axe, тож тут перевіряється ще й достовірність гейта.',
+				en: 'Turn on «reduce motion» in the system (Windows: Settings → Accessibility → Visual effects → Animation effects off) and reload the home page. Cards must appear AT ONCE, with no fade-in or blur. This is the same mode axe measures in, so this check also validates the gate itself.'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'common_23',
+			category: { uk: 'Доступність', en: 'Accessibility' },
+			text: {
+				uk: 'Пройдіть Tab-ом по головній і подивіться, чи фокус НЕ потрапляє на власну смугу прокрутки праворуч. Вона дублює звичайну прокрутку, тож у порядку фокуса її бути не мусить — інакше на шляху до вмісту з’являється зупинка, яка нічого не робить.',
+				en: 'Tab through the home page and check that focus does NOT land on the custom scrollbar on the right. It duplicates ordinary scrolling, so it must stay out of the focus order — otherwise there is a stop on the way to the content that does nothing.'
+			},
+			coverage: 'manual',
+			negative: true
 		}
 	]
 };

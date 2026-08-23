@@ -541,7 +541,19 @@ img {
 .menu-btn--link {
 	background-color: color-mix(in srgb, var(--color-primary), transparent 50%);
 	backdrop-filter: var(--blur-glass);
-	color: #ffffff;
+	/*
+	 * З теми, а не зашитий `#ffffff` — той самий клас, що в `.game-title`.
+	 *
+	 * Тло тут — `--color-primary` під 50% прозорості, і воно СВІТЛЕ у двох темах
+	 * із чотирьох. Білий текст на ньому не проходить 4.5:1; знайшов це перший
+	 * прогін axe 2026-08-23 (`color-contrast`, serious, 2 вузли на головній).
+	 *
+	 * `src/contrast.test.ts` цього не бачив і не міг: він звіряє пари ЗМІННИХ
+	 * тем, а зашитий у CSS колір змінною не є. Сусідній `.menu-btn--game` уже
+	 * брав `--color-text-on-panel` — тобто правило в проєкті було, і саме цей
+	 * рядок із нього випадав.
+	 */
+	color: var(--color-text-on-panel);
 	box-shadow: none;
 }
 

@@ -64,6 +64,35 @@ jobs:
         if: ${{ !cancelled() }}
         run: npm run check:i18n
 
+      # Кеш браузерів між прогонами: `npm ci` їх не приносить, а
+      # `playwright install` без кешу качає ~130 МБ щоразу.
+      - name: Cache Playwright browsers
+        if: ${{ !cancelled() }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright chromium
+        if: ${{ !cancelled() }}
+        run: npx playwright install --with-deps chromium
+
+      # axe над ЗІБРАНИМ сайтом (ACCESSIBILITY-v8 § 10, GATE-A11Y-AXE). До
+      # 2026-08-23 цього гейта в проєкті не було зовсім — не «зелений», а
+      # відсутній. Конфіг Playwright сам робить `npm run build` і піднімає
+      # прев'ю, тож окремого кроку збірки тут не потрібно.
+      - name: E2E — axe над зібраним сайтом
+        if: ${{ !cancelled() }}
+        run: npm run test:e2e -- --project=chromium
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
       # Поріг high, а не moderate: після оновлення лишилися лише 4 low, але
       # moderate-поріг довелося б вимкнути на першому ж транзитивному
       # попередженні, а вимкнений гейт гірший за відсутній.

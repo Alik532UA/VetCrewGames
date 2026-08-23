@@ -2,7 +2,8 @@
 	import { browser } from '$app/environment';
 	import { Spring } from 'svelte/motion';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { t } from '$lib/i18n';
+	// `t` звідси прибраний разом із `aria-label` нижче: інших перекладів у цьому
+	// компоненті немає, і залишений імпорт валив `no-unused-vars` як помилку.
 	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
 	import { readMetrics, watchScroller } from '$lib/utils/scrollMetrics';
 
@@ -208,6 +209,20 @@
 
 <!-- Умова — `enabled`, а не `visible`: інакше зникнення нічим анімувати. -->
 {#if enabled}
+	<!--
+		`aria-label` тут БУВ і прибраний, а не забутий.
+
+		Це звичайний `div`, тобто роль `generic` — а вона імені не приймає, і
+		`aria-label` на ній заборонений специфікацією ARIA. axe називає це
+		`aria-prohibited-attr` (serious), і саме він знайшов це першим прогоном
+		нового гейта 2026-08-23.
+
+		Правильний підпис вимагав би `role="scrollbar"`, а з ним — `aria-valuenow`,
+		`aria-controls` і власного клавіатурного керування, тобто ДРУГОГО механізму
+		прокрутки поруч із наявним. Смуга ж дублює нативну прокрутку, доступну з
+		клавіатури й без неї. Тому елемент лишається без імені — так само, як у
+		`teatralo4ka`, де це рішення вже записане в самому компоненті.
+	-->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="page-scrollbar"
@@ -215,7 +230,6 @@
 		class:page-scrollbar--hidden={presence.current < 0.01}
 		style="top: {trackTop}px; height: {clientHeight}px; width: {width}px;
 			opacity: {presence.current}; transform: translateX({(1 - presence.current) * width}px);"
-		aria-label={t('scrollbar.title')}
 		data-testid="page-scrollbar-container"
 		oncontextmenu={(e) => {
 			e.preventDefault();
