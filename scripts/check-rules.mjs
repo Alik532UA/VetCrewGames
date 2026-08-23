@@ -165,6 +165,11 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/startedAt`, SERVER_TIME, host.token)
 	},
 	{
+		name: 'господар перемикає режим початку партії',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/info/autoStart`, true, host.token)
+	},
+	{
 		name: 'господар вмикає відлік до автоматичного старту',
 		allowed: true,
 		run: () => write(`rooms/${CODE}/info/countdownAt`, SERVER_TIME, host.token)
@@ -316,6 +321,18 @@ const CASES = [
 		name: 'не-господар міняє info',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/info/seed`, 777, guest.token)
+	},
+	{
+		// Режим кімнати — рішення господаря: інакше гість умикав би автостарт і
+		// партія починалася б без жодного натиску з того боку, де є кнопка.
+		name: 'гість перемикає режим початку партії',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/autoStart`, true, guest.token)
+	},
+	{
+		name: 'режим початку партії НЕ булевий',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/autoStart`, 'yes', host.token)
 	},
 	{
 		// Інакше гість запускав би партію, до якої господар не готовий, — і робив би

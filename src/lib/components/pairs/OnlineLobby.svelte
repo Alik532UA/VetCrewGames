@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import type { Member, Role } from '$lib/net/roomTypes';
+	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
 
 	/**
 	 * Лобі кімнати: код, склад, роль і кнопка «почати».
@@ -24,10 +25,17 @@
 		 * лише малює.
 		 */
 		countdownLeft: number | null;
+		/**
+		 * Режим початку партії: сама чи за підтвердженням господаря.
+		 *
+		 * Налаштування КІМНАТИ, тож видно його обом — гість мусить знати, чого
+		 * чекати. Міняти може лише господар: правило бази інших і не пустить.
+		 */
+		autoStart: boolean;
 		onRole: (role: Role) => void;
 		onStart: () => void;
-		/** Скасувати відлік. Є лише в господаря — правило бази інших і не пустить. */
-		onCancelCountdown: () => void;
+		/** Перемкнути режим. Кличеться лише з боку господаря. */
+		onAutoStart: (on: boolean) => void;
 	}
 
 	let {
@@ -38,9 +46,10 @@
 		amHost,
 		myRole,
 		countdownLeft,
+		autoStart,
 		onRole,
 		onStart,
-		onCancelCountdown
+		onAutoStart
 	}: Props = $props();
 
 	const players = $derived(members.filter((member) => member.role === 'player'));
@@ -106,17 +115,46 @@
 			{@html formatFont(t('pairs.startingIn'))}
 			<b class="lobby__seconds">{countdownLeft}{@html formatFont(t('pairs.seconds'))}</b>
 		</p>
-		{#if amHost}
-			<button
-				type="button"
-				class="chip"
-				onclick={onCancelCountdown}
-				data-testid="pairs-cancel-countdown-btn"
-			>
-				{@html formatFont(t('pairs.cancelStart'))}
-			</button>
-		{/if}
+		<!--
+			КНОПКИ «НЕ ПОЧИНАТИ» ТУТ БІЛЬШЕ НЕМА, і це не втрата, а виправлення.
+		
+			Вона гасила ПОЗНАЧКУ відліку, а вмикав його склад кімнати: щойно гравців
+			двоє — відлік мусить іти. Тому скасування жило один такт, після чого
+			таймер запускався сам. Заміряно автором.
+		
+			Тепер скасування — це перемикач режиму нижче: «Підтвердження готовності».
+			Він тримається, бо міняє РІШЕННЯ, а не наслідок.
+		-->
 	{/if}
+
+	<!--
+		РЕЖИМ ПОЧАТКУ ПАРТІЇ — налаштування кімнати, а не поведінка.
+		
+		Дві названі кнопки замість здогадки: «Автостарт» і «Підтвердження
+		готовності». Кімната, створена руками, стоїть на другому — її відкривають
+		для когось конкретного, і партія, що почалася сама, щойно зайшов ХТОСЬ,
+		була б несподіванкою. «Швидка гра» створює кімнату на першому: вона
+		зводить незнайомців, і зайвий натиск лише заважає.
+		
+		Гість бачить режим РЯДКОМ, а не кнопками: міняти його він не може
+		(правило бази), але знати, чого чекати, мусить — інакше «чому не
+		починається» лишається без відповіді з того боку, де немає кнопки.
+	-->
+	{#if amHost}
+		<SegmentedChoice
+			legend={t('pairs.startMode')}
+			scope="pairs-start-mode"
+			value={autoStart ? 'auto' : 'confirm'}
+			onchange={(id) => onAutoStart(id === 'auto')}
+			options={[
+				{ id: 'auto', label: t('pairs.modeAuto') },
+				{ id: 'confirm', label: t('pairs.modeConfirm') }
+			]}
+		/>
+	{/if}
+	<p class="lobby__hint text-panel" data-testid="pairs-start-mode-text">
+		{@html formatFont(t(autoStart ? 'pairs.modeAutoHint' : 'pairs.modeConfirmHint'))}
+	</p>
 
 	{#if amHost}
 		<!--

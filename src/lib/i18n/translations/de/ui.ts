@@ -59,7 +59,6 @@ export const ui = {
 	'pairs.shownNewest': 'Neueste angezeigt — es gibt weitere',
 	'pairs.startingIn': 'Start in',
 	'pairs.seconds': 's',
-	'pairs.cancelStart': 'Noch nicht',
 	'pairs.roomsUnavailable': 'Die Raumliste ist nicht verfügbar. Beitreten per Code und Raum erstellen gehen weiter.',
 
 	// Team-Namen: Adjektiv + Tier. GANZE Phrasen; starke Deklination ohne Artikel
@@ -193,4 +192,9 @@ export const ui = {
 	'beta.rulesFresh': 'Die veröffentlichte Fassung passt zu diesem Build',
 	'beta.rulesStale': 'In der Datenbank gilt eine ANDERE Fassung — dieser Build ist nicht veröffentlicht',
 	'beta.rulesUnknown': 'Nicht feststellbar: kein Netz oder Datenbank nicht erreichbar',
+	'pairs.startMode': 'Spielbeginn',
+	'pairs.modeAuto': 'Autostart',
+	'pairs.modeConfirm': 'Auf Bestätigung warten',
+	'pairs.modeAutoHint': 'Das Spiel beginnt von selbst, sobald zwei Spieler da sind.',
+	'pairs.modeConfirmHint': 'Das Spiel wartet, bis der Gastgeber „Spiel starten“ drückt.',
 } as const;

@@ -59,7 +59,6 @@ export const ui = {
 	'pairs.shownNewest': 'Nieuwste weergegeven — er zijn meer',
 	'pairs.startingIn': 'Start over',
 	'pairs.seconds': 's',
-	'pairs.cancelStart': 'Nog niet',
 	'pairs.roomsUnavailable': 'De kamerlijst is niet beschikbaar. Meedoen met een code en een kamer maken werken wel.',
 
 	// Teamnamen: bijvoeglijk naamwoord + dier. HELE zinnen; bij het-woorden zonder
@@ -191,4 +190,9 @@ export const ui = {
 	'beta.rulesFresh': 'De uitgerolde versie hoort bij deze build',
 	'beta.rulesStale': 'De database gebruikt een ANDERE versie — deze build is nog niet uitgerold',
 	'beta.rulesUnknown': 'Niet te bepalen: geen netwerk of database onbereikbaar',
+	'pairs.startMode': 'Start van het spel',
+	'pairs.modeAuto': 'Automatisch starten',
+	'pairs.modeConfirm': 'Wachten op bevestiging',
+	'pairs.modeAutoHint': 'Het spel begint zelf zodra er twee spelers zijn.',
+	'pairs.modeConfirmHint': 'Het spel wacht tot de host op „Spel starten” drukt.',
 } as const;

@@ -59,7 +59,6 @@ export const ui = {
 	'pairs.shownNewest': 'Showing the newest — there are more',
 	'pairs.startingIn': 'Starting in',
 	'pairs.seconds': 's',
-	'pairs.cancelStart': 'Not yet',
 	'pairs.roomsUnavailable': 'The room list is unavailable. Joining by code and creating a room still work.',
 
 	// Crew names: adjective + animal. WHOLE phrases — see `config/crewNames.ts`.
@@ -189,4 +188,9 @@ export const ui = {
 	'beta.rulesFresh': 'The deployed revision matches this build',
 	'beta.rulesStale': 'The database runs a DIFFERENT revision — this build is not deployed yet',
 	'beta.rulesUnknown': 'Could not tell: no network, or the database is unreachable',
+	'pairs.startMode': 'Starting the game',
+	'pairs.modeAuto': 'Auto start',
+	'pairs.modeConfirm': 'Wait for confirmation',
+	'pairs.modeAutoHint': 'The game starts by itself as soon as two players are in.',
+	'pairs.modeConfirmHint': 'The game waits until the host presses “Start the game”.',
 } as const;

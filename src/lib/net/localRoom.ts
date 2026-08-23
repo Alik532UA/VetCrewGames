@@ -101,6 +101,13 @@ export class LocalRoom {
 				this.#emit();
 			},
 
+			setAutoStart: async (on) => {
+				// Той самий контракт, що в справжній базі: зміна режиму гасить відлік.
+				const { countdownAt: _reset, ...rest } = this.#info;
+				this.#info = { ...rest, autoStart: on };
+				this.#emit();
+			},
+
 			setCountdown: async (active) => {
 				// Підставний транспорт тримає той самий контракт: увімкнено — число,
 				// скасовано — поля немає. Саме на це й дивиться сторінка.

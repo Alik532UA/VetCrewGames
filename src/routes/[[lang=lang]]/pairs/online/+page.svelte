@@ -160,7 +160,15 @@
 		replaceState(url, {});
 	}
 
-	async function enter(action: 'create' | 'join') {
+	/**
+	 * Зайти в кімнату або створити її.
+	 *
+	 * `quick` доходить сюди лише по одній дорозі — від кнопки «швидка гра», — і
+	 * вирішує рівно одне: чи вмикати автостарт у новій кімнаті. Окремої функції
+	 * створення заради цього немає: усе інше в шляху те саме, а копія розійшлася б
+	 * на першій же правці.
+	 */
+	async function enter(action: 'create' | 'join', quick = false) {
 		if (busy) return;
 		busy = true;
 		try {
@@ -180,7 +188,19 @@
 					 * Тому вона лягає в кімнату числами один раз — і далі однакова в усіх.
 					 */
 					config: { pairs: layout.pairs, cols: layout.cols },
-					name: who
+					name: who,
+					/*
+					 * АВТОСТАРТ ЛИШЕ ДЛЯ ШВИДКОЇ ГРИ, і це рішення автора.
+					 *
+					 * Кімнату, створену руками, відкривають для когось конкретного:
+					 * надсилають код і чекають саме на нього. Партія, що почалася сама,
+					 * щойно зайшов ХТОСЬ, тут була б несподіванкою. Швидка гра —
+					 * навпаки: вона зводить двох незнайомців, і зайвий натиск лише
+					 * заважає.
+					 *
+					 * Господар може перемкнути режим у лобі — обидві кнопки там видно.
+					 */
+					autoStart: quick
 				});
 			} else {
 				const room = await net.peekRoom(joinCode.trim().toUpperCase());
@@ -322,7 +342,9 @@
 		// Своя кімната для швидкої гри — завжди ВІДКРИТА: сенс дії в тому, щоб у неї
 		// хтось зайшов, а закрита цього не дозволяє за побудовою.
 		isPrivate = false;
-		await enter('create');
+		// `true` — автостарт: сенс швидкої гри в тому, щоб партія почалася сама,
+		// щойно зібралися двоє. У кімнаті, створеній руками, це виключено.
+		await enter('create', true);
 	}
 
 	async function setRole(role: Role) {
@@ -539,7 +561,19 @@
 		if (!browser || !amHost || !match || match.status !== 'lobby') return;
 
 		const players = match.members.filter((member) => member.role === 'player').length;
-		const ready = players === PAIRS_PLAYERS;
+		/*
+		 * РЕЖИМ КІМНАТИ — ПЕРША УМОВА, і саме її бракувало.
+		 *
+		 * Доти відлік залежав лише від складу, тобто «двоє гравців» означало
+		 * «відлік мусить іти». Через це кнопка «не починати» не працювала: вона
+		 * гасила позначку, склад лишався тим самим, і цей ефект умикав відлік
+		 * заново наступним же тактом — заміряно автором, таймер скидався й
+		 * запускався сам.
+		 *
+		 * Тепер «не починати» перемикає РЕЖИМ, і скасування тримається: `ready`
+		 * стає хибним не через склад, а через рішення господаря.
+		 */
+		const ready = match.autoStart && players === PAIRS_PLAYERS;
 		const running = match.countdownAt !== null;
 
 		if (ready === running) return;
@@ -582,12 +616,19 @@
 			: Math.max(0, Math.ceil((match.countdownAt + COUNTDOWN_MS - clock) / 1000))
 	);
 
-	/** Скасувати відлік. Кімната лишається в лобі, старт стає ручним. */
-	async function cancelCountdown() {
+	/**
+	 * Перемкнути режим початку партії.
+	 *
+	 * Це ж і є «не починати»: воно не гасить таймер, а ВИКЛЮЧАЄ АВТОСТАРТ — і
+	 * саме тому скасування тримається. Гасіння самої позначки бере на себе
+	 * транспорт одним записом (див. `setAutoStart` у `net/rtdbRoom.ts`), щоб не
+	 * було миті, коли режим уже «підтвердження», а таймер ще доходить до нуля.
+	 */
+	async function switchAutoStart(on: boolean) {
 		if (!match || !amHost) return;
 		try {
 			const net = await import('$lib/net/rtdbRoom');
-			await (await net.roomTransport(code)).setCountdown(false);
+			await (await net.roomTransport(code)).setAutoStart(on);
 		} catch (error) {
 			hostActionFailed(error);
 		}
@@ -662,9 +703,10 @@
 			{amHost}
 			{myRole}
 			{countdownLeft}
+			autoStart={match.autoStart}
 			onRole={setRole}
 			onStart={start}
-			onCancelCountdown={cancelCountdown}
+			onAutoStart={switchAutoStart}
 		/>
 	{:else}
 		<OnlineRoom

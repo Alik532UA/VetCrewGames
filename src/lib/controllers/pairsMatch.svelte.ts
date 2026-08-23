@@ -57,6 +57,15 @@ export class PairsMatch {
 	 */
 	countdownAt = $state<number | null>(null);
 
+	/**
+	 * Режим початку партії: сама чи за підтвердженням.
+	 *
+	 * Відсутнє поле = виключено. Так поводяться кімнати старших збірок — і це
+	 * безпечніший бік: партія, що почалася сама там, де цього не просили,
+	 * гірша за партію, яку треба почати кнопкою.
+	 */
+	autoStart = $state(false);
+
 	readonly #me: string;
 	readonly #transport: RoomTransport;
 	/** Опис партії, з якого роздано поточну дошку. Зміна = роздати заново. */
@@ -192,6 +201,7 @@ export class PairsMatch {
 		this.status = snapshot.info.status;
 		this.hostUid = snapshot.info.hostUid;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
+		this.autoStart = snapshot.info.autoStart === true;
 
 		/*
 		 * Опис партії — рядок, і порівнюється він цілком.

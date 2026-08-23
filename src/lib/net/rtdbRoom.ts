@@ -43,6 +43,15 @@ export interface NewRoom {
 	config: Record<string, number>;
 	/** Імʼя господаря: він одразу й перший учасник. */
 	name: string;
+	/**
+	 * Чи починати партію самій, коли зібралися гравці.
+	 *
+	 * Задається ПРИ СТВОРЕННІ, бо різні дороги в кімнату хочуть різного:
+	 * «швидка гра» зводить незнайомців і мусить починатися сама, а кімнату,
+	 * створену руками, автор відкриває для когось конкретного й починає тоді,
+	 * коли вирішить сам.
+	 */
+	autoStart?: boolean;
 	random?: () => number;
 }
 
@@ -87,6 +96,9 @@ export async function createRoom(options: NewRoom): Promise<string> {
 			status: 'lobby',
 			hostUid: uid,
 			config: options.config,
+			// `?? false` явно: відсутнє поле правило прийме, але тоді режим кімнати
+			// читався б із відсутності, а не з рішення.
+			autoStart: options.autoStart ?? false,
 			createdAt: serverTimestamp()
 		};
 
@@ -241,6 +253,17 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				return;
 			}
 			await set(ref(db, `rooms/${code}/info/status`), status);
+		},
+
+		async setAutoStart(on: boolean) {
+			/*
+			 * ОДНИМ записом, і `countdownAt: null` тут обовʼязковий.
+			 *
+			 * Двома записами існувала б мить, коли режим уже «підтвердження», а
+			 * позначка відліку ще лежить, — і таймер господаря встиг би почати
+			 * партію, яку щойно скасували.
+			 */
+			await update(ref(db, `rooms/${code}/info`), { autoStart: on, countdownAt: null });
 		},
 
 		async setCountdown(active: boolean) {
