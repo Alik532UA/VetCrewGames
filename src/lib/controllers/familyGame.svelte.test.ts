@@ -185,4 +185,21 @@ describe('FamilyGameController', () => {
 		expect(game.gameOver).toBe(false);
 		expect(game.round).not.toBeNull();
 	});
+	/**
+	 * Бездоганна партія набирає РІВНО максимум.
+	 *
+	 * Перевіряється не формула, а її збіг із дійсністю: до цієї правки всі п’ять
+	 * ігор показували знаменником число раундів, і жоден тест цього не бачив, бо
+	 * ніхто не грав партію до кінця правильно.
+	 */
+	it('бездоганна партія набирає РІВНО максимум', () => {
+		const game = new FamilyGameController(4);
+		game.start();
+		for (let round = 1; round <= 4; round += 1) {
+			game.choose(game.round!.oddAnimal);
+			game.nextRound();
+		}
+		expect(game.gameOver).toBe(true);
+		expect(game.sessionScore).toBe(game.maxScore);
+	});
 });

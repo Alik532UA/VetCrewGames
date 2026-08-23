@@ -289,6 +289,9 @@
 			touchDragClone?.remove();
 		};
 	});
+
+	/** Максимум партії — у підказці, а не знаменником. Див. `GameOverCard`. */
+	const maxHint = $derived(`${t('common.maxScore')}: ${game.maxScore}`);
 </script>
 
 <div class="game-page" use:fitToViewport>
@@ -297,7 +300,10 @@
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
 				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
-				<span class="score-value">{game.sessionScore} / {game.maxScore}</span>
+				<!-- Тільки набране; максимум — у підказці. Див. `GameOverCard`. -->
+				<span class="score-value" title={maxHint} aria-label="{game.sessionScore}. {maxHint}"
+					>{game.sessionScore}</span
+				>
 			</div>
 			<button class="btn-play-again" onclick={() => game.reset()} data-testid="population-play-again-btn">
 				<RotateCcw size={24} />

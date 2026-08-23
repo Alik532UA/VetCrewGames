@@ -79,6 +79,7 @@ export const ui = {
 	'common.incorrect': 'Incorrect!',
 	'common.gameOver': 'Game Over!',
 	'common.yourScore': 'Your Score:',
+	'common.maxScore': 'Best possible in this game',
 
 	// Icon-button labels in the header: not text on screen but what a screen
 	// reader announces — which is exactly why they belong in the dictionary

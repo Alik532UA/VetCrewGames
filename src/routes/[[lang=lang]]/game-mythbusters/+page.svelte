@@ -28,6 +28,9 @@
 		 */
 		return settings.claimHeader('myth.title', () => goto(langPath(lang, 'quiz/play')));
 	});
+
+	/** Максимум партії — у підказці, а не знаменником. Див. `GameOverCard`. */
+	const maxHint = $derived(`${t('common.maxScore')}: ${game.maxScore}`);
 </script>
 
 <div class="game-page" use:fitToViewport>
@@ -36,7 +39,13 @@
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
 				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
-				<span class="score-value">{game.sessionScore} / {game.totalRounds}</span>
+				<!--
+					Тільки набране. Максимум — у підказці, тими самими двома атрибутами,
+					що в `GameOverCard`: `title` для миші, `aria-label` для читалки.
+				-->
+				<span class="score-value" title={maxHint} aria-label="{game.sessionScore}. {maxHint}"
+					>{game.sessionScore}</span
+				>
 			</div>
 			<div class="game-over-actions">
 				<button class="btn-play-again" onclick={() => game.reset()}>

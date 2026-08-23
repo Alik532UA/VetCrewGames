@@ -6,7 +6,7 @@ import {
 	type HabitatRound
 } from '$lib/config/habitat-game';
 import { settings } from '$lib/services/settings.svelte';
-import { roundPoints } from '$lib/config/scoring';
+import { maxRoundPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -26,6 +26,20 @@ import type { RoundOutcome } from '$lib/types/game';
  */
 export class HabitatGameController {
 	readonly totalRounds: number;
+
+	/**
+	 * Максимум за партію — НАКОПИЧУЄТЬСЯ, а не рахується формулою.
+	 *
+	 * Тут єдина гра, де розмір раунду змінний: зон у правильній відповіді буває
+	 * різна кількість, а раунди тягнуться з пулу по одному (`#next`). Отже
+	 * максимум партії невідомий, доки її не зіграно, і формула на кшталт
+	 * `maxSessionPoints(parts, rounds)` тут була б вигадкою.
+	 *
+	 * Побічно це робить число правильним і в тому випадку, коли записи в пулі
+	 * скінчилися раніше за раунди: партія завершується, і максимум відповідає
+	 * рівно тим раундам, які справді були.
+	 */
+	maxScore = $state(0);
 
 	/** `null`, доки гравець не обрав підрежим на стартовому екрані. */
 	mode = $state<HabitatMode | null>(null);
@@ -84,6 +98,7 @@ export class HabitatGameController {
 		this.roundNumber = 1;
 		this.roundResults = [];
 		this.sessionScore = 0;
+		this.maxScore = 0;
 		this.gameOver = false;
 		this.#used = [];
 		this.#next();
@@ -148,6 +163,7 @@ export class HabitatGameController {
 		this.roundNumber = 1;
 		this.roundResults = [];
 		this.sessionScore = 0;
+		this.maxScore = 0;
 		this.#used = [];
 	}
 
@@ -181,5 +197,12 @@ export class HabitatGameController {
 		}
 
 		this.round = round;
+		/*
+		 * Максимум зростає ТУТ, при показі раунду, а не при відповіді.
+		 *
+		 * Раунд, на який не відповіли, усе одно був частиною партії: інакше
+		 * пропущене питання тихо піднімало б частку правильних відповідей.
+		 */
+		this.maxScore += maxRoundPoints(round.correct.length);
 	}
 }

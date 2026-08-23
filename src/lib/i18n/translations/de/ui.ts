@@ -82,6 +82,7 @@ export const ui = {
 	'common.incorrect': 'Falsch!',
 	'common.gameOver': 'Spiel vorbei!',
 	'common.yourScore': 'Dein Ergebnis:',
+	'common.maxScore': 'Maximum in dieser Runde',
 
 	// Beschriftungen der Symbolschaltflächen in der Kopfzeile: kein Text auf dem
 	// Bildschirm, sondern das, was ein Screenreader vorliest — genau deshalb

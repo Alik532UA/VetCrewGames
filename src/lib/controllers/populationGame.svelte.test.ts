@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PERFECT_BONUS } from '$lib/config/scoring';
+import { maxSessionPoints, PERFECT_BONUS } from '$lib/config/scoring';
 import type { Animal } from '$lib/config/population-game';
 
 /**
@@ -185,9 +185,47 @@ describe('PopulationGameController', () => {
 		expect(game.gameOver).toBe(true);
 	});
 
-	it('maxScore рахується з кількості раундів і карток', () => {
-		expect(started(3, 10).maxScore).toBe(30);
-		expect(started(4, 5).maxScore).toBe(20);
+	/**
+	 * Максимум — З ПРАВИЛА РАХУНКУ, а не з числа слотів.
+	 *
+	 * Попередня редакція цього тесту стверджувала `30` для трьох слотів і десяти
+	 * раундів — і кодувала помилку: раунд без жодної хиби дає ще й `PERFECT_BONUS`,
+	 * тобто 3 + 1 = 4, а не 3. Екран підсумку через це показував знаменник, менший
+	 * за досяжний максимум, і зелений тест це підтверджував.
+	 *
+	 * Тепер очікуване значення НЕ вписане цифрою: воно береться з того самого
+	 * `maxSessionPoints`, що й у контролері. Тест не повторює реалізацію — він
+	 * стверджує, що контролер бере число саме звідти, а не з власної арифметики.
+	 */
+	it('maxScore приходить із правила рахунку, а не з числа слотів', () => {
+		expect(started(3, 10).maxScore).toBe(maxSessionPoints(3, 10));
+		expect(started(4, 5).maxScore).toBe(maxSessionPoints(4, 5));
+		// І це справді більше за «по очку за слот»: різниця — надбавка за раунд.
+		expect(started(3, 10).maxScore).toBeGreaterThan(3 * 10);
+	});
+
+	/**
+	 * ГОЛОВНА перевірка цього блока, і саме її просив автор: «якщо на всі
+	 * відповіді дати правильну — чи збігається число?»
+	 *
+	 * Формула може бути правильною сама собою й усе одно не дорівнювати тому, що
+	 * реально можна набрати: досить, щоб раунд нараховував очки інакше. Тому тут
+	 * грається БЕЗДОГАННА партія, і рахунок мусить зійтися з максимумом до одиниці.
+	 */
+	it('бездоганна партія набирає РІВНО максимум', () => {
+		const game = started(3, 4);
+
+		for (let round = 1; round <= 4; round += 1) {
+			// Розкладаємо в правильному порядку — його контролер знає сам.
+			for (const [index, animal] of game.correctOrder.entries()) {
+				game.moveTo(animal, 'slot', index);
+			}
+			game.check();
+			game.nextRound();
+		}
+
+		expect(game.gameOver).toBe(true);
+		expect(game.sessionScore).toBe(game.maxScore);
 	});
 
 	it('reset() повертає партію на початок', () => {

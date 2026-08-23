@@ -65,7 +65,7 @@
 	{#if game.gameOver}
 		<GameOverCard
 			score={game.sessionScore}
-			total={game.roundResults.length * 3}
+			total={game.maxScore}
 			{lang}
 			onPlayAgain={() => game.reset()}
 			testId="feeding-game-over"

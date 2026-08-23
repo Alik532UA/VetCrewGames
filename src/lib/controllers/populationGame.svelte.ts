@@ -1,7 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { getRandomAnimals, type Animal } from '$lib/config/population-game';
 import { settings } from '$lib/services/settings.svelte';
-import { roundPoints } from '$lib/config/scoring';
+import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -69,9 +69,16 @@ export class PopulationGameController {
 		this.initialSourceAnimals.filter((animal): animal is Animal => animal !== null)
 	);
 
-	/** Максимум за партію: по одному очку за кожну правильну позицію. */
+	/**
+	 * Максимум за партію.
+	 *
+	 * Було `totalRounds * slotCount` — по очку за позицію, і це занижувало
+	 * максимум на десять балів: раунд без жодної помилки дає ще й
+	 * `PERFECT_BONUS`, тобто 3 + 1 = 4. Тепер число бере `maxSessionPoints`, і
+	 * надбавка враховується сама.
+	 */
 	get maxScore(): number {
-		return this.totalRounds * this.slotCount;
+		return maxSessionPoints(this.slotCount, this.totalRounds);
 	}
 
 	/**

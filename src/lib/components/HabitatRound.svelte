@@ -61,7 +61,7 @@
 	{#if game.gameOver}
 		<GameOverCard
 			score={game.sessionScore}
-			total={game.roundResults.length}
+			total={game.maxScore}
 			{lang}
 			onPlayAgain={() => game.chooseMode(mode)}
 			testId="habitat-game-over"

@@ -191,6 +191,18 @@ export const feedingSets: readonly FeedingSet[] = [
 ];
 
 /** Куди страва має потрапити: до однієї з тварин або в смітник. */
+/**
+ * Скільки страв у раунді.
+ *
+ * Не «приблизно три»: усі десять наборів нижче мають рівно три `foodIds`, і від
+ * цього числа залежить максимум партії (`maxSessionPoints` у контролері). Тримати
+ * його тут, а не цифрою в контролері, — щоб раунд іншого розміру ламав ОДНЕ
+ * місце, а не тихо занижував знаменник на екрані підсумку.
+ *
+ * Стежить інваріант `src/lib/config/feeding-game.test.ts`.
+ */
+export const FOODS_PER_ROUND = 3;
+
 export const BIN = 'bin' as const;
 export type Target = string | typeof BIN;
 

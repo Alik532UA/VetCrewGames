@@ -1,7 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
 import { settings } from '$lib/services/settings.svelte';
-import { roundPoints } from '$lib/config/scoring';
+import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import { storage } from '$lib/services/storage';
 import type { RoundOutcome } from '$lib/types/game';
 
@@ -32,6 +32,21 @@ const SHOWN_KEY = 'shown_myths';
 
 export class MythGameController {
 	readonly totalRounds: number;
+
+	/**
+	 * Максимум за партію — З ПРАВИЛА РАХУНКУ, а не з числа раундів.
+	 *
+	 * Раунд тут бінарний, тобто коштує `BINARY_POINTS` (три), і саме тому
+	 * знаменником не може бути `totalRounds`: десять раундів дають 30 балів, а
+	 * не 10. Екран підсумку показував саме 10 — заміряно автором.
+	 *
+	 * `maxSessionPoints` існує в `config/scoring.ts` із тестами й доти не
+	 * викликалася ніде. Тепер зміна ціни відповіді в одному місці міняє й це
+	 * число: правити знаменник руками більше не треба.
+	 */
+	get maxScore(): number {
+		return maxSessionPoints(1, this.totalRounds);
+	}
 
 	current = $state<ActiveQuestion | null>(null);
 	roundNumber = $state(1);

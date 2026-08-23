@@ -2,7 +2,7 @@ import { randomFor } from '$lib/utils/seededRandom';
 import { buildRound, getNextPuzzle, type FamilyRound } from '$lib/config/family-game';
 import type { Animal } from '$lib/config/population-game';
 import { settings } from '$lib/services/settings.svelte';
-import { roundPoints } from '$lib/config/scoring';
+import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -17,6 +17,11 @@ import type { RoundOutcome } from '$lib/types/game';
  */
 export class FamilyGameController {
 	readonly totalRounds: number;
+
+	/** Максимум за партію: раунд бінарний, тобто по `BINARY_POINTS` за кожен. */
+	get maxScore(): number {
+		return maxSessionPoints(1, this.totalRounds);
+	}
 
 	round = $state<FamilyRound | null>(null);
 	roundNumber = $state(1);

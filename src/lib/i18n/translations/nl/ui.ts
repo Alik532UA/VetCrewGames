@@ -80,6 +80,7 @@ export const ui = {
 	'common.incorrect': 'Fout!',
 	'common.gameOver': 'Spel voorbij!',
 	'common.yourScore': 'Jouw score:',
+	'common.maxScore': 'Maximum in dit spel',
 
 	// Bijschriften van de pictogramknoppen in de kopbalk: geen tekst op het
 	// scherm, maar wat een schermlezer voorleest — precies daarom horen ze in het

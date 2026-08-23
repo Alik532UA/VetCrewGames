@@ -1,15 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
-import {
-	BIN,
-	buildFeedingRound,
-	correctTarget,
-	getNextFeedingSet,
-	type FeedingRound,
-	type Food,
-	type Target
-} from '$lib/config/feeding-game';
+import { BIN, buildFeedingRound, correctTarget, FOODS_PER_ROUND, getNextFeedingSet, type FeedingRound, type Food, type Target } from '$lib/config/feeding-game';
 import { settings } from '$lib/services/settings.svelte';
-import { roundPoints } from '$lib/config/scoring';
+import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
 /**
@@ -82,8 +74,21 @@ export class FeedingGameController {
 		return this.round?.foods.length ?? 3;
 	}
 
+	/**
+	 * Максимум за партію.
+	 *
+	 * Було `totalRounds * 3` — і це занижувало його на десять балів: складений
+	 * раунд дає ще й `PERFECT_BONUS` за відповідь без жодної помилки, тобто
+	 * 3 + 1 = 4 за раунд, а не 3. Тепер число бере `maxSessionPoints`, і надбавка
+	 * враховується сама.
+	 *
+	 * Страв у раунді завжди три — перевірено по `config/feeding-game.ts`: усі
+	 * десять раундів мають рівно три `foodIds`. Якщо колись з’явиться раунд
+	 * іншого розміру, це число стане неправильним, і саме тому воно виводиться
+	 * з `FOODS_PER_ROUND`, а не вписане цифрою.
+	 */
 	get maxScore(): number {
-		return this.totalRounds * 3;
+		return maxSessionPoints(FOODS_PER_ROUND, this.totalRounds);
 	}
 
 	/** Страви, які ще лежать «на столі». */
