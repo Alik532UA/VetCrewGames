@@ -58,6 +58,9 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	// (у формі входу — у блок «хто я»). Поле `<select>` свій фон має; підпис
 	// над ним — ні, і саме його бачить ця перевірка.
 	'src/lib/components/ui/CountryPicker.svelte': 'вибір країни, фон дає панель-господар',
+	// Набір ігор кладуть у панель `.quiz-online__games.text-panel` — і у формі
+	// входу, і в лобі. Свій фон тут був би панеллю на панелі.
+	'src/lib/components/quiz/QuizGamePicker.svelte': 'набір ігор, фон дає .quiz-online__games',
 	'src/lib/components/ErrorFallback.svelte': 'екран помилки — суцільна картка',
 	// Панелі заповідника малюються ЛИШЕ всередині `BottomSheet`, і фон дає він.
 	// Свій фон тут був би панеллю на панелі — двома шарами того самого кольору

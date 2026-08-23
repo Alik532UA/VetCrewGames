@@ -17,5 +17,9 @@
 </script>
 
 <div class="menu-page">
-	<ModeMenu playHref={langPath(lang, 'quiz/play')} testId="quiz" />
+	<ModeMenu
+		playHref={langPath(lang, 'quiz/play')}
+		onlineHref={langPath(lang, 'quiz/online')}
+		testId="quiz"
+	/>
 </div>

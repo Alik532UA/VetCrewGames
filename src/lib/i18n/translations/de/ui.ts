@@ -13,6 +13,13 @@ export const ui = {
 	'menu.game.random': 'Zufälliges Spiel',
 	'menu.reserve': 'Schutzgebiet',
 	'menu.quiz': 'Quiz',
+	'quiz.gamesInRoom': 'Spiele in diesem Raum',
+	'quiz.gamesLast': 'Mindestens ein Spiel muss bleiben',
+	'quiz.otherGame': 'Dieser Raum ist für ein anderes Spiel.',
+	'quiz.waitingOthers': 'Sie sind fertig. Warten auf die anderen.',
+	'quiz.finished': 'fertig',
+	'quiz.unknownGame': 'Dieses Spiel kommt aus einer neueren Version. Seite neu laden.',
+	'quiz.skipStep': 'Überspringen',
 
 	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —
 	// nur das Ziel von „Spielen“ unterscheidet sich.

@@ -10,11 +10,10 @@
 	import { layoutForViewport } from '$lib/config/memory-game';
 	import { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
+	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
-	import type { LobbyRoom } from '$lib/net/lobby';
-	import type { OwnRoom } from '$lib/net/ownRooms';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 
@@ -93,27 +92,16 @@
 	 * Приватність — вибір для того, хто грає з конкретною людиною.
 	 */
 	let isPrivate = $state(false);
-	/** Перелік відкритих кімнат. Порожній і поки не підписалися, і коли їх немає. */
-	let rooms = $state<LobbyRoom[]>([]);
-	/** Чи лишилося щось за межею запиту: обрізку треба показати, а не сховати. */
-	let roomsHasMore = $state(false);
 	/**
-	 * Перелік не читається — майже завжди «правила ще не викладені».
+	 * Перелік кімнат і свої партії — СПІЛЬНИЙ контролер із «Вікториною».
 	 *
-	 * Окремо від «кімнат немає»: порожній список і недоступний список — різні
-	 * повідомлення, і друге не мусить читатися як перше.
+	 * Доти тут стояли чотири поля стану й дві підписки, і рівно те саме стояло
+	 * на другій сторінці спільної гри. Сорок рядків, які розійшлися б на першій
+	 * же правці — і розійшлися б непомітно: кожна копія виглядала б правильною
+	 * окремо. Чому саме перелік винесено першим і що з боргу лишилося —
+	 * у докблоці `controllers/lobbyFeed.svelte.ts`.
 	 */
-	let roomsUnavailable = $state(false);
-	/**
-	 * Партії, які вже йдуть і до яких я належу.
-	 *
-	 * Окремо від `rooms` навмисно: у переліку лежить те, куди можна ЗАЙТИ, а це —
-	 * те, куди можна ВЕРНУТИСЯ. Джерела теж різні: перелік читається з `lobby`,
-	 * спільної гілки, а ці — з мого приватного індексу `myRooms/{uid}`. Змішати
-	 * їх в одному масиві означало б або показати чужі розпочаті партії, або
-	 * приховати свою.
-	 */
-	let ownRooms = $state<OwnRoom[]>([]);
+	const lobby = new LobbyFeed();
 	/** Зняти свою кімнату з переліку. `null`, якщо вона закрита або вже знята. */
 	let unlist: (() => void) | null = null;
 	let me = $state('');
@@ -177,7 +165,7 @@
 	 * Цього досить для задачі, яку ставив автор: збіг помітний саме там, де імена
 	 * стоять поруч у списку.
 	 */
-	const takenNames = $derived(rooms.map((room) => room.hostName));
+	const takenNames = $derived(lobby.takenNames);
 
 
 
@@ -426,7 +414,7 @@
 	async function quickGame() {
 		if (busy) return;
 
-		const free = rooms
+		const free = lobby.rooms
 			.filter(
 				(room) =>
 					room.gameId === 'pairs' &&
@@ -617,49 +605,10 @@
 	 */
 	$effect(() => {
 		if (!browser || match) return;
-
-		let stop: (() => void) | null = null;
-		let dead = false;
-
-		void (async () => {
-			try {
-				const list = await import('$lib/net/lobby');
-				const off = await list.watchLobby({
-					onRooms: (next, more) => {
-						rooms = next;
-						roomsHasMore = more;
-						roomsUnavailable = false;
-						/*
-						 * Тут, а не в `$effect`: імʼя підставляється в `onMount`, тобто ДО
-						 * приїзду переліку, і ефект, що читає й пише те саме `name`,
-						 * довелося б стерегти від самозапуску. Умови «чиє це імʼя» живуть у
-						 * `playerName.ts`, і `null` означає «не чіпати».
-						 */
-						player.settle(next.map((room) => room.hostName));
-					},
-					// Порожній список і недоступний список — РІЗНІ повідомлення. Доти
-					// друге виглядало як перше, тобто «правила не викладені» читалося
-					// як «ніхто не створив кімнату».
-					onUnavailable: () => {
-						rooms = [];
-						roomsHasMore = false;
-						roomsUnavailable = true;
-					}
-				});
-				// Ефект міг зникнути, поки йшов імпорт і вхід: тоді підписку треба
-				// знімати одразу, інакше вона живе довше за сторінку.
-				if (dead) off();
-				else stop = off;
-			} catch (error) {
-				roomsUnavailable = true;
-				logService.warn('network', 'lobby subscription failed', { error: String(error) });
-			}
-		})();
-
-		return () => {
-			dead = true;
-			stop?.();
-		};
+		// Імʼя перекидається ТУТ, бо підставляється воно в `onMount` — тобто до
+		// приїзду переліку. Ефект, що читає й пише те саме поле, довелося б
+		// стерегти від самозапуску; умови «чиє це імʼя» живуть у `playerName.ts`.
+		return lobby.watch((names) => player.settle(names));
 	});
 
 	/**
@@ -680,19 +629,7 @@
 	 */
 	$effect(() => {
 		if (!browser || match) return;
-
-		let dead = false;
-		void (async () => {
-			const own = await import('$lib/net/ownRooms');
-			// `listOwnRooms` не кидає: це довідка, і її відсутність лишає сторінку
-			// такою, якою вона була до появи цього рядка.
-			const found = await own.listOwnRooms();
-			if (!dead) ownRooms = found;
-		})();
-
-		return () => {
-			dead = true;
-		};
+		return lobby.load();
 	});
 
 	/**
@@ -865,10 +802,10 @@
 					на місці — форма й далі перевіряється без бази.
 				-->
 				<RoomList
-					{rooms}
-					resume={ownRooms}
-					hasMore={roomsHasMore}
-					unavailable={roomsUnavailable}
+					rooms={lobby.rooms}
+					resume={lobby.own}
+					hasMore={lobby.hasMore}
+					unavailable={lobby.unavailable}
 					{busy}
 					onEnter={(chosen) => {
 						joinCode = chosen;

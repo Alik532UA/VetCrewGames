@@ -13,6 +13,13 @@ export const ui = {
 	'menu.game.random': 'Random game',
 	'menu.reserve': 'Reserve',
 	'menu.quiz': 'Quiz',
+	'quiz.gamesInRoom': 'Games in this room',
+	'quiz.gamesLast': 'At least one game must stay on',
+	'quiz.otherGame': 'That room is for a different game.',
+	'quiz.waitingOthers': 'You are done. Waiting for the others.',
+	'quiz.finished': 'done',
+	'quiz.unknownGame': 'This game comes from a newer version. Reload the page.',
+	'quiz.skipStep': 'Skip',
 
 	// The three items are the same for the quiz and for "Find a pair" — only
 	// where "Play" leads differs.
