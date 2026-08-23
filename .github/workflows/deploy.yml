@@ -167,8 +167,68 @@ jobs:
       # причину в scripts/firebase-cli.mjs: його транзитивна залежність
       # `superstatic` не приймає сучасний Node, а в проєкті стоїть
       # `engine-strict=true`, тож devDependency ламала б `npm install` цілком.
+      # ШТАМП ВЕРСІЇ звіряється ПЕРЕД емулятором, бо він не потребує нічого:
+      # два файли й хеш. Порядок не косметика — якщо штамп відстав, решта прогону
+      # вже не важлива: правила, які виїдуть у продакшн, будуть іншими за ті, що
+      # перевірив емулятор.
+      - name: Rules stamp matches rules content
+        run: npm run rules:stamp:check
+
       - name: Check database rules
         run: npm run check:rules
+
+  # ВИКЛАДАННЯ ПРАВИЛ, і воно тут окремим джобом із трьох причин.
+  #
+  # ПЕРША: доти правила викладалися РУКАМИ — копіюванням файлу в консоль
+  # Firebase. Наслідок був заміряний, а не гіпотетичний: 2026-08-23 зонд проти
+  # живої бази показав, що в продакшні діє інша редакція, ніж у git, і через це
+  # не працював список публічних кімнат. Тобто гейт на емуляторі був зелений, а
+  # база жила за іншими правилами.
+  #
+  # ДРУГА: `needs: rules` обов'язковий. Викласти правила, які не пройшли
+  # емулятор, гірше, ніж не викласти нічого: у продакшн поїхала б редакція, яку
+  # ніхто не перевіряв.
+  #
+  # ТРЕТЯ: `if` на `main`. Правила — спільний ресурс проєкту Firebase, і гілка,
+  # яку ще обговорюють, не має права їх переписати.
+  #
+  # ПІСЛЯ викладання — ЗОНД. Без нього «деплой зелений» означало б лише «команда
+  # не впала»: `firebase deploy` рапортує успіх і тоді, коли виклав не те, що
+  # думав автор (не той проєкт, не та гілка конфігу). Зонд входить анонімно
+  # публічним ключем і читає `/__rulesVersion/<штамп>` — тобто перевіряє тим самим
+  # шляхом, яким ходить відвідувач. Сервісний акаунт для цього не годиться: його
+  # токен обходить правила цілком, і зонд завжди казав би «викладено».
+  rules_deploy:
+    needs: rules
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Сервісний акаунт — єдиний секрет, який ця робота вимагає. Створити:
+      # Firebase Console → Project settings → Service accounts → Generate new
+      # private key, і вміст JSON покласти в секрет FIREBASE_SERVICE_ACCOUNT.
+      - name: Deploy database rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+        run: |
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$GOOGLE_APPLICATION_CREDENTIALS"
+          npm run rules:deploy
+          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      # Перевірка ПІСЛЯ викладання: чи справді в базі тепер та редакція.
+      - name: Verify deployed rules
+        run: npm run check:rules:live
 
   deploy:
     needs: build_site

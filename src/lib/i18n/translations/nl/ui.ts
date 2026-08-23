@@ -184,5 +184,11 @@ export const ui = {
 	'beta.copied': 'Rapport gekopieerd',
 	'beta.clear': 'Markeringen wissen',
 	'beta.copyFailed':
-		'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.'
+		'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.',
+	'beta.rulesTitle': 'Toegangsregels van de database',
+	'beta.rulesCheck': 'Controleren',
+	'beta.rulesChecking': 'De database vragen…',
+	'beta.rulesFresh': 'De uitgerolde versie hoort bij deze build',
+	'beta.rulesStale': 'De database gebruikt een ANDERE versie — deze build is nog niet uitgerold',
+	'beta.rulesUnknown': 'Niet te bepalen: geen netwerk of database onbereikbaar',
 } as const;

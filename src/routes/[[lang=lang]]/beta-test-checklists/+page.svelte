@@ -8,6 +8,7 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { logService } from '$lib/services/logService.svelte';
+	import { RULES_VERSION } from '$lib/net/rulesVersion';
 	import { betaProgress } from '$lib/services/betaProgress.svelte';
 	import { buildBetaReport } from '$lib/services/betaReport';
 	import { BETA_TABS, sortedChecks, type Coverage } from '$lib/config/betaChecks';
@@ -80,6 +81,28 @@
 	 * де вкладка була не у фокусі.
 	 */
 	let fallback = $state('');
+
+	/**
+	 * ЧИ ВИКЛАДЕНІ В БАЗІ ТІ САМІ ПРАВИЛА, ЩО В ЦІЙ ЗБІРЦІ.
+	 *
+	 * Рядок тут, а не в шапці й не в тості, бо це діагностика, а не стан гри: його
+	 * шукають рівно тоді, коли щось у мережевій частині поводиться незрозуміло.
+	 *
+	 * НА ВИМОГУ, а не при відкритті: читання вимагає авторизації, а вхід анонімний
+	 * — тобто автоматична перевірка заводила б обліковий запис Firebase кожному,
+	 * хто просто відкрив цю сторінку. Кнопка лишає рішення людині.
+	 */
+	let rulesState = $state<'idle' | 'checking' | 'fresh' | 'stale' | 'unknown'>('idle');
+	let rulesStamp = $state('');
+
+	async function checkRules() {
+		if (rulesState === 'checking') return;
+		rulesState = 'checking';
+		const { checkLiveRules } = await import('$lib/net/rulesLive');
+		const result = await checkLiveRules();
+		rulesStamp = result.stamp;
+		rulesState = result.state;
+	}
 
 	async function copyReport() {
 		const report = buildBetaReport(betaProgress.marks, {
@@ -156,6 +179,45 @@
 			</section>
 		{/if}
 	{/each}
+
+	<!--
+		ПРАВИЛА ДОСТУПУ — окремий рядок, бо це єдине, чого не видно ні з коду, ні зі
+		збірки: вони виконуються на боці Firebase, а викладає їх людина.
+
+		Заміряно 2026-08-23: у продакшні діяла інша редакція, ніж у git, і через це
+		не працював список публічних кімнат — а сторінка казала лише «перелік
+		недоступний», не називаючи причини. Тепер причину видно одним словом.
+	-->
+	<section class="rules-state text-panel">
+		<h2 class="rules-state__title">{@html formatFont(t('beta.rulesTitle'))}</h2>
+		<p class="rules-state__line" data-testid="beta-rules-state-text">
+			{#if rulesState === 'idle'}
+				<code class="rules-state__stamp">{RULES_VERSION}</code>
+			{:else if rulesState === 'checking'}
+				{@html formatFont(t('beta.rulesChecking'))}
+			{:else}
+				{@html formatFont(
+					t(
+						rulesState === 'fresh'
+							? 'beta.rulesFresh'
+							: rulesState === 'stale'
+								? 'beta.rulesStale'
+								: 'beta.rulesUnknown'
+					)
+				)}
+				<code class="rules-state__stamp">{rulesStamp}</code>
+			{/if}
+		</p>
+		<button
+			type="button"
+			class="action"
+			onclick={checkRules}
+			aria-disabled={rulesState === 'checking'}
+			data-testid="beta-rules-check-btn"
+		>
+			{@html formatFont(t('beta.rulesCheck'))}
+		</button>
+	</section>
 
 	<div class="actions">
 		<button type="button" class="action" onclick={copyReport} data-testid="beta-report-btn">
@@ -259,6 +321,41 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
+	}
+
+	/*
+	 * Смуга стану правил. Тло дає `.text-panel` — свого тут навмисно немає, як і в
+	 * решти діагностичних блоків цієї сторінки.
+	 */
+	.rules-state {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--space-sm);
+		width: 100%;
+		max-width: 46rem;
+		margin: 0 auto;
+	}
+
+	.rules-state__title {
+		margin: 0;
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-bold);
+		text-transform: uppercase;
+	}
+
+	.rules-state__line {
+		margin: 0;
+		font-size: var(--font-size-sm);
+	}
+
+	/* Штамп — код, і читається він по знаках: рівна ширина обов'язкова. */
+	.rules-state__stamp {
+		font-family: ui-monospace, monospace;
+		font-variant-numeric: tabular-nums;
+		padding: 0 4px;
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--color-text), transparent 90%);
 	}
 
 	.actions {

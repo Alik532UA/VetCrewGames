@@ -20,6 +20,8 @@
  * неможливий випадково (CLOUD-DATABASE-v8 § 3.1).
  */
 
+import { readFile } from 'node:fs/promises';
+
 const DB_HOST = process.env.FIREBASE_DATABASE_EMULATOR_HOST ?? '127.0.0.1:9010';
 const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '127.0.0.1:9109';
 const PROJECT = process.env.GCLOUD_PROJECT ?? 'demo-vet-crew-games';
@@ -67,6 +69,17 @@ async function read(path, token) {
 	const auth = token ? `&auth=${token}` : '';
 	return (await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}${auth}`)).status;
 }
+
+/**
+ * Штамп версії правил — читається З ФАЙЛУ, а не вписується сюди числом.
+ *
+ * Власна копія штампа в тесті означала б два джерела: після `npm run
+ * rules:stamp` вони розійшлися б, і гейт червонів би на правильних правилах.
+ */
+const RULES_STAMP = /\$v === '([0-9a-f]+)'/.exec(
+	await readFile('database.rules.json', 'utf8')
+)?.[1];
+if (!RULES_STAMP) throw new Error('у database.rules.json немає блока __rulesVersion');
 
 const host = await signIn('господар');
 const guest = await signIn('гість');
@@ -187,6 +200,14 @@ const CASES = [
 		name: 'господар читає свій індекс кімнат',
 		allowed: true,
 		run: () => read(`myRooms/${host.uid}`, host.token)
+	},
+	{
+		// Саме на цьому дозволі й тримається перевірка «чи викладені правила»:
+		// відповідь «дозволено» на очікуваний штамп і є версією. Даних за шляхом
+		// немає — правила оцінюються ДО існування вузла.
+		name: 'зонд версії пускає ОЧІКУВАНИЙ штамп',
+		allowed: true,
+		run: () => read(`__rulesVersion/${RULES_STAMP}`, guest.token)
 	},
 	{
 		name: 'господар публікує СВОЮ кімнату в переліку',
@@ -328,6 +349,25 @@ const CASES = [
 		name: 'запис у переліку без обовʼязкових полів',
 		allowed: false,
 		run: () => write(`lobby/${CODE}`, { hostUid: host.uid }, host.token)
+	},
+	{
+		// Якби пускало будь-який штамп, зонд завжди казав би «викладено» — тобто
+		// перевірка була б гіршою за відсутню: вона брехала б у бік «усе гаразд».
+		name: 'зонд версії НЕ пускає чужий штамп',
+		allowed: false,
+		run: () => read('__rulesVersion/deadbeefdead', guest.token)
+	},
+	{
+		// Перелічити гілку не можна: інакше штамп можна було б ВИЧИТАТИ з бази, і
+		// зонд перетворився б із перевірки на підказку.
+		name: 'перелічити гілку зонда версії',
+		allowed: false,
+		run: () => read('__rulesVersion', guest.token)
+	},
+	{
+		name: 'зонд версії для неавторизованого',
+		allowed: false,
+		run: () => read(`__rulesVersion/${RULES_STAMP}`, null)
 	},
 	{
 		name: 'чужа присутність',

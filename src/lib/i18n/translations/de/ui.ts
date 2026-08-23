@@ -186,5 +186,11 @@ export const ui = {
 	'beta.copied': 'Bericht kopiert',
 	'beta.clear': 'Markierungen löschen',
 	'beta.copyFailed':
-		'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.'
+		'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.',
+	'beta.rulesTitle': 'Zugriffsregeln der Datenbank',
+	'beta.rulesCheck': 'Prüfen',
+	'beta.rulesChecking': 'Frage die Datenbank…',
+	'beta.rulesFresh': 'Die veröffentlichte Fassung passt zu diesem Build',
+	'beta.rulesStale': 'In der Datenbank gilt eine ANDERE Fassung — dieser Build ist nicht veröffentlicht',
+	'beta.rulesUnknown': 'Nicht feststellbar: kein Netz oder Datenbank nicht erreichbar',
 } as const;

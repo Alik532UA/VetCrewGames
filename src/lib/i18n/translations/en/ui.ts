@@ -182,5 +182,11 @@ export const ui = {
 	'beta.copy': 'Copy the report',
 	'beta.copied': 'Report copied',
 	'beta.clear': 'Clear the marks',
-	'beta.copyFailed': 'The browser refused to copy it. Select the text below and copy it by hand.'
+	'beta.copyFailed': 'The browser refused to copy it. Select the text below and copy it by hand.',
+	'beta.rulesTitle': 'Database access rules',
+	'beta.rulesCheck': 'Check',
+	'beta.rulesChecking': 'Asking the database…',
+	'beta.rulesFresh': 'The deployed revision matches this build',
+	'beta.rulesStale': 'The database runs a DIFFERENT revision — this build is not deployed yet',
+	'beta.rulesUnknown': 'Could not tell: no network, or the database is unreachable',
 } as const;

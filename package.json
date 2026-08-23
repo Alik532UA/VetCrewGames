@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.295",
+	"version": "0.6.296",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -15,6 +15,10 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:build": "node scripts/check-build.mjs",
 		"check:i18n": "npx tsx scripts/check-translations.ts",
+		"rules:stamp": "node scripts/rules-stamp.mjs",
+		"rules:stamp:check": "node scripts/rules-stamp.mjs --check",
+		"check:rules:live": "node scripts/check-rules-live.mjs",
+		"rules:deploy": "node scripts/firebase-cli.mjs deploy --only database --project vet-crew-games",
 		"check:rules": "node scripts/firebase-cli.mjs emulators:exec --project demo-vet-crew-games --only database,auth \"node scripts/check-rules.mjs\"",
 		"emulators": "node scripts/firebase-cli.mjs emulators:start --project demo-vet-crew-games --only database,auth",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
