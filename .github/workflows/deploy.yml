@@ -24,13 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Версія збігається з `engines.node` у package.json і з .nvmrc
       # (DEPENDENCIES-v8 § 2.3). Було 20 — а Node 20 вийшов з підтримки
       # 30.04.2026, тобто CI збирав продакшн на рантаймі без оновлень безпеки.
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -68,7 +68,7 @@ jobs:
       # `playwright install` без кешу качає ~130 МБ щоразу.
       - name: Cache Playwright browsers
         if: ${{ !cancelled() }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
@@ -121,7 +121,7 @@ jobs:
         run: npx @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs
 
       - name: Upload Artifacts
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: 'build/'
 
@@ -139,10 +139,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -150,7 +150,7 @@ jobs:
       # Емулятор Realtime Database — java-процес. Без цього кроку `emulators:exec`
       # падає з «java not found», і це виглядає як зламані правила.
       - name: Install Java for the database emulator
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -207,10 +207,10 @@ jobs:
     permissions: {}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -288,4 +288,4 @@ jobs:
     steps:
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
