@@ -17,7 +17,6 @@ export const ui = {
 	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen
 	// waar „Spelen” heen leidt verschilt.
 	'menu.play': 'Spelen',
-	'menu.playWithFriends': 'Met vrienden spelen',
 	'menu.playOnline': 'Online spelen',
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
@@ -71,30 +70,6 @@ export const ui = {
 
 	// Teamnamen: bijvoeglijk naamwoord + dier. HELE zinnen; bij het-woorden zonder
 	// lidwoord blijft het adjectief onverbogen — zie `config/crewNames.ts`.
-	'pairs.crew1': 'Vrolijke Koe',
-	'pairs.crew2': 'Slimme Vos',
-	'pairs.crew3': 'Slaperige Beer',
-	'pairs.crew4': 'Beleefde Pinguïn',
-	'pairs.crew5': 'Wijze Uil',
-	'pairs.crew6': 'Stekelige Egel',
-	'pairs.crew7': 'Rustige Capibara',
-	'pairs.crew8': 'Luie Panda',
-	'pairs.crew9': 'Dappere Mier',
-	'pairs.crew10': 'Stille Kat',
-	'pairs.crew11': 'Luide Papegaai',
-	'pairs.crew12': 'Aardige Olifant',
-	'pairs.crew13': 'Oplettende Valk',
-	'pairs.crew14': 'Geduldige Schildpad',
-	'pairs.crew15': 'Blije Dolfijn',
-	'pairs.crew16': 'Pluizige Maki',
-	'pairs.crew17': 'Trotse Leeuw',
-	'pairs.crew18': 'Kwebbelende Kraai',
-	'pairs.crew19': 'Springende Kangoeroe',
-	'pairs.crew20': 'Glanzende Pauw',
-	'pairs.crew21': 'Onhandig Nijlpaard',
-	'pairs.crew22': 'Aandachtig Hert',
-	'pairs.crew23': 'Grappige Kikker',
-	'pairs.crew24': 'Grimmige Wolf',
 	'menu.comingSoon': 'Nog in ontwikkeling',
 	'menu.game.population': 'Wie komt vaker voor?',
 	'menu.game.habitat': 'Waar wonen ze?',

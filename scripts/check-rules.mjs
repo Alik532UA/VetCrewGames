@@ -397,10 +397,13 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/status`, 'winner', host.token)
 	},
 	{
-		name: "імʼя довше за 24 символи",
+		// Межу підняли з 24 до 48, і випадок мусив піти за нею: на 25 символах він
+		// тепер стверджував би заборону, якої вже немає, — тобто зеленів би на
+		// протилежному правилі.
+		name: "імʼя довше за 48 символів",
 		allowed: false,
 		run: () =>
-			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, name: 'я'.repeat(25) }, guest.token)
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, name: 'я'.repeat(49) }, guest.token)
 	},
 	{
 		name: 'рядок складу без обовʼязкових полів',

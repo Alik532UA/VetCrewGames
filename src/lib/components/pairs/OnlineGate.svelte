@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Dices, Zap } from 'lucide-svelte';
-	import { t, td, formatFont } from '$lib/i18n';
-	import { randomCrewName } from '$lib/config/crewNames';
+	import { t, formatFont } from '$lib/i18n';
 	import InputTools from '$lib/components/ui/InputTools.svelte';
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
 
@@ -39,6 +38,15 @@
 		isPrivate: boolean;
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
+		/**
+		 * Кубик: підставити інше імʼя.
+		 *
+		 * Робить це СТОРІНКА, а не компонент, і причина не в шаруванні: словник імен
+		 * тепер довантажується окремим чанком (`i18n/crew`), а форма про
+		 * завантаження нічого не знає й знати не мусить. Заразом сюда перестав
+		 * протікати перелік зайнятих імен — він теж із мережі.
+		 */
+		onRandomName: () => void;
 		onCreate: () => void;
 		onJoin: () => void;
 		/**
@@ -60,6 +68,7 @@
 		joinCode = $bindable(),
 		isPrivate = $bindable(),
 		busy,
+		onRandomName,
 		onCreate,
 		onJoin,
 		onQuickGame,
@@ -132,7 +141,7 @@
 					type="text"
 					bind:this={nameInput}
 					bind:value={name}
-					maxlength="24"
+					maxlength="48"
 					placeholder={t('memory.you')}
 					data-testid="pairs-name-input"
 				/>
@@ -159,13 +168,18 @@
 
 				Імʼя й далі підставляється саме, тож вигадувати його не мусять; кубик
 				існує для того, кому підставлене не сподобалося, і віддає ГАРАНТОВАНО
-				інше — інакше один кидок із двадцяти чотирьох виглядав би як зламана
+				інше — інакше один кидок із вісімдесяти шести виглядав би як зламана
 				кнопка.
+
+				ЗАЙНЯТІ ІМЕНА ТЕЖ ВИКЛЮЧАЮТЬСЯ, але вирішує це сторінка: перелік тих,
+				хто вже онлайн, приходить із мережі. Кидок, що віддав уже видане імʼя,
+				технічно правильний і практично шкідливий — два однакових рядки в
+				списку роблять неможливим вибір «до кого зайти».
 			-->
 			<button
 				type="button"
 				class="gate__dice"
-				onclick={() => (name = randomCrewName(td, Math.random, name.trim()))}
+				onclick={onRandomName}
 				aria-label={t('pairs.otherName')}
 				data-testid="pairs-name-random-btn"
 			>

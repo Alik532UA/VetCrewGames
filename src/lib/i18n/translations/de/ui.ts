@@ -17,7 +17,6 @@ export const ui = {
 	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —
 	// nur das Ziel von „Spielen“ unterscheidet sich.
 	'menu.play': 'Spielen',
-	'menu.playWithFriends': 'Mit Freunden spielen',
 	'menu.playOnline': 'Online spielen',
 
 	// Gemeinsame Runde von Finde ein Paar: Lobby, Rolle, Zug.
@@ -71,30 +70,6 @@ export const ui = {
 
 	// Team-Namen: Adjektiv + Tier. GANZE Phrasen; starke Deklination ohne Artikel
 	// (m -er, f -e, n -es) — siehe `config/crewNames.ts`.
-	'pairs.crew1': 'Fröhliche Kuh',
-	'pairs.crew2': 'Schlauer Fuchs',
-	'pairs.crew3': 'Schläfriger Bär',
-	'pairs.crew4': 'Höflicher Pinguin',
-	'pairs.crew5': 'Weise Eule',
-	'pairs.crew6': 'Stacheliger Igel',
-	'pairs.crew7': 'Ruhiges Wasserschwein',
-	'pairs.crew8': 'Fauler Panda',
-	'pairs.crew9': 'Tapfere Ameise',
-	'pairs.crew10': 'Stille Katze',
-	'pairs.crew11': 'Lauter Papagei',
-	'pairs.crew12': 'Netter Elefant',
-	'pairs.crew13': 'Wachsamer Falke',
-	'pairs.crew14': 'Geduldige Schildkröte',
-	'pairs.crew15': 'Munterer Delfin',
-	'pairs.crew16': 'Flauschiger Lemur',
-	'pairs.crew17': 'Stolzer Löwe',
-	'pairs.crew18': 'Schwatzhafte Krähe',
-	'pairs.crew19': 'Springendes Känguru',
-	'pairs.crew20': 'Glänzender Pfau',
-	'pairs.crew21': 'Tapsiges Flusspferd',
-	'pairs.crew22': 'Aufmerksamer Hirsch',
-	'pairs.crew23': 'Lustiger Frosch',
-	'pairs.crew24': 'Grimmiger Wolf',
 	'menu.comingSoon': 'Noch in Arbeit',
 	'menu.game.population': 'Wer ist häufiger?',
 	'menu.game.habitat': 'Wo leben sie?',

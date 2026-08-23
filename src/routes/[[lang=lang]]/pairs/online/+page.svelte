@@ -2,7 +2,6 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { storage } from '$lib/services/storage';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
@@ -10,9 +9,8 @@
 	import { logService } from '$lib/services/logService.svelte';
 	import { layoutForViewport } from '$lib/config/memory-game';
 	import { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
-	import { td } from '$lib/i18n';
-	import { randomCrewName } from '$lib/config/crewNames';
-	import type { Role } from '$lib/net/roomTypes';
+	import { PlayerName } from '$lib/controllers/playerName.svelte';
+	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import type { LobbyRoom } from '$lib/net/lobby';
@@ -79,7 +77,14 @@
 	let match = $state<PairsMatch | null>(null);
 	let code = $state('');
 	let joinCode = $state('');
-	let name = $state('');
+	/**
+	 * Підпис гравця — окремий контролер.
+	 *
+	 * Тут зійшлися збережений вибір людини, підставлене нами імʼя,
+	 * довантажуваний словник імен і перелік уже зайнятих. Розсипані по
+	 * сторінці, вони давали три місця, кожне з яких могло переписати поле.
+	 */
+	const player = new PlayerName(Math.random);
 	/**
 	 * Чи ховати створювану кімнату зі списку.
 	 *
@@ -131,23 +136,32 @@
 	const amHost = $derived(Boolean(me) && match?.hostUid === me);
 
 	/**
-	 * Імʼя за замовчуванням: людину не мусять просити його вигадати.
+	 * Словник імен ДОВАНТАЖУЄТЬСЯ, тож ефект стежить за мовою.
 	 *
-	 * Було `` `${t('memory.you')} ${Math.floor(Math.random() * 900 + 100)}` `` —
-	 * «Ти 417». У лобі стоять двоє, і обидва «Ти» з різними числами: підпис не
-	 * називав нікого. Тепер це готова фраза зі списку команди — чому саме такий
-	 * список і чому фрази цілі, написано в `config/crewNames.ts`.
+	 * Причина винесення словника з основного — у `i18n/crew/index.ts`: 86 імен
+	 * на кожну з чотирьох мов важили 3 КБ gzip у першому payload КОЖНОГО
+	 * відвідувача, а читає їх рівно ця сторінка.
 	 */
-	const guessName = () => randomCrewName(td, Math.random);
+	$effect(() => {
+		void player.load(settings.locale, takenNames);
+	});
 
 	/**
-	 * Імʼя пам'ятається між заходами.
+	 * Імена, уже видані тим, хто зараз онлайн.
 	 *
-	 * Не зручність: сторінка заходить у кімнату заново після перезавантаження, і без
-	 * збереженого імені гравець перетворювався б на «Ти 417» — сам для себе й для
-	 * суперника, посеред партії.
+	 * Джерело — перелік кімнат: це ЄДИНЕ, що клієнт знає про інших до входу в
+	 * кімнату. Тобто це підписи господарів відкритих кімнат, а не всіх людей у
+	 * грі, — і межа названа навмисно, бо решти клієнт не бачить і не має права
+	 * бачити: `presence` живе під кодом кімнати, а перелічити `rooms` правила
+	 * забороняють.
+	 *
+	 * Цього досить для задачі, яку ставив автор: збіг помітний саме там, де імена
+	 * стоять поруч у списку.
 	 */
-	const NAME_KEY = 'pairs.name';
+	const takenNames = $derived(rooms.map((room) => room.hostName));
+
+
+
 
 	/**
 	 * Код кімнати живе в АДРЕСІ, а не лише в памʼяті.
@@ -184,8 +198,7 @@
 		busy = true;
 		try {
 			const net = await import('$lib/net/rtdbRoom');
-			const who = name.trim() || guessName();
-			storage.set(NAME_KEY, who);
+			const who = player.forEntry(takenNames);
 			const layout = layoutForViewport();
 
 			if (action === 'create') {
@@ -371,7 +384,7 @@
 	async function setRole(role: Role) {
 		if (!match || match.status !== 'lobby') return;
 		const net = await import('$lib/net/rtdbRoom');
-		await net.joinRoom(code, name.trim() || guessName(), role);
+		await net.joinRoom(code, player.forEntry(takenNames), role);
 	}
 
 	async function start() {
@@ -456,17 +469,26 @@
 		}
 	}
 
-	/** Нова партія в тій самій кімнаті. Роздає господар: зерно одне на всіх. */
-	async function rematch() {
+	/**
+	 * Дія господаря над кімнатою — ОДИН каркас на всі.
+	 *
+	 * `rematch` і `switchAutoStart` повторювали той самий набір: перевірити, що я
+	 * господар, підвантажити транспорт, зловити помилку й сказати про неї. Повтор
+	 * дорогий не рядками, а тим, що `catch` легко забути в наступній копії — і
+	 * кнопка змовчить, як уже змовчала одного разу «Зіграти ще».
+	 */
+	async function hostAction(run: (transport: RoomTransport) => Promise<void>) {
 		if (!match || !amHost) return;
 		try {
 			const net = await import('$lib/net/rtdbRoom');
-			const transport = await net.roomTransport(code);
-			await transport.restart(Math.floor(Math.random() * 2 ** 31));
+			await run(await net.roomTransport(code));
 		} catch (error) {
 			hostActionFailed(error);
 		}
 	}
+
+	/** Нова партія в тій самій кімнаті. Роздає господар: зерно одне на всіх. */
+	const rematch = () => hostAction((t) => t.restart(Math.floor(Math.random() * 2 ** 31)));
 
 	/**
 	 * Дія господаря не вдалася — і людина мусить про це почути.
@@ -539,6 +561,13 @@
 						rooms = next;
 						roomsHasMore = more;
 						roomsUnavailable = false;
+						/*
+						 * Тут, а не в `$effect`: імʼя підставляється в `onMount`, тобто ДО
+						 * приїзду переліку, і ефект, що читає й пише те саме `name`,
+						 * довелося б стерегти від самозапуску. Умови «чиє це імʼя» живуть у
+						 * `playerName.ts`, і `null` означає «не чіпати».
+						 */
+						player.settle(next.map((room) => room.hostName));
 					},
 					// Порожній список і недоступний список — РІЗНІ повідомлення. Доти
 					// друге виглядало як перше, тобто «правила не викладені» читалося
@@ -696,15 +725,7 @@
 	 * транспорт одним записом (див. `setAutoStart` у `net/rtdbRoom.ts`), щоб не
 	 * було миті, коли режим уже «підтвердження», а таймер ще доходить до нуля.
 	 */
-	async function switchAutoStart(on: boolean) {
-		if (!match || !amHost) return;
-		try {
-			const net = await import('$lib/net/rtdbRoom');
-			await (await net.roomTransport(code)).setAutoStart(on);
-		} catch (error) {
-			hostActionFailed(error);
-		}
-	}
+	const switchAutoStart = (on: boolean) => hostAction((t) => t.setAutoStart(on));
 
 	/** Кнопка «забрати чергу» існує лише коли межа вже вийшла. */
 	const canTakeTurn = $derived(Boolean(match?.canYieldAt(clock)));
@@ -731,7 +752,6 @@
 		 * тут лише для того, щоб суперник розумів, хто ходить. Кому підставлене не
 		 * до душі, той натисне кубик або впише своє.
 		 */
-		name = storage.get(NAME_KEY) ?? randomCrewName(td, Math.random);
 		const saved = roomFromUrl();
 		if (saved) {
 			// Повертаємося самі: код в адресі означає «я вже був у цій кімнаті».
@@ -750,10 +770,11 @@
 <div class="online-page">
 	{#if !match}
 		<OnlineGate
-			bind:name
+			bind:name={player.value}
 			bind:joinCode
 			bind:isPrivate
 			{busy}
+			onRandomName={() => player.reroll(takenNames)}
 			onCreate={() => enter('create')}
 			onJoin={() => enter('join')}
 			onQuickGame={quickGame}

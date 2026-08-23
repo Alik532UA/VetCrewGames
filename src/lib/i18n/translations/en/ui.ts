@@ -17,7 +17,6 @@ export const ui = {
 	// The three items are the same for the quiz and for "Find a pair" — only
 	// where "Play" leads differs.
 	'menu.play': 'Play',
-	'menu.playWithFriends': 'Play with friends',
 	'menu.playOnline': 'Play online',
 
 	// Shared game of Find a Pair: lobby, role, turn.
@@ -70,30 +69,6 @@ export const ui = {
 	'pairs.roomsUnavailable': 'The room list is unavailable. Joining by code and creating a room still work.',
 
 	// Crew names: adjective + animal. WHOLE phrases — see `config/crewNames.ts`.
-	'pairs.crew1': 'Cheerful Cow',
-	'pairs.crew2': 'Sly Fox',
-	'pairs.crew3': 'Sleepy Bear',
-	'pairs.crew4': 'Polite Penguin',
-	'pairs.crew5': 'Wise Owl',
-	'pairs.crew6': 'Prickly Hedgehog',
-	'pairs.crew7': 'Calm Capybara',
-	'pairs.crew8': 'Lazy Panda',
-	'pairs.crew9': 'Brave Ant',
-	'pairs.crew10': 'Quiet Cat',
-	'pairs.crew11': 'Loud Parrot',
-	'pairs.crew12': 'Kind Elephant',
-	'pairs.crew13': 'Watchful Falcon',
-	'pairs.crew14': 'Patient Turtle',
-	'pairs.crew15': 'Merry Dolphin',
-	'pairs.crew16': 'Fluffy Lemur',
-	'pairs.crew17': 'Proud Lion',
-	'pairs.crew18': 'Chatty Crow',
-	'pairs.crew19': 'Jumpy Kangaroo',
-	'pairs.crew20': 'Shiny Peacock',
-	'pairs.crew21': 'Clumsy Hippo',
-	'pairs.crew22': 'Attentive Deer',
-	'pairs.crew23': 'Funny Frog',
-	'pairs.crew24': 'Grumpy Wolf',
 	'menu.comingSoon': 'Still in the works',
 	'menu.game.population': 'Who is more?',
 	'menu.game.habitat': 'Where do they live?',
