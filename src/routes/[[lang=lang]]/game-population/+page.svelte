@@ -15,6 +15,7 @@
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
+	import { fitLabel } from '$lib/utils/fitLabel';
 
 	const lang = $derived(languageFromParam(page.params.lang));
 
@@ -371,7 +372,20 @@
 											{@html formatPopulation(animal.population)}
 										</div>{/if}
 								</div>
-								<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
+								<span class="game-card__name">
+							<!--
+								Внутрішній елемент потрібен для ВИМІРУ.
+
+								Зовнішній `.game-card__name` — це flex-контейнер із центруванням,
+								і `scrollWidth` на ньому міряє анонімний flex-елемент, а не текст.
+								Внутрішній має `max-width: 100%` і `overflow: hidden`, тож у нього
+								`clientWidth` — це «скільки місця є», а `scrollWidth` — «скільки
+								треба рядку». Два однозначних числа замість одного сумнівного.
+							-->
+							<span class="game-card__name-text" use:fitLabel={td(animal.nameKey)}
+								>{@html formatFont(td(animal.nameKey))}</span
+							>
+						</span>
 								{#if game.checked}<span
 										class="game-card__icon"
 										class:game-card__icon--correct={game.slotResults[i]}
@@ -477,7 +491,12 @@
 													height="400"
 												/>
 											</div>
-											<span class="game-card__name">{@html formatFont(td(animal.nameKey))}</span>
+											<span class="game-card__name">
+												<span
+													class="game-card__name-text"
+													use:fitLabel={td(animal.nameKey)}>{@html formatFont(td(animal.nameKey))}</span
+												>
+											</span>
 										</div>
 									{/each}
 									{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
@@ -722,6 +741,23 @@
 		align-items: center;
 		width: 100%;
 		height: 100%;
+		/*
+		 * КАРТКА НЕ МАЄ ПРАВА СТАТИ ШИРШОЮ ЗА СВІЙ СЛОТ, і тримає це саме цей
+		 * рядок, а не скрипт.
+		 *
+		 * Картка — елемент сітки, а елемент сітки типово не може стати вужчим за
+		 * свій `min-content`. Для нерозривної назви (`Reuzenmiereneter`,
+		 * `Stachelschwein`) цей мінімум і є ширина слова — заміряно на скріншотах
+		 * автора: слот 110px, картка в ньому 118.78px. Картка визирала з-під рамки
+		 * і штовхала сусідів у рядку.
+		 *
+		 * Пара до цього рядка — `overflow: hidden` на `.game-card__name-text`:
+		 * коробка з прихованим переповненням має нульовий внесок у мінімальну
+		 * ширину, тож текст більше нічого не розсуває. Разом вони дають гарантію
+		 * БЕЗ JS: якщо `fitLabel` не виконається, картка все одно лишиться в межах
+		 * слота, просто підпис буде обрізаний.
+		 */
+		min-width: 0;
 		gap: var(--space-xs);
 		padding: var(--space-sm);
 		background-color: var(--color-bg-card);
@@ -794,7 +830,6 @@
 		overflow: hidden;
 	}
 	.game-card__name {
-		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
 		color: #ffffff;
 		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
@@ -805,6 +840,49 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		min-width: 0;
+	}
+
+	/*
+	 * Тут живе і розмір підпису, і вся гарантія «картка не росте».
+	 *
+	 * `--label-scale` ставить `fitLabel` інлайновим стилем, і лише тоді, коли
+	 * текст справді не вміщається. Типове значення `1` означає «не чіпали»:
+	 * назва, яка вміщалася, лишається того самого кегля, що й раніше. Це вимога,
+	 * а не оптимізація — інакше картки в одному рядку мали б різний розмір тексту
+	 * і це читалося б як дефект.
+	 *
+	 * `overflow: hidden` тут не для краси: він робить внесок цієї коробки в
+	 * мінімальну ширину нульовим (автоматичний мінімум скрол-контейнера — нуль).
+	 * Саме тому текст більше не розсуває картку навіть без скрипта.
+	 */
+	.game-card__name-text {
+		max-width: 100%;
+		font-size: calc(var(--font-size-md) * var(--label-scale, 1));
+		overflow: hidden;
+		text-overflow: ellipsis;
+		/*
+		 * Три змінні — це СТАН ПЕРЕНОСУ, і типові значення означають «в один
+		 * рядок». Перемикає їх `fitLabel` інлайновим стилем, і лише тоді, коли
+		 * навіть на дні масштабу текст не вміщається в рядок.
+		 *
+		 * Чому змінними, а не окремим правилом під атрибут: атрибут ставить лише
+		 * скрипт, тож компілятор Svelte такого селектора не бачить і викидає
+		 * «Unused CSS selector». Лікується це або `:global()` — виходом зі скоупу
+		 * компонента заради власного стану, — або цим. Плюс інлайнові стилі копіює
+		 * `cloneNode`, тож клон під пальцем несе стан переносу з собою.
+		 *
+		 * Обрізане «Reuzenmierenet…» у грі, де тварину треба впізнати за назвою,
+		 * гірше за дрібний шрифт у два рядки, а місце під другий рядок є: підпис має
+		 * `flex: 1` у картці з фіксованим співвідношенням сторін.
+		 *
+		 * `anywhere` — гарантія на нерозривних словах; `hyphens: auto` ставить
+		 * перенос по складах у німецькій і нідерландській, а мову бере з
+		 * `<html lang>`, який виставляє маршрут.
+		 */
+		white-space: var(--label-wrap, nowrap);
+		overflow-wrap: var(--label-break, normal);
+		hyphens: var(--label-hyphens, manual);
 	}
 	.game-card__icon {
 		position: absolute;
