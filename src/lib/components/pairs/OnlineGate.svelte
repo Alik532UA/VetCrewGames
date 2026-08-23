@@ -3,6 +3,7 @@
 	import { t, td, formatFont } from '$lib/i18n';
 	import { randomCrewName } from '$lib/config/crewNames';
 	import InputTools from '$lib/components/ui/InputTools.svelte';
+	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
 
 	/**
 	 * Вхід у спільну партію.
@@ -165,19 +166,35 @@
 	<!-- ── 3. Створити кімнату ──────────────────────────────────────────────── -->
 	<section class="gate__panel">
 		<!--
-			Прапорець стоїть ПЕРЕД кнопкою, і це не смак: він міняє те, що кнопка
-			зробить, тож прочитати його треба до натиску, а не після.
+			ДВА НАЗВАНІ СТАНИ, а не прапорець. Стоять ПЕРЕД кнопкою, і це не смак:
+			вибір міняє те, що кнопка зробить, тож прочитати його треба до натиску.
 
-			Типове значення — «відкрита» (прапорець знятий). Кімната, якої немає в
-			списку, потребує, щоб код комусь передали; кімната зі списку не потребує
-			нічого. Приватність тут — вибір для того, хто грає з конкретною людиною,
-			а не типовий стан.
+			Прапорець «закрита кімната» був гірший двома речами. По-перше, він називав
+			лише один стан із двох: що означає ЗНЯТИЙ прапорець, доводилося
+			домислювати. По-друге, слово «закрита» описує механіку, а не намір — а
+			намір у людини рівно один із двох, і саме його тепер видно обома написами.
+
+			«ЛИШЕ ДРУЗІ» — це кімната поза списком, у яку заходять за кодом, що ви
+			комусь надішлете. Тут немає й не може бути справжнього переліку друзів:
+			акаунтів у проєкті немає взагалі (`net/firebase.ts` — `signInAnonymously`),
+			тож «друзі» означає рівно «ті, кому ви дали код». Підказка нижче каже це
+			прямо, щоб напис на кнопці не обіцяв більше, ніж робить.
+
+			Типовий стан — «для всіх». Кімната поза списком потребує, щоб код комусь
+			передали; кімната в списку не потребує нічого, і саме вона робить корисними
+			і список, і швидку гру.
 		-->
-		<label class="gate__check">
-			<input type="checkbox" bind:checked={isPrivate} data-testid="pairs-private-checkbox" />
-			<span>{@html formatFont(t('pairs.privateRoom'))}</span>
-		</label>
-		<p class="gate__hint">{@html formatFont(t('pairs.privateRoomHint'))}</p>
+		<SegmentedChoice
+			legend={t('pairs.visibility')}
+			scope="pairs-visibility"
+			value={isPrivate ? 'friends' : 'everyone'}
+			onchange={(id) => (isPrivate = id === 'friends')}
+			options={[
+				{ id: 'friends', label: t('pairs.friendsOnly') },
+				{ id: 'everyone', label: t('pairs.everyone') }
+			]}
+		/>
+		<p class="gate__hint">{@html formatFont(t('pairs.visibilityHint'))}</p>
 
 		<button
 			type="button"
@@ -364,25 +381,6 @@
 		.gate__field-btn:hover {
 			background: color-mix(in srgb, var(--color-text), transparent 82%);
 		}
-	}
-
-	.gate__check {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		/* 44px на всю смугу: натискати мусить і підпис, а не лише сама позначка. */
-		min-height: 44px;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-on-panel);
-		cursor: pointer;
-	}
-
-	.gate__check input {
-		width: 20px;
-		height: 20px;
-		flex-shrink: 0;
-		accent-color: var(--color-accent);
-		cursor: pointer;
 	}
 
 	/*
