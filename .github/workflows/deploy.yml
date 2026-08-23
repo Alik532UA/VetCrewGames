@@ -30,7 +30,7 @@ jobs:
       # (DEPENDENCIES-v8 § 2.3). Було 20 — а Node 20 вийшов з підтримки
       # 30.04.2026, тобто CI збирав продакшн на рантаймі без оновлень безпеки.
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -142,7 +142,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -210,7 +210,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
