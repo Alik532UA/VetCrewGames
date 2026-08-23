@@ -125,41 +125,52 @@
 			`:focus-within` на обгортці ОБОВʼЯЗКОВИЙ: рамка більше не на полі, тож без
 			цього рядка фокус клавіатурою став би невидимим.
 		-->
-		<div class="gate__field">
-			<input
-				id="pairs-name"
-				type="text"
-				bind:this={nameInput}
-				bind:value={name}
-				maxlength="24"
-				placeholder={t('memory.you')}
-				data-testid="pairs-name-input"
-			/>
+		<div class="gate__row">
+			<div class="gate__field">
+				<input
+					id="pairs-name"
+					type="text"
+					bind:this={nameInput}
+					bind:value={name}
+					maxlength="24"
+					placeholder={t('memory.you')}
+					data-testid="pairs-name-input"
+				/>
+				<InputTools
+					bind:value={name}
+					input={nameInput}
+					tools={['paste', 'clear']}
+					scope="pairs-name"
+					fieldLabel={t('pairs.yourName')}
+				/>
+			</div>
 			<!--
-				Кубик — теж усередині поля, хоч автор називав лише «вставити, копіювати,
-				очистити». Одна кнопка зовні поруч із двома всередині виглядала б як
-				недороблена: прохання було про те, щоб кнопки належали полю.
+				КУБИК — ПОЗА ПОЛЕМ, праворуч від нього, і це вибір автора.
+
+				Я був поставив його всередину заодно з «вставити» й «очистити», бо одна
+				кнопка зовні поруч із двома всередині здалася недоробленою. Автор
+				повернув назовні, і в цьому є своя логіка: «вставити» й «очистити» діють
+				на ТЕКСТ, який уже в полі, а кубик пише туди НОВЕ значення. Різна природа
+				— різне місце.
+
+				44px, а не 32: поза полем місце є, а власний стандарт сенсорної цілі
+				(ACCESSIBILITY-v8 § 8) виняток вимагає лише там, де його нема куди
+				подіти.
 
 				Імʼя й далі підставляється саме, тож вигадувати його не мусять; кубик
 				існує для того, кому підставлене не сподобалося, і віддає ГАРАНТОВАНО
-				інше — інакше один кидок із шістнадцяти виглядав би як зламана кнопка.
+				інше — інакше один кидок із двадцяти чотирьох виглядав би як зламана
+				кнопка.
 			-->
 			<button
 				type="button"
-				class="gate__field-btn"
+				class="gate__dice"
 				onclick={() => (name = randomCrewName(td, Math.random, name.trim()))}
 				aria-label={t('pairs.otherName')}
 				data-testid="pairs-name-random-btn"
 			>
-				<Dices size={16} aria-hidden="true" />
+				<Dices size={18} aria-hidden="true" />
 			</button>
-			<InputTools
-				bind:value={name}
-				input={nameInput}
-				tools={['paste', 'clear']}
-				scope="pairs-name"
-				fieldLabel={t('pairs.yourName')}
-			/>
 		</div>
 	</section>
 
@@ -313,6 +324,39 @@
 		color: var(--color-text-on-panel);
 	}
 
+	/* Поле й кубик поруч: розтягується поле, кубик лишається свого розміру. */
+	.gate__row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+	}
+
+	.gate__row .gate__field {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.gate__dice {
+		width: 44px;
+		height: 44px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--color-text), transparent 92%);
+		color: var(--color-text);
+		cursor: pointer;
+		padding: 0;
+	}
+
+	@media (hover: hover) {
+		.gate__dice:hover {
+			background: color-mix(in srgb, var(--color-text), transparent 82%);
+		}
+	}
+
 	/*
 	 * ОБГОРТКА ПОЛЯ несе рамку, тло й фокус; сам `input` — прозорий і без рамки.
 	 *
@@ -351,36 +395,6 @@
 	/* Рамку тепер малює обгортка, і друга рамка від фокусу поля була б подвійною. */
 	.gate__field input:focus {
 		outline: none;
-	}
-
-	/*
-	 * Кнопка всередині поля — 32px.
-	 *
-	 * Менше за власний стандарт сенсорної цілі (44px), і це той самий свідомий
-	 * виняток, що в `InputTools`: WCAG 2.5.8 (AA, 24×24) виконано з запасом, а
-	 * 2.5.5 (AAA, 44×44) — ні, бо кнопка на 44px усередині поля на 44px не лишає
-	 * місця самому тексту. Дія при цьому досяжна й інакше: імʼя можна просто
-	 * ввести з клавіатури.
-	 */
-	.gate__field-btn {
-		width: 32px;
-		height: 32px;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 92%);
-		color: var(--color-text);
-		cursor: pointer;
-		padding: 0;
-	}
-
-	@media (hover: hover) {
-		.gate__field-btn:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 82%);
-		}
 	}
 
 	/*
