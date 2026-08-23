@@ -201,9 +201,28 @@
 		color: var(--color-text);
 	}
 
+	/*
+	 * Чия черга — ПЛАШКА, а не підкрашений текст.
+	 *
+	 * `--color-accent` (`#ffb327`) однаковий у всіх чотирьох темах, бо це колір
+	 * марки. Як ТЕКСТ він читабельний лише на темному: заміряно 1.50:1 у
+	 * light-green і 1.60:1 у winter при потрібних 4.5
+	 * (`tests/contrast-runtime.spec.ts`) — найгірша пара, знайдена цим гейтом.
+	 *
+	 * Тому акцент переїхав у ТЛО, а текст став `--color-text-on-accent` — токен,
+	 * який для цього й існує і в кожній темі підібраний саме під акцент: 7.38:1 у
+	 * light-green, 7.64:1 у winter.
+	 *
+	 * Побічно сигнал став сильнішим: плашку видно з відстані, з якої відтінок
+	 * тексту не розрізняється, — а «чия черга» треба бачити, не вчитуючись.
+	 */
 	.scoreboard__player--turn {
 		font-weight: var(--font-weight-bold);
-		color: var(--color-accent);
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
+		/* Плашка не мусить розсувати рядок: відступи дрібні, а місце під них уже є. */
+		padding: 0 var(--space-xs);
+		border-radius: var(--radius-sm);
 	}
 
 	.scoreboard__moves {

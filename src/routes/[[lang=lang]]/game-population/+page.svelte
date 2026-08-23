@@ -659,7 +659,13 @@
 			blur-in 3s ease 400ms both;
 	}
 	.sorting-panel__instruction {
-		color: #ffffff;
+		/*
+		 * Тло цієї панелі — `--color-bg-panel` під прозорістю, і воно СВІТЛЕ у двох
+		 * темах: заміряно 1.80:1 у light-green і 1.79:1 у winter при потрібних 4.5
+		 * (`tests/contrast-runtime.spec.ts`). Із `--color-text-on-panel` — 7.37:1 і
+		 * 7.72:1. Той самий клас, що `.game-title` у `GameHeader`.
+		 */
+		color: var(--color-text-on-panel);
 		text-align: center;
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
@@ -837,8 +843,18 @@
 	}
 	.game-card__name {
 		font-weight: var(--font-weight-bold);
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+		/*
+		 * `--color-text`, а не `--color-text-on-panel`: тло тут — `--color-bg-card`
+		 * самої картки, не панель. Білим було 3.88:1 у light-green і 3.00:1 у
+		 * winter при потрібних 4.5.
+		 *
+		 * Одного цього рядка не хватило: на тодішньому `#598f3a` AA не давав ЖОДЕН
+		 * колір теми, тож разом із ним висвітлено сам токен (див. `themes/dark.css`).
+		 * Тепер 5.04:1 у light-green і 4.68:1 у winter.
+		 */
+		color: var(--color-text);
+		/* Облямівка кольором тла — див. те саме міркування в `.source-panel__title`. */
+		text-shadow: 1px 1px 2px color-mix(in srgb, var(--color-bg-card), transparent 20%);
 		text-align: center;
 		width: 100%;
 		line-height: 1.2;
@@ -1044,8 +1060,17 @@
 		margin: 0;
 	}
 	.source-panel__title {
-		color: #ffffff;
-		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+		/* 2.71:1 (light-green) і 2.29:1 (winter) білим; із теми — 4.88:1 і 5.98:1. */
+		color: var(--color-text-on-panel);
+		/*
+		 * Тінь — кольором ТЛА, а не чорним.
+		 *
+		 * Сенс тіні тут — облямівка, що відділяє текст від панелі. Чорна працює
+		 * лише поки текст світлий; під темним текстом на світлій панелі вона стає
+		 * плямою, яка з'їдає ту саму читабельність. Колір тла перевертається
+		 * разом із темою сам.
+		 */
+		text-shadow: 1px 1px 2px color-mix(in srgb, var(--color-bg-panel-dark), transparent 50%);
 		text-align: center;
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);

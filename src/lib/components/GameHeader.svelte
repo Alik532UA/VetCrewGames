@@ -221,15 +221,25 @@
 		transform: translate(-50%, -50%) rotate(-90deg);
 	}
 
+	/*
+	 * Обводка кільця — з теми, тим самим правилом, що й `.game-title` вище.
+	 *
+	 * Гейт `tests/contrast-runtime.spec.ts` цих двох рядків НЕ ТРИМАЄ і не може:
+	 * він міряє `color` (ним lucide малює значки через `currentColor`), а не
+	 * `stroke`, вписаний літералом, — інакше кожна ілюстрація проєкту давала б
+	 * хибні дефекти. Тобто виправлено руками, за тим самим міркуванням, що й
+	 * сусідній `.score-value`, який гейт таки заміряв: 2.71:1 у light-green і
+	 * 2.29:1 у winter при потрібних 4.5.
+	 */
 	.circle-bg {
 		fill: none;
-		stroke: rgba(255, 255, 255, 0.15);
+		stroke: color-mix(in srgb, var(--color-text-on-panel), transparent 85%);
 		stroke-width: 3.5;
 	}
 
 	.circle-fill {
 		fill: none;
-		stroke: #ffffff;
+		stroke: var(--color-text-on-panel);
 		stroke-width: 3.5;
 		stroke-linecap: round;
 		transition: stroke-dasharray 0.5s ease;
@@ -238,7 +248,7 @@
 	.score-value {
 		font-size: 11px;
 		font-weight: 900;
-		color: #ffffff;
+		color: var(--color-text-on-panel);
 		z-index: 1;
 	}
 

@@ -23,6 +23,15 @@
 	let openMenu = $state<'theme' | 'lang' | null>(null);
 
 	/**
+	 * Чи показувати вимикач гарячих клавіш у шапці.
+	 *
+	 * `false` на прохання автора (2026-08-23): кнопка займає місце в ряду, а
+	 * користуються нею рідко. Прибрана З ОЧЕЙ, не з коду, — детально чому саме
+	 * так, і що з цього тягне за собою WCAG, написано над самою кнопкою.
+	 */
+	const SHOW_SHORTCUTS_TOGGLE = false;
+
+	/**
 	 * Значки живуть тут, поруч із розміткою, а не в конфігу тем: інакше
 	 * `lucide-svelte` тягнеться в `settings`, а звідти — у кожен тест, що бере
 	 * налаштування.
@@ -127,21 +136,41 @@
 	латинську «i», щоб літера була у шрифті inglobal. Для того, що малюється, це
 	правильно; для того, що читає машина, — ні, бо «Вимкнути гарячi клавiшi» з
 	латинською i вимовляється покручем (AGENTS.md, конвенції).
+
+	── ЧОМУ ЗАРАЗ ПРИХОВАНА (на прохання автора, 2026-08-23) ──
+
+	Кнопку прибрано З ОЧЕЙ, а не з коду: автор сказав «можливо колись повернемо».
+	Повернення — знімається `SHOW_SHORTCUTS_TOGGLE`, один рядок.
+
+	Прапорець — `const`, і саме тому. Умова `{#if}` на сталій `false` лишає
+	розмітку в дереві компонента, тож `svelte-check`, ESLint і збірка й далі її
+	перевіряють: `t()` бачить ключі, значки лишаються імпортованими, i18n-паритет
+	не рветься. Закоментований блок нічого з цього не дає — він гниє тихо, і
+	«колись повернемо» через півроку означає «перепишемо з нуля».
+
+	САМІ СКОРОЧЕННЯ ПРАЦЮЮТЬ І ДАЛІ. Приховано лише перемикач видимості; обробник
+	вище живий, а `settings.shortcutsEnabled` лишається справжнім прапорцем із
+	власним значенням у сховищі. Тобто WCAG SC 2.1.4 виконується так само —
+	вимкнути одиночні літери досі можна, просто зараз не звідси. Якщо перемикач не
+	повернеться, вимикач мусить з'явитися десь інде: скорочення без способу їх
+	вимкнути порушують критерій прямо.
 -->
-<button
-	type="button"
-	class="header-btn"
-	onclick={() => settings.setShortcutsEnabled(!settings.shortcutsEnabled)}
-	aria-pressed={settings.shortcutsEnabled}
-	aria-label={t(settings.shortcutsEnabled ? 'header.shortcutsOn' : 'header.shortcutsOff')}
-	data-testid="header-shortcuts-toggle"
->
-	{#if settings.shortcutsEnabled}
-		<Keyboard size={20} />
-	{:else}
-		<KeyboardOff size={20} />
-	{/if}
-</button>
+{#if SHOW_SHORTCUTS_TOGGLE}
+	<button
+		type="button"
+		class="header-btn"
+		onclick={() => settings.setShortcutsEnabled(!settings.shortcutsEnabled)}
+		aria-pressed={settings.shortcutsEnabled}
+		aria-label={t(settings.shortcutsEnabled ? 'header.shortcutsOn' : 'header.shortcutsOff')}
+		data-testid="header-shortcuts-toggle"
+	>
+		{#if settings.shortcutsEnabled}
+			<Keyboard size={20} />
+		{:else}
+			<KeyboardOff size={20} />
+		{/if}
+	</button>
+{/if}
 
 <HeaderMenu
 	label={t('header.toggleTheme')}

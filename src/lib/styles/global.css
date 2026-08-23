@@ -322,9 +322,26 @@ button {
 	/* Без цього ряд шапки стискає кнопки: вони flex-елементи, а 36px — не підлога. */
 	flex-shrink: 0;
 	border-radius: var(--radius-md);
-	background-color: rgba(255, 255, 255, 0.1);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	color: #ffffff;
+	/*
+	 * КОЛІР І ТЛО — З ТЕМИ, а не білі літерали. Той самий клас, що в
+	 * `.game-title` і `.menu-btn--link` нижче, і ця кнопка з нього випадала.
+	 *
+	 * Тло смуги, у якій вона стоїть, — `--color-bg-panel-dark` під прозорістю, і
+	 * воно СВІТЛЕ у двох темах із чотирьох. Заміряно рантайм-гейтом
+	 * `tests/contrast-runtime.spec.ts`: білий значок давав 2.41:1 у light-green і
+	 * 2.09:1 у winter при потрібних трьох (WCAG 1.4.11, нетекстовий контраст) —
+	 * 106 вузлів на ВСІХ одинадцяти сторінках, тобто найпоширеніший дефект
+	 * контрасту в проєкті. З `--color-text-on-panel` це 5.44:1 і 6.52:1.
+	 *
+	 * Тло й рамка — домішка ТОГО САМОГО кольору, а не білого: 10% білого поверх
+	 * світлої панелі робить кнопку ще світлішою за неї, тобто ознака «кнопка»
+	 * зникає рівно в тих темах, де зникав і значок. Домішка кольору тексту
+	 * перевертається разом із темою сама: у темних це підсвітка, у світлих —
+	 * притінення.
+	 */
+	background-color: color-mix(in srgb, var(--color-text-on-panel), transparent 90%);
+	border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 90%);
+	color: var(--color-text-on-panel);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -344,7 +361,8 @@ button {
 
 @media (hover: hover) {
 	.header-btn:hover {
-		background-color: rgba(255, 255, 255, 0.2);
+		/* Та сама домішка, лише щільніша: 20% замість 10%. */
+		background-color: color-mix(in srgb, var(--color-text-on-panel), transparent 80%);
 		transform: scale(1.05);
 	}
 }

@@ -3,14 +3,13 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { settings } from '$lib/services/settings.svelte';
-	import { t, formatFont } from '$lib/i18n';
 	import { MythGameController } from '$lib/controllers/mythGame.svelte';
-	import { RotateCcw, Home } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MythCard from '$lib/components/MythCard.svelte';
+	import GameOverCard from '$lib/components/GameOverCard.svelte';
 
 	const lang = $derived(languageFromParam(page.params.lang));
 
@@ -28,36 +27,34 @@
 		 */
 		return settings.claimHeader('myth.title', () => goto(langPath(lang, 'quiz/play')));
 	});
-
-	/** Максимум партії — у підказці, а не знаменником. Див. `GameOverCard`. */
-	const maxHint = $derived(`${t('common.maxScore')}: ${game.maxScore}`);
 </script>
 
 <div class="game-page" use:fitToViewport>
 	{#if game.gameOver}
-		<div class="game-over-card" in:fade={{ duration: 400 }}>
-			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
-			<div class="game-over-score">
-				<span class="score-label">{@html formatFont(t('common.yourScore'))}</span>
-				<!--
-					Тільки набране. Максимум — у підказці, тими самими двома атрибутами,
-					що в `GameOverCard`: `title` для миші, `aria-label` для читалки.
-				-->
-				<span class="score-value" title={maxHint} aria-label="{game.sessionScore}. {maxHint}"
-					>{game.sessionScore}</span
-				>
-			</div>
-			<div class="game-over-actions">
-				<button class="btn-play-again" onclick={() => game.reset()}>
-					<RotateCcw size={24} />
-					{@html formatFont(t('common.playAgain'))}
-				</button>
-				<a href={langPath(languageFromParam(page.params.lang))} class="btn-menu">
-					<Home size={24} />
-					{@html formatFont(t('common.mainMenu'))}
-				</a>
-			</div>
-		</div>
+		<!--
+			СПІЛЬНИЙ компонент, а не власна копія — і саме копія тут була дефектом.
+
+			Доти цей блок був дослівно переписаним `GameOverCard`: та сама розмітка,
+			ті самі 45 рядків стилів. Розійшлися вони в одному рядку: коли `.btn-menu`
+			у спільному компоненті перевели на токени теми, копія лишилася з
+			`color: #ffffff` на `rgba(255, 255, 255, 0.1)` — білий текст на світлому
+			тлі у двох темах із чотирьох. Автор знайшов це оком, бо жоден гейт на
+            екран підсумку не заходить: щоб його побачити, партію треба дограти.
+
+			З чотирьох інших ігор жодна копії не мала — усі кликали `GameOverCard`.
+			Тобто дефект був не в кольорі, а в дублікаті: полагодити копію означало б
+			лишити причину на місці.
+
+			Заразом сюди приїхало те, чого копія не мала зовсім: `data-testid` на
+			картці, рахунку й обох кнопках, і `aria-hidden` на значках.
+		-->
+		<GameOverCard
+			score={game.sessionScore}
+			total={game.maxScore}
+			{lang}
+			onPlayAgain={() => game.reset()}
+			testId="mythbusters-game-over"
+		/>
 	{:else if game.current}
 		<div class="round-indicator-wrapper">
 			<RoundIndicator
@@ -114,83 +111,10 @@
 		width: 100%;
 	}
 
-	.game-over-card {
-		width: 100%;
-		background: var(--color-bg-surface);
-		border-radius: var(--radius-lg);
-		padding: var(--space-2xl);
-		box-shadow: var(--shadow-card);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-xl);
-		text-align: center;
-	}
-	.game-over-title {
-		font-size: var(--font-size-2xl);
-		font-weight: var(--font-weight-bold);
-		margin: 0;
-		color: var(--color-text);
-	}
-	.game-over-score {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-xs);
-	}
-	.score-label {
-		font-size: var(--font-size-md);
-		color: var(--color-text-muted);
-		text-transform: uppercase;
-	}
-	.score-value {
-		font-size: 3rem;
-		font-weight: 900;
-		color: var(--color-accent);
-		line-height: 1;
-	}
-
-	.game-over-actions {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		width: 100%;
-		max-width: 300px;
-	}
-
-	.btn-play-again,
-	.btn-menu {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-sm);
-		padding: var(--space-md) var(--space-xl);
-		border-radius: var(--radius-md);
-		border: none;
-		font-weight: var(--font-weight-bold);
-		font-size: var(--font-size-lg);
-		cursor: pointer;
-		transition: all var(--transition-fast);
-		text-decoration: none;
-	}
-
-	.btn-play-again {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
-	}
-	.btn-play-again:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
-		background: var(--color-accent-hover);
-	}
-
-	.btn-menu {
-		background: rgba(255, 255, 255, 0.1);
-		color: #ffffff;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-	}
-	.btn-menu:hover {
-		background: rgba(255, 255, 255, 0.2);
-		transform: translateY(-2px);
-	}
+	/*
+	 * Стилів екрана підсумку тут БІЛЬШЕ НЕМА — усі 45 рядків жили в `GameOverCard`
+	 * і були переписані сюди дослівно. Прибрано разом із розміткою: копія стилю
+	 * без копії розмітки — це мертвий код, про який компілятор скаже лише
+	 * попередженням про невикористаний селектор.
+	 */
 </style>
