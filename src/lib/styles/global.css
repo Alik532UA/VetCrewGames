@@ -3,6 +3,33 @@
 @import './themes/winter.css';
 @import './themes/orange-purple.css';
 
+/*
+ * ЗВУЖЕННЯ СХЕМИ ПІД КОЖНУ ТЕМУ (UI-UX-v8 § 1.5.1).
+ *
+ * База — `color-scheme: light dark` у `themes/dark.css` на бареному `:root`;
+ * вона дає `light-dark()` право йти за системною перевагою. Кожна ЯВНО обрана
+ * тема мусить цю схему звузити, інакше `light-dark()` віддасть їй значення за
+ * системною перевагою, а не за її власною природою. Найдорожчий випадок —
+ * світлі теми при темній системі.
+ *
+ * Розподіл узятий не з назв, а з `app.html`, де скрипт рахує
+ * `isDark = theme === 'dark' || theme === 'orange-purple'`.
+ *
+ * `html` у селекторі ОБОВʼЯЗКОВИЙ: без нього специфічність (0,1,0) така сама,
+ * як у `:root`, тобто нічия, і переможця обирає порядок правил
+ * (SVELTE-UI-v8 `SUI-SCOPE-SPECIFICITY`). У сусідньому `as5` це заміряно —
+ * звуження мовчки не діяло.
+ */
+html[data-theme='dark'],
+html[data-theme='orange-purple'] {
+	color-scheme: dark;
+}
+
+html[data-theme='light-green'],
+html[data-theme='winter'] {
+	color-scheme: light;
+}
+
 /* ===== Fonts ===== */
 @font-face {
 	font-family: 'Inglobal';

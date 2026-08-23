@@ -1,40 +1,21 @@
-[data-theme='light-green'] {
-	--color-bg: #f2f5ec;
-	--bg-image: url('/images/background/bg-light-green-v01.webp');
-	--color-bg-surface: #e4ebd8;
-	--color-bg-panel: #93bf4c;
-	--color-bg-panel-dark: #598f3a;
-	--color-bg-card: #598f3a;
-	/*
-	 * Світліший за #6da043 не для краси, а за WCAG AA: із темним текстом
-	 * `--color-text-on-panel` (#13371b) той давав 4.25:1 при потрібних 4.5 —
-	 * саме на наведенні, тобто в стані, якого не бачить жоден статичний аудит
-	 * розмальованої сторінки. Тепер 5.18:1. Змінено тло НАВЕДЕННЯ, а не колір
-	 * тексту: так спокій лишається як був, і «на наведенні світліше» — теж.
-	 * Стереже `src/contrast.test.ts`.
-	 */
-	--color-bg-card-hover: #7fb050;
-	--color-text: #262626;
-	--color-text-on-panel: #13371b;
-	--color-text-on-accent: #13371b;
-	--color-text-muted: #4a5a3a;
-	--color-primary: #598f3a;
-	--color-primary-hover: #4a7a2e;
-	--color-accent: #ffb327;
-	--color-accent-hover: #ffc04a;
-	--color-accent-shadow: rgba(255, 179, 39, 0.4);
-	--color-success: #598f3a;
-	--color-error: #d44;
-	--color-warning: #b8860b;
-	--color-disabled: #ccc;
-	--color-disabled-text: #999;
-	--color-border: #93bf4c;
-	--color-stat: #13371b;
-
-	--shadow-card: 0 4px 16px rgba(0, 0, 0, 0.1);
-	--shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.15);
-	--shadow-glow-primary: 0 0 20px rgba(89, 143, 58, 0.2);
-	--shadow-glow-success: 0 0 20px rgba(89, 143, 58, 0.3);
-	--shadow-glow-error: 0 0 20px rgba(221, 68, 68, 0.3);
-	--shadow-glow-accent: 0 0 20px rgba(255, 179, 39, 0.3);
-}
+/*
+ * СВІТЛО-ЗЕЛЕНА ТЕМА БІЛЬШЕ НЕ Є ОКРЕМИМ НАБОРОМ ЗНАЧЕНЬ.
+ *
+ * Тут стояв блок `[data-theme='light-green']` із 29 оголошеннями. 26 із них
+ * тепер перший аргумент `light-dark()` у `themes/dark.css`, а решта три
+ * (`--color-accent`, `--color-accent-hover`, `--color-text-on-accent`) були
+ * ДОСЛІВНИМИ копіями базових — тобто другим джерелом того самого кольору, яке
+ * розходиться при першій же правці.
+ *
+ * Жоден колір не змінився: перший аргумент — це те, що стояло тут. Перевірити
+ * можна порівнянням diff цього коміту.
+ *
+ * ЧОМУ ПАРА — ЦЕ САМЕ `dark`/`light-green`. Скрипт першого кадру відображає на
+ * неї `prefers-color-scheme`. Теми `winter` і `orange-purple` — виключно явний
+ * вибір, тож лишаються зі власними значеннями і звужують `color-scheme` під
+ * себе в `global.css` (UI-UX-v8 § 1.5.1.2).
+ *
+ * ФАЙЛ ЛИШАЄТЬСЯ, А НЕ ВИДАЛЯЄТЬСЯ: його імпортує `global.css`, і саме тут
+ * шукатимуть світло-зелену палітру. Порожній файл із цим текстом відповідає на
+ * питання «а де ж вона?» — видалений не відповідає ні на що.
+ */

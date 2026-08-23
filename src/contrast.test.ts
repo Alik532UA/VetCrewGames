@@ -68,6 +68,64 @@ const THEME_SOURCES: Record<Theme, RegExp> = {
 	'orange-purple': /\[data-theme='orange-purple'\]\s*\{/
 };
 
+/**
+ * Схема, за якою браузер обирає аргумент `light-dark()` у кожній темі.
+ *
+ * З 2026-08-23 пара `light-green`/`dark` описана `light-dark()` в одному блоці
+ * (UI-UX-v8 § 1.5.1), тож `themes/light-green.css` оголошень більше не має —
+ * значення приходять із `dark.css` разом із вибором аргументу.
+ *
+ * Розподіл НЕ виводиться з назви теми, а списаний із `app.html`, де скрипт
+ * першого кадру рахує `isDark = theme === 'dark' || theme === 'orange-purple'`, і
+ * з `global.css`, де рівно так звужено `color-scheme`. Тримається окремою картою
+ * саме тому, що зв'язок «winter → світла схема» неочевидний і мусить бути
+ * видимим у diff, а не вгаданим.
+ */
+const THEME_SCHEME: Record<Theme, 'light' | 'dark'> = {
+	dark: 'dark',
+	'light-green': 'light',
+	winter: 'light',
+	'orange-purple': 'dark'
+};
+
+/**
+ * `light-dark(A, B)` → `A` для світлої схеми, `B` для темної.
+ *
+ * Кома тут НЕ розділювач: аргументом буває `rgba(255, 179, 39, 0.4)` або
+ * `0 4px 16px rgba(0, 0, 0, 0.1)`, тобто самі містять коми. Тому ділиться
+ * підрахунком дужок, а не `split(',')` — інакше перший аргумент обривався б на
+ * `rgba(255`, не розбирався як колір, і перевірка МОВЧКИ рахувала б пару
+ * непокритою, тобто «проблем немає» (AI-AGENT-PITFALLS-v8 § 1).
+ */
+function pickLightDark(value: string, theme: Theme): string {
+	const v = value.trim();
+	if (v.toLowerCase().indexOf('light-dark(') !== 0) return v;
+
+	let depth = 0;
+	const args: string[] = [];
+	let current = '';
+	for (let i = 'light-dark('.length - 1; i < v.length; i += 1) {
+		const ch = v[i];
+		if (ch === '(') {
+			depth += 1;
+			if (depth === 1) continue;
+		} else if (ch === ')') {
+			depth -= 1;
+			if (depth === 0) {
+				args.push(current);
+				break;
+			}
+		} else if (ch === ',' && depth === 1) {
+			args.push(current);
+			current = '';
+			continue;
+		}
+		current += ch;
+	}
+	if (args.length !== 2) return v;
+	return (THEME_SCHEME[theme] === 'light' ? args[0] : args[1]).trim();
+}
+
 type Rgb = [number, number, number];
 
 /**
@@ -169,7 +227,9 @@ class TokenResolver {
 
 	resolveValue(value: string, theme: Theme, depth = 0): Rgb | null {
 		if (depth > 10) return null;
-		const v = value.trim();
+		// `light-dark()` знімається ПЕРЕД усім іншим: усередині нього стоїть і
+		// літерал, і `var()`, тобто те, що розбирає решта методу.
+		const v = pickLightDark(value, theme);
 		const direct = parseColor(v);
 		if (direct) return direct;
 		// Рівно один var() і нічого крім нього: `var(--a)` або `var(--a, fallback)`.

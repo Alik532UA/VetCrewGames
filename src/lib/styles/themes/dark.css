@@ -1,33 +1,55 @@
+/*
+ * ПАЛІТРА ПАРИ `light-green`/`dark` — В ОДНОМУ БЛОЦІ (UI-UX-v8 § 1.5.1).
+ *
+ * `light-dark(світле, темне)`: перший аргумент — те, що стояло в
+ * `themes/light-green.css`, другий — те, що стояло тут. Пара саме ця, бо
+ * скрипт першого кадру в `app.html` відображає на неї системну перевагу:
+ * `theme = prefers-color-scheme: dark ? 'dark' : 'light-green'`.
+ *
+ * НАВІЩО. Доти системна перевага доїжджала до сторінки виключно через JS. А
+ * скрипт першого кадру інлайновий, тобто в зібраній версії його пускає ХЕШ у
+ * CSP — і рівно цей клас дефекту 2026-08-23 ламав заставку в сусідньому
+ * `teatralo4ka`. Тепер тема без JS береться з системи.
+ *
+ * ПЕРЕВЕДЕНО ВСІ 26 ТОКЕНІВ, ЩО ВІДРІЗНЯЛИСЯ, а не один фон. Базовий блок тут
+ * описує ТЕМНУ тему, тож переклад одного `--color-bg` дав би при заблокованому
+ * скрипті й світлій системі світле тло зі світлим текстом `#e5e5e5` —
+ * нечитабельну пару там, де доти була просто «не та тема» (§ 1.5.1.1).
+ *
+ * `color-scheme: light dark` тут ОБОВʼЯЗКОВИЙ: без нього `light-dark()` мовчки
+ * віддає перший аргумент. Звуження під кожну з чотирьох тем — у `global.css`.
+ */
 :root,
 [data-theme='dark'] {
-	--color-bg: #1a1a1a;
-	--bg-image: url('/images/background/bg-dark-v01.webp');
-	--color-bg-surface: #242424;
-	--color-bg-panel: #2a3d1d;
-	--color-bg-panel-dark: #132510;
-	--color-bg-card: #3a5a2a;
-	--color-bg-card-hover: #4a6a3a;
-	--color-text: #e5e5e5;
-	--color-text-on-panel: #e5e5e5;
+	color-scheme: light dark;
+	--color-bg: light-dark(#f2f5ec, #1a1a1a);
+	--bg-image: light-dark(url('/images/background/bg-light-green-v01.webp'), url('/images/background/bg-dark-v01.webp'));
+	--color-bg-surface: light-dark(#e4ebd8, #242424);
+	--color-bg-panel: light-dark(#93bf4c, #2a3d1d);
+	--color-bg-panel-dark: light-dark(#598f3a, #132510);
+	--color-bg-card: light-dark(#598f3a, #3a5a2a);
+	--color-bg-card-hover: light-dark(#7fb050, #4a6a3a);
+	--color-text: light-dark(#262626, #e5e5e5);
+	--color-text-on-panel: light-dark(#13371b, #e5e5e5);
 	--color-text-on-accent: #13371b;
-	--color-text-muted: #a0a0a0;
-	--color-primary: #93bf4c;
-	--color-primary-hover: #a4d45c;
+	--color-text-muted: light-dark(#4a5a3a, #a0a0a0);
+	--color-primary: light-dark(#598f3a, #93bf4c);
+	--color-primary-hover: light-dark(#4a7a2e, #a4d45c);
 	--color-accent: #ffb327;
 	--color-accent-hover: #ffc04a;
-	--color-accent-shadow: rgba(255, 179, 39, 0.2);
-	--color-success: #93bf4c;
-	--color-error: #ff6b6b;
-	--color-warning: #facc15;
-	--color-disabled: #333333;
-	--color-disabled-text: #666666;
-	--color-border: #3a5a2a;
-	--color-stat: var(--color-accent);
+	--color-accent-shadow: light-dark(rgba(255, 179, 39, 0.4), rgba(255, 179, 39, 0.2));
+	--color-success: light-dark(#598f3a, #93bf4c);
+	--color-error: light-dark(#d44, #ff6b6b);
+	--color-warning: light-dark(#b8860b, #facc15);
+	--color-disabled: light-dark(#ccc, #333333);
+	--color-disabled-text: light-dark(#999, #666666);
+	--color-border: light-dark(#93bf4c, #3a5a2a);
+	--color-stat: light-dark(#13371b, var(--color-accent));
 
-	--shadow-card: 0 4px 16px rgba(0, 0, 0, 0.5);
-	--shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.6);
-	--shadow-glow-primary: 0 0 20px rgba(147, 200, 74, 0.2);
-	--shadow-glow-success: 0 0 20px rgba(147, 200, 74, 0.2);
-	--shadow-glow-error: 0 0 20px rgba(255, 107, 107, 0.2);
-	--shadow-glow-accent: 0 0 20px rgba(255, 179, 39, 0.2);
+	--shadow-card: light-dark(0 4px 16px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.5));
+	--shadow-card-hover: light-dark(0 8px 32px rgba(0, 0, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.6));
+	--shadow-glow-primary: light-dark(0 0 20px rgba(89, 143, 58, 0.2), 0 0 20px rgba(147, 200, 74, 0.2));
+	--shadow-glow-success: light-dark(0 0 20px rgba(89, 143, 58, 0.3), 0 0 20px rgba(147, 200, 74, 0.2));
+	--shadow-glow-error: light-dark(0 0 20px rgba(221, 68, 68, 0.3), 0 0 20px rgba(255, 107, 107, 0.2));
+	--shadow-glow-accent: light-dark(0 0 20px rgba(255, 179, 39, 0.3), 0 0 20px rgba(255, 179, 39, 0.2));
 }
