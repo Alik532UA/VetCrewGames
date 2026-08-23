@@ -124,7 +124,11 @@
 		} catch (error) {
 			// Звіт мусить дійти до людини навіть тоді, коли браузер відмовив.
 			fallback = report;
-			logService.error('ui', 'Failed to copy the beta report', { error });
+			// `String(error)`, а не `{ error }`: `message` і `stack` у `Error`
+			// неперелічувані, тож у звіті таке поле стає рівно `{}`.
+			logService.error('ui', 'Failed to copy the beta report', {
+				reason: String(error)
+			});
 		}
 	}
 

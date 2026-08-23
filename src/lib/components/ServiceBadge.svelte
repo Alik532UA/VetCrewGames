@@ -138,7 +138,7 @@
 				copied = false;
 			}, 1500);
 		} catch (err) {
-			logService.warn('ui', 'Failed to copy logs', { error: err });
+			logService.warn('ui', 'Failed to copy logs', { reason: String(err) });
 		}
 	}
 

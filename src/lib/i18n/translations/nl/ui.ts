@@ -195,4 +195,5 @@ export const ui = {
 	'pairs.modeConfirm': 'Wachten op bevestiging',
 	'pairs.modeAutoHint': 'Het spel begint zelf zodra er twee spelers zijn.',
 	'pairs.modeConfirmHint': 'Het spel wacht tot de host op „Spel starten” drukt.',
+	'pairs.rulesStale': 'De server laat je niet in de kamer. Meestal zijn de databaseregels ouder dan deze build.',
 } as const;

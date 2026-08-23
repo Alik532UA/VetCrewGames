@@ -193,4 +193,5 @@ export const ui = {
 	'pairs.modeConfirm': 'Wait for confirmation',
 	'pairs.modeAutoHint': 'The game starts by itself as soon as two players are in.',
 	'pairs.modeConfirmHint': 'The game waits until the host presses “Start the game”.',
+	'pairs.rulesStale': 'The server refused to let you in. The usual cause is database rules older than this build.',
 } as const;

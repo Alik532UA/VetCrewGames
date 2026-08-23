@@ -285,13 +285,23 @@
 			match = started;
 		} catch (error) {
 			/*
-			 * Причини дві, і плутати їх не можна: «правила не пускають» не лікується
-			 * повтором, а «не склалося» — лікується. Перша версія казала «спробуйте ще
-			 * раз» на першу з них, тобто радила безглузде.
+			 * ТРИ РІЗНІ ПРИЧИНИ, і кожна вимагає іншої дії.
+			 *
+			 * «Правила не пускають» не лікується повтором, «не склалося» —
+			 * лікується. Перша версія казала «спробуйте ще раз» на обидві, тобто
+			 * радила безглузде на половині випадків.
+			 *
+			 * Третю додано після справжнього випадку: `PERMISSION_DENIED` означає, що
+			 * база відкинула запис, і найчастіша причина цього — правила в Firebase
+			 * СТАРІШІ за цю збірку. Так буває рівно тоді, коли клієнт уже пише нове
+			 * поле, а `$other: false` у старому правилі відкидає весь запис. Порада
+			 * «спробуйте ще раз» тут теж безглузда: помагає лише викладання правил.
 			 */
-			const why = error instanceof Error && error.message === 'rules-missing';
-			toast.error(why ? 'pairs.rulesMissing' : 'pairs.netFailed');
-			logService.error('network', 'room entry failed', error);
+			const reason = error instanceof Error ? error.message : String(error);
+			const denied = /permission[_ ]denied/i.test(reason);
+			const missing = reason === 'rules-missing';
+			toast.error(missing ? 'pairs.rulesMissing' : denied ? 'pairs.rulesStale' : 'pairs.netFailed');
+			logService.error('network', 'room entry failed', { action, reason });
 		} finally {
 			busy = false;
 		}
@@ -391,7 +401,7 @@
 			await match.yieldTurn(Date.now());
 		} catch (error) {
 			toast.error('pairs.actionFailed');
-			logService.error('network', 'yield failed', error);
+			logService.error('network', 'yield failed', { reason: String(error) });
 		}
 	}
 
@@ -439,7 +449,7 @@
 	 */
 	function hostActionFailed(error: unknown) {
 		toast.error('pairs.actionFailed');
-		logService.error('network', 'host action denied', error);
+		logService.error('network', 'host action denied', { reason: String(error) });
 	}
 
 	/**
