@@ -9,7 +9,7 @@
 	import { logService } from '$lib/services/logService.svelte';
 	import { layoutForViewport } from '$lib/config/memory-game';
 	import { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
-	import { PlayerName } from '$lib/controllers/playerName.svelte';
+	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
@@ -84,7 +84,7 @@
 	 * довантажуваний словник імен і перелік уже зайнятих. Розсипані по
 	 * сторінці, вони давали три місця, кожне з яких могло переписати поле.
 	 */
-	const player = new PlayerName(Math.random);
+	const player = new PlayerIdentity(Math.random);
 	/**
 	 * Чи ховати створювану кімнату зі списку.
 	 *
@@ -271,6 +271,7 @@
 					 */
 					config: { pairs: layout.pairs, cols: layout.cols },
 					name: who,
+					country: player.country,
 					/*
 					 * АВТОСТАРТ ЛИШЕ ДЛЯ ШВИДКОЇ ГРИ, і це рішення автора.
 					 *
@@ -310,7 +311,7 @@
 				code = wanted;
 				// Роль НЕ передаємо: повернувшись у кімнату, глядач мусить лишитися
 				// глядачем, інакше склад зміниться й дошку перероздасть усім.
-				await net.joinRoom(code, who);
+				await net.joinRoom(code, who, undefined, player.country);
 			}
 			rememberInUrl(code);
 
@@ -361,6 +362,7 @@
 							// матчу. Правило бази однаково звірить його з господарем кімнати.
 							hostUid: me,
 							hostName: who,
+						hostCountry: player.country,
 							gameId: 'pairs',
 							rulesVersion: RULES_VERSION,
 							players: 1
@@ -450,7 +452,7 @@
 	async function setRole(role: Role) {
 		if (!match || match.status !== 'lobby') return;
 		const net = await import('$lib/net/rtdbRoom');
-		await net.joinRoom(code, player.forEntry(takenNames), role);
+		await net.joinRoom(code, player.forEntry(takenNames), role, player.country);
 	}
 
 	async function start() {
@@ -812,6 +814,14 @@
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
 		/*
+		 * Прапор питається РІВНО ОДИН РАЗ, і тому тут, а не в ефекті.
+		 *
+		 * Ефект імен перезапускається на кожній зміні мови, а цей запит іде до
+		 * сторонньої служби й несе IP відвідувача. Від мови прапор не залежить.
+		 */
+		void player.loadCountry();
+
+		/*
 		 * Поле імені НЕ буває порожнім: або збережене, або кинуте з списку команди.
 		 *
 		 * Порожнє поле — це прохання вигадати, а вигадувати нікого не просили: імʼя
@@ -840,6 +850,7 @@
 			bind:joinCode
 			bind:isPrivate
 			{busy}
+			bind:country={player.country}
 			onRandomName={() => player.reroll(takenNames)}
 			onCreate={() => enter('create')}
 			onJoin={() => enter('join')}

@@ -3,6 +3,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import InputTools from '$lib/components/ui/InputTools.svelte';
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
+	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
 
 	/**
 	 * Вхід у спільну партію.
@@ -36,6 +37,8 @@
 		joinCode: string;
 		/** Кімнату видно в списку чи вона лише за кодом. Двобічне. */
 		isPrivate: boolean;
+		/** Прапор гравця. Порожній рядок — без прапора. Двобічне. */
+		country: string;
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
 		/**
@@ -67,6 +70,7 @@
 		name = $bindable(),
 		joinCode = $bindable(),
 		isPrivate = $bindable(),
+		country = $bindable(),
 		busy,
 		onRandomName,
 		onCreate,
@@ -204,6 +208,15 @@
 				<Dices size={18} aria-hidden="true" />
 			</button>
 		</div>
+
+		<!--
+			ПРАПОР — У ТОМУ САМОМУ БЛОЦІ, що імʼя.
+		
+			Це одна відповідь на одне питання — «як мене видно іншим», — і саме
+			тому вони поруч, а не в окремій панелі. Окремий блок читався б як ще
+			один спосіб зайти в кімнату, а це не спосіб зайти, а підпис.
+		-->
+		<CountryPicker bind:value={country} scope="pairs-country" />
 	</section>
 
 	<!-- ── 3. Створити кімнату ──────────────────────────────────────────────── -->

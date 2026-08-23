@@ -3,6 +3,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import type { LobbyRoom } from '$lib/net/lobby';
 	import type { OwnRoom } from '$lib/net/ownRooms';
+	import Flag from '$lib/components/ui/Flag.svelte';
 
 	/**
 	 * Перелік відкритих кімнат — четвертий блок форми входу.
@@ -141,7 +142,14 @@
 							переписати код замість натиснути кнопку. Кнопка робить те саме
 							надійніше.
 						-->
-						<span class="rooms__host">{room.hostName}</span>
+						<span class="rooms__host">
+							<!--
+								Прапор ПЕРЕД імʼям: рядки в списку скануються очима зліва, і
+								прапор — те, що видно з одного погляду, а імʼя треба прочитати.
+							-->
+							<Flag code={room.hostCountry} />
+							{room.hostName}
+						</span>
 						<span class="rooms__players">
 							<Users size={14} aria-hidden="true" />
 							{@html formatFont(t('pairs.players'))}: {room.players}
@@ -243,6 +251,9 @@
 	}
 
 	.rooms__host {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		font-weight: var(--font-weight-bold);
 		font-size: var(--font-size-sm);
 		overflow: hidden;

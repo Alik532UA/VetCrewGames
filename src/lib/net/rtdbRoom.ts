@@ -85,6 +85,8 @@ export interface NewRoom {
 	config: Record<string, number>;
 	/** Імʼя господаря: він одразу й перший учасник. */
 	name: string;
+	/** Прапор господаря. Порожній рядок — без прапора. */
+	country?: string;
 	/**
 	 * Чи починати партію самій, коли зібралися гравці.
 	 *
@@ -185,7 +187,10 @@ export async function createRoom(options: NewRoom): Promise<string> {
 			await set(ref(db, `rooms/${code}/members/${uid}`), {
 				name: options.name,
 				role: 'player',
-				order: 1
+				order: 1,
+				// Поле або є, або його немає зовсім: `undefined` у `set()` кидає, а
+				// порожній рядок не пройшов би `.validate` (рівно дві літери).
+				...(options.country ? { country: options.country } : {})
 			});
 
 			// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
@@ -206,7 +211,12 @@ export async function createRoom(options: NewRoom): Promise<string> {
  * тобто перероздав би дошку всім. Роль міняється лише тоді, коли її справді
  * натиснули.
  */
-export async function joinRoom(code: string, name: string, role?: Member['role']): Promise<void> {
+export async function joinRoom(
+	code: string,
+	name: string,
+	role?: Member['role'],
+	country?: string
+): Promise<void> {
 	const { uid, db } = await connect();
 	const { get, ref, set } = await import('firebase/database');
 
@@ -218,7 +228,15 @@ export async function joinRoom(code: string, name: string, role?: Member['role']
 	await set(ref(db, `rooms/${code}/members/${uid}`), {
 		name,
 		role: role ?? existing[uid]?.role ?? 'player',
-		order
+		order,
+		/*
+		 * Своя країна ПЕРЕЗАПИСУЄТЬСЯ, а не лишається як була.
+		 *
+		 * Інакше, ніж `order` і `role`: ті визначають роздачу й черга, тож їх
+		 * повторний вхід не торкається. Прапор — підпис, і людина могла
+		 * змінити його у формі саме перед тим, як вернутися в кімнату.
+		 */
+		...(country ? { country } : {})
 	});
 
 	/*

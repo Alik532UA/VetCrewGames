@@ -5,6 +5,7 @@
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
 	import RoomQr from '$lib/components/pairs/RoomQr.svelte';
+	import Flag from '$lib/components/ui/Flag.svelte';
 
 	/**
 	 * Лобі кімнати: код, склад, роль і кнопка «почати».
@@ -138,6 +139,7 @@
 				class:lobby__member--away={!online.includes(member.uid)}
 				data-testid="pairs-member-{member.uid}-item"
 			>
+				<Flag code={member.country} />
 				{member.name}{#if member.uid === me} <YouTag />{/if}
 				<span class="lobby__role">
 					{@html formatFont(

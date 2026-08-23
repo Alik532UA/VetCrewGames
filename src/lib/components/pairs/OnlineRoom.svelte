@@ -2,6 +2,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
+	import Flag from '$lib/components/ui/Flag.svelte';
 	import type { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 
 	/**
@@ -203,6 +204,7 @@
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
+				<Flag code={match.members.find((m) => m.uid === player.uid)?.country} />
 				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}: {scoreOf(
 					player.uid
 				)}<!--
@@ -298,6 +300,13 @@
 	}
 
 	/* Чия черга — видно й тут: підпис вище відповідає на питання, табло показує рахунок. */
+	/* Прапор і підпис в один рядок: без цього прапор злітає на базову лінію. */
+	.board__player {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+
 	.board__player--turn {
 		font-weight: var(--font-weight-bold);
 		color: var(--color-accent);

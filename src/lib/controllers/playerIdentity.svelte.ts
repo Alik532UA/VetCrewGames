@@ -1,10 +1,20 @@
 import { randomCrewName } from '$lib/config/crewNames';
-import { NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
+import { isCountry } from '$lib/config/countries';
+import { detectCountry } from '$lib/net/country';
+import { COUNTRY_KEY, NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
 import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 import { storage } from '$lib/services/storage';
 
 /**
- * Підпис гравця у формі входу: значення, словник і межа «наше/людське».
+ * ХТО Я В КІМНАТІ: підпис і прапор.
+ *
+ * ## Чому імʼя й прапор разом
+ *
+ * Це одна відповідь на одне питання — «як мене видно іншим». Обидва
+ * памʼятаються між заходами, обидва їдуть у кімнату одним записом складу,
+ * обидва підставляються самі й міняються людиною. Розділені на два
+ * контролери, вони дали б два майже однакових файли й дві копії роботи зі
+ * сховищем.
  *
  * ## Чому окремий контролер, а не поля сторінки
  *
@@ -27,7 +37,7 @@ import { storage } from '$lib/services/storage';
  * Той самий підпис, що в `crewNames.ts` і `pickOne`: `Math.random()` усередині
  * робить поведінку неперевірною точно, а лише ймовірно.
  */
-export class PlayerName {
+export class PlayerIdentity {
 	/** Що стоїть у полі. Двобічне: форма прив'язується просто до нього. */
 	value = $state('');
 
@@ -41,6 +51,15 @@ export class PlayerName {
 
 	/** Що з поля підставили МИ. Порожньо — вибір людини. */
 	#assigned = '';
+
+	/**
+	 * Код країни для прапора. Порожньо — «без прапора», і це ВІДПОВІДЬ.
+	 *
+	 * Не `null`: відсутність прапора тут не «ще не знаємо», а свідомий вибір
+	 * зі списку («Без прапора» стоїть у ньому першим пунктом). Стан
+	 * «ще не питали» відрізняється інакше — його немає у сховищі.
+	 */
+	country = $state('');
 
 	readonly #random: () => number;
 
@@ -67,6 +86,34 @@ export class PlayerName {
 		const chosen = initialName(storage.get(NAME_KEY), this.text, this.#random, taken);
 		this.value = chosen.name;
 		this.#assigned = chosen.assigned;
+	}
+
+	/**
+	 * Прапор: збережений вибір, а якщо його немає — ПІДКАЗКА за IP.
+	 *
+	 * Порядок тут і є вся суть. Спершу сховище: вибір людини головніший за
+	 * будь-яке визначення, і перезаписати його означало б щоразу вертати
+	 * прапор, який вона вже змінила. Запит до сторонньої служби йде ЛИШЕ
+	 * коли у сховищі немає нічого — тобто один раз, на першому відкритті.
+	 *
+	 * Порожній рядок у сховищі — це «без прапора», і він теж лічиться
+	 * вибором: `null` від `storage.get` означає «не питали», а `''` —
+	 * «питали, відповіли: не показувати».
+	 *
+	 * Чому IP лише підказка, а не факт, розписано в `net/country.ts`.
+	 */
+	async loadCountry(): Promise<void> {
+		const saved = storage.get(COUNTRY_KEY);
+		if (saved !== null) {
+			this.country = isCountry(saved) ? saved : '';
+			return;
+		}
+		const guess = await detectCountry();
+		if (guess === null) return;
+		this.country = guess;
+		// Запамʼятовуємо ПІДКАЗКУ теж: інакше служба питалася б на кожному
+		// відкритті сторінки, тобто IP їхав би туди щоразу.
+		storage.set(COUNTRY_KEY, guess);
 	}
 
 	/**
@@ -101,6 +148,9 @@ export class PlayerName {
 	forEntry(taken: readonly string[]): string {
 		const who = this.value.trim() || randomCrewName(this.text, this.#random, taken);
 		storage.set(NAME_KEY, who);
+		// Прапор памʼятається ТУТ, а не при кожній зміні списку: запис у сховище
+		// має сенс тоді, коли вибір уже поїхав у кімнату.
+		storage.set(COUNTRY_KEY, this.country);
 		return who;
 	}
 }

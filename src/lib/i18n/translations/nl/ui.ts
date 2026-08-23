@@ -56,6 +56,8 @@ export const ui = {
 	'pairs.resumeOne': 'Terug',
 	'pairs.otherName': 'Andere naam',
 	'pairs.nickname': 'Bijnaam',
+	'pairs.country': 'Vlag',
+	'pairs.countryNone': 'Geen vlag',
 	'pairs.you': 'jij',
 	'pairs.myRole': 'Jouw rol',
 	'pairs.visibility': 'Wie mag meedoen',

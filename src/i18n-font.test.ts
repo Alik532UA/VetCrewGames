@@ -113,6 +113,25 @@ const DICTIONARY_CALL = /(^|[^\w$.])t d?\(|(^|[^\w$.])td?\(/;
 /** Форматери, які вже роблять підміну. Обидва повертають готову розмітку. */
 const FORMATTERS = /formatFont|formatPopulation/;
 
+/**
+ * Файли, де видимий текст форматується `formatPlain`, — і чому саме там.
+ *
+ * Правило вище вимагає `formatFont`, і не з примхи: він обгортає літеру в
+ * `<span>`, тобто в DOM лишається ПРАВИЛЬНИЙ символ, і пошук, копіювання та
+ * читалка працюють. `formatPlain` міняє символ у значенні — дешевше, але
+ * ламає саме це.
+ *
+ * Виняток один, і він не про смак: `<option>` не приймає розмітки взагалі —
+ * браузер викидає будь-який вкладений тег. Отже `formatFont` там не працює
+ * фізично, і вибір стоїть між `formatPlain` і неправильним шрифтом.
+ *
+ * Кожен рядок — обіцянка, що в цьому файлі текст живе у `<option>`. Список
+ * перевіряється на прострочені записи окремим тестом нижче.
+ */
+const PLAIN_IN_OPTIONS: Record<string, string> = {
+	'src/lib/components/ui/CountryPicker.svelte': 'назви країн у <option>'
+};
+
 describe('український текст на екрані', () => {
 	const components = walk('src').filter((f) => f.endsWith('.svelte'));
 
@@ -149,6 +168,7 @@ describe('український текст на екрані', () => {
 				for (const expression of expressions(region)) {
 					if (!DICTIONARY_CALL.test(expression)) continue;
 					if (FORMATTERS.test(expression)) continue;
+				if (file in PLAIN_IN_OPTIONS && /formatPlain/.test(expression)) continue;
 					problems.push(`${file}: ${expression.replace(/\s+/g, ' ').slice(0, 70)}`);
 				}
 			}
@@ -169,6 +189,23 @@ describe('український текст на екрані', () => {
 	 * копіювання тексту, читалку й індексацію. Замінювати символ можна лише на
 	 * показі — у джерелі він мусить бути тим, чим є.
 	 */
+	/**
+	 * Прострочений виняток мовчки ховає наступний неформатований текст.
+	 *
+	 * Той самий замок, що в `BACKED_BY_PARENT` у `backdrop.test.ts`: файл
+	 * прибрали або перейменували, а дозвіл лишився — і в ньому вже можна
+	 * забути `formatFont`, не почервонівши.
+	 */
+	it('у списку винятків для <option> немає зайвих файлів', () => {
+		const stale = Object.keys(PLAIN_IN_OPTIONS).filter((file) => !components.includes(file));
+		expect(stale, 'файлу вже немає — прибрати з PLAIN_IN_OPTIONS').toEqual([]);
+		for (const file of Object.keys(PLAIN_IN_OPTIONS)) {
+			// Обіцянка перевіряється, а не приймається на віру: якщо `<option>` із
+			// файлу зник, дозвіл більше нічого не виправдовує.
+			expect(readFileSync(file, 'utf8'), `${file}: <option> уже немає`).toContain('<option');
+		}
+	});
+
 	it('в українському словнику немає латиниці всередині слів', () => {
 		const dictionaries = walk('src/lib/i18n/translations/uk');
 		expect(dictionaries.length, 'словників не знайдено — перевірка осліпла').toBeGreaterThan(3);

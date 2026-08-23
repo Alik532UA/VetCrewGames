@@ -56,6 +56,8 @@ export const ui = {
 	'pairs.resumeOne': 'Вернутися',
 	'pairs.otherName': 'Інше імʼя',
 	'pairs.nickname': 'Нікнейм',
+	'pairs.country': 'Прапор',
+	'pairs.countryNone': 'Без прапора',
 	'pairs.you': 'ви',
 	'pairs.myRole': 'Ваша роль',
 	'pairs.visibility': 'Хто може зайти',

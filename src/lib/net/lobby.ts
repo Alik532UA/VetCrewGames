@@ -49,6 +49,8 @@ export interface LobbyRoom {
 	code: string;
 	hostUid: string;
 	hostName: string;
+	/** Прапор господаря. Відсутнє = без прапора; правило дозволяє обидва. */
+	hostCountry?: string;
 	gameId: string;
 	rulesVersion: number;
 	players: number;
@@ -76,6 +78,15 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
 	await set(node, {
 		hostUid: entry.hostUid,
 		hostName: entry.hostName,
+		/*
+		 * `...(entry.hostCountry ? { hostCountry: entry.hostCountry } : {})` —
+		 * поле або є, або його немає ЗОВСІМ.
+		 *
+		 * `undefined` усередині обʼєкта `set()` у Firebase КИДАЄ, а порожній
+		 * рядок не пройшов би `.validate` (там рівно дві літери). На цьому вже
+		 * одного разу зникав хід `peek`.
+		 */
+		...(entry.hostCountry ? { hostCountry: entry.hostCountry } : {}),
 		gameId: entry.gameId,
 		rulesVersion: entry.rulesVersion,
 		players: entry.players,

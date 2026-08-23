@@ -56,6 +56,8 @@ export const ui = {
 	'pairs.resumeOne': 'Zurück',
 	'pairs.otherName': 'Anderer Name',
 	'pairs.nickname': 'Spitzname',
+	'pairs.country': 'Flagge',
+	'pairs.countryNone': 'Ohne Flagge',
 	'pairs.you': 'Sie',
 	'pairs.myRole': 'Ihre Rolle',
 	'pairs.visibility': 'Wer darf beitreten',
