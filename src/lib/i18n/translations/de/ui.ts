@@ -47,6 +47,18 @@ export const ui = {
 	'pairs.otherName': 'Anderer Name',
 	'pairs.privateRoom': 'Privater Raum',
 	'pairs.privateRoomHint': 'Ein privater Raum steht nicht in der Liste — man kommt nur mit dem Code hinein.',
+	'pairs.rooms': 'Räume',
+	'pairs.noRooms': 'Noch keine offenen Räume',
+	'pairs.noRoomsHint': 'Erstelle einen — er erscheint hier bei allen, die diese Seite offen haben.',
+	'pairs.players': 'Spieler',
+	'pairs.enter': 'Beitreten',
+	'pairs.quickGame': 'Schnelles Spiel',
+	'pairs.quickGameHint': 'Wir treten einem freien Raum bei oder erstellen einen neuen offenen.',
+	'pairs.shown': 'Angezeigt',
+	'pairs.startingIn': 'Start in',
+	'pairs.seconds': 's',
+	'pairs.cancelStart': 'Noch nicht',
+	'pairs.roomsUnavailable': 'Die Raumliste ist nicht verfügbar. Beitreten per Code und Raum erstellen gehen weiter.',
 
 	// Team-Namen für das gemeinsame Spiel. GANZE Phrasen — siehe `config/crewNames.ts`.
 	'pairs.crew1': 'Chefarzt',

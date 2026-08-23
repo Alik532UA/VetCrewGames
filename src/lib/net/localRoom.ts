@@ -82,10 +82,30 @@ export class LocalRoom {
 			},
 
 			setStatus: async (status) => {
+				/*
+				 * `countdownAt` гасне разом із початком партії — так само, як у справжній
+				 * базі (там це один `update` із `null`).
+				 *
+				 * Розходження цих двох реалізацій зловив тест
+				 * `pairsMatch.svelte.test.ts` → «початок партії гасить відлік»: гасіння
+				 * було дописане лише в `rtdbRoom`, і підставний транспорт лишав позначку
+				 * назавжди. Саме той клас дефекту, від якого тест на підставному
+				 * транспорті беззахисний, якщо контракти розійшлися: перевірка доводила б
+				 * властивість реалізації, якої в продакшні немає.
+				 */
+				const { countdownAt: _stale, ...rest } = this.#info;
 				this.#info =
 					status === 'playing'
-						? { ...this.#info, status, startedAt: this.#now }
-						: { ...this.#info, status };
+						? { ...rest, status, startedAt: this.#now }
+						: { ...rest, status };
+				this.#emit();
+			},
+
+			setCountdown: async (active) => {
+				// Підставний транспорт тримає той самий контракт: увімкнено — число,
+				// скасовано — поля немає. Саме на це й дивиться сторінка.
+				const { countdownAt: _drop, ...rest } = this.#info;
+				this.#info = active ? { ...rest, countdownAt: this.#now } : rest;
 				this.#emit();
 			},
 

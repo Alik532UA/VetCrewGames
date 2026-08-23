@@ -38,6 +38,10 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	'src/lib/components/RoundIndicator.svelte': 'лічильник раундів — усередині шапки гри',
 	'src/lib/components/FeedingVerdicts.svelte': 'кожен присуд має власну картку .verdict',
 	'src/lib/components/GameOverCard.svelte': 'уся розмітка лежить у картці .game-over-card',
+	// Перелік кімнат малюється ЛИШЕ як четвертий блок форми входу, всередині
+	// `.gate`, і фон дає вона (`--color-bg-panel`). Власний фон тут був би
+	// панеллю на панелі — двома шарами того самого кольору з видимим швом.
+	'src/lib/components/pairs/RoomList.svelte': 'четвертий блок форми входу, фон дає .gate',
 	'src/lib/components/ErrorFallback.svelte': 'екран помилки — суцільна картка',
 	// Панелі заповідника малюються ЛИШЕ всередині `BottomSheet`, і фон дає він.
 	// Свій фон тут був би панеллю на панелі — двома шарами того самого кольору

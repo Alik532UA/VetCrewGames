@@ -16,11 +16,32 @@
 		me: string;
 		amHost: boolean;
 		myRole: Role;
+		/**
+		 * Скільки секунд до автоматичного старту; `null` — відліку немає.
+		 *
+		 * Число приходить готовим, а не рахується тут: воно виводиться з СЕРВЕРНОЇ
+		 * позначки в кімнаті, і саме тому в обох учасників однакове. Компонент його
+		 * лише малює.
+		 */
+		countdownLeft: number | null;
 		onRole: (role: Role) => void;
 		onStart: () => void;
+		/** Скасувати відлік. Є лише в господаря — правило бази інших і не пустить. */
+		onCancelCountdown: () => void;
 	}
 
-	let { code, members, online, me, amHost, myRole, onRole, onStart }: Props = $props();
+	let {
+		code,
+		members,
+		online,
+		me,
+		amHost,
+		myRole,
+		countdownLeft,
+		onRole,
+		onStart,
+		onCancelCountdown
+	}: Props = $props();
 
 	const players = $derived(members.filter((member) => member.role === 'player'));
 	/*
@@ -69,6 +90,34 @@
 		{/each}
 	</div>
 
+	<!--
+		ВІДЛІК БАЧАТЬ ОБОЄ, і це головне в ньому.
+
+		Той, хто зайшов другим, кнопки «Почати» не має зовсім, тож без цього рядка
+		партія починалася б для нього раптово. Число тут те саме, що в господаря:
+		воно виводиться з серверної позначки, а не з місцевого таймера.
+
+		Скасувати може господар кнопкою; гість — перейшовши в глядачі, бо тоді
+		гравців стає менше двох і відлік гасне сам. Тобто вихід є в обох, і жоден із
+		них не потребує окремого права в базі.
+	-->
+	{#if countdownLeft !== null}
+		<p class="lobby__countdown text-panel" data-testid="pairs-countdown-text">
+			{@html formatFont(t('pairs.startingIn'))}
+			<b class="lobby__seconds">{countdownLeft}{@html formatFont(t('pairs.seconds'))}</b>
+		</p>
+		{#if amHost}
+			<button
+				type="button"
+				class="chip"
+				onclick={onCancelCountdown}
+				data-testid="pairs-cancel-countdown-btn"
+			>
+				{@html formatFont(t('pairs.cancelStart'))}
+			</button>
+		{/if}
+	{/if}
+
 	{#if amHost}
 		<!--
 			Починає лише господар, і кнопка не ховається, коли гравців бракує:
@@ -108,6 +157,22 @@
 	.lobby__code {
 		margin: 0;
 		font-size: var(--font-size-md);
+	}
+
+	.lobby__countdown {
+		margin: 0;
+		font-size: var(--font-size-md);
+		color: var(--color-text);
+	}
+
+	/*
+	 * Число рівної ширини: без `tabular-nums` рядок сіпається на кожній секунді,
+	 * бо «5» і «1» у пропорційному шрифті різної ширини — а сіпається він рівно
+	 * тоді, коли на нього дивляться.
+	 */
+	.lobby__seconds {
+		font-variant-numeric: tabular-nums;
+		color: var(--color-accent);
 	}
 
 	/* Код диктують уголос, тож він великий і з проміжками між літерами. */

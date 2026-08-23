@@ -48,6 +48,15 @@ export class PairsMatch {
 	 */
 	turnSince = $state<number | null>(null);
 
+	/**
+	 * Серверний час початку відліку до автоматичного старту; `null` — відліку
+	 * немає.
+	 *
+	 * Контролер його лише ПЕРЕДАЄ далі: рішення «пора починати» належить
+	 * господареві, а правила партії про відлік не знають нічого.
+	 */
+	countdownAt = $state<number | null>(null);
+
 	readonly #me: string;
 	readonly #transport: RoomTransport;
 	/** Опис партії, з якого роздано поточну дошку. Зміна = роздати заново. */
@@ -182,6 +191,7 @@ export class PairsMatch {
 		this.members = snapshot.members;
 		this.status = snapshot.info.status;
 		this.hostUid = snapshot.info.hostUid;
+		this.countdownAt = snapshot.info.countdownAt ?? null;
 
 		/*
 		 * Опис партії — рядок, і порівнюється він цілком.

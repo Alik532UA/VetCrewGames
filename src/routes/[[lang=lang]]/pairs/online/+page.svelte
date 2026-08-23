@@ -14,6 +14,8 @@
 	import { randomCrewName } from '$lib/config/crewNames';
 	import type { Role } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
+	import RoomList from '$lib/components/pairs/RoomList.svelte';
+	import type { LobbyRoom } from '$lib/net/lobby';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 
@@ -52,6 +54,27 @@
 	 */
 	const CLOCK_MS = 1000;
 
+	/**
+	 * Скільком гравцям місце в партії «Знайди пару».
+	 *
+	 * Двоє — це сама гра, а не налаштування: дошка ділиться між двома чергами, і
+	 * третій може бути лише глядачем. Число тут потрібне швидкій грі: вона мусить
+	 * відрізнити кімнату, де ще чекають, від тієї, де вже грають удвох.
+	 *
+	 * Не з правил бази: там стеля 12 на всі ігри проєкту, і це інша величина.
+	 */
+	const PAIRS_PLAYERS = 2;
+
+	/**
+	 * Скільки триває відлік до автоматичного старту.
+	 *
+	 * Пʼять секунд — не «щоб гарно»: це та межа, за яку встигаєш прочитати, що
+	 * відбувається, і натиснути «Не починати», але не встигаєш занудьгувати. Менше
+	 * — і кнопка скасування існує лише формально; більше — і двоє, які вже готові,
+	 * сидять і чекають на таймер.
+	 */
+	const COUNTDOWN_MS = 5000;
+
 	let match = $state<PairsMatch | null>(null);
 	let code = $state('');
 	let joinCode = $state('');
@@ -64,6 +87,19 @@
 	 * Приватність — вибір для того, хто грає з конкретною людиною.
 	 */
 	let isPrivate = $state(false);
+	/** Перелік відкритих кімнат. Порожній і поки не підписалися, і коли їх немає. */
+	let rooms = $state<LobbyRoom[]>([]);
+	/** Скільки їх УСЬОГО: список обрізаний, і обрізку треба показати. */
+	let roomsTotal = $state(0);
+	/**
+	 * Перелік не читається — майже завжди «правила ще не викладені».
+	 *
+	 * Окремо від «кімнат немає»: порожній список і недоступний список — різні
+	 * повідомлення, і друге не мусить читатися як перше.
+	 */
+	let roomsUnavailable = $state(false);
+	/** Зняти свою кімнату з переліку. `null`, якщо вона закрита або вже знята. */
+	let unlist: (() => void) | null = null;
 	let me = $state('');
 	let online = $state<string[]>([]);
 	let busy = $state(false);
@@ -193,6 +229,37 @@
 			if (action === 'create') {
 				releaseHold = await live.holdRoom(code);
 				stops.push(() => releaseHold?.());
+
+				/*
+				 * ВІДКРИТА кімната потрапляє в перелік; закрита — ні, і в цьому вся
+				 * різниця між ними.
+				 *
+				 * Запис віддає код усім, хто читає перелік, тому рішення лишається за
+				 * господарем і зроблене воно прапорцем у формі. Подробиці ціни — у
+				 * `net/lobby.ts`.
+				 *
+				 * Невдача публікації НЕ скасовує створення: кімната працює й без
+				 * запису, просто її не видно в списку — тобто найгірший наслідок
+				 * дорівнює стану «закрита кімната».
+				 */
+				if (!isPrivate) {
+					try {
+						const list = await import('$lib/net/lobby');
+						unlist = await list.publishRoom({
+							code,
+							// `me` уже відомий: його виставив `connect()` вище, до створення
+							// матчу. Правило бази однаково звірить його з господарем кімнати.
+							hostUid: me,
+							hostName: who,
+							gameId: 'pairs',
+							rulesVersion: RULES_VERSION,
+							players: 1
+						});
+						stops.push(() => unlist?.());
+					} catch (error) {
+						logService.warn('network', 'room not published', { code, error: String(error) });
+					}
+				}
 			}
 
 			match = started;
@@ -208,6 +275,54 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	/**
+	 * ШВИДКА ГРА: зайти у вільну кімнату, а якщо таких немає — створити відкриту.
+	 *
+	 * Вибір найстаршої з вільних, а не найновішої. Список показує найновіші вгорі
+	 * (так видно, що щойно з'явилося), але заходити треба до того, хто чекає
+	 * ДОВШЕ — інакше кімната, створена першою, стоятиме порожньою, поки біля
+	 * свіжих збирається черга.
+	 *
+	 * ЗБІГ ДВОХ НАТИСКІВ не потребує захисту, і це варто сказати прямо, бо
+	 * виглядає інакше:
+	 *
+	 *   обидва вибрали ту саму кімнату → обидва зайшли, і це рівно те, що
+	 *     потрібно: двоє гравців у кімнаті на двох;
+	 *   обидва не знайшли нічого й створили → дві кімнати по одному, і кожен
+	 *     побачить кімнату іншого в списку наступним же кадром.
+	 *
+	 * Тобто гірший випадок — це «створилося на одну кімнату більше», і він
+	 * лікується сам. Блокування ж (транзакція чи оренда коду) коштувало б окремої
+	 * гілки в базі й правила до неї — заради стану, який не є помилкою.
+	 *
+	 * Версія правил перевіряється ТУТ, а не після спроби: зайти в кімнату з
+	 * іншою версією однаково не вийде (`enter` покаже «гра оновилася»), і
+	 * пропонувати таку кімнату швидкій грі — це запрошувати до відмови.
+	 */
+	async function quickGame() {
+		if (busy) return;
+
+		const free = rooms
+			.filter(
+				(room) =>
+					room.gameId === 'pairs' &&
+					room.rulesVersion === RULES_VERSION &&
+					room.players < PAIRS_PLAYERS
+			)
+			.sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
+
+		if (free.length > 0) {
+			joinCode = free[0].code;
+			await enter('join');
+			return;
+		}
+
+		// Своя кімната для швидкої гри — завжди ВІДКРИТА: сенс дії в тому, щоб у неї
+		// хтось зайшов, а закрита цього не дозволяє за побудовою.
+		isPrivate = false;
+		await enter('create');
 	}
 
 	async function setRole(role: Role) {
@@ -232,6 +347,13 @@
 		 */
 		releaseHold?.();
 		releaseHold = null;
+
+		/*
+		 * І з переліку теж: у списку мусять бути лише кімнати, куди ще можна зайти.
+		 * Партія, що вже йде, — це рядок, який обіцяє гру й дає роль глядача.
+		 */
+		unlist?.();
+		unlist = null;
 	}
 
 	/**
@@ -261,6 +383,10 @@
 	async function close() {
 		if (!match || !amHost) return;
 		try {
+			// Спершу з переліку, і лише потім сама кімната: у зворотному порядку є
+			// вікно, у якому в списку стоїть рядок кімнати, якої вже немає.
+			unlist?.();
+			unlist = null;
 			const net = await import('$lib/net/rtdbRoom');
 			await net.closeRoom(code);
 			await goto(langPath(lang, 'pairs'));
@@ -315,11 +441,157 @@
 	 * таймер, що цокає всю партію, тут був би витратою батареї на нічого.
 	 */
 	$effect(() => {
-		if (!browser || match?.yieldReadyAt === null || match?.yieldReadyAt === undefined) return;
+		// Друга причина цокати — відлік у лобі: без неї число на екрані стояло б
+		// нерухомо, поки таймер господаря тихо доходив до нуля.
+		const counting = match?.countdownAt !== null && match?.countdownAt !== undefined;
+		const waiting = match?.yieldReadyAt !== null && match?.yieldReadyAt !== undefined;
+		if (!browser || (!waiting && !counting)) return;
 		clock = Date.now();
 		const timer = setInterval(() => (clock = Date.now()), CLOCK_MS);
 		return () => clearInterval(timer);
 	});
+
+	/**
+	 * ПІДПИСКА НА ПЕРЕЛІК — лише поки видно форму входу.
+	 *
+	 * `$effect`, а не `onMount`: підписка мусить зникнути, щойно з'явився матч.
+	 * Тримати її під час партії означало б слухати чужі кімнати замість своєї, і
+	 * платити за це трафіком на кожну чужу зміну.
+	 *
+	 * ЦІНА, ЯКУ ВАРТО НАЗВАТИ: читання переліку вимагає авторизації, тож ця
+	 * підписка входить анонімно ВІДРАЗУ при відкритті сторінки — доти вхід
+	 * відкладався до створення чи приєднання. Анонімний обліковий запис при цьому
+	 * НЕ множиться: `connect()` перевикористовує наявного користувача, і новий
+	 * з'являється лише в того, хто вперше відкрив саму цю сторінку.
+	 */
+	$effect(() => {
+		if (!browser || match) return;
+
+		let stop: (() => void) | null = null;
+		let dead = false;
+
+		void (async () => {
+			try {
+				const list = await import('$lib/net/lobby');
+				const off = await list.watchLobby({
+					onRooms: (next, total) => {
+						rooms = next;
+						roomsTotal = total;
+						roomsUnavailable = false;
+					},
+					// Порожній список і недоступний список — РІЗНІ повідомлення. Доти
+					// друге виглядало як перше, тобто «правила не викладені» читалося
+					// як «ніхто не створив кімнату».
+					onUnavailable: () => {
+						rooms = [];
+						roomsTotal = 0;
+						roomsUnavailable = true;
+					}
+				});
+				// Ефект міг зникнути, поки йшов імпорт і вхід: тоді підписку треба
+				// знімати одразу, інакше вона живе довше за сторінку.
+				if (dead) off();
+				else stop = off;
+			} catch (error) {
+				roomsUnavailable = true;
+				logService.warn('network', 'lobby subscription failed', { error: String(error) });
+			}
+		})();
+
+		return () => {
+			dead = true;
+			stop?.();
+		};
+	});
+
+	/**
+	 * ГОСПОДАР ВЕДЕ КІЛЬКІСТЬ ГРАВЦІВ У СВОЄМУ ЗАПИСІ.
+	 *
+	 * Він єдиний, хто може: правило дозволяє писати в `lobby/{code}` лише
+	 * господареві, а склад він і так бачить підпискою. Гість не має ні права, ні
+	 * потреби.
+	 *
+	 * Без цього список показував би «Гравців: 1» у кімнаті, де вже двоє, — і
+	 * швидка гра водила б людей у повні кімнати, роблячи їх глядачами.
+	 */
+	$effect(() => {
+		if (!browser || !unlist || !amHost || !match) return;
+		const players = match.members.filter((member) => member.role === 'player').length;
+		void import('$lib/net/lobby').then((list) => list.updatePlayers(code, players));
+	});
+
+	/**
+	 * ВІДЛІК ДО АВТОМАТИЧНОГО СТАРТУ — вмикає ГОСПОДАР, бачать обоє.
+	 *
+	 * Навіщо взагалі. Швидка гра приводить двох незнайомців у кімнату, і хтось із
+	 * них мусить натиснути «Почати». Той, хто зайшов другим, кнопки не має зовсім
+	 * (вона господарева), а господар може дивитися в інше вікно — і партія не
+	 * починається, хоч обоє на місці.
+	 *
+	 * Умова саме РІВНО двоє, а не «двоє й більше»: третій у кімнаті — глядач, і
+	 * його поява не мусить нічого запускати. Менше двох — відлік гасне сам, і саме
+	 * це дає гостю спосіб його скасувати: перейти в глядачі. Явна кнопка є в
+	 * господаря.
+	 *
+	 * Записує лише господар — гостю правило бази й не дозволить.
+	 */
+	$effect(() => {
+		if (!browser || !amHost || !match || match.status !== 'lobby') return;
+
+		const players = match.members.filter((member) => member.role === 'player').length;
+		const ready = players === PAIRS_PLAYERS;
+		const running = match.countdownAt !== null;
+
+		if (ready === running) return;
+		void import('$lib/net/rtdbRoom')
+			.then((net) => net.roomTransport(code))
+			.then((transport) => transport.setCountdown(ready))
+			.catch((error) => logService.warn('network', 'countdown not set', { error: String(error) }));
+	});
+
+	/**
+	 * Коли відлік вийшов — партія починається.
+	 *
+	 * Таймер ГОСПОДАРЯ, і тільки його: перевести кімнату в `playing` має право
+	 * лише він. У гостя те саме поле малює число, і розбіжність годинників зсуває
+	 * лише показане, а не мить старту.
+	 *
+	 * `setTimeout` на ЗАЛИШОК, а не на пʼять секунд: господар міг перезавантажити
+	 * сторінку посеред відліку, і тоді чекати треба менше, ніж спочатку.
+	 */
+	$effect(() => {
+		if (!browser || !amHost || !match || match.status !== 'lobby') return;
+		const startedAt = match.countdownAt;
+		if (startedAt === null) return;
+
+		const left = Math.max(0, startedAt + COUNTDOWN_MS - Date.now());
+		const timer = setTimeout(() => void start(), left);
+		return () => clearTimeout(timer);
+	});
+
+	/**
+	 * Скільки секунд лишилося. `null` — відліку немає.
+	 *
+	 * Читає `clock`, який уже цокає раз на секунду, — тому окремого таймера тут
+	 * немає. Але `clock` іде лише поки на нього чекають (`$effect` нижче), тож
+	 * заводимо його й на відлік: інакше число стояло б на місці.
+	 */
+	const countdownLeft = $derived(
+		match?.countdownAt === null || match?.countdownAt === undefined
+			? null
+			: Math.max(0, Math.ceil((match.countdownAt + COUNTDOWN_MS - clock) / 1000))
+	);
+
+	/** Скасувати відлік. Кімната лишається в лобі, старт стає ручним. */
+	async function cancelCountdown() {
+		if (!match || !amHost) return;
+		try {
+			const net = await import('$lib/net/rtdbRoom');
+			await (await net.roomTransport(code)).setCountdown(false);
+		} catch (error) {
+			hostActionFailed(error);
+		}
+	}
 
 	/** Кнопка «забрати чергу» існує лише коли межа вже вийшла. */
 	const canTakeTurn = $derived(Boolean(match?.canYieldAt(clock)));
@@ -359,7 +631,28 @@
 			{busy}
 			onCreate={() => enter('create')}
 			onJoin={() => enter('join')}
-		/>
+		>
+			{#snippet roomList()}
+				<!--
+					Список малює СТОРІНКА, а форма лишає для нього місце сніпетом.
+
+					Причина не в компонуванні: `OnlineGate` навмисно не знає про мережу
+					(див. його докблок), а список без мережі не існує. Сніпет тримає межу
+					на місці — форма й далі перевіряється без бази.
+				-->
+				<RoomList
+					{rooms}
+					total={roomsTotal}
+					unavailable={roomsUnavailable}
+					{busy}
+					onEnter={(chosen) => {
+						joinCode = chosen;
+						void enter('join');
+					}}
+					onQuickGame={quickGame}
+				/>
+			{/snippet}
+		</OnlineGate>
 	{:else if match.status === 'lobby'}
 		<OnlineLobby
 			{code}
@@ -368,8 +661,10 @@
 			{me}
 			{amHost}
 			{myRole}
+			{countdownLeft}
 			onRole={setRole}
 			onStart={start}
+			onCancelCountdown={cancelCountdown}
 		/>
 	{:else}
 		<OnlineRoom

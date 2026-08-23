@@ -228,10 +228,25 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			 * назавжди.
 			 */
 			if (status === 'playing') {
-				await update(ref(db, `rooms/${code}/info`), { status, startedAt: serverTimestamp() });
+				/*
+				 * `countdownAt: null` тим самим записом — щоб не лишалося поля, яке вже
+				 * ні про що. Стале число читалося б як «відлік іде» щоразу, коли хтось
+				 * повернеться в кімнату після партії.
+				 */
+				await update(ref(db, `rooms/${code}/info`), {
+					status,
+					startedAt: serverTimestamp(),
+					countdownAt: null
+				});
 				return;
 			}
 			await set(ref(db, `rooms/${code}/info/status`), status);
+		},
+
+		async setCountdown(active: boolean) {
+			// `null` — це видалення поля; правило `.validate` на видалення не діє, тож
+			// скасування дозволене тим самим правом, що й увімкнення.
+			await set(ref(db, `rooms/${code}/info/countdownAt`), active ? serverTimestamp() : null);
 		},
 
 		async restart(seed: number) {

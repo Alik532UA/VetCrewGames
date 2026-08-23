@@ -92,6 +92,21 @@ const SERVER_TIME = { '.sv': 'timestamp' };
 const move = (by, seq) => ({ seq, by, type: 'flip', at: SERVER_TIME, payload: { index: 3 } });
 
 /**
+ * Запис у переліку публічних кімнат. Несекретні поля — і ТІЛЬКИ вони.
+ *
+ * `hostUid` тут не для показу, а для правила: саме за ним дається право прибрати
+ * запис, і саме тому воно не залежить від того, чи кімната ще існує.
+ */
+const lobbyEntry = (hostUid) => ({
+	hostUid,
+	hostName: 'Головний Лікар',
+	gameId: 'pairs',
+	rulesVersion: 2,
+	players: 1,
+	at: SERVER_TIME
+});
+
+/**
  * Кожен рядок — що саме перевіряємо і чого чекаємо.
  * Порядок має значення: пізніші випадки спираються на стан, створений раніше.
  */
@@ -121,6 +136,18 @@ const CASES = [
 		name: 'господар ставить серверну позначку початку партії',
 		allowed: true,
 		run: () => write(`rooms/${CODE}/info/startedAt`, SERVER_TIME, host.token)
+	},
+	{
+		name: 'господар вмикає відлік до автоматичного старту',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/info/countdownAt`, SERVER_TIME, host.token)
+	},
+	{
+		// Скасування — видалення поля. `.validate` на видалення не діє, тож перевіряти
+		// треба саме право: воно те саме, що на зміну `info`.
+		name: 'господар скасовує відлік',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/info/countdownAt`, null, host.token)
 	},
 	{
 		name: 'гість дописує СВІЙ хід у журнал',
@@ -160,6 +187,24 @@ const CASES = [
 		name: 'господар читає свій індекс кімнат',
 		allowed: true,
 		run: () => read(`myRooms/${host.uid}`, host.token)
+	},
+	{
+		name: 'господар публікує СВОЮ кімнату в переліку',
+		allowed: true,
+		run: () => write(`lobby/${CODE}`, lobbyEntry(host.uid), host.token)
+	},
+	{
+		// Саме це й неможливо для `rooms`, і саме заради цього гілка існує.
+		name: 'будь-хто ЧИТАЄ ПЕРЕЛІК публічних кімнат',
+		allowed: true,
+		run: () => read('lobby', guest.token)
+	},
+	{
+		// Кількість гравців веде господар: він єдиний, хто бачить склад і має
+		// право писати сюди.
+		name: 'господар оновлює кількість гравців у переліку',
+		allowed: true,
+		run: () => write(`lobby/${CODE}/players`, 2, host.token)
 	},
 
 	// --- сторонній не мусить цього могти ---
@@ -216,6 +261,19 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/seed`, 777, guest.token)
 	},
 	{
+		// Інакше гість запускав би партію, до якої господар не готовий, — і робив би
+		// це з боку, де кнопки «Почати» немає.
+		name: 'гість вмикає відлік',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/countdownAt`, SERVER_TIME, guest.token)
+	},
+	{
+		// Підроблений час означав би «відлік уже скінчився» будь-коли.
+		name: 'відлік із ПІДРОБЛЕНИМ часом',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/countdownAt`, 1000, host.token)
+	},
+	{
 		name: 'створити кімнату, назвавши господарем ІНШОГО',
 		allowed: false,
 		run: () => write('rooms/BBBBB/info', info(host.uid), guest.token)
@@ -235,6 +293,41 @@ const CASES = [
 		name: 'рядок складу без обовʼязкових полів',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/members/${guest.uid}`, { name: 'Без ролі' }, guest.token)
+	},
+	{
+		// Головне обмеження цієї гілки: публічною кімнату робить ЇЇ господар, а не
+		// хтось інший. Без цього будь-хто відкривав би чужий код усьому світові.
+		name: 'ЧУЖУ кімнату оголошують публічною',
+		allowed: false,
+		run: () => write(`lobby/${CODE}`, lobbyEntry(guest.uid), guest.token)
+	},
+	{
+		// Запис, що не відповідає жодній кімнаті, — це привид у списку.
+		name: 'публікація кімнати, якої НЕМАЄ',
+		allowed: false,
+		run: () => write('lobby/ZZZZZ', lobbyEntry(guest.uid), guest.token)
+	},
+	{
+		name: 'чужий запис у переліку прибирають',
+		allowed: false,
+		run: () => write(`lobby/${CODE}`, null, guest.token)
+	},
+	{
+		// `seed` і `config` визначають роздачу: побачити їх, не заходячи в кімнату,
+		// означало б бачити дошку суперника до першого ходу.
+		name: 'у перелік кладуть зерно роздачі',
+		allowed: false,
+		run: () => write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), seed: 12345 }, host.token)
+	},
+	{
+		name: 'запис у переліку з клієнтським часом',
+		allowed: false,
+		run: () => write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), at: 1000 }, host.token)
+	},
+	{
+		name: 'запис у переліку без обовʼязкових полів',
+		allowed: false,
+		run: () => write(`lobby/${CODE}`, { hostUid: host.uid }, host.token)
 	},
 	{
 		name: 'чужа присутність',

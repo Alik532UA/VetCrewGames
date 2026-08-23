@@ -633,4 +633,51 @@ describe('суперник відпав', () => {
 		expect(host.status).toBe('over');
 		stop();
 	});
+
+	/**
+	 * ВІДЛІК ДО АВТОМАТИЧНОГО СТАРТУ — і головне в ньому те, що його бачать ОБОЄ.
+	 *
+	 * Саме заради цього позначка живе в кімнаті, а не в памʼяті господаря: той, хто
+	 * зайшов другим, кнопки «Почати» не має зовсім, і без спільного поля партія
+	 * починалася б для нього раптово. Перевіряється це двома учасниками в одному
+	 * процесі — тобто рівно тим, задля чого й існує підставний транспорт.
+	 */
+	describe('відлік до автоматичного старту', () => {
+		it('увімкнений господарем — видно обом', async () => {
+			const { room, host, guest, stop } = table();
+			expect(host.countdownAt, 'спочатку відліку немає').toBeNull();
+
+			await room.transport().setCountdown(true);
+
+			expect(host.countdownAt, 'господар бачить').not.toBeNull();
+			expect(guest.countdownAt, 'гість бачить те саме').toBe(host.countdownAt);
+			stop();
+		});
+
+		it('скасований — зникає в обох', async () => {
+			const { room, host, guest, stop } = table();
+			await room.transport().setCountdown(true);
+			await room.transport().setCountdown(false);
+
+			expect(host.countdownAt).toBeNull();
+			expect(guest.countdownAt).toBeNull();
+			stop();
+		});
+
+		/*
+		 * Стале число читалося б як «відлік іде» щоразу, коли хтось повернеться в
+		 * кімнату після партії, — і кнопка «Не починати» висіла б у грі, яка вже
+		 * почалася. Тому початок партії гасить позначку ТИМ САМИМ записом.
+		 */
+		it('початок партії гасить відлік', async () => {
+			const { room, host, guest, stop } = table();
+			await room.transport().setCountdown(true);
+			await room.transport().setStatus('playing');
+
+			expect(host.countdownAt, 'у господаря погасло').toBeNull();
+			expect(guest.countdownAt, 'і в гостя').toBeNull();
+			expect(host.status).toBe('playing');
+			stop();
+		});
+	});
 });

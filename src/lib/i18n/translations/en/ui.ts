@@ -47,6 +47,18 @@ export const ui = {
 	'pairs.otherName': 'Another name',
 	'pairs.privateRoom': 'Private room',
 	'pairs.privateRoomHint': 'A private room is not in the list — it can only be joined with its code.',
+	'pairs.rooms': 'Rooms',
+	'pairs.noRooms': 'No open rooms yet',
+	'pairs.noRoomsHint': 'Create one — it will show up here for everyone who has this page open.',
+	'pairs.players': 'Players',
+	'pairs.enter': 'Enter',
+	'pairs.quickGame': 'Quick game',
+	'pairs.quickGameHint': 'We will join a free room, or create a new open one if there is none.',
+	'pairs.shown': 'Showing',
+	'pairs.startingIn': 'Starting in',
+	'pairs.seconds': 's',
+	'pairs.cancelStart': 'Not yet',
+	'pairs.roomsUnavailable': 'The room list is unavailable. Joining by code and creating a room still work.',
 
 	// Crew names for the shared game. WHOLE phrases — see `config/crewNames.ts`.
 	'pairs.crew1': 'Head Vet',

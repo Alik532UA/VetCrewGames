@@ -47,6 +47,18 @@ export const ui = {
 	'pairs.otherName': 'Andere naam',
 	'pairs.privateRoom': 'Privékamer',
 	'pairs.privateRoomHint': 'Een privékamer staat niet in de lijst — je komt er alleen met de code in.',
+	'pairs.rooms': 'Kamers',
+	'pairs.noRooms': 'Nog geen open kamers',
+	'pairs.noRoomsHint': 'Maak er een — hij komt hier bij iedereen die deze pagina open heeft.',
+	'pairs.players': 'Spelers',
+	'pairs.enter': 'Meedoen',
+	'pairs.quickGame': 'Snel spel',
+	'pairs.quickGameHint': 'We stappen in een vrije kamer, of maken een nieuwe open kamer.',
+	'pairs.shown': 'Weergegeven',
+	'pairs.startingIn': 'Start over',
+	'pairs.seconds': 's',
+	'pairs.cancelStart': 'Nog niet',
+	'pairs.roomsUnavailable': 'De kamerlijst is niet beschikbaar. Meedoen met een code en een kamer maken werken wel.',
 
 	// Teamnamen voor het gedeelde spel. HELE zinnen — zie `config/crewNames.ts`.
 	'pairs.crew1': 'Hoofdarts',

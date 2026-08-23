@@ -38,8 +38,13 @@
 		busy: boolean;
 		onCreate: () => void;
 		onJoin: () => void;
-		/** Список кімнат — четвертий блок. Його малює сторінка: вона знає мережу. */
-		rooms?: import('svelte').Snippet;
+		/**
+		 * Список кімнат — четвертий блок. Його малює СТОРІНКА: вона знає мережу.
+		 *
+		 * `roomList`, а не `rooms`: це сніпет, а не дані, і поруч на сторінці живе
+		 * стан із назвою `rooms` — сніпет-проп мусив би збігтися з ним імʼям.
+		 */
+		roomList?: import('svelte').Snippet;
 	}
 
 	let {
@@ -49,7 +54,7 @@
 		busy,
 		onCreate,
 		onJoin,
-		rooms
+		roomList
 	}: Props = $props();
 
 	/** Код кімнати — рівно пʼять літер; коротший вводити ще не закінчили. */
@@ -182,9 +187,9 @@
 	</section>
 
 	<!-- ── 4. Список кімнат ─────────────────────────────────────────────────── -->
-	{#if rooms}
+	{#if roomList}
 		<section class="gate__block gate__block--last">
-			{@render rooms()}
+			{@render roomList()}
 		</section>
 	{/if}
 </div>
