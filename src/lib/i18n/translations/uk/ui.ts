@@ -33,8 +33,9 @@ export const ui = {
 	'pairs.rolePlayer': 'Гравець',
 	'pairs.roleSpectator': 'Глядач',
 	'pairs.start': 'Почати партію',
+	'pairs.startWhenReady': 'Натисніть «Почати партію», коли будете готові.',
 	'pairs.needPlayers': 'Потрібні щонайменше двоє гравців.',
-	'pairs.waitingHost': 'Чекаємо, доки господар почне.',
+	'pairs.waitingHost': 'Чекаємо, доки лідер почне.',
 	'pairs.yourTurn': 'Ваш хід',
 	'pairs.waitingFor': 'Хід',
 	'pairs.noRoom': 'Такої кімнати немає.',
@@ -182,6 +183,6 @@ export const ui = {
 	'pairs.modeAuto': 'Автостарт',
 	'pairs.modeConfirm': 'Підтвердження готовності',
 	'pairs.modeAutoHint': 'Партія почнеться сама, щойно зберуться двоє гравців.',
-	'pairs.modeConfirmHint': 'Партія чекає, доки господар натисне «Почати партію».',
+	'pairs.modeConfirmHint': 'Партія чекає, доки лідер натисне «Почати партію».',
 	'pairs.rulesStale': 'Сервер не пускає в кімнату. Найчастіша причина — правила бази старіші за цю версію гри.',
 } as const;

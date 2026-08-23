@@ -33,6 +33,7 @@ export const ui = {
 	'pairs.rolePlayer': 'Player',
 	'pairs.roleSpectator': 'Spectator',
 	'pairs.start': 'Start the game',
+	'pairs.startWhenReady': 'Press “Start the game” when you are ready.',
 	'pairs.needPlayers': 'At least two players are needed.',
 	'pairs.waitingHost': 'Waiting for the host to start.',
 	'pairs.yourTurn': 'Your turn',

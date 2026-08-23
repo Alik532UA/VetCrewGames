@@ -33,6 +33,7 @@ export const ui = {
 	'pairs.rolePlayer': 'Spieler',
 	'pairs.roleSpectator': 'Zuschauer',
 	'pairs.start': 'Spiel starten',
+	'pairs.startWhenReady': 'Drücken Sie „Partie starten“, wenn Sie bereit sind.',
 	'pairs.needPlayers': 'Es braucht mindestens zwei Spieler.',
 	'pairs.waitingHost': 'Warten, bis der Gastgeber startet.',
 	'pairs.yourTurn': 'Du bist dran',

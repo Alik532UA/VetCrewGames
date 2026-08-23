@@ -33,6 +33,7 @@ export const ui = {
 	'pairs.rolePlayer': 'Speler',
 	'pairs.roleSpectator': 'Kijker',
 	'pairs.start': 'Spel starten',
+	'pairs.startWhenReady': 'Druk op “Spel starten” als je klaar bent.',
 	'pairs.needPlayers': 'Er zijn minstens twee spelers nodig.',
 	'pairs.waitingHost': 'Wachten tot de gastheer begint.',
 	'pairs.yourTurn': 'Jouw zet',
