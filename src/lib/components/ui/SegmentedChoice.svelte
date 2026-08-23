@@ -101,14 +101,31 @@
 		color: var(--color-text-on-panel);
 	}
 
-	/* Спільна панель, у якій живуть сегменти. */
+	/*
+	 * Спільна панель, у якій живуть сегменти — і в неї СВОЄ тло.
+	 *
+	 * Було `color-mix(… transparent 94%)`, тобто шестивідсотковий натяк. На сторінці
+	 * панель лежить просто на фотографії тла, і напис невибраного сегмента
+	 * опинявся на фотографії — автор сказав про це прямо: «стильно, але немає
+	 * фону, текст погано читається».
+	 *
+	 * Тло взято те саме, що в глобального `.text-panel`, а не вигадане: воно вже
+	 * перевірене гейтом контрасту в усіх чотирьох темах разом із
+	 * `--color-text-on-panel`, яким тут пофарбовані сегменти. Своє значення
+	 * означало б нову пару, якої гейт не бачив.
+	 *
+	 * `backdrop-filter` тут теж не для краси: без розмиття будь-яка фотографія
+	 * просвічує крізь напівпрозоре тло дрібними деталями, і саме вони роблять
+	 * текст нечитабельним.
+	 */
 	.seg__track {
 		display: flex;
 		gap: 2px;
 		padding: 4px;
 		border-radius: var(--radius-md);
-		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 88%);
-		background: color-mix(in srgb, var(--color-text-on-panel), transparent 94%);
+		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
+		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
+		backdrop-filter: var(--blur-glass);
 	}
 
 	/*

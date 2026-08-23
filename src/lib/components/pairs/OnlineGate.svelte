@@ -142,7 +142,7 @@
 					bind:this={nameInput}
 					bind:value={name}
 					maxlength="48"
-					placeholder={t('memory.you')}
+					placeholder={t('pairs.nickname')}
 					data-testid="pairs-name-input"
 				/>
 				<InputTools

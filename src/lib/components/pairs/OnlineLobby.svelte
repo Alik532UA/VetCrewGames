@@ -3,6 +3,7 @@
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import type { Member, Role } from '$lib/net/roomTypes';
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
+	import YouTag from '$lib/components/ui/YouTag.svelte';
 
 	/**
 	 * Лобі кімнати: код, склад, роль і кнопка «почати».
@@ -117,7 +118,7 @@
 				class:lobby__member--away={!online.includes(member.uid)}
 				data-testid="pairs-member-{member.uid}-item"
 			>
-				{member.name}{member.uid === me ? ' •' : ''}
+				{member.name}{#if member.uid === me} <YouTag />{/if}
 				<span class="lobby__role">
 					{@html formatFont(
 						t(member.role === 'player' ? 'pairs.rolePlayer' : 'pairs.roleSpectator')
@@ -127,20 +128,29 @@
 		{/each}
 	</ul>
 
-	<div class="lobby__roles" role="group" aria-label={t('pairs.rolePlayer')}>
-		{#each ['player', 'spectator'] as const as role (role)}
-			<button
-				type="button"
-				class="chip"
-				class:chip--on={myRole === role}
-				aria-pressed={myRole === role}
-				onclick={() => onRole(role)}
-				data-testid="pairs-role-{role}-btn"
-			>
-				{@html formatFont(t(role === 'player' ? 'pairs.rolePlayer' : 'pairs.roleSpectator'))}
-			</button>
-		{/each}
-	</div>
+	<!--
+		РОЛЬ — ТОЙ САМИЙ СЕГМЕНТОВАНИЙ ВИБІР, що й режим початку партії.
+	
+		Доти це були два чіпи з `aria-pressed`, і автор сказав про них точно: «не
+		зрозуміло, яка позиція вибрана». Причина в тому, що чіп-перемикач має лише
+		одну відмінність між станами — колір тла, — і поруч стоять два таких чіпи,
+		тобто око бачить дві кнопки, а не один вибір із двох.
+	
+		Сегментована панель показує саме вибір: спільна рамка каже «це одне поле», а
+		залитий сегмент — «ось поточне значення». Заразом зникають два дефекти чіпів:
+		нативні радіокнопки дають групі керування з клавіатури стрілками, а вибране
+		значення читається скрінрідером як стан радіо, а не як натиснута кнопка.
+	-->
+	<SegmentedChoice
+		legend={t('pairs.myRole')}
+		scope="pairs-role"
+		value={myRole}
+		onchange={(id) => onRole(id as Role)}
+		options={[
+			{ id: 'player', label: t('pairs.rolePlayer') },
+			{ id: 'spectator', label: t('pairs.roleSpectator') }
+		]}
+	/>
 
 	<!--
 		СТАТУС — ОДИН, і в ОДНОМУ МІСЦІ.
@@ -295,29 +305,15 @@
 		opacity: 0.7;
 	}
 
-	.lobby__roles {
-		display: flex;
-		gap: var(--space-sm);
-	}
-
-	.chip {
-		min-height: 44px;
-		padding: 0 var(--space-md);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.chip--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-	}
-
 	/*
-	 * `.lobby__hint` ТУТ БІЛЬШЕ НЕМА: три підказки, що ним користувалися,
-	 * зійшлися в один `.lobby__status`. Правило, що не має жодного носія,
-	 * читається як «десь у розмітці ще є підказка» — а її немає.
+	 * ТУТ БІЛЬШЕ НЕМА `.lobby__roles`, `.chip`, `.chip--on` І `.lobby__hint`.
+	 *
+	 * Чіпи ролі стали `SegmentedChoice` — той самий елемент, що й режим початку
+	 * партії, тож і стилі тепер там, в одному місці. Три підказки зійшлися в один
+	 * `.lobby__status`.
+	 *
+	 * Правило без жодного носія читається як «десь у розмітці ще є такий елемент»,
+	 * і саме на цьому в проєкті вже одного разу лишилася мертва копія компонента.
+	 * Компілятор Svelte про це попереджає — попередження тут гейт, а не шум.
 	 */
 </style>

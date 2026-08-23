@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
+	import YouTag from '$lib/components/ui/YouTag.svelte';
 	import type { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 
 	/**
@@ -169,7 +170,9 @@
 						ми не знаємо. Перша версія писала «Аня — переміг», тобто вгадувала —
 						і вгадувала неправильно рівно в половині випадків.
 					-->
-					{@html formatFont(t('pairs.won'))}: {winner.name}{winner.uid === me ? ' •' : ''}
+					{@html formatFont(t('pairs.won'))}: {winner.name}{#if winner.uid === me}
+						<YouTag />
+					{/if}
 				{:else}
 					{@html formatFont(t('pairs.draw'))}
 				{/if}
@@ -200,7 +203,9 @@
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
-				{player.name}{player.uid === me ? ' •' : ''}: {scoreOf(player.uid)}<!--
+				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}: {scoreOf(
+					player.uid
+				)}<!--
 					СТАН СЛОВАМИ, а не лише стилем.
 
 					Доти «немає звʼязку» передавалося перекресленням і прозорістю — тобто
