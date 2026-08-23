@@ -1,6 +1,6 @@
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
 import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
-import { isYieldLegal, yieldReadyAt, type TurnState } from './turnLimit';
+import { isStallActionLegal, yieldReadyAt, type TurnState } from './turnLimit';
 
 /**
  * Спільна партія «Знайди пару»: журнал ходів → правила гри.
@@ -66,6 +66,21 @@ export class PairsMatch {
 	 */
 	autoStart = $state(false);
 
+	/**
+	 * Хто завершив партію, не дограючи. `null` — партія йде або дограна до кінця.
+	 *
+	 * **Чому це стан МАТЧУ, а не поле кімнати.** Перевести кімнату в `over` має
+	 * право лише господар — а лишається на дошці частіше саме ГІСТЬ: пішов той,
+	 * хто роздавав. Дати гостю право писати `info.status` означало б дати йому
+	 * право закінчити партію, у якій він програє.
+	 *
+	 * Тому завершення — ХІД у журналі, як і `yield`: його однаково перевіряють
+	 * усі, і законний він рівно тоді, коли межа очікування вийшла. Побічно з
+	 * цього виходить те, чого полем не отримати: гість, що вернувся, побачить
+	 * причину завершення, а не просто скінчену партію.
+	 */
+	endedBy = $state<string | null>(null);
+
 	readonly #me: string;
 	readonly #transport: RoomTransport;
 	/** Опис партії, з якого роздано поточну дошку. Зміна = роздати заново. */
@@ -97,9 +112,20 @@ export class PairsMatch {
 		return !this.players.some((player) => player.uid === this.#me);
 	}
 
+	/**
+	 * Партія скінчилася — дограна до кінця АБО завершена через стояння.
+	 *
+	 * Одне питання, одна відповідь. Доти екран питав `game.gameOver`, і після
+	 * появи `end` цього стало не досить: дошка з незібраними парами не «gameOver»,
+	 * а партії вже немає.
+	 */
+	get over(): boolean {
+		return this.game.gameOver || this.endedBy !== null;
+	}
+
 	/** Чий зараз хід. `null` — партія не почалася або скінчилася. */
 	get actor(): MemoryPlayer | null {
-		if (this.status !== 'playing' || this.game.gameOver) return null;
+		if (this.status !== 'playing' || this.over) return null;
 		return this.game.current ?? null;
 	}
 
@@ -177,6 +203,25 @@ export class PairsMatch {
 	async yieldTurn(now: number): Promise<void> {
 		if (!this.canYieldAt(now)) return;
 		await this.#send('yield');
+	}
+
+	/**
+	 * Завершити партію, з якої суперник не вернувся.
+	 *
+	 * Умова та сама, що й у «забрати хід», і це не випадковість: обидві дії
+	 * означають «я маю право діяти замість того, хто стоїть». Тому кнопки
+	 * зʼявляються разом — людина вибирає, грати далі самій чи закінчити, а не
+	 * отримує одну можливість і чекає на другу.
+	 *
+	 * **Рахунок при цьому НЕ вигадується.** Пари, зібрані до зникнення, лишаються
+	 * як є; той, хто пішов, не отримує ні перемоги, ні поразки за неявку. Екран
+	 * підсумку окремим рядком каже, що партію завершили не догравши, — бо
+	 * «перемога 4:2» над відсутнім без цього рядка була б неправдою про те, як
+	 * вона здобута.
+	 */
+	async endMatch(now: number): Promise<void> {
+		if (!this.canYieldAt(now)) return;
+		await this.#send('end');
 	}
 
 	async #send(type: string, payload?: Record<string, number | string>): Promise<void> {
@@ -261,6 +306,12 @@ export class PairsMatch {
 		});
 		this.applied = 0;
 		/*
+		 * Завершення СКИДАЄТЬСЯ разом із роздачею, і без цього рядка «Зіграти ще»
+		 * віддавало б нову дошку, яку вже неможливо грати: журнал новий, а позначка
+		 * «партію завершено» лишилася б від попередньої.
+		 */
+		this.endedBy = null;
+		/*
 		 * Відлік першої черги — від позначки початку партії, поставленої сервером.
 		 * Без неї суперник, який зайшов у кімнату й одразу зник, тримав би першу
 		 * чергу назавжди: межа очікування не мала б від чого рахуватися.
@@ -281,12 +332,37 @@ export class PairsMatch {
 	 * подовжував би очікування (див. `#apply`).
 	 */
 	#play(move: Move): boolean {
+		/*
+		 * ЗАВЕРШЕНА ПАРТІЯ НЕ ПРИЙМАЄ НІЧОГО — і перевірка мусить бути тут.
+		 *
+		 * Екран після завершення кнопок не малює, але дописати хід у журнал можна
+		 * руками, а `game.gameOver` при завершенні через стояння лишається `false`:
+		 * дошка ж не догра́на. Тобто без цього рядка `flip` від того, чия черга
+		 * була, змінював би дошку в партії, якої вже немає, — і змінював би її в
+		 * усіх однаково, бо журнал у всіх той самий.
+		 *
+		 * Заразом це відкидає й другий `end`: партію завершують один раз.
+		 */
+		if (this.endedBy !== null) return false;
+
 		// `yield` — єдиний хід, який робить НЕ той, чия черга, тож він стоїть вище
 		// загальної перевірки. Умови законності — у `turnLimit.ts`, і вони спираються
 		// лише на журнал, тож рішення в усіх учасників збігається.
 		if (move.type === 'yield') {
-			if (!isYieldLegal(move, this.#turnState)) return false;
+			if (!isStallActionLegal(move, this.#turnState)) return false;
 			this.game.passTurn();
+			return true;
+		}
+
+		/*
+		 * `end` — теж не від того, чия черга, і теж перевіряється журналом.
+		 *
+		 * Стоїть вище загальної перевірки з тієї самої причини, що й `yield`. А
+		 * порядок між ними значення не має: два різні типи ходу.
+		 */
+		if (move.type === 'end') {
+			if (!isStallActionLegal(move, this.#turnState)) return false;
+			this.endedBy = move.by;
 			return true;
 		}
 

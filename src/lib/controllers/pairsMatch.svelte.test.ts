@@ -635,6 +635,126 @@ describe('суперник відпав', () => {
 	});
 
 	/**
+	 * ЗАВЕРШИТИ ПАРТІЮ — друга дія того, хто лишився, і та сама умова.
+	 *
+	 * Задача: партію, з якої суперник не вернувся, доти не завершувало НІЩО.
+	 * Забирати хід можна було вічно, тобто гра на двох тихо вироджувалась у
+	 * пасьянс, а екран підсумку оголошував перемогу над відсутнім.
+	 *
+	 * Чому це ХІД, а не переведення кімнати в `over`: право на це має лише
+	 * господар, а лишається на дошці частіше саме гість — пішов той, хто
+	 * роздавав. Тож законність рахується з журналу й збігається в усіх.
+	 */
+	it('після межі партію завершує той, хто лишився — і бачать це обидва', async () => {
+		const { room, host, guest, stop } = table();
+		const now = room.tick(PAST_LIMIT);
+
+		await guest.endMatch(now);
+
+		expect(guest.endedBy, 'завершив той, хто лишився').toBe(GUEST);
+		expect(host.endedBy, 'і господар бачить те саме').toBe(GUEST);
+		expect(guest.over, 'партії немає').toBe(true);
+		expect(host.over).toBe(true);
+		expect(host.actor, 'черги більше ні в кого').toBeNull();
+		// Дошка НЕ догра́на: завершення не вигадує зібраних пар.
+		expect(host.game.gameOver, 'це не «всі пари знайдено»').toBe(false);
+		stop();
+	});
+
+	it('до часу партію не завершити', async () => {
+		const { room, host, guest, stop } = table();
+		room.tick(TURN_LIMIT_MS - 1000);
+
+		await guest.endMatch(room.tick(0));
+
+		expect(room.moves, 'зарано — ходу немає').toHaveLength(0);
+		expect(guest.over).toBe(false);
+		expect(host.endedBy).toBeNull();
+		stop();
+	});
+
+	it('той, чия черга, партію не завершує: це був би спосіб утекти з поразки', async () => {
+		const { room, host, stop } = table();
+		const now = room.tick(PAST_LIMIT);
+
+		await host.endMatch(now);
+
+		expect(room.moves).toHaveLength(0);
+		expect(host.over).toBe(false);
+		stop();
+	});
+
+	it('дописаний напряму end до часу відкидають обидва', async () => {
+		// Кнопки немає, але запис у журнал можна зробити руками. Правила
+		// застосування мусять відкинути такий хід у ВСІХ, а не лише в UI.
+		const { room, host, guest, stop } = table();
+		room.tick(1000);
+
+		await room.transport().append({ seq: 1, by: GUEST, type: 'end' });
+
+		expect(guest.over, 'хід нічого не означає').toBe(false);
+		expect(host.over).toBe(false);
+		expect(host.applied, 'номер журналу зайнято').toBe(1);
+		stop();
+	});
+
+	it('глядач партію не завершує', async () => {
+		const watcher: Member = { uid: WATCHER, name: 'Глядач', role: 'spectator', order: 3 };
+		const { room, host, stop } = table([watcher]);
+		const eye = new PairsMatch(WATCHER, room.transport());
+		const off = eye.listen();
+
+		const now = room.tick(PAST_LIMIT);
+		await eye.endMatch(now);
+
+		expect(room.moves, 'глядач у черзі не стоїть').toHaveLength(0);
+		expect(host.over).toBe(false);
+		off();
+		stop();
+	});
+
+	/**
+	 * ЗАВЕРШЕНА ПАРТІЯ НЕ ПРИЙМАЄ ХОДІВ — і це найдорожча перевірка блока.
+	 *
+	 * Дефект, який вона ловить, видно лише в журналі: при завершенні через
+	 * стояння `game.gameOver` лишається `false` (дошка ж не догра́на), тож
+	 * загальна перевірка «хід від того, чия черга» пропускала `flip` — і дошка
+	 * мінялася в партії, якої вже немає. Кнопок для цього немає, але дописати
+	 * хід у журнал можна руками, і тоді його застосували б УСІ однаково.
+	 */
+	it('після завершення журнал більше нічого не змінює', async () => {
+		const { room, host, guest, stop } = table();
+		await guest.endMatch(room.tick(PAST_LIMIT));
+		const frozen = board(host);
+
+		const [a, b] = findPair(host);
+		await room.transport().append({ seq: 2, by: HOST, type: 'flip', payload: { index: a } });
+		await room.transport().append({ seq: 3, by: HOST, type: 'flip', payload: { index: b } });
+		await room.transport().append({ seq: 4, by: GUEST, type: 'end' });
+
+		expect(board(host), 'дошка не ворухнулася').toBe(frozen);
+		expect(board(guest), 'і в другого так само').toBe(frozen);
+		expect(host.endedBy, 'завершив однаково той самий').toBe(GUEST);
+		stop();
+	});
+
+	it('нова роздача скидає завершення', async () => {
+		// Без цього «Зіграти ще» віддавало б нову дошку, яку неможливо грати:
+		// журнал новий, а позначка «партію завершено» лишилася б від попередньої.
+		const { room, host, guest, stop } = table();
+		await guest.endMatch(room.tick(PAST_LIMIT));
+		expect(host.over).toBe(true);
+
+		await room.transport().restart(777);
+
+		expect(host.endedBy, 'позначку знято').toBeNull();
+		expect(guest.endedBy).toBeNull();
+		expect(host.over, 'партію можна грати').toBe(false);
+		expect(host.actor, 'черга є').not.toBeNull();
+		stop();
+	});
+
+	/**
 	 * ВІДЛІК ДО АВТОМАТИЧНОГО СТАРТУ — і головне в ньому те, що його бачать ОБОЄ.
 	 *
 	 * Саме заради цього позначка живе в кімнаті, а не в памʼяті господаря: той, хто

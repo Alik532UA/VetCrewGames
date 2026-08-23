@@ -16,6 +16,7 @@
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import type { LobbyRoom } from '$lib/net/lobby';
+	import type { OwnRoom } from '$lib/net/ownRooms';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 
@@ -98,6 +99,16 @@
 	 * повідомлення, і друге не мусить читатися як перше.
 	 */
 	let roomsUnavailable = $state(false);
+	/**
+	 * Партії, які вже йдуть і до яких я належу.
+	 *
+	 * Окремо від `rooms` навмисно: у переліку лежить те, куди можна ЗАЙТИ, а це —
+	 * те, куди можна ВЕРНУТИСЯ. Джерела теж різні: перелік читається з `lobby`,
+	 * спільної гілки, а ці — з мого приватного індексу `myRooms/{uid}`. Змішати
+	 * їх в одному масиві означало б або показати чужі розпочаті партії, або
+	 * приховати свою.
+	 */
+	let ownRooms = $state<OwnRoom[]>([]);
 	/** Зняти свою кімнату з переліку. `null`, якщо вона закрита або вже знята. */
 	let unlist: (() => void) | null = null;
 	let me = $state('');
@@ -406,6 +417,24 @@
 	}
 
 	/**
+	 * Завершити партію, з якої суперник не вернувся.
+	 *
+	 * Доступна за тієї самої умови, що й «забрати хід», і НЕ лише господареві:
+	 * лишається на дошці частіше саме гість — пішов той, хто роздавав. Тому це хід
+	 * у журналі, а не переведення кімнати в `over`, яке правило дозволяє лише
+	 * господареві (див. `endMatch` у контролері).
+	 */
+	async function endMatch() {
+		if (!match) return;
+		try {
+			await match.endMatch(Date.now());
+		} catch (error) {
+			toast.error('pairs.actionFailed');
+			logService.error('network', 'end match failed', { reason: String(error) });
+		}
+	}
+
+	/**
 	 * Закрити кімнату — ЯВНОЮ кнопкою, а не при виході зі сторінки.
 	 *
 	 * Відрізнити «пішов назовсім» від «перезавантажив» на клієнті неможливо, а
@@ -537,6 +566,39 @@
 	});
 
 	/**
+	 * СВОЇ РОЗПОЧАТІ ПАРТІЇ — один запит, а не підписка.
+	 *
+	 * Задача, яку це закриває: вийшов зі сторінки посеред гри — і дороги назад не
+	 * було взагалі. Код кімнати жив лише в адресі, а адреса губилася разом із
+	 * вкладкою; індекс `myRooms` при цьому існував, але знав лише кімнати, де я
+	 * господар, і читав його один збирач.
+	 *
+	 * ПІДПИСКИ ТУТ НЕ ТРЕБА, і це рішення, а не спрощення. Свої партії не
+	 * зʼявляються самі: вони зʼявляються тоді, коли я сам зайшов у кімнату, — а
+	 * після цього сторінка вже показує партію, не форму. Підписка платила б
+	 * трафіком за зміни, яких у цей момент не буває.
+	 *
+	 * Читається щоразу, коли видно форму входу, — тобто й при поверненні з партії:
+	 * закриту кімнату треба прибрати з рядка, а не лишити обіцянку.
+	 */
+	$effect(() => {
+		if (!browser || match) return;
+
+		let dead = false;
+		void (async () => {
+			const own = await import('$lib/net/ownRooms');
+			// `listOwnRooms` не кидає: це довідка, і її відсутність лишає сторінку
+			// такою, якою вона була до появи цього рядка.
+			const found = await own.listOwnRooms();
+			if (!dead) ownRooms = found;
+		})();
+
+		return () => {
+			dead = true;
+		};
+	});
+
+	/**
 	 * ГОСПОДАР ВЕДЕ КІЛЬКІСТЬ ГРАВЦІВ У СВОЄМУ ЗАПИСІ.
 	 *
 	 * Він єдиний, хто може: правило дозволяє писати в `lobby/{code}` лише
@@ -647,6 +709,18 @@
 	/** Кнопка «забрати чергу» існує лише коли межа вже вийшла. */
 	const canTakeTurn = $derived(Boolean(match?.canYieldAt(clock)));
 
+	/**
+	 * Скільки лишилося до межі очікування. `null` — межа незастосовна.
+	 *
+	 * Число рахується ТУТ, бо межу знає контролер: екран отримує готовий залишок і
+	 * не тримає власної копії `TURN_LIMIT_MS`. Читає `clock`, який уже цокає, поки
+	 * `yieldReadyAt` не `null`, — тобто рівно ті секунди, коли на нього дивляться.
+	 */
+	const yieldInMs = $derived.by(() => {
+		const ready = match?.yieldReadyAt;
+		return ready === null || ready === undefined ? null : Math.max(0, ready - clock);
+	});
+
 	onMount(() => {
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
@@ -694,6 +768,7 @@
 				-->
 				<RoomList
 					{rooms}
+					resume={ownRooms}
 					hasMore={roomsHasMore}
 					unavailable={roomsUnavailable}
 					{busy}
@@ -726,6 +801,8 @@
 			onRematch={amHost ? rematch : undefined}
 			onClose={amHost ? close : undefined}
 			onYield={canTakeTurn ? takeTurn : undefined}
+			onEnd={canTakeTurn ? endMatch : undefined}
+			{yieldInMs}
 		/>
 	{/if}
 </div>

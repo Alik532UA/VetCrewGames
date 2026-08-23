@@ -2,6 +2,7 @@
 	import { Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import type { LobbyRoom } from '$lib/net/lobby';
+	import type { OwnRoom } from '$lib/net/ownRooms';
 
 	/**
 	 * Перелік відкритих кімнат — четвертий блок форми входу.
@@ -39,6 +40,19 @@
 	interface Props {
 		rooms: LobbyRoom[];
 		/**
+		 * Мої партії, які вже йдуть, — ЗАКРІПЛЕНІ над списком.
+		 *
+		 * Джерело інше, ніж у `rooms`, і це головне тут: перелік читається з
+		 * `lobby`, спільної гілки, а ці — з приватного індексу `myRooms/{uid}`.
+		 * Тому закріплений рядок не розкриває нікому нічого: у ньому лежить код,
+		 * який я й так знаю, бо це моя кімната.
+		 *
+		 * У `lobby` розпочатих партій немає навмисно (див. `net/lobby.ts`), і саме
+		 * тому вернутися в свою було нічим: код жив лише в адресі й губився разом
+		 * із вкладкою.
+		 */
+		resume: OwnRoom[];
+		/**
 		 * Чи лишилося щось за межею запиту.
 		 *
 		 * Не «усього N»: запит обмежений правилом бази, тож повної кількості не знає
@@ -53,7 +67,7 @@
 		onEnter: (code: string) => void;
 	}
 
-	let { rooms, hasMore, unavailable, busy, onEnter }: Props = $props();
+	let { rooms, resume, hasMore, unavailable, busy, onEnter }: Props = $props();
 
 	/*
 	 * Обрізку видно РЯДКОМ, а не мовчки (NO-SILENT-CAPS).
@@ -74,6 +88,37 @@
 		вибору. Усередині панелі зі списком вона читалася б як «спосіб зайти в
 		кімнату зі списку», хоч вона й кімнату створить, коли списку немає.
 	-->
+	<!--
+		ЗАКРІПЛЕНІ ЗВЕРХУ — і поза `{#if unavailable}`.
+
+		Це не косметика порядку: недоступний перелік і своя розпочата партія — різні
+		джерела. `lobby` міг не прочитатися (правила, мережа), а індекс `myRooms`
+		прочитався — і рядок «вернутися в партію» мусить бути там, бо саме тоді він
+		найпотрібніший: список порожній, а гра йде.
+	-->
+	{#if resume.length > 0}
+		<ul class="rooms__list rooms__list--resume" data-testid="pairs-resume-list">
+			{#each resume as room (room.code)}
+				<li class="rooms__item rooms__item--resume" data-testid="pairs-resume-{room.code}-item">
+					<span class="rooms__who">
+						<span class="rooms__host">{@html formatFont(t('pairs.resume'))}</span>
+						<span class="rooms__players">{@html formatFont(t('pairs.resumeHint'))}</span>
+					</span>
+					<button
+						type="button"
+						class="rooms__enter rooms__enter--resume"
+						onclick={() => onEnter(room.code)}
+						aria-disabled={busy}
+						aria-label="{t('pairs.resume')}: {room.code}"
+						data-testid="pairs-resume-{room.code}-btn"
+					>
+						{@html formatFont(t('pairs.resumeOne'))}
+					</button>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+
 	{#if unavailable}
 		<p class="rooms__hint" data-testid="pairs-rooms-unavailable-hint">
 			{@html formatFont(t('pairs.roomsUnavailable'))}
@@ -230,6 +275,41 @@
 	@media (hover: hover) {
 		.rooms__enter:hover {
 			background: color-mix(in srgb, var(--color-text), transparent 80%);
+		}
+	}
+
+	/*
+	 * ЗАКРІПЛЕНЕ НЕ ГОРТАЄТЬСЯ. Базовий клас має стелю висоти й прокрутку — для
+	 * двадцяти чужих кімнат це правильно, для власної партії ні: рядок, у який
+	 * треба вернутися, не має права поїхати під межу разом із рештою.
+	 */
+	.rooms__list--resume {
+		max-height: none;
+		overflow: visible;
+	}
+
+	/*
+	 * Рамка, а не інше тло.
+	 *
+	 * Тло `--color-bg-card` уже перевірене на всіх чотирьох темах разом із
+	 * `--color-text`; підмішати в нього акцент означало б завести пару, якої
+	 * гейт контрасту ще не бачив, і завести її в чотирьох темах одночасно.
+	 * Рамка виділяє рядок, не торкаючись пари «текст на тлі».
+	 */
+	.rooms__item--resume {
+		border: 2px solid var(--color-accent);
+	}
+
+	/* Дія тут головна на всій формі — тож єдина залита акцентом. */
+	.rooms__enter--resume {
+		border-color: var(--color-accent);
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
+	}
+
+	@media (hover: hover) {
+		.rooms__enter--resume:hover {
+			background: color-mix(in srgb, var(--color-accent), var(--color-text) 15%);
 		}
 	}
 </style>

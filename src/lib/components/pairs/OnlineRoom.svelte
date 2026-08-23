@@ -26,9 +26,45 @@
 		 * звʼязку, нікого не підганяють.
 		 */
 		onYield?: () => void;
+		/**
+		 * Завершити партію, з якої суперник не вернувся. Умова та сама, що в
+		 * `onYield`, — тож обидві кнопки зʼявляються разом, і людина вибирає, грати
+		 * далі самій чи закінчити.
+		 */
+		onEnd?: () => void;
+		/**
+		 * Скільки лишилося до межі очікування, у мілісекундах. `null` — межа
+		 * незастосовна (моя черга, глядач, партія скінчилася).
+		 *
+		 * Число приходить ГОТОВИМ, бо межу знає контролер, а не екран: інакше
+		 * компонент мусив би тримати власну копію `TURN_LIMIT_MS`, і дві копії
+		 * розійшлися б на першій же правці.
+		 */
+		yieldInMs?: number | null;
 	}
 
-	let { match, me, online, onRematch, onClose, onYield }: Props = $props();
+	let { match, me, online, onRematch, onClose, onYield, onEnd, yieldInMs = null }: Props = $props();
+
+	/**
+	 * Хто з гравців зник із гілки присутності.
+	 *
+	 * Себе тут не буде: власний запис живий доти, доки жива вкладка, — а якби він
+	 * зник, цього екрана вже ніхто не бачив би.
+	 */
+	const away = $derived(match.players.filter((player) => !online.includes(player.uid)));
+
+	/**
+	 * Залишок очікування як `0:47`. `null` — показувати нічого.
+	 *
+	 * Доти це число обчислювалося й ВИКИДАЛОСЯ: межа була відома, годинник цокав,
+	 * а на екрані ті девʼяносто секунд не було нічого, крім перекресленого імені.
+	 * Виглядало це як «гра зависла», а не як «чекаємо на суперника».
+	 */
+	const countdown = $derived.by(() => {
+		if (yieldInMs === null || yieldInMs <= 0) return null;
+		const total = Math.ceil(yieldInMs / 1000);
+		return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+	});
 
 	/** Скільки пар зібрав кожен: рахунок живе в правилах, не в кімнаті. */
 	const scoreOf = (uid: string) => match.game.players.find((p) => p.id === uid)?.score ?? 0;
@@ -55,7 +91,7 @@
 		рядком і словами, а не лише підсвіткою в таблі.
 	-->
 	<p class="board__turn text-panel" role="status" data-testid="pairs-turn-status">
-		{#if match.game.gameOver}
+		{#if match.over}
 			{@html formatFont(t('pairs.over'))}
 		{:else if match.myTurn}
 			{@html formatFont(t('pairs.yourTurn'))}
@@ -65,29 +101,67 @@
 	</p>
 
 	<!--
-		«Суперник відпав» — кнопка, а не автоматика.
+		«Суперник відпав» — кнопка, а не автоматика. Але СКАЗАТИ про це треба одразу.
 
-		Присутність гасне сама, але вона НЕ лежить у журналі ходів, отже не має права
+		Присутність гасне сама, і вона НЕ лежить у журналі ходів, отже не має права
 		змінювати стан партії: інакше дошки розійшлися б залежно від того, чий сокет
-		обірвався першим. Тому забрати чергу — це звичайний хід, який робить людина
-		й однаково перевіряють усі. Підпис називає причину: людина мусить розуміти,
-		чому ця кнопка взагалі є.
+		обірвався першим. Тому діяти замість того, хто стоїть, — це хід, який робить
+		людина й однаково перевіряють усі.
+
+		ЩО ЗМІНИЛОСЯ: панель зʼявляється, щойно зникла присутність, а не через
+		девʼяносто секунд разом із кнопкою. Доти між «суперник зник» і «можна діяти»
+		був проміжок, у якому екран не казав НІЧОГО — і саме він читався як зламана
+		гра. Тепер видно причину, залишок часу й що буде далі.
 	-->
-	{#if onYield}
-		<div class="board__stall text-panel" data-testid="pairs-stall-panel">
-			<span>{@html formatFont(t('pairs.opponentGone'))}</span>
-			<button type="button" class="chip" onclick={onYield} data-testid="pairs-yield-btn">
-				{@html formatFont(t('pairs.takeTurn'))}
-			</button>
+	{#if away.length > 0 || onYield}
+		<div class="board__stall text-panel" role="status" data-testid="pairs-stall-panel">
+			{#if away.length > 0}
+				<span data-testid="pairs-stall-away-text">
+					{@html formatFont(t('pairs.away'))}: {away.map((player) => player.name).join(', ')}
+				</span>
+			{:else}
+				<!-- Присутність є, а ходу немає: людина сидить у вкладці й не грає. -->
+				<span>{@html formatFont(t('pairs.opponentGone'))}</span>
+			{/if}
+
+			{#if onYield}
+				<button type="button" class="chip" onclick={onYield} data-testid="pairs-yield-btn">
+					{@html formatFont(t('pairs.takeTurn'))}
+				</button>
+				{#if onEnd}
+					<button type="button" class="chip" onclick={onEnd} data-testid="pairs-end-btn">
+						{@html formatFont(t('pairs.endMatch'))}
+					</button>
+				{/if}
+			{:else if countdown}
+				<span class="board__wait" data-testid="pairs-stall-countdown-value">
+					{@html formatFont(t('pairs.yieldIn'))} {countdown}
+				</span>
+			{:else if match.myTurn}
+				<!-- Межа незастосовна, бо чекають МЕНЕ. Підганяти нікого не треба. -->
+				<span class="board__wait">{@html formatFont(t('pairs.awayYourTurn'))}</span>
+			{/if}
 		</div>
 	{/if}
 
-	{#if match.game.gameOver}
+	{#if match.over}
 		<!--
 			Підсумок замість зникнення дошки: картки лишаються на місці, бо після
 			партії на них дивляться — «а де ж була та друга сова».
 		-->
 		<div class="board__over text-panel" data-testid="pairs-result-panel">
+			<!--
+				ЯК партія скінчилася — окремим рядком, і він тут не для повноти.
+
+				«Перемога: Аня 4:2» над тим, хто пішов на другому ході, — правда про
+				рахунок і неправда про партію. Рядок називає причину, тож рахунок нікого
+				не вводить в оману й нічого не приховує.
+			-->
+			{#if match.endedBy !== null}
+				<span class="board__wait" data-testid="pairs-ended-early-hint">
+					{@html formatFont(t('pairs.endedEarly'))}
+				</span>
+			{/if}
 			<b data-testid="pairs-result-text">
 				{#if winner}
 					<!--
@@ -126,7 +200,16 @@
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
-				{player.name}{player.uid === me ? ' •' : ''}: {scoreOf(player.uid)}
+				{player.name}{player.uid === me ? ' •' : ''}: {scoreOf(player.uid)}<!--
+					СТАН СЛОВАМИ, а не лише стилем.
+
+					Доти «немає звʼязку» передавалося перекресленням і прозорістю — тобто
+					скрінрідер не отримував нічого, а очима це читалося як «видалено» або
+					«недоступно», хоч людина могла просто зайти в тунель. Тепер причина
+					написана, а стиль лишається підказкою, а не єдиним джерелом.
+				-->{#if !online.includes(player.uid)}
+					<span class="board__away">({@html formatFont(t('pairs.away'))})</span>
+				{/if}
 			</span>
 		{/each}
 		<span class="board__moves" data-testid="pairs-moves-value">
@@ -147,7 +230,7 @@
 			<MemoryCard
 				{slot}
 				position={index + 1}
-				disabled={!match.myTurn || match.game.gameOver}
+				disabled={!match.myTurn || match.over}
 				onflip={() => match.flip(index)}
 				testId="pairs-card-btn-{slot.card.id}"
 			/>
@@ -215,10 +298,22 @@
 		color: var(--color-accent);
 	}
 
-	/* Звʼязок обірвався. Не «вийшов»: людина могла просто зайти в тунель. */
+	/*
+	 * Звʼязок обірвався. Не «вийшов»: людина могла просто зайти в тунель.
+	 *
+	 * ПЕРЕКРЕСЛЕННЯ ПРИБРАНО НАВМИСНО. Воно означає «видалено» — а гравець нікуди
+	 * не подівся: його рахунок лишається в силі, його черга лишається його. Стан
+	 * тепер написаний словами поруч (`board__away`), тож стилю досить бути
+	 * приглушенням, а не окремим твердженням.
+	 */
 	.board__player--away {
-		opacity: 0.5;
-		text-decoration: line-through;
+		opacity: 0.75;
+	}
+
+	.board__away {
+		font-size: var(--font-size-sm);
+		opacity: 0.85;
+		white-space: nowrap;
 	}
 
 	.board__moves {
