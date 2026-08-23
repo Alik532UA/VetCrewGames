@@ -282,10 +282,18 @@
 					 *
 					 * Господар може перемкнути режим у лобі — обидві кнопки там видно.
 					 */
-					autoStart: quick
+					autoStart: quick,
+					/*
+					 * Від цього залежить ДОВЖИНА коду, а не лише публікація: два розряди
+					 * для кімнати зі списку, пʼять для тієї, куди пускає лише код.
+					 *
+					 * Швидка гра завжди публічна: вона й існує, щоб звести незнайомців.
+					 */
+					isPrivate: quick ? false : isPrivate
 				});
 			} else {
-				const room = await net.peekRoom(joinCode.trim().toUpperCase());
+				const wanted = joinCode.replace(/\D/g, '');
+			const room = await net.peekRoom(wanted);
 				if (!room) {
 					toast.error('pairs.noRoom');
 					return;
@@ -299,7 +307,7 @@
 					toast.error('pairs.oldVersion');
 					return;
 				}
-				code = joinCode.trim().toUpperCase();
+				code = wanted;
 				// Роль НЕ передаємо: повернувшись у кімнату, глядач мусить лишитися
 				// глядачем, інакше склад зміниться й дошку перероздасть усім.
 				await net.joinRoom(code, who);

@@ -1,4 +1,5 @@
 import { connect } from './firebase';
+import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } from './roomTypes';
 
@@ -24,17 +25,58 @@ import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } 
  * хід простроченим коли завгодно й забирав чергу.
  */
 
-/** Літери коду: без 0/O і 1/I — їх диктують по телефону з помилками. */
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const CODE_LENGTH = 5;
+/**
+ * КОД — ЦИФРАМИ, і це рішення автора з видимою ціною.
+ *
+ * Було `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` × 5 — тридцять три мільйони варіантів,
+ * без 0/O і 1/I, бо їх диктують із помилками. Цифри знімають плутанину літер
+ * повністю (диктувати «чотири два» неможливо неправильно) і дають цифрову
+ * клавіатуру на телефоні замість повної.
+ */
+const DIGITS = '0123456789';
 
-export const makeCode = (random: () => number): string =>
-	Array.from({ length: CODE_LENGTH }, () => ALPHABET[Math.floor(random() * ALPHABET.length)]).join(
-		''
-	);
+/**
+ * Публічна кімната — ДВА розряди, і це не стеля, а початок.
+ *
+ * Дві цифри — сто варіантів. Мало, і навмисно: код публічної кімнати не є
+ * секретом (вона й так у переліку), тож єдина його задача — легко диктуватися.
+ * Коли сотні не хватає, розряд додається сам (див. `createRoom`).
+ */
+const PUBLIC_CODE_LENGTH = 2;
 
-/** Скільком спробам дати код, перш ніж зізнатися, що не вийшло. */
-const CODE_TRIES = 5;
+/** Доки ростити розряд публічного коду. Чотири цифри — десять тисяч кімнат. */
+const PUBLIC_CODE_MAX = 4;
+
+/**
+ * Приватна кімната — пʼять цифр, і ослаблення тут НАЗВАНЕ.
+ *
+ * Код приватної кімнати і є її пароль: у переліку її немає, зайти можна лише
+ * знаючи код. Пʼять цифр — сто тисяч варіантів проти тридцяти трьох мільйонів у
+ * попередніх пʼяти символах алфавіту, тобто в 335 разів слабше, і перебрати
+ * стотисячний простір скриптом реально.
+ *
+ * Автор обрав це свідомо, з міркуванням «кімната живе хвилини, а не дні»: щоб
+ * перебір щось дав, він мусить влучити у ВІКНО життя конкретної кімнати. Плюс
+ * порожня кімната зникає разом із вкладкою господаря (`onDisconnect`), а
+ * розпочату партія не пускає третього гравцем — лише глядачем.
+ *
+ * Якщо колись знадобиться міцніше — рости має саме це число, і нічого більше:
+ * решта коду довжини не знає.
+ */
+const PRIVATE_CODE_LENGTH = 5;
+
+export const makeCode = (random: () => number, length: number): string =>
+	Array.from({ length }, () => DIGITS[Math.floor(random() * DIGITS.length)]).join('');
+
+/**
+ * Скільком спробам дати кожен розряд, перш ніж додати наступний.
+ *
+ * Дванадцять, а не пʼять: на двох розрядах простір малий, і промах тут
+ * нормальний, а не сигнал. При шістдесяти зайнятих зі ста ймовірність дванадцяти
+ * промахів підряд — близько 0,2%, тобто розряд додається лише коли простір
+ * справді майже вичерпано, а не через невдачу.
+ */
+const CODE_TRIES = 12;
 
 export interface NewRoom {
 	gameId: string;
@@ -52,6 +94,17 @@ export interface NewRoom {
 	 * коли вирішить сам.
 	 */
 	autoStart?: boolean;
+	/**
+	 * Кімната поза переліком — і від цього залежить ДОВЖИНА коду.
+	 *
+	 * Не косметика: у публічної кімнати код не секрет (вона й так у списку), тож
+	 * він короткий і легко диктується. У приватної код І Є пароль, тож він довший
+	 * — див. `PRIVATE_CODE_LENGTH`, де названо й ослаблення цифрового простору.
+	 *
+	 * Сам факт публікації в `lobby` робить СТОРІНКА окремим викликом: сюда
+	 * приходить лише намір, бо від нього залежить код.
+	 */
+	isPrivate?: boolean;
 	random?: () => number;
 }
 
@@ -76,50 +129,70 @@ export async function createRoom(options: NewRoom): Promise<string> {
 	// Спершу прибираємо СВОЄ покинуте: вивільнений код одразу вертається в обіг.
 	await pruneOwnRooms();
 
-	for (let attempt = 0; attempt < CODE_TRIES; attempt++) {
-		const code = makeCode(random);
+	/*
+	 * РОЗРЯД РОСТЕ САМ, коли простір вичерпано.
+	 *
+	 * Приватна кімната росту не потребує: сто тисяч варіантів не заповнить ніхто,
+	 * тож у неї межі збігаються й зовнішній цикл робить один прохід.
+	 *
+	 * Публічна починає з двох цифр — сотні. Це усвідомлено мало: код тут не
+	 * секрет, а зручність, і сотні кімнат одночасно в грі такого розміру не буває.
+	 * Коли таки трапиться, розряд додається, і НІЩО про це не мовчить: у журнал
+	 * ідеться запис (NO-SILENT-CAPS), бо це рідка подія, за якою видно, що гра
+	 * виросла.
+	 */
+	const from = options.isPrivate ? PRIVATE_CODE_LENGTH : PUBLIC_CODE_LENGTH;
+	const to = options.isPrivate ? PRIVATE_CODE_LENGTH : PUBLIC_CODE_MAX;
 
-		let taken: boolean;
-		try {
-			taken = (await get(ref(db, `rooms/${code}/info`))).exists();
-		} catch (error) {
-			// Читати не дають — далі пробувати нема сенсу: те саме буде з будь-яким
-			// кодом. Найчастіша причина — правила ще не викладені в консоль.
-			throw new Error('rules-missing', { cause: error });
+	for (let length = from; length <= to; length++) {
+		if (length > from) {
+			logService.info('network', `room codes grew to ${length} digits`);
 		}
-		if (taken) continue;
+		for (let attempt = 0; attempt < CODE_TRIES; attempt++) {
+			const code = makeCode(random, length);
 
-		const info: RoomInfo & { createdAt: object } = {
-			gameId: options.gameId,
-			rulesVersion: options.rulesVersion,
-			seed: options.seed,
-			status: 'lobby',
-			hostUid: uid,
-			config: options.config,
-			// `?? false` явно: відсутнє поле правило прийме, але тоді режим кімнати
-			// читався б із відсутності, а не з рішення.
-			autoStart: options.autoStart ?? false,
-			createdAt: serverTimestamp()
-		};
+			let taken: boolean;
+			try {
+				taken = (await get(ref(db, `rooms/${code}/info`))).exists();
+			} catch (error) {
+				// Читати не дають — далі пробувати нема сенсу: те саме буде з будь-яким
+				// кодом. Найчастіша причина — правила ще не викладені в консоль.
+				throw new Error('rules-missing', { cause: error });
+			}
+			if (taken) continue;
 
-		try {
-			await set(ref(db, `rooms/${code}/info`), info);
-		} catch {
-			// Хтось зайняв цей код між читанням і записом. Саме від цього й стоїть
-			// правило «лише створити» — беремо наступний.
-			continue;
+			const info: RoomInfo & { createdAt: object } = {
+				gameId: options.gameId,
+				rulesVersion: options.rulesVersion,
+				seed: options.seed,
+				status: 'lobby',
+				hostUid: uid,
+				config: options.config,
+				// `?? false` явно: відсутнє поле правило прийме, але тоді режим кімнати
+				// читався б із відсутності, а не з рішення.
+				autoStart: options.autoStart ?? false,
+				createdAt: serverTimestamp()
+			};
+
+			try {
+				await set(ref(db, `rooms/${code}/info`), info);
+			} catch {
+				// Хтось зайняв цей код між читанням і записом. Саме від цього й стоїть
+				// правило «лише створити» — беремо наступний.
+				continue;
+			}
+
+			await set(ref(db, `rooms/${code}/members/${uid}`), {
+				name: options.name,
+				role: 'player',
+				order: 1
+			});
+
+			// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
+			await rememberOwnRoom(code);
+
+			return code;
 		}
-
-		await set(ref(db, `rooms/${code}/members/${uid}`), {
-			name: options.name,
-			role: 'player',
-			order: 1
-		});
-
-		// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
-		await rememberOwnRoom(code);
-
-		return code;
 	}
 
 	throw new Error('room-code-taken');

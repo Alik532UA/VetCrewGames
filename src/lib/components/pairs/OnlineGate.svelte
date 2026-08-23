@@ -75,23 +75,41 @@
 		roomList
 	}: Props = $props();
 
-	/** Код кімнати — рівно пʼять літер; коротший вводити ще не закінчили. */
-	const CODE_LENGTH = 5;
+	/**
+	 * Код кімнати — ЦИФРИ, і довжина в нього різна.
+	 *
+	 * Публічна кімната має два розряди (сто варіантів — код тут не секрет, а
+	 * зручність), приватна пʼять (там код і є пароль). Розряд публічних росте
+	 * сам, коли простір вичерпано, — тому верхня межа тут пʼять, а не «стільки,
+	 * скільки зараз генерується»: поле мусить приймати будь-який чинний код.
+	 *
+	 * Числа названо джерелом правди в `net/rtdbRoom.ts`; тут вони повторюються
+	 * навмисно, бо форма про мережу не знає нічого (див. докблок компонента), а
+	 * розходження ловить `src/room-code.test.ts`.
+	 */
+	const CODE_MIN = 2;
+	const CODE_MAX = 5;
 
 	let nameInput = $state<HTMLInputElement | null>(null);
 	let codeInput = $state<HTMLInputElement | null>(null);
 
 	/**
-	 * Код зводиться до великих літер ОДРАЗУ, у значенні, а не лише на вигляд.
+	 * Код зводиться до ЦИФР одразу, у значенні, а не лише на вигляд.
 	 *
-	 * `text-transform: uppercase` міняє малюнок, але не рядок: у поле лишався б
-	 * `abcde`, а `joinRoom` отримував би вже `ABCDE` після `toUpperCase()` на
-	 * сторінці — два різні значення того самого поля. Головне ж, що кнопка «зайти»
-	 * дивиться на ДОВЖИНУ: вставлений код із пробілом по краях («ABCDE ») давав
-	 * шість символів, `maxlength` різав останню літеру, і кнопка лишалася сірою на
-	 * правильному коді.
+	 * Доти тут стояв `toUpperCase()` — код був літерним, і `text-transform`
+	 * змінив би лише малюнок: у полі лишався б `abcde`, а мережа отримувала б
+	 * `ABCDE`, тобто два різні значення того самого поля.
+	 *
+	 * Тепер причина та сама, а дія інша: усе, крім цифр, ВИКИДАЄТЬСЯ. Це
+	 * закриває найчастіший спосіб принести сміття — вставку з мессенджера, де
+	 * код приїжджає разом із пробілами, дефісами й «код: ». Кнопка «зайти»
+	 * дивиться на довжину, тож саме такий рядок робив її сірою на правильному
+	 * коді.
+	 *
+	 * Провідні нулі зберігаються: «07» — чинний двоцифровий код, і числом цей
+	 * рядок не стає ніде.
 	 */
-	const normaliseCode = (raw: string) => raw.trim().toUpperCase().slice(0, CODE_LENGTH);
+	const normaliseCode = (raw: string) => raw.replace(/\D/g, '').slice(0, CODE_MAX);
 </script>
 
 <div class="gate">
@@ -237,6 +255,13 @@
 		<label class="gate__label" for="pairs-code">
 			<span>{@html formatFont(t('pairs.roomCode'))}</span>
 		</label>
+		<!--
+			`inputmode="numeric"` — цифрова клавіатура на телефоні.
+
+			Не `type="number"`: той дає стрілки збільшення, ковтає провідні нулі («07»
+			стало б «7») і на частині браузерів приймає `e` та знак мінус. Код — це
+			рядок цифр, а не число, і саме тому `type` лишається `text`.
+		-->
 		<div class="gate__field">
 			<input
 				id="pairs-code"
@@ -244,9 +269,10 @@
 				bind:this={codeInput}
 				bind:value={joinCode}
 				oninput={() => (joinCode = normaliseCode(joinCode))}
-				maxlength={CODE_LENGTH}
+				maxlength={CODE_MAX}
 				class="gate__code"
-				autocapitalize="characters"
+				inputmode="numeric"
+				pattern="[0-9]*"
 				autocomplete="off"
 				spellcheck="false"
 				data-testid="pairs-code-input"
@@ -264,7 +290,7 @@
 			type="button"
 			class="btn-primary"
 			onclick={onJoin}
-			aria-disabled={busy || joinCode.trim().length < CODE_LENGTH}
+			aria-disabled={busy || joinCode.trim().length < CODE_MIN}
 			data-testid="pairs-join-btn"
 		>
 			{@html formatFont(t('pairs.joinRoom'))}
