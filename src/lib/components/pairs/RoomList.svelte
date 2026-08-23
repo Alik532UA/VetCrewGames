@@ -21,22 +21,17 @@
 	 * Він отримує масив і кличе те, що дали. Тому список перевіряється без бази, а
 	 * сторінка лишається єдиним місцем, яке знає про Firebase.
 	 *
-	 * ## ЧОГО ТУТ НЕМАЄ: кімнат ДРУЗІВ угорі списку
+	 * ## КІМНАТИ ДРУЗІВ УГОРІ СПИСКУ
 	 *
-	 * Автор просив закріпити їхні кімнати над іншими — замість окремої сторінки
-	 * «грати з друзями». Зробити цього НЕ ВИЙДЕ, і причина не в списку.
+	 * Доти цього не було, і не через недогляд: друзі — це два акаунти, взаємно
+	 * підписані один на одного, а акаунтів у грі не було ЗОВСІМ. Анонімний `uid`
+	 * живе доки живе сховище браузера, тож ні підписатися, ні впізнати того
+	 * самого гравця наступного дня було нічим.
 	 *
-	 * Друзі — це два акаунти, взаємно підписані один на одного (як у сусідньому
-	 * `Slovko`: `users/{uid}/following/{targetUid}` плюс дзеркальні `followers`).
-	 * А тут акаунтів немає ЗОВСІМ: `net/firebase.ts` робить `signInAnonymously`,
-	 * тобто `uid` живе рівно доки живе сховище браузера. Ні підписатися, ні
-	 * впізнати того самого гравця наступного дня, ні навіть відрізнити його від
-	 * себе на іншому пристрої — нічим.
-	 *
-	 * Тому «закріплені кімнати друзів» вимагають спершу акаунтів (реєстрація,
-	 * профіль, пошук людей, взаємна підписка) — тобто окремої роботи, більшої за
-	 * весь онлайн-режим. Порожньої «затички під друзів» тут навмисно немає: сорт,
-	 * що завжди повертає порожню групу, читається як зроблена робота.
+	 * Тепер акаунти є (`net/account.ts`, `net/follows.ts`), і закріплення стало
+	 * можливим: сюда приходить перелік `uid` друзів, а рядок кімнати вже несе
+	 * `hostUid`. Порожній перелік означає «друзів немає або акаунта немає» — і в
+	 * обох випадках список виглядає так, як виглядав доти.
 	 */
 	interface Props {
 		rooms: LobbyRoom[];
@@ -54,6 +49,14 @@
 		 */
 		resume: OwnRoom[];
 		/**
+		 * `uid` друзів — їхні кімнати стоять ОКРЕМОЮ групою зверху.
+		 *
+		 * Група, а не просто інший порядок: «кімнати друзів» — це відповідь на
+		 * інше питання, ніж «які кімнати відкриті». Перемішані з рештою вони
+		 * вимагали б порівнювати кожен рядок із пам’яттю про те, хто друг.
+		 */
+		friends: readonly string[];
+		/**
 		 * Чи лишилося щось за межею запиту.
 		 *
 		 * Не «усього N»: запит обмежений правилом бази, тож повної кількості не знає
@@ -68,7 +71,16 @@
 		onEnter: (code: string) => void;
 	}
 
-	let { rooms, resume, hasMore, unavailable, busy, onEnter }: Props = $props();
+	let { rooms, resume, friends, hasMore, unavailable, busy, onEnter }: Props = $props();
+
+	/*
+	 * Дві групи з одного масиву, і порядок усередині кожної НЕ міняється:
+	 * перелік приїжджає впорядкованим за свіжістю (`net/lobby.ts`), і
+	 * пересортувати його тут означало б дві різні відповіді на «яка кімната
+	 * найновіша» на одному екрані.
+	 */
+	const friendly = $derived(rooms.filter((room) => friends.includes(room.hostUid)));
+	const others = $derived(rooms.filter((room) => !friends.includes(room.hostUid)));
 
 	/*
 	 * Обрізку видно РЯДКОМ, а не мовчки (NO-SILENT-CAPS).
@@ -130,23 +142,26 @@
 		</p>
 		<p class="rooms__hint">{@html formatFont(t('pairs.noRoomsHint'))}</p>
 	{:else}
-		<ul class="rooms__list" data-testid="pairs-rooms-list">
-			{#each rooms as room (room.code)}
+		<!--
+			ДВІ ГРУПИ, а не інший порядок в одному списку.
+		
+			«Кімнати друзів» — відповідь на інше питання, ніж «які кімнати відкриті».
+			Перемішані з рештою, вони вимагали б порівнювати кожен рядок із памʼяттю
+			про те, хто друг; окремою групою з підписом це видно з одного погляду.
+		
+			Імʼя господаря показується БЕЗ коду кімнати. Код і так лежить у ключі
+			запису, тобто його вже видно кожному, хто читає перелік; але показувати
+			його рядком означало б запрошувати переписати код замість натиснути
+			кнопку. Прапор стоїть ПЕРЕД імʼям: рядки скануються очима зліва, і прапор
+			видно з одного погляду, а імʼя треба прочитати.
+		-->
+		{#if friendly.length > 0}
+			<h3 class="rooms__group">{@html formatFont(t('pairs.friendsRooms'))}</h3>
+			<ul class="rooms__list" data-testid="pairs-friend-rooms-list">
+				{#each friendly as room (room.code)}
 				<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
 					<span class="rooms__who">
-						<!--
-							Імʼя господаря — БЕЗ коду кімнати на екрані.
-
-							Код і так лежить у ключі запису, тобто його вже видно кожному, хто
-							читає перелік; але показувати його рядком означало б запрошувати
-							переписати код замість натиснути кнопку. Кнопка робить те саме
-							надійніше.
-						-->
 						<span class="rooms__host">
-							<!--
-								Прапор ПЕРЕД імʼям: рядки в списку скануються очима зліва, і
-								прапор — те, що видно з одного погляду, а імʼя треба прочитати.
-							-->
 							<Flag code={room.hostCountry} />
 							{room.hostName}
 						</span>
@@ -166,8 +181,38 @@
 						{@html formatFont(t('pairs.enter'))}
 					</button>
 				</li>
-			{/each}
-		</ul>
+				{/each}
+			</ul>
+		{/if}
+
+		{#if others.length > 0}
+			<ul class="rooms__list" data-testid="pairs-rooms-list">
+				{#each others as room (room.code)}
+				<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
+					<span class="rooms__who">
+						<span class="rooms__host">
+							<Flag code={room.hostCountry} />
+							{room.hostName}
+						</span>
+						<span class="rooms__players">
+							<Users size={14} aria-hidden="true" />
+							{@html formatFont(t('pairs.players'))}: {room.players}
+						</span>
+					</span>
+					<button
+						type="button"
+						class="rooms__enter"
+						onclick={() => onEnter(room.code)}
+						aria-disabled={busy}
+						aria-label="{t('pairs.enter')}: {room.hostName}"
+						data-testid="pairs-room-{room.code}-btn"
+					>
+						{@html formatFont(t('pairs.enter'))}
+					</button>
+				</li>
+				{/each}
+			</ul>
+		{/if}
 
 		{#if hasMore}
 			<p class="rooms__hint" data-testid="pairs-rooms-trimmed-hint">
@@ -182,6 +227,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-sm);
+	}
+
+	/* Підпис групи: дрібніший за заголовок списку, але тим самим кольором. */
+	.rooms__group {
+		margin: var(--space-xs) 0 0;
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-bold);
+		color: var(--color-text-on-panel);
+		text-transform: uppercase;
 	}
 
 	.rooms__title {

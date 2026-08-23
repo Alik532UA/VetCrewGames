@@ -13,6 +13,8 @@ export const ui = {
 	'menu.game.random': 'Random game',
 	'menu.reserve': 'Reserve',
 	'menu.quiz': 'Quiz',
+	'account.title': 'Account',
+	'pairs.friendsRooms': 'Friends’ rooms',
 	'quiz.gamesInRoom': 'Games in this room',
 	'quiz.gamesLast': 'At least one game must stay on',
 	'quiz.otherGame': 'That room is for a different game.',

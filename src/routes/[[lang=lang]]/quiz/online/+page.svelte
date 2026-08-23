@@ -371,6 +371,7 @@
 				<RoomList
 					rooms={lobby.rooms}
 					resume={lobby.own}
+					friends={lobby.friends}
 					hasMore={lobby.hasMore}
 					unavailable={lobby.unavailable}
 					{busy}

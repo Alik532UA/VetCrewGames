@@ -46,6 +46,7 @@ const OG_LOCALES = new Map([
 
 const EXPECTED_PAGES = [
 	['index.html', 'uk'],
+	['account/index.html', 'uk'],
 	['quiz/index.html', 'uk'],
 	['quiz/play/index.html', 'uk'],
 	['quiz/online/index.html', 'uk'],
@@ -65,6 +66,7 @@ const EXPECTED_PAGES = [
 	['game-feeding/index.html', 'uk'],
 	['game-memory/index.html', 'uk'],
 	['en/index.html', 'en'],
+	['en/account/index.html', 'en'],
 	['en/quiz/index.html', 'en'],
 	['en/quiz/play/index.html', 'en'],
 	['en/quiz/online/index.html', 'en'],
@@ -84,6 +86,7 @@ const EXPECTED_PAGES = [
 	['en/game-feeding/index.html', 'en'],
 	['en/game-memory/index.html', 'en'],
 	['de/index.html', 'de'],
+	['de/account/index.html', 'de'],
 	['de/quiz/index.html', 'de'],
 	['de/quiz/play/index.html', 'de'],
 	['de/quiz/online/index.html', 'de'],
@@ -103,6 +106,7 @@ const EXPECTED_PAGES = [
 	['de/game-feeding/index.html', 'de'],
 	['de/game-memory/index.html', 'de'],
 	['nl/index.html', 'nl'],
+	['nl/account/index.html', 'nl'],
 	['nl/quiz/index.html', 'nl'],
 	['nl/quiz/play/index.html', 'nl'],
 	['nl/quiz/online/index.html', 'nl'],

@@ -13,6 +13,8 @@ export const ui = {
 	'menu.game.random': 'Zufälliges Spiel',
 	'menu.reserve': 'Schutzgebiet',
 	'menu.quiz': 'Quiz',
+	'account.title': 'Konto',
+	'pairs.friendsRooms': 'Räume von Freunden',
 	'quiz.gamesInRoom': 'Spiele in diesem Raum',
 	'quiz.gamesLast': 'Mindestens ein Spiel muss bleiben',
 	'quiz.otherGame': 'Dieser Raum ist für ein anderes Spiel.',

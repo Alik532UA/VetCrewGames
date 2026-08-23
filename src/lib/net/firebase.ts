@@ -31,9 +31,24 @@ const CONFIG = {
 };
 
 export interface Connection {
-	/** Хто я в цій кімнаті. Анонімний, але стабільний у межах браузера. */
+	/**
+	 * Хто я. Анонімний доти, доки до цього ж входу не привʼязали акаунт.
+	 *
+	 * Саме «до цього ж»: реєстрація — це `linkWithCredential`, тож `uid` при
+	 * ній НЕ міняється, і все, що під ним лежить (кімнати, підписки, профіль),
+	 * лишається на місці. Подробиці — у `net/account.ts`.
+	 */
 	uid: string;
 	db: Database;
+	/**
+	 * Сам обʼєкт автентифікації — потрібен акаунтам, і лише їм.
+	 *
+	 * Гра його не торкається: кімнати живуть на `uid`, а не на користувачі.
+	 * Але привʼязати акаунт, вийти чи спитати `isAnonymous` без нього
+	 * неможливо, а другий `getAuth()` поруч дав би другий екземпляр на той
+	 * самий застосунок.
+	 */
+	auth: Auth;
 }
 
 /**
@@ -68,7 +83,7 @@ async function open(): Promise<Connection> {
 	const user = auth.currentUser ?? (await authModule.signInAnonymously(auth)).user;
 	logService.info('network', 'anonymous session ready');
 
-	return { uid: user.uid, db };
+	return { uid: user.uid, db, auth };
 }
 
 /**

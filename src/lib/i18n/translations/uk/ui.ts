@@ -13,6 +13,8 @@ export const ui = {
 	'menu.game.random': 'Випадкова гра',
 	'menu.reserve': 'Заповідник',
 	'menu.quiz': 'Вікторина',
+	'account.title': 'Акаунт',
+	'pairs.friendsRooms': 'Кімнати друзів',
 	'quiz.gamesInRoom': 'Ігри в кімнаті',
 	'quiz.gamesLast': 'Хоч одна гра мусить лишитися',
 	'quiz.otherGame': 'Ця кімната для іншої гри.',

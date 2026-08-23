@@ -242,6 +242,162 @@ const CASES = [
 		allowed: true,
 		run: () => read(`myRooms/${guest.uid}`, guest.token)
 	},
+
+	/*
+	 * ── АКАУНТИ, ПРОФІЛІ Й ПІДПИСКИ ──────────────────────────────────────────
+	 *
+	 * Порядок тут має значення: псевдонім займається першим, бо решта випадків
+	 * спирається на вже зайнятий.
+	 */
+	{
+		name: 'господар займає ВІЛЬНИЙ псевдонім на себе',
+		allowed: true,
+		run: () => write('handles/leader', host.uid, host.token)
+	},
+	{
+		// Правило вимагає `newData.val() === auth.uid`: інакше можна було б зайняти
+		// псевдонім і вказати в ньому чужого, тобто підмінити людину в пошуку.
+		name: 'псевдонім на ЧУЖИЙ uid',
+		allowed: false,
+		run: () => write('handles/stolen', host.uid, guest.token)
+	},
+	{
+		// Зайнятий не перезаписує НІХТО, включно з власником: зміна псевдоніма —
+		// це звільнити старий і зайняти новий, а не перезапис.
+		name: 'перезапис зайнятого псевдоніма',
+		allowed: false,
+		run: () => write('handles/leader', guest.uid, guest.token)
+	},
+	{
+		name: 'читання одного псевдоніма',
+		allowed: true,
+		run: () => read('handles/leader', guest.token)
+	},
+	{
+		/*
+		 * ПЕРЕЛІК ПСЕВДОНІМІВ ЦІЛКОМ — заборонено, і це головний випадок цієї
+		 * групи: без межі один запит віддав би всі псевдоніми разом із `uid`,
+		 * тобто повний список користувачів гри.
+		 */
+		name: 'перелічити всі псевдоніми',
+		allowed: false,
+		run: () => read('handles', guest.token)
+	},
+	{
+		name: 'пошук людей обмеженим запитом',
+		allowed: true,
+		run: () => readQuery('handles', 'orderBy=%22%24key%22&limitToFirst=20', guest.token)
+	},
+	{
+		name: 'пошук без межі',
+		allowed: false,
+		run: () => readQuery('handles', 'orderBy=%22%24key%22', guest.token)
+	},
+	{
+		name: 'господар пише свій профіль',
+		allowed: true,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Лідер', handle: 'leader', country: 'ua', at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'профіль читає інший гравець',
+		allowed: true,
+		run: () => read(`users/${host.uid}/profile`, guest.token)
+	},
+	{
+		name: 'чужий профіль перезаписати',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Не я', handle: 'faker', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		// Псевдонім вузький навмисно: за ним шукають людей. Великі літери й інші
+		// алфавіти дають пари, що виглядають однаково й не збігаються.
+		name: 'псевдонім із великими літерами',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/profile`,
+				{ name: 'Гість', handle: 'Guest', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'псевдонім коротший за три символи',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/profile`,
+				{ name: 'Гість', handle: 'ab', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'у профілі поле, якого схема не знає',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/profile`,
+				{ name: 'Гість', handle: 'guest', role: 'admin', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		// Дзеркало пише САМ підписник: ключ — його `uid`, і правило це вимагає.
+		name: 'гість додає себе в підписники господаря',
+		allowed: true,
+		run: () => write(`users/${host.uid}/followers/${guest.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'гість пише свою підписку',
+		allowed: true,
+		run: () => write(`users/${guest.uid}/following/${host.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		/*
+		 * ЧУЖУ ПІДПИСКУ НЕ СТВОРИТИ, і це не дрібниця: без цього правила будь-хто
+		 * дописував би собі підписників, а взаємність — це і є друзі. Тобто
+		 * «дружба» ставала б односторонньою заявою.
+		 */
+		name: 'записати чужу підписку за нього',
+		allowed: false,
+		run: () => write(`users/${host.uid}/following/${guest.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'записати себе чужим підписником від третьої особи',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/followers/${host.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'підписки читає інший гравець',
+		allowed: true,
+		run: () => read(`users/${guest.uid}/following`, host.token)
+	},
+	{
+		// «Прибери мене зі своїх підписок»: без цього дозволу відписати наполегливого
+		// підписника було б нічим. Та сама пара прав, що в сусідньому `Slovko`.
+		name: 'той, на кого підписані, знімає чужу підписку на себе',
+		allowed: true,
+		run: () => write(`users/${guest.uid}/following/${host.uid}`, null, host.token)
+	},
+	{
+		name: 'перелічити всіх користувачів',
+		allowed: false,
+		run: () => read('users', guest.token)
+	},
+	{
+		name: 'довільна гілка під користувачем',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/secrets`, { key: 'value' }, guest.token)
+	},
 	{
 		/*
 		 * Хід `end` («завершити партію») пише НЕ господар, і це навмисно: лишається

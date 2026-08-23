@@ -64,6 +64,24 @@
 			>
 				{@html formatFont(t('menu.game.memory'))}
 			</a>
+
+			<!--
+				АКАУНТ — окремим пунктом, а не в шапці.
+
+				У шапці живуть перемикачі (тема, мова, повний екран) — те, що міняє
+				вигляд поточної сторінки. Акаунт натомість веде на ОКРЕМУ сторінку з
+				чотирма блоками, і в рядку іконок він читався б як ще один перемикач.
+
+				Клас `--link`, а не `--game`: це не гра, і виглядати вона мусить інакше
+				від тих трьох, що вище.
+			-->
+			<a
+				href={langPath(lang, 'account')}
+				class="menu-btn menu-btn--link anim-stagger-4"
+				data-testid="menu-account-link"
+			>
+				{@html formatFont(t('account.title'))}
+			</a>
 		</nav>
 	{:else}
 		<FlatGameMenu {lang} games={MENU_GAMES} pool={MENU_POOL} />

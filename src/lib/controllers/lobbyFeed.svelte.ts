@@ -1,5 +1,6 @@
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { OwnRoom } from '$lib/net/ownRooms';
+import { friendUids } from '$lib/net/follows';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
@@ -47,6 +48,19 @@ export class LobbyFeed {
 	 * те, куди можна ВЕРНУТИСЯ.
 	 */
 	own = $state<OwnRoom[]>([]);
+
+	/**
+	 * `uid` моїх друзів — тих, із кимось підписка ВЗАЄМНА.
+	 *
+	 * Потрібні переліку, щоб закріпити їхні кімнати зверху. Саме `uid`, а не
+	 * профілі: у рядку кімнати й так стоїть імʼя господаря, а читати профілі
+	 * заради сортування означало б стільком запитів, скільком підписок.
+	 *
+	 * Порожньо — або друзів немає, або акаунта немає зовсім. Обидва випадки
+	 * дають той самий результат: список без закріплених рядків, тобто рівно
+	 * те, що було до появи підписок.
+	 */
+	friends = $state<string[]>([]);
 
 	/**
 	 * Імена, уже видані тим, хто зараз онлайн.
@@ -113,10 +127,18 @@ export class LobbyFeed {
 
 		void (async () => {
 			const own = await import('$lib/net/ownRooms');
-			// `listOwnRooms` не кидає: це довідка, і її відсутність лишає сторінку
-			// такою, якою вона була до появи рядка «продовжити партію».
-			const found = await own.listOwnRooms();
-			if (!dead) this.own = found;
+			/*
+			 * Одним `Promise.all`, а не двома чеканнями поспіль: обидві відповіді
+			 * потрібні тому самому списку, і послідовні запити подвоїли б час до
+			 * першого показу без жодної вигоди.
+			 *
+			 * Жодна з них не кидає: це довідки, і їхня відсутність лишає список
+			 * таким, яким він був до появи рядків «продовжити» й «кімнати друзів».
+			 */
+			const [rooms, friends] = await Promise.all([own.listOwnRooms(), friendUids()]);
+			if (dead) return;
+			this.own = rooms;
+			this.friends = friends;
 		})();
 
 		return () => {
