@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Info } from 'lucide-svelte';
 	import { formatFont } from '$lib/i18n';
 	import EmailField from './EmailField.svelte';
 	import GoogleMark from './GoogleMark.svelte';
@@ -101,6 +102,15 @@
 	 * заради значення, яке нікого, крім цієї розмітки, не стосується.
 	 */
 	let forgot = $state(false);
+	/**
+	 * Чи розкрито довідку «як працює акаунт».
+	 *
+	 * Три абзаци пояснення стояли на екрані завжди, і автор сказав про них точно:
+	 * «захламляє екран». Людина, яка прийшла ввести пошту, читає тут не три
+	 * абзаци, а два поля; той, кому потрібне пояснення, дістає його одним
+	 * натиском. Стан ЕКРАННИЙ і локальний: сторінці нема чого з ним робити.
+	 */
+	let hints = $state(false);
 
 	/**
 	 * Чи є що надсилати. Межі ті самі, що в Firebase: пошта з символом і пароль
@@ -142,8 +152,45 @@
 			onback={() => (forgot = false)}
 		/>
 	{:else}
-		<h2 class="auth__title">{@html formatFont(text('account.signInTitle'))}</h2>
-		<p class="auth__hint">{@html formatFont(text('account.why'))}</p>
+		<!--
+			ЗАГОЛОВОК І `i` — В ОДНОМУ РЯДКУ, кнопка праворуч.
+
+			Довідка мусить бути там, де на неї дивляться, коли не розуміють: біля
+			назви екрана. Під формою її не побачив би той, хто вагається ще до
+			першого поля, а окремим рядком над формою вона знову зайняла б місце,
+			яке щойно звільнили.
+		-->
+		<div class="auth__head">
+			<h2 class="auth__title" id="auth-title">
+				{@html formatFont(text('account.signInTitle'))}
+			</h2>
+			<button
+				type="button"
+				class="auth__info"
+				aria-expanded={hints}
+				aria-controls="auth-hints"
+				aria-label={text('account.infoOpen')}
+				title={text('account.infoOpen')}
+				onclick={() => (hints = !hints)}
+				data-testid="auth-info-btn"
+			>
+				<Info size={18} aria-hidden="true" />
+			</button>
+		</div>
+
+		{#if hints}
+			<!--
+				Порядок абзаців — порядок питань: навіщо це взагалі, що буде, якщо
+				зареєструватися, і що буде, якщо ввійти в наявний акаунт. Останній
+				абзац — про друзів, бо саме через них тут найчастіше й опиняються.
+			-->
+			<div class="auth__hints" id="auth-hints" data-testid="auth-info-panel">
+				<p class="auth__hint">{@html formatFont(text('account.infoWhy'))}</p>
+				<p class="auth__hint">{@html formatFont(text('account.infoRegister'))}</p>
+				<p class="auth__hint">{@html formatFont(text('account.infoSignIn'))}</p>
+				<p class="auth__hint">{@html formatFont(text('account.infoFriends'))}</p>
+			</div>
+		{/if}
 
 		<!--
 			GOOGLE СТОЇТЬ ПЕРШИМ, а не під формою.
@@ -221,19 +268,6 @@
 				{@html formatFont(text('account.signIn'))}
 			</button>
 
-			<!--
-				Попередження стоїть МІЖ кнопками, і саме тому воно тут, а не під
-				обома: воно стосується рівно «Увійти». Вхід у ІНШИЙ акаунт міняє
-				`uid`, тобто анонімний доробок лишається під старим — річ незворотна,
-				і сказати про неї треба там, де дія.
-
-				Симетричну підказку про реєстрацію («профіль і кімнати збережуться»)
-				прибрано, і це рішення: вона заспокоювала, а не застерігала.
-			-->
-			<p class="auth__hint" data-testid="auth-signin-hint">
-				{@html formatFont(text('account.signInHint'))}
-			</p>
-
 			<button
 				type="button"
 				class="auth__btn auth__btn--alt"
@@ -243,6 +277,7 @@
 			>
 				{@html formatFont(text('account.register'))}
 			</button>
+
 		</form>
 	{/if}
 </section>
@@ -261,8 +296,65 @@
 		gap: var(--space-xs);
 	}
 
-	.auth__title {
+	/*
+	 * Заголовок і кнопка довідки — один рядок, кнопка притиснута праворуч.
+	 *
+	 * `space-between`, а не `margin-left: auto` на кнопці: у рядку рівно два
+	 * елементи, і саме про їхню відстань тут ідеться. Відступ під рядком лишився
+	 * той самий, що був у заголовка, — інакше форма підскочила б на кілька
+	 * пікселів проти того, до чого око вже звикло.
+	 */
+	.auth__head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-sm);
 		margin: 0 0 var(--space-xs);
+	}
+
+	/*
+	 * КНОПКА `i` — 44px, хоч сама іконка 18px.
+	 *
+	 * Це власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8), і тут він
+	 * особливо доречний: кнопка стоїть у куті, а кут — найгірше місце для
+	 * маленької цілі на телефоні. Рамки немає навмисно: обведена вона читалася б
+	 * як третя дія поруч із двома кнопками входу, а це довідка.
+	 */
+	.auth__info {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		border: none;
+		border-radius: var(--radius-sm);
+		background: none;
+		color: var(--color-text);
+		cursor: pointer;
+	}
+
+	@media (hover: hover) {
+		.auth__info:hover {
+			background: color-mix(in srgb, var(--color-text), transparent 90%);
+		}
+	}
+
+	/*
+	 * Довідка — окремим блоком, а не чотирма абзацами поспіль у потоці форми:
+	 * `gap` між абзацами тут менший за проміжок між полями, тож пояснення
+	 * читається як один текст, а не як чотири підписи до сусідніх кнопок.
+	 */
+	.auth__hints {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+		margin: 0 0 var(--space-xs);
+	}
+
+	/* Відступ під заголовком тепер тримає рядок `.auth__head`, а не він сам. */
+	.auth__title {
+		margin: 0;
 		font-size: var(--font-size-md);
 	}
 
@@ -307,6 +399,18 @@
 	 * обовʼязкове: без нього акцентний колір лишається єдиною ознакою, що це
 	 * можна натиснути, — а колір як єдина ознака заборонений (ACCESSIBILITY-v8).
 	 */
+	/*
+	 * «ВІДНОВИТИ ПАРОЛЬ» — КОЛЬОРОМ ТЕКСТУ, а не акцентом.
+	 *
+	 * Акцент тут не проходив: `contrast-runtime.spec.ts` заміряв 1,50:1 у
+	 * `light-green` і 1,60:1 у `winter` при потрібних 4,5 — жовтий на світлій
+	 * панелі. Це не «майже видно», а нечитабельно, і тримався той колір рівно на
+	 * тому, що гейт рантайму запускають рідше за юніт-тести.
+	 *
+	 * Посилання пізнається за ПІДКРЕСЛЕННЯМ, і воно тут і було: колір нічого до
+	 * цього не додавав, тож заміна нічого не коштує. Пара «текст на панелі» вже
+	 * підібрана в усіх чотирьох темах (6,23–4,67:1 — заміряно в `CountryMenu`).
+	 */
 	.auth__forgot {
 		align-self: flex-end;
 		/* 44px сенсорної цілі набирається відступами, а не висотою рядка. */
@@ -314,7 +418,7 @@
 		padding: 0 var(--space-xs);
 		border: none;
 		background: none;
-		color: var(--color-accent);
+		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
 		text-decoration: underline;

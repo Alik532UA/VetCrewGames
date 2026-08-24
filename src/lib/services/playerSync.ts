@@ -128,6 +128,15 @@ export function stopPlaySync(): void {
  * покаранням за те, що людина спершу грала.
  */
 export async function mergeOnSignIn(): Promise<void> {
+	/*
+	 * ПОПЕРЕДНЯ ПІДПИСКА ЗНІМАЄТЬСЯ ПЕРШОЮ, і це не косметика.
+	 *
+	 * Вхід у ІНШИЙ акаунт міняє `uid`, а підписка, створена до входу, слухає
+	 * вузол попереднього: після входу вона отримувала б відмову правила, а нову —
+	 * `startPlaySync` не створив би, бо стара ще «є». Тобто живої синхронізації
+	 * не було б саме там, де вона найпотрібніша.
+	 */
+	stopPlaySync();
 	playerData.markLinked();
 	const merged = mergePlay(playerData.snapshot(), await readPlay());
 	playerData.apply(merged);

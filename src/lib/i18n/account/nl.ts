@@ -12,11 +12,14 @@
  * зібрані словники й цих ключів більше не бачить.
  */
 export const account: Record<string, string> = {
-	'account.signInTitle': 'Inloggen',
-	'account.why': 'Een account is alleen nodig voor vrienden: om iemand te volgen moet die je morgen herkennen. Spelen kan ook zonder.',
+	'account.signInTitle': 'Inloggen of registreren',
+	'account.infoFriends': 'Vrienden betekent elkaar volgen, dus beide kanten hebben een account nodig. Handle en avatar stel je na het inloggen in je profiel in.',
+	'account.infoSignIn': 'Inloggen op een bestaand account opent juist dat account — met zijn naam, zijn handle, zijn vrienden. De score en records uit deze browser komen erbij; onafgemaakte kamers van daarvoor verhuizen niet mee.',
+	'account.infoRegister': 'Registreren begint niets opnieuw. Je blijft dezelfde speler, wat je haalde blijft bij je — en wordt vanaf dan in het account bewaard, dus ook op je andere apparaten.',
+	'account.infoWhy': 'Zonder account werkt alles: spelen, kamers maken, punten halen. Maar de score en records leven dan alleen in deze browser — en verdwijnen met de gegevens ervan.',
+	'account.infoOpen': 'Hoe het account werkt',
 	'account.signIn': 'Inloggen',
 	'account.register': 'Registreren',
-	'account.signInHint': 'Let op: inloggen op een ander account vervangt de huidige speler. Wat anoniem gedaan is, blijft daar.',
 	'account.email': 'E-mail',
 	'account.password': 'Wachtwoord',
 	'account.errorTaken': 'Dat e-mailadres is al in gebruik. Probeer “Inloggen”.',
@@ -72,7 +75,7 @@ export const account: Record<string, string> = {
 	'account.resetSend': 'E-mail versturen',
 	'account.resetBack': 'Terug naar inloggen',
 	'account.resetSent': 'Bestaat dat e-mailadres, dan is het bericht al verzonden.',
-	'account.google': 'Inloggen met Google',
+	'account.google': 'Doorgaan met Google',
 	'account.or': 'of',
 	'account.errorGoogleOff': 'Inloggen met Google is nog niet ingeschakeld. Gebruik e-mail.',
 	// Regionamen en teksten van de landkeuze. Waarom hier en niet in het

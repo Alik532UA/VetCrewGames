@@ -12,11 +12,14 @@
  * зібрані словники й цих ключів більше не бачить.
  */
 export const account: Record<string, string> = {
-	'account.signInTitle': 'Sign in',
-	'account.why': 'An account is only needed for friends: to follow someone, they must recognise you the next day. You can play without one.',
+	'account.signInTitle': 'Sign in or register',
+	'account.infoFriends': 'Friends means following each other, so both sides need an account. The handle and avatar are set after signing in, in the profile.',
+	'account.infoSignIn': 'Signing into an existing account opens that account — its name, its handle, its friends. The score and records from this browser are added to it; unfinished rooms started before the sign-in do not move into the account.',
+	'account.infoRegister': 'Registering does not start over. You stay the same player, what you scored stays with you — and from then on it is kept in the account, so it opens on your other devices.',
+	'account.infoWhy': 'Everything works without an account: playing, creating rooms, scoring. But then the score and records live only in this browser — and go away with its data.',
+	'account.infoOpen': 'How the account works',
 	'account.signIn': 'Sign in',
 	'account.register': 'Register',
-	'account.signInHint': 'Careful: signing in to another account replaces the current player. Anything done anonymously stays with it.',
 	'account.email': 'Email',
 	'account.password': 'Password',
 	'account.errorTaken': 'That email is already taken. Try “Sign in”.',
@@ -72,7 +75,7 @@ export const account: Record<string, string> = {
 	'account.resetSend': 'Send the email',
 	'account.resetBack': 'Back to sign in',
 	'account.resetSent': 'If that email exists, the message is already on its way.',
-	'account.google': 'Sign in with Google',
+	'account.google': 'Continue with Google',
 	'account.or': 'or',
 	'account.errorGoogleOff': 'Google sign-in is not enabled yet. Use email instead.',
 	// Region names and the country-picker strings. Why they live here and not in

@@ -12,11 +12,14 @@
  * зібрані словники й цих ключів більше не бачить.
  */
 export const account: Record<string, string> = {
-	'account.signInTitle': 'Anmelden',
-	'account.why': 'Ein Konto braucht man nur für Freunde: um jemandem zu folgen, muss er Sie am nächsten Tag wiedererkennen. Spielen geht auch ohne.',
+	'account.signInTitle': 'Anmelden oder registrieren',
+	'account.infoFriends': 'Freunde heißt: einander folgen, also braucht es auf beiden Seiten ein Konto. Kürzel und Avatar werden nach der Anmeldung im Profil gesetzt.',
+	'account.infoSignIn': 'Die Anmeldung in einem vorhandenen Konto öffnet genau dieses Konto — mit seinem Namen, seinem Kürzel, seinen Freunden. Punktestand und Rekorde aus diesem Browser kommen hinzu; unbeendete Räume von vorher ziehen nicht mit um.',
+	'account.infoRegister': 'Die Registrierung fängt nicht von neuem an. Du bleibst derselbe Spieler, das Erspielte bleibt bei dir — und wird von da an im Konto bewahrt, also auch auf deinen anderen Geräten.',
+	'account.infoWhy': 'Ohne Konto funktioniert alles: spielen, Räume erstellen, Punkte sammeln. Punktestand und Rekorde leben dann aber nur in diesem Browser — und verschwinden mit seinen Daten.',
+	'account.infoOpen': 'Wie das Konto funktioniert',
 	'account.signIn': 'Anmelden',
 	'account.register': 'Registrieren',
-	'account.signInHint': 'Achtung: die Anmeldung in ein anderes Konto ersetzt den aktuellen Spieler. Anonym Erspieltes bleibt dort.',
 	'account.email': 'E-Mail',
 	'account.password': 'Passwort',
 	'account.errorTaken': 'Diese E-Mail ist schon vergeben. Versuchen Sie „Anmelden“.',
@@ -72,7 +75,7 @@ export const account: Record<string, string> = {
 	'account.resetSend': 'E-Mail senden',
 	'account.resetBack': 'Zurück zur Anmeldung',
 	'account.resetSent': 'Falls diese E-Mail existiert, ist die Nachricht unterwegs.',
-	'account.google': 'Mit Google anmelden',
+	'account.google': 'Weiter mit Google',
 	'account.or': 'oder',
 	'account.errorGoogleOff': 'Google-Anmeldung ist noch nicht aktiviert. Bitte E-Mail verwenden.',
 	// Regionsnamen und Texte der Länderauswahl. Warum hier und nicht im

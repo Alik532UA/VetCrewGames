@@ -95,6 +95,20 @@ export async function signInEmail(email: string, password: string): Promise<void
 	const { auth } = await connect();
 	const { signInWithEmailAndPassword } = await import('firebase/auth');
 	await signInWithEmailAndPassword(auth, email, password);
+
+	/*
+	 * СКИНУТИ КЕШ ПІД'ЄДНАННЯ — і це не прибирання, а умова роботи.
+	 *
+	 * `connect()` кешує проміс РАЗОМ із `uid`. Після входу в інший акаунт `uid`
+	 * інший, а кеш віддавав би старий — і кожне звертання після входу йшло б у
+	 * гілку попереднього акаунта: профіль читався б чужий, а запис відкидало б
+	 * правило (`$uid === auth.uid` уже не збігається). Найгірше тут те, що на
+	 * екрані це виглядало б як «нічого не сталося».
+	 *
+	 * Тест цього не бачив і не міг: у ньому `connect` — мок, який щоразу читає
+	 * поточний `uid`, тобто веде себе як код БЕЗ кешу.
+	 */
+	forget();
 }
 
 /**
@@ -149,6 +163,10 @@ export async function signInGoogle(): Promise<void> {
 		);
 		if (!credential) throw error;
 		await signInWithCredential(auth, credential);
+		// `uid` став іншим — кеш під'єднання мусить піти разом із ним (див.
+		// `signInEmail`). У гілці `linkWithPopup` вище `uid` той самий, тож там
+		// скидати нічого.
+		forget();
 	}
 }
 
