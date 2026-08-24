@@ -207,6 +207,35 @@ export class QuizMatch {
 		return out;
 	}
 
+	/**
+	 * Скільки очок дав САМЕ ЦЕЙ раунд — кожному.
+	 *
+	 * Табло між раундами показує приріст, а не лише підсумок: «+90» відповідає на
+	 * питання «як я щойно зіграв», якого сума не бачить. Рахується тут, а не в
+	 * компоненті, з тієї самої причини, що й уся решта рахунку: це чиста функція
+	 * від журналу, і два місця з тією самою арифметикою розійшлися б непомітно.
+	 *
+	 * Гравець без відповіді в цьому раунді має нуль, а не відсутнє значення: нуль
+	 * — це відповідь («не встиг»), а порожнеча читалася б як «ще не порахували».
+	 */
+	get roundGains(): Record<string, number> {
+		const out: Record<string, number> = {};
+		for (const player of this.players) out[player.uid] = 0;
+
+		const round = this.round;
+		const start = this.startedAt[round];
+		if (start === undefined) return out;
+
+		const game = this.programme[round]?.game;
+		if (game === undefined) return out;
+		const limit = roundLimitMs(game, this.#factor);
+
+		for (const [uid, answer] of Object.entries(this.answers[round] ?? {})) {
+			out[uid] = answerPoints(answer.at, start, limit, answer.correct);
+		}
+		return out;
+	}
+
 	get myScore(): number {
 		return this.scores[this.#me] ?? 0;
 	}

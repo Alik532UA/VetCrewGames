@@ -6,6 +6,7 @@
 	import QuizScores from './QuizScores.svelte';
 	import QuizAway from './QuizAway.svelte';
 	import QuizRound from './QuizRound.svelte';
+	import QuizReveal from './QuizReveal.svelte';
 
 	/**
 	 * ЕКРАН КІМНАТИ: партія й підсумок. Мережі тут немає зовсім.
@@ -97,30 +98,41 @@
 	<QuizAway away={match.away} secondsLeft={awayLeft} />
 
 	{@const phase = match.phase(clock)}
-	<!--
-		ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
+	{#if phase === 'reveal'}
+		<!--
+			ТАБЛО МІЖ РАУНДАМИ — і смуга гравців зверху на цей час ЗНИКАЄ.
 
-		Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу саме
-		тоді, коли вона потрібна на питанні. Під час раунду видно лише склад
-		гравців із позначкою «вже відповів», а рахунок з'являється на таблі між
-		раундами.
-	-->
-	<QuizScores
-		players={match.players}
-		answered={match.answered}
-		scores={match.scores}
-		withScores={phase !== 'round'}
-		{me}
-	/>
+			Дві таблиці одночасно (смуга вгорі й панель посередині) показували б ті
+			самі числа двічі, а очі тим часом шукали б, котра з них головна. Автор
+			попросив рівно це: «панель по центру екрана на час табла, рядок зверху на
+			цей час ховається».
+		-->
+		<QuizReveal players={match.players} scores={match.scores} gains={match.roundGains} {me} />
+	{:else}
+		<!--
+			ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
 
-	<QuizRound
-		{phase}
-		step={match.step}
-		leftMs={match.leftMs(clock)}
-		limitMs={match.limitMs}
-		answered={match.iAnswered}
-		{onanswer}
-	/>
+			Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу саме
+			тоді, коли вона потрібна на питанні. Під час раунду видно лише склад
+			гравців із позначкою «вже відповів».
+		-->
+		<QuizScores
+			players={match.players}
+			answered={match.answered}
+			scores={match.scores}
+			withScores={false}
+			{me}
+		/>
+
+		<QuizRound
+			{phase}
+			step={match.step}
+			leftMs={match.leftMs(clock)}
+			limitMs={match.limitMs}
+			answered={match.iAnswered}
+			{onanswer}
+		/>
+	{/if}
 {/if}
 
 <style>

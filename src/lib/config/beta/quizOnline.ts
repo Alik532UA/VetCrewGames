@@ -142,11 +142,11 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_10',
 			category: { uk: 'Раунд', en: 'The round' },
 			text: {
-				uk: 'Дайте таймеру дійти до кінця, не відповідаючи. Мусить зʼявитися рядок про наступний раунд, простояти чотири секунди й піти САМ — натискати нічого не треба.',
-				en: 'Let the timer run out without answering. A line about the next round must appear, stand for four seconds and move on BY ITSELF — nothing needs pressing.'
+				uk: 'Дайте таймеру дійти до кінця, не відповідаючи. Посередині мусить зʼявитися табло з усіма гравцями, рахунок мусить НАБИРАТИСЯ (а не стрибнути), простояти чотири секунди й піти САМ — натискати нічого не треба. Смуга гравців зверху на цей час зникає.',
+				en: 'Let the timer run out without answering. A scoreboard with every player must appear in the middle, the score must COUNT UP (not jump), stand for four seconds and move on BY ITSELF — nothing needs pressing. The player strip on top disappears for that time.'
 			},
 			coverage: 'manual',
-			testid: 'quiz-reveal-text'
+			testid: 'quiz-reveal-panel'
 		},
 		{
 			id: 'quizonline_11',

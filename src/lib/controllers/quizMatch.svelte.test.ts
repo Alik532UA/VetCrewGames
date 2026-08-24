@@ -310,6 +310,45 @@ describe('фази раунду', () => {
 	});
 });
 
+describe('приріст за раунд', () => {
+	/**
+	 * Табло між раундами показує «+90», а не лише суму — тобто приріст мусить
+	 * рахуватися з журналу так само чесно, як і сам рахунок.
+	 */
+	it('дає кожному стільки, скільки цей раунд і коштував', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(2000);
+		await guest.answer(1);
+
+		const start = host.startedAt[0];
+		const limit = host.limitMs;
+		const gains = host.roundGains;
+
+		expect(gains[HOST]).toBe(answerPoints(host.answers[0][HOST].at, start, limit, 1));
+		expect(gains[GUEST]).toBe(answerPoints(host.answers[0][GUEST].at, start, limit, 1));
+		// Пізніша відповідь коштує менше — те саме правило, що й у сумі.
+		expect(gains[GUEST]).toBeLessThan(gains[HOST]);
+		stop();
+	});
+
+	it('той, хто не відповів, має нуль, а не порожнеч', async () => {
+		const { room, host, stop } = table();
+		await host.startRound(0);
+		await host.answer(1);
+		expect(host.roundGains[GUEST]).toBe(0);
+		room.tick(0);
+		stop();
+	});
+
+	it('до першого раунду приріст нульовий в усіх', () => {
+		const { host, stop } = table();
+		expect(Object.values(host.roundGains)).toEqual([0, 0]);
+		stop();
+	});
+});
+
 describe('той, хто зник із кімнати', () => {
 	/**
 	 * ГОЛОВНЕ ТУТ: партія не чекає на того, кого немає.

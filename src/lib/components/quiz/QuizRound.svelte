@@ -78,11 +78,13 @@
 			{@html formatFont(t('quiz.answered'))}
 		</p>
 	{/if}
-{:else if phase === 'reveal'}
-	<p class="round__wait text-panel" data-testid="quiz-reveal-text">
-		{@html formatFont(t('quiz.nextRound'))}
-	</p>
 {/if}
+
+<!--
+	ФАЗУ ТАБЛА ТУТ БІЛЬШЕ НЕМА: її малює `QuizReveal` — панель посередині з
+	набором балів. Тут стояв рядок «Наступний раунд», і він був усім, що людина
+	бачила між раундами.
+-->
 
 <style>
 	/*
