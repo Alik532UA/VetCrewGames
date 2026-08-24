@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
+	import { playerData } from '$lib/services/playerData.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { QuizMatch } from '$lib/controllers/quizMatch.svelte';
@@ -128,6 +129,8 @@
 
 	/** Вийти з кімнати на форму входу. Кімнату не закриває. */
 	function leaveRoom() {
+		// Кімнати немає — локальний рахунок знову живе своїм життям.
+		playerData.endOnline();
 		for (const stop of stops) stop();
 		stops = [];
 		releaseHold = null;
@@ -199,6 +202,15 @@
 
 			const started = new QuizMatch(me, transport, dev ? DEV_TIME_FACTOR : 1);
 			stops.push(started.listen());
+			/*
+			 * ЛОКАЛЬНИЙ РАХУНОК НА ПАУЗІ, поки триває спільна партія.
+			 *
+			 * Раунди грають ТІ САМІ контролери, що соло, і кожен додає свої 3–4 очки
+			 * за правильну відповідь та пише «зіграно партію» — на КОЖЕН раунд, тобто
+			 * дванадцять разів за вікторину. Замість цього в кінці партії
+			 * зараховується один раз, за курсом двох шкал (`awardQuizMatch`).
+			 */
+			playerData.beginOnline();
 
 			const live = await import('$lib/net/presence');
 			stops.push(await live.trackPresence(code));
@@ -438,6 +450,23 @@
 	$effect(() => {
 		if (!browser || match) return;
 		return lobby.load();
+	});
+
+	/**
+	 * БАЛИ ЗА ПАРТІЮ нараховуються один раз, у мить, коли вона скінчилася.
+	 *
+	 * Ключ ідемпотентності — зерно партії: «зіграти ще» ставить нове зерно й стирає
+	 * журнал, тобто наступна партія отримає своє нарахування, а поточна не отримає
+	 * другого. Без цього ефект, що перезапускається на кожен приїзд ходу, доливав
+	 * би бали доти, доки хтось дивиться на екран підсумку.
+	 */
+	let awardedSeed = -1;
+
+	$effect(() => {
+		if (!browser || !match || !match.over) return;
+		if (match.seed === awardedSeed) return;
+		awardedSeed = match.seed;
+		playerData.awardQuizMatch(match.myScore);
 	});
 
 	onMount(() => {

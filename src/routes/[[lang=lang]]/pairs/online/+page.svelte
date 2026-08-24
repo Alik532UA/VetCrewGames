@@ -5,6 +5,8 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
+	import { playerData } from '$lib/services/playerData.svelte';
+	import { PAIRS_DRAW_POINTS, PAIRS_WIN_POINTS } from '$lib/config/scoring';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { layoutForViewport } from '$lib/config/memory-game';
@@ -167,9 +169,6 @@
 	 */
 	const takenNames = $derived(lobby.takenNames);
 
-
-
-
 	/**
 	 * Код кімнати живе в АДРЕСІ, а не лише в памʼяті.
 	 *
@@ -238,6 +237,8 @@
 	 * саме `stops` їх і викликає, тож зворотний порядок лишив би їх невиконаними.
 	 */
 	function leaveRoom() {
+		// Кімнати немає — локальний рахунок знову живе своїм життям.
+		playerData.endOnline();
 		for (const stop of stops) stop();
 		stops = [];
 		releaseHold = null;
@@ -299,7 +300,7 @@
 				});
 			} else {
 				const wanted = joinCode.replace(/\D/g, '');
-			const room = await net.peekRoom(wanted);
+				const room = await net.peekRoom(wanted);
 				if (!room) {
 					toast.error('pairs.noRoom');
 					return;
@@ -326,6 +327,15 @@
 
 			const started = new PairsMatch(me, transport);
 			stops.push(started.listen());
+			/*
+			 * ЛОКАЛЬНИЙ РАХУНОК НА ПАУЗІ, поки триває спільна партія.
+			 *
+			 * `MemoryGameController` — той самий, що в грі за одним пристроєм, і він
+			 * додає по очку за кожну свою пару та пише «зіграно партію» в рекорд гри.
+			 * У спільній партії це друга шкала поверх результату: за неї бали вже
+			 * нараховуються в кінці, за перемогу або нічию.
+			 */
+			playerData.beginOnline();
 
 			// Присутність — окремий модуль: інша природа записів (їх прибирає сервер),
 			// і в кімнаті вони не живуть навмисно.
@@ -367,7 +377,7 @@
 							// матчу. Правило бази однаково звірить його з господарем кімнати.
 							hostUid: me,
 							hostName: who,
-						hostCountry: player.country,
+							hostCountry: player.country,
 							hostAvatar: player.forRoom(),
 							gameId: 'pairs',
 							rulesVersion: RULES_VERSION,
@@ -765,6 +775,24 @@
 		return ready === null || ready === undefined ? null : Math.max(0, ready - clock);
 	});
 
+	/**
+	 * БАЛИ ЗА ПАРТІЮ нараховуються один раз, у мить, коли вона скінчилася.
+	 *
+	 * Ключ ідемпотентності — зерно партії: «зіграти ще» ставить нове зерно й
+	 * стирає журнал, тобто наступна партія отримає своє нарахування, а поточна не
+	 * отримає другого. Без цього ефект, що перезапускається на кожен приїзд ходу,
+	 * доливав би бали доти, доки хтось дивиться на екран підсумку.
+	 */
+	let awardedSeed = -1;
+
+	$effect(() => {
+		if (!browser || !match || !match.over || match.iAmSpectator) return;
+		if (match.seed === awardedSeed) return;
+		awardedSeed = match.seed;
+		if (match.iWon) playerData.awardOnline(PAIRS_WIN_POINTS);
+		else if (match.drawn) playerData.awardOnline(PAIRS_DRAW_POINTS);
+	});
+
 	onMount(() => {
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
@@ -875,5 +903,4 @@
 		margin: 0 auto;
 		box-sizing: border-box;
 	}
-
 </style>

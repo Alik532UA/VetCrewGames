@@ -27,6 +27,13 @@ export class PairsMatch {
 	applied = $state(0);
 	/** Стан кімнати: доки не `playing`, дошки немає. */
 	status = $state<'lobby' | 'playing' | 'over'>('lobby');
+	/**
+	 * Зерно кімнати. Змінюється на «зіграти ще», тобто це і є «яка це партія».
+	 *
+	 * Публічне саме тому: нарахування балів за партію мусить статися один раз на
+	 * партію, і зерно — єдиний ключ, за яким їх можна відрізнити.
+	 */
+	seed = $state(0);
 	members = $state<Member[]>([]);
 	/**
 	 * Хто господар — з КІМНАТИ, а не з порядку у списку.
@@ -121,6 +128,35 @@ export class PairsMatch {
 	 */
 	get over(): boolean {
 		return this.game.gameOver || this.endedBy !== null;
+	}
+
+	/**
+	 * ХТО ПЕРЕМІГ. `null` — нічия або партія ще йде.
+	 *
+	 * Рахується з дошки, а не пишеться в базу: усі застосовують ті самі ходи, тож
+	 * усі отримають ту саму відповідь, а поле в кімнаті було б другим джерелом
+	 * правди про те саме.
+	 *
+	 * Тут, а не в `OnlineRoom`: те саме число потрібне і екрану, і нарахуванню
+	 * балів у кінці партії, а дві копії цієї арифметики розійшлися б непомітно —
+	 * кожна виглядала б правильною окремо.
+	 */
+	get winnerUid(): string | null {
+		if (!this.over) return null;
+		const scoreOf = (uid: string) => this.game.players.find((p) => p.id === uid)?.score ?? 0;
+		const best = Math.max(...this.players.map((player) => scoreOf(player.uid)));
+		const top = this.players.filter((player) => scoreOf(player.uid) === best);
+		return top.length === 1 ? top[0].uid : null;
+	}
+
+	/** Партія скінчилася нічиєю. Пар парна кількість, тож це не рідкість. */
+	get drawn(): boolean {
+		return this.over && this.winnerUid === null;
+	}
+
+	/** Чи переміг саме я. */
+	get iWon(): boolean {
+		return this.winnerUid === this.#me;
 	}
 
 	/** Чий зараз хід. `null` — партія не почалася або скінчилася. */
@@ -256,6 +292,8 @@ export class PairsMatch {
 		 * Саме це й робить пізнього учасника рівним усім: він не отримує стану, він
 		 * відтворює його.
 		 */
+		this.seed = snapshot.info.seed;
+
 		const deal = JSON.stringify({
 			seed: snapshot.info.seed,
 			config: snapshot.info.config,

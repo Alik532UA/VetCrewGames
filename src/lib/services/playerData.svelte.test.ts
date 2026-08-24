@@ -143,4 +143,55 @@ describe('дані гравця', () => {
 
 		expect(playerData.recordOf('habitat')?.best, 'знімок правив би сам стан').toBe(4);
 	});
+
+	/*
+	 * ОНЛАЙН-ПАРТІЯ: локальна шкала на паузі, а в кінці — один переказ.
+	 *
+	 * Онлайн-раунди грають ті самі контролери, що соло, тож без паузи одна спільна
+	 * вікторина доливала б дванадцять порцій соло-балів і дванадцять «зіграно
+	 * партію» — тобто ламала б ту саму шкалу, яку курс і вирівнює.
+	 */
+	it('під час онлайн-партії локальні очки не пишуться', async () => {
+		const { playerData } = await load();
+		playerData.addScore(3);
+		playerData.beginOnline();
+		playerData.addScore(3);
+		playerData.finishGame('mythbusters', 12);
+		expect(playerData.score).toBe(3);
+		expect(playerData.records.mythbusters).toBeUndefined();
+	});
+
+	it('після кімнати локальні очки пишуться знову', async () => {
+		const { playerData } = await load();
+		playerData.beginOnline();
+		playerData.addScore(3);
+		playerData.endOnline();
+		playerData.addScore(4);
+		expect(playerData.score).toBe(4);
+	});
+
+	it('підсумок вікторини переводиться за курсом, а не додається як є', async () => {
+		const { playerData } = await load();
+		playerData.beginOnline();
+		playerData.awardQuizMatch(980);
+		// 980 / 50 = 19.6 → 20: округлення, а не відкидання, інакше остача згорала б.
+		expect(playerData.score).toBe(20);
+	});
+
+	it('нуль не пишеться зовсім — ні очок, ні події', async () => {
+		const { playerData } = await load();
+		let told = 0;
+		playerData.onChange = () => (told += 1);
+		playerData.awardQuizMatch(10);
+		playerData.awardOnline(0);
+		expect(playerData.score).toBe(0);
+		expect(told).toBe(0);
+	});
+
+	it('перемога в «Знайди пару» — плоскі бали, без курсу', async () => {
+		const { playerData } = await load();
+		playerData.beginOnline();
+		playerData.awardOnline(10);
+		expect(playerData.score).toBe(10);
+	});
 });

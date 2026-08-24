@@ -1,5 +1,6 @@
 import { storage } from './storage';
 import { settings } from './settings.svelte';
+import { ONLINE_TO_LOCAL } from '$lib/config/scoring';
 import { forgetAccount, hasAccount, rememberAccount } from './accountFlag';
 import type { GameRecord, PlayData } from '$lib/net/play';
 
@@ -32,6 +33,22 @@ import type { GameRecord, PlayData } from '$lib/net/play';
 class PlayerData {
 	/** Рекорд кожної гри за її ключем із `config/menu-games.ts`. */
 	records = $state<Record<string, GameRecord>>({});
+
+	/**
+	 * ЧИ ЙДЕ ЗАРАЗ ОНЛАЙН-ПАРТІЯ, у якій локальний рахунок не чіпається.
+	 *
+	 * Онлайн-раунд грається ТИМИ САМИМИ контролерами, що соло, — і вони самі
+	 * додавали свої 3–4 очки за кожну правильну відповідь та писали «зіграно
+	 * партію» на КОЖЕН раунд. За одну спільну вікторину це виходило дванадцять
+	 * партій у рекордах і дванадцять порцій балів, тобто та сама шкала, яку
+	 * конвертація нижче й вирівнює, ламалася з іншого боку.
+	 *
+	 * Тому під час партії місцевий рахунок стоїть, а в кінці зараховується один
+	 * раз — `awardOnline()`. Прапорець у пам'яті, а не у сховищі: перезавантаження
+	 * сторінки мусить його скидати, інакше вкладка, закрита посеред партії, тихо
+	 * вимкнула б рахунок назавжди.
+	 */
+	#online = false;
 
 	/**
 	 * Кого повідомити про зміну. Ставить `playerSync`, і лише він.
@@ -79,8 +96,45 @@ class PlayerData {
 	 * живе), а тут до цього додається рівно одне: повідомлення для синхронізації.
 	 */
 	addScore(points: number): void {
+		if (this.#online) return;
 		settings.addScore(points);
 		this.onChange?.();
+	}
+
+	/** Онлайн-партія почалася: локальний рахунок до її кінця не рухається. */
+	beginOnline(): void {
+		this.#online = true;
+	}
+
+	/** Онлайн-партія скінчилася або кімнату покинуто. Ідемпотентно. */
+	endOnline(): void {
+		this.#online = false;
+	}
+
+	/**
+	 * Зарахувати підсумок онлайн-партії в наскрізний рахунок.
+	 *
+	 * Ділення живе тут, а не на місці виклику: сторінка знає свій рахунок партії,
+	 * а курс двох шкал — це властивість шкали, і в неї одне місце
+	 * (`config/scoring.ts`).
+	 *
+	 * Прапорець при цьому НЕ перевіряється: саме цей запис і має пройти, хоч
+	 * партія ще формально «онлайн». Нуль не пишеться зовсім — ні очок, ні події.
+	 */
+	awardOnline(points: number): void {
+		if (points <= 0) return;
+		settings.addScore(points);
+		this.onChange?.();
+	}
+
+	/**
+	 * Підсумок спільної ВІКТОРИНИ — за курсом двох шкал.
+	 *
+	 * Ділення живе тут, а не на місці виклику: сторінка знає свій рахунок партії,
+	 * а курс — властивість шкали, і в неї одне місце (`config/scoring.ts`).
+	 */
+	awardQuizMatch(matchScore: number): void {
+		this.awardOnline(Math.round(matchScore / ONLINE_TO_LOCAL));
 	}
 
 	/**
@@ -91,6 +145,9 @@ class PlayerData {
 	 * вона названа там, де про неї вирішено.
 	 */
 	finishGame(id: string, score: number): void {
+		// Онлайн-раунд — не партія цієї гри: рекорд і «зіграно» тут не пишуться
+		// (рішення автора: за спільну вікторину йде лише наскрізний рахунок).
+		if (this.#online) return;
 		const previous = this.records[id] ?? { best: 0, plays: 0 };
 		this.records = {
 			...this.records,

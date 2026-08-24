@@ -75,15 +75,10 @@
 	/**
 	 * Хто переміг. `null` — нічия, і це не рідкість: пар парна кількість.
 	 *
-	 * Рахується з дошки, а не пишеться в базу: усі мають ті самі ходи, тож усі
-	 * отримають ту саму відповідь — а ще одне поле в кімнаті було б другим
-	 * джерелом правди про те саме.
+	 * Відповідь дає МАТЧ: те саме число потрібне ще й нарахуванню балів у кінці
+	 * партії, а дві копії цієї арифметики розійшлися б непомітно.
 	 */
-	const winner = $derived.by(() => {
-		const best = Math.max(...match.players.map((player) => scoreOf(player.uid)));
-		const top = match.players.filter((player) => scoreOf(player.uid) === best);
-		return top.length === 1 ? top[0] : null;
-	});
+	const winner = $derived(match.players.find((player) => player.uid === match.winnerUid) ?? null);
 
 	const rows = $derived(Math.ceil(match.game.slots.length / match.game.cols));
 </script>
@@ -138,7 +133,8 @@
 				{/if}
 			{:else if countdown}
 				<span class="board__wait" data-testid="pairs-stall-countdown-value">
-					{@html formatFont(t('pairs.yieldIn'))} {countdown}
+					{@html formatFont(t('pairs.yieldIn'))}
+					{countdown}
 				</span>
 			{:else if match.myTurn}
 				<!-- Межа незастосовна, бо чекають МЕНЕ. Підганяти нікого не треба. -->
