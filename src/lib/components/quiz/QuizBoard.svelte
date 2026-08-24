@@ -3,12 +3,18 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { MythGameController } from '$lib/controllers/mythGame.svelte';
 	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
-	import type { QuizStep } from '$lib/config/quizOnline';
+	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
+	import { FamilyGameController } from '$lib/controllers/familyGame.svelte';
+	import { PopulationGameController } from '$lib/controllers/populationGame.svelte';
+	import { habitatModeOf, type QuizStep } from '$lib/config/quizOnline';
 	import { BIN } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import type { QuickTarget } from '$lib/components/FeedingDish.svelte';
 	import MythCard from '$lib/components/MythCard.svelte';
 	import FeedingBoard from '$lib/components/FeedingBoard.svelte';
+	import HabitatBoard from '$lib/components/HabitatBoard.svelte';
+	import FamilyBoard from '$lib/components/FamilyBoard.svelte';
+	import PopulationBoard from '$lib/components/PopulationBoard.svelte';
 
 	/**
 	 * Один КРОК спільної вікторини: своя дошка, чужий рахунок.
@@ -79,9 +85,28 @@
 	const myths = mine.game === 'myths' ? new MythGameController(ROUNDS_PER_STEP, mine.seed) : null;
 	const feeding =
 		mine.game === 'feeding' ? new FeedingGameController(ROUNDS_PER_STEP, mine.seed) : null;
-	const game = myths ?? feeding;
+	/** Підрежим «Де живем?»: `null` — це інша гра. */
+	const habitatMode = habitatModeOf(mine.game);
+	const habitat =
+		habitatMode === null ? null : new HabitatGameController(ROUNDS_PER_STEP, mine.seed);
+	const family =
+		mine.game === 'family' ? new FamilyGameController(ROUNDS_PER_STEP, mine.seed) : null;
+	const population =
+		mine.game === 'population' ? new PopulationGameController(ROUNDS_PER_STEP, mine.seed) : null;
+	const game = myths ?? feeding ?? habitat ?? family ?? population;
 
-	onMount(() => game?.start());
+	onMount(() => {
+		/*
+		 * «Де живем?» починається ВИБОРОМ ПІДРЕЖИМУ, а не `start()`.
+		 *
+		 * Її контролер не має чого роздавати, поки не знає, про що питати:
+		 * `chooseMode` і роздає перший раунд. Інші дві гри підрежиму не мають, і в
+		 * них це звичайний `start()`.
+		 */
+		if (habitat && habitatMode) habitat.chooseMode(habitatMode);
+		else (myths ?? feeding ?? family)?.start();
+		// `population` не чіпаємо: його перший раунд роздає сама дошка в `onMount`.
+	});
 
 	/**
 	 * Про закінчення кроку повідомляємо РІВНО раз.
@@ -107,7 +132,22 @@
 			if (verdicts.length === 0) return 0;
 			return verdicts.filter((verdict) => verdict.isCorrect).length / verdicts.length;
 		}
-		return game?.roundResults[0] === 'correct' ? 1 : 0;
+		/*
+		 * «Де живем?» знає ТРИ результати, а не два: `partial` — це коли вибрано
+		 * частину правильних варіантів. Половина очок за нього — не компроміс, а
+		 * те, як гра влаштована: питання множинного вибору.
+		 */
+		if (habitat) {
+			const outcome = habitat.roundResults[0];
+			return outcome === 'correct' ? 1 : outcome === 'partial' ? 0.5 : 0;
+		}
+		/*
+		 * «Хто численніший?» дає частку за побудовою: три картки, і кожна на своєму
+		 * місці або ні. Беремо результат раунду так само, як решта — контролер уже
+		 * звів його до `correct`/`partial`/`incorrect`.
+		 */
+		const outcome = game?.roundResults[0];
+		return outcome === 'correct' ? 1 : outcome === 'partial' ? 0.5 : 0;
 	}
 
 	$effect(() => {
@@ -175,6 +215,12 @@
 					onnext={() => myths.nextRound()}
 				/>
 			{/each}
+		{:else if family}
+			<FamilyBoard game={family} />
+		{:else if population}
+			<PopulationBoard game={population} />
+		{:else if habitat && habitatMode}
+			<HabitatBoard game={habitat} mode={habitatMode} />
 		{:else if feeding?.round}
 			<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
 			<FeedingBoard game={feeding} {targets} />

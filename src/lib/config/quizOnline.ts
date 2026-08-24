@@ -92,8 +92,47 @@ export interface OnlineGame {
 
 export const ONLINE_GAMES: readonly OnlineGame[] = [
 	{ id: 'myths', nameKey: 'menu.game.mythbusters', seconds: 7 },
-	{ id: 'feeding', nameKey: 'menu.game.feeding', seconds: 15 }
+	{ id: 'feeding', nameKey: 'menu.game.feeding', seconds: 15 },
+	/*
+	 * «Де живем?» — ДВІ гри, а не одна з налаштуванням.
+	 *
+	 * Континенти й природні зони питають про різне й мають різні набори
+	 * варіантів, тож у кімнаті вони мусять вибиратися окремо: людина, яка хоче
+	 * материки, не мусить отримувати біоми через раунд. Автор попросив рівно це —
+	 * «6 (4 + де живем Континенти + де живем Природні зони)».
+	 *
+	 * Дванадцять секунд: варіантів тут кілька й вибір буває множинний, тобто
+	 * читати треба більше, ніж у «Міфах», але й тягати нічого не треба, як у
+	 * «Роздай страви».
+	 */
+	{ id: 'habitat-continents', nameKey: 'habitat.mode.continents', seconds: 12 },
+	{ id: 'habitat-biomes', nameKey: 'habitat.mode.biomes', seconds: 12 },
+	/*
+	 * «Хто зайвий?» — чотири картки, вибір один. Десять секунд: подивитися на
+	 * чотири тварини й помітити, яка не з тієї родини, швидше не виходить.
+	 */
+	{ id: 'family', nameKey: 'menu.game.family', seconds: 10 },
+	/*
+	 * «Хто численніший?» — сортування трьох карток перетягуванням, і двадцять
+	 * секунд тут не щедрість. Це ЄДИНА гра набору, де відповідь дається не
+	 * вибором, а рухом: три картки треба розставити, а на телефоні ще й пальцем.
+	 * Сім секунд робили б її недосяжною, а не швидкою.
+	 */
+	{ id: 'population', nameKey: 'menu.game.population', seconds: 20 }
 ];
+
+/**
+ * Підрежим «Де живем?» за ідентифікатором гри. `null` — це інша гра.
+ *
+ * Тут, а не в дошці: `ONLINE_GAMES` — джерело правди про склад, і розбір його
+ * власних ідентифікаторів належить йому. У компоненті це був би другий розбір
+ * тих самих рядків.
+ */
+export function habitatModeOf(gameId: string): 'continents' | 'biomes' | null {
+	if (gameId === 'habitat-continents') return 'continents';
+	if (gameId === 'habitat-biomes') return 'biomes';
+	return null;
+}
 
 /**
  * У РОЗРОБЦІ РАУНД УП'ЯТЕРО ДОВШИЙ.
