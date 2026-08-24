@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Info } from 'lucide-svelte';
 	import { formatFont } from '$lib/i18n';
 	import EmailField from './EmailField.svelte';
 	import GoogleMark from './GoogleMark.svelte';
 	import ResetPanel from './ResetPanel.svelte';
 	import PasswordInput from '$lib/components/ui/PasswordInput.svelte';
+	import InfoPopover from '$lib/components/ui/InfoPopover.svelte';
 
 	/**
 	 * ФОРМА ВХОДУ: чотири шляхи ввійти, ДВІ КНОПКИ, жодного вибору режиму.
@@ -102,15 +102,6 @@
 	 * заради значення, яке нікого, крім цієї розмітки, не стосується.
 	 */
 	let forgot = $state(false);
-	/**
-	 * Чи розкрито довідку «як працює акаунт».
-	 *
-	 * Три абзаци пояснення стояли на екрані завжди, і автор сказав про них точно:
-	 * «захламляє екран». Людина, яка прийшла ввести пошту, читає тут не три
-	 * абзаци, а два поля; той, кому потрібне пояснення, дістає його одним
-	 * натиском. Стан ЕКРАННИЙ і локальний: сторінці нема чого з ним робити.
-	 */
-	let hints = $state(false);
 
 	/**
 	 * Чи є що надсилати. Межі ті самі, що в Firebase: пошта з символом і пароль
@@ -156,41 +147,23 @@
 			ЗАГОЛОВОК І `i` — В ОДНОМУ РЯДКУ, кнопка праворуч.
 
 			Довідка мусить бути там, де на неї дивляться, коли не розуміють: біля
-			назви екрана. Під формою її не побачив би той, хто вагається ще до
-			першого поля, а окремим рядком над формою вона знову зайняла б місце,
-			яке щойно звільнили.
+			назви екрана. Саме пояснення відкривається ПОВЕРХ (`InfoPopover`), тобто
+			форма під ним не ворушиться — доти воно розсувало картку, і поля, на які
+			людина щойно дивилася, з'їжджали вниз.
+
+			Порядок абзаців — порядок питань: навіщо це взагалі, що буде після
+			реєстрації, що буде після входу в наявний акаунт і чому для друзів
+			акаунт потрібен обом.
 		-->
 		<div class="auth__head">
-			<h2 class="auth__title" id="auth-title">
-				{@html formatFont(text('account.signInTitle'))}
-			</h2>
-			<button
-				type="button"
-				class="auth__info"
-				aria-expanded={hints}
-				aria-controls="auth-hints"
-				aria-label={text('account.infoOpen')}
-				title={text('account.infoOpen')}
-				onclick={() => (hints = !hints)}
-				data-testid="auth-info-btn"
-			>
-				<Info size={18} aria-hidden="true" />
-			</button>
+			<h2 class="auth__title">{@html formatFont(text('account.signInTitle'))}</h2>
+			<InfoPopover label={text('account.infoOpen')} scope="auth">
+				<p class="auth__note">{@html formatFont(text('account.infoWhy'))}</p>
+				<p class="auth__note">{@html formatFont(text('account.infoRegister'))}</p>
+				<p class="auth__note">{@html formatFont(text('account.infoSignIn'))}</p>
+				<p class="auth__note">{@html formatFont(text('account.infoFriends'))}</p>
+			</InfoPopover>
 		</div>
-
-		{#if hints}
-			<!--
-				Порядок абзаців — порядок питань: навіщо це взагалі, що буде, якщо
-				зареєструватися, і що буде, якщо ввійти в наявний акаунт. Останній
-				абзац — про друзів, бо саме через них тут найчастіше й опиняються.
-			-->
-			<div class="auth__hints" id="auth-hints" data-testid="auth-info-panel">
-				<p class="auth__hint">{@html formatFont(text('account.infoWhy'))}</p>
-				<p class="auth__hint">{@html formatFont(text('account.infoRegister'))}</p>
-				<p class="auth__hint">{@html formatFont(text('account.infoSignIn'))}</p>
-				<p class="auth__hint">{@html formatFont(text('account.infoFriends'))}</p>
-			</div>
-		{/if}
 
 		<!--
 			GOOGLE СТОЇТЬ ПЕРШИМ, а не під формою.
@@ -313,60 +286,23 @@
 	}
 
 	/*
-	 * КНОПКА `i` — 44px, хоч сама іконка 18px.
+	 * Абзац довідки — КОЛЬОРОМ ТЕКСТУ, а не приглушеним.
 	 *
-	 * Це власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8), і тут він
-	 * особливо доречний: кнопка стоїть у куті, а кут — найгірше місце для
-	 * маленької цілі на телефоні. Рамки немає навмисно: обведена вона читалася б
-	 * як третя дія поруч із двома кнопками входу, а це довідка.
+	 * Панель поповера має власне тло (`--color-bg-surface`), тобто пара тут інша,
+	 * ніж у підказок на самій картці. Приглушений колір на цьому тлі вже
+	 * впирався в 4,5:1 у світлих темах — заміряно в `CountryMenu`, — тож текст
+	 * повним кольором, а «це пояснення, а не дія» каже кегль.
 	 */
-	.auth__info {
-		display: flex;
-		flex-shrink: 0;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: none;
+	.auth__note {
+		margin: 0;
 		color: var(--color-text);
-		cursor: pointer;
-	}
-
-	@media (hover: hover) {
-		.auth__info:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 90%);
-		}
-	}
-
-	/*
-	 * Довідка — окремим блоком, а не чотирма абзацами поспіль у потоці форми:
-	 * `gap` між абзацами тут менший за проміжок між полями, тож пояснення
-	 * читається як один текст, а не як чотири підписи до сусідніх кнопок.
-	 */
-	.auth__hints {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-xs);
-		margin: 0 0 var(--space-xs);
+		font-size: var(--font-size-sm);
 	}
 
 	/* Відступ під заголовком тепер тримає рядок `.auth__head`, а не він сам. */
 	.auth__title {
 		margin: 0;
 		font-size: var(--font-size-md);
-	}
-
-	/*
-	 * Підказки — КЕГЛЕМ, а не прозорістю: `opacity` на тексті цієї панелі
-	 * опускає пару під 4.5:1, і жодне значення прозорості її не рятує. Те саме
-	 * міркування записане в `RoomList`, `OnlineGate` і на сторінці акаунта.
-	 */
-	.auth__hint {
-		margin: 0;
-		font-size: var(--font-size-xs);
-		color: var(--color-text-on-panel);
 	}
 
 	/*
