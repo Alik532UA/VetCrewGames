@@ -21,7 +21,7 @@ export const ui = {
 	'quiz.unknownGame': 'This game comes from a newer version. Reload the page.',
 	'quiz.skipStep': 'Skip',
 	'quiz.roundTimer': 'Round time',
-	'quiz.answered': 'Answer sent. Waiting for the others.',
+	'quiz.answered': 'Waiting for the others.',
 	'quiz.nextRound': 'Next round',
 
 	// The three items are the same for the quiz and for "Find a pair" — only

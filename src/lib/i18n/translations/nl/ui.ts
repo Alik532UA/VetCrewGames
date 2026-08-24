@@ -21,7 +21,7 @@ export const ui = {
 	'quiz.unknownGame': 'Dit spel komt uit een nieuwere versie. Herlaad de pagina.',
 	'quiz.skipStep': 'Overslaan',
 	'quiz.roundTimer': 'Rondetijd',
-	'quiz.answered': 'Antwoord verzonden. Wachten op de rest.',
+	'quiz.answered': 'Wachten op de rest.',
 	'quiz.nextRound': 'Volgende ronde',
 
 	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen

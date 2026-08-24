@@ -20,13 +20,24 @@
 	 * два зворотні виклики. Компонент нічого не вирішує — він малює
 	 * (SVELTE-CORE-v8 § 3.1).
 	 */
+	/**
+	 * `hideNext` — ОНЛАЙН-РАУНД, у якому темп задає не гравець.
+	 *
+	 * У соло кнопка «Далі» лишається: вона і є темп, і саме за нею читають розбір.
+	 * У кімнаті ж наступний раунд оголошує господар за спільним таймером, тож своя
+	 * кнопка тут або нічого не робила б, або перескакувала б раунд у себе одного.
+	 * Замість неї `QuizRound` ставить рядок «чекаємо на решту» — на те саме місце,
+	 * щоб дошка не стрибала.
+	 */
 	interface Props {
 		question: ActiveQuestion;
 		onanswer: (truth: boolean) => void;
 		onnext: () => void;
+		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
+		hideNext?: boolean;
 	}
 
-	let { question, onanswer, onnext }: Props = $props();
+	let { question, onanswer, onnext, hideNext = false }: Props = $props();
 </script>
 
 <div
@@ -82,9 +93,11 @@
 					</div>
 				{:else}
 					<div class="myth-card__result" use:revealScroll in:slide={{ duration: 400 }} out:fade>
-						<button class="btn-next" onclick={() => onnext()} data-testid="mythbusters-next-btn">
-							{@html formatFont(t('myth.next'))}
-						</button>
+						{#if !hideNext}
+							<button class="btn-next" onclick={() => onnext()} data-testid="mythbusters-next-btn">
+								{@html formatFont(t('myth.next'))}
+							</button>
+						{/if}
 						<div class="result-header" class:result-header--correct={question.isCorrect}>
 							{#if question.isCorrect}
 								<CheckCircle2 size={24} />

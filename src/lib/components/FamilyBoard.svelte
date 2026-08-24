@@ -22,15 +22,28 @@
 	 * У спільній грі він мусить народитися з ЗЕРНОМ раунду — інакше двоє гравців
 	 * отримають різні набори тварин, і партія перестане бути спільною.
 	 */
+	/**
+	 * `hideNext` — ОНЛАЙН-РАУНД, у якому темп задає не гравець.
+	 *
+	 * У соло кнопка «Далі» лишається: вона і є темп, і саме за нею читають розбір.
+	 * У кімнаті ж наступний раунд оголошує господар за спільним таймером, тож своя
+	 * кнопка тут або нічого не робила б, або перескакувала б раунд у себе одного.
+	 * Замість неї `QuizRound` ставить рядок «чекаємо на решту» — на те саме місце,
+	 * щоб дошка не стрибала.
+	 */
 	interface Props {
 		game: FamilyGameController;
+		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
+		hideNext?: boolean;
 	}
 
-	let { game }: Props = $props();
+	let { game, hideNext = false }: Props = $props();
 </script>
 
 {#if game.round}
-	<p class="prompt text-panel" data-testid="family-prompt-text">{@html formatFont(t('family.prompt'))}</p>
+	<p class="prompt text-panel" data-testid="family-prompt-text">
+		{@html formatFont(t('family.prompt'))}
+	</p>
 
 	{#key game.round.id}
 		<div class="cards-grid" in:fade={{ duration: 300 }}>
@@ -95,15 +108,17 @@
 				{@html formatFont(t(game.round.explanationKey as never))}
 			</p>
 
-			<button
-				type="button"
-				class="btn-next"
-				onclick={() => game.nextRound()}
-				data-testid="family-next-btn"
-				in:fly={{ y: 8, duration: 250 }}
-			>
-				{@html formatFont(t('common.next'))}
-			</button>
+			{#if !hideNext}
+				<button
+					type="button"
+					class="btn-next"
+					onclick={() => game.nextRound()}
+					data-testid="family-next-btn"
+					in:fly={{ y: 8, duration: 250 }}
+				>
+					{@html formatFont(t('common.next'))}
+				</button>
+			{/if}
 		</div>
 	{/if}
 {/if}
@@ -153,12 +168,12 @@
 			var(--columns) * (var(--card-image-h) * 3 / 4) + (var(--columns) - 1) * var(--space-md)
 		);
 	}
-		.cards-grid {
-			--columns: 4;
-		}
-		.result {
-			max-width: 620px;
-		}
+	.cards-grid {
+		--columns: 4;
+	}
+	.result {
+		max-width: 620px;
+	}
 	.animal-card {
 		display: flex;
 		flex-direction: column;
@@ -180,10 +195,10 @@
 			box-shadow 0.35s ease,
 			opacity 0.35s ease;
 	}
-		.animal-card:not(:disabled):hover {
-			transform: translateY(-3px);
-			box-shadow: var(--shadow-glow-primary);
-		}
+	.animal-card:not(:disabled):hover {
+		transform: translateY(-3px);
+		box-shadow: var(--shadow-glow-primary);
+	}
 	.animal-card:not(:disabled):active {
 		transform: scale(0.98);
 	}

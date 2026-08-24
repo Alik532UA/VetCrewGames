@@ -36,18 +36,28 @@
 	 * У спільній грі він мусить народитися з ЗЕРНОМ раунду — інакше двоє гравців
 	 * отримають різні набори тварин, і партія перестане бути спільною.
 	 */
+	/**
+	 * `hideNext` — ОНЛАЙН-РАУНД, у якому темп задає не гравець.
+	 *
+	 * У соло кнопка «Далі» лишається: вона і є темп, і саме за нею читають розбір.
+	 * У кімнаті ж наступний раунд оголошує господар за спільним таймером, тож своя
+	 * кнопка тут або нічого не робила б, або перескакувала б раунд у себе одного.
+	 * Замість неї `QuizRound` ставить рядок «чекаємо на решту» — на те саме місце,
+	 * щоб дошка не стрибала.
+	 */
 	interface Props {
 		game: PopulationGameController;
+		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
+		hideNext?: boolean;
 	}
 
-	let { game }: Props = $props();
+	let { game, hideNext = false }: Props = $props();
 
 	/** Чисто візуальний стан — контролер про нього не знає й знати не має. */
 	let isActuallyDragging = $state(false);
 	let dragOverId = $state<string | null>(null);
 	let hoverSlotIndex = $state<number | null>(null);
 	let hoverSourceIndex = $state<number | null>(null);
-	const isSwapping = $derived(game.isSwapping);
 
 	// Стан перетягування пальцем: HTML5 DnD на мобільних не працює, тож клон
 	// картки їздить за пальцем вручну.
@@ -66,7 +76,9 @@
 	let touchDragStarted = false;
 	const TOUCH_DRAG_THRESHOLD = 8;
 
-	const [send, receive] = createCrossfade(() => isSwapping);
+	// Читається просто з контролера: проміжне похідне тут було псевдонімом на один
+	// ужиток, а зайвий шар між анімацією та її умовою нічого не пояснює.
+	const [send, receive] = createCrossfade(() => game.isSwapping);
 
 	/** Хід зроблено — візуальний стан перетягування знімається тут, не в правилах. */
 	function afterDrop(moved: boolean) {
@@ -312,67 +324,67 @@
 	});
 </script>
 
-	<div class="sorting-panel">
-		<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
-		<div class="slots-row">
-			{#each game.slots as slotAnimal, i (i)}
-				<div
-					class="game-container"
-					class:container--filled={!!slotAnimal}
-					class:container--picked={!!slotAnimal &&
-						game.picked?.id === slotAnimal.id &&
-						!isActuallyDragging}
-					class:container--touch-over={dragOverId === `slot-${i}`}
-					data-slot-index={i}
-					ondragover={(e) => handleDragOver(e, `slot-${i}`)}
-					ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
-					onmouseenter={() => (hoverSlotIndex = i)}
-					onmouseleave={() => (hoverSlotIndex = null)}
-					ondrop={(e) => dropFromMouse(e, 'slot', i)}
-					onclick={() => handleSlotClick(i)}
-					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
-					role="button"
-					tabindex="0"
-				>
-					{#each slotAnimal ? [slotAnimal] : [] as animal (animal.id)}
-						<div
-							class="game-card"
-							class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
-							class:card--dragging-orig={isActuallyDragging &&
-								game.pickedFrom?.type === 'slot' &&
-								game.pickedFrom?.index === i}
-							draggable={!game.checked ? 'true' : 'false'}
-							data-drag-animal={animal.id}
-							data-drag-source-type="slot"
-							data-drag-source-index={i}
-							ondragstart={(e) => handleDragStart(e, animal, { type: 'slot', index: i })}
-							ondragend={handleDragEnd}
-							onclick={(e) => handleCardClick(e, animal, { type: 'slot', index: i })}
-							onkeydown={(e) => {
-								if (e.key === 'Enter' || e.key === ' ')
-									handleCardClick(e, animal, { type: 'slot', index: i });
-							}}
-							role="button"
-							tabindex="0"
-							in:receive={{ key: animal.id }}
-							out:send={{ key: animal.id }}
-						>
-							<div class="game-card__img-container">
-								<img
-									src={animal.image}
-									alt={td(animal.nameKey)}
-									class="game-card__img"
-									draggable="false"
-									loading="lazy"
-									width="300"
-									height="400"
-								/>
-								{#if game.checked}<div class="game-card__pop-overlay">
-										{@html formatPopulation(animal.population)}
-									</div>{/if}
-							</div>
-							<span class="game-card__name">
-						<!--
+<div class="sorting-panel">
+	<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
+	<div class="slots-row">
+		{#each game.slots as slotAnimal, i (i)}
+			<div
+				class="game-container"
+				class:container--filled={!!slotAnimal}
+				class:container--picked={!!slotAnimal &&
+					game.picked?.id === slotAnimal.id &&
+					!isActuallyDragging}
+				class:container--touch-over={dragOverId === `slot-${i}`}
+				data-slot-index={i}
+				ondragover={(e) => handleDragOver(e, `slot-${i}`)}
+				ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
+				onmouseenter={() => (hoverSlotIndex = i)}
+				onmouseleave={() => (hoverSlotIndex = null)}
+				ondrop={(e) => dropFromMouse(e, 'slot', i)}
+				onclick={() => handleSlotClick(i)}
+				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
+				role="button"
+				tabindex="0"
+			>
+				{#each slotAnimal ? [slotAnimal] : [] as animal (animal.id)}
+					<div
+						class="game-card"
+						class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
+						class:card--dragging-orig={isActuallyDragging &&
+							game.pickedFrom?.type === 'slot' &&
+							game.pickedFrom?.index === i}
+						draggable={!game.checked ? 'true' : 'false'}
+						data-drag-animal={animal.id}
+						data-drag-source-type="slot"
+						data-drag-source-index={i}
+						ondragstart={(e) => handleDragStart(e, animal, { type: 'slot', index: i })}
+						ondragend={handleDragEnd}
+						onclick={(e) => handleCardClick(e, animal, { type: 'slot', index: i })}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' || e.key === ' ')
+								handleCardClick(e, animal, { type: 'slot', index: i });
+						}}
+						role="button"
+						tabindex="0"
+						in:receive={{ key: animal.id }}
+						out:send={{ key: animal.id }}
+					>
+						<div class="game-card__img-container">
+							<img
+								src={animal.image}
+								alt={td(animal.nameKey)}
+								class="game-card__img"
+								draggable="false"
+								loading="lazy"
+								width="300"
+								height="400"
+							/>
+							{#if game.checked}<div class="game-card__pop-overlay">
+									{@html formatPopulation(animal.population)}
+								</div>{/if}
+						</div>
+						<span class="game-card__name">
+							<!--
 							Внутрішній елемент потрібен для ВИМІРУ.
 
 							Зовнішній `.game-card__name` — це flex-контейнер із центруванням,
@@ -381,169 +393,167 @@
 							`clientWidth` — це «скільки місця є», а `scrollWidth` — «скільки
 							треба рядку». Два однозначних числа замість одного сумнівного.
 						-->
-						<span class="game-card__name-text" use:fitLabel={td(animal.nameKey)}
-							>{@html formatFont(td(animal.nameKey))}</span
-						>
+							<span class="game-card__name-text" use:fitLabel={td(animal.nameKey)}
+								>{@html formatFont(td(animal.nameKey))}</span
+							>
+						</span>
+						{#if game.checked}<span
+								class="game-card__icon"
+								class:game-card__icon--correct={game.slotResults[i]}
+								class:game-card__icon--wrong={!game.slotResults[i]}
+								>{#if game.slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X
+										size={18}
+										strokeWidth={3}
+									/>{/if}</span
+							>{/if}
+					</div>
+				{/each}
+				{#if !slotAnimal}
+					<span class="game-container__label">
+						{#if i === 0}{@html formatFont(t('population.least'))}
+						{:else if i === 1}{@html formatFont(t('population.middle'))}
+						{:else}{@html formatFont(t('population.most'))}
+						{/if}
 					</span>
-							{#if game.checked}<span
-									class="game-card__icon"
-									class:game-card__icon--correct={game.slotResults[i]}
-									class:game-card__icon--wrong={!game.slotResults[i]}
-									>{#if game.slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X
-											size={18}
-											strokeWidth={3}
-										/>{/if}</span
-								>{/if}
+					{#if !isActuallyDragging && hoverSlotIndex === i}
+						<MiniGhostGrid
+							animals={game.availableAnimals}
+							pickedId={game.picked?.id}
+							onpick={(animal) => game.moveTo(animal, 'slot', i)}
+						/>
+					{/if}
+				{/if}
+			</div>
+		{/each}
+	</div>
+</div>
+
+{#if !game.checked}
+	<button
+		class="btn-check"
+		disabled={!game.allSlotsFilled}
+		onclick={() => game.check()}
+		data-testid="population-check-btn">{@html formatFont(t('population.check'))}</button
+	>
+{:else if !hideNext}
+	<button
+		type="button"
+		class="btn-check"
+		onclick={() => game.nextRound()}
+		data-testid="population-next-round-btn">{@html formatFont(t('population.nextRound'))}</button
+	>
+{/if}
+
+<div class="dynamic-zone-wrapper">
+	{#if !game.checked}
+		<div class="source-panel-wrapper" transition:slide={{ duration: 400 }}>
+			<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
+				<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
+				<div class="source-panel__cards">
+					{#each game.sourceAnimals as srcAnimal, i (i)}
+						<div
+							class="game-container"
+							class:container--filled={!!srcAnimal}
+							class:container--picked={!!srcAnimal &&
+								game.picked?.id === srcAnimal.id &&
+								!isActuallyDragging}
+							class:container--touch-over={dragOverId === `source-${i}`}
+							data-source-index={i}
+							ondragover={(e) => handleDragOver(e, `source-${i}`)}
+							ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
+							onmouseenter={() => (hoverSourceIndex = i)}
+							onmouseleave={() => (hoverSourceIndex = null)}
+							ondrop={(e) => dropFromMouse(e, 'source', i)}
+							onclick={() => handleSourcePlaceholderClick(i)}
+							onkeydown={(e) =>
+								(e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
+							role="button"
+							tabindex="0"
+						>
+							{#each srcAnimal ? [srcAnimal] : [] as animal (animal.id)}
+								<div
+									class="game-card"
+									class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
+									class:card--dragging-orig={isActuallyDragging &&
+										game.pickedFrom?.type === 'source' &&
+										game.pickedFrom?.index === i}
+									draggable="true"
+									data-drag-animal={animal.id}
+									data-drag-source-type="source"
+									data-drag-source-index={i}
+									ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })}
+									ondragend={handleDragEnd}
+									onclick={(e) => handleCardClick(e, animal, { type: 'source', index: i })}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ')
+											handleCardClick(e, animal, { type: 'source', index: i });
+									}}
+									role="button"
+									tabindex="0"
+									in:receive={{ key: animal.id }}
+									out:send={{ key: animal.id }}
+								>
+									<div class="game-card__img-container">
+										<img
+											src={animal.image}
+											alt={td(animal.nameKey)}
+											class="game-card__img"
+											draggable="false"
+											loading="lazy"
+											width="300"
+											height="400"
+										/>
+									</div>
+									<span class="game-card__name">
+										<span class="game-card__name-text" use:fitLabel={td(animal.nameKey)}
+											>{@html formatFont(td(animal.nameKey))}</span
+										>
+									</span>
+								</div>
+							{/each}
+							{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
+								<MiniGhostGrid
+									animals={game.availableAnimals}
+									pickedId={game.picked?.id}
+									onpick={(animal) => game.moveTo(animal, 'source', i)}
+								/>
+							{/if}
 						</div>
 					{/each}
-					{#if !slotAnimal}
-						<span class="game-container__label">
-							{#if i === 0}{@html formatFont(t('population.least'))}
-							{:else if i === 1}{@html formatFont(t('population.middle'))}
-							{:else}{@html formatFont(t('population.most'))}
-							{/if}
-						</span>
-						{#if !isActuallyDragging && hoverSlotIndex === i}
-							<MiniGhostGrid
-								animals={game.availableAnimals}
-								pickedId={game.picked?.id}
-								onpick={(animal) => game.moveTo(animal, 'slot', i)}
-							/>
-						{/if}
-					{/if}
 				</div>
-			{/each}
+			</div>
 		</div>
-	</div>
-
-	{#if !game.checked}
-		<button class="btn-check" disabled={!game.allSlotsFilled} onclick={() => game.check()} data-testid="population-check-btn"
-			>{@html formatFont(t('population.check'))}</button
-		>
-	{:else}
-		<button
-			type="button"
-			class="btn-check"
-			onclick={() => game.nextRound()}
-			data-testid="population-next-round-btn"
-			>{@html formatFont(t('population.nextRound'))}</button
-		>
 	{/if}
 
-	<div class="dynamic-zone-wrapper">
-		{#if !game.checked}
-			<div class="source-panel-wrapper" transition:slide={{ duration: 400 }}>
-				<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
-					<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
-					<div class="source-panel__cards">
-						{#each game.sourceAnimals as srcAnimal, i (i)}
-							<div
-								class="game-container"
-								class:container--filled={!!srcAnimal}
-								class:container--picked={!!srcAnimal &&
-									game.picked?.id === srcAnimal.id &&
-									!isActuallyDragging}
-								class:container--touch-over={dragOverId === `source-${i}`}
-								data-source-index={i}
-								ondragover={(e) => handleDragOver(e, `source-${i}`)}
-								ondragleave={(e) => handleDragLeave(e, `source-${i}`)}
-								onmouseenter={() => (hoverSourceIndex = i)}
-								onmouseleave={() => (hoverSourceIndex = null)}
-								ondrop={(e) => dropFromMouse(e, 'source', i)}
-								onclick={() => handleSourcePlaceholderClick(i)}
-								onkeydown={(e) =>
-									(e.key === 'Enter' || e.key === ' ') && handleSourcePlaceholderClick(i)}
-								role="button"
-								tabindex="0"
-							>
-								{#each srcAnimal ? [srcAnimal] : [] as animal (animal.id)}
-									<div
-										class="game-card"
-										class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
-										class:card--dragging-orig={isActuallyDragging &&
-											game.pickedFrom?.type === 'source' &&
-											game.pickedFrom?.index === i}
-										draggable="true"
-										data-drag-animal={animal.id}
-										data-drag-source-type="source"
-										data-drag-source-index={i}
-										ondragstart={(e) => handleDragStart(e, animal, { type: 'source', index: i })}
-										ondragend={handleDragEnd}
-										onclick={(e) => handleCardClick(e, animal, { type: 'source', index: i })}
-										onkeydown={(e) => {
-											if (e.key === 'Enter' || e.key === ' ')
-												handleCardClick(e, animal, { type: 'source', index: i });
-										}}
-										role="button"
-										tabindex="0"
-										in:receive={{ key: animal.id }}
-										out:send={{ key: animal.id }}
-									>
-										<div class="game-card__img-container">
-											<img
-												src={animal.image}
-												alt={td(animal.nameKey)}
-												class="game-card__img"
-												draggable="false"
-												loading="lazy"
-												width="300"
-												height="400"
-											/>
-										</div>
-										<span class="game-card__name">
-											<span
-												class="game-card__name-text"
-												use:fitLabel={td(animal.nameKey)}>{@html formatFont(td(animal.nameKey))}</span
-											>
-										</span>
-									</div>
-								{/each}
-								{#if !srcAnimal && !isActuallyDragging && hoverSourceIndex === i}
-									<MiniGhostGrid
-										animals={game.availableAnimals}
-										pickedId={game.picked?.id}
-										onpick={(animal) => game.moveTo(animal, 'source', i)}
-									/>
-								{/if}
-							</div>
-						{/each}
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		{#if game.checked}
-			<div class="results-zone-wrapper" use:revealScroll transition:slide={{ duration: 400 }}>
-				<div class="results-zone">
-					{#each game.correctOrder as animal, i (animal.id)}
-						<div class="result-card anim-stagger-{i + 1}">
-							<div class="result-card__left">
-								<img
-									src={animal.image}
-									alt={td(animal.nameKey)}
-									class="result-card__img-small"
-									loading="lazy"
-									width="70"
-									height="93"
-								/>
-							</div>
-							<div class="result-card__right">
-								<div class="result-card__top">
-									<span class="result-card__name-bold"
-										>{@html formatFont(td(animal.nameKey))}</span
-									><span class="result-card__stat"
-										>{@html formatPopulation(animal.population)}</span
-									>
-								</div>
-								<div class="result-card__divider"></div>
-								<p class="result-card__fact-simple">{@html formatFont(td(animal.factKey))}</p>
-							</div>
+	{#if game.checked}
+		<div class="results-zone-wrapper" use:revealScroll transition:slide={{ duration: 400 }}>
+			<div class="results-zone">
+				{#each game.correctOrder as animal, i (animal.id)}
+					<div class="result-card anim-stagger-{i + 1}">
+						<div class="result-card__left">
+							<img
+								src={animal.image}
+								alt={td(animal.nameKey)}
+								class="result-card__img-small"
+								loading="lazy"
+								width="70"
+								height="93"
+							/>
 						</div>
-					{/each}
-				</div>
+						<div class="result-card__right">
+							<div class="result-card__top">
+								<span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span
+								><span class="result-card__stat">{@html formatPopulation(animal.population)}</span>
+							</div>
+							<div class="result-card__divider"></div>
+							<p class="result-card__fact-simple">{@html formatFont(td(animal.factKey))}</p>
+						</div>
+					</div>
+				{/each}
 			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
+</div>
 
 <style>
 	.sorting-panel {
@@ -589,7 +599,8 @@
 		flex: 1;
 		max-width: 110px;
 		aspect-ratio: 11 / 17;
-		border: var(--slot-border) dashed color-mix(in srgb, var(--color-text-on-panel), transparent 70%);
+		border: var(--slot-border) dashed
+			color-mix(in srgb, var(--color-text-on-panel), transparent 70%);
 		border-radius: var(--radius-md);
 		display: grid;
 		place-items: center;

@@ -26,12 +26,23 @@
 	 * гравців отримають різних тварин, і партія перестане бути спільною. Створити
 	 * його всередині означало б заховати цей вибір там, де його не видно.
 	 */
+	/**
+	 * `hideNext` — ОНЛАЙН-РАУНД, у якому темп задає не гравець.
+	 *
+	 * У соло кнопка «Далі» лишається: вона і є темп, і саме за нею читають розбір.
+	 * У кімнаті ж наступний раунд оголошує господар за спільним таймером, тож своя
+	 * кнопка тут або нічого не робила б, або перескакувала б раунд у себе одного.
+	 * Замість неї `QuizRound` ставить рядок «чекаємо на решту» — на те саме місце,
+	 * щоб дошка не стрибала.
+	 */
 	interface Props {
 		game: HabitatGameController;
 		mode: HabitatMode;
+		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
+		hideNext?: boolean;
 	}
 
-	let { game, mode }: Props = $props();
+	let { game, mode, hideNext = false }: Props = $props();
 
 	/** Підпис варіанта залежить від підрежиму: континент чи природна зона. */
 	const optionKey = (option: string): TranslationKey =>
@@ -124,14 +135,16 @@
 				</p>
 			{/if}
 
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={() => game.nextRound()}
-				data-testid="habitat-next-btn"
-			>
-				{@html formatFont(t('common.next'))}
-			</button>
+			{#if !hideNext}
+				<button
+					type="button"
+					class="btn-primary"
+					onclick={() => game.nextRound()}
+					data-testid="habitat-next-btn"
+				>
+					{@html formatFont(t('common.next'))}
+				</button>
+			{/if}
 		</div>
 	{/if}
 {/if}
@@ -172,8 +185,8 @@
 		color: var(--color-text-muted);
 	}
 	.result {
-			max-width: 460px;
-		}
+		max-width: 460px;
+	}
 	.result {
 		display: flex;
 		flex-direction: column;

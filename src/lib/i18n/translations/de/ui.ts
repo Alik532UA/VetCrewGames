@@ -21,7 +21,7 @@ export const ui = {
 	'quiz.unknownGame': 'Dieses Spiel kommt aus einer neueren Version. Seite neu laden.',
 	'quiz.skipStep': 'Überspringen',
 	'quiz.roundTimer': 'Rundenzeit',
-	'quiz.answered': 'Antwort gesendet. Warten auf die anderen.',
+	'quiz.answered': 'Warten auf die anderen.',
 	'quiz.nextRound': 'Nächste Runde',
 
 	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —

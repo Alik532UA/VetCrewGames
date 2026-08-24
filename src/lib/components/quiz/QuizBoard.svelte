@@ -1,13 +1,9 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { t, formatFont } from '$lib/i18n';
-	import { MythGameController } from '$lib/controllers/mythGame.svelte';
-	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
-	import { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
-	import { FamilyGameController } from '$lib/controllers/familyGame.svelte';
-	import { PopulationGameController } from '$lib/controllers/populationGame.svelte';
-	import { habitatModeOf, type QuizStep } from '$lib/config/quizOnline';
+	import { createQuizGame, startQuizGame } from '$lib/controllers/quizGame';
 	import { BIN } from '$lib/config/feeding-game';
+	import type { QuizStep } from '$lib/config/quizOnline';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import type { QuickTarget } from '$lib/components/FeedingDish.svelte';
 	import MythCard from '$lib/components/MythCard.svelte';
@@ -64,58 +60,32 @@
 	 * лишилася б від попередньої гри, і саме це воно й ловить.
 	 */
 	const mine = untrack(() => step);
-	/*
-	 * ОДИН РАУНД НА КОНТРОЛЕР, і це те, що зробило раундову модель дешевою.
-	 *
-	 * Усі пʼять контролерів ігор приймають `(totalRounds, seed)`, а
-	 * `quizSeed.test.ts` доводить, що за однакового зерна послідовність однакова.
-	 * Тобто «одне питання» — це просто контролер на один раунд, і жодної нової
-	 * механіки роздачі не потрібно.
-	 */
-	const ROUNDS_PER_STEP = 1;
 
 	/*
-	 * Контролер вибирається за грою кроку. `null` означає, що гра кроку невідома —
-	 * так буває, коли кімнату створила НОВІША збірка, у якій ігор більше.
+	 * СТВОРЕННЯ ПЕРЕЇХАЛО У ФАБРИКУ, і не заради стрункості.
 	 *
-	 * Це не помилка й не падіння: крок просто нічим грати, і батько мусить мати
-	 * змогу його закрити. Тому нижче стоїть кнопка «пропустити», а не порожній
-	 * екран без виходу.
+	 * Тут стояло п'ять `new` підряд, і в одного з них аргументи були переставлені:
+	 * «Хто численніший?» отримувала одну комірку замість трьох, зерно в поле
+	 * `totalRounds` і `Math.random` замість спільної роздачі. Гейт цього не бачив,
+	 * бо перевіряв контролери, а не місце виклику. Тепер місце виклику одне
+	 * (`controllers/quizGame.ts`), і його перевіряє `quizGame.test.ts`.
 	 */
-	const myths = mine.game === 'myths' ? new MythGameController(ROUNDS_PER_STEP, mine.seed) : null;
-	const feeding =
-		mine.game === 'feeding' ? new FeedingGameController(ROUNDS_PER_STEP, mine.seed) : null;
-	/** Підрежим «Де живем?»: `null` — це інша гра. */
-	const habitatMode = habitatModeOf(mine.game);
-	const habitat =
-		habitatMode === null ? null : new HabitatGameController(ROUNDS_PER_STEP, mine.seed);
-	const family =
-		mine.game === 'family' ? new FamilyGameController(ROUNDS_PER_STEP, mine.seed) : null;
-	const population =
-		mine.game === 'population' ? new PopulationGameController(ROUNDS_PER_STEP, mine.seed) : null;
-	const game = myths ?? feeding ?? habitat ?? family ?? population;
+	const created = createQuizGame(mine);
+	const game = created?.game ?? null;
 
 	onMount(() => {
-		/*
-		 * «Де живем?» починається ВИБОРОМ ПІДРЕЖИМУ, а не `start()`.
-		 *
-		 * Її контролер не має чого роздавати, поки не знає, про що питати:
-		 * `chooseMode` і роздає перший раунд. Інші дві гри підрежиму не мають, і в
-		 * них це звичайний `start()`.
-		 */
-		if (habitat && habitatMode) habitat.chooseMode(habitatMode);
-		else (myths ?? feeding ?? family)?.start();
-		// `population` не чіпаємо: його перший раунд роздає сама дошка в `onMount`.
+		// Яка гра чим починається — знає фабрика: «Де живем?» вибором підрежиму,
+		// «Хто численніший?» роздачею в самій дошці, решта звичайним `start()`.
+		if (created) startQuizGame(created);
 	});
 
 	/**
-	 * Про закінчення кроку повідомляємо РІВНО раз.
+	 * Про відповідь повідомляємо РІВНО раз.
 	 *
-	 * `$effect` перезапускається на будь-якій зміні читаного стану, а `gameOver`
-	 * лишається `true` до кінця життя компонента — тобто без цього прапорця
-	 * повідомлення пішло б стільком разів, скільком ще щось ворухнулося. У журналі
-	 * це були б повторні записи того самого кроку; вони відкидаються при
-	 * застосуванні (`QuizMatch`), але писати їх однаково не треба.
+	 * `$effect` перезапускається на будь-якій зміні читаного стану, тож без цього
+	 * прапорця повідомлення пішло б стільком разів, скільком ще щось ворухнулося.
+	 * У журналі це були б повторні записи того самого раунду; вони відкидаються
+	 * при застосуванні (`QuizMatch`), але писати їх однаково не треба.
 	 */
 	let reported = false;
 
@@ -127,8 +97,8 @@
 	 * нічого», хоч сама вона так не влаштована.
 	 */
 	function correctShare(): number {
-		if (feeding) {
-			const verdicts = feeding.verdicts;
+		if (created?.kind === 'feeding') {
+			const verdicts = created.game.verdicts;
 			if (verdicts.length === 0) return 0;
 			return verdicts.filter((verdict) => verdict.isCorrect).length / verdicts.length;
 		}
@@ -137,8 +107,8 @@
 		 * частину правильних варіантів. Половина очок за нього — не компроміс, а
 		 * те, як гра влаштована: питання множинного вибору.
 		 */
-		if (habitat) {
-			const outcome = habitat.roundResults[0];
+		if (created?.kind === 'habitat') {
+			const outcome = created.game.roundResults[0];
 			return outcome === 'correct' ? 1 : outcome === 'partial' ? 0.5 : 0;
 		}
 		/*
@@ -150,26 +120,42 @@
 		return outcome === 'correct' ? 1 : outcome === 'partial' ? 0.5 : 0;
 	}
 
+	/**
+	 * ВІДПОВІДЬ ІДЕ В ЖУРНАЛ У МИТЬ ВІДПОВІДІ, а не після натиску «Далі».
+	 *
+	 * Тут стояло `if (!game?.gameOver …)`, і при `totalRounds = 1` цей прапорець
+	 * встає лише після того, як дошка покличе `nextRound()` — тобто після натиску
+	 * «Далі» на власній кнопці дошки. Наслідків було три, і всі три автор
+	 * побачив: бали не зараховувалися, поки не натиснеш «Далі»; множник за
+	 * швидкість міряв швидкість НАТИСКУ, а не відповіді (тобто той, хто прочитав
+	 * пояснення, платив за це балами); і раунд не міг закінчитися раніше строку,
+	 * бо «всі відповіли» не ставало правдою.
+	 *
+	 * `roundResults` — спільний сигнал усіх п'яти контролерів: кожен додає
+	 * результат раунду саме в обробнику відповіді (`answer`, `check`, `feed`).
+	 * Тобто це «людина відповіла», тоді як `gameOver` — «міні-партія скінчилася», і
+	 * в раунді на одну відповідь це РІЗНІ моменти.
+	 */
 	$effect(() => {
-		if (!game?.gameOver || reported) return;
+		if (reported || !game || game.roundResults.length === 0) return;
 		reported = true;
 		onanswer(correctShare());
 	});
 
 	/** Мішені перетягування — та сама похідна, що на сторінці «Роздай страви». */
 	const targets = $derived<QuickTarget[]>(
-		feeding?.round
+		created?.kind === 'feeding' && created.game.round
 			? [
 					{
-						id: feeding.round.animals[0].id,
-						labelKey: feeding.round.animals[0].nameKey as TranslationKey,
-						image: feeding.round.animals[0].image,
+						id: created.game.round.animals[0].id,
+						labelKey: created.game.round.animals[0].nameKey as TranslationKey,
+						image: created.game.round.animals[0].image,
 						place: 'left' as const
 					},
 					{
-						id: feeding.round.animals[1].id,
-						labelKey: feeding.round.animals[1].nameKey as TranslationKey,
-						image: feeding.round.animals[1].image,
+						id: created.game.round.animals[1].id,
+						labelKey: created.game.round.animals[1].nameKey as TranslationKey,
+						image: created.game.round.animals[1].image,
 						place: 'right' as const
 					},
 					/*
@@ -186,7 +172,7 @@
 </script>
 
 <div class="board" data-testid="quiz-board-panel">
-	{#if game === null}
+	{#if created === null}
 		<!--
 			Гра з новішої збірки. Крок пропускається з нулем очок — інакше партія
 			застрягла б на ньому назавжди, і виглядало б це як зламана кімната.
@@ -200,48 +186,49 @@
 		>
 			{@html formatFont(t('quiz.skipStep'))}
 		</button>
-	{:else if !game.gameOver}
+	{:else if created.kind === 'myths' && created.game.current}
+		<!--
+			`{#each}` на одному елементі — це спосіб перемонтувати картку на кожне
+			питання: без ключа Svelte перевикористав би вузли, і перехід між питаннями
+			не грав би. Той самий приймо, що на сторінці гри.
 
-		{#if myths?.current}
-			<!--
-				`{#each}` на одному елементі — це спосіб перемонтувати картку на кожне
-				питання: без ключа Svelte перевикористав би вузли, і перехід між
-				питаннями не грав би. Той самий приймо, що на сторінці гри.
-			-->
-			{#each [myths.current] as question (question.id)}
-				<MythCard
-					{question}
-					onanswer={(truth) => myths.answer(truth)}
-					onnext={() => myths.nextRound()}
-				/>
-			{/each}
-		{:else if family}
-			<FamilyBoard game={family} />
-		{:else if population}
-			<PopulationBoard game={population} />
-		{:else if habitat && habitatMode}
-			<HabitatBoard game={habitat} mode={habitatMode} />
-		{:else if feeding?.round}
-			<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
-			<FeedingBoard game={feeding} {targets} />
-			<!--
-				КНОПКИ «ДАЛІ» ТУТ НЕМА, і це не пропуск.
-			
-				Після `feed()` наступний раунд оголошує сама дошка — `FeedingTable`
-				всередині `FeedingBoard`. Своя кнопка поруч давала б два способи
-				зробити те саме, і другий натиск перескочив би раунд.
-			-->
-			{#if !feeding.fed}
-				<button
-					type="button"
-					class="btn-primary"
-					disabled={!feeding.canFeed}
-					onclick={() => feeding.feed()}
-					data-testid="quiz-feeding-feed-btn"
-				>
-					{@html formatFont(t(feeding.canFeed ? 'feeding.feed' : 'feeding.placeSomething'))}
-				</button>
-			{/if}
+			`onnext` порожній, і це не пропуск: у кімнаті наступний раунд оголошує
+			господар, а не гравець. Саму кнопку «Далі» ховає `MythCard` за `hideNext`.
+		-->
+		{#each [created.game.current] as question (question.id)}
+			<MythCard
+				{question}
+				onanswer={(truth) => created.game.answer(truth)}
+				onnext={() => {}}
+				hideNext
+			/>
+		{/each}
+	{:else if created.kind === 'family'}
+		<FamilyBoard game={created.game} hideNext />
+	{:else if created.kind === 'population'}
+		<PopulationBoard game={created.game} hideNext />
+	{:else if created.kind === 'habitat'}
+		<HabitatBoard game={created.game} mode={created.mode} hideNext />
+	{:else if created.kind === 'feeding' && created.game.round}
+		<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
+		<FeedingBoard game={created.game} {targets} />
+		<!--
+			КНОПКИ «ДАЛІ» ТУТ НЕМА, і це не пропуск.
+
+			Після `feed()` наступний раунд оголошує сама дошка — `FeedingTable`
+			всередині `FeedingBoard`. Своя кнопка поруч давала б два способи зробити те
+			саме, і другий натиск перескочив би раунд.
+		-->
+		{#if !created.game.fed}
+			<button
+				type="button"
+				class="btn-primary"
+				disabled={!created.game.canFeed}
+				onclick={() => created.game.feed()}
+				data-testid="quiz-feeding-feed-btn"
+			>
+				{@html formatFont(t(created.game.canFeed ? 'feeding.feed' : 'feeding.placeSomething'))}
+			</button>
 		{/if}
 	{/if}
 </div>
