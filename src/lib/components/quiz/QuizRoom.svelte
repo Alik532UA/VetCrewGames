@@ -33,6 +33,12 @@
 	 * гостя немає. Замість неї рядок про те, чого він чекає.
 	 */
 	interface Props {
+		/**
+		 * Перекладач вікторини: її рядки лежать у ЛІНИВОМУ чанку (`i18n/quiz`), бо
+		 * головний словник вантажать усі відвідувачі. Далі він іде в дошку, табло й
+		 * вікно очікування.
+		 */
+		text: (key: string) => string;
 		match: QuizMatch;
 		me: string;
 		lang: Language;
@@ -48,8 +54,19 @@
 		onkick: (uid: string) => void;
 	}
 
-	let { match, me, lang, amHost, clock, awayLeft, onanswer, onRematch, onClose, onkick }: Props =
-		$props();
+	let {
+		text,
+		match,
+		me,
+		lang,
+		amHost,
+		clock,
+		awayLeft,
+		onanswer,
+		onRematch,
+		onClose,
+		onkick
+	}: Props = $props();
 </script>
 
 {#if match.over}
@@ -98,7 +115,7 @@
 		Вікно очікування стоїть НАД таблом: воно про кімнату, а не про раунд, і
 		саме тому не накриває питання.
 	-->
-	<QuizAway away={match.away} secondsLeft={awayLeft} onkick={amHost ? onkick : undefined} />
+	<QuizAway {text} away={match.away} secondsLeft={awayLeft} onkick={amHost ? onkick : undefined} />
 
 	{@const phase = match.phase(clock)}
 	{#if phase === 'reveal'}
@@ -110,7 +127,13 @@
 			попросив рівно це: «панель по центру екрана на час табла, рядок зверху на
 			цей час ховається».
 		-->
-		<QuizReveal players={match.players} scores={match.scores} gains={match.roundGains} {me} />
+		<QuizReveal
+			{text}
+			players={match.players}
+			scores={match.scores}
+			gains={match.roundGains}
+			{me}
+		/>
 	{:else}
 		<!--
 			ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
@@ -128,6 +151,7 @@
 		/>
 
 		<QuizRound
+			{text}
 			{phase}
 			step={match.step}
 			leftMs={match.leftMs(clock)}

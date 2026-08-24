@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
-	import { t, formatFont } from '$lib/i18n';
+	import { formatFont } from '$lib/i18n';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -32,6 +32,11 @@
 	 * Це не «менша анімація», а її відсутність — саме те, про що просить критерій.
 	 */
 	interface Props {
+		/**
+		 * Перекладач вікторини: її рядки лежать у ЛІНИВОМУ чанку
+		 * (`i18n/quiz`), бо головний словник вантажать усі відвідувачі.
+		 */
+		text: (key: string) => string;
 		players: Member[];
 		/** Підсумковий рахунок кожного — після цього раунду. */
 		scores: Record<string, number>;
@@ -42,7 +47,7 @@
 		duration?: number;
 	}
 
-	let { players, scores, gains, me, duration = 700 }: Props = $props();
+	let { text, players, scores, gains, me, duration = 700 }: Props = $props();
 
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 
@@ -90,7 +95,7 @@
 </script>
 
 <section class="reveal text-panel" data-testid="quiz-reveal-panel">
-	<h2 class="reveal__title">{@html formatFont(t('quiz.nextRound'))}</h2>
+	<h2 class="reveal__title">{@html formatFont(text('quiz.nextRound'))}</h2>
 
 	<ul class="reveal__list">
 		{#each ranked as player, place (player.uid)}

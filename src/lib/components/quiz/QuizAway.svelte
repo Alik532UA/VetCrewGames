@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatFont } from '$lib/i18n';
+	import { formatFont } from '$lib/i18n';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -34,6 +34,11 @@
 	 * імʼя, прапор чи роль він не може.
 	 */
 	interface Props {
+		/**
+		 * Перекладач вікторини: її рядки лежать у ЛІНИВОМУ чанку
+		 * (`i18n/quiz`), бо головний словник вантажать усі відвідувачі.
+		 */
+		text: (key: string) => string;
 		/** Кого немає онлайн. Порожньо — вікна немає зовсім. */
 		away: Member[];
 		/** Скільки секунд лишилося з пільгового часу. `0` — вичерпано. */
@@ -47,12 +52,12 @@
 		onkick?: (uid: string) => void;
 	}
 
-	let { away, secondsLeft, onkick }: Props = $props();
+	let { text, away, secondsLeft, onkick }: Props = $props();
 </script>
 
 {#if away.length > 0}
 	<section class="away text-panel" role="status" data-testid="quiz-away-panel">
-		<h2 class="away__title">{@html formatFont(t('quiz.awayTitle'))}</h2>
+		<h2 class="away__title">{@html formatFont(text('quiz.awayTitle'))}</h2>
 
 		<ul class="away__list" data-testid="quiz-away-list">
 			{#each away as member (member.uid)}
@@ -67,7 +72,7 @@
 							onclick={() => onkick(member.uid)}
 							data-testid="quiz-away-{member.uid}-btn"
 						>
-							{@html formatFont(t('quiz.awayKick'))}
+							{@html formatFont(text('quiz.awayKick'))}
 						</button>
 					{/if}
 				</li>
@@ -80,12 +85,12 @@
 				оголосити зміну, а не перечитувати весь абзац.
 			-->
 			<p class="away__note">
-				{@html formatFont(t('quiz.awayWait'))}
+				{@html formatFont(text('quiz.awayWait'))}
 				<b class="away__count" data-testid="quiz-away-timer-value">{secondsLeft}</b>
 			</p>
 		{:else}
 			<p class="away__note" data-testid="quiz-away-gone-text">
-				{@html formatFont(t('quiz.awayGone'))}
+				{@html formatFont(text('quiz.awayGone'))}
 			</p>
 		{/if}
 	</section>

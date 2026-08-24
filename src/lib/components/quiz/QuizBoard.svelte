@@ -36,6 +36,11 @@
 	 * партії — окреме число, воно живе в журналі кімнати.
 	 */
 	interface Props {
+		/**
+		 * Перекладач вікторини: її рядки лежать у ЛІНИВОМУ чанку
+		 * (`i18n/quiz`), бо головний словник вантажать усі відвідувачі.
+		 */
+		text: (key: string) => string;
 		step: QuizStep;
 		/**
 		 * Я відповів — ось ЧАСТКА правильного, від 0 до 1. Кличеться РІВНО раз.
@@ -48,7 +53,7 @@
 		onanswer: (correct: number) => void;
 	}
 
-	let { step, onanswer }: Props = $props();
+	let { text, step, onanswer }: Props = $props();
 
 	/*
 	 * КРОК ЧИТАЄТЬСЯ ОДИН РАЗ, і `untrack` про це і каже.
@@ -177,14 +182,14 @@
 			Гра з новішої збірки. Крок пропускається з нулем очок — інакше партія
 			застрягла б на ньому назавжди, і виглядало б це як зламана кімната.
 		-->
-		<p class="board__unknown text-panel">{@html formatFont(t('quiz.unknownGame'))}</p>
+		<p class="board__unknown text-panel">{@html formatFont(text('quiz.unknownGame'))}</p>
 		<button
 			type="button"
 			class="btn-primary"
 			onclick={() => onanswer(0)}
 			data-testid="quiz-skip-btn"
 		>
-			{@html formatFont(t('quiz.skipStep'))}
+			{@html formatFont(text('quiz.skipStep'))}
 		</button>
 	{:else if created.kind === 'myths' && created.game.current}
 		<!--

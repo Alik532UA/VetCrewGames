@@ -15,18 +15,7 @@ export const ui = {
 	'menu.quiz': 'Quiz',
 	'account.title': 'Account',
 	'pairs.friendsRooms': 'Kamers van vrienden',
-	'quiz.gamesInRoom': 'Spellen in deze kamer',
-	'quiz.gamesLast': 'Er moet minstens één spel aan blijven',
 	'quiz.otherGame': 'Die kamer is voor een ander spel.',
-	'quiz.unknownGame': 'Dit spel komt uit een nieuwere versie. Herlaad de pagina.',
-	'quiz.skipStep': 'Overslaan',
-	'quiz.roundTimer': 'Rondetijd',
-	'quiz.answered': 'Wachten op de rest.',
-	'quiz.awayTitle': 'Geen verbinding',
-	'quiz.awayWait': 'We wachten of hij terugkomt:',
-	'quiz.awayGone': 'De partij gaat door — op deze speler wordt niet meer gewacht.',
-	'quiz.awayKick': 'Verwijderen',
-	'quiz.nextRound': 'Volgende ronde',
 
 	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen
 	// waar „Spelen” heen leidt verschilt.

@@ -15,18 +15,7 @@ export const ui = {
 	'menu.quiz': 'Quiz',
 	'account.title': 'Konto',
 	'pairs.friendsRooms': 'Räume von Freunden',
-	'quiz.gamesInRoom': 'Spiele in diesem Raum',
-	'quiz.gamesLast': 'Mindestens ein Spiel muss bleiben',
 	'quiz.otherGame': 'Dieser Raum ist für ein anderes Spiel.',
-	'quiz.unknownGame': 'Dieses Spiel kommt aus einer neueren Version. Seite neu laden.',
-	'quiz.skipStep': 'Überspringen',
-	'quiz.roundTimer': 'Rundenzeit',
-	'quiz.answered': 'Warten auf die anderen.',
-	'quiz.awayTitle': 'Keine Verbindung',
-	'quiz.awayWait': 'Wir warten, ob er zurückkommt:',
-	'quiz.awayGone': 'Die Partie läuft weiter — auf diesen Spieler wird nicht mehr gewartet.',
-	'quiz.awayKick': 'Entfernen',
-	'quiz.nextRound': 'Nächste Runde',
 
 	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —
 	// nur das Ziel von „Spielen“ unterscheidet sich.

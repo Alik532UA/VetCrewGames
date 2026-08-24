@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatFont } from '$lib/i18n';
+	import { formatFont } from '$lib/i18n';
 	import type { QuizPhase } from '$lib/controllers/quizMatch.svelte';
 	import type { QuizStep } from '$lib/config/quizOnline';
 	import QuizBoard from './QuizBoard.svelte';
@@ -22,6 +22,11 @@
 	 * рахував би від власного `Date.now()`.
 	 */
 	interface Props {
+		/**
+		 * Перекладач вікторини: її рядки лежать у ЛІНИВОМУ чанку
+		 * (`i18n/quiz`), бо головний словник вантажать усі відвідувачі.
+		 */
+		text: (key: string) => string;
 		phase: QuizPhase;
 		/** Крок програми для цього раунду. `null` — раунду ще немає. */
 		step: QuizStep | null;
@@ -34,7 +39,7 @@
 		onanswer: (correct: number) => void;
 	}
 
-	let { phase, step, leftMs, limitMs, answered, onanswer }: Props = $props();
+	let { text, phase, step, leftMs, limitMs, answered, onanswer }: Props = $props();
 
 	const leftPercent = $derived(limitMs === 0 ? 0 : Math.round((leftMs / limitMs) * 100));
 </script>
@@ -47,7 +52,7 @@
 	<div
 		class="timer"
 		role="timer"
-		aria-label={t('quiz.roundTimer')}
+		aria-label={text('quiz.roundTimer')}
 		data-testid="quiz-round-progress"
 	>
 		<span class="timer__fill" style="width: {leftPercent}%"></span>
@@ -69,13 +74,13 @@
 		нього — нова партія на один раунд, а не продовження.
 	-->
 	{#key step.seed}
-		<QuizBoard {step} {onanswer} />
+		<QuizBoard {text} {step} {onanswer} />
 	{/key}
 
 	{#if answered}
 		<!-- На місце кнопки «Далі», яку в кімнаті ховає сама дошка (`hideNext`). -->
 		<p class="round__wait text-panel" data-testid="quiz-answered-text">
-			{@html formatFont(t('quiz.answered'))}
+			{@html formatFont(text('quiz.answered'))}
 		</p>
 	{/if}
 {/if}

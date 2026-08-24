@@ -22,13 +22,18 @@
 	 * і отримувала протилежне тому, що просила.
 	 */
 	interface Props {
+		/**
+		 * Перекладач вікторини: її рядки лежать у ЛІНИВОМУ чанку
+		 * (`i18n/quiz`), бо головний словник вантажать усі відвідувачі.
+		 */
+		text: (key: string) => string;
 		/** Вибрані ігри. Двобічне. */
 		selected: string[];
 		/** Чи можна міняти. Гість бачить набір, але не править його. */
 		editable: boolean;
 	}
 
-	let { selected = $bindable(), editable }: Props = $props();
+	let { text, selected = $bindable(), editable }: Props = $props();
 
 	const isLast = $derived(selected.length === 1);
 
@@ -45,7 +50,7 @@
 </script>
 
 <fieldset class="games">
-	<legend class="games__legend">{@html formatFont(t('quiz.gamesInRoom'))}</legend>
+	<legend class="games__legend">{@html formatFont(text('quiz.gamesInRoom'))}</legend>
 	<div class="games__list">
 		{#each ONLINE_GAMES as game (game.id)}
 			{@const on = selected.includes(game.id)}
@@ -55,7 +60,7 @@
 				class:games__item--on={on}
 				aria-pressed={on}
 				aria-disabled={!editable || (on && isLast)}
-				title={on && isLast ? t('quiz.gamesLast') : ''}
+				title={on && isLast ? text('quiz.gamesLast') : ''}
 				onclick={() => toggle(game.id)}
 				data-testid="quiz-game-{game.id}-toggle"
 			>

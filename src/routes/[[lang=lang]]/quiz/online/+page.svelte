@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
+	import { loadQuizText } from '$lib/i18n/quiz';
 	import { playerData } from '$lib/services/playerData.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
@@ -41,6 +42,21 @@
 	 * Вони не знають ні про гру, ні про мережу — саме тому й підійшли.
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
+
+	/**
+	 * Рядки вікторини ДОВАНТАЖУЮТЬСЯ окремим чанком (`i18n/quiz`).
+	 *
+	 * Причина заміряна: головний словник імпортує всі чотири мови статично, тобто
+	 * вони лежать у першому payload КОЖНОГО відвідувача, а ці одинадцять рядків
+	 * потрібні лише в кімнаті — і саме вони перевищили бюджет кореневого layout
+	 * (120,5 КБ проти 120).
+	 *
+	 * У стані лежить СЛОВНИК, а перекладач похідний: функція в `$state` не
+	 * оновлювала екран — рядки лишалися ключами, хоч словник і приїхав. Той самий
+	 * взірець, що на сторінці акаунта, і та сама причина.
+	 */
+	let dict = $state<Record<string, string>>({});
+	const text = $derived((key: string) => dict[key] ?? key);
 
 	/**
 	 * Версія ПРАВИЛ спільної вікторини. Різні версії в кімнату не пускають.
@@ -478,6 +494,7 @@
 	onMount(() => {
 		const release = settings.claimHeader('menu.quiz', () => goto(langPath(lang, 'quiz')));
 		void player.loadCountry();
+		void loadQuizText(settings.locale).then((loaded) => (dict = loaded));
 
 		const saved = roomFromUrl();
 		if (saved) {
@@ -515,7 +532,7 @@
 					налаштування наявної кімнати.
 				-->
 				<div class="quiz-online__games text-panel">
-					<QuizGamePicker bind:selected={picked} editable={true} />
+					<QuizGamePicker {text} bind:selected={picked} editable={true} />
 				</div>
 				<RoomList
 					rooms={lobby.rooms}
@@ -554,7 +571,7 @@
 			`info.config` пише лише господар.
 		-->
 		<div class="quiz-online__games text-panel">
-			<QuizGamePicker selected={match.games} editable={false} />
+			<QuizGamePicker {text} selected={match.games} editable={false} />
 		</div>
 	{:else}
 		<!--
@@ -566,6 +583,7 @@
 			сторінки.
 		-->
 		<QuizRoom
+			{text}
 			{match}
 			{me}
 			{lang}
