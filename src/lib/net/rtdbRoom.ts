@@ -146,6 +146,9 @@ export async function createRoom(options: NewRoom): Promise<string> {
 	const from = options.isPrivate ? PRIVATE_CODE_LENGTH : PUBLIC_CODE_LENGTH;
 	const to = options.isPrivate ? PRIVATE_CODE_LENGTH : PUBLIC_CODE_MAX;
 
+	/** Остання відмова правил — щоб вичерпаний цикл назвав причину, а не наслідок. */
+	let lastDenial: unknown = null;
+
 	for (let length = from; length <= to; length++) {
 		if (length > from) {
 			logService.info('network', `room codes grew to ${length} digits`);
@@ -178,9 +181,36 @@ export async function createRoom(options: NewRoom): Promise<string> {
 
 			try {
 				await set(ref(db, `rooms/${code}/info`), info);
-			} catch {
-				// Хтось зайняв цей код між читанням і записом. Саме від цього й стоїть
-				// правило «лише створити» — беремо наступний.
+			} catch (error) {
+				/*
+				 * ГЛУХИЙ `catch` ТУТ КОШТУВАВ ЦІЛОГО РЕЖИМУ, і ось як саме.
+				 *
+				 * Задум був вузький: «хтось зайняв цей код між читанням і записом,
+				 * беремо наступний» — від цього й стоїть правило «лише створити».
+				 * Але `catch` без розбору ковтав ЛЮБУ відмову запису. Коли запис
+				 * падав завжди (а він падав: у ключах `config` стояла точка, яку RTDB
+				 * не приймає), цикл щиро вважав зайнятими всі коди, доростав до
+				 * чотирьох цифр і кидав `room-code-taken`. На екрані з'являлося
+				 * «Не вдалося зайти в кімнату. Спробуйте ще раз» — порада, якої
+				 * жодне «ще раз» не виконає.
+				 *
+				 * Тобто помилка називала СЛІДСТВО і ховала причину. Той самий клас,
+				 * що вже виправляли вище для читання, тільки на записі.
+				 *
+				 * Тепер відмова розбирається. Відсутність `permission_denied`
+				 * означає, що інший код не допоможе — SDK відкидає такий запис ще до
+				 * мережі, — тож помилка йде далі негайно.
+				 */
+				const reason = error instanceof Error ? error.message : String(error);
+				if (!/permission[_ ]denied/i.test(reason)) throw error;
+
+				/*
+				 * Відмова правил. Це або справді зайнятий код, або невалідний вміст —
+				 * і повідомлення бази їх не розрізняє. Тому пробуємо далі, але
+				 * ПРИЧИНУ тримаємо: якщо не лишиться спроб, її назве помилка нижче,
+				 * а не загальне «код зайнятий».
+				 */
+				lastDenial = error;
 				continue;
 			}
 
@@ -200,7 +230,12 @@ export async function createRoom(options: NewRoom): Promise<string> {
 		}
 	}
 
-	throw new Error('room-code-taken');
+	/*
+	 * Вичерпано всі коди на всіх розрядах. Якщо база хоч раз відмовила — причина
+	 * їде разом із помилкою: без цього «код зайнятий» звучало б як правда навіть
+	 * тоді, коли жоден код не був зайнятий, а відмовляв вміст.
+	 */
+	throw new Error('room-code-taken', lastDenial ? { cause: lastDenial } : undefined);
 }
 
 /**
