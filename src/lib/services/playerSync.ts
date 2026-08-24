@@ -1,4 +1,6 @@
 import { mergePlay, readPlay, watchPlay, writePlay, type PlayData } from '$lib/net/play';
+import { readMyProfile, type Profile } from '$lib/net/account';
+import { publishLeader } from '$lib/net/leaders';
 import { playerData } from './playerData.svelte';
 import { logService } from './logService.svelte';
 
@@ -30,6 +32,16 @@ let unwatch: (() => void) | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 /**
+ * Свій профіль — рівно для рядка таблиці лідерів.
+ *
+ * Кешований навмисно: рядок публікується після кожного запису рахунку, а профіль
+ * міняється раз на місяць. Читати його щоразу означало б зайве читання на кожні
+ * три секунди активної гри. Оновлює кеш `refreshProfile()` — його кличе сторінка
+ * акаунта, коли профіль справді змінився.
+ */
+let profile: Profile | null = null;
+
+/**
  * Дані приїхали з бази — злити з місцевими.
  *
  * Якщо після злиття місцеве БІЛЬШЕ за хмарне, різницю треба відіслати: інакше
@@ -42,6 +54,34 @@ function absorb(cloud: PlayData | null): void {
 	const merged = mergePlay(playerData.snapshot(), cloud);
 	playerData.apply(merged);
 	if (!same(merged, cloud)) void writePlay(merged);
+	void showInBoard(merged.score);
+}
+
+/**
+ * Оновити свій рядок у таблиці лідерів.
+ *
+ * Без профілю рядка не буває: у ньому імʼя, псевдонім і аватар, а не самий
+ * рахунок. Профіль може бути ще не створеним — тоді таблиця просто чекає, поки
+ * людина його заповнить.
+ *
+ * НЕ КИДАЄ й нічого не перевіряє: поріг у 50 очок і згоду на показ тримає правило
+ * бази, і відмова тут — нормальний стан, а не помилка (`net/leaders.ts`).
+ */
+async function showInBoard(score: number): Promise<void> {
+	profile ??= await readMyProfile();
+	if (profile) await publishLeader(profile, score);
+}
+
+/**
+ * Профіль змінився — перечитати його й оновити рядок таблиці.
+ *
+ * Кличе сторінка акаунта після збереження профілю й після зміни перемикачів
+ * приватності: інакше в таблиці лишилося б старе імʼя або старий аватар, і
+ * виглядало б це як таблиця, що відстає на місяць.
+ */
+export async function refreshProfile(): Promise<void> {
+	profile = null;
+	await showInBoard(playerData.snapshot().score);
 }
 
 /** Відкладений запис: десятки змін за партію — це один запит, а не десятки. */
@@ -50,9 +90,11 @@ function pushSoon(): void {
 	if (timer !== null) clearTimeout(timer);
 	timer = setTimeout(() => {
 		timer = null;
-		void writePlay(playerData.snapshot()).then((ok) => {
+		const snapshot = playerData.snapshot();
+		void writePlay(snapshot).then((ok) => {
 			if (!ok) logService.warn('network', 'score not synced', { score: playerData.score });
 		});
+		void showInBoard(snapshot.score);
 	}, PUSH_DELAY_MS);
 }
 

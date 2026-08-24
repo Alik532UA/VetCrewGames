@@ -86,4 +86,18 @@ export const account: Record<string, string> = {
 	'account.regionAntarctic': 'Antarctica',
 	'account.countrySearch': 'Land zoeken',
 	'account.countryNotFound': 'Niets gevonden',
+	// Privacyschakelaars en het scorebord.
+	'account.privacyTitle': 'Privacy',
+	'account.privacyHint': 'Deze schakelaars worden door de database zelf bewaakt: wat hier uit staat, ziet niemand — niet alleen op dit scherm.',
+	'account.privacy.search': 'Toon mij in de zoekresultaten',
+	'account.privacy.follow': 'Anderen mogen mij volgen',
+	'account.privacy.board': 'Toon mij op het scorebord',
+	'account.privacyOn': 'Aan',
+	'account.privacyOff': 'Uit',
+	'account.boardTitle': 'Scorebord',
+	'account.boardAll': 'Iedereen',
+	'account.boardFriends': 'Vrienden',
+	'account.boardEmpty': 'Leeg: het bord begint bij {score} punten.',
+	'account.boardNoFriends': 'Hier komen vrienden — wederzijdse volgers die al een score hebben.',
+	'account.errorNotAllowed': 'Niet toegestaan — deze persoon heeft volgen misschien uitgezet.',
 };

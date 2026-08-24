@@ -284,14 +284,181 @@ const CASES = [
 		run: () => read('handles', guest.token)
 	},
 	{
+		/*
+		 * РЕЄСТР УНІКАЛЬНОСТІ НЕ ПЕРЕЛІЧУЄТЬСЯ БІЛЬШЕ НІЯК — навіть обмеженим
+		 * запитом. Доти пошук ішов саме тут, і разом із перемикачем «не показувати
+		 * мене в пошуку» це стало суперечністю: реєстр зобов'язаний містити ВСІХ,
+		 * тож людину, яка вимкнула пошук, усе одно можна було перебрати. Тепер
+		 * пошук — окрема гілка `find`, у якій лежать лише згодні.
+		 */
+		name: 'перелічити реєстр псевдонімів обмеженим запитом',
+		allowed: false,
+		run: () => readQuery('handles', 'orderBy=%22%24key%22&limitToFirst=20', guest.token)
+	},
+
+	/*
+	 * ПОШУКОВИЙ ІНДЕКС І ПРИВАТНІСТЬ. Три перемикачі, і кожен перевіряється тут
+	 * саме тому, що тримає його правило, а не екран: клієнтський фільтр приховує
+	 * лише від того, хто дивиться екраном.
+	 */
+	{
+		name: 'гість вписує себе в пошуковий індекс',
+		allowed: true,
+		run: () => write('find/guest_one', guest.uid, guest.token)
+	},
+	{
 		name: 'пошук людей обмеженим запитом',
 		allowed: true,
-		run: () => readQuery('handles', 'orderBy=%22%24key%22&limitToFirst=20', guest.token)
+		run: () => readQuery('find', 'orderBy=%22%24key%22&limitToFirst=20', guest.token)
 	},
 	{
 		name: 'пошук без межі',
 		allowed: false,
-		run: () => readQuery('handles', 'orderBy=%22%24key%22', guest.token)
+		run: () => readQuery('find', 'orderBy=%22%24key%22', guest.token)
+	},
+	{
+		name: 'запис у пошуковий індекс на ЧУЖИЙ uid',
+		allowed: false,
+		run: () => write('find/stolen', host.uid, guest.token)
+	},
+	{
+		name: 'гість пише свої перемикачі приватності',
+		allowed: true,
+		run: () =>
+			write(`users/${guest.uid}/privacy`, { search: false, follow: true, board: true }, guest.token)
+	},
+	{
+		name: 'чужі перемикачі приватності читає інший гравець',
+		allowed: false,
+		run: () => read(`users/${guest.uid}/privacy`, host.token)
+	},
+	{
+		name: 'у приватності поле, якого схема не знає',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/privacy/secret`, true, guest.token)
+	},
+	{
+		/*
+		 * ГОЛОВНИЙ ВИПАДОК приватності: перемикач вимкнено — і база НЕ ДАЄ
+		 * повернутися в пошук. Саме цим він відрізняється від фільтра на екрані:
+		 * ні стара збірка з кешу, ні чужий клієнт, ні консоль браузера не
+		 * повернуть запис, поки перемикач `false`.
+		 */
+		name: 'вписатися в пошук із вимкненим пошуком',
+		allowed: false,
+		run: () => write('find/guest_two', guest.uid, guest.token)
+	},
+	{
+		// Прибрати себе з індексу можна ЗАВЖДИ: заборона вимкнути пошук через
+		// вимкнений пошук була б замком без ключа.
+		name: 'вийти з пошуку при вимкненому пошуку',
+		allowed: true,
+		run: () => write('find/guest_one', null, guest.token)
+	},
+	{
+		name: 'гість вертає пошук і знову вписується',
+		allowed: true,
+		run: () =>
+			write(`users/${guest.uid}/privacy`, { search: true, follow: false, board: false }, guest.token)
+	},
+	{
+		name: 'підписатися на того, хто закрив підписки',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/followers/${host.uid}`, { at: SERVER_TIME }, host.token)
+	},
+	{
+		// Зняти підписку можна й при закритих підписках: інакше людина, яка щойно
+		// їх закрила, замкнула б наявних підписників назавжди.
+		name: 'зняти підписку при закритих підписках',
+		allowed: true,
+		run: () => write(`users/${guest.uid}/followers/${host.uid}`, null, host.token)
+	},
+
+	/*
+	 * ТАБЛИЦЯ ЛІДЕРІВ. Поріг і згода — умови ЗАПИСУ, а не фільтр показу: у гілці
+	 * немає нічого, чого не мусить бути видно.
+	 */
+	{
+		name: 'рядок таблиці при вимкненому показі',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'гість дозволяє показ у таблиці',
+		allowed: true,
+		run: () =>
+			write(`users/${guest.uid}/privacy`, { search: true, follow: true, board: true }, guest.token)
+	},
+	{
+		name: 'гість пише свій рядок таблиці',
+		allowed: true,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'ua', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з рахунком нижче порога',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${host.uid}`,
+				{ name: 'Господар', handle: 'leader', score: 49, at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'ЧУЖИЙ рядок таблиці',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Не я', handle: 'faker', score: 999, at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'у рядку таблиці поле, якого схема не знає',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, rank: 1, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'читання таблиці обмеженим запитом за рахунком',
+		allowed: true,
+		run: () => readQuery('leaders', 'orderBy=%22score%22&limitToLast=50', host.token)
+	},
+	{
+		name: 'читання таблиці без межі',
+		allowed: false,
+		run: () => readQuery('leaders', 'orderBy=%22score%22', host.token)
+	},
+	{
+		name: 'читання таблиці цілком',
+		allowed: false,
+		run: () => read('leaders', host.token)
+	},
+	{
+		name: 'читання ОДНОГО рядка таблиці (вкладка «друзі»)',
+		allowed: true,
+		run: () => read(`leaders/${guest.uid}`, host.token)
+	},
+	{
+		// Прибрати себе можна завжди — навіть коли рахунок уже нижчий за поріг.
+		name: 'прибрати свій рядок таблиці',
+		allowed: true,
+		run: () => write(`leaders/${guest.uid}`, null, guest.token)
 	},
 	{
 		name: 'господар пише свій профіль',

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountState, Profile } from '$lib/net/account';
 import type { Friend } from '$lib/net/follows';
+import type { Leader } from '$lib/net/leaders';
 
 /**
  * Контролер акаунта — БЕЗ Firebase і без мережі.
@@ -70,7 +71,10 @@ const net = {
 const follows = {
 	follow: vi.fn<(target: string) => Promise<void>>(async () => {}),
 	unfollow: vi.fn<(target: string) => Promise<void>>(async () => {}),
-	listFollowing: vi.fn<() => Promise<Friend[]>>(async () => [])
+	listFollowing: vi.fn<() => Promise<Friend[]>>(async () => []),
+	// Друзі — це ВЗАЄМНІ підписки, і саме цим переліком будується вкладка «друзі»
+	// в таблиці лідерів: одностороння підписка друга не робить.
+	friendUids: vi.fn<() => Promise<string[]>>(async () => [])
 };
 
 /**
@@ -87,10 +91,36 @@ const follows = {
  */
 const play = {
 	mergeOnSignIn: vi.fn<() => Promise<void>>(async () => {}),
+	refreshProfile: vi.fn<() => Promise<void>>(async () => {}),
 	signedOut: vi.fn<() => void>()
 };
 const reserve = { reset: vi.fn<() => void>() };
 
+/**
+ * ПРИВАТНІСТЬ І ТАБЛИЦЯ — теж мокаються, і теж на межі модуля.
+ *
+ * Головне, що тут доводиться: контролер не «фільтрує показ», а віддає рішення
+ * базі й приводить у відповідність те, що вже лежить назовні — індекс пошуку
+ * (це робить `savePrivacy`) і рядок таблиці лідерів.
+ */
+const privacyNet = {
+	OPEN_PRIVACY: { search: true, follow: true, board: true },
+	readPrivacy: vi.fn(async () => ({ search: true, follow: true, board: true })),
+	savePrivacy: vi.fn<(next: unknown, handle: string | null) => Promise<void>>(async () => {})
+};
+const board = {
+	BOARD_LIMIT: 50,
+	BOARD_MIN_SCORE: 50,
+	// Тип названий явно: `async () => []` виводиться як `never[]`, і рядок таблиці
+	// в `mockResolvedValue` не проходив би перевірку типів.
+	topLeaders: vi.fn<() => Promise<Leader[]>>(async () => []),
+	leadersOf: vi.fn<(uids: string[]) => Promise<Leader[]>>(async () => []),
+	withdrawLeader: vi.fn<() => Promise<void>>(async () => {}),
+	publishLeader: vi.fn<() => Promise<void>>(async () => {})
+};
+
+vi.mock('$lib/net/privacy', () => privacyNet);
+vi.mock('$lib/net/leaders', () => board);
 vi.mock('$lib/net/firebase', () => ({ connect }));
 vi.mock('$lib/net/account', () => net);
 vi.mock('$lib/net/follows', () => follows);
@@ -113,6 +143,13 @@ describe('Account', () => {
 		net.signInEmail.mockReset().mockResolvedValue(undefined);
 		net.signInGoogle.mockReset().mockResolvedValue(undefined);
 		net.signOut.mockReset().mockResolvedValue(undefined);
+		privacyNet.readPrivacy.mockReset().mockResolvedValue({ search: true, follow: true, board: true });
+		privacyNet.savePrivacy.mockReset().mockResolvedValue(undefined);
+		board.topLeaders.mockReset().mockResolvedValue([]);
+		board.leadersOf.mockReset().mockResolvedValue([]);
+		board.withdrawLeader.mockReset().mockResolvedValue(undefined);
+		follows.friendUids.mockReset().mockResolvedValue([]);
+		play.refreshProfile.mockReset();
 		play.mergeOnSignIn.mockReset();
 		play.signedOut.mockReset();
 		reserve.reset.mockReset();
@@ -509,9 +546,12 @@ describe('Account', () => {
 			const account = new Account();
 			await expect(account.save('Лідер', 'lider', '', '')).resolves.toBe(true);
 
+			// Третій аргумент — `searchable`: чи вписувати псевдонім у пошуковий
+			// індекс. Типово так, бо приватність типово дозволяє пошук.
 			expect(net.saveProfile).toHaveBeenCalledWith(
 				{ name: 'Лідер', handle: 'lider', country: undefined, avatar: undefined },
-				undefined
+				undefined,
+				true
 			);
 		});
 
@@ -526,7 +566,8 @@ describe('Account', () => {
 
 			expect(net.saveProfile).toHaveBeenCalledWith(
 				{ name: 'Шеф', handle: 'chief', country: 'ua', avatar: 'cat:blue' },
-				'lider'
+				'lider',
+				true
 			);
 			expect(account.profile?.handle).toBe('chief');
 		});
@@ -608,6 +649,88 @@ describe('Account', () => {
 			expect(account.follows('uid-a')).toBe(true);
 			expect(account.follows('uid-b')).toBe(false);
 			expect(connect).not.toHaveBeenCalled();
+		});
+	});
+
+	/**
+	 * ПРИВАТНІСТЬ: перемикач міняє не показ, а те, що лежить у базі.
+	 *
+	 * Тому й перевіряється саме порядок наслідків: запис вибору, потім приведення
+	 * у відповідність рядка таблиці. Без другої половини вимкнений показ лишав би
+	 * рядок у таблиці до наступного збереження рахунку — тобто перемикач,
+	 * що клацнув і нічого не зробив.
+	 */
+	describe('setPrivacy()', () => {
+		it('зберігає вибір і передає псевдонім для індексу пошуку', async () => {
+			net.readProfile.mockResolvedValue(profile());
+			const account = new Account();
+			await account.load();
+
+			await expect(
+				account.setPrivacy({ search: false, follow: true, board: true })
+			).resolves.toBe(true);
+
+			expect(privacyNet.savePrivacy).toHaveBeenCalledWith(
+				{ search: false, follow: true, board: true },
+				'lider'
+			);
+			expect(account.privacy.search).toBe(false);
+		});
+
+		it('вимкнений показ ПРИБИРАЄ рядок таблиці', async () => {
+			const account = new Account();
+			await account.load();
+
+			await account.setPrivacy({ search: true, follow: true, board: false });
+
+			expect(board.withdrawLeader).toHaveBeenCalledTimes(1);
+			expect(play.refreshProfile).not.toHaveBeenCalled();
+		});
+
+		it('увімкнений показ оновлює рядок таблиці', async () => {
+			const account = new Account();
+			await account.load();
+
+			await account.setPrivacy({ search: true, follow: true, board: true });
+
+			expect(play.refreshProfile).toHaveBeenCalledTimes(1);
+			expect(board.withdrawLeader).not.toHaveBeenCalled();
+		});
+
+		it('невдалий запис не міняє ні стану, ні таблиці', async () => {
+			privacyNet.savePrivacy.mockRejectedValueOnce(fbError('PERMISSION_DENIED'));
+			const account = new Account();
+			await account.load();
+
+			await expect(
+				account.setPrivacy({ search: false, follow: false, board: false })
+			).resolves.toBe(false);
+
+			expect(account.privacy.search, 'екран показував би вибір, якого база не прийняла').toBe(
+				true
+			);
+			expect(board.withdrawLeader).not.toHaveBeenCalled();
+			expect(account.error).toBe('PERMISSION_DENIED');
+		});
+	});
+
+	describe('loadBoard()', () => {
+		it('читає обидві таблиці — усіх і друзів', async () => {
+			follows.friendUids.mockResolvedValue(['uid-friend']);
+			board.topLeaders.mockResolvedValue([
+				{ uid: 'uid-anon', name: 'Лідер', handle: 'lider', score: 300 }
+			]);
+			board.leadersOf.mockResolvedValue([
+				{ uid: 'uid-friend', name: 'Друг', handle: 'druh', score: 120 }
+			]);
+
+			const account = new Account();
+			await account.loadBoard();
+
+			expect(account.leaders).toHaveLength(1);
+			expect(account.friendLeaders).toHaveLength(1);
+			// Друзі — ВЗАЄМНІ підписки, тож список береться саме з `friendUids()`.
+			expect(board.leadersOf).toHaveBeenCalledWith(['uid-friend']);
 		});
 	});
 });

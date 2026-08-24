@@ -12,6 +12,8 @@
 	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
 	import AuthForm from '$lib/components/auth/AuthForm.svelte';
+	import PrivacyPanel from '$lib/components/account/PrivacyPanel.svelte';
+	import LeaderBoard from '$lib/components/account/LeaderBoard.svelte';
 	import { AVATAR_KEY, formatAvatar, parseAvatar } from '$lib/config/avatars';
 	import { storage } from '$lib/services/storage';
 
@@ -82,7 +84,12 @@
 	onMount(() => {
 		const release = settings.claimHeader('account.title', () => goto(langPath(lang, '')));
 		void loadAccountText(settings.locale).then((loaded) => (dict = loaded));
-		void account.load().then(fillFromProfile);
+		void account.load().then(() => {
+			fillFromProfile();
+			// Таблиця читається ПІСЛЯ профілю й підписок: вкладка «друзі» будується з
+			// взаємних підписок, а без них вона показала б порожньо на повній базі.
+			void account.loadBoard();
+		});
 		return release;
 	});
 
@@ -181,6 +188,13 @@
 			case 'auth/wrong-password':
 			case 'auth/user-not-found':
 				return 'account.errorWrong';
+			/*
+			 * Відмова БАЗИ, а не автентифікації. Найчастіший випадок один: людина
+			 * закрила підписки на себе перемикачем приватності, і правило не дало
+			 * створити запис. Загальне «не вдалося» тут читалося б як поломка.
+			 */
+			case 'PERMISSION_DENIED':
+				return 'account.errorNotAllowed';
 			default:
 				return 'account.errorOther';
 		}
@@ -342,6 +356,38 @@
 			</ul>
 		</section>
 
+		<!--
+			ПРИВАТНІСТЬ. Кожен перемикач тримає правило бази — див. `net/privacy.ts`.
+
+			Стоїть ПЕРЕД пошуком і підписками навмисно: рішення «чи хочу я, щоб мене
+			знаходили» логічно передує самому пошуку, а не ховається за ним.
+		-->
+		<PrivacyPanel
+			privacy={account.privacy}
+			{text}
+			busy={account.busy}
+			onchange={(next) => void account.setPrivacy(next)}
+		/>
+
+		<!--
+			ПОМИЛКА ДІЙ ПРОФІЛЮ — один рядок на всю нижню частину сторінки.
+			Доти відмова базою (закриті підписки, зайнятий псевдонім у чужих руках)
+			не показувалася ніде: `errorKey` віддавався лише формі входу, а вона на
+			цьому екрані вже не показана.
+		-->
+		{#if errorKey}
+			<!--
+				`text-panel` обов'язковий: текст просто на тлі сторінки не проходить
+				гейт підкладки (`src/backdrop.test.ts`), і не з формальності — на
+				світлих темах фон сторінки й акцент дають пару нижче 4.5:1.
+			-->
+			<section class="account__panel text-panel">
+				<p class="account__error" role="alert" data-testid="account-action-error-text">
+					{@html formatFont(text(errorKey))}
+				</p>
+			</section>
+		{/if}
+
 		<!-- ПІДПИСКИ. Взаємні позначені: саме вони й є друзі. -->
 		<section class="account__panel text-panel">
 			<h2 class="account__title">{@html formatFont(text('account.followingTitle'))}</h2>
@@ -380,6 +426,14 @@
 				{/each}
 			</ul>
 		</section>
+
+		<!-- ТАБЛИЦЯ ЛІДЕРІВ: усі й друзі. Поріг і згоду тримає правило бази. -->
+		<LeaderBoard
+			leaders={account.leaders}
+			friends={account.friendLeaders}
+			{text}
+			me={account.uid}
+		/>
 	{/if}
 </div>
 

@@ -97,6 +97,93 @@ export const accountTab: BetaTab = {
 		},
 		{
 			id: 'account_8',
+			category: { uk: 'Приватність', en: 'Privacy' },
+			text: {
+				uk: 'Вимкніть «Показувати мене в пошуку» й пошукайте себе з другого пристрою за початком псевдоніма. Вас НЕ мусить бути видно — межу тримає правило бази, а не екран.',
+				en: 'Turn off “Show me in search” and look for yourself from the second device by the start of your handle. You must NOT be found — the boundary is held by the database rule, not the screen.'
+			},
+			negative: true,
+			coverage: 'manual',
+			// Локатор із `*`: три перемикачі малює один `{#each}`, тож у розмітці стоїть
+			// шаблон `account-privacy-{id}-btn`. Гейт чеклиста саме так і збирає
+			// динамічні локатори — підстановкою зірки (`betaChecks.test.ts`).
+			testid: 'account-privacy-*-btn'
+		},
+		{
+			id: 'account_9',
+			category: { uk: 'Приватність', en: 'Privacy' },
+			text: {
+				uk: 'Вимкніть «Дозволяти підписуватися на мене» й спробуйте підписатися з другого пристрою. Мусить бути відмова з підказкою, а не мовчазна кнопка.',
+				en: 'Turn off “Let others follow me” and try to follow from the second device. It must refuse with a hint, not sit there silently.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'account-privacy-*-btn'
+		},
+		{
+			id: 'account_10',
+			category: { uk: 'Таблиця лідерів', en: 'Leaderboard' },
+			text: {
+				uk: 'Наберіть щонайменше 50 очок і відкрийте акаунт: ваш рядок мусить зʼявитися в таблиці з тим самим імʼям, аватаром і прапором, що в профілі.',
+				en: 'Score at least 50 points and open the account: your row must appear on the board with the same name, avatar and flag as in the profile.'
+			},
+			coverage: 'manual',
+			testid: 'account-board-list'
+		},
+		{
+			id: 'account_11',
+			category: { uk: 'Таблиця лідерів', en: 'Leaderboard' },
+			text: {
+				uk: 'Вимкніть «Показувати мене в таблиці лідерів». Ваш рядок мусить зникнути й НЕ повернутися після наступної партії.',
+				en: 'Turn off “Show me on the leaderboard”. Your row must disappear and must NOT come back after the next game.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'account-privacy-*-btn'
+		},
+		{
+			id: 'account_12',
+			category: { uk: 'Таблиця лідерів', en: 'Leaderboard' },
+			text: {
+				uk: 'Маючи взаємну підписку, відкрийте вкладку «Друзі» в таблиці. Там мусять бути лише взаємні підписки — односторонньої там бути не мусить.',
+				en: 'With a mutual follow in place, open the “Friends” tab on the board. Only mutual follows may be there — a one-way follow must not.'
+			},
+			coverage: 'manual',
+			testid: 'account-board-friends-btn'
+		},
+		{
+			id: 'account_13',
+			category: { uk: 'Рахунок в акаунті', en: 'Score in the account' },
+			text: {
+				uk: 'Наберіть очок анонімно, потім зареєструйтеся. Рахунок у шапці мусить лишитися тим самим: анонімний доробок зливається з акаунтом.',
+				en: 'Score some points anonymously, then register. The score in the header must stay the same: the anonymous progress merges into the account.'
+			},
+			coverage: 'manual',
+			testid: 'auth-register-btn'
+		},
+		{
+			id: 'account_14',
+			category: { uk: 'Рахунок в акаунті', en: 'Score in the account' },
+			text: {
+				uk: 'Увійдіть тим самим акаунтом на другому пристрої. Рахунок і рекорди мусять приїхати; награне на першому — доїхати, поки другий відкритий.',
+				en: 'Sign in with the same account on the second device. The score and records must arrive; what you play on the first must reach the second while it is open.'
+			},
+			coverage: 'manual',
+			testid: 'auth-login-btn'
+		},
+		{
+			id: 'account_15',
+			category: { uk: 'Рахунок в акаунті', en: 'Score in the account' },
+			text: {
+				uk: 'Вийдіть з акаунта. Рахунок у шапці мусить стати нулем, а заповідник — початися заново: інакше рахунок можна було б переписати в новий акаунт.',
+				en: 'Sign out. The score in the header must drop to zero and the reserve must start over: otherwise a score could be copied into a new account.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'account-leave-btn'
+		},
+		{
+			id: 'account_16',
 			category: { uk: 'Вихід', en: 'Signing out' },
 			text: {
 				uk: 'Вийдіть з акаунта. Сайт мусить лишитися робочим — перелік кімнат читається, кімнату можна створити: вихід одразу вертає анонімний вхід.',

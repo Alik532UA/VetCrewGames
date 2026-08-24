@@ -86,4 +86,18 @@ export const account: Record<string, string> = {
 	'account.regionAntarctic': 'Antarctica',
 	'account.countrySearch': 'Search country',
 	'account.countryNotFound': 'Nothing found',
+	// Privacy switches and the leaderboard.
+	'account.privacyTitle': 'Privacy',
+	'account.privacyHint': 'These switches are held by the database itself: what is off here is hidden from everyone, not just on this screen.',
+	'account.privacy.search': 'Show me in search',
+	'account.privacy.follow': 'Let others follow me',
+	'account.privacy.board': 'Show me on the leaderboard',
+	'account.privacyOn': 'On',
+	'account.privacyOff': 'Off',
+	'account.boardTitle': 'Leaderboard',
+	'account.boardAll': 'Everyone',
+	'account.boardFriends': 'Friends',
+	'account.boardEmpty': 'Empty: the board starts at {score} points.',
+	'account.boardNoFriends': 'Friends will appear here — mutual follows that already have a score.',
+	'account.errorNotAllowed': 'Not allowed — this person may have closed follows.',
 };

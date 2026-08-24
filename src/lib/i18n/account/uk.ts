@@ -97,4 +97,24 @@ export const account: Record<string, string> = {
 	'account.regionAntarctic': 'Антарктика',
 	'account.countrySearch': 'Пошук країни',
 	'account.countryNotFound': 'Нічого не знайдено',
+	/*
+	 * ПРИВАТНІСТЬ І ТАБЛИЦЯ ЛІДЕРІВ.
+	 *
+	 * Перемикачі приватності описані словом «база» навмисно: вони справді тримаються
+	 * правилом бази, а не фільтром на екрані, і людині варто це знати — від цього
+	 * залежить, чи вірити перемикачу.
+	 */
+	'account.privacyTitle': 'Приватність',
+	'account.privacyHint': 'Ці перемикачі тримає сама база: вимкнене тут не видно нікому, а не лише на цьому екрані.',
+	'account.privacy.search': 'Показувати мене в пошуку',
+	'account.privacy.follow': 'Дозволяти підписуватися на мене',
+	'account.privacy.board': 'Показувати мене в таблиці лідерів',
+	'account.privacyOn': 'Увімкнено',
+	'account.privacyOff': 'Вимкнено',
+	'account.boardTitle': 'Таблиця лідерів',
+	'account.boardAll': 'Усі',
+	'account.boardFriends': 'Друзі',
+	'account.boardEmpty': 'Порожньо: у таблицю потрапляють від {score} очок.',
+	'account.boardNoFriends': 'Тут будуть друзі — взаємні підписки, у яких уже є рахунок.',
+	'account.errorNotAllowed': 'Не дозволено — можливо, ця людина закрила підписки на себе.',
 };

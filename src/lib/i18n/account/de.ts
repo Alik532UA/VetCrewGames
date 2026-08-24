@@ -86,4 +86,18 @@ export const account: Record<string, string> = {
 	'account.regionAntarctic': 'Antarktis',
 	'account.countrySearch': 'Land suchen',
 	'account.countryNotFound': 'Nichts gefunden',
+	// Datenschutz-Schalter und die Rangliste.
+	'account.privacyTitle': 'Privatsphäre',
+	'account.privacyHint': 'Diese Schalter hält die Datenbank selbst: Was hier aus ist, sieht niemand — nicht nur auf diesem Bildschirm.',
+	'account.privacy.search': 'Mich in der Suche zeigen',
+	'account.privacy.follow': 'Anderen erlauben, mir zu folgen',
+	'account.privacy.board': 'Mich in der Rangliste zeigen',
+	'account.privacyOn': 'Ein',
+	'account.privacyOff': 'Aus',
+	'account.boardTitle': 'Rangliste',
+	'account.boardAll': 'Alle',
+	'account.boardFriends': 'Freunde',
+	'account.boardEmpty': 'Leer: die Rangliste beginnt bei {score} Punkten.',
+	'account.boardNoFriends': 'Hier erscheinen Freunde — gegenseitige Abos, die schon einen Punktestand haben.',
+	'account.errorNotAllowed': 'Nicht erlaubt — diese Person hat Abos vielleicht geschlossen.',
 };

@@ -12,10 +12,12 @@ import {
 	type AccountState,
 	type Profile
 } from '$lib/net/account';
-import { follow, listFollowing, unfollow, type Friend } from '$lib/net/follows';
+import { follow, friendUids, listFollowing, unfollow, type Friend } from '$lib/net/follows';
+import { OPEN_PRIVACY, readPrivacy, savePrivacy, type Privacy } from '$lib/net/privacy';
+import { leadersOf, topLeaders, withdrawLeader, type Leader } from '$lib/net/leaders';
 import { connect } from '$lib/net/firebase';
 import { logService } from '$lib/services/logService.svelte';
-import { mergeOnSignIn, signedOut } from '$lib/services/playerSync';
+import { mergeOnSignIn, refreshProfile, signedOut } from '$lib/services/playerSync';
 
 /**
  * Стан акаунта на екрані: хто я, мій профіль, мої підписки, знахідки пошуку.
@@ -44,6 +46,18 @@ export class Account {
 	following = $state<Friend[]>([]);
 	/** Знахідки пошуку людей. */
 	found = $state<Profile[]>([]);
+	/**
+	 * Мої перемикачі приватності.
+	 *
+	 * Типово дозволено все, і це не оптимізм: вузла в базі немає, доки людина не
+	 * торкалася перемикачів, а правила питають `!= false`. Показати їх вимкненими
+	 * означало б збрехати про стан, якого ніхто не задавав.
+	 */
+	privacy = $state<Privacy>({ ...OPEN_PRIVACY });
+	/** Таблиця лідерів: найкращі взагалі. */
+	leaders = $state<Leader[]>([]);
+	/** Таблиця лідерів серед друзів — тобто взаємних підписок. */
+	friendLeaders = $state<Leader[]>([]);
 	/** Триває мережева дія: кнопки не приймають повторних натискань. */
 	busy = $state(false);
 	/** Код останньої невдачі для перекладу. Порожньо — усе гаразд. */
@@ -63,6 +77,7 @@ export class Account {
 			this.state = await accountState();
 			this.profile = await readProfile(uid);
 			this.following = await listFollowing();
+			this.privacy = await readPrivacy();
 		} catch (error) {
 			logService.warn('network', 'account not loaded', { reason: String(error) });
 		}
@@ -224,11 +239,52 @@ export class Account {
 		const done = await this.#act('profile', () =>
 			saveProfile(
 				{ name, handle, country: country || undefined, avatar: avatar || undefined },
-				previous
+				previous,
+				this.privacy.search
 			)
 		);
-		if (done) this.profile = await readProfile(this.uid);
+		if (done) {
+			this.profile = await readProfile(this.uid);
+			// Рядок у таблиці лідерів несе імʼя, аватар і країну — без цього виклику
+			// він показував би те, що було до збереження.
+			await refreshProfile();
+		}
 		return done;
+	}
+
+	/**
+	 * Перемикачі приватності.
+	 *
+	 * Кожен із трьох тримає ПРАВИЛО БАЗИ (`net/privacy.ts`), тож тут не фільтр, а
+	 * рівно дві дії: записати вибір і привести у відповідність те, що вже лежить
+	 * назовні — індекс пошуку (це робить `savePrivacy`) і рядок таблиці лідерів.
+	 *
+	 * Порядок на вимкненні важливий: спершу запис, потім прибирання рядка. У
+	 * зворотному порядку рядок міг би повернутися наступним же збереженням
+	 * рахунку, бо перемикач у базі ще дозволяв би показ.
+	 */
+	async setPrivacy(next: Privacy): Promise<boolean> {
+		const done = await this.#act('privacy', () =>
+			savePrivacy(next, this.profile?.handle ?? null)
+		);
+		if (!done) return false;
+
+		this.privacy = next;
+		if (next.board) await refreshProfile();
+		else await withdrawLeader();
+		return true;
+	}
+
+	/**
+	 * Прочитати обидві таблиці — глобальну й серед друзів.
+	 *
+	 * Друзі — це ВЗАЄМНІ підписки, і саме тому список береться з `friendUids()`, а
+	 * не з `following`: одностороння підписка не робить людину другом, і показувати
+	 * її рахунок серед друзів було б неправдою.
+	 */
+	async loadBoard(): Promise<void> {
+		this.leaders = await topLeaders();
+		this.friendLeaders = await leadersOf(await friendUids());
 	}
 
 	async search(prefix: string): Promise<void> {

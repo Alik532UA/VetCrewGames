@@ -209,7 +209,11 @@ export async function handleFree(handle: string): Promise<boolean> {
  * Якщо звільнити його першим, а новий зайняти не вдасться, людина лишиться без
  * псевдоніма зовсім — гірше, ніж із двома на мить.
  */
-export async function saveProfile(profile: Omit<Profile, 'uid'>, previous?: string): Promise<void> {
+export async function saveProfile(
+	profile: Omit<Profile, 'uid'>,
+	previous?: string,
+	searchable = true
+): Promise<void> {
 	const { uid, db } = await connect();
 	const { ref, remove, serverTimestamp, set } = await import('firebase/database');
 
@@ -229,14 +233,66 @@ export async function saveProfile(profile: Omit<Profile, 'uid'>, previous?: stri
 		at: serverTimestamp()
 	});
 
+	/*
+	 * ПОШУКОВИЙ ІНДЕКС — після профілю, і окремим записом.
+	 *
+	 * Він не частина профілю: людина, яка вимкнула пошук, лишається з профілем і
+	 * псевдонімом, просто її не знаходять. Тому невдача тут не валить збереження —
+	 * профіль уже записаний, а індекс наздожене наступним збереженням.
+	 *
+	 * Правило бази при цьому не дасть створити запис тому, хто пошук вимкнув, —
+	 * навіть якщо цей рядок колись покличуть із `searchable = true` помилково.
+	 */
+	if (searchable) await setSearchable(profile.handle, true);
+
 	if (previous && previous !== profile.handle) {
 		// Звільнення старого — прибирання, а не частина запису: невдача тут лишає
 		// зайнятий псевдонім, який більше нікого не називає. Це сміття, а не дефект.
 		try {
 			await remove(ref(db, `handles/${previous}`));
+			await remove(ref(db, `find/${previous}`));
 		} catch (error) {
 			logService.warn('network', 'old handle not released', { reason: String(error) });
 		}
+	}
+}
+
+/**
+ * Показувати цей псевдонім у пошуку — чи прибрати з індексу.
+ *
+ * ОДИН власник гілки `find`: і збереження профілю, і перемикач приватності
+ * ходять сюди. Два місця запису в один індекс розійшлися б тихо — саме так у
+ * сусідньому `Slovko` профіль називав псевдонім, якого в індексі не було.
+ *
+ * НЕ КИДАЄ. Увімкнути пошук може не дати правило (перемикач ще `false` у базі), а
+ * вимкнути — обрив мережі. Обидва випадки лишають індекс позаду стану, і
+ * наздоганяє його наступне збереження, а не виняток на екрані.
+ */
+export async function setSearchable(handle: string, on: boolean): Promise<void> {
+	try {
+		const { uid, db } = await connect();
+		const { ref, remove, set } = await import('firebase/database');
+		if (on) await set(ref(db, `find/${handle}`), uid);
+		else await remove(ref(db, `find/${handle}`));
+	} catch (error) {
+		logService.warn('network', 'search index not updated', { reason: String(error) });
+	}
+}
+
+/**
+ * СВІЙ профіль. `null` — його ще не створили або читання не вдалося.
+ *
+ * Окремо від `readProfile(uid)`, бо `uid` знає лише під'єднання: тягнути його
+ * через півдороги застосунку означало б передавати аргумент, який завжди той
+ * самий, і давати змогу передати чужий.
+ */
+export async function readMyProfile(): Promise<Profile | null> {
+	try {
+		const { uid } = await connect();
+		return await readProfile(uid);
+	} catch (error) {
+		logService.warn('network', 'own profile not read', { reason: String(error) });
+		return null;
 	}
 }
 
@@ -255,9 +311,14 @@ export const SEARCH_LIMIT = 20;
 /**
  * Пошук людей за початком псевдоніма.
  *
+ * ГІЛКА `find`, а не `handles`, і це не перейменування: реєстр унікальності
+ * містить усіх, а індекс пошуку — лише тих, хто на це згоден (перемикач
+ * `privacy/search`). Доти перелічити можна було саме реєстр, тобто вимкнений
+ * пошук нічого не приховував.
+ *
  * ОБМЕЖЕНИМ запитом, і межа тут — умова доступу, а не оптимізація: без неї один
- * запит вивантажив би всі псевдоніми разом із `uid`, тобто повний список
- * користувачів гри. Правило вимагає `orderByKey` і `limitToFirst <= 20`.
+ * запит вивантажив би весь індекс разом із `uid`, тобто перелік користувачів
+ * гри. Правило вимагає `orderByKey` і `limitToFirst <= 20`.
  *
  * `\uf8ff` — останній код ПРИВАТНОЇ області Unicode (BMP), і саме тому він тут
  * доречний: у псевдонімах дозволені лише `[a-z0-9_]`, тож жоден справжній ключ до
@@ -277,7 +338,7 @@ export async function searchHandles(prefix: string): Promise<Profile[]> {
 		);
 		const found = await get(
 			query(
-				ref(db, 'handles'),
+				ref(db, 'find'),
 				orderByKey(),
 				startAt(clean),
 				endAt(`${clean}\uf8ff`),
