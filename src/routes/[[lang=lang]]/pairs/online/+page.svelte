@@ -103,7 +103,17 @@
 	 * окремо. Чому саме перелік винесено першим і що з боргу лишилося —
 	 * у докблоці `controllers/lobbyFeed.svelte.ts`.
 	 */
-	const lobby = new LobbyFeed();
+	/**
+	 * Назва гри в базі — одним рядком на весь файл.
+	 *
+	 * Вона стоїть у чотирьох місцях: у складі кімнати, у перевірці при вході, у
+	 * записі переліку й тепер в АДРЕСІ гілки переліку. Розбіжність у будь-якому з
+	 * них означала б кімнату, яку видно не там, де в неї заходять.
+	 */
+	const GAME_ID_PAIRS = 'pairs';
+
+	// Перелік читається з гілки СВОЄЇ гри: кімнати вікторини тут не з'являються.
+	const lobby = new LobbyFeed(GAME_ID_PAIRS);
 	/** Зняти свою кімнату з переліку. `null`, якщо вона закрита або вже знята. */
 	let unlist: (() => void) | null = null;
 	let me = $state('');
@@ -266,7 +276,7 @@
 
 			if (action === 'create') {
 				code = await net.createRoom({
-					gameId: 'pairs',
+					gameId: GAME_ID_PAIRS,
 					rulesVersion: RULES_VERSION,
 					seed: Math.floor(Math.random() * 2 ** 31),
 					/*
@@ -379,7 +389,7 @@
 							hostName: who,
 							hostCountry: player.country,
 							hostAvatar: player.forRoom(),
-							gameId: 'pairs',
+							gameId: GAME_ID_PAIRS,
 							rulesVersion: RULES_VERSION,
 							players: 1
 						});
@@ -673,7 +683,7 @@
 	$effect(() => {
 		if (!browser || !unlist || !amHost || !match) return;
 		const players = match.members.filter((member) => member.role === 'player').length;
-		void import('$lib/net/lobby').then((list) => list.updatePlayers(code, players));
+		void import('$lib/net/lobby').then((list) => list.updatePlayers(GAME_ID_PAIRS, code, players));
 	});
 
 	/**

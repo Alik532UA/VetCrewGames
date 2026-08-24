@@ -43,11 +43,17 @@ const own = (over: Partial<OwnRoom> = {}): OwnRoom => ({
 	...over
 });
 
-const watchLobby = vi.fn<(watcher: LobbyWatcher) => Promise<() => void>>();
+const watchLobby = vi.fn<(gameId: string, watcher: LobbyWatcher) => Promise<() => void>>();
 const listOwnRooms = vi.fn<() => Promise<OwnRoom[]>>(async () => []);
 const friendUids = vi.fn<() => Promise<string[]>>(async () => []);
 
 vi.mock('$lib/net/lobby', () => ({ watchLobby }));
+
+/**
+ * Гра переліку. Тепер це АДРЕСА гілки (`lobby/{gameId}`), а не фільтр: кімнати
+ * чужої гри в підписку просто не приходять, а свої партії відсіюються за полем.
+ */
+const GAME = 'quiz';
 vi.mock('$lib/net/ownRooms', () => ({ listOwnRooms }));
 vi.mock('$lib/net/follows', () => ({ friendUids }));
 
@@ -64,7 +70,7 @@ describe('LobbyFeed', () => {
 	});
 
 	it('перевірка жива: спочатку порожньо й доступно', () => {
-		const feed = new LobbyFeed();
+		const feed = new LobbyFeed(GAME);
 		expect(feed.rooms).toEqual([]);
 		expect(feed.own).toEqual([]);
 		expect(feed.friends).toEqual([]);
@@ -76,12 +82,12 @@ describe('LobbyFeed', () => {
 	describe('watch()', () => {
 		it('приїхалі кімнати кладуться в список разом із позначкою обрізки', async () => {
 			let push: LobbyWatcher['onRooms'] = () => {};
-			watchLobby.mockImplementation(async (watcher) => {
+			watchLobby.mockImplementation(async (_gameId, watcher) => {
 				push = watcher.onRooms;
 				return () => {};
 			});
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const names: string[][] = [];
 			const stop = feed.watch((next) => names.push(next));
 			await settle();
@@ -102,13 +108,13 @@ describe('LobbyFeed', () => {
 		it('недоступний перелік не виглядає як «кімнат немає»', async () => {
 			let fail: LobbyWatcher['onUnavailable'] = () => {};
 			let push: LobbyWatcher['onRooms'] = () => {};
-			watchLobby.mockImplementation(async (watcher) => {
+			watchLobby.mockImplementation(async (_gameId, watcher) => {
 				push = watcher.onRooms;
 				fail = watcher.onUnavailable;
 				return () => {};
 			});
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const stop = feed.watch(() => {});
 			await settle();
 
@@ -124,13 +130,13 @@ describe('LobbyFeed', () => {
 		it('кімнати після невдачі знімають позначку недоступності', async () => {
 			let fail: LobbyWatcher['onUnavailable'] = () => {};
 			let push: LobbyWatcher['onRooms'] = () => {};
-			watchLobby.mockImplementation(async (watcher) => {
+			watchLobby.mockImplementation(async (_gameId, watcher) => {
 				push = watcher.onRooms;
 				fail = watcher.onUnavailable;
 				return () => {};
 			});
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const stop = feed.watch(() => {});
 			await settle();
 
@@ -145,7 +151,7 @@ describe('LobbyFeed', () => {
 		it('підписка, що не встановилася, дає «недоступно», а не падіння', async () => {
 			watchLobby.mockRejectedValue(new Error('offline'));
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const stop = feed.watch(() => {});
 			await settle();
 
@@ -157,7 +163,7 @@ describe('LobbyFeed', () => {
 			const off = vi.fn();
 			watchLobby.mockResolvedValue(off);
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const stop = feed.watch(() => {});
 			await settle();
 
@@ -179,7 +185,7 @@ describe('LobbyFeed', () => {
 					})
 			);
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const stop = feed.watch(() => {});
 			// Імпорт доїхав, `watchLobby` уже кликнули — але вхід ще йде.
 			await settle();
@@ -198,7 +204,7 @@ describe('LobbyFeed', () => {
 			listOwnRooms.mockResolvedValue([own(), own({ code: 'DDDD', amHost: false })]);
 			friendUids.mockResolvedValue(['uid-a', 'uid-b']);
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			feed.load();
 			await settle();
 
@@ -210,7 +216,7 @@ describe('LobbyFeed', () => {
 		it('без акаунта список друзів просто порожній', async () => {
 			friendUids.mockResolvedValue([]);
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			feed.load();
 			await settle();
 
@@ -228,7 +234,7 @@ describe('LobbyFeed', () => {
 			);
 			friendUids.mockResolvedValue(['uid-a']);
 
-			const feed = new LobbyFeed();
+			const feed = new LobbyFeed(GAME);
 			const stop = feed.load();
 			// Запит уже поїхав; сторінка вмирає, поки відповідь у дорозі.
 			await settle();

@@ -71,7 +71,8 @@
 	let joinCode = $state('');
 	let isPrivate = $state(false);
 	/** Перелік кімнат і свої партії — спільний контролер, див. `lobbyFeed`. */
-	const lobby = new LobbyFeed();
+	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
+	const lobby = new LobbyFeed('quiz');
 	let unlist: (() => void) | null = null;
 	let releaseHold: (() => void) | null = null;
 	let me = $state('');

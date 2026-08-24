@@ -25,6 +25,20 @@ import { logService } from '$lib/services/logService.svelte';
  * тобто про гру.
  */
 export class LobbyFeed {
+	/**
+	 * ЧИЯ ЦЕ ГРА — і це не фільтр, а адреса.
+	 *
+	 * Перелік читається з `lobby/{gameId}`, тобто чужі кімнати сюди просто не
+	 * приходять. `myRooms` натомість спільний на всі ігри (це приватний індекс
+	 * своїх партій), тож там гра справді відсіюється — але вже без ціни: індекс
+	 * малий за побудовою й читається одним запитом без вікна.
+	 */
+	readonly #gameId: string;
+
+	constructor(gameId: string) {
+		this.#gameId = gameId;
+	}
+
 	/** Відкриті кімнати. Порожньо і поки не підписалися, і коли їх немає. */
 	rooms = $state<LobbyRoom[]>([]);
 
@@ -86,7 +100,7 @@ export class LobbyFeed {
 		void (async () => {
 			try {
 				const list = await import('$lib/net/lobby');
-				const off = await list.watchLobby({
+				const off = await list.watchLobby(this.#gameId, {
 					onRooms: (next, more) => {
 						this.rooms = next;
 						this.hasMore = more;
@@ -137,7 +151,9 @@ export class LobbyFeed {
 			 */
 			const [rooms, friends] = await Promise.all([own.listOwnRooms(), friendUids()]);
 			if (dead) return;
-			this.own = rooms;
+			// Свої партії — з індексу, спільного для всіх ігор: тут гра відсіюється,
+			// бо «вернутися» можна лише в кімнату цієї гри, а не в будь-яку свою.
+			this.own = rooms.filter((room) => room.gameId === this.#gameId);
 			this.friends = friends;
 		})();
 

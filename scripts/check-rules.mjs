@@ -701,7 +701,7 @@ const CASES = [
 		// стоїть як `request.query.limit <= 50`.
 		name: 'перелік кімнат читається обмеженим запитом',
 		allowed: true,
-		run: () => readQuery('lobby', 'orderBy=%22at%22&limitToLast=21', guest.token)
+		run: () => readQuery('lobby/pairs', 'orderBy=%22at%22&limitToLast=21', guest.token)
 	},
 	{
 		/*
@@ -721,20 +721,33 @@ const CASES = [
 		 */
 		name: 'господар знімає ЩЕ НЕІСНУЮЧИЙ запис (як onDisconnect при реєстрації)',
 		allowed: true,
-		run: () => write(`lobby/${CODE}`, null, host.token)
+		run: () => write(`lobby/pairs/${CODE}`, null, host.token)
 	},
 	{
 		name: 'господар публікує СВОЮ кімнату в переліку',
 		allowed: true,
-		run: () => write(`lobby/${CODE}`, lobbyEntry(host.uid), host.token)
+		run: () => write(`lobby/pairs/${CODE}`, lobbyEntry(host.uid), host.token)
 	},
 
+	{
+		/*
+		 * ГІЛКА ГРИ АВТОРИТЕТНА, і це весь сенс розділення переліків.
+		 *
+		 * Без цієї умови кімнату «Знайди пару» можна було б оголосити в гілці
+		 * вікторини — і вона стояла б там у списку, хоч зайти в неї дошкою
+		 * вікторини нічим. Тобто розділення трималося б лише на тому, що клієнт
+		 * пише правильний шлях.
+		 */
+		name: 'кімнату не оголосити в переліку ЧУЖОЇ гри',
+		allowed: false,
+		run: () => write(`lobby/quiz/${CODE}`, lobbyEntry(host.uid), host.token)
+	},
 	{
 		// Кількість гравців веде господар: він єдиний, хто бачить склад і має
 		// право писати сюди.
 		name: 'господар оновлює кількість гравців у переліку',
 		allowed: true,
-		run: () => write(`lobby/${CODE}/players`, 2, host.token)
+		run: () => write(`lobby/pairs/${CODE}/players`, 2, host.token)
 	},
 	{
 		// Аватар господаря в переліку. Дозвіл доводить, що поле НАЗВАНЕ: без
@@ -742,13 +755,13 @@ const CASES = [
 		name: 'аватар господаря в переліку кімнат',
 		allowed: true,
 		run: () =>
-			write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'star:teal' }, host.token)
+			write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'star:teal' }, host.token)
 	},
 	{
 		name: 'аватар господаря без двокрапки',
 		allowed: false,
 		run: () =>
-			write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
+			write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
 	},
 
 	// --- сторонній не мусить цього могти ---
@@ -939,54 +952,54 @@ const CASES = [
 		// клієнті, тобто була ввічливим проханням.
 		name: 'перелік кімнат читають БЕЗ обмеження',
 		allowed: false,
-		run: () => read('lobby', guest.token)
+		run: () => read('lobby/pairs', guest.token)
 	},
 	{
 		name: 'перелік кімнат читають із ЗАВЕЛИКОЮ межею',
 		allowed: false,
-		run: () => readQuery('lobby', 'orderBy=%22at%22&limitToLast=500', guest.token)
+		run: () => readQuery('lobby/pairs', 'orderBy=%22at%22&limitToLast=500', guest.token)
 	},
 	{
 		// Межа названа разом із порядком: без `orderBy` індекс не діє, і база
 		// однаково віддала б гілку цілком.
 		name: 'перелік кімнат читають з межею, але без orderBy',
 		allowed: false,
-		run: () => readQuery('lobby', 'limitToLast=10', guest.token)
+		run: () => readQuery('lobby/pairs', 'limitToLast=10', guest.token)
 	},
 	{
 		// Головне обмеження цієї гілки: публічною кімнату робить ЇЇ господар, а не
 		// хтось інший. Без цього будь-хто відкривав би чужий код усьому світові.
 		name: 'ЧУЖУ кімнату оголошують публічною',
 		allowed: false,
-		run: () => write(`lobby/${CODE}`, lobbyEntry(guest.uid), guest.token)
+		run: () => write(`lobby/pairs/${CODE}`, lobbyEntry(guest.uid), guest.token)
 	},
 	{
 		// Запис, що не відповідає жодній кімнаті, — це привид у списку.
 		name: 'публікація кімнати, якої НЕМАЄ',
 		allowed: false,
-		run: () => write('lobby/ZZZZZ', lobbyEntry(guest.uid), guest.token)
+		run: () => write('lobby/pairs/ZZZZZ', lobbyEntry(guest.uid), guest.token)
 	},
 	{
 		name: 'чужий запис у переліку прибирають',
 		allowed: false,
-		run: () => write(`lobby/${CODE}`, null, guest.token)
+		run: () => write(`lobby/pairs/${CODE}`, null, guest.token)
 	},
 	{
 		// `seed` і `config` визначають роздачу: побачити їх, не заходячи в кімнату,
 		// означало б бачити дошку суперника до першого ходу.
 		name: 'у перелік кладуть зерно роздачі',
 		allowed: false,
-		run: () => write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), seed: 12345 }, host.token)
+		run: () => write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), seed: 12345 }, host.token)
 	},
 	{
 		name: 'запис у переліку з клієнтським часом',
 		allowed: false,
-		run: () => write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), at: 1000 }, host.token)
+		run: () => write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), at: 1000 }, host.token)
 	},
 	{
 		name: 'запис у переліку без обовʼязкових полів',
 		allowed: false,
-		run: () => write(`lobby/${CODE}`, { hostUid: host.uid }, host.token)
+		run: () => write(`lobby/pairs/${CODE}`, { hostUid: host.uid }, host.token)
 	},
 	{
 		// Якби пускало будь-який штамп, зонд завжди казав би «викладено» — тобто

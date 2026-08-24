@@ -2,7 +2,18 @@ import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
- * ПЕРЕЛІК ПУБЛІЧНИХ КІМНАТ — `lobby/{code}`.
+ * ПЕРЕЛІК ПУБЛІЧНИХ КІМНАТ — `lobby/{gameId}/{code}`.
+ *
+ * ## Гілка на кожну гру, а не фільтр на клієнті
+ *
+ * Доти все лежало в одній гілці, і обидві сторінки показували все: у «Знайди
+ * пару» видно було кімнати вікторини й навпаки. Фільтр на клієнті цього НЕ
+ * лікує — запит обмежений `limitToLast`, тож найновіші двадцять пʼять записів
+ * набираються з обох ігор разом, і серія кімнат однієї виштовхує іншу за межу
+ * вікна: список читався б як порожній, хоч кімнати є.
+ *
+ * Тому гра — рівень шляху, і ключ гілки авторитетний: правило вимагає, щоб поле
+ * `gameId` дорівнювало ключу.
  *
  * ## Задача, і чому вона довго не мала розв'язку
  *
@@ -81,7 +92,8 @@ export interface LobbyRoom {
 export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => void> {
 	const { db } = await connect();
 	const { onDisconnect, ref, remove, serverTimestamp, set } = await import('firebase/database');
-	const node = ref(db, `lobby/${entry.code}`);
+	// Гра — рівень шляху, і правило звіряє її з полем `gameId` у самому записі.
+	const node = ref(db, `lobby/${entry.gameId}/${entry.code}`);
 
 	await onDisconnect(node).remove();
 	await set(node, {
@@ -116,22 +128,22 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
  * місць уже немає, і стане глядачем. Кинути звідси означало б зламати лобі
  * господаря через несправність довідки.
  */
-export async function updatePlayers(code: string, players: number): Promise<void> {
+export async function updatePlayers(gameId: string, code: string, players: number): Promise<void> {
 	try {
 		const { db } = await connect();
 		const { ref, set } = await import('firebase/database');
-		await set(ref(db, `lobby/${code}/players`), players);
+		await set(ref(db, `lobby/${gameId}/${code}/players`), players);
 	} catch (error) {
 		logService.warn('network', 'lobby player count not updated', { code, reason: reasonOf(error) });
 	}
 }
 
 /** Зняти кімнату з переліку. Так само не кидає — і з тієї самої причини. */
-export async function unpublishRoom(code: string): Promise<void> {
+export async function unpublishRoom(gameId: string, code: string): Promise<void> {
 	try {
 		const { db } = await connect();
 		const { ref, remove } = await import('firebase/database');
-		await remove(ref(db, `lobby/${code}`));
+		await remove(ref(db, `lobby/${gameId}/${code}`));
 	} catch (error) {
 		logService.warn('network', 'lobby entry not removed', { code, reason: reasonOf(error) });
 	}
@@ -207,7 +219,7 @@ export interface LobbyWatcher {
 	onUnavailable: (reason: string) => void;
 }
 
-export async function watchLobby(watcher: LobbyWatcher): Promise<() => void> {
+export async function watchLobby(gameId: string, watcher: LobbyWatcher): Promise<() => void> {
 	const { db } = await connect();
 	const { limitToLast, off, onValue, orderByChild, query, ref } = await import(
 		'firebase/database'
@@ -219,7 +231,7 @@ export async function watchLobby(watcher: LobbyWatcher): Promise<() => void> {
 	 * не оптимізація, а умова доступу. Побічно зникла й потреба сортувати весь
 	 * список: база віддає рівно найновіші.
 	 */
-	const branch = query(ref(db, 'lobby'), orderByChild('at'), limitToLast(LOBBY_FETCH));
+	const branch = query(ref(db, `lobby/${gameId}`), orderByChild('at'), limitToLast(LOBBY_FETCH));
 
 	const handler = onValue(
 		branch,
