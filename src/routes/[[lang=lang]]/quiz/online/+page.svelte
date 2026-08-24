@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, pushState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
@@ -88,11 +88,31 @@
 
 	const roomFromUrl = () => (browser ? (page.url.searchParams.get('room') ?? '') : '');
 
-	function rememberInUrl(value: string) {
+	/**
+	 * Записати код у адресу — КРОКОМ в історії, і саме через `goto`.
+	 *
+	 * Тут був `pushState`, і він ламав режим ЦІЛКОМ. Причина в його контракті:
+	 * поверхнева маршрутизація змінює `history` і `page.state`, але `page.url`
+	 * НЕ ПРИСВОЮЄ ніколи — навпаки, зберігає стару адресу в записі історії, щоб
+	 * `page.url` лишався узгоджений із завантаженим маршрутом і його даними.
+	 *
+	 * А ефект нижче читає рівно `page.url`. Тобто щойно кімната з'являлася, ефект
+	 * бачив «в адресі кімнати немає» й одразу викидав із неї. Заміряно в браузері:
+	 * `код 99`, `location.search` = `?room=99`, а `page.url` порожній — і виходило
+	 * так, що зайти в кімнату було неможливо ні у вікторині, ні в «Знайди пару».
+	 *
+	 * `goto` — справжня навігація: вона і додає крок в історію (тобто «назад»
+	 * веде на форму входу, як і задумано), і оновлює `page.url`. Тому джерело
+	 * правди стало правдою, а не збігом.
+	 *
+	 * `await` обов'язковий: без нього все, що читає адресу далі, побачило б її в
+	 * попередньому стані — той самий клас помилки, тільки на такт коротший.
+	 */
+	async function rememberInUrl(value: string) {
 		if (!browser) return;
 		const url = new URL(page.url);
 		url.searchParams.set('room', value);
-		pushState(url, {});
+		await goto(url, { noScroll: true, keepFocus: true });
 	}
 
 	/** Вийти з кімнати на форму входу. Кімнату не закриває. */
@@ -159,7 +179,7 @@
 				code = wanted;
 				await net.joinRoom(code, who, undefined, player.country);
 			}
-			rememberInUrl(code);
+			await rememberInUrl(code);
 
 			const transport = await net.roomTransport(code);
 			const connection = await import('$lib/net/firebase').then((m) => m.connect());
