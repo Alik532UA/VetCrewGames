@@ -1,6 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { getNextQuestion, type GameQuestion } from '$lib/config/myth-game';
-import { settings } from '$lib/services/settings.svelte';
+import { playerData } from '$lib/services/playerData.svelte';
+import { GAME_ID } from '$lib/config/menu-games';
 import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import { storage } from '$lib/services/storage';
 import type { RoundOutcome } from '$lib/types/game';
@@ -113,7 +114,7 @@ export class MythGameController {
 			// де відповідей три (config/scoring.ts).
 			const points = roundPoints(1, 1);
 			this.sessionScore += points;
-			settings.addScore(points);
+			playerData.addScore(points);
 		}
 	}
 
@@ -138,10 +139,24 @@ export class MythGameController {
 		this.#next();
 	}
 
+
+	/**
+	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
+	 *
+	 * Перевірка `gameOver` на вході не про обережність: партія закінчується з
+	 * кількох місць (раунди скінчилися, набори скінчилися), і кожне з них раніше
+	 * просто ставило прапорець. Рекорд, записаний двічі, зіпсував би `plays` —
+	 * тобто число партій, яких не було.
+	 */
+	#finish(): void {
+		if (this.gameOver) return;
+		this.gameOver = true;
+		playerData.finishGame(GAME_ID.mythbusters, this.sessionScore);
+	}
 	#next(): void {
 		if (this.roundNumber > this.totalRounds) {
 			this.current = null;
-			this.gameOver = true;
+			this.#finish();
 			return;
 		}
 

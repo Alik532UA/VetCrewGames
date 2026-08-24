@@ -11,12 +11,42 @@ import { myths } from '$lib/config/myth-game';
  */
 const storageMock = {
 	getJSON: vi.fn<(key: string) => unknown>(() => null),
-	setJSON: vi.fn<(key: string, value: unknown) => boolean>(() => true)
+	setJSON: vi.fn<(key: string, value: unknown) => boolean>(() => true),
+	/*
+	 * `get`/`set`/`remove` цей контролер не кличе — їх кличе `playerData`, який
+	 * тепер стоїть у його графі (рекорд гри пишеться в кінці партії). Порожній мок
+	 * замість них означав би `storage.get is not a function` ще на імпорті, тобто
+	 * сюїта не збиралася б.
+	 */
+	get: vi.fn<(key: string) => string | null>(() => null),
+	set: vi.fn<(key: string, value: string) => boolean>(() => true),
+	remove: vi.fn<(key: string) => void>()
 };
-const settingsMock = { addScore: vi.fn() };
+/*
+ * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
+ * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
+ * тут нічого — важливо, що контролер кличе `addScore` і `finishGame` рівно
+ * тоді, коли треба.
+ */
+const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
 
-vi.mock('$lib/services/storage', () => ({ storage: storageMock }));
-vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
+/*
+ * ЧАСТКОВИЙ мок, а не повна заміна модуля.
+ *
+ * Доти тут стояло `() => ({ storage: storageMock })`, тобто модуль сховища
+ * підмінявся ЦІЛКОМ — разом із `sessionStore`, якого мок не називав. Поки
+ * контролер тягнув лише `storage`, це працювало; щойно в його графі з'явився
+ * `logService` (він читає журнал зі `sessionStore`), сюїта перестала навіть
+ * збиратися. Помилка при цьому вказувала на `logService`, а не на цей рядок.
+ *
+ * `importOriginal` лишає модулю всі інші експорти — тобто наступний імпорт у
+ * графі не ламає цей тест.
+ */
+vi.mock('$lib/services/storage', async (importOriginal) => ({
+	...(await importOriginal<typeof import('$lib/services/storage')>()),
+	storage: storageMock
+}));
+vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
 const { MythGameController } = await import('./mythGame.svelte');
 
@@ -24,7 +54,8 @@ describe('MythGameController', () => {
 	beforeEach(() => {
 		storageMock.getJSON.mockReset().mockReturnValue(null);
 		storageMock.setJSON.mockReset().mockReturnValue(true);
-		settingsMock.addScore.mockReset();
+		playerMock.addScore.mockReset();
+		playerMock.finishGame.mockReset();
 	});
 
 	it('start() дає перше питання й запамʼятовує його як показане', () => {
@@ -44,14 +75,14 @@ describe('MythGameController', () => {
 		game.answer(game.current!.isTrue);
 
 		expect(game.sessionScore).toBe(BINARY_POINTS);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(BINARY_POINTS);
+		expect(playerMock.addScore).toHaveBeenCalledWith(BINARY_POINTS);
 		expect(game.roundResults).toEqual(['correct']);
 
 		game.nextRound();
 		game.answer(!game.current!.isTrue);
 
 		expect(game.sessionScore, 'помилка не має додавати очок').toBe(BINARY_POINTS);
-		expect(settingsMock.addScore).toHaveBeenCalledTimes(1);
+		expect(playerMock.addScore).toHaveBeenCalledTimes(1);
 		expect(game.roundResults).toEqual(['correct', 'incorrect']);
 	});
 

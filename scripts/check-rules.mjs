@@ -425,6 +425,75 @@ const CASES = [
 		allowed: true,
 		run: () => write(`users/${guest.uid}/following/${host.uid}`, null, host.token)
 	},
+	/*
+	 * ДАНІ ГРИ: рахунок і рекорди. Половина випадків тут — про те, що вони
+	 * ПРИВАТНІ, і це не формальність: рахунок — єдине, що людина набирала сама, і
+	 * публічною його робить лише власне рішення (гілка `leaders`, коли буде).
+	 */
+	{
+		name: 'власник пише свій рахунок і рекорд гри',
+		allowed: true,
+		run: () =>
+			write(
+				`users/${guest.uid}/play`,
+				{ score: 42, games: { population: { best: 12, plays: 3 } }, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'власник читає свої дані гри',
+		allowed: true,
+		run: () => read(`users/${guest.uid}/play`, guest.token)
+	},
+	{
+		// Нова гра не вимагає правки правил: ключ перевіряється взірцем. Саме тому
+		// тут окремий випадок — щоб взірець не звузили до переліку непомітно.
+		name: 'рекорд гри, якої ще не було в правилах',
+		allowed: true,
+		run: () =>
+			write(
+				`users/${guest.uid}/play/games/new-game-2027`,
+				{ best: 1, plays: 1 },
+				guest.token
+			)
+	},
+	{
+		name: 'чужий рахунок читає інший гравець',
+		allowed: false,
+		run: () => read(`users/${guest.uid}/play`, host.token)
+	},
+	{
+		name: 'чужий рахунок переписує інший гравець',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/score`, 999999, host.token)
+	},
+	{
+		name: 'рахунок рядком, а не числом',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/score`, 'багато', guest.token)
+	},
+	{
+		name: 'від’ємний рахунок',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/score`, -1, guest.token)
+	},
+	{
+		name: 'у даних гри поле, якого схема не знає',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/cheat`, true, guest.token)
+	},
+	{
+		name: 'у рекорді гри поле, якого схема не знає',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/games/population/rank`, 1, guest.token)
+	},
+	{
+		// Ключ гри — малі латинські, цифри й дефіс. Кирилиця й крапка тут означали б
+		// вузол, якого код не назве ніколи, тобто сміття, що не прибирається.
+		name: 'ключ гри не за взірцем',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/games/Гра.1`, { best: 1, plays: 1 }, guest.token)
+	},
 	{
 		name: 'перелічити всіх користувачів',
 		allowed: false,

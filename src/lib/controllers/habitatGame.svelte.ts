@@ -5,7 +5,8 @@ import {
 	type HabitatMode,
 	type HabitatRound
 } from '$lib/config/habitat-game';
-import { settings } from '$lib/services/settings.svelte';
+import { playerData } from '$lib/services/playerData.svelte';
+import { GAME_ID } from '$lib/config/menu-games';
 import { maxRoundPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
@@ -138,7 +139,7 @@ export class HabitatGameController {
 
 		if (points > 0) {
 			this.sessionScore += points;
-			settings.addScore(points);
+			playerData.addScore(points);
 		}
 	}
 
@@ -167,13 +168,28 @@ export class HabitatGameController {
 		this.#used = [];
 	}
 
+
+	/**
+	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
+	 *
+	 * Перевірка `gameOver` на вході не про обережність: партія закінчується з
+	 * кількох місць (раунди скінчилися, набори скінчилися), і кожне з них раніше
+	 * просто ставило прапорець. Рекорд, записаний двічі, зіпсував би `plays` —
+	 * тобто число партій, яких не було.
+	 */
+	#finish(): void {
+		if (this.gameOver) return;
+		this.gameOver = true;
+		playerData.finishGame(GAME_ID.habitat, this.sessionScore);
+	}
 	#next(): void {
 		this.selected = [];
 		this.checked = false;
 
 		if (!this.mode || this.roundNumber > this.totalRounds) {
 			this.round = null;
-			this.gameOver = this.mode !== null;
+			if (this.mode) this.#finish();
+			else this.gameOver = false;
 			return;
 		}
 
@@ -182,7 +198,7 @@ export class HabitatGameController {
 			// Записи скінчилися раніше за раунди — партія завершується, а не
 			// повторює те саме питання.
 			this.round = null;
-			this.gameOver = true;
+			this.#finish();
 			return;
 		}
 

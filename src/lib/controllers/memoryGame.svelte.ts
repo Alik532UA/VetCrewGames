@@ -1,5 +1,6 @@
 import { buildDeck, MEMORY_PAIRS, type MemoryCard } from '$lib/config/memory-game';
-import { settings } from '$lib/services/settings.svelte';
+import { playerData } from '$lib/services/playerData.svelte';
+import { GAME_ID } from '$lib/config/menu-games';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 /**
@@ -211,8 +212,22 @@ export class MemoryGameController {
 
 		// У загальний рахунок сайту йдуть лише пари гравця за цим пристроєм:
 		// чужі очки — не його досягнення.
-		if (player.local) settings.addScore(1);
+		if (player.local) playerData.addScore(1);
 
-		if (this.takenPairs === this.pairs) this.gameOver = true;
+		if (this.takenPairs === this.pairs) this.#finish();
+	}
+
+	/**
+	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
+	 *
+	 * Рекордом тут вважаються ПАРИ ГРАВЦЯ ЗА ЦИМ ПРИСТРОЄМ (`localScore`), а не
+	 * всі зібрані пари: у гру за одним пристроєм грають удвох, і зарахувати собі
+	 * чужі пари означало б рекорд, якого людина не робила. Та сама межа, що на
+	 * рядок вище — у наскрізний рахунок ідуть лише свої очки.
+	 */
+	#finish(): void {
+		if (this.gameOver) return;
+		this.gameOver = true;
+		playerData.finishGame(GAME_ID.memory, this.localScore);
 	}
 }

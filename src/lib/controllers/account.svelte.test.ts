@@ -73,9 +73,29 @@ const follows = {
 	listFollowing: vi.fn<() => Promise<Friend[]>>(async () => [])
 };
 
+/**
+ * ДАНІ ГРАВЦЯ й ЗАПОВІДНИК — теж на межі модуля, і теж не заради швидкості.
+ *
+ * `playerSync` тягне за собою `playerData` → `settings`, а конструктор
+ * налаштувань читає системну тему через `matchMedia`, якого в jsdom немає. Тобто
+ * без цього мока сюїта не збиралася б узагалі — і повідомлення вказувало б на
+ * тему, а не на акаунт.
+ *
+ * Заповідник контролер вантажить динамічно вже в самому виході (`leave()`), тож
+ * мок тут ще й доводить, що виклик справді робиться: недограна партія мусить
+ * зникати разом з акаунтом.
+ */
+const play = {
+	mergeOnSignIn: vi.fn<() => Promise<void>>(async () => {}),
+	signedOut: vi.fn<() => void>()
+};
+const reserve = { reset: vi.fn<() => void>() };
+
 vi.mock('$lib/net/firebase', () => ({ connect }));
 vi.mock('$lib/net/account', () => net);
 vi.mock('$lib/net/follows', () => follows);
+vi.mock('$lib/services/playerSync', () => play);
+vi.mock('$lib/controllers/reserve.svelte', () => ({ reserve }));
 
 const { Account } = await import('./account.svelte');
 
@@ -93,6 +113,9 @@ describe('Account', () => {
 		net.signInEmail.mockReset().mockResolvedValue(undefined);
 		net.signInGoogle.mockReset().mockResolvedValue(undefined);
 		net.signOut.mockReset().mockResolvedValue(undefined);
+		play.mergeOnSignIn.mockReset();
+		play.signedOut.mockReset();
+		reserve.reset.mockReset();
 		follows.follow.mockReset().mockResolvedValue(undefined);
 		follows.unfollow.mockReset().mockResolvedValue(undefined);
 		follows.listFollowing.mockReset().mockResolvedValue([]);
@@ -226,6 +249,39 @@ describe('Account', () => {
 
 			expect(account.state).toBe('anonymous');
 			expect(net.accountState).not.toHaveBeenCalled();
+		});
+	});
+
+	/**
+	 * АНОНІМНИЙ ДОРОБОК ЗЛИВАЄТЬСЯ З АКАУНТОМ — усіма трьома входами.
+	 *
+	 * Це те, чого не було: рахунок жив у браузері, і «увійти» означало «і далі
+	 * тримати його в браузері». Три шляхи входу — реєстрація, пошта, Google — і
+	 * пропущений виклик у будь-якому з них виглядав би не як помилка, а як
+	 * зникнення набраного (сусідній `Slovko` цим уже хворів).
+	 *
+	 * Невдалий вхід не зливає нічого: зливати з чим — акаунта немає.
+	 */
+	describe('злиття даних гравця', () => {
+		it.each([
+			['register', (a: InstanceType<typeof Account>) => a.register('a@b.co', 'password')],
+			['signIn', (a: InstanceType<typeof Account>) => a.signIn('a@b.co', 'password')],
+			['google', (a: InstanceType<typeof Account>) => a.google()]
+		])('%s зливає анонімне з акаунтом', async (_name, run) => {
+			const account = new Account();
+
+			await expect(run(account)).resolves.toBe(true);
+
+			expect(play.mergeOnSignIn).toHaveBeenCalledTimes(1);
+		});
+
+		it('невдалий вхід не зливає нічого', async () => {
+			net.signInEmail.mockRejectedValueOnce(fbError('auth/invalid-credential'));
+
+			const account = new Account();
+			await account.signIn('a@b.co', 'wrong');
+
+			expect(play.mergeOnSignIn).not.toHaveBeenCalled();
 		});
 	});
 
@@ -369,6 +425,36 @@ describe('Account', () => {
 			expect(account.following).toEqual([]);
 			expect(account.found).toEqual([]);
 			expect(account.uid).toBe('uid-anon-2');
+		});
+
+		/**
+		 * ВИХІД СТИРАЄ МІСЦЕВЕ — і це не косметика, а межа між акаунтами.
+		 *
+		 * Рахунок і рекорди зливаються з акаунтом при вході. Якби вихід лишав їх у
+		 * браузері, вони влилися б у НАСТУПНИЙ акаунт, у який тут увійдуть, — тобто
+		 * рахунок можна було б переписати з чужого. У сусідньому `MindStep` це
+		 * рівно так і працює досі: метод очищення там написаний і не покликаний.
+		 */
+		it('успіх стирає рахунок, рекорди й недограну партію', async () => {
+			const account = new Account();
+			await account.load();
+
+			await expect(account.leave()).resolves.toBe(true);
+
+			expect(play.signedOut).toHaveBeenCalledTimes(1);
+			expect(reserve.reset, 'фонд заповідника лишився б наступному власнику браузера')
+				.toHaveBeenCalledTimes(1);
+		});
+
+		it('невдалий вихід не стирає нічого', async () => {
+			const account = new Account();
+			await account.load();
+
+			net.signOut.mockRejectedValueOnce(fbError('auth/network-request-failed'));
+			await expect(account.leave()).resolves.toBe(false);
+
+			expect(play.signedOut).not.toHaveBeenCalled();
+			expect(reserve.reset).not.toHaveBeenCalled();
 		});
 
 		it('невдалий вихід лишає все як було', async () => {

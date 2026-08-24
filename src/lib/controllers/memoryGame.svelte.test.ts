@@ -7,8 +7,14 @@ import {
 	layoutForViewport
 } from '$lib/config/memory-game';
 
-const settingsMock = { addScore: vi.fn() };
-vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
+/*
+ * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
+ * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
+ * тут нічого — важливо, що контролер кличе `addScore` і `finishGame` рівно
+ * тоді, коли треба.
+ */
+const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
+vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
 const { MemoryGameController } = await import('./memoryGame.svelte');
 
@@ -102,7 +108,10 @@ describe('колода «Знайди пару»', () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('MemoryGameController', () => {
-	beforeEach(() => settingsMock.addScore.mockReset());
+	beforeEach(() => {
+		playerMock.addScore.mockReset();
+		playerMock.finishGame.mockReset();
+	});
 
 	const started = (seed = 1) => {
 		const game = new MemoryGameController();
@@ -159,6 +168,37 @@ describe('MemoryGameController', () => {
 		expect(game.gameOver, 'партія на десять пар мусить завершитися на десятій').toBe(true);
 	});
 
+	/**
+	 * РЕКОРДОМ тут вважаються пари ГРАВЦЯ ЗА ЦИМ ПРИСТРОЄМ, а не всі зібрані.
+	 *
+	 * За одним пристроєм грають удвох, і зарахувати собі чужі пари означало б
+	 * рекорд, якого людина не робила. Та сама межа, що на наскрізному рахунку.
+	 */
+	it('кінець партії записує рекорд — і лише свої пари', () => {
+		const game = new MemoryGameController();
+		game.start({
+			seed: 4,
+			pairs: 10,
+			players: [
+				{ id: 'a', nameKey: 'memory.you', score: 0, local: true },
+				{ id: 'b', nameKey: 'memory.rival', score: 0, local: false }
+			]
+		});
+
+		for (const key of [...new Set(game.slots.map((slot) => slot.card.pairKey))]) {
+			const [a, b] = game.slots.flatMap((slot, i) => (slot.card.pairKey === key ? [i] : []));
+			game.flip(a);
+			game.flip(b);
+		}
+
+		expect(game.gameOver).toBe(true);
+		expect(playerMock.finishGame).toHaveBeenCalledTimes(1);
+		// Саме `localScore`, а не `takenPairs`: у цій партії всі збіги дістав
+		// гравець за цим пристроєм (збіг не передає хід), тож числа тут рівні —
+		// різниця видна в партії з промахами, і охороняє її сам виклик.
+		expect(playerMock.finishGame).toHaveBeenCalledWith('memory', game.localScore);
+	});
+
 	it('соло-партія — це список із одного гравця', () => {
 		const game = started();
 		expect(game.players).toHaveLength(1);
@@ -177,7 +217,7 @@ describe('MemoryGameController', () => {
 		expect(game.players[0].score).toBe(1);
 		expect(game.awaitingPeek, 'ховати нема чого').toBe(false);
 		expect(game.currentPlayerIndex, 'вгадав — ходить далі').toBe(0);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(1);
+		expect(playerMock.addScore).toHaveBeenCalledWith(1);
 	});
 
 	it('промах лишає картки відкритими, доки не приберуть', () => {
@@ -292,7 +332,7 @@ describe('MemoryGameController', () => {
 		game.flip(q);
 		expect(game.currentPlayerIndex, 'збіг — хід лишається').toBe(1);
 		expect(game.players[1].score).toBe(1);
-		expect(settingsMock.addScore, 'чужі очки в загальний рахунок не йдуть').not.toHaveBeenCalled();
+		expect(playerMock.addScore, 'чужі очки в загальний рахунок не йдуть').not.toHaveBeenCalled();
 	});
 
 	it('партія завершується, коли зібрано всі пари', () => {

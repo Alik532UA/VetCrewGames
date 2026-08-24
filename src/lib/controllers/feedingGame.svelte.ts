@@ -1,6 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { BIN, buildFeedingRound, correctTarget, FOODS_PER_ROUND, getNextFeedingSet, type FeedingRound, type Food, type Target } from '$lib/config/feeding-game';
-import { settings } from '$lib/services/settings.svelte';
+import { playerData } from '$lib/services/playerData.svelte';
+import { GAME_ID } from '$lib/config/menu-games';
 import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
@@ -196,7 +197,7 @@ export class FeedingGameController {
 			// це не «на одну краще, ніж дві» (config/scoring.ts).
 			const points = roundPoints(correct, this.foodsPerRound);
 			this.sessionScore += points;
-			settings.addScore(points);
+			playerData.addScore(points);
 		}
 	}
 
@@ -220,6 +221,20 @@ export class FeedingGameController {
 		this.#next();
 	}
 
+
+	/**
+	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
+	 *
+	 * Перевірка `gameOver` на вході не про обережність: партія закінчується з
+	 * кількох місць (раунди скінчилися, набори скінчилися), і кожне з них раніше
+	 * просто ставило прапорець. Рекорд, записаний двічі, зіпсував би `plays` —
+	 * тобто число партій, яких не було.
+	 */
+	#finish(): void {
+		if (this.gameOver) return;
+		this.gameOver = true;
+		playerData.finishGame(GAME_ID.feeding, this.sessionScore);
+	}
 	#next(): void {
 		this.placements = {};
 		this.picked = null;
@@ -227,7 +242,7 @@ export class FeedingGameController {
 
 		if (this.roundNumber > this.totalRounds) {
 			this.round = null;
-			this.gameOver = true;
+			this.#finish();
 			return;
 		}
 
@@ -236,7 +251,7 @@ export class FeedingGameController {
 			// Наборів менше, ніж раундів: партія завершується достроково, а не
 			// показує той самий стіл удруге.
 			this.round = null;
-			this.gameOver = true;
+			this.#finish();
 			return;
 		}
 

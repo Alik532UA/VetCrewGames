@@ -5,8 +5,14 @@ import { animals } from '$lib/config/population-game';
 import { BIOMES, CONTINENTS, buildHabitatRound, habitatEntries } from '$lib/config/habitat-game';
 import { uk } from '$lib/i18n/translations/uk';
 
-const settingsMock = { addScore: vi.fn() };
-vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
+/*
+ * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
+ * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
+ * тут нічого — важливо, що контролер кличе `addScore` і `finishGame` рівно
+ * тоді, коли треба.
+ */
+const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
+vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
 const { HabitatGameController } = await import('./habitatGame.svelte');
 
@@ -89,7 +95,10 @@ describe('дані «Де живем?»', () => {
 });
 
 describe('HabitatGameController', () => {
-	beforeEach(() => settingsMock.addScore.mockReset());
+	beforeEach(() => {
+		playerMock.addScore.mockReset();
+		playerMock.finishGame.mockReset();
+	});
 
 	const started = (mode: 'continents' | 'biomes' = 'continents', rounds = 10) => {
 		const game = new HabitatGameController(rounds);
@@ -147,7 +156,7 @@ describe('HabitatGameController', () => {
 		expect(game.sessionScore).toBe(
 			roundPoints(game.round!.correct.length, game.round!.correct.length)
 		);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(game.sessionScore);
+		expect(playerMock.addScore).toHaveBeenCalledWith(game.sessionScore);
 		expect(game.roundResults).toEqual(['correct']);
 	});
 
@@ -170,7 +179,7 @@ describe('HabitatGameController', () => {
 		expect(game.outcome).toBe('partial');
 		// Одна влучна зона — одне очко. Надбавки немає: раунд не бездоганний.
 		expect(game.sessionScore).toBe(1);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(1);
+		expect(playerMock.addScore).toHaveBeenCalledWith(1);
 	});
 
 	it('зайвий варіант робить відповідь неправильною', () => {

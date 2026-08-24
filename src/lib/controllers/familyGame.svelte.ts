@@ -1,7 +1,8 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { buildRound, getNextPuzzle, type FamilyRound } from '$lib/config/family-game';
 import type { Animal } from '$lib/config/population-game';
-import { settings } from '$lib/services/settings.svelte';
+import { playerData } from '$lib/services/playerData.svelte';
+import { GAME_ID } from '$lib/config/menu-games';
 import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
@@ -81,7 +82,7 @@ export class FamilyGameController {
 			// Бінарний раунд: три очки за правильну відповідь (config/scoring.ts).
 			const points = roundPoints(1, 1);
 			this.sessionScore += points;
-			settings.addScore(points);
+			playerData.addScore(points);
 		}
 	}
 
@@ -105,12 +106,26 @@ export class FamilyGameController {
 		this.#next();
 	}
 
+
+	/**
+	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
+	 *
+	 * Перевірка `gameOver` на вході не про обережність: партія закінчується з
+	 * кількох місць (раунди скінчилися, набори скінчилися), і кожне з них раніше
+	 * просто ставило прапорець. Рекорд, записаний двічі, зіпсував би `plays` —
+	 * тобто число партій, яких не було.
+	 */
+	#finish(): void {
+		if (this.gameOver) return;
+		this.gameOver = true;
+		playerData.finishGame(GAME_ID.family, this.sessionScore);
+	}
 	#next(): void {
 		this.chosen = null;
 
 		if (this.roundNumber > this.totalRounds) {
 			this.round = null;
-			this.gameOver = true;
+			this.#finish();
 			return;
 		}
 
@@ -120,7 +135,7 @@ export class FamilyGameController {
 		const puzzle = getNextPuzzle(this.#used, this.#random);
 		if (!puzzle) {
 			this.round = null;
-			this.gameOver = true;
+			this.#finish();
 			return;
 		}
 

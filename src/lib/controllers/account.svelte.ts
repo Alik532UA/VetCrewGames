@@ -15,6 +15,7 @@ import {
 import { follow, listFollowing, unfollow, type Friend } from '$lib/net/follows';
 import { connect } from '$lib/net/firebase';
 import { logService } from '$lib/services/logService.svelte';
+import { mergeOnSignIn, signedOut } from '$lib/services/playerSync';
 
 /**
  * Стан акаунта на екрані: хто я, мій профіль, мої підписки, знахідки пошуку.
@@ -103,7 +104,10 @@ export class Account {
 	/** Створити акаунт на наявному анонімному вході: `uid` не міняється. */
 	async register(email: string, password: string): Promise<boolean> {
 		const done = await this.#act('register', () => linkEmail(email, password));
-		if (done) this.state = await accountState();
+		if (done) {
+			this.state = await accountState();
+			await mergeOnSignIn();
+		}
 		return done;
 	}
 
@@ -115,7 +119,10 @@ export class Account {
 	 */
 	async signIn(email: string, password: string): Promise<boolean> {
 		const done = await this.#act('sign-in', () => signInEmail(email, password));
-		if (done) await this.load();
+		if (done) {
+			await this.load();
+			await mergeOnSignIn();
+		}
 		return done;
 	}
 
@@ -129,7 +136,10 @@ export class Account {
 	 */
 	async google(): Promise<boolean> {
 		const done = await this.#act('google', () => signInGoogle());
-		if (done) await this.load();
+		if (done) {
+			await this.load();
+			await mergeOnSignIn();
+		}
 		return done;
 	}
 
@@ -151,9 +161,41 @@ export class Account {
 		return false;
 	}
 
+	/**
+	 * Вийти з акаунта — і НЕ лишити в браузері нічого, що набрала людина.
+	 *
+	 * ## Чому місцеве стирається, а не лишається «про запас»
+	 *
+	 * Рахунок і рекорди зливаються з акаунтом при вході (`playerData.signedIn`).
+	 * Якби вихід лишав їх у сховищі, вони влилися б у НАСТУПНИЙ акаунт, у який
+	 * тут увійдуть, — тобто рахунок можна було б переписати з чужого, просто
+	 * вийшовши й увійшовши іншим. У сусідньому `MindStep` це рівно так і працює
+	 * досі: метод очищення там написаний, і його не кличе жоден рядок.
+	 *
+	 * ## Чому й заповідник
+	 *
+	 * Автор попросив стирати все, що стосується гравця, включно з недограною
+	 * партією. Фонд заповідника — саме вона: пів години гри, які інакше побачив би
+	 * наступний власник цього браузера. Стирає його СВІЙ контролер: до сховища
+	 * фонду ходить лише він (інваріант у `src/structure.test.ts`), і `reset()`
+	 * робить обидві половини одним рухом — новий фонд у памʼяті й у сховищі.
+	 */
 	async leave(): Promise<boolean> {
 		const done = await this.#act('sign-out', () => signOut());
 		if (done) {
+			signedOut();
+			/*
+			 * Заповідник — ДИНАМІЧНИМ імпортом, і це не стиль.
+			 *
+			 * Статичний тягнув би в чанк сторінки акаунта всю симуляцію: каталог
+			 * видів, рушій доби, збереження. Заміряно: 217 КБ gzip проти 305 на
+			 * тому самому маршруті (`npm run check:build` — гейт). Тут же він
+			 * приїжджає лише в мить виходу з акаунта, тобто рівно тоді, коли
+			 * потрібен.
+			 */
+			const { reserve } = await import('$lib/controllers/reserve.svelte');
+			reserve.reset();
+
 			// Після виходу все читається заново: `uid` уже інший, тобто попередній
 			// профіль і підписки на екрані стосувалися б чужого акаунта.
 			this.profile = null;

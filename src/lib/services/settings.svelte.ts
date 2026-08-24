@@ -184,8 +184,28 @@ class Settings {
 		document.documentElement.setAttribute('data-font', this.font);
 	}
 
+	/**
+	 * Додати очки.
+	 *
+	 * Кличуть НЕ контролери ігор, а `services/playerData`: він додає до цього рівно
+	 * одне — повідомлення для синхронізації з акаунтом. Сам рахунок лишився тут, бо
+	 * його показує шапка на кожній сторінці: у чанку кореневого layout цей модуль
+	 * і так є, а `playerData` туди краще не тягнути (бюджет — гейт `check:build`).
+	 */
 	addScore(points: number): void {
 		this.score += points;
+		storage.set('score', this.score.toString());
+	}
+
+	/**
+	 * Поставити рахунок числом — потрібне синхронізації з акаунтом і виходу з нього.
+	 *
+	 * `addScore` для цього не годиться: злите з хмарою значення — це НЕ приріст, і
+	 * рахувати з нього різницю означало б два джерела правди про те саме число.
+	 * Наскрізний запис у мутаторі, як і в решті сеттерів (SVELTE-CORE-v8 § 1.9).
+	 */
+	setScore(value: number): void {
+		this.score = value;
 		storage.set('score', this.score.toString());
 	}
 

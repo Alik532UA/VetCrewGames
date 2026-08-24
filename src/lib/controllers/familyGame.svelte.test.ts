@@ -4,8 +4,14 @@ import { animals } from '$lib/config/population-game';
 import { buildRound, familyPuzzles } from '$lib/config/family-game';
 import { uk } from '$lib/i18n/translations/uk';
 
-const settingsMock = { addScore: vi.fn() };
-vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
+/*
+ * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
+ * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
+ * тут нічого — важливо, що контролер кличе `addScore` і `finishGame` рівно
+ * тоді, коли треба.
+ */
+const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
+vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
 const { FamilyGameController } = await import('./familyGame.svelte');
 
@@ -73,7 +79,10 @@ describe('набори «Хто з іншої родини?»', () => {
 });
 
 describe('FamilyGameController', () => {
-	beforeEach(() => settingsMock.addScore.mockReset());
+	beforeEach(() => {
+		playerMock.addScore.mockReset();
+		playerMock.finishGame.mockReset();
+	});
 
 	const odd = (game: InstanceType<typeof FamilyGameController>) => game.round!.oddAnimal;
 	const notOdd = (game: InstanceType<typeof FamilyGameController>) =>
@@ -95,7 +104,7 @@ describe('FamilyGameController', () => {
 		game.choose(odd(game));
 		expect(game.isCorrect).toBe(true);
 		expect(game.sessionScore).toBe(BINARY_POINTS);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(BINARY_POINTS);
+		expect(playerMock.addScore).toHaveBeenCalledWith(BINARY_POINTS);
 		expect(game.roundResults).toEqual(['correct']);
 
 		game.nextRound();

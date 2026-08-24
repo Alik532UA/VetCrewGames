@@ -1,6 +1,7 @@
 import { randomFor } from '$lib/utils/seededRandom';
 import { getRandomAnimals, type Animal } from '$lib/config/population-game';
-import { settings } from '$lib/services/settings.svelte';
+import { playerData } from '$lib/services/playerData.svelte';
+import { GAME_ID } from '$lib/config/menu-games';
 import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
@@ -244,7 +245,7 @@ export class PopulationGameController {
 			// По очку за слот, надбавка за повний ряд (config/scoring.ts).
 			const points = roundPoints(correctCount, this.slotCount);
 			this.sessionScore += points;
-			settings.addScore(points);
+			playerData.addScore(points);
 		}
 	}
 
@@ -253,8 +254,22 @@ export class PopulationGameController {
 			this.roundNumber++;
 			this.startRound();
 		} else {
-			this.gameOver = true;
+			this.#finish();
 		}
+	}
+
+	/**
+	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
+	 *
+	 * Перевірка `gameOver` на вході не про обережність: кінець партії настає з
+	 * кількох місць (раунди скінчилися, набори скінчилися), і кожне з них раніше
+	 * просто ставило прапорець. Рекорд, записаний двічі, зіпсував би `plays` —
+	 * тобто число партій, яких не було.
+	 */
+	#finish(): void {
+		if (this.gameOver) return;
+		this.gameOver = true;
+		playerData.finishGame(GAME_ID.population, this.sessionScore);
 	}
 
 	/**

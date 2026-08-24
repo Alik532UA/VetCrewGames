@@ -5,8 +5,14 @@ import { animals } from '$lib/config/population-game';
 import { BIN, correctTarget, feedingSets, foods } from '$lib/config/feeding-game';
 import { uk } from '$lib/i18n/translations/uk';
 
-const settingsMock = { addScore: vi.fn() };
-vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
+/*
+ * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
+ * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
+ * тут нічого — важливо, що контролер кличе `addScore` і `finishGame` рівно
+ * тоді, коли треба.
+ */
+const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
+vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
 const { FeedingGameController } = await import('./feedingGame.svelte');
 
@@ -98,7 +104,10 @@ describe('дані «Що їмо?»', () => {
 });
 
 describe('FeedingGameController', () => {
-	beforeEach(() => settingsMock.addScore.mockReset());
+	beforeEach(() => {
+		playerMock.addScore.mockReset();
+		playerMock.finishGame.mockReset();
+	});
 
 	const started = (rounds = 10) => {
 		const game = new FeedingGameController(rounds);
@@ -278,7 +287,7 @@ describe('FeedingGameController', () => {
 		// Бездоганний раунд дістає надбавку: три страви з трьох це інша якість
 		// відповіді, ніж дві (config/scoring.ts).
 		expect(game.sessionScore).toBe(3 + PERFECT_BONUS);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(3 + PERFECT_BONUS);
+		expect(playerMock.addScore).toHaveBeenCalledWith(3 + PERFECT_BONUS);
 		expect(game.roundResults).toEqual(['correct']);
 	});
 

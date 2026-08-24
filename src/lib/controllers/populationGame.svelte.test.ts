@@ -12,8 +12,14 @@ import type { Animal } from '$lib/config/population-game';
  * оком у розмітці.
  */
 
-const settingsMock = { addScore: vi.fn() };
-vi.mock('$lib/services/settings.svelte', () => ({ settings: settingsMock }));
+/*
+ * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
+ * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
+ * тут нічого — важливо, що контролер кличе `addScore` і `finishGame` рівно
+ * тоді, коли треба.
+ */
+const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
+vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
 /** Детермінований розклад: інакше тест перевіряв би `Math.random`. */
 const DECK: Animal[] = [
@@ -38,7 +44,10 @@ function started(slotCount = 3, totalRounds = 10) {
 }
 
 describe('PopulationGameController', () => {
-	beforeEach(() => settingsMock.addScore.mockReset());
+	beforeEach(() => {
+		playerMock.addScore.mockReset();
+		playerMock.finishGame.mockReset();
+	});
 
 	it('startRound() роздає картки й рахує правильний порядок за зростанням', () => {
 		const game = started();
@@ -135,7 +144,7 @@ describe('PopulationGameController', () => {
 		expect(game.slotResults).toEqual([true, true, true]);
 		// Повний ряд дістає надбавку понад очко за слот (config/scoring.ts).
 		expect(game.sessionScore).toBe(3 + PERFECT_BONUS);
-		expect(settingsMock.addScore).toHaveBeenCalledWith(3 + PERFECT_BONUS);
+		expect(playerMock.addScore).toHaveBeenCalledWith(3 + PERFECT_BONUS);
 		expect(game.roundResults).toEqual(['correct']);
 	});
 
@@ -183,6 +192,25 @@ describe('PopulationGameController', () => {
 
 		game.nextRound();
 		expect(game.gameOver).toBe(true);
+	});
+
+	/**
+	 * РЕКОРД ГРИ пишеться в кінці партії, і рівно один раз.
+	 *
+	 * Це те, чого доти не існувало зовсім: у хмару їхав лише наскрізний рахунок,
+	 * тобто «скільки всього», без жодного «скільки за одну партію». Двічі
+	 * записаний рекорд зіпсував би `plays` — число партій, яких не було.
+	 */
+	it('кінець партії записує рекорд гри — один раз', () => {
+		const game = started(3, 1);
+		game.moveTo(DECK[0], 'slot', 0);
+		game.check();
+
+		game.nextRound();
+		game.nextRound();
+
+		expect(playerMock.finishGame).toHaveBeenCalledTimes(1);
+		expect(playerMock.finishGame).toHaveBeenCalledWith('population', game.sessionScore);
 	});
 
 	/**

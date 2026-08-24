@@ -11,18 +11,45 @@ import type { TranslationKey } from '$lib/i18n/translations/uk';
  * лише відволікає. Два переліки в двох файлах розійшлися б на наступній грі.
  */
 
+/**
+ * КЛЮЧІ ІГОР — під ними лежить рекорд у сховищі й у базі (`net/play.ts`).
+ *
+ * Окремі від маршрутів навмисно, хоч і схожі на них. Маршрут — це адреса, і його
+ * колись перейменують (уже перейменовували: `quiz/play` став меню). Ключ рекорду
+ * перейменувати не можна: під старим лишиться все, що людина набрала, і рекорд
+ * зникне без жодної помилки — найтихіший різновид втрати.
+ *
+ * Взірець ключа стереже правило бази (`users/$uid/play/games/$gameId`): малі
+ * латинські, цифри й дефіс. Тобто нова гра — це рядок ТУТ і більше нічого: ні
+ * правки правил, ні деплою бази.
+ *
+ * Об'єкт, а не масив рядків: контролер називає гру `GAME_ID.population`, і
+ * помилку в назві ловить компілятор, а не тиха відсутність рекорду.
+ */
+export const GAME_ID = {
+	mythbusters: 'mythbusters',
+	population: 'population',
+	habitat: 'habitat',
+	family: 'family',
+	feeding: 'feeding',
+	memory: 'memory'
+} as const;
+
+export type GameId = (typeof GAME_ID)[keyof typeof GAME_ID];
+
 export interface MenuGame {
+	id: GameId;
 	key: TranslationKey;
 	route: RouteRest;
 }
 
 /** П'ятірка вікторини: саме вона лежить за «Грати» й за «Випадковою грою». */
 export const QUIZ_GAMES: readonly MenuGame[] = [
-	{ key: 'menu.game.mythbusters', route: 'game-mythbusters' },
-	{ key: 'menu.game.population', route: 'game-population' },
-	{ key: 'menu.game.habitat', route: 'game-habitat' },
-	{ key: 'menu.game.family', route: 'game-family' },
-	{ key: 'menu.game.feeding', route: 'game-feeding' }
+	{ id: GAME_ID.mythbusters, key: 'menu.game.mythbusters', route: 'game-mythbusters' },
+	{ id: GAME_ID.population, key: 'menu.game.population', route: 'game-population' },
+	{ id: GAME_ID.habitat, key: 'menu.game.habitat', route: 'game-habitat' },
+	{ id: GAME_ID.family, key: 'menu.game.family', route: 'game-family' },
+	{ id: GAME_ID.feeding, key: 'menu.game.feeding', route: 'game-feeding' }
 ];
 
 /**
@@ -34,5 +61,5 @@ export const QUIZ_GAMES: readonly MenuGame[] = [
  */
 export const MENU_GAMES: readonly MenuGame[] = [
 	...QUIZ_GAMES,
-	{ key: 'menu.game.memory', route: 'game-memory' }
+	{ id: GAME_ID.memory, key: 'menu.game.memory', route: 'game-memory' }
 ];
