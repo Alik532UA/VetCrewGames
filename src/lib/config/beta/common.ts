@@ -79,6 +79,16 @@ export const commonTab: BetaTab = {
 			testid: 'header-locale-btn'
 		},
 		{
+			id: 'common_25',
+			category: { uk: 'Акаунт', en: 'Account' },
+			text: {
+				uk: 'Натисніть іконку людини в шапці — між прапором мови й кнопкою повного екрана. Мусить відкритися сторінка акаунта тією ж мовою, що й поточна сторінка.',
+				en: 'Press the person icon in the header — between the language flag and the fullscreen button. The account page must open in the same language as the current page.'
+			},
+			coverage: 'manual',
+			testid: 'header-account-link'
+		},
+		{
 			id: 'common_5',
 			category: { uk: 'Мова', en: 'Language' },
 			text: {

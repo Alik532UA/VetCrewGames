@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sun, Moon, Snowflake, Leaf, Keyboard, KeyboardOff } from 'lucide-svelte';
+	import { Sun, Moon, Snowflake, Leaf, Keyboard, KeyboardOff, CircleUser } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, formatPlain } from '$lib/i18n';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
@@ -225,7 +225,41 @@
 	{/snippet}
 </HeaderMenu>
 
+<!--
+	АКАУНТ — ІКОНКОЮ В ШАПЦІ, між вибором мови й повним екраном.
+
+	Доти він був пунктом головного меню, і там стояло пояснення, чому саме там: «у
+	шапці живуть перемикачі, а акаунт веде на окрему сторінку». Автор це рішення
+	скасував — і аргумент проти нього був слабший, ніж здавався: у шапці вже стоїть
+	наскрізний рахунок, тобто вона й так не лише про вигляд сторінки. Акаунт же
+	потрібен саме там, де людина грає, а не лише на першому екрані.
+
+	Посилання, а не кнопка: це навігація, і «відкрити в новій вкладці» мусить
+	працювати. Мова в адресі — через `langPath`, як усе внутрішнє.
+-->
+<a
+	href={langPath(current, 'account')}
+	class="header-btn"
+	aria-label={t('account.title')}
+	title={t('account.title')}
+	data-testid="header-account-link"
+>
+	<CircleUser size={20} />
+</a>
+
 <style>
+	/*
+	 * Посилання в ряду іконок мусить виглядати кнопкою: клас той самий, що в
+	 * решти, а підкреслення тексту тут нема чого підкреслювати.
+	 */
+	a.header-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: inherit;
+		text-decoration: none;
+	}
+
 	/*
 	 * Прапор — картинка з фіксованою коробкою. Розміри стоять і в атрибутах, і
 	 * тут: без атрибутів рядок шапки смикається, поки SVG вантажиться, а без
