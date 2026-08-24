@@ -171,10 +171,30 @@ test('без запиту розділ — СІТКА прапорів, а за�
 		const group = menu.querySelector('[role="group"]')!;
 		const heading = group.querySelector<HTMLElement>('div')!;
 		const options = [...group.querySelectorAll<HTMLElement>('[role="option"]')];
+
+		/*
+		 * ПРОКРУТКА ЗБИВАЄТЬСЯ ПЕРЕД ЗАМІРОМ, і це не педантизм.
+		 *
+		 * Заголовок регіону `position: sticky`, тобто при прокрученому списку він
+		 * ЇДЕ ВНИЗ за вікном перегляду — і `offsetTop` віддає його зсунуте
+		 * положення, а не місце в розкладці. Рядок «заголовок стоїть окремо»
+		 * ставав від цього залежним від того, чи хтось встиг прокрутити список:
+		 * локально гейт був зелений, а в CI цей самий рядок упав.
+		 */
+		const scroll = menu.querySelector('[role="listbox"]')!.parentElement!;
+		scroll.scrollTop = 0;
+
 		return {
 			names: menu.querySelectorAll('.menu__name').length,
 			labelled: options.every((o) => (o.getAttribute('aria-label') ?? '').length > 1),
 			columns: new Set(options.map((o) => Math.round(o.offsetLeft))).size,
+			/*
+			 * ГОЛОВНЕ ТВЕРДЖЕННЯ — ШИРИНА, а не координата: «окремим рядком» тут
+			 * означає рівно `flex: 0 0 100%` на заголовку. Ширину не зсуває ні
+			 * прокрутка, ні `sticky`, ні шрифт, тобто вона стверджує саме те
+			 * правило CSS, заради якого рядок і написаний.
+			 */
+			headingSpans: heading.offsetWidth / group.clientWidth,
 			underHeading: options.every((o) => o.offsetTop > heading.offsetTop),
 			square: options.every((o) => Math.abs(o.offsetWidth - o.offsetHeight) <= 2)
 		};
@@ -188,7 +208,11 @@ test('без запиту розділ — СІТКА прапорів, а за�
 	expect(grid.names, 'назви країн мусять зникнути, поки нічого не набрано').toBeLessThanOrEqual(1);
 	expect(grid.labelled, 'пункт без назви в `aria-label` — це «кнопка» для скрінрідера').toBe(true);
 	expect(grid.columns, 'прапори мусять стояти сіткою, а не стовпцем').toBeGreaterThan(1);
-	expect(grid.underHeading, 'заголовок розділу мусить стояти окремим рядком').toBe(true);
+	expect(
+		grid.headingSpans,
+		'заголовок мусить займати весь рядок — інакше прапори стануть поруч із ним'
+	).toBeGreaterThan(0.9);
+	expect(grid.underHeading, 'прапори мусять починатися ПІД заголовком').toBe(true);
 	expect(grid.square, 'плитка мусить бути квадратною сенсорною ціллю').toBe(true);
 });
 
