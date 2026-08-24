@@ -66,6 +66,8 @@ export const ui = {
 	'pairs.otherName': 'Another name',
 	'pairs.nickname': 'Nickname',
 	'pairs.country': 'Flag',
+	/* Name for the `xr` code — ISO has no such entity, see `OWN_COUNTRY_NAMES`. */
+	'country.xr': 'Russian Volunteer Corps',
 	'pairs.countryNone': 'No flag',
 	'pairs.you': 'you',
 	'pairs.myRole': 'Your role',

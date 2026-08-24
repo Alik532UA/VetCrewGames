@@ -66,6 +66,8 @@ export const ui = {
 	'pairs.otherName': 'Andere naam',
 	'pairs.nickname': 'Bijnaam',
 	'pairs.country': 'Vlag',
+	/* Naam voor code `xr` — ISO kent deze entiteit niet, zie `OWN_COUNTRY_NAMES`. */
+	'country.xr': 'Russisch Vrijwilligerskorps',
 	'pairs.countryNone': 'Geen vlag',
 	'pairs.you': 'jij',
 	'pairs.myRole': 'Jouw rol',

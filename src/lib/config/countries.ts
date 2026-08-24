@@ -1,4 +1,5 @@
 import { FLAG_COUNTRIES } from './countries.generated';
+import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 /**
  * Країна гравця: код, назва мовою інтерфейсу й перевірка на чинність.
@@ -57,6 +58,25 @@ export function countryName(code: string, locale: string): string {
 }
 
 /**
+ * КОДИ, ЯКИХ `Intl.DisplayNames` НЕ ЗНАЄ, — назва зі словника проєкту.
+ *
+ * Такий код тут один: `xr` — Російський добровольчий корпус. ISO його не має, і
+ * взятий він із діапазону вільного призначення (`XA`–`XZ`), який стандарт прямо
+ * лишає застосункам; той самий діапазон використовує й пакет прапорів — `XK`
+ * для Косова, `XO` для Південної Осетії, `XC` для Північного Кіпру.
+ *
+ * Без цього переліку список показував би сирий «XR» — і показував би його
+ * ПОСЕРЕД абетки, бо сортування йде за назвою. Причина, чому це не в
+ * `Intl.DisplayNames`, названа прямо: цієї сутності в ICU немає й не буде.
+ *
+ * Ключ типізований, а не `string`: приведення `as TranslationKey` тут уже
+ * ховало помилку в сусідньому модулі — ключ існував, але не той.
+ */
+export const OWN_COUNTRY_NAMES: Readonly<Record<string, TranslationKey>> = {
+	xr: 'country.xr'
+};
+
+/**
  * Країни, впорядковані за назвою МОВОЮ ІНТЕРФЕЙСУ.
  *
  * Сортування через `Intl.Collator`, а не `localeCompare` за замовчуванням: у
@@ -66,9 +86,13 @@ export function countryName(code: string, locale: string): string {
  * Список рахується на вимогу, а не тримається готовим: він потрібен рівно тоді,
  * коли людина відкрила вибір країни, і залежить від мови.
  */
-export function countriesByName(locale: string): Array<{ code: string; name: string }> {
+export function countriesByName(
+	locale: string,
+	translate: (key: TranslationKey) => string
+): Array<{ code: string; name: string }> {
 	const collator = new Intl.Collator(locale);
-	return FLAG_COUNTRIES.map((code) => ({ code, name: countryName(code, locale) })).sort((a, b) =>
-		collator.compare(a.name, b.name)
-	);
+	return FLAG_COUNTRIES.map((code) => {
+		const own = OWN_COUNTRY_NAMES[code];
+		return { code, name: own ? translate(own) : countryName(code, locale) };
+	}).sort((a, b) => collator.compare(a.name, b.name));
 }

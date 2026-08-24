@@ -66,6 +66,12 @@ export const ui = {
 	'pairs.otherName': 'Інше імʼя',
 	'pairs.nickname': 'Нікнейм',
 	'pairs.country': 'Прапор',
+	/*
+	 * Назва для коду `xr`. `Intl.DisplayNames` її не знає й не знатиме: ISO цієї
+	 * сутності не має, а код узятий із діапазону вільного призначення — див.
+	 * `OWN_COUNTRY_NAMES` у `config/countries.ts`.
+	 */
+	'country.xr': 'Російський добровольчий корпус',
 	'pairs.countryNone': 'Без прапора',
 	'pairs.you': 'ви',
 	'pairs.myRole': 'Ваша роль',

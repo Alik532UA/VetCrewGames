@@ -212,9 +212,19 @@
 		justify-content: center;
 		border: none;
 		border-radius: var(--radius-sm);
-		/* Домішка кольору тексту — та сама ідіома, що в `.header-btn`: у світлих
-		   темах це притінення, у темних підсвітка, і перевертається вона сама. */
-		background: color-mix(in srgb, var(--color-text), transparent 92%);
+		/*
+		 * У СПОКОЇ ТЛА НЕМА, і це половина відклику на наведення.
+		 *
+		 * Друга половина — прозорість, і вона в `global.css`, бо рівень «курсор
+		 * десь у полі» залежить від предка поза цим компонентом. Разом вони й
+		 * дають те, що просив автор: у спокої значки не відбирають увагу, під
+		 * курсором проявляються.
+		 *
+		 * Тло тут, а не прозорість нижче 85%, з причини, названої в `global.css`:
+		 * гейт контрасту міряє значок проти справжнього тла, і прозорий значок
+		 * його не проходить. Підкладка ж контрасту не забирає — вона його додає.
+		 */
+		background: none;
 		color: var(--color-text);
 		cursor: pointer;
 		padding: 0;
@@ -222,7 +232,8 @@
 
 	@media (hover: hover) {
 		.tools__btn:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 82%);
+			background: color-mix(in srgb, var(--color-accent), transparent 88%);
+			color: var(--color-accent);
 		}
 	}
 </style>

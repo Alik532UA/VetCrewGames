@@ -43,19 +43,33 @@
 		value: string;
 		/** Основа `data-testid`: `pairs-country` дає `pairs-country-select`. */
 		scope: string;
+		/**
+		 * КОМПАКТНИЙ РЕЖИМ: видно лише прапор, і він сам є контролом.
+		 *
+		 * Потрібен там, де прапор стоїть ПЕРЕД ніком, а не окремим рядком: підпис
+		 * «Прапор» над полем на п'ятсот пікселів ширини читався як ще одне
+		 * налаштування, хоч це частина того самого підпису гравця.
+		 *
+		 * Нативний `select` при цьому НЕ зникає — він лежить поверх прапора
+		 * прозорим. Це не хитрість, а єдиний спосіб зберегти те, за що він тут і
+		 * вибраний (див. докблок вище): на телефоні браузер відкриває власний
+		 * вибірник на всю висоту, а введення літери в ньому працює як пошук. Кнопка
+		 * з власним списком на 264 пункти все це втратила б.
+		 */
+		compact?: boolean;
 	}
 
-	let { value = $bindable(), scope }: Props = $props();
+	let { value = $bindable(), scope, compact = false }: Props = $props();
 
 	/*
 	 * Список рахується на вимогу мови, а не тримається готовим: сортування
 	 * двохсот шістдесяти пʼяти назв колатором залежить від мови, а мову
 	 * перемикають на цій самій сторінці.
 	 */
-	const countries = $derived(countriesByName(settings.locale));
+	const countries = $derived(countriesByName(settings.locale, t));
 </script>
 
-<div class="country">
+<div class="country" class:country--compact={compact}>
 	<label class="country__label" for="{scope}-select">
 		<span>{@html formatFont(t('pairs.country'))}</span>
 	</label>
@@ -66,6 +80,7 @@
 			class="country__select"
 			bind:value
 			data-testid="{scope}-select"
+			title={compact ? t('pairs.country') : undefined}
 		>
 			<!--
 				«Без прапора» — ПЕРШИЙ пункт, і він не порожній рядок на вигляд.
@@ -118,5 +133,69 @@
 		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
+	}
+	/*
+	 * КОМПАКТНИЙ РЕЖИМ: прапор — контрол, `select` лежить поверх прозорим.
+	 *
+	 * Підпис прибирається з очей, але лишається в DOM: `for`/`id` — єдине, що
+	 * називає цей контрол для скрінрідера, і `title` на самому `select` його не
+	 * заміняє (браузери читають `title` не завжди й не першим).
+	 *
+	 * `opacity: 0` замість `visibility: hidden` чи `appearance: none`: прихований
+	 * інакше `select` перестає приймати кліки, а весь сенс тут — щоб натиснули
+	 * саме по прапору й відкрився НАТИВНИЙ список.
+	 *
+	 * 44px — власний стандарт сенсорної цілі. Прапор усередині 18px, решта —
+	 * область натискання, тобто цілі 44px без роздування рядка.
+	 */
+	.country--compact {
+		flex-direction: row;
+	}
+
+	.country--compact .country__label {
+		/* Не `display: none`: підпис мусить лишитися для скрінрідера. */
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.country--compact .country__row {
+		position: relative;
+		width: 44px;
+		height: 44px;
+		justify-content: center;
+		gap: 0;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+	}
+
+	.country--compact .country__select {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		min-height: 0;
+		padding: 0;
+		border: none;
+		background: none;
+		opacity: 0;
+		cursor: pointer;
+	}
+
+	/*
+	 * Фокус клавіатурою мусить бути видимий, а сам `select` прозорий — тож рамку
+	 * малює обгортка. Без цього рядка прапор у фокусі не відрізнявся б ніяк.
+	 */
+	.country--compact .country__row:focus-within {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	@media (hover: hover) {
+		.country--compact .country__row:hover {
+			background: color-mix(in srgb, var(--color-text), transparent 90%);
+		}
 	}
 </style>
