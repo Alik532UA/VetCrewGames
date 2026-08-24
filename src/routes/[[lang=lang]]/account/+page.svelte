@@ -9,7 +9,7 @@
 	import { Account } from '$lib/controllers/account.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
-	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
+	import AuthForm from '$lib/components/auth/AuthForm.svelte';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -25,20 +25,16 @@
 	 * міняється, тож ні кімнати, ні підписки не гинуть. Подробиці — у
 	 * `net/account.ts`.
 	 *
-	 * ## Чому «створити» й «зайти» — сегментований вибір, а не дві форми
+	 * ## Форма входу живе в компоненті, а не тут
 	 *
-	 * Поля в них однакові (пошта й пароль), а наслідки протилежні: реєстрація
-	 * ЗБЕРІГАЄ поточний `uid`, вхід у наявний акаунт його МІНЯЄ. Дві форми поруч
-	 * читалися б як «те саме двома шляхами», і людина натискала б будь-яку. Один
-	 * вибір над спільними полями змушує прочитати, що саме зараз станеться, — і
-	 * попередження під ним стосується рівно вибраного.
+	 * `components/auth/AuthForm.svelte` — і там же записано, чому в ній ДВІ
+	 * КНОПКИ й жодного вибору режиму. Сторінці лишається проводка: «Увійти»
+	 * перечитує профіль (бо `uid` став іншим), «Зареєструватись» — ні (`uid` той
+	 * самий).
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
 	const account = new Account();
 
-	let mode = $state<'register' | 'signin'>('register');
-	let email = $state('');
-	let password = $state('');
 	let name = $state('');
 	let handle = $state('');
 	let country = $state('');
@@ -69,28 +65,23 @@
 	onMount(() => {
 		const release = settings.claimHeader('account.title', () => goto(langPath(lang, '')));
 		void loadAccountText(settings.locale).then((loaded) => (dict = loaded));
-		void account.load().then(() => {
-			// Поля форми заповнюються З ПРОФІЛЮ, а не лишаються порожніми: порожнє
-			// поле поруч із наявним профілем читається як «профілю немає».
-			name = account.profile?.name ?? '';
-			handle = account.profile?.handle ?? '';
-			country = account.profile?.country ?? '';
-		});
+		void account.load().then(fillFromProfile);
 		return release;
 	});
 
-	async function submitAuth() {
-		const done =
-			mode === 'register'
-				? await account.register(email, password)
-				: await account.signIn(email, password);
-		if (!done) return;
-		password = '';
-		if (mode === 'signin') {
-			name = account.profile?.name ?? '';
-			handle = account.profile?.handle ?? '';
-			country = account.profile?.country ?? '';
-		}
+	/**
+	 * Поля форми заповнюються З ПРОФІЛЮ, а не лишаються порожніми: порожнє поле
+	 * поруч із наявним профілем читається як «профілю немає».
+	 */
+	function fillFromProfile() {
+		name = account.profile?.name ?? '';
+		handle = account.profile?.handle ?? '';
+		country = account.profile?.country ?? '';
+	}
+
+	/** Вхід МІНЯЄ `uid`, тож профіль на екрані стосувався б чужого акаунта. */
+	async function signIn(email: string, password: string) {
+		if (await account.signIn(email, password)) fillFromProfile();
 	}
 
 	async function submitProfile() {
@@ -130,7 +121,6 @@
 		}
 	});
 
-	const canAuth = $derived(email.trim().length > 3 && password.length >= 6 && !account.busy);
 	const canSave = $derived(
 		name.trim().length > 0 && /^[a-z0-9_]{3,20}$/.test(handle) && !account.busy
 	);
@@ -138,76 +128,13 @@
 
 <div class="account-page">
 	{#if account.state === 'anonymous'}
-		<!--
-			ФОРМА ВХОДУ. Поля спільні, наслідки різні — тому вибір над ними.
-		-->
-		<section class="account__panel text-panel">
-			<h2 class="account__title">{@html formatFont(text('account.signInTitle'))}</h2>
-			<p class="account__hint">{@html formatFont(text('account.why'))}</p>
-
-			<SegmentedChoice
-				legend={text('account.mode')}
-				scope="account-mode"
-				value={mode}
-				onchange={(id) => (mode = id as 'register' | 'signin')}
-				options={[
-					{ id: 'register', label: text('account.modeRegister') },
-					{ id: 'signin', label: text('account.modeSignIn') }
-				]}
-			/>
-
-			<p class="account__hint" data-testid="account-mode-hint">
-				{@html formatFont(
-					text(mode === 'register' ? 'account.registerHint' : 'account.signInHint')
-				)}
-			</p>
-
-			<label class="account__label" for="account-email">
-				<span>{@html formatFont(text('account.email'))}</span>
-			</label>
-			<input
-				id="account-email"
-				class="account__input"
-				type="email"
-				bind:value={email}
-				autocomplete="email"
-				inputmode="email"
-				data-testid="account-email-input"
-			/>
-
-			<label class="account__label" for="account-password">
-				<span>{@html formatFont(text('account.password'))}</span>
-			</label>
-			<!--
-				`autocomplete` різний за режимом: браузер мусить знати, пропонувати
-				новий пароль чи підставити збережений. Однакове значення робить одне з
-				двох незручним.
-			-->
-			<input
-				id="account-password"
-				class="account__input"
-				type="password"
-				bind:value={password}
-				autocomplete={mode === 'register' ? 'new-password' : 'current-password'}
-				data-testid="account-password-input"
-			/>
-
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={submitAuth}
-				aria-disabled={!canAuth}
-				data-testid="account-submit-btn"
-			>
-				{@html formatFont(text(mode === 'register' ? 'account.modeRegister' : 'account.modeSignIn'))}
-			</button>
-
-			{#if errorKey}
-				<p class="account__error" role="alert" data-testid="account-error-text">
-					{@html formatFont(text(errorKey))}
-				</p>
-			{/if}
-		</section>
+		<AuthForm
+			{text}
+			{errorKey}
+			busy={account.busy}
+			onlogin={(email, password) => void signIn(email, password)}
+			onregister={(email, password) => void account.register(email, password)}
+		/>
 	{:else}
 		<!-- ПРОФІЛЬ: те, що бачать інші. -->
 		<section class="account__panel text-panel">
