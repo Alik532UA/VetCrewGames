@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { t, formatFont } from '$lib/i18n';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
@@ -21,47 +20,62 @@
 	 */
 	interface Props {
 		players: Member[];
-		/** Хто на якому кроці й з яким рахунком. Ключ — `uid`. */
-		progress: Record<string, { step: number; score: number }>;
-		/** Скільки кроків у партії. Нуль — програма ще не приїхала. */
-		total: number;
+		/** Хто вже відповів у поточному раунді. Саме ФАКТ, без правильності. */
+		answered: string[];
+		/** Рахунок кожного. Показується лише коли `withScores`. */
+		scores: Record<string, number>;
+		/**
+		 * ЧИ ПОКАЗУВАТИ РАХУНОК.
+		 *
+		 * Під час раунду — ні, і це вимога автора: цифри поруч із питанням тягнуть
+		 * увагу на себе саме тоді, коли її треба на питанні. Рахунок з'являється на
+		 * таблі між раундами, тобто рівно тоді, коли на нього й дивляться.
+		 */
+		withScores: boolean;
 		me: string;
 	}
 
-	let { players, progress, total, me }: Props = $props();
+	let { players, answered, scores, withScores, me }: Props = $props();
 
 	/*
-	 * Порядок — за РАХУНКОМ, а не за входом.
+	 * Порядок — за РАХУНКОМ, але лише коли рахунок видно.
 	 *
-	 * Тут це не косметика: у вікторині всі рухаються одночасно, і питання, на яке
-	 * дивляться, — «хто веде». Порядок входу відповідав би на нього лише
-	 * випадково. Тайбрейк за `order`, щоб при рівному рахунку рядки не стрибали
-	 * місцями на кожному оновленні.
+	 * Під час раунду сортування за очками переставляло б рядки просто від того, що
+	 * хтось відповів, — тобто показувало б те, що ми навмисно ховаємо. Тому в
+	 * раунді порядок за входом: стабільний і нічого не виказує.
 	 */
 	const ranked = $derived(
-		[...players].sort((a, b) => {
-			const byScore = (progress[b.uid]?.score ?? 0) - (progress[a.uid]?.score ?? 0);
-			return byScore !== 0 ? byScore : a.order - b.order;
-		})
+		withScores
+			? [...players].sort(
+					(a, b) => (scores[b.uid] ?? 0) - (scores[a.uid] ?? 0) || a.order - b.order
+				)
+			: [...players].sort((a, b) => a.order - b.order)
 	);
 </script>
 
 <ul class="scores text-panel" data-testid="quiz-scores-list">
 	{#each ranked as player (player.uid)}
-		{@const own = progress[player.uid] ?? { step: 0, score: 0 }}
-		<li class="scores__row" data-testid="quiz-score-{player.uid}-item">
+		<!--
+			ФОН РЯДКА — ЦЕ Й Є «ВІН УЖЕ ВІДПОВІВ».
+			
+			Саме факт, без правильності: показати «правильно» до кінця раунду
+			означало б підказати відповідь тим, хто ще думає. Автор попросив рівно
+			це — «просто сам факт відповіді, наприклад інший фон контейнеру».
+		-->
+		<li
+			class="scores__row"
+			class:scores__row--answered={answered.includes(player.uid)}
+			data-testid="quiz-score-{player.uid}-item"
+		>
 			<span class="scores__who">
 				<Flag code={player.country} />
 				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}
 			</span>
-			<span class="scores__step">
-				{#if total > 0 && own.step >= total}
-					{@html formatFont(t('quiz.finished'))}
-				{:else}
-					{own.step}&nbsp;/&nbsp;{total}
-				{/if}
-			</span>
-			<b class="scores__points" data-testid="quiz-score-{player.uid}-value">{own.score}</b>
+			{#if withScores}
+				<b class="scores__points" data-testid="quiz-score-{player.uid}-value">
+					{scores[player.uid] ?? 0}
+				</b>
+			{/if}
 		</li>
 	{/each}
 </ul>
@@ -77,8 +91,18 @@
 		width: 100%;
 	}
 
+	/*
+	 * Підкладка «відповів» — домішка АКЦЕНТУ до тла, а не свій колір: у чотирьох
+	 * темах акцент різний, і власне значення тут розійшлося б із трьома з них.
+	 */
+	.scores__row--answered {
+		background: color-mix(in srgb, var(--color-accent), transparent 82%);
+		border-radius: var(--radius-sm);
+	}
+
 	.scores__row {
 		display: flex;
+		padding: 2px var(--space-xs);
 		align-items: center;
 		gap: var(--space-sm);
 		font-size: var(--font-size-sm);
@@ -100,13 +124,14 @@
 	 * оновленні рахунку, бо «1» і «4» у пропорційному шрифті різної ширини — а
 	 * сіпається він саме тоді, коли на нього дивляться.
 	 */
-	.scores__step,
 	.scores__points {
 		flex-shrink: 0;
 		font-variant-numeric: tabular-nums;
 	}
 
 	.scores__points {
+		flex-shrink: 0;
+		font-variant-numeric: tabular-nums;
 		min-width: 2.5ch;
 		text-align: right;
 		color: var(--color-accent);

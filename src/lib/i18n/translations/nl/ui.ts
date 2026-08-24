@@ -19,9 +19,11 @@ export const ui = {
 	'quiz.gamesLast': 'Er moet minstens één spel aan blijven',
 	'quiz.otherGame': 'Die kamer is voor een ander spel.',
 	'quiz.waitingOthers': 'Jij bent klaar. We wachten op de rest.',
-	'quiz.finished': 'klaar',
 	'quiz.unknownGame': 'Dit spel komt uit een nieuwere versie. Herlaad de pagina.',
 	'quiz.skipStep': 'Overslaan',
+	'quiz.roundTimer': 'Rondetijd',
+	'quiz.answered': 'Antwoord verzonden. Wachten op de rest.',
+	'quiz.nextRound': 'Volgende ronde',
 
 	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen
 	// waar „Spelen” heen leidt verschilt.

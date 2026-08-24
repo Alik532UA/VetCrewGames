@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.319",
+	"version": "0.6.320",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -28,7 +28,8 @@
 		"test": "vitest run --coverage",
 		"test:watch": "vitest",
 		"test:e2e": "playwright test",
-		"sync:flags": "node scripts/sync-flags.mjs"
+		"sync:flags": "node scripts/sync-flags.mjs",
+		"sync:regions": "node scripts/sync-regions.mjs"
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "^4.13.0",

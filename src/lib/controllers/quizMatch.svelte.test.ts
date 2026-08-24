@@ -4,7 +4,11 @@ import type { Member, RoomInfo } from '$lib/net/roomTypes';
 import {
 	GAME_FLAG_PREFIX,
 	ONLINE_GAMES,
-	QUIZ_STEPS,
+	QUIZ_ROUNDS,
+	REVEAL_MS,
+	SETTLE_MS,
+	answerPoints,
+	roundLimitMs,
 	configToGames,
 	gamesToConfig,
 	quizProgramme
@@ -23,15 +27,18 @@ const { QuizMatch } = await import('./quizMatch.svelte');
 /**
  * Спільна вікторина — на двох учасниках в одному процесі.
  *
- * Головне, що тут доводиться, інше, ніж у «Знайди пару». Там — «дошка є чистою
- * функцією від журналу». Тут дошки в кожного своя, тож доводиться два інших
- * твердження:
+ * Доводиться чотири твердження, і третє з них — головне:
  *
  *  1. ПРОГРАМА однакова в усіх, бо виводиться з зерна кімнати;
- *  2. РАХУНОК не подвоюється від повторного надсилання того самого кроку.
+ *  2. одна відповідь на раунд: повтор не подвоює очок;
+ *  3. РАХУНОК — чиста функція від журналу. Ніхто не оголошує своїх очок; він
+ *     оголошує лише правильність, а швидкість рахується з двох СЕРВЕРНИХ
+ *     позначок часу. Тому та сама відповідь, надіслана пізніше, коштує менше —
+ *     і підробити це клієнт не може;
+ *  4. фази раунду залежать від переданого часу, а не від справжнього годинника.
  *
- * Друге — єдине місце, де база не захищає: правило «лише створити» стереже НОМЕР
- * ходу, а повторний результат приїжджає з іншим номером.
+ * Час тут рухає `room.tick()`, а не `Date.now()`: перевірка, яка чекає реальні
+ * секунди, або довга, або зеленіє випадково.
  */
 
 const HOST = 'uid-host';
@@ -64,7 +71,7 @@ function table(roomInfo: RoomInfo = info()) {
 describe('набір ігор у кімнаті', () => {
 	it('перевірка жива: ігри онлайн є', () => {
 		expect(ONLINE_GAMES.length).toBeGreaterThan(0);
-		expect(QUIZ_STEPS).toBeGreaterThan(1);
+		expect(QUIZ_ROUNDS).toBeGreaterThan(1);
 	});
 
 	/**
@@ -136,89 +143,193 @@ describe('програма партії', () => {
 describe('рахунок спільної вікторини', () => {
 	it('обидва бачать однакову програму', () => {
 		const { host, guest, stop } = table();
+		expect(host.programme).toHaveLength(QUIZ_ROUNDS);
 		expect(host.programme).toEqual(guest.programme);
-		expect(host.programme).toHaveLength(QUIZ_STEPS);
-		stop();
-	});
-
-	it('закритий крок додає очки й рухає гравця далі', async () => {
-		const { host, guest, stop } = table();
-		expect(host.myStep).toBe(0);
-
-		await host.finishStep(3);
-
-		expect(host.myStep, 'мій крок зрушив').toBe(1);
-		expect(host.myScore).toBe(3);
-		expect(guest.progress[HOST], 'і гість бачить те саме').toEqual({ step: 1, score: 3 });
 		stop();
 	});
 
 	/**
-	 * ПОВТОРНИЙ РЕЗУЛЬТАТ ТОГО САМОГО КРОКУ НЕ ЗАРАХОВУЄТЬСЯ.
+	 * ШВИДКІСТЬ РАХУЄТЬСЯ З ЖУРНАЛУ, і це головне твердження всього файлу.
 	 *
-	 * Це єдине місце, де база не допоможе: правило «лише створити» стереже номер
-	 * ходу, а повторне надсилання приїжджає з іншим номером. Без перевірки в
-	 * застосуванні гравець, чий запис не доїхав із першого разу, отримав би
-	 * подвійні очки — і виглядало б це не як зловживання, а як щедрий підрахунок.
+	 * Двоє дають ОДНАКОВО правильну відповідь на той самий раунд, але з різницею
+	 * в часі — і очки виходять різні. Жоден із них числа очок не надсилав: у
+	 * журналі лежить `correct: 1`, а решту порахував контролер із двох серверних
+	 * позначок.
+	 *
+	 * Саме цього не могла зробити попередня модель: там у журнал їхало готове
+	 * число, тобто швидкість була ОГОЛОШЕНОЮ, і 100 замість 62 виглядало як
+	 * швидка відповідь.
 	 */
-	it('той самий крок, дописаний двічі, не подвоює очок', async () => {
+	it('та сама відповідь пізніше коштує менше', async () => {
 		const { room, host, guest, stop } = table();
-		await host.finishStep(5);
+		await host.startRound(0);
 
-		// Руками, з тим самим номером кроку: саме так виглядав би повтор.
-		await room.transport().append({
-			seq: 2,
-			by: HOST,
-			type: 'step',
-			payload: { step: 0, points: 5 }
-		});
+		await host.answer(1);
+		room.tick(Math.round(host.limitMs * 0.8));
+		await guest.answer(1);
 
-		expect(host.myScore, 'очки не подвоїлися').toBe(5);
-		expect(host.myStep).toBe(1);
-		expect(guest.progress[HOST]).toEqual({ step: 1, score: 5 });
+		const scores = host.scores;
+		expect(scores[HOST]).toBeGreaterThan(scores[GUEST]);
+		// Миттєва відповідь — стеля; найповільніша — підлога. Числа з конфігу.
+		expect(scores[HOST]).toBe(100);
+		expect(scores[GUEST]).toBeLessThan(100);
+		expect(scores[GUEST]).toBeGreaterThanOrEqual(50);
 		stop();
 	});
 
-	it('крок не з черги відкидається', async () => {
-		const { room, host, stop } = table();
-
-		// Третій крок, коли не закритий перший: пропуск нічого не означає.
-		await room.transport().append({
-			seq: 1,
-			by: HOST,
-			type: 'step',
-			payload: { step: 2, points: 9 }
-		});
-
-		expect(host.myStep).toBe(0);
-		expect(host.myScore).toBe(0);
-		stop();
-	});
-
-	it('партія скінчилася, коли всі пройшли програму', async () => {
-		const { host, guest, stop } = table();
-		expect(host.over).toBe(false);
-
-		for (let step = 0; step < QUIZ_STEPS; step++) await host.finishStep(1);
-		expect(host.over, 'один закінчив — партія ще йде').toBe(false);
-		expect(host.playing).toBe(1);
-
-		for (let step = 0; step < QUIZ_STEPS; step++) await guest.finishStep(2);
-
-		expect(host.over).toBe(true);
-		expect(host.playing).toBe(0);
-		expect(guest.myScore).toBe(2 * QUIZ_STEPS);
-		stop();
-	});
-
-	it('після програми крок більше не приймається', async () => {
+	it('хибна відповідь не дає очок, навіть найшвидша', async () => {
 		const { host, stop } = table();
-		for (let step = 0; step < QUIZ_STEPS; step++) await host.finishStep(1);
-		const before = host.myScore;
-
-		await host.finishStep(100);
-
-		expect(host.myScore, 'зайвий крок нічого не додав').toBe(before);
+		await host.startRound(0);
+		await host.answer(0);
+		expect(host.scores[HOST]).toBe(0);
 		stop();
+	});
+
+	it('часткова правильність дає частку очок', async () => {
+		const { host, stop } = table();
+		await host.startRound(0);
+		await host.answer(2 / 3);
+		// Миттєва відповідь дала б 100 за повну правильність; дві третини — 67.
+		expect(host.scores[HOST]).toBe(67);
+		stop();
+	});
+
+	/**
+	 * Одна відповідь на раунд — єдине місце, де база не захищає.
+	 *
+	 * Правило «лише створити» стереже НОМЕР ходу, а повторна відповідь приїжджає
+	 * з іншим номером. Без цієї перевірки повтор надсилання давав би подвійні
+	 * очки, і виглядало б це як щедрий баг, а не як дірка.
+	 */
+	it('повторна відповідь на той самий раунд не додає очок', async () => {
+		const { room, host, stop } = table();
+		await host.startRound(0);
+		await host.answer(1);
+		const once = host.scores[HOST];
+
+		// Обходимо власну перевірку контролера й пишемо в журнал напряму — саме так
+		// вчинив би той, хто відкрив консоль.
+		await room.transport().append({
+			seq: host.applied + 1,
+			by: HOST,
+			type: 'answer',
+			payload: { round: 0, correct: 1 }
+		});
+
+		expect(host.scores[HOST]).toBe(once);
+		stop();
+	});
+
+	/**
+	 * Раунд оголошує ЛИШЕ господар.
+	 *
+	 * Правило бази цього не тримає: підписати хід чужим `uid` не можна, але
+	 * оголосити раунд від СЕБЕ може будь-хто. Без перевірки при застосуванні гість
+	 * перескочив би раунд — і в усіх поїхала б програма.
+	 */
+	it('раунд, оголошений гостем, відкидається', async () => {
+		const { host, guest, stop } = table();
+		await guest.startRound(0);
+		expect(host.round).toBe(-1);
+		expect(guest.round).toBe(-1);
+		stop();
+	});
+
+	it('хто відповів — видно, а що відповів — ні', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		await guest.answer(1);
+
+		expect(host.answered).toEqual([GUEST]);
+		expect(host.iAnswered).toBe(false);
+		expect(host.everyoneAnswered).toBe(false);
+
+		await host.answer(0);
+		expect(host.everyoneAnswered).toBe(true);
+		// Факт відповіді однаковий для правильної й хибної: у переліку лише uid.
+		expect(host.answered.slice().sort()).toEqual([GUEST, HOST].sort());
+		stop();
+	});
+});
+
+describe('фази раунду', () => {
+	it('поки час іде — раунд; коли вийшов — табло', async () => {
+		const { room, host, stop } = table();
+		await host.startRound(0);
+		const start = host.startedAt[0];
+
+		expect(host.phase(start)).toBe('round');
+		expect(host.phase(start + host.limitMs - 1)).toBe('round');
+		expect(host.phase(start + host.limitMs)).toBe('reveal');
+		room.tick(0);
+		stop();
+	});
+
+	/**
+	 * Коли відповіли всі, раунд кінчається РАНІШЕ — але не в ту саму мить.
+	 *
+	 * Секунда потрібна останньому: без неї табло вискакує тоді, коли він щойно
+	 * відпустив кнопку, і власної відповіді на дошці він не бачить.
+	 */
+	it('усі відповіли — табло за секунду, а не одразу', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(500);
+		await guest.answer(1);
+
+		const last = host.answers[0][GUEST].at;
+		expect(host.phase(last)).toBe('round');
+		expect(host.phase(last + SETTLE_MS - 1)).toBe('round');
+		expect(host.phase(last + SETTLE_MS)).toBe('reveal');
+		stop();
+	});
+
+	it('наступний раунд — через показ табла, не раніше', async () => {
+		const { host, stop } = table();
+		await host.startRound(0);
+		const deadline = host.deadlineAt() as number;
+
+		expect(host.nextDue(deadline)).toBe(false);
+		expect(host.nextDue(deadline + REVEAL_MS - 1)).toBe(false);
+		expect(host.nextDue(deadline + REVEAL_MS)).toBe(true);
+		stop();
+	});
+
+	it('партія скінчилася, коли раунди програми вичерпані', async () => {
+		const { host, stop } = table();
+		for (let round = 0; round < QUIZ_ROUNDS; round++) await host.startRound(round);
+		expect(host.over).toBe(false);
+		await host.startRound(QUIZ_ROUNDS);
+		expect(host.over).toBe(true);
+		expect(host.phase(0)).toBe('over');
+		stop();
+	});
+});
+
+describe('очки за відповідь — чиста функція', () => {
+	it('перевірка жива: межі беруться з конфігу', () => {
+		expect(roundLimitMs('myths')).toBeGreaterThan(0);
+		expect(roundLimitMs('myths', 5)).toBe(roundLimitMs('myths') * 5);
+		// Невідома гра не валить рахунок: беремо найкоротший раунд.
+		expect(roundLimitMs('гри-такої-немає')).toBeGreaterThan(0);
+	});
+
+	it('миттєва відповідь — стеля, остання мілісекунда — підлога', () => {
+		expect(answerPoints(1000, 1000, 7000, 1)).toBe(100);
+		expect(answerPoints(8000, 1000, 7000, 1)).toBe(50);
+		expect(answerPoints(4500, 1000, 7000, 1)).toBe(75);
+	});
+
+	/**
+	 * Відповідь ПОЗА вікном оцінюється як найповільніша, а не як нульова.
+	 *
+	 * Від'ємна різниця можлива: `at` ставить сервер із вікном у пʼять секунд, і
+	 * хід міг отримати позначку раніше за старт раунду. Нуль очок за це був би
+	 * покаранням за розсинхрон годинників.
+	 */
+	it('час поза вікном не дає ні нуля, ні понад стелю', () => {
+		expect(answerPoints(0, 1000, 7000, 1)).toBe(100);
+		expect(answerPoints(99999, 1000, 7000, 1)).toBe(50);
 	});
 });

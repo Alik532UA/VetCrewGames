@@ -3,11 +3,10 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { MythGameController } from '$lib/controllers/mythGame.svelte';
 	import { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
-	import { ONLINE_GAMES, type QuizStep } from '$lib/config/quizOnline';
+	import type { QuizStep } from '$lib/config/quizOnline';
 	import { BIN } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import type { QuickTarget } from '$lib/components/FeedingDish.svelte';
-	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MythCard from '$lib/components/MythCard.svelte';
 	import FeedingBoard from '$lib/components/FeedingBoard.svelte';
 
@@ -36,11 +35,18 @@
 	 */
 	interface Props {
 		step: QuizStep;
-		/** Крок закінчено — стільки очок. Кличеться РІВНО раз. */
-		onfinish: (points: number) => void;
+		/**
+		 * Я відповів — ось ЧАСТКА правильного, від 0 до 1. Кличеться РІВНО раз.
+		 *
+		 * Частка, а не очки, і це ключове. Очки залежать від швидкості, а швидкість
+		 * рахується з двох СЕРВЕРНИХ позначок часу в журналі — дошка про неї не
+		 * знає й знати не мусить. Доти сюда їхало готове число, тобто клієнт
+		 * оголошував і правильність, і швидкість; тепер він оголошує лише першу.
+		 */
+		onanswer: (correct: number) => void;
 	}
 
-	let { step, onfinish }: Props = $props();
+	let { step, onanswer }: Props = $props();
 
 	/*
 	 * КРОК ЧИТАЄТЬСЯ ОДИН РАЗ, і `untrack` про це і каже.
@@ -52,7 +58,15 @@
 	 * лишилася б від попередньої гри, і саме це воно й ловить.
 	 */
 	const mine = untrack(() => step);
-	const rounds = ONLINE_GAMES.find((game) => game.id === mine.game)?.rounds ?? 5;
+	/*
+	 * ОДИН РАУНД НА КОНТРОЛЕР, і це те, що зробило раундову модель дешевою.
+	 *
+	 * Усі пʼять контролерів ігор приймають `(totalRounds, seed)`, а
+	 * `quizSeed.test.ts` доводить, що за однакового зерна послідовність однакова.
+	 * Тобто «одне питання» — це просто контролер на один раунд, і жодної нової
+	 * механіки роздачі не потрібно.
+	 */
+	const ROUNDS_PER_STEP = 1;
 
 	/*
 	 * Контролер вибирається за грою кроку. `null` означає, що гра кроку невідома —
@@ -62,9 +76,9 @@
 	 * змогу його закрити. Тому нижче стоїть кнопка «пропустити», а не порожній
 	 * екран без виходу.
 	 */
-	const myths = mine.game === 'myths' ? new MythGameController(rounds, mine.seed) : null;
+	const myths = mine.game === 'myths' ? new MythGameController(ROUNDS_PER_STEP, mine.seed) : null;
 	const feeding =
-		mine.game === 'feeding' ? new FeedingGameController(rounds, mine.seed) : null;
+		mine.game === 'feeding' ? new FeedingGameController(ROUNDS_PER_STEP, mine.seed) : null;
 	const game = myths ?? feeding;
 
 	onMount(() => game?.start());
@@ -80,10 +94,26 @@
 	 */
 	let reported = false;
 
+	/**
+	 * Частка правильного в цьому раунді.
+	 *
+	 * У «Міфів» відповідь бінарна — один результат раунду. У «Роздай страви» три
+	 * страви, і дві з трьох мусять давати дві третини: інакше гра стає «усе або
+	 * нічого», хоч сама вона так не влаштована.
+	 */
+	function correctShare(): number {
+		if (feeding) {
+			const verdicts = feeding.verdicts;
+			if (verdicts.length === 0) return 0;
+			return verdicts.filter((verdict) => verdict.isCorrect).length / verdicts.length;
+		}
+		return game?.roundResults[0] === 'correct' ? 1 : 0;
+	}
+
 	$effect(() => {
 		if (!game?.gameOver || reported) return;
 		reported = true;
-		onfinish(game.sessionScore);
+		onanswer(correctShare());
 	});
 
 	/** Мішені перетягування — та сама похідна, що на сторінці «Роздай страви». */
@@ -125,19 +155,12 @@
 		<button
 			type="button"
 			class="btn-primary"
-			onclick={() => onfinish(0)}
+			onclick={() => onanswer(0)}
 			data-testid="quiz-skip-btn"
 		>
 			{@html formatFont(t('quiz.skipStep'))}
 		</button>
 	{:else if !game.gameOver}
-		<div class="board__rounds">
-			<RoundIndicator
-				current={game.roundNumber}
-				total={rounds}
-				results={game.roundResults}
-			/>
-		</div>
 
 		{#if myths?.current}
 			<!--
@@ -184,11 +207,6 @@
 		align-items: center;
 		gap: var(--space-sm);
 		width: 100%;
-	}
-
-	.board__rounds {
-		display: flex;
-		justify-content: center;
 	}
 
 	.board__prompt,

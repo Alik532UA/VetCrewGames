@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
+	import { browser, dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
@@ -11,13 +11,13 @@
 	import { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
-	import { ONLINE_GAMES, gamesToConfig } from '$lib/config/quizOnline';
+	import { DEV_TIME_FACTOR, ONLINE_GAMES, gamesToConfig } from '$lib/config/quizOnline';
 	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import QuizGamePicker from '$lib/components/quiz/QuizGamePicker.svelte';
-	import QuizBoard from '$lib/components/quiz/QuizBoard.svelte';
+	import QuizRound from '$lib/components/quiz/QuizRound.svelte';
 	import QuizScores from '$lib/components/quiz/QuizScores.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 
@@ -185,7 +185,7 @@
 			const connection = await import('$lib/net/firebase').then((m) => m.connect());
 			me = connection.uid;
 
-			const started = new QuizMatch(me, transport);
+			const started = new QuizMatch(me, transport, dev ? DEV_TIME_FACTOR : 1);
 			stops.push(started.listen());
 
 			const live = await import('$lib/net/presence');
@@ -286,16 +286,51 @@
 		await net.joinRoom(code, player.forEntry(takenNames), role, player.country);
 	}
 
-	/** Крок закінчено — результат у журнал. */
-	async function finishStep(points: number) {
+	/** Я відповів — частка правильного в журнал. Очки порахує кожен сам. */
+	async function answer(correct: number) {
 		if (!match) return;
 		try {
-			await match.finishStep(points);
+			await match.answer(correct);
 		} catch (error) {
 			toast.error('pairs.actionFailed');
-			logService.error('network', 'quiz step not saved', { reason: String(error) });
+			logService.error('network', 'quiz answer not saved', { reason: String(error) });
 		}
 	}
+
+	/**
+	 * ГОДИННИК ПАРТІЇ ЙДЕ ЧАСТІШЕ ЗА СЕКУНДУ, і це не марнотратство.
+	 *
+	 * На ньому смуга таймера раунду. Оновлення раз на секунду давало б смугу, що
+	 * стрибає сімома кроками, — а раунд і триває сім секунд, тобто стрибок був би
+	 * майже всією смугою.
+	 */
+	const ROUND_CLOCK_MS = 100;
+
+	/*
+	 * НАСТУПНИЙ РАУНД ОГОЛОШУЄ ГОСПОДАР, і рівно один раз.
+	 *
+	 * Прапорець потрібен, бо `$effect` перезапускається на кожен такт годинника, а
+	 * умова «час таблу вийшов» лишається правдою, доки раунд не змінився. Без
+	 * нього господар писав би той самий раунд десять разів на секунду; журнал
+	 * відкидав би повтори (перше оголошення виграє), але писати їх однаково не
+	 * треба.
+	 */
+	let announcing = false;
+
+	$effect(() => {
+		if (!browser || !match || !amHost) return;
+		if (match.status !== 'playing' || match.over) return;
+		// Партія щойно почалася — перший раунд оголошується без чекання.
+		if (match.round < 0) {
+			if (announcing) return;
+			announcing = true;
+			void match.startRound(0).finally(() => (announcing = false));
+			return;
+		}
+		if (!match.nextDue(clock) || announcing) return;
+		announcing = true;
+		void match.startRound(match.round + 1).finally(() => (announcing = false));
+	});
 
 	// Відлік до автоматичного старту — той самий механізм, що в «Знайди пару»:
 	// позначку ставить лідер, а бачать обидва.
@@ -321,11 +356,22 @@
 			: Math.max(0, Math.ceil((match.countdownAt + COUNTDOWN_MS - clock) / 1000))
 	);
 
-	// Годинник іде ЛИШЕ поки на нього чекають — тобто під час відліку в лобі.
+	/*
+	 * Годинник іде, поки на нього чекають: відлік у лобі АБО раунд партії.
+	 *
+	 * Під час раунду частіше — на ньому смуга таймера. Поза цими двома станами
+	 * таймера немає зовсім: інтервал, який тікає на порожньому екрані, — це
+	 * розряджений акумулятор і нічого більше.
+	 */
+	const clockNeeded = $derived(
+		countdownLeft !== null || (match !== null && match.status === 'playing' && !match.over)
+	);
+
 	$effect(() => {
-		if (!browser || countdownLeft === null) return;
+		if (!browser || !clockNeeded) return;
+		const every = countdownLeft !== null && match?.status !== 'playing' ? CLOCK_MS : ROUND_CLOCK_MS;
 		clock = Date.now();
-		const timer = setInterval(() => (clock = Date.now()), CLOCK_MS);
+		const timer = setInterval(() => (clock = Date.now()), every);
 		return () => clearInterval(timer);
 	});
 
@@ -433,8 +479,9 @@
 	{:else if match.over}
 		<QuizScores
 			players={match.players}
-			progress={match.progress}
-			total={match.programme.length}
+			answered={match.answered}
+			scores={match.scores}
+			withScores
 			{me}
 		/>
 		<!--
@@ -460,24 +507,31 @@
 			<p class="quiz-online__wait text-panel">{@html formatFont(t('pairs.waitingHost'))}</p>
 		{/if}
 	{:else}
+		<!--
+			ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
+			
+			Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу
+			саме тоді, коли вона потрібна на питанні. Під час раунду видно лише
+			склад гравців із позначкою «вже відповів», а рахунок з'являється на
+			таблі між раундами.
+		-->
+		{@const phase = match.phase(clock)}
 		<QuizScores
 			players={match.players}
-			progress={match.progress}
-			total={match.programme.length}
+			answered={match.answered}
+			scores={match.scores}
+			withScores={phase !== 'round'}
 			{me}
 		/>
-		{#if match.currentStep}
-			<!--
-				`{#key}` на зерні кроку: контролер тримає стан партії, і «наступна гра»
-				для нього — нова партія, а не наступний раунд. Без ключа дошка лишалася б
-				з половиною стану від попередньої гри.
-			-->
-			{#key match.currentStep.seed}
-				<QuizBoard step={match.currentStep} onfinish={finishStep} />
-			{/key}
-		{:else}
-			<p class="quiz-online__wait text-panel">{@html formatFont(t('quiz.waitingOthers'))}</p>
-		{/if}
+
+		<QuizRound
+			{phase}
+			step={match.step}
+			leftMs={match.leftMs(clock)}
+			limitMs={match.limitMs}
+			answered={match.iAnswered}
+			onanswer={answer}
+		/>
 	{/if}
 </div>
 
@@ -487,8 +541,19 @@
 		flex-direction: column;
 		align-items: center;
 		flex: 1;
-		width: 95%;
-		max-width: 96vw;
+		/*
+		 * ШИРИНА ОБМЕЖЕНА, а не «майже все вікно».
+		 *
+		 * Тут стояло `width: 95%; max-width: 96vw`, і на широкому екрані дошка
+		 * «Роздай страви» розповзалася на всю ширину: три мішені по пів метра, а
+		 * підпис і кнопка «Далі» посередині пустки. Автор надіслав знімок саме
+		 * цього — «розтягнутий та поломаний інтерфейс».
+		 *
+		 * 900px — ширина, за якої три мішені лишаються квадратними, а картки
+		 * тварин читаються без прокрутки.
+		 */
+		width: 100%;
+		max-width: 900px;
 		padding: 3svh 0 var(--space-lg);
 		gap: var(--space-md);
 		margin: 0 auto;
