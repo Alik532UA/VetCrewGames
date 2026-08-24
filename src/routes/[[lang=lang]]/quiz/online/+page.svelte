@@ -295,6 +295,11 @@
 	}
 
 	const switchAutoStart = (on: boolean) => hostAction((transport) => transport.setAutoStart(on));
+	/**
+	 * Прибрати того, хто зник. Дія лідера, і правило бази дозволяє саме її:
+	 * ВИДАЛЕННЯ чужого рядка складу, а не зміну.
+	 */
+	const kick = (uid: string) => hostAction((transport) => transport.removeMember(uid));
 	const rematch = () =>
 		hostAction((transport) => transport.restart(Math.floor(Math.random() * 2 ** 31)));
 
@@ -570,6 +575,7 @@
 			onanswer={answer}
 			onRematch={rematch}
 			onClose={close}
+			onkick={kick}
 		/>
 	{/if}
 </div>

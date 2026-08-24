@@ -25,6 +25,7 @@ export const ui = {
 	'quiz.awayTitle': 'Keine Verbindung',
 	'quiz.awayWait': 'Wir warten, ob er zurückkommt:',
 	'quiz.awayGone': 'Die Partie läuft weiter — auf diesen Spieler wird nicht mehr gewartet.',
+	'quiz.awayKick': 'Entfernen',
 	'quiz.nextRound': 'Nächste Runde',
 
 	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —

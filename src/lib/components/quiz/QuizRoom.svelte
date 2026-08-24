@@ -44,9 +44,12 @@
 		onanswer: (correct: number) => void;
 		onRematch: () => void;
 		onClose: () => void;
+		/** Прибрати зниклого. Лише лідер — тобто в гостя цього немає зовсім. */
+		onkick: (uid: string) => void;
 	}
 
-	let { match, me, lang, amHost, clock, awayLeft, onanswer, onRematch, onClose }: Props = $props();
+	let { match, me, lang, amHost, clock, awayLeft, onanswer, onRematch, onClose, onkick }: Props =
+		$props();
 </script>
 
 {#if match.over}
@@ -95,7 +98,7 @@
 		Вікно очікування стоїть НАД таблом: воно про кімнату, а не про раунд, і
 		саме тому не накриває питання.
 	-->
-	<QuizAway away={match.away} secondsLeft={awayLeft} />
+	<QuizAway away={match.away} secondsLeft={awayLeft} onkick={amHost ? onkick : undefined} />
 
 	{@const phase = match.phase(clock)}
 	{#if phase === 'reveal'}

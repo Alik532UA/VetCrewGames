@@ -25,6 +25,7 @@ export const ui = {
 	'quiz.awayTitle': 'Geen verbinding',
 	'quiz.awayWait': 'We wachten of hij terugkomt:',
 	'quiz.awayGone': 'De partij gaat door — op deze speler wordt niet meer gewacht.',
+	'quiz.awayKick': 'Verwijderen',
 	'quiz.nextRound': 'Volgende ronde',
 
 	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen

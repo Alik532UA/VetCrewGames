@@ -25,6 +25,7 @@ export const ui = {
 	'quiz.awayTitle': 'Lost connection',
 	'quiz.awayWait': 'Waiting to see if they come back:',
 	'quiz.awayGone': 'The match goes on — this player is no longer awaited.',
+	'quiz.awayKick': 'Remove',
 	'quiz.nextRound': 'Next round',
 
 	// The three items are the same for the quiz and for "Find a pair" — only

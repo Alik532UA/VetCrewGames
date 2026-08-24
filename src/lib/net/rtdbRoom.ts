@@ -320,7 +320,8 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */
 export async function roomTransport(code: string): Promise<RoomTransport> {
 	const { db } = await connect();
-	const { off, onValue, ref, serverTimestamp, set, update } = await import('firebase/database');
+	const { off, onValue, ref, remove, serverTimestamp, set, update } =
+		await import('firebase/database');
 	const room = ref(db, `rooms/${code}`);
 
 	return {
@@ -410,6 +411,14 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			 * партію, яку щойно скасували.
 			 */
 			await update(ref(db, `rooms/${code}/info`), { autoStart: on, countdownAt: null });
+		},
+
+		async removeMember(uid: string) {
+			/*
+			 * Саме `remove`, а не запис `null` у поле: прибирається ВЕСЬ рядок
+			 * учасника, і правило дозволяє господареві рівно це — видалення, не зміну.
+			 */
+			await remove(ref(db, `rooms/${code}/members/${uid}`));
 		},
 
 		async setCountdown(active: boolean) {

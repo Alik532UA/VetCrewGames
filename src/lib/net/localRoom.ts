@@ -95,9 +95,7 @@ export class LocalRoom {
 				 */
 				const { countdownAt: _stale, ...rest } = this.#info;
 				this.#info =
-					status === 'playing'
-						? { ...rest, status, startedAt: this.#now }
-						: { ...rest, status };
+					status === 'playing' ? { ...rest, status, startedAt: this.#now } : { ...rest, status };
 				this.#emit();
 			},
 
@@ -105,6 +103,13 @@ export class LocalRoom {
 				// Той самий контракт, що в справжній базі: зміна режиму гасить відлік.
 				const { countdownAt: _reset, ...rest } = this.#info;
 				this.#info = { ...rest, autoStart: on };
+				this.#emit();
+			},
+
+			removeMember: async (uid) => {
+				// Той самий контракт, що в справжній базі: рядок учасника зникає цілком.
+				// Підставка, добріша за оригінал, доводила б не те, що треба.
+				this.#members = this.#members.filter((member) => member.uid !== uid);
 				this.#emit();
 			},
 

@@ -197,6 +197,36 @@ const CASES = [
 			)
 	},
 	{
+		/*
+		 * ГОСПОДАР ПРИБИРАЄ ЗНИКЛОГО — і це єдине, що він може зробити з чужим
+		 * рядком складу. Потрібно це тому, що `members` не гаснуть самі: той, хто
+		 * закрив вкладку, лишається у складі назавжди.
+		 */
+		name: 'господар ПРИБИРАЄ чужий рядок складу',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/members/${guest.uid}`, null, host.token)
+	},
+	{
+		// А ПЕРЕПИСАТИ його не може: інакше господар міняв би чуже імʼя, прапор і
+		// роль, тобто говорив би за іншого.
+		name: 'господар ПЕРЕПИСУЄ чужий рядок складу',
+		allowed: false,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, name: 'Не він' }, host.token)
+	},
+	{
+		// Гість не господар: прибрати сусіда він не може.
+		name: 'гість ПРИБИРАЄ чужий рядок складу',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/members/${host.uid}`, null, guest.token)
+	},
+	{
+		// Вертаємо гостя у склад: наступні випадки спираються на його присутність.
+		name: 'гість вертається у склад після виключення',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/members/${guest.uid}`, member, guest.token)
+	},
+	{
 		// `at` серверний, як і в `net/presence.ts`. Клієнтське число тут доти
 		// проходило, бо форма присутності не перевірялася зовсім.
 		name: 'учасник тримає СВОЮ присутність',
@@ -359,7 +389,11 @@ const CASES = [
 		name: 'гість вертає пошук і знову вписується',
 		allowed: true,
 		run: () =>
-			write(`users/${guest.uid}/privacy`, { search: true, follow: false, board: false }, guest.token)
+			write(
+				`users/${guest.uid}/privacy`,
+				{ search: true, follow: false, board: false },
+				guest.token
+			)
 	},
 	{
 		name: 'підписатися на того, хто закрив підписки',
@@ -618,11 +652,7 @@ const CASES = [
 		name: 'рекорд гри, якої ще не було в правилах',
 		allowed: true,
 		run: () =>
-			write(
-				`users/${guest.uid}/play/games/new-game-2027`,
-				{ best: 1, plays: 1 },
-				guest.token
-			)
+			write(`users/${guest.uid}/play/games/new-game-2027`, { best: 1, plays: 1 }, guest.token)
 	},
 	{
 		name: 'чужий рахунок читає інший гравець',
@@ -867,21 +897,13 @@ const CASES = [
 		name: 'прапор із двох літер',
 		allowed: true,
 		run: () =>
-			write(
-				`rooms/${CODE}/members/${guest.uid}`,
-				{ ...member, country: 'ua' },
-				guest.token
-			)
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, country: 'ua' }, guest.token)
 	},
 	{
 		name: 'прапор із трьох літер',
 		allowed: false,
 		run: () =>
-			write(
-				`rooms/${CODE}/members/${guest.uid}`,
-				{ ...member, country: 'ukr' },
-				guest.token
-			)
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, country: 'ukr' }, guest.token)
 	},
 	{
 		/*
@@ -898,11 +920,7 @@ const CASES = [
 		name: 'аватар у складі кімнати',
 		allowed: true,
 		run: () =>
-			write(
-				`rooms/${CODE}/members/${guest.uid}`,
-				{ ...member, avatar: 'cat:blue' },
-				guest.token
-			)
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, avatar: 'cat:blue' }, guest.token)
 	},
 	{
 		name: 'аватар довший за 24 символи',
@@ -918,11 +936,7 @@ const CASES = [
 		name: 'аватар без двокрапки',
 		allowed: false,
 		run: () =>
-			write(
-				`rooms/${CODE}/members/${guest.uid}`,
-				{ ...member, avatar: 'catblue' },
-				guest.token
-			)
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, avatar: 'catblue' }, guest.token)
 	},
 	{
 		// Нове поле не відкриває нового шляху: рядок складу лишається чужим, і
@@ -930,14 +944,10 @@ const CASES = [
 		name: 'аватар у ЧУЖОМУ рядку складу',
 		allowed: false,
 		run: () =>
-			write(
-				`rooms/${CODE}/members/${host.uid}`,
-				{ ...member, avatar: 'dog:red' },
-				guest.token
-			)
+			write(`rooms/${CODE}/members/${host.uid}`, { ...member, avatar: 'dog:red' }, guest.token)
 	},
 	{
-		name: "імʼя довше за 48 символів",
+		name: 'імʼя довше за 48 символів',
 		allowed: false,
 		run: () =>
 			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, name: 'я'.repeat(49) }, guest.token)
@@ -1067,11 +1077,7 @@ const CASES = [
 		name: 'невідоме поле в ході',
 		allowed: false,
 		run: () =>
-			write(
-				`rooms/${CODE}/moves/000012`,
-				{ ...move(guest.uid, 12), score: 999 },
-				guest.token
-			)
+			write(`rooms/${CODE}/moves/000012`, { ...move(guest.uid, 12), score: 999 }, guest.token)
 	},
 	{
 		name: 'невідоме поле в info',

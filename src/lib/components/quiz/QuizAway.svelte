@@ -25,18 +25,29 @@
 	 *
 	 * Він відповідає на єдине питання, яке в цю мить є: чекати чи грати далі. За
 	 * межею відліку вікно каже прямо, що на цього гравця більше не чекають, — і
-	 * саме тоді має сенс кнопка «виключити» в лідера. Її тут немає навмисно:
-	 * правило бази дозволяє писати в `members/{uid}` лише самому цьому
-	 * учасникові, тож кнопка вимагає правки правил і приїде разом із нею.
+	 * саме тоді з'являється «Виключити» в лідера.
+	 *
+	 * КНОПКА ЛИШЕ ПІСЛЯ ВІДЛІКУ, і це не обережність: обрив зв'язку на пару секунд
+	 * трапляється в кожного, а виключення незворотне — той, кого прибрали, вертається
+	 * в кімнату вже без свого рахунку в цій партії. Правило бази дозволяє
+	 * господареві саме ВИДАЛЕННЯ чужого рядка складу, а не зміну: переписати чуже
+	 * імʼя, прапор чи роль він не може.
 	 */
 	interface Props {
 		/** Кого немає онлайн. Порожньо — вікна немає зовсім. */
 		away: Member[];
 		/** Скільки секунд лишилося з пільгового часу. `0` — вичерпано. */
 		secondsLeft: number;
+		/**
+		 * Прибрати гравця з кімнати. `undefined` — я не лідер, і кнопки немає.
+		 *
+		 * Не `disabled`: кнопка, якої натиснути не можна, у гостя лише питала б, чому
+		 * вона там стоїть.
+		 */
+		onkick?: (uid: string) => void;
 	}
 
-	let { away, secondsLeft }: Props = $props();
+	let { away, secondsLeft, onkick }: Props = $props();
 </script>
 
 {#if away.length > 0}
@@ -49,6 +60,16 @@
 					<Avatar avatar={member.avatar} />
 					<Flag code={member.country} />
 					<span class="away__name">{member.name}</span>
+					{#if onkick && secondsLeft === 0}
+						<button
+							type="button"
+							class="away__kick"
+							onclick={() => onkick(member.uid)}
+							data-testid="quiz-away-{member.uid}-btn"
+						>
+							{@html formatFont(t('quiz.awayKick'))}
+						</button>
+					{/if}
 				</li>
 			{/each}
 		</ul>
@@ -117,6 +138,22 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/*
+	 * Кнопка тиха: дія незворотна, але не та, по яку тут дивляться. Гучна кнопка
+	 * поруч з іменем читалася б як пропозиція.
+	 */
+	.away__kick {
+		min-height: 32px;
+		padding: 0 var(--space-sm);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--color-text), transparent 90%);
+		color: var(--color-text);
+		font: inherit;
+		font-size: var(--font-size-xs);
+		cursor: pointer;
 	}
 
 	.away__note {
