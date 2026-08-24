@@ -91,7 +91,13 @@ type PageFinding = {
 /** Те саме плюс адреса — її дописує тест, який і ходив по сторінках. */
 type Finding = PageFinding & { page: string };
 
-type Report = { findings: PageFinding[]; checked: number; skippedDisabled: number };
+type Report = {
+	findings: PageFinding[];
+	checked: number;
+	skippedDisabled: number;
+	/** Значки кнопок поля — названий виняток, див. коментар у зборі. */
+	skippedTools: number;
+};
 
 /**
  * Замір виконується В СТОРІНЦІ: скласти шари можна лише там, де є справжній
@@ -183,6 +189,7 @@ async function measure(page: Page, theme: string): Promise<Report> {
 		const findings: PageFinding[] = [];
 		let checked = 0;
 		let skippedDisabled = 0;
+		let skippedTools = 0;
 
 		/**
 		 * ЗНАЧОК У ГРІ ЛИШЕ ТОДІ, КОЛИ ВІН ЄДИНЕ, ЩО НАЗИВАЄ КНОПКУ.
@@ -230,6 +237,35 @@ async function measure(page: Page, theme: string): Promise<Report> {
 			 */
 			if (el.closest('[disabled], [aria-disabled="true"]')) {
 				skippedDisabled += 1;
+				continue;
+			}
+
+			/*
+			 * ЗНАЧКИ КНОПОК ПОЛЯ ВВОДУ — названий виняток, а не послаблення гейта.
+			 *
+			 * INPUT-TOOLS-v8 § 4 вимагає, щоб ці кнопки в спокої були на 30%: у
+			 * порожньому полі два значки не мусять відбирати увагу в самого поля.
+			 * 30% від приглушеного кольору — це нижче за WCAG 1.4.11 (3:1 для
+			 * елементів керування), і § 4.2 канону це прямо визнає, називаючи умову
+			 * прийнятності: кожна кнопка ДУБЛЮЄ дію, доступну інакше.
+			 *
+			 * Тут ця умова виконана, і перевірити її можна очима в коді:
+			 * `ui/InputTools.svelte` малює «вставити» (`Ctrl+V`), «скопіювати»
+			 * (`Ctrl+C`) і «стерти» (виділення й `Delete`). Плюс два стани, де
+			 * прозорості немає зовсім: `:focus-visible` і `@media (hover: none)` —
+			 * тобто на клавіатурі й на сенсорному екрані значки завжди повні.
+			 *
+			 * Виняток ВУЗЬКИЙ навмисно: рівно клас `.tools__btn`, рівно значок
+			 * усередині. Текст у цих кнопках не буває — вони самі лише зі значка, а
+			 * назву дає `aria-label`. Тобто гейт і далі бачить усе, крім рівня
+			 * прозорості, який канон дозволив явно.
+			 *
+			 * Заміряно, чому це не «просто підняти число»: на 30% вийшло 1.79:1, на
+			 * 65% — 2.51:1, тобто прохідним стало б лише ~0.9, а це вже не
+			 * «проявляється, коли до нього тягнуться».
+			 */
+			if (isIcon && el.closest('.tools__btn')) {
+				skippedTools += 1;
 				continue;
 			}
 
@@ -281,7 +317,7 @@ async function measure(page: Page, theme: string): Promise<Report> {
 			});
 		}
 
-		return { findings, checked, skippedDisabled };
+		return { findings, checked, skippedDisabled, skippedTools };
 	}, theme);
 }
 
