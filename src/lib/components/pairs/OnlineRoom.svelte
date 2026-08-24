@@ -3,6 +3,7 @@
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import type { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 
 	/**
@@ -204,6 +205,7 @@
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
+				<Avatar avatar={match.members.find((m) => m.uid === player.uid)?.avatar} />
 				<Flag code={match.members.find((m) => m.uid === player.uid)?.country} />
 				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}: {scoreOf(
 					player.uid

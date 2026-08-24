@@ -276,6 +276,7 @@
 					config: { pairs: layout.pairs, cols: layout.cols },
 					name: who,
 					country: player.country,
+					avatar: player.forRoom(),
 					/*
 					 * АВТОСТАРТ ЛИШЕ ДЛЯ ШВИДКОЇ ГРИ, і це рішення автора.
 					 *
@@ -315,7 +316,7 @@
 				code = wanted;
 				// Роль НЕ передаємо: повернувшись у кімнату, глядач мусить лишитися
 				// глядачем, інакше склад зміниться й дошку перероздасть усім.
-				await net.joinRoom(code, who, undefined, player.country);
+				await net.joinRoom(code, who, undefined, player.country, player.forRoom());
 			}
 			await rememberInUrl(code);
 
@@ -367,6 +368,7 @@
 							hostUid: me,
 							hostName: who,
 						hostCountry: player.country,
+							hostAvatar: player.forRoom(),
 							gameId: 'pairs',
 							rulesVersion: RULES_VERSION,
 							players: 1
@@ -456,7 +458,7 @@
 	async function setRole(role: Role) {
 		if (!match || match.status !== 'lobby') return;
 		const net = await import('$lib/net/rtdbRoom');
-		await net.joinRoom(code, player.forEntry(takenNames), role, player.country);
+		await net.joinRoom(code, player.forEntry(takenNames), role, player.country, player.forRoom());
 	}
 
 	async function start() {

@@ -156,6 +156,7 @@
 					config: gamesToConfig(picked),
 					name: who,
 					country: player.country,
+					avatar: player.forRoom(),
 					autoStart: quick,
 					isPrivate: quick ? false : isPrivate
 				});
@@ -177,7 +178,7 @@
 					return;
 				}
 				code = wanted;
-				await net.joinRoom(code, who, undefined, player.country);
+				await net.joinRoom(code, who, undefined, player.country, player.forRoom());
 			}
 			await rememberInUrl(code);
 
@@ -203,6 +204,7 @@
 						hostUid: me,
 						hostName: who,
 						hostCountry: player.country,
+						hostAvatar: player.forRoom(),
 						gameId: 'quiz',
 						rulesVersion: RULES_VERSION,
 						players: 1
@@ -283,7 +285,7 @@
 	async function setRole(role: Role) {
 		if (!match || match.status !== 'lobby') return;
 		const net = await import('$lib/net/rtdbRoom');
-		await net.joinRoom(code, player.forEntry(takenNames), role, player.country);
+		await net.joinRoom(code, player.forEntry(takenNames), role, player.country, player.forRoom());
 	}
 
 	/** Крок закінчено — результат у журнал. */

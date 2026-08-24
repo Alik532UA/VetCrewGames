@@ -51,6 +51,15 @@ export interface LobbyRoom {
 	hostName: string;
 	/** Прапор господаря. Відсутнє = без прапора; правило дозволяє обидва. */
 	hostCountry?: string;
+	/**
+	 * Аватар господаря — рядок `значок:колір`.
+	 *
+	 * Лежить тут із тієї самої причини, що імʼя й прапор: перелік кімнат
+	 * НЕ ЧИТАЄ `rooms` (правила забороняють перелічувати їх — код кімнати і є її
+	 * пароль), тож усе, що видно в рядку списку, мусить бути в самому записі.
+	 * Відсутнє = типовий аватар.
+	 */
+	hostAvatar?: string;
 	gameId: string;
 	rulesVersion: number;
 	players: number;
@@ -87,6 +96,9 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
 		 * одного разу зникав хід `peek`.
 		 */
 		...(entry.hostCountry ? { hostCountry: entry.hostCountry } : {}),
+		// Те саме й для аватара: його `.validate` вимагає взірця `значок:колір`,
+		// якому порожній рядок не відповідає.
+		...(entry.hostAvatar ? { hostAvatar: entry.hostAvatar } : {}),
 		gameId: entry.gameId,
 		rulesVersion: entry.rulesVersion,
 		players: entry.players,

@@ -8,8 +8,12 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { Account } from '$lib/controllers/account.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
 	import AuthForm from '$lib/components/auth/AuthForm.svelte';
+	import { AVATAR_KEY, formatAvatar, parseAvatar } from '$lib/config/avatars';
+	import { storage } from '$lib/services/storage';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -38,6 +42,19 @@
 	let name = $state('');
 	let handle = $state('');
 	let country = $state('');
+	/**
+	 * Аватар — рядок `значок:колір`.
+	 *
+	 * Початкове значення зі СХОВИЩА, а не типове: у кімнату аватар їде саме
+	 * звідти (`controllers/playerIdentity`), і форма профілю мусить показувати те,
+	 * що вже вибрано, а не пропонувати вибрати вдруге.
+	 *
+	 * Через `parseAvatar`, а не прямо: зіпсоване значення у сховищі дало б
+	 * вибір, у якому не позначено нічого, і перше збереження записало б у базу
+	 * рядок, який правило відкине.
+	 */
+	const saved = parseAvatar(storage.get(AVATAR_KEY));
+	let avatar = $state(formatAvatar(saved.icon, saved.color));
 	let query = $state('');
 	/** Псевдонім зайнятий — перевірено перед збереженням. */
 	let taken = $state(false);
@@ -77,6 +94,15 @@
 		name = account.profile?.name ?? '';
 		handle = account.profile?.handle ?? '';
 		country = account.profile?.country ?? '';
+		/*
+		 * Аватар — ЛИШЕ якщо профіль його має.
+		 *
+		 * Інакше, ніж решта полів: у профілі його може не бути (він
+		 * необовʼязковий), а у сховищі вже лежить вибір, з яким людина ходить у
+		 * кімнати. Скинути її вибір на типовий через відсутність поля в базі
+		 * означало б стерти те, чого база не знає.
+		 */
+		if (account.profile?.avatar) avatar = account.profile.avatar;
 	}
 
 	/** Вхід МІНЯЄ `uid`, тож профіль на екрані стосувався б чужого акаунта. */
@@ -90,7 +116,20 @@
 			taken = true;
 			return;
 		}
-		await account.save(name, handle, country);
+		if (!(await account.save(name, handle, country, avatar))) return;
+		/*
+		 * Аватар пишеться У СХОВИЩЕ ТЕЖ, і саме тут — після вдалого запису.
+		 *
+		 * Причина не в кеші: у кімнату аватар їде зі сховища
+		 * (`controllers/playerIdentity`), бо форма входу в кімнату читати профіль
+		 * не мусить — це був би мережевий запит на екрані, який має відкритися з
+		 * першого дотику. Ті самі дві половини, що в прапора: він теж лежить і в
+		 * профілі, і у сховищі.
+		 *
+		 * Порядок обовʼязковий: запис у сховище ПІСЛЯ бази. У зворотному невдалий
+		 * запис профілю лишав би у кімнатах аватар, якого в профілі немає.
+		 */
+		storage.set(AVATAR_KEY, avatar);
 	}
 
 	/**
@@ -139,6 +178,15 @@
 		<!-- ПРОФІЛЬ: те, що бачать інші. -->
 		<section class="account__panel text-panel">
 			<h2 class="account__title">{@html formatFont(text('account.profileTitle'))}</h2>
+
+			<!--
+				АВАТАР — ПЕРШИМ у формі, і це не про важливість.
+
+				Він єдине тут, що видно оком, а не читається: рядки скануються зверху,
+				і плитка згори одразу каже, про кого ця форма. Поставлений після
+				текстових полів, він читався б як налаштування наприкінці списку.
+			-->
+			<AvatarPicker bind:value={avatar} {text} scope="account-avatar" />
 
 			<label class="account__label" for="account-name">
 				<span>{@html formatFont(t('pairs.nickname'))}</span>
@@ -235,6 +283,7 @@
 					{#if person.uid !== account.uid}
 						<li class="account__row" data-testid="account-found-{person.uid}-item">
 							<span class="account__who">
+								<Avatar avatar={person.avatar} />
 								<Flag code={person.country} />
 								{person.name}
 								<span class="account__handle">@{person.handle}</span>
@@ -276,6 +325,7 @@
 				{#each account.following as friend (friend.profile.uid)}
 					<li class="account__row" data-testid="account-following-{friend.profile.uid}-item">
 						<span class="account__who">
+							<Avatar avatar={friend.profile.avatar} />
 							<Flag code={friend.profile.country} />
 							{friend.profile.name}
 							<span class="account__handle">@{friend.profile.handle}</span>

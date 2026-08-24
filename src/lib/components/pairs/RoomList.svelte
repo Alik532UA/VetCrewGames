@@ -4,6 +4,7 @@
 	import type { LobbyRoom } from '$lib/net/lobby';
 	import type { OwnRoom } from '$lib/net/ownRooms';
 	import Flag from '$lib/components/ui/Flag.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 
 	/**
 	 * Перелік відкритих кімнат — четвертий блок форми входу.
@@ -162,6 +163,7 @@
 				<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
 					<span class="rooms__who">
 						<span class="rooms__host">
+							<Avatar avatar={room.hostAvatar} />
 							<Flag code={room.hostCountry} />
 							{room.hostName}
 						</span>
@@ -191,6 +193,7 @@
 				<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
 					<span class="rooms__who">
 						<span class="rooms__host">
+							<Avatar avatar={room.hostAvatar} />
 							<Flag code={room.hostCountry} />
 							{room.hostName}
 						</span>
