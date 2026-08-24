@@ -33,10 +33,20 @@
 		 * таблі між раундами, тобто рівно тоді, коли на нього й дивляться.
 		 */
 		withScores: boolean;
+		/**
+		 * СМУГА чи ТАБЛИЦЯ.
+		 *
+		 * `strip` — рядок над дошкою під час партії: гравці в ЛІНІЮ, бо це підпис
+		 * до гри, а не сама гра. Стовпцем він з'їдав висоту екрана й відсував
+		 * дошку — автор попросив рівно це: «в лінію і не ламає розмітку ігор».
+		 *
+		 * `table` — підсумок: стовпець із місцями, де рядок і є одиниця читання.
+		 */
+		layout?: 'strip' | 'table';
 		me: string;
 	}
 
-	let { players, answered, scores, withScores, me }: Props = $props();
+	let { players, answered, scores, withScores, layout = 'strip', me }: Props = $props();
 
 	/*
 	 * Порядок — за РАХУНКОМ, але лише коли рахунок видно.
@@ -54,8 +64,13 @@
 	);
 </script>
 
-<ul class="scores text-panel" data-testid="quiz-scores-list">
-	{#each ranked as player (player.uid)}
+<ul
+	class="scores text-panel"
+	class:scores--strip={layout === 'strip'}
+	class:scores--table={layout === 'table'}
+	data-testid="quiz-scores-list"
+>
+	{#each ranked as player, place (player.uid)}
 		<!--
 			ФОН РЯДКА — ЦЕ Й Є «ВІН УЖЕ ВІДПОВІВ».
 			
@@ -68,6 +83,13 @@
 			class:scores__row--answered={answered.includes(player.uid)}
 			data-testid="quiz-score-{player.uid}-item"
 		>
+			{#if layout === 'table'}
+				<!--
+					Місце числом, і саме в таблиці: у смузі воно означало б порядок, який
+					під час раунду навмисно нічого не виказує.
+				-->
+				<b class="scores__place" data-testid="quiz-score-{player.uid}-count">{place + 1}</b>
+			{/if}
 			<span class="scores__who">
 				<Avatar avatar={player.avatar} />
 				<Flag code={player.country} />
@@ -85,12 +107,29 @@
 <style>
 	.scores {
 		display: flex;
-		flex-direction: column;
 		gap: var(--space-xs);
 		margin: 0;
 		padding: var(--space-sm) var(--space-md);
 		list-style: none;
 		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/*
+	 * СМУГА — рядок, що переноситься, а не стовпець.
+	 *
+	 * Стовпцем табло росло вниз на кожного гравця й відсувало дошку — на четвертому
+	 * учаснику питання виїжджало за екран. `flex-wrap` лишає це чесним і на вузькому
+	 * екрані: краще другий рядок, ніж обрізані підписи.
+	 */
+	.scores--strip {
+		flex-flow: row wrap;
+		justify-content: center;
+		gap: var(--space-xs) var(--space-md);
+	}
+
+	.scores--table {
+		flex-direction: column;
 	}
 
 	/*
@@ -110,11 +149,23 @@
 		font-size: var(--font-size-sm);
 	}
 
+	/* У смузі рядок займає своє й не тягнеться на всю ширину. */
+	.scores--strip .scores__row {
+		flex: 0 1 auto;
+	}
+
+	.scores__place {
+		flex-shrink: 0;
+		min-width: 2ch;
+		font-variant-numeric: tabular-nums;
+		color: var(--color-text-muted);
+		text-align: right;
+	}
+
 	.scores__who {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -126,9 +177,8 @@
 	 * оновленні рахунку, бо «1» і «4» у пропорційному шрифті різної ширини — а
 	 * сіпається він саме тоді, коли на нього дивляться.
 	 */
-	.scores__points {
-		flex-shrink: 0;
-		font-variant-numeric: tabular-nums;
+	.scores--table .scores__who {
+		flex: 1;
 	}
 
 	.scores__points {

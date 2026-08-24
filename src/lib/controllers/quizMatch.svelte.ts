@@ -65,6 +65,19 @@ export class QuizMatch {
 	/** Які ігри вибрані в кімнаті. Порожньо — ще не приїхав знімок. */
 	games = $state<string[]>([]);
 
+	/**
+	 * ХТО ЗАРАЗ ОНЛАЙН — приходить іззовні, з `presence`.
+	 *
+	 * Не з журналу й не зі складу кімнати: `members` не прибираються ніколи (їх
+	 * пише кожен про себе й лише про себе), а `presence` гасне сама —
+	 * `onDisconnect` знімає запис, коли вкладка зникла.
+	 *
+	 * Порожній список означає «присутність ще НЕ ПРИЇХАЛА», а не «нікого немає»:
+	 * підписка встає за такт після входу, і за цей такт раунд не мусить вважатися
+	 * закінченим. Тому нижче порожнеча трактується як «чекаємо всіх».
+	 */
+	present = $state<string[]>([]);
+
 	/** Серверний час початку кожного раунду. Ключ — номер раунду. */
 	startedAt = $state<Record<number, number>>({});
 	/** Відповіді: раунд → гравець → коли й наскільки правильно. */
@@ -130,10 +143,41 @@ export class QuizMatch {
 		return this.answered.includes(this.#me);
 	}
 
-	/** Чи відповіли всі гравці. */
-	get everyoneAnswered(): boolean {
+	/**
+	 * Гравці, чиєї відповіді партія справді чекає.
+	 *
+	 * Доти чекали ВСІХ зі складу — і партія через це замерзала назавжди: той, хто
+	 * закрив вкладку, лишається в `members` (їх ніхто не прибирає), відповіді від
+	 * нього не буде ніколи, тож «усі відповіли» не ставало правдою й кожен
+	 * наступний раунд крутив таймер до кінця. Автор сказав це прямо: «при виході
+	 * одного з гравців немає вікна очікування».
+	 *
+	 * Дві порожнечі трактуються як «чекаємо всіх», і обидві — навмисно:
+	 * присутність, яка ще не приїхала, і кімната, у якій за мить не стало нікого.
+	 * Інакше раунд закінчувався б сам собою на порожньому списку.
+	 */
+	get awaited(): Member[] {
 		const players = this.players;
-		return players.length > 0 && players.every((player) => this.answered.includes(player.uid));
+		if (this.present.length === 0) return players;
+		const here = players.filter((player) => this.present.includes(player.uid));
+		return here.length > 0 ? here : players;
+	}
+
+	/**
+	 * Гравці, яких чекають, а вони не онлайн. Для вікна очікування.
+	 *
+	 * Порожньо, поки присутність не приїхала: показати «немає зв'язку» в перший
+	 * такт означало б написати це про кожного, включно з собою.
+	 */
+	get away(): Member[] {
+		if (this.present.length === 0) return [];
+		return this.players.filter((player) => !this.present.includes(player.uid));
+	}
+
+	/** Чи відповіли всі, кого чекають. */
+	get everyoneAnswered(): boolean {
+		const awaited = this.awaited;
+		return awaited.length > 0 && awaited.every((player) => this.answered.includes(player.uid));
 	}
 
 	/**
@@ -201,11 +245,18 @@ export class QuizMatch {
 		return now >= deadline ? 'reveal' : 'round';
 	}
 
-	/** Скільки секунд лишилося в раунді, зверху обмежено. Для смуги таймера. */
+	/**
+	 * Скільки лишилося до кінця раунду. Для смуги таймера.
+	 *
+	 * Від ДЕДЛАЙНУ, а не від межі часу: коли відповіли всі, дедлайн переїжджає на
+	 * секунду після останньої відповіді — і смуга мусить це показати. Доти вона
+	 * рахувалася від `start + limitMs` і бігла далі на екрані, де раунд уже
+	 * фактично закінчився.
+	 */
 	leftMs(now: number): number {
-		const start = this.startedAt[this.round];
-		if (start === undefined) return 0;
-		return Math.max(0, start + this.limitMs - now);
+		const deadline = this.deadlineAt();
+		if (deadline === null) return 0;
+		return Math.max(0, deadline - now);
 	}
 
 	/** Чи час господареві оголошувати наступний раунд. */

@@ -22,6 +22,9 @@ export const ui = {
 	'quiz.skipStep': 'Overslaan',
 	'quiz.roundTimer': 'Rondetijd',
 	'quiz.answered': 'Wachten op de rest.',
+	'quiz.awayTitle': 'Geen verbinding',
+	'quiz.awayWait': 'We wachten of hij terugkomt:',
+	'quiz.awayGone': 'De partij gaat door — op deze speler wordt niet meer gewacht.',
 	'quiz.nextRound': 'Volgende ronde',
 
 	// De drie items zijn hetzelfde voor de quiz en voor „Zoek het paar” — alleen
@@ -75,7 +78,8 @@ export const ui = {
 	'pairs.visibility': 'Wie mag meedoen',
 	'pairs.friendsOnly': 'Alleen vrienden',
 	'pairs.everyone': 'Voor iedereen',
-	'pairs.visibilityHint': 'Alleen vrienden — de kamer staat niet in de lijst; je komt er alleen met de code die je doorgeeft. Voor iedereen — de kamer verschijnt in ieders lijst.',
+	'pairs.visibilityHint':
+		'Alleen vrienden — de kamer staat niet in de lijst; je komt er alleen met de code die je doorgeeft. Voor iedereen — de kamer verschijnt in ieders lijst.',
 	'pairs.rooms': 'Kamers',
 	'pairs.noRooms': 'Nog geen open kamers',
 	'pairs.noRoomsHint': 'Maak er een — hij komt hier bij iedereen die deze pagina open heeft.',
@@ -86,7 +90,8 @@ export const ui = {
 	'pairs.shownNewest': 'Nieuwste weergegeven — er zijn meer',
 	'pairs.startingIn': 'Start over',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'De kamerlijst is niet beschikbaar. Meedoen met een code en een kamer maken werken wel.',
+	'pairs.roomsUnavailable':
+		'De kamerlijst is niet beschikbaar. Meedoen met een code en een kamer maken werken wel.',
 
 	// Teamnamen: bijvoeglijk naamwoord + dier. HELE zinnen; bij het-woorden zonder
 	// lidwoord blijft het adjectief onverbogen — zie `config/crewNames.ts`.
@@ -132,7 +137,8 @@ export const ui = {
 	'common.clear': 'Wissen',
 	'common.copied': 'Gekopieerd',
 	'common.pasteDenied': 'De browser gaf het klembord niet vrij. Plak met de hand: Ctrl+V.',
-	'common.copyDenied': 'De browser mocht niet naar het klembord schrijven. Kopieer met de hand: Ctrl+C.',
+	'common.copyDenied':
+		'De browser mocht niet naar het klembord schrijven. Kopieer met de hand: Ctrl+C.',
 
 	// Bijschriften van de pictogramknoppen in de kopbalk: geen tekst op het
 	// scherm, maar wat een schermlezer voorleest — precies daarom horen ze in het
@@ -198,5 +204,6 @@ export const ui = {
 	'pairs.modeConfirm': 'Wachten op bevestiging',
 	'pairs.modeAutoHint': 'Het spel begint zelf zodra er twee spelers zijn.',
 	'pairs.modeConfirmHint': 'Het spel wacht tot de host op „Spel starten” drukt.',
-	'pairs.rulesStale': 'De server laat je niet in de kamer. Meestal zijn de databaseregels ouder dan deze build.',
+	'pairs.rulesStale':
+		'De server laat je niet in de kamer. Meestal zijn de databaseregels ouder dan deze build.'
 } as const;

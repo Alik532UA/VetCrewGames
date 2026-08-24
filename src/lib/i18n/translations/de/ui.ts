@@ -22,6 +22,9 @@ export const ui = {
 	'quiz.skipStep': 'Überspringen',
 	'quiz.roundTimer': 'Rundenzeit',
 	'quiz.answered': 'Warten auf die anderen.',
+	'quiz.awayTitle': 'Keine Verbindung',
+	'quiz.awayWait': 'Wir warten, ob er zurückkommt:',
+	'quiz.awayGone': 'Die Partie läuft weiter — auf diesen Spieler wird nicht mehr gewartet.',
 	'quiz.nextRound': 'Nächste Runde',
 
 	// Die drei Einträge sind für das Quiz und für „Finde das Paar“ dieselben —
@@ -75,7 +78,8 @@ export const ui = {
 	'pairs.visibility': 'Wer darf beitreten',
 	'pairs.friendsOnly': 'Nur Freunde',
 	'pairs.everyone': 'Für alle',
-	'pairs.visibilityHint': 'Nur Freunde — der Raum steht nicht in der Liste, hinein kommt man nur mit dem Code, den du weitergibst. Für alle — der Raum erscheint in jeder Liste.',
+	'pairs.visibilityHint':
+		'Nur Freunde — der Raum steht nicht in der Liste, hinein kommt man nur mit dem Code, den du weitergibst. Für alle — der Raum erscheint in jeder Liste.',
 	'pairs.rooms': 'Räume',
 	'pairs.noRooms': 'Noch keine offenen Räume',
 	'pairs.noRoomsHint': 'Erstelle einen — er erscheint hier bei allen, die diese Seite offen haben.',
@@ -86,7 +90,8 @@ export const ui = {
 	'pairs.shownNewest': 'Neueste angezeigt — es gibt weitere',
 	'pairs.startingIn': 'Start in',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Die Raumliste ist nicht verfügbar. Beitreten per Code und Raum erstellen gehen weiter.',
+	'pairs.roomsUnavailable':
+		'Die Raumliste ist nicht verfügbar. Beitreten per Code und Raum erstellen gehen weiter.',
 
 	// Team-Namen: Adjektiv + Tier. GANZE Phrasen; starke Deklination ohne Artikel
 	// (m -er, f -e, n -es) — siehe `config/crewNames.ts`.
@@ -133,8 +138,10 @@ export const ui = {
 	'common.copy': 'Kopieren',
 	'common.clear': 'Löschen',
 	'common.copied': 'Kopiert',
-	'common.pasteDenied': 'Der Browser hat die Zwischenablage nicht freigegeben. Bitte von Hand einfügen: Strg+V.',
-	'common.copyDenied': 'Der Browser hat das Schreiben in die Zwischenablage verweigert. Bitte von Hand kopieren: Strg+C.',
+	'common.pasteDenied':
+		'Der Browser hat die Zwischenablage nicht freigegeben. Bitte von Hand einfügen: Strg+V.',
+	'common.copyDenied':
+		'Der Browser hat das Schreiben in die Zwischenablage verweigert. Bitte von Hand kopieren: Strg+C.',
 
 	// Beschriftungen der Symbolschaltflächen in der Kopfzeile: kein Text auf dem
 	// Bildschirm, sondern das, was ein Screenreader vorliest — genau deshalb
@@ -193,12 +200,14 @@ export const ui = {
 	'beta.rulesCheck': 'Prüfen',
 	'beta.rulesChecking': 'Frage die Datenbank…',
 	'beta.rulesFresh': 'Die veröffentlichte Fassung passt zu diesem Build',
-	'beta.rulesStale': 'In der Datenbank gilt eine ANDERE Fassung — dieser Build ist nicht veröffentlicht',
+	'beta.rulesStale':
+		'In der Datenbank gilt eine ANDERE Fassung — dieser Build ist nicht veröffentlicht',
 	'beta.rulesUnknown': 'Nicht feststellbar: kein Netz oder Datenbank nicht erreichbar',
 	'pairs.startMode': 'Spielbeginn',
 	'pairs.modeAuto': 'Autostart',
 	'pairs.modeConfirm': 'Auf Bestätigung warten',
 	'pairs.modeAutoHint': 'Das Spiel beginnt von selbst, sobald zwei Spieler da sind.',
 	'pairs.modeConfirmHint': 'Das Spiel wartet, bis der Gastgeber „Spiel starten“ drückt.',
-	'pairs.rulesStale': 'Der Server lässt nicht in den Raum. Meist sind die Datenbankregeln älter als dieser Build.',
+	'pairs.rulesStale':
+		'Der Server lässt nicht in den Raum. Meist sind die Datenbankregeln älter als dieser Build.'
 } as const;

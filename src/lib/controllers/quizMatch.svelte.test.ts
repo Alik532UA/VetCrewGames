@@ -135,7 +135,10 @@ describe('програма партії', () => {
 	 * наступне число потоку, а не `seed + index`.
 	 */
 	it('кроки мають різні зерна', () => {
-		const seeds = quizProgramme(SEED, ONLINE_GAMES.map((game) => game.id)).map((s) => s.seed);
+		const seeds = quizProgramme(
+			SEED,
+			ONLINE_GAMES.map((game) => game.id)
+		).map((s) => s.seed);
 		expect(new Set(seeds).size).toBe(seeds.length);
 	});
 });
@@ -303,6 +306,82 @@ describe('фази раунду', () => {
 		await host.startRound(QUIZ_ROUNDS);
 		expect(host.over).toBe(true);
 		expect(host.phase(0)).toBe('over');
+		stop();
+	});
+});
+
+describe('той, хто зник із кімнати', () => {
+	/**
+	 * ГОЛОВНЕ ТУТ: партія не чекає на того, кого немає.
+	 *
+	 * `members` не прибираються ніколи — кожен пише лише про себе, — тож гравець,
+	 * що закрив вкладку, лишається у складі назавжди. Доти це замерзало партію:
+	 * «усі відповіли» не ставало правдою, і кожен раунд крутив таймер до кінця.
+	 */
+	it('раунд закінчується без відповіді того, кого немає онлайн', async () => {
+		const { room, host, stop } = table();
+		host.present = [HOST];
+		await host.startRound(0);
+		await host.answer(1);
+
+		expect(host.away.map((member) => member.uid)).toEqual([GUEST]);
+		expect(host.everyoneAnswered).toBe(true);
+
+		const mine = host.answers[0][HOST].at;
+		expect(host.phase(mine + SETTLE_MS)).toBe('reveal');
+		room.tick(0);
+		stop();
+	});
+
+	/**
+	 * ПОРОЖНЯ ПРИСУТНІСТЬ — це «ще не приїхала», а не «нікого немає».
+	 *
+	 * Підписка встає за такт після входу. Якби порожнеча означала «нікого», перший
+	 * же раунд закінчився б сам собою, до першої відповіді.
+	 */
+	it('поки присутність не приїхала — чекаємо всіх', async () => {
+		const { room, host, stop } = table();
+		await host.startRound(0);
+		await host.answer(1);
+
+		expect(host.present).toEqual([]);
+		expect(host.away).toEqual([]);
+		expect(host.everyoneAnswered).toBe(false);
+		room.tick(0);
+		stop();
+	});
+
+	/** Якщо не стало НІКОГО — раунд теж не вважається закінченим. */
+	it('порожня кімната не закінчує раунд сама собою', async () => {
+		const { room, host, stop } = table();
+		host.present = ['uid-somebody-else'];
+		await host.startRound(0);
+		await host.answer(1);
+
+		expect(host.awaited).toHaveLength(2);
+		expect(host.everyoneAnswered).toBe(false);
+		room.tick(0);
+		stop();
+	});
+
+	/**
+	 * Смуга таймера показує ДЕДЛАЙН, а не межу часу.
+	 *
+	 * Доти вона рахувалася від `start + limitMs` і бігла далі на екрані, де раунд
+	 * уже фактично закінчився — тобто показувала час, якого немає.
+	 */
+	it('смуга таймера скорочується разом із дедлайном', async () => {
+		const { room, host, stop } = table();
+		host.present = [HOST];
+		await host.startRound(0);
+		const start = host.startedAt[0];
+		expect(host.leftMs(start)).toBe(host.limitMs);
+
+		await host.answer(1);
+		const left = host.leftMs(host.answers[0][HOST].at);
+		expect(left).toBeLessThanOrEqual(SETTLE_MS);
+		expect(left).toBeGreaterThan(0);
+		room.tick(0);
 		stop();
 	});
 });

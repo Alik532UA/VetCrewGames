@@ -22,6 +22,9 @@ export const ui = {
 	'quiz.skipStep': 'Skip',
 	'quiz.roundTimer': 'Round time',
 	'quiz.answered': 'Waiting for the others.',
+	'quiz.awayTitle': 'Lost connection',
+	'quiz.awayWait': 'Waiting to see if they come back:',
+	'quiz.awayGone': 'The match goes on — this player is no longer awaited.',
 	'quiz.nextRound': 'Next round',
 
 	// The three items are the same for the quiz and for "Find a pair" — only
@@ -41,7 +44,7 @@ export const ui = {
 	'pairs.roomCode': 'Room code',
 	'pairs.qrHint': 'Point a camera to join',
 	'pairs.qrLabel': 'QR code for this room',
-	'pairs.yourName': 'What\'s your name?',
+	'pairs.yourName': "What's your name?",
 	'pairs.rolePlayer': 'Player',
 	'pairs.roleSpectator': 'Spectator',
 	'pairs.start': 'Start the game',
@@ -75,7 +78,8 @@ export const ui = {
 	'pairs.visibility': 'Who can join',
 	'pairs.friendsOnly': 'Friends only',
 	'pairs.everyone': 'Everyone',
-	'pairs.visibilityHint': 'Friends only — the room stays out of the list and can be joined only with the code you send. Everyone — the room shows up in everybody’s list.',
+	'pairs.visibilityHint':
+		'Friends only — the room stays out of the list and can be joined only with the code you send. Everyone — the room shows up in everybody’s list.',
 	'pairs.rooms': 'Rooms',
 	'pairs.noRooms': 'No open rooms yet',
 	'pairs.noRoomsHint': 'Create one — it will show up here for everyone who has this page open.',
@@ -86,7 +90,8 @@ export const ui = {
 	'pairs.shownNewest': 'Showing the newest — there are more',
 	'pairs.startingIn': 'Starting in',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'The room list is unavailable. Joining by code and creating a room still work.',
+	'pairs.roomsUnavailable':
+		'The room list is unavailable. Joining by code and creating a room still work.',
 
 	// Crew names: adjective + animal. WHOLE phrases — see `config/crewNames.ts`.
 	'menu.comingSoon': 'Still in the works',
@@ -196,5 +201,6 @@ export const ui = {
 	'pairs.modeConfirm': 'Wait for confirmation',
 	'pairs.modeAutoHint': 'The game starts by itself as soon as two players are in.',
 	'pairs.modeConfirmHint': 'The game waits until the host presses “Start the game”.',
-	'pairs.rulesStale': 'The server refused to let you in. The usual cause is database rules older than this build.',
+	'pairs.rulesStale':
+		'The server refused to let you in. The usual cause is database rules older than this build.'
 } as const;

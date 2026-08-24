@@ -5,7 +5,6 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { t, formatFont } from '$lib/i18n';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { QuizMatch } from '$lib/controllers/quizMatch.svelte';
@@ -17,9 +16,7 @@
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import QuizGamePicker from '$lib/components/quiz/QuizGamePicker.svelte';
-	import QuizRound from '$lib/components/quiz/QuizRound.svelte';
-	import QuizScores from '$lib/components/quiz/QuizScores.svelte';
-	import GameOverCard from '$lib/components/GameOverCard.svelte';
+	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
 
 	/**
 	 * СПІЛЬНА ВІКТОРИНА: усі відповідають одночасно, кожен на своєму екрані.
@@ -52,6 +49,18 @@
 	 */
 	const RULES_VERSION = 1;
 	const CLOCK_MS = 1000;
+	/**
+	 * Скільки чекаємо того, хто зник, перш ніж сказати, що більше не чекаємо.
+	 *
+	 * Пʼятнадцять секунд — те саме число, що в `MindStep` (`reconnectionState`),
+	 * і взято воно звідти навмисно: автор попросив зробити «по прикладу з
+	 * MindStep», а два різні пільгові часи в двох його проєктах були б різницею
+	 * без причини.
+	 *
+	 * Партія на цей час НЕ СТАЄ: раунд закінчується, коли відповіли присутні. Це
+	 * лише те, доки на екрані стоїть відлік замість рядка «більше не чекають».
+	 */
+	const AWAY_GRACE_MS = 15000;
 	const COUNTDOWN_MS = 5000;
 	/** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
 	const MIN_PLAYERS = 2;
@@ -66,6 +75,8 @@
 	let releaseHold: (() => void) | null = null;
 	let me = $state('');
 	let online = $state<string[]>([]);
+	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
+	let awaySince = $state<Record<string, number>>({});
 	let busy = $state(false);
 	let stops: Array<() => void> = [];
 	let clock = $state(Date.now());
@@ -191,7 +202,29 @@
 
 			const live = await import('$lib/net/presence');
 			stops.push(await live.trackPresence(code));
-			stops.push(await live.watchPresence(code, (uids) => (online = uids)));
+			stops.push(
+				await live.watchPresence(code, (uids) => {
+					online = uids;
+					/*
+					 * ПРИСУТНІСТЬ ЇДЕ В МАТЧ, і саме це розморожує партію: раунд
+					 * закінчується, коли відповіли ПРИСУТНІ, а не всі, хто колись
+					 * зайшов (`members` не прибираються ніколи).
+					 */
+					started.present = uids;
+					/*
+					 * Мить зникнення запамʼятовується ТУТ, бо тільки тут видно перехід.
+					 * Із самого переліку її не вивести: він каже, кого немає, а не
+					 * відколи.
+					 */
+					const now = Date.now();
+					const next: Record<string, number> = {};
+					for (const member of started.players) {
+						if (uids.includes(member.uid)) continue;
+						next[member.uid] = awaySince[member.uid] ?? now;
+					}
+					awaySince = next;
+				})
+			);
 
 			if (action === 'create') {
 				releaseHold = await live.holdRoom(code);
@@ -227,9 +260,7 @@
 
 	/** Зайти у вільну кімнату вікторини, а якщо таких немає — створити нову. */
 	async function quickGame() {
-		const free = lobby.rooms.find(
-			(room) => room.gameId === 'quiz' && room.players < MIN_PLAYERS
-		);
+		const free = lobby.rooms.find((room) => room.gameId === 'quiz' && room.players < MIN_PLAYERS);
 		if (free) {
 			joinCode = free.code;
 			await enter('join', true);
@@ -251,7 +282,8 @@
 	}
 
 	const switchAutoStart = (on: boolean) => hostAction((transport) => transport.setAutoStart(on));
-	const rematch = () => hostAction((transport) => transport.restart(Math.floor(Math.random() * 2 ** 31)));
+	const rematch = () =>
+		hostAction((transport) => transport.restart(Math.floor(Math.random() * 2 ** 31)));
 
 	async function start() {
 		if (!match) return;
@@ -352,6 +384,18 @@
 		return () => clearTimeout(timer);
 	});
 
+	/**
+	 * Скільки лишилося з пільгового часу — за тим, кого не стало НАЙПОЗІШЕ.
+	 *
+	 * Не за найранішим: інакше поява другого зниклого не подовжила б відлік, і
+	 * вікно сказало б «більше не чекають» про того, хто зник секунду тому.
+	 */
+	const awayLeft = $derived.by(() => {
+		const stamps = (match?.away ?? []).map((member) => awaySince[member.uid] ?? clock);
+		if (stamps.length === 0) return 0;
+		return Math.max(0, Math.ceil((Math.max(...stamps) + AWAY_GRACE_MS - clock) / 1000));
+	});
+
 	const countdownLeft = $derived(
 		match?.countdownAt === null || match?.countdownAt === undefined
 			? null
@@ -366,7 +410,9 @@
 	 * розряджений акумулятор і нічого більше.
 	 */
 	const clockNeeded = $derived(
-		countdownLeft !== null || (match !== null && match.status === 'playing' && !match.over)
+		countdownLeft !== null ||
+			(match !== null && match.status === 'playing' && !match.over) ||
+			(match !== null && match.away.length > 0)
 	);
 
 	$effect(() => {
@@ -473,66 +519,27 @@
 			`info.config` пише лише господар.
 		-->
 		<div class="quiz-online__games text-panel">
-			<QuizGamePicker
-				selected={match.games}
-				editable={false}
-			/>
+			<QuizGamePicker selected={match.games} editable={false} />
 		</div>
-	{:else if match.over}
-		<QuizScores
-			players={match.players}
-			answered={match.answered}
-			scores={match.scores}
-			withScores
-			{me}
-		/>
-		<!--
-			Екран підсумку — ЛИШЕ в лідера, бо «Зіграти ще» роздає він.
-		
-			`onPlayAgain` у `GameOverCard` обовʼязковий, і це правильно: картка з
-			кнопкою, яка нічого не робить, гірша за картку без кнопки. Гість бачить
-			табло й рядок «чекаємо на лідера» — тобто теж повний підсумок, просто без
-			чужої кнопки.
-		-->
-		{#if amHost}
-			<GameOverCard
-				score={match.myScore}
-				total={match.myScore}
-				{lang}
-				onPlayAgain={rematch}
-				testId="quiz-online-game-over"
-			/>
-			<button type="button" class="chip" onclick={close} data-testid="quiz-close-btn">
-				{@html formatFont(t('pairs.closeRoom'))}
-			</button>
-		{:else}
-			<p class="quiz-online__wait text-panel">{@html formatFont(t('pairs.waitingHost'))}</p>
-		{/if}
 	{:else}
 		<!--
-			ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
-			
-			Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу
-			саме тоді, коли вона потрібна на питанні. Під час раунду видно лише
-			склад гравців із позначкою «вже відповів», а рахунок з'являється на
-			таблі між раундами.
-		-->
-		{@const phase = match.phase(clock)}
-		<QuizScores
-			players={match.players}
-			answered={match.answered}
-			scores={match.scores}
-			withScores={phase !== 'round'}
-			{me}
-		/>
+			ПАРТІЯ Й ПІДСУМОК — в окремому компоненті.
 
-		<QuizRound
-			{phase}
-			step={match.step}
-			leftMs={match.leftMs(clock)}
-			limitMs={match.limitMs}
-			answered={match.iAnswered}
+			Сторінка тримає вхід у кімнату: код, присутність, перелік, дії лідера.
+			`QuizRoom` не знає про мережу зовсім — він читає матч і час, і саме тому
+			підсумок у ньому однаковий в усіх, а не збирається з двох різних гілок
+			сторінки.
+		-->
+		<QuizRoom
+			{match}
+			{me}
+			{lang}
+			{amHost}
+			{clock}
+			{awayLeft}
 			onanswer={answer}
+			onRematch={rematch}
+			onClose={close}
 		/>
 	{/if}
 </div>
@@ -564,21 +571,5 @@
 
 	.quiz-online__games {
 		width: 100%;
-	}
-
-	.quiz-online__wait {
-		margin: 0;
-		text-align: center;
-		font-size: var(--font-size-sm);
-	}
-
-	.chip {
-		min-height: 44px;
-		padding: 0 var(--space-md);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
 	}
 </style>
