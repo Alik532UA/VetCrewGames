@@ -14,6 +14,22 @@ import type { BetaTab } from '../betaChecks';
  * `createUserWithEmailAndPassword`, усе працюватиме як раніше, крім одного:
  * кімнати й підписки лишаться під старим `uid`. Це найтихіший різновид дефекту —
  * ніщо не падає, просто зникає минуле.
+ *
+ * ## ЧОТИРИ ШЛЯХИ ВВІЙТИ, і саме тут вони й перевіряються
+ *
+ * Двадцять пунктів вище прожили без жодного слова про Google і без жодного про
+ * відновлення пароля — доти, доки одна редакція форми не прибрала обидві кнопки
+ * разом із зайвим вибором режиму. Мережевий шар при цьому лишився цілий, тобто
+ * можливості не зникли, а ВІДʼЄДНАЛИСЯ: код на місці, викликати нікому.
+ *
+ * Червоного не було ніде, і не могло бути: перевірка типів не скаржиться на
+ * функцію без споживача, гейт коду теж, а тести форми перевіряють те, що в ній
+ * є, а не те, чого немає. Людина ж це бачить за секунду — досить відкрити
+ * сторінку. Тобто це рівно той різновид, для якого чеклист і існує, і його тут
+ * не було.
+ *
+ * Звідси пункти нижче: усі чотири шляхи названі поіменно, і два з них —
+ * перевірки межі, бо вибір режиму повернути легше, ніж здається.
  */
 export const accountTab: BetaTab = {
 	id: 'account',
@@ -232,6 +248,103 @@ export const accountTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'account-leave-btn'
+		},
+		{
+			id: 'account_21',
+			category: { uk: 'Чотири шляхи ввійти', en: 'Four ways in' },
+			text: {
+				uk: 'Відкрийте акаунт анонімним. На екрані мусять бути СІМ речей: кнопка входу через Google, слово «або», поле пошти, поле пароля зі значком ока, рядок «Відновити пароль», «Увійти» й «Зареєструватись».',
+				en: 'Open the account page as an anonymous player. SEVEN things must be on screen: the Google sign-in button, the word “or”, the email field, the password field with an eye icon, a “reset password” line, “Sign in” and “Register”.'
+			},
+			coverage: 'manual',
+			testid: 'auth-google-btn'
+		},
+		{
+			id: 'account_22',
+			category: { uk: 'Чотири шляхи ввійти', en: 'Four ways in' },
+			text: {
+				uk: 'Приміряйте оком ширину й висоту: кнопка Google, обидва поля й обидві кнопки мусять бути однакової міри. Жодна не мусить бути вужчою чи вищою за сусідню.',
+				en: 'Compare width and height by eye: the Google button, both fields and both buttons must be the same size. None may be narrower or taller than its neighbour.'
+			},
+			coverage: 'manual',
+			testid: 'auth-register-btn'
+		},
+		{
+			id: 'account_23',
+			category: { uk: 'Чотири шляхи ввійти', en: 'Four ways in' },
+			text: {
+				uk: 'Над полями НЕ мусить бути вибору «Що зробити: створити акаунт / зайти в наявний». Намір називає сама кнопка, і кнопок дві.',
+				en: 'Above the fields there must be NO “what to do: create an account / sign in to an existing one” choice. The button itself names the intent, and there are two buttons.'
+			},
+			/*
+			 * ПЕРЕВІРКА МЕЖІ. Вибір режиму виглядає корисним — поля однакові,
+			 * наслідки протилежні, — і саме тому вертається легко. Автотест його
+			 * відсутності не судить: у формі просто не було б одного елемента.
+			 */
+			negative: true,
+			coverage: 'manual',
+			testid: 'auth-login-btn'
+		},
+		{
+			id: 'account_24',
+			category: { uk: 'Відновлення пароля', en: 'Resetting the password' },
+			text: {
+				uk: 'Натисніть «Відновити пароль» і надішліть лист на пошту, якої в грі точно немає. Повідомлення мусить бути ТЕ САМЕ, що для наявної пошти: інакше сторонній перебирав би адреси й дізнавався, хто зареєстрований.',
+				en: 'Press the reset link and send a letter to an email that certainly is not in the game. The message must be THE SAME as for an existing email: otherwise a stranger could try addresses and learn who is registered.'
+			},
+			coverage: 'manual',
+			testid: 'auth-forgot-btn'
+		},
+		{
+			id: 'account_25',
+			category: { uk: 'Відновлення пароля', en: 'Resetting the password' },
+			text: {
+				uk: 'На екрані відновлення поля пароля бути НЕ мусить — його ж і забули. Мусить бути лише пошта, попередження про теку «Спам» і шлях назад до входу.',
+				en: 'On the reset screen there must be NO password field — that is the thing that was forgotten. Only the email, a warning about the spam folder and a way back to signing in.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'reset-submit-btn'
+		},
+		{
+			id: 'account_26',
+			category: { uk: 'Значки в полі пароля', en: 'Icons inside the password field' },
+			text: {
+				uk: 'На телефоні торкніться поля пароля пальцем. Значки в ньому мусять стати повністю видимими й ЛИШИТИСЯ такими, доки ви в полі, а не пригаснути назад після дотику.',
+				en: 'On a phone, touch the password field with a finger. The icons inside it must become fully visible and STAY that way while you are in the field, not dim back down after the touch.'
+			},
+			coverage: 'manual',
+			testid: 'account-password-toggle-btn'
+		},
+		{
+			id: 'account_27',
+			category: { uk: 'Значки в полі пароля', en: 'Icons inside the password field' },
+			text: {
+				uk: 'На комп’ютері наведіть курсор на поле пароля й, не забираючи його, дійдіть до значка ока клавішею табуляції. Значок у фокусі мусить бути повністю видимим, а не напівпрозорим.',
+				en: 'On a desktop, hover the pointer over the password field and, without moving it away, reach the eye icon with the tab key. The focused icon must be fully visible, not semi-transparent.'
+			},
+			coverage: 'manual',
+			testid: 'account-password-toggle-btn'
+		},
+		{
+			id: 'account_28',
+			category: { uk: 'Аватарка', en: 'Avatar' },
+			text: {
+				uk: 'Виберіть значок і колір аватарки, збережіть профіль і зайдіть у кімнату з другого пристрою. Ваша аватарка мусить бути видна в переліку гравців поруч із іменем, тим самим значком і кольором.',
+				en: 'Pick an avatar icon and colour, save the profile and join a room from another device. Your avatar must be visible in the player list next to your name, with the same icon and colour.'
+			},
+			coverage: 'manual',
+			testid: 'account-avatar-icon-*-radio'
+		},
+		{
+			id: 'account_29',
+			category: { uk: 'Вибір країни', en: 'Choosing a country' },
+			text: {
+				uk: 'На телефоні відкрийте вибір країни. Перелік мусить прокручуватися пальцем, а назва країни під пальцем — читатися: у вузькому вікні колонка одна, і це нормально.',
+				en: 'On a phone, open the country picker. The list must scroll with a finger and the country under it must stay readable: in a narrow window there is one column, and that is fine.'
+			},
+			coverage: 'manual',
+			testid: 'account-country-menu'
 		}
 	]
 };

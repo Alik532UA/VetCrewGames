@@ -18,7 +18,6 @@ export const ui = {
 	'quiz.gamesInRoom': 'Games in this room',
 	'quiz.gamesLast': 'At least one game must stay on',
 	'quiz.otherGame': 'That room is for a different game.',
-	'quiz.waitingOthers': 'You are done. Waiting for the others.',
 	'quiz.unknownGame': 'This game comes from a newer version. Reload the page.',
 	'quiz.skipStep': 'Skip',
 	'quiz.roundTimer': 'Round time',

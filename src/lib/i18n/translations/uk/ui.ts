@@ -18,7 +18,6 @@ export const ui = {
 	'quiz.gamesInRoom': 'Ігри в кімнаті',
 	'quiz.gamesLast': 'Хоч одна гра мусить лишитися',
 	'quiz.otherGame': 'Ця кімната для іншої гри.',
-	'quiz.waitingOthers': 'Ви закінчили. Чекаємо на решту.',
 	'quiz.unknownGame': 'Ця гра з новішої версії. Оновіть сторінку.',
 	'quiz.skipStep': 'Пропустити',
 	'quiz.roundTimer': 'Час раунду',

@@ -63,9 +63,10 @@ const markup = svelteFiles('src')
  *  * літерали `data-testid="reserve-card-close-btn"` — як є;
  *  * шаблони `data-testid="reserve-animal-{animal.id}-btn"` — динамічна частина
  *    стає `*`, і пункт має право написати `reserve-animal-*-btn`;
- *  * шаблон, що ПОЧИНАЄТЬСЯ з `{testId}`, розкривається кожним значенням
- *    `testId="…"`, яке є в проєкті: звідси й беруться `header-theme-btn` і
- *    `memory-game-over-play-again-btn`.
+ *  * шаблон, що ПОЧИНАЄТЬСЯ з підстановки, розкривається кожним значенням
+ *    пропів `testId="…"` і `scope="…"`, які є в проєкті: звідси й беруться
+ *    `header-theme-btn`, `memory-game-over-play-again-btn` і
+ *    `account-country-menu`.
  */
 const star = (id: string) => id.replace(/\$?\{[^}]*\}/g, '*');
 
@@ -74,9 +75,25 @@ function knownLocators(): Set<string> {
 	const raw = [...markup.matchAll(/data-testid=(?:"([^"]*)"|\{`([^`]*)`\})/g)].map(
 		(m) => m[1] ?? m[2]
 	);
-	// Значення пропа `testId`: і бази («header-theme»), і готові шаблони
-	// («memory-card-btn-{slot.card.id}»).
-	const props = [...markup.matchAll(/\btestId=(?:"([^"]*)"|\{`([^`]*)`\})/g)].map(
+	/*
+	 * Бази беруться з ДВОХ пропів, і це не дрібниця.
+	 *
+	 * Доти читався лише `testId`, а проєкт має ще `scope`: `CountryPicker`,
+	 * `AvatarPicker` та `InputTools` малюють `data-testid="{scope}-menu"`,
+	 * `"{scope}-icon-{icon}-radio"`, `"{scope}-paste-btn"`. Такий шаблон
+	 * починається з підстановки, тобто розкривається базами, — а серед баз
+	 * значень `scope` не було, і жоден із цих локаторів у набір не потрапляв.
+	 *
+	 * Наслідок був не «перевірка суворіша, ніж треба», а рівно те, від чого
+	 * застерігає докблок вище: пункт, що назве СПРАВЖНІЙ локатор, падає, і автора
+	 * тягне прибрати поле. А пункт без локатора не перевіряється взагалі — тобто
+	 * надмірна суворість оберталася діркою. Заміряно на двох пунктах вкладки
+	 * акаунта: `account-country-menu` і `account-avatar-icon-*-radio` на сторінці
+	 * є, а набір їх не знав.
+	 *
+	 * Готові шаблони в самому пропі («memory-card-btn-{slot.card.id}») теж звідси.
+	 */
+	const props = [...markup.matchAll(/\b(?:testId|scope)=(?:"([^"]*)"|\{`([^`]*)`\})/g)].map(
 		(m) => m[1] ?? m[2]
 	);
 

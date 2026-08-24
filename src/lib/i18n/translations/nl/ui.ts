@@ -18,7 +18,6 @@ export const ui = {
 	'quiz.gamesInRoom': 'Spellen in deze kamer',
 	'quiz.gamesLast': 'Er moet minstens één spel aan blijven',
 	'quiz.otherGame': 'Die kamer is voor een ander spel.',
-	'quiz.waitingOthers': 'Jij bent klaar. We wachten op de rest.',
 	'quiz.unknownGame': 'Dit spel komt uit een nieuwere versie. Herlaad de pagina.',
 	'quiz.skipStep': 'Overslaan',
 	'quiz.roundTimer': 'Rondetijd',
