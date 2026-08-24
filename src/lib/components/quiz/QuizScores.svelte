@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
 
 	/**
@@ -68,6 +69,7 @@
 			data-testid="quiz-score-{player.uid}-item"
 		>
 			<span class="scores__who">
+				<Avatar avatar={player.avatar} />
 				<Flag code={player.country} />
 				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}
 			</span>

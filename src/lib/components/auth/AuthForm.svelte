@@ -1,319 +1,253 @@
 <script lang="ts">
 	import { formatFont } from '$lib/i18n';
-	import PasswordInput from '$lib/components/ui/PasswordInput.svelte';
-	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
-	import GoogleMark from './GoogleMark.svelte';
-	import EmailField from './EmailField.svelte';
-	import ResetPanel from './ResetPanel.svelte';
 
 	/**
-	 * Вхід, реєстрація й відновлення пароля — ОДНЕ вікно.
+	 * ФОРМА ВХОДУ: спільні поля, ДВІ КНОПКИ, жодного вибору режиму.
 	 *
-	 * ## Чому одне, а не три
+	 * ## Що тут було й чому це прибрано
 	 *
-	 * AUTH-FORM-v8 § 1 вимагає цього, і вимагає по суті: людина, яка спробувала
-	 * увійти й не змогла, робить далі одну з двох речей — реєструється або
-	 * відновлює пароль. Обидві доступні звідси, без переходів, і поля не
-	 * доводиться вводити вдруге.
+	 * Доти над полями стояв сегментований вибір «Що зробити: Створити акаунт /
+	 * Зайти в наявний», а кнопка внизу була одна й міняла підпис. Міркування було
+	 * таке: поля однакові, наслідки протилежні, тож нехай людина спершу скаже, що
+	 * саме робить.
 	 *
-	 * Доти тут було інакше: сегментований вибір «створити / зайти в наявний», а
-	 * відновлення пароля не було ЗОВСІМ. Автор надіслав знімок сусіднього
-	 * `Slovko` як зразок, і різниця, яку він назвав, — «кнопки та поля різного
-	 * розміру»: це § 1.1 FORM-INPUTS, де розміри й відступи полів фіксовані.
+	 * Міркування хибне на одному кроці: воно додає РІШЕННЯ там, де його немає.
+	 * Людина не вибирає «режим форми» — вона або має акаунт, або ні, і знає це до
+	 * того, як побачила екран. Вибір режиму змушує сказати те саме двічі: спершу
+	 * перемикачем, потім кнопкою. Автор сказав про це прямо, показавши знімок
+	 * сусіднього `Slovko`, де вибору немає зовсім.
 	 *
-	 * ## Компонент не знає, ЯК авторизуватися
+	 * Тепер намір виражає САМА КНОПКА, і їх дві: «Увійти» — submit форми (частіший
+	 * випадок і той, що спрацьовує з клавіатури), «Зареєструватись» — звичайна
+	 * кнопка поруч. Той самий склад, що в `Slovko/src/lib/components/auth` і в
+	 * каноні AUTH-FORM-v8 § 6 (`auth-login-btn` і `auth-register-btn`).
 	 *
-	 * Він приймає callback-пропси й нічого не імпортує з мережі. Причина не в
-	 * чистоті: форму треба буде показати й у модалці профілю, а логіка входу
-	 * живе в контролері, який тримає стан на весь застосунок. Дві копії логіки
-	 * розійшлися б у обробці помилок — найтихіше місце з усіх.
+	 * ## Попередження лишилося, бо воно НЕ про режим
 	 *
-	 * ## Помилка входу НЕ уточнюється
+	 * Вхід у ІНШИЙ акаунт міняє `uid`, тобто анонімний доробок лишається під
+	 * старим — це не деталь інтерфейсу, а незворотна річ. Тому текст стоїть
+	 * рядком ПІД кнопкою «Увійти»: попередження мусить бути там, де дія, а не в
+	 * підказці до перемикача, якого більше немає.
 	 *
-	 * «Немає такого листа» окремо від «невірний пароль» — це спосіб перебирати
-	 * існуючі акаунти. Текст готує контролер, і він однаковий для обох випадків;
-	 * тут лишається тільки показати. Те саме для відновлення: повідомлення про
-	 * надсилання однакове й тоді, коли такої пошти немає.
+	 * Симетричну підказку про реєстрацію («профіль і кімнати збережуться»)
+	 * ПРИБРАНО, і це рішення, а не недогляд: вона заспокоювала, а не
+	 * застерігала. Її відсутність нічим не загрожує, тоді як відсутність
+	 * попередження про зміну `uid` — загрожує.
+	 *
+	 * ## `autocomplete` — `current-password`, і це вибір
+	 *
+	 * Форма більше не знає заздалегідь, що робить людина, а браузеру треба сказати
+	 * рівно одне значення. Вхід частіший за реєстрацію, тож підставити збережений
+	 * пароль корисніше, ніж запропонувати новий. Ціна названа: менеджер паролів
+	 * при реєстрації сам нового не запропонує.
 	 */
 	interface Props {
-		/** `auth` — вхід і реєстрація; `forgot` — відновлення пароля. */
 		/**
-		 * ПЕРЕКЛАДАЧ ПРОПОМ, а не `t()` з `$lib/i18n`.
+		 * Перекладач сторінки, а не власний доступ до словника.
 		 *
-		 * Рядки акаунта живуть у ЛІНИВОМУ чанку: головний словник стоїть рівно на
-		 * межі бюджету (120 КБ gzip зі стелі 120). Тобто `t()` цих ключів не знає
-		 * в принципі — він типізований по головному словнику, і `svelte-check` це
-		 * показав 21 помилкою. Проп, а не стан: функція в `$state` не
-		 * перемальовує, і це вже коштувало екрана з ключами замість тексту.
+		 * Рядки акаунта лежать у ЛІНИВОМУ чанку (`i18n/account/index.ts`), і
+		 * тримає його сторінка. Другий завантажувач тут означав би другий стан із
+		 * тим самим словником і другу мить, у яку на екрані ще ключі.
 		 */
 		text: (key: string) => string;
-		mode: 'auth' | 'forgot';
-		/** Що робить кнопка входу: створити акаунт чи зайти в наявний. */
-		intent: 'register' | 'signin';
-		busy?: boolean;
-		/** Готовий текст помилки. Порожній — помилки немає. */
-		error?: string;
-		/** Готовий текст підтвердження (лист надіслано). */
-		info?: string;
-		/** Чи показувати вхід через Google. */
-		withGoogle?: boolean;
-		onsubmit: (email: string, password: string) => void;
-		onforgot: (email: string) => void;
-		ongoogle?: () => void;
-		onmode: (mode: 'auth' | 'forgot') => void;
-		onintent: (intent: 'register' | 'signin') => void;
+		/** Ключ повідомлення про останню невдачу. `null` — усе гаразд. */
+		errorKey: string | null;
+		/** Триває мережева дія: повторні натискання нічого не роблять. */
+		busy: boolean;
+		onlogin: (email: string, password: string) => void;
+		onregister: (email: string, password: string) => void;
 	}
 
-	let {
-		text,
-		mode,
-		intent,
-		busy = false,
-		error = '',
-		info = '',
-		withGoogle = false,
-		onsubmit,
-		onforgot,
-		ongoogle,
-		onmode,
-		onintent
-	}: Props = $props();
+	let { text, errorKey, busy, onlogin, onregister }: Props = $props();
 
 	let email = $state('');
 	let password = $state('');
 
-	/*
-	 * Порожні поля кнопку не пускають, і межі тут не косметичні: Firebase
-	 * відкидає пароль коротший за шість символів власною помилкою, і показати її
-	 * замість підказки означало б перекласти на людину читання коду помилки.
+	/**
+	 * Чи є що надсилати. Межі ті самі, що в Firebase: пошта з символом і пароль
+	 * від шести знаків — інакше відповідь однаково буде відмовою.
 	 */
-	const canSubmit = $derived(email.trim().length > 3 && password.length >= 6 && !busy);
+	const ready = $derived(email.trim().length > 3 && password.length >= 6 && !busy);
+
+	/*
+	 * `aria-disabled`, а не `disabled`, — і тому обидва наміри мають ВЛАСНИЙ
+	 * сторож. Справжній `disabled` виймає кнопку з порядку фокуса, тобто читалка
+	 * її не знаходить і не може сказати, чому вона не працює. Ціна названа:
+	 * натиснути неготову кнопку можна, і не пустити мусить код.
+	 */
+	function submit(event: Event) {
+		event.preventDefault();
+		if (!ready) return;
+		onlogin(email.trim(), password);
+	}
+
+	function register() {
+		if (!ready) return;
+		onregister(email.trim(), password);
+	}
 </script>
 
-<div class="auth" data-testid="auth-card">
-	{#if mode === 'forgot'}
-		<ResetPanel
-			{text}
-			{error}
-			{info}
-			{busy}
-			{onforgot}
-			onback={() => onmode('auth')}
-		/>
-	{:else}
-		<h2 class="auth__title">{@html formatFont(text('account.signInTitle'))}</h2>
-		<p class="auth__hint">{@html formatFont(text('account.why'))}</p>
+<section class="auth text-panel" data-testid="auth-panel">
+	<h2 class="auth__title">{@html formatFont(text('account.signInTitle'))}</h2>
+	<p class="auth__hint">{@html formatFont(text('account.why'))}</p>
 
-		{#if withGoogle}
-			<button
-				type="button"
-				class="auth__google"
-				onclick={ongoogle}
-				disabled={busy}
-				data-testid="auth-google-btn"
-			>
-				<GoogleMark />
-				<span>{@html formatFont(text('account.google'))}</span>
-			</button>
-			<div class="auth__divider"><span>{@html formatFont(text('account.or'))}</span></div>
+	<form class="auth__form" onsubmit={submit} data-testid="auth-form">
+		<label class="auth__label" for="account-email">
+			<span>{@html formatFont(text('account.email'))}</span>
+		</label>
+		<input
+			id="account-email"
+			class="auth__input"
+			type="email"
+			bind:value={email}
+			autocomplete="email"
+			inputmode="email"
+			data-testid="account-email-input"
+		/>
+
+		<label class="auth__label" for="account-password">
+			<span>{@html formatFont(text('account.password'))}</span>
+		</label>
+		<input
+			id="account-password"
+			class="auth__input"
+			type="password"
+			bind:value={password}
+			autocomplete="current-password"
+			data-testid="account-password-input"
+		/>
+
+		{#if errorKey}
+			<p class="auth__error" role="alert" data-testid="account-error-text">
+				{@html formatFont(text(errorKey))}
+			</p>
 		{/if}
 
-		<SegmentedChoice
-			legend={text('account.mode')}
-			scope="account-mode"
-			value={intent}
-			onchange={(id) => onintent(id as 'register' | 'signin')}
-			options={[
-				{ id: 'register', label: text('account.modeRegister') },
-				{ id: 'signin', label: text('account.modeSignIn') }
-			]}
-		/>
-		<p class="auth__hint" data-testid="account-mode-hint">
-			{@html formatFont(text(intent === 'register' ? 'account.registerHint' : 'account.signInHint'))}
+		<button
+			type="submit"
+			class="auth__btn auth__btn--main"
+			aria-disabled={!ready}
+			data-testid="auth-login-btn"
+		>
+			{@html formatFont(text('account.signIn'))}
+		</button>
+
+		<!--
+			Попередження стоїть МІЖ кнопками, і саме тому воно тут, а не під обома:
+			воно стосується рівно «Увійти». Ціна названа — пара кнопок не злита в
+			одну смугу, як у `Slovko`; натомість кожна відповідає сама за себе.
+		-->
+		<p class="auth__hint" data-testid="auth-signin-hint">
+			{@html formatFont(text('account.signInHint'))}
 		</p>
 
-		<form
-			class="auth__form"
-			onsubmit={(event) => {
-				event.preventDefault();
-				onsubmit(email, password);
-			}}
+		<button
+			type="button"
+			class="auth__btn auth__btn--alt"
+			onclick={register}
+			aria-disabled={!ready}
+			data-testid="auth-register-btn"
 		>
-			<EmailField
-				id="account-email"
-				testId="account-email-input"
-				label={text('account.email')}
-				bind:value={email}
-			/>
-
-			<PasswordInput
-				{text}
-				id="account-password"
-				testId="account-password"
-				label={text('account.password')}
-				autocomplete={intent === 'register' ? 'new-password' : 'current-password'}
-				bind:value={password}
-			/>
-
-			<!--
-				«Відновити пароль» — окремим рядком ПІД полем, а не в самому полі: там
-				уже око, CapsLock і попередження про розкладку, і для тексту дії місця
-				немає. Назва повна: «Забули?» не каже, що станеться далі.
-			-->
-			<button
-				type="button"
-				class="auth__link auth__link--reset"
-				onclick={() => onmode('forgot')}
-				data-testid="account-forgot-btn"
-			>
-				{@html formatFont(text('account.forgotPassword'))}
-			</button>
-
-			{#if error}
-				<p class="auth__error" data-testid="account-error-text">{@html formatFont(error)}</p>
-			{/if}
-
-			<button
-				type="submit"
-				class="auth__primary"
-				disabled={!canSubmit}
-				data-testid="account-submit-btn"
-			>
-				{@html formatFont(text(intent === 'register' ? 'account.modeRegister' : 'account.modeSignIn'))}
-			</button>
-		</form>
-	{/if}
-</div>
+			{@html formatFont(text('account.register'))}
+		</button>
+	</form>
+</section>
 
 <style>
-	/*
-	 * Ширина картки — 440px, і це та сама величина, що в каноні (§ 2). Причина
-	 * названа там прямо: типова скарга на такі форми — «завузький контейнер».
-	 */
 	.auth {
-		width: 100%;
-		max-width: 440px;
-		margin-inline: auto;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-md);
+		gap: var(--space-xs);
+		width: 100%;
 	}
 
-	:global(.auth__title) {
+	.auth__form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.auth__title {
+		margin: 0 0 var(--space-xs);
+		font-size: var(--font-size-md);
+	}
+
+	.auth__label {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-on-panel);
+	}
+
+	/*
+	 * Підказки — КЕГЛЕМ, а не прозорістю: `opacity` на тексті цієї панелі
+	 * опускає пару під 4.5:1, і жодне значення прозорості її не рятує. Те саме
+	 * міркування записане в `RoomList`, `OnlineGate` і на сторінці акаунта.
+	 */
+	.auth__hint {
 		margin: 0;
-		font-size: var(--font-size-xl);
-		color: var(--color-text);
+		font-size: var(--font-size-xs);
+		color: var(--color-text-on-panel);
 	}
 
-	:global(.auth__hint) {
+	/*
+	 * Помилка — АКЦЕНТОМ, а не власним червоним: свого токена для помилки в
+	 * проєкті немає, і вигадувати колір тут означало б завести пару, якої гейт
+	 * контрасту не бачив, — у чотирьох темах одразу.
+	 */
+	.auth__error {
 		margin: 0;
 		font-size: var(--font-size-sm);
+		color: var(--color-accent);
+		font-weight: var(--font-weight-bold);
+	}
+
+	.auth__input {
+		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
+		min-height: 44px;
+		padding: 0 var(--space-sm);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
 		color: var(--color-text);
-		opacity: 0.8;
+		font: inherit;
 	}
 
-	:global(.auth__form) {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-	}
-
-
-
-
-
-
-
-	:global(.auth__primary),
-	.auth__google {
+	/*
+	 * ОБИДВІ КНОПКИ — на всю ширину й тієї самої висоти, що поля.
+	 *
+	 * Глобальний `.btn-primary` тут не годиться: у нього `max-width: 320px` і
+	 * кегль `--font-size-lg`, тобто в цій панелі він вийшов би і вужчим за
+	 * поля, і вищим за 44px. Дві кнопки різної ваги, але однакової міри
+	 * читаються як пара варіантів; різної міри — як головна дія і випадковий
+	 * додаток.
+	 */
+	.auth__btn {
 		width: 100%;
 		min-height: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-sm);
-		padding: 0 var(--space-md);
+		padding: 0 var(--space-sm);
 		border-radius: var(--radius-sm);
 		font: inherit;
-		font-size: var(--font-size-sm);
 		font-weight: var(--font-weight-bold);
 		cursor: pointer;
 	}
 
-	:global(.auth__primary) {
+	.auth__btn--main {
 		border: 1px solid var(--color-accent);
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
 	}
 
-	.auth__google {
+	/*
+	 * Друга кнопка виглядає як ПОЛЕ, а не як приглушена копія першої: сірої
+	 * кнопки поруч із яскравою легко не побачити зовсім, а реєстрація — не
+	 * другорядна дія, лише рідша.
+	 */
+	.auth__btn--alt {
 		border: 1px solid var(--color-border);
 		background: var(--color-bg-card);
 		color: var(--color-text);
 	}
 
-	:global(.auth__primary):disabled,
-	.auth__google:disabled {
-		opacity: 0.6;
+	.auth__btn[aria-disabled='true'] {
 		cursor: not-allowed;
-	}
-
-	/*
-	 * КОЛІР ТЕКСТУ, А НЕ АКЦЕНТУ, і підкреслення замість кольору.
-	 *
-	 * Тут стояв `--color-accent`, і гейт контрасту заміряв 1.50:1 проти
-	 * потрібних 4.5 — `rgb(255, 179, 39)` на `rgb(232, 238, 221)` у темі
-	 * `light-green`. Бурштиновий акцент цього проєкту на світлому тлі як
-	 * текст не читається взагалі.
-	 *
-	 * Підкреслення тут не заміна кольору, а те, чим посилання й мусить
-	 * позначатися: сенс, переданий ЛИШЕ кольором, не бачить ні дальтонік, ні
-	 * Lighthouse (`link-in-text-block`).
-	 */
-	:global(.auth__link) {
-		align-self: flex-start;
-		min-height: 44px;
-		padding: 0;
-		border: none;
-		background: none;
-		color: var(--color-text);
-		text-decoration: underline;
-		font: inherit;
-		font-size: var(--font-size-sm);
-		cursor: pointer;
-	}
-
-	.auth__link--reset {
-		align-self: flex-end;
-		/* Притиснуто до поля, під яким стоїть: інакше читається як окрема дія. */
-		margin-top: calc(-1 * var(--space-sm));
-	}
-
-	.auth__divider {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		font-size: var(--font-size-xs);
-		color: var(--color-text);
-		opacity: 0.7;
-	}
-
-	.auth__divider::before,
-	.auth__divider::after {
-		content: '';
-		flex: 1;
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	:global(.auth__error) {
-		margin: 0;
-		font-size: var(--font-size-sm);
-		color: var(--color-error);
-	}
-
-	:global(.auth__info) {
-		margin: 0;
-		font-size: var(--font-size-sm);
-		color: var(--color-success);
 	}
 </style>

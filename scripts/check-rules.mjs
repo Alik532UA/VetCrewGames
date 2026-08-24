@@ -341,6 +341,43 @@ const CASES = [
 			)
 	},
 	{
+		name: 'аватар у профілі',
+		allowed: true,
+		run: () =>
+			write(
+				`users/${guest.uid}/profile`,
+				{ name: 'Гість', handle: 'guest', avatar: 'turtle:violet', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'аватар у профілі довший за 24 символи',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/profile`,
+				{
+					name: 'Гість',
+					handle: 'guest',
+					avatar: `${'a'.repeat(16)}:${'b'.repeat(16)}`,
+					at: SERVER_TIME
+				},
+				guest.token
+			)
+	},
+	{
+		// Аватар у ЧУЖОМУ профілі. Те саме, що з рядком складу: нове поле не
+		// створює нового шляху до чужого вузла.
+		name: 'аватар у чужому профілі',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Не я', handle: 'faker', avatar: 'bug:pink', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
 		name: 'у профілі поле, якого схема не знає',
 		allowed: false,
 		run: () =>
@@ -463,6 +500,20 @@ const CASES = [
 		allowed: true,
 		run: () => write(`lobby/${CODE}/players`, 2, host.token)
 	},
+	{
+		// Аватар господаря в переліку. Дозвіл доводить, що поле НАЗВАНЕ: без
+		// рядка в правилах `$other: false` відкинув би публікацію кімнати цілком.
+		name: 'аватар господаря в переліку кімнат',
+		allowed: true,
+		run: () =>
+			write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'star:teal' }, host.token)
+	},
+	{
+		name: 'аватар господаря без двокрапки',
+		allowed: false,
+		run: () =>
+			write(`lobby/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
+	},
 
 	// --- сторонній не мусить цього могти ---
 	{
@@ -580,6 +631,59 @@ const CASES = [
 			write(
 				`rooms/${CODE}/members/${guest.uid}`,
 				{ ...member, country: 'ukr' },
+				guest.token
+			)
+	},
+	{
+		/*
+		 * АВАТАР — три випадки, і жоден не зайвий.
+		 *
+		 * Дозвіл сам собою нічого не стверджує (`$other: false` відкидає лише
+		 * НЕНАЗВАНІ поля), зате він доводить головне: поле НАЗВАНЕ. Без рядка
+		 * `avatar` у правилах цей запис упав би ЦІЛКОМ — не «аватар не
+		 * зберігся», а «не вдалося зайти в кімнату».
+		 *
+		 * Значення мають два негативні: без «задовгого» межу `length <= 24`
+		 * можна було б зняти, а без «без двокрапки» — взірець форми.
+		 */
+		name: 'аватар у складі кімнати',
+		allowed: true,
+		run: () =>
+			write(
+				`rooms/${CODE}/members/${guest.uid}`,
+				{ ...member, avatar: 'cat:blue' },
+				guest.token
+			)
+	},
+	{
+		name: 'аватар довший за 24 символи',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/members/${guest.uid}`,
+				{ ...member, avatar: `${'a'.repeat(16)}:${'b'.repeat(16)}` },
+				guest.token
+			)
+	},
+	{
+		name: 'аватар без двокрапки',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/members/${guest.uid}`,
+				{ ...member, avatar: 'catblue' },
+				guest.token
+			)
+	},
+	{
+		// Нове поле не відкриває нового шляху: рядок складу лишається чужим, і
+		// аватар у ньому не робить його своїм.
+		name: 'аватар у ЧУЖОМУ рядку складу',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/members/${host.uid}`,
+				{ ...member, avatar: 'dog:red' },
 				guest.token
 			)
 	},

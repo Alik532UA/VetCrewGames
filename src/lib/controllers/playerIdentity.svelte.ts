@@ -1,5 +1,6 @@
 import { randomCrewName } from '$lib/config/crewNames';
 import { isCountry } from '$lib/config/countries';
+import { AVATAR_KEY, DEFAULT_AVATAR, isAvatar } from '$lib/config/avatars';
 import { detectCountry } from '$lib/net/country';
 import { COUNTRY_KEY, NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
 import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
@@ -61,10 +62,30 @@ export class PlayerIdentity {
 	 */
 	country = $state('');
 
+	/**
+	 * Аватар у кімнаті — рядок `значок:колір`.
+	 *
+	 * ВИБИРАЄТЬСЯ НЕ ТУТ, і це межа, а не недогляд: редактор аватара живе у формі
+	 * профілю на `/account/`, бо його підписи («Кіт», «Синій» — двадцять чотири
+	 * рядки) лежать у ЛИНИВОМУ чанку `i18n/account`. Перенести їх у головний
+	 * словник не можна: він статично імпортується кореневим layout і стоїть рівно
+	 * на межі бюджету (заміряно `npm run check:build`: 120 КБ gzip зі стелі 120).
+	 *
+	 * Тому тут аватар лише ЧИТАЄТЬСЯ зі сховища — так само, як прапор, і в тому ж
+	 * місці. Хто аватара не вибирав, іде в кімнату з типовим.
+	 *
+	 * `null` від `storage.get` і невідоме значення дають те саме: типовий аватар.
+	 * Різниця «не питали / вибрали ніякий» тут, на відміну від прапора, не
+	 * потрібна — «без аватара» не буває, порожня плитка читалася б як дефект.
+	 */
+	avatar = $state(DEFAULT_AVATAR);
+
 	readonly #random: () => number;
 
 	constructor(random: () => number) {
 		this.#random = random;
+		const saved = storage.get(AVATAR_KEY);
+		if (isAvatar(saved)) this.avatar = saved;
 	}
 
 	/** Перекладач над уже завантаженим словником. */
@@ -152,5 +173,15 @@ export class PlayerIdentity {
 		// має сенс тоді, коли вибір уже поїхав у кімнату.
 		storage.set(COUNTRY_KEY, this.country);
 		return who;
+	}
+
+	/**
+	 * Аватар для запису в кімнату. Порожньо — поля в базі не буде зовсім.
+	 *
+	 * Типовий аватар НЕ пишеться: він і так підставляється на показі, а зайве
+	 * поле в `members/$uid` пишеться на КОЖЕН вхід у кімнату.
+	 */
+	forRoom(): string | undefined {
+		return this.avatar === DEFAULT_AVATAR ? undefined : this.avatar;
 	}
 }

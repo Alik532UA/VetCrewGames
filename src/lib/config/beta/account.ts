@@ -28,14 +28,18 @@ export const accountTab: BetaTab = {
 				en: 'Create a room anonymously, leave it, then register with an email. The “resume the game” row must stay: the uid did not change.'
 			},
 			coverage: 'manual',
-			testid: 'account-submit-btn'
+			// Локатор — САМА кнопка «Зареєструватись». Доти тут стояв
+			// `account-submit-btn`: одна кнопка, чий підпис мінявся від
+			// сегментованого вибору режиму. Вибору режиму більше немає (див.
+			// `components/auth/AuthForm.svelte`), і намір тепер називає кнопка.
+			testid: 'auth-register-btn'
 		},
 		{
 			id: 'account_2',
 			category: { uk: 'Реєстрація', en: 'Registering' },
 			text: {
-				uk: 'Спробуйте зареєструватися поштою, яка вже зайнята. Мусить бути порада «зайти в наявний», а не загальне «не вдалося».',
-				en: 'Try registering with an email that is already taken. It must advise “sign in to an existing one”, not a generic failure.'
+				uk: 'Спробуйте зареєструватися поштою, яка вже зайнята. Мусить бути порада натиснути «Увійти», а не загальне «не вдалося».',
+				en: 'Try registering with an email that is already taken. It must advise pressing “Sign in”, not a generic failure.'
 			},
 			coverage: 'manual',
 			testid: 'account-error-text'

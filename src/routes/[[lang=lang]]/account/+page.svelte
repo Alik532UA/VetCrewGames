@@ -8,8 +8,12 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { Account } from '$lib/controllers/account.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
 	import AuthForm from '$lib/components/auth/AuthForm.svelte';
+	import { AVATAR_KEY, formatAvatar, parseAvatar } from '$lib/config/avatars';
+	import { storage } from '$lib/services/storage';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -25,26 +29,32 @@
 	 * міняється, тож ні кімнати, ні підписки не гинуть. Подробиці — у
 	 * `net/account.ts`.
 	 *
-	 * ## Чому «створити» й «зайти» — сегментований вибір, а не дві форми
+	 * ## Форма входу живе в компоненті, а не тут
 	 *
-	 * Поля в них однакові (пошта й пароль), а наслідки протилежні: реєстрація
-	 * ЗБЕРІГАЄ поточний `uid`, вхід у наявний акаунт його МІНЯЄ. Дві форми поруч
-	 * читалися б як «те саме двома шляхами», і людина натискала б будь-яку. Один
-	 * вибір над спільними полями змушує прочитати, що саме зараз станеться, — і
-	 * попередження під ним стосується рівно вибраного.
+	 * `components/auth/AuthForm.svelte` — і там же записано, чому в ній ДВІ
+	 * КНОПКИ й жодного вибору режиму. Сторінці лишається проводка: «Увійти»
+	 * перечитує профіль (бо `uid` став іншим), «Зареєструватись» — ні (`uid` той
+	 * самий).
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
 	const account = new Account();
 
-	/** Який режим форми показано: вхід/реєстрація чи відновлення пароля. */
-	let mode = $state<'auth' | 'forgot'>('auth');
-	/** Що робить кнопка входу. Поля живуть у самій формі, не тут. */
-	let intent = $state<'register' | 'signin'>('register');
-	/** Лист відновлення надіслано: повідомлення однакове для будь-якої пошти. */
-	let resetSent = $state(false);
 	let name = $state('');
 	let handle = $state('');
 	let country = $state('');
+	/**
+	 * Аватар — рядок `значок:колір`.
+	 *
+	 * Початкове значення зі СХОВИЩА, а не типове: у кімнату аватар їде саме
+	 * звідти (`controllers/playerIdentity`), і форма профілю мусить показувати те,
+	 * що вже вибрано, а не пропонувати вибрати вдруге.
+	 *
+	 * Через `parseAvatar`, а не прямо: зіпсоване значення у сховищі дало б
+	 * вибір, у якому не позначено нічого, і перше збереження записало б у базу
+	 * рядок, який правило відкине.
+	 */
+	const saved = parseAvatar(storage.get(AVATAR_KEY));
+	let avatar = $state(formatAvatar(saved.icon, saved.color));
 	let query = $state('');
 	/** Псевдонім зайнятий — перевірено перед збереженням. */
 	let taken = $state(false);
@@ -72,38 +82,32 @@
 	onMount(() => {
 		const release = settings.claimHeader('account.title', () => goto(langPath(lang, '')));
 		void loadAccountText(settings.locale).then((loaded) => (dict = loaded));
-		void account.load().then(() => {
-			// Поля форми заповнюються З ПРОФІЛЮ, а не лишаються порожніми: порожнє
-			// поле поруч із наявним профілем читається як «профілю немає».
-			name = account.profile?.name ?? '';
-			handle = account.profile?.handle ?? '';
-			country = account.profile?.country ?? '';
-		});
+		void account.load().then(fillFromProfile);
 		return release;
 	});
 
-	async function submitAuth(email: string, password: string) {
-		const done =
-			intent === 'register'
-				? await account.register(email, password)
-				: await account.signIn(email, password);
-		if (!done) return;
-		if (intent === 'signin') {
-			name = account.profile?.name ?? '';
-			handle = account.profile?.handle ?? '';
-			country = account.profile?.country ?? '';
-		}
+	/**
+	 * Поля форми заповнюються З ПРОФІЛЮ, а не лишаються порожніми: порожнє поле
+	 * поруч із наявним профілем читається як «профілю немає».
+	 */
+	function fillFromProfile() {
+		name = account.profile?.name ?? '';
+		handle = account.profile?.handle ?? '';
+		country = account.profile?.country ?? '';
+		/*
+		 * Аватар — ЛИШЕ якщо профіль його має.
+		 *
+		 * Інакше, ніж решта полів: у профілі його може не бути (він
+		 * необовʼязковий), а у сховищі вже лежить вибір, з яким людина ходить у
+		 * кімнати. Скинути її вибір на типовий через відсутність поля в базі
+		 * означало б стерти те, чого база не знає.
+		 */
+		if (account.profile?.avatar) avatar = account.profile.avatar;
 	}
 
-	/**
-	 * Відновлення пароля: результат ОДНАКОВИЙ для наявної й відсутньої пошти.
-	 *
-	 * Контролер ковтає `auth/user-not-found` саме для цього, а тут лишається не
-	 * зіпсувати: показати «немає такої пошти» означало б дати спосіб перебирати
-	 * акаунти.
-	 */
-	async function submitReset(email: string) {
-		resetSent = await account.resetPassword(email);
+	/** Вхід МІНЯЄ `uid`, тож профіль на екрані стосувався б чужого акаунта. */
+	async function signIn(email: string, password: string) {
+		if (await account.signIn(email, password)) fillFromProfile();
 	}
 
 	async function submitProfile() {
@@ -112,7 +116,20 @@
 			taken = true;
 			return;
 		}
-		await account.save(name, handle, country);
+		if (!(await account.save(name, handle, country, avatar))) return;
+		/*
+		 * Аватар пишеться У СХОВИЩЕ ТЕЖ, і саме тут — після вдалого запису.
+		 *
+		 * Причина не в кеші: у кімнату аватар їде зі сховища
+		 * (`controllers/playerIdentity`), бо форма входу в кімнату читати профіль
+		 * не мусить — це був би мережевий запит на екрані, який має відкритися з
+		 * першого дотику. Ті самі дві половини, що в прапора: він теж лежить і в
+		 * профілі, і у сховищі.
+		 *
+		 * Порядок обовʼязковий: запис у сховище ПІСЛЯ бази. У зворотному невдалий
+		 * запис профілю лишав би у кімнатах аватар, якого в профілі немає.
+		 */
+		storage.set(AVATAR_KEY, avatar);
 	}
 
 	/**
@@ -150,40 +167,26 @@
 
 <div class="account-page">
 	{#if account.state === 'anonymous'}
-		<!--
-			ФОРМА ВХОДУ — ОКРЕМИМ КОМПОНЕНТОМ, і сторінка від цього меншає.
-			
-			Тут стояли поля, вибір режиму й кнопка просто в розмітці. Відновлення
-			пароля не було зовсім, а Google-вхід був записаний боргом. Обидва
-			вимагає AUTH-FORM-v8 § 1, і обидва додати на місці було нікуди: сторінка
-			вже на 515 рядків при орієнтирі 400.
-			
-			Сторінка лишає собі те, що знає лише вона: як перекласти код помилки й
-			що робити після входу.
-		-->
-		<section class="account__panel text-panel">
-			<AuthForm
-				{text}
-				{mode}
-				intent={intent}
-				busy={account.busy}
-				error={errorKey ? text(errorKey) : ''}
-				info={resetSent ? text('account.resetSent') : ''}
-				withGoogle
-				onsubmit={submitAuth}
-				onforgot={submitReset}
-				ongoogle={() => account.google()}
-				onmode={(next) => {
-					mode = next;
-					resetSent = false;
-				}}
-				onintent={(next) => (intent = next)}
-			/>
-		</section>
+		<AuthForm
+			{text}
+			{errorKey}
+			busy={account.busy}
+			onlogin={(email, password) => void signIn(email, password)}
+			onregister={(email, password) => void account.register(email, password)}
+		/>
 	{:else}
 		<!-- ПРОФІЛЬ: те, що бачать інші. -->
 		<section class="account__panel text-panel">
 			<h2 class="account__title">{@html formatFont(text('account.profileTitle'))}</h2>
+
+			<!--
+				АВАТАР — ПЕРШИМ у формі, і це не про важливість.
+
+				Він єдине тут, що видно оком, а не читається: рядки скануються зверху,
+				і плитка згори одразу каже, про кого ця форма. Поставлений після
+				текстових полів, він читався б як налаштування наприкінці списку.
+			-->
+			<AvatarPicker bind:value={avatar} {text} scope="account-avatar" />
 
 			<label class="account__label" for="account-name">
 				<span>{@html formatFont(t('pairs.nickname'))}</span>
@@ -280,6 +283,7 @@
 					{#if person.uid !== account.uid}
 						<li class="account__row" data-testid="account-found-{person.uid}-item">
 							<span class="account__who">
+								<Avatar avatar={person.avatar} />
 								<Flag code={person.country} />
 								{person.name}
 								<span class="account__handle">@{person.handle}</span>
@@ -321,6 +325,7 @@
 				{#each account.following as friend (friend.profile.uid)}
 					<li class="account__row" data-testid="account-following-{friend.profile.uid}-item">
 						<span class="account__who">
+							<Avatar avatar={friend.profile.avatar} />
 							<Flag code={friend.profile.country} />
 							{friend.profile.name}
 							<span class="account__handle">@{friend.profile.handle}</span>

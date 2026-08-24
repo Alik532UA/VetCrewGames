@@ -87,6 +87,8 @@ export interface NewRoom {
 	name: string;
 	/** Прапор господаря. Порожній рядок — без прапора. */
 	country?: string;
+	/** Аватар господаря — рядок `значок:колір`. Порожній рядок — типовий. */
+	avatar?: string;
 	/**
 	 * Чи починати партію самій, коли зібралися гравці.
 	 *
@@ -220,7 +222,8 @@ export async function createRoom(options: NewRoom): Promise<string> {
 				order: 1,
 				// Поле або є, або його немає зовсім: `undefined` у `set()` кидає, а
 				// порожній рядок не пройшов би `.validate` (рівно дві літери).
-				...(options.country ? { country: options.country } : {})
+				...(options.country ? { country: options.country } : {}),
+				...(options.avatar ? { avatar: options.avatar } : {})
 			});
 
 			// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
@@ -250,7 +253,8 @@ export async function joinRoom(
 	code: string,
 	name: string,
 	role?: Member['role'],
-	country?: string
+	country?: string,
+	avatar?: string
 ): Promise<void> {
 	const { uid, db } = await connect();
 	const { get, ref, set } = await import('firebase/database');
@@ -270,8 +274,11 @@ export async function joinRoom(
 		 * Інакше, ніж `order` і `role`: ті визначають роздачу й черга, тож їх
 		 * повторний вхід не торкається. Прапор — підпис, і людина могла
 		 * змінити його у формі саме перед тим, як вернутися в кімнату.
+		 *
+		 * Те саме й аватар: він теж підпис, і теж міняється між заходами.
 		 */
-		...(country ? { country } : {})
+		...(country ? { country } : {}),
+		...(avatar ? { avatar } : {})
 	});
 
 	/*

@@ -170,10 +170,20 @@ export class Account {
 		return handleFree(handle);
 	}
 
-	async save(name: string, handle: string, country: string): Promise<boolean> {
+	/**
+	 * Зберегти профіль.
+	 *
+	 * Аватар їде тим самим записом, що імʼя й країна: це один опис того, «як мене
+	 * видно», і розділяти його на два записи означало б стан, у якому половина
+	 * профілю нова, а половина стара.
+	 */
+	async save(name: string, handle: string, country: string, avatar: string): Promise<boolean> {
 		const previous = this.profile?.handle;
 		const done = await this.#act('profile', () =>
-			saveProfile({ name, handle, country: country || undefined }, previous)
+			saveProfile(
+				{ name, handle, country: country || undefined, avatar: avatar || undefined },
+				previous
+			)
 		);
 		if (done) this.profile = await readProfile(this.uid);
 		return done;
