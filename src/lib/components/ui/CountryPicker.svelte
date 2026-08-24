@@ -181,6 +181,7 @@
 			{value}
 			{scope}
 			{seed}
+			{compact}
 			onpick={(code) => {
 				value = code;
 				closePanel();

@@ -17,6 +17,18 @@ import { reduceMotion, settlePage } from './support/settle';
  * «у сусідню». Тому тут перевіряється саме зв'язка «розкладка + клавіші», і
  * перевіряється натисканням, а не оком.
  *
+ * ## ДВА РЕЖИМИ, і кожен перевіряється окремо
+ *
+ * Друга скарга автора: «актуальний результат — прапор і текст; очікуваний —
+ * тільки прапор, але пошук по тексту працює». Тож у компактному режимі (а
+ * сторінка «Знайди пару» саме такий) панель без запиту малює СІТКУ прапорів, а
+ * назви й колонки повертаються, щойно набрано літеру.
+ *
+ * Це знову зв'язка з клавіатурою, і знову інша: у сітці порядок документа йде
+ * РЯДКАМИ, тобто наступний пункт лежить праворуч, а «вниз» мусить вести окрема
+ * арифметика (`rowNeighbourIn`). Тому нижче парами: сітка без запиту й колонки
+ * після набору.
+ *
  * ## Що перевіряється деінде
  *
  * Правило сусідства як арифметика — `src/lib/utils/menuColumns.test.ts` (там
@@ -75,6 +87,23 @@ async function activeSpot(page: Page): Promise<Spot | null> {
 	}, SCOPE);
 }
 
+/**
+ * Набрати запит — і тим самим перевести панель у режим НАЗВ.
+ *
+ * У компактному режимі (а сторінка «Знайди пару» саме такий) панель без запиту
+ * малює лише прапори сіткою: назви там нічого не додають, бо кнопка — сам
+ * прапор. Назви, колонки й усе, що з них випливає, з'являються рівно тоді, коли
+ * набрано хоч літеру, — тобто твердження про колонки треба перевіряти саме
+ * після набору, а не «на відкритій панелі».
+ *
+ * `а` вибрано навмисно: під нього підходять сотні країн, отже колонок лишається
+ * кілька, і жодне з наступних тверджень не спирається на короткий список.
+ */
+async function typeToNames(page: Page, query = 'а') {
+	await page.keyboard.type(query);
+	await expect(page.locator(`[data-testid="${SCOPE}-menu"] .menu__name`).first()).toBeVisible();
+}
+
 /** Каретка в полі пошуку: де стоїть і що виділено. */
 async function caret(page: Page) {
 	return page.evaluate((scope) => {
@@ -129,8 +158,45 @@ test('панель розкладається в колонки й не вила
 	expect(shape.spilling, 'назва вилізла за свою колонку').toBe(0);
 });
 
-test('розділ не розрізаний між колонками, заголовок при своїх країнах', async ({ page }) => {
+test('без запиту розділ — СІТКА прапорів, а заголовок стоїть окремим рядком', async ({ page }) => {
 	await openMenu(page);
+
+	/*
+	 * Скарга автора: «актуальний результат — прапор і текст; очікуваний — тільки
+	 * прапор, але пошук по тексту працює». Тобто без запиту назв бути не мусить, а
+	 * прапори мусять стояти сіткою — інакше 262 плитки знову витягуються в колонку.
+	 */
+	const grid = await page.evaluate((scope) => {
+		const menu = document.querySelector(`[data-testid="${scope}-menu"]`)!;
+		const group = menu.querySelector('[role="group"]')!;
+		const heading = group.querySelector<HTMLElement>('div')!;
+		const options = [...group.querySelectorAll<HTMLElement>('[role="option"]')];
+		return {
+			names: menu.querySelectorAll('.menu__name').length,
+			labelled: options.every((o) => (o.getAttribute('aria-label') ?? '').length > 1),
+			columns: new Set(options.map((o) => Math.round(o.offsetLeft))).size,
+			underHeading: options.every((o) => o.offsetTop > heading.offsetTop),
+			square: options.every((o) => Math.abs(o.offsetWidth - o.offsetHeight) <= 2)
+		};
+	}, SCOPE);
+
+	/*
+	 * Назва «без прапора» лишається текстом — це не країна, а свідома відповідь
+	 * «не показувати», і плиткою її не покажеш. Тому один `.menu__name` тут
+	 * законний, а 262 — ні.
+	 */
+	expect(grid.names, 'назви країн мусять зникнути, поки нічого не набрано').toBeLessThanOrEqual(1);
+	expect(grid.labelled, 'пункт без назви в `aria-label` — це «кнопка» для скрінрідера').toBe(true);
+	expect(grid.columns, 'прапори мусять стояти сіткою, а не стовпцем').toBeGreaterThan(1);
+	expect(grid.underHeading, 'заголовок розділу мусить стояти окремим рядком').toBe(true);
+	expect(grid.square, 'плитка мусить бути квадратною сенсорною ціллю').toBe(true);
+});
+
+test('після набору розділ не розрізаний між колонками, заголовок при своїх країнах', async ({
+	page
+}) => {
+	await openMenu(page);
+	await typeToNames(page);
 
 	const groups = await page.evaluate((scope) => {
 		const menu = document.querySelector(`[data-testid="${scope}-menu"]`)!;
@@ -159,8 +225,51 @@ test('розділ не розрізаний між колонками, заго
 	).toEqual([]);
 });
 
-test('стрілка вниз іде в межах колонки, вбік — у сусідню', async ({ page }) => {
+test('у сітці прапорів «вниз» веде РЯДКОМ нижче, а «вбік» — на плитку', async ({ page }) => {
 	await openMenu(page);
+
+	/*
+	 * У колонках лінійний крок і є «вниз»: multicol заповнює спершу всю першу
+	 * колонку. У сітці порядок документа йде РЯДКАМИ, тобто наступний пункт лежить
+	 * ПРАВОРУЧ — і «вниз» мусить веcти інша арифметика (`rowNeighbourIn`). Без
+	 * цього 262 прапори проходилися б по одному, і кожен крок «униз» їхав би вбік.
+	 */
+	await page.keyboard.press('Home');
+	const start = await activeSpot(page);
+	await page.keyboard.press('ArrowDown');
+	const below = await activeSpot(page);
+	expect(below!.top, 'крок униз мусить піти нижче').toBeGreaterThan(start!.top);
+	expect(
+		Math.abs(below!.left - start!.left),
+		`крок униз поїхав убік: ${start!.text} → ${below!.text}`
+	).toBeLessThanOrEqual(NEAR);
+
+	await page.keyboard.press('ArrowRight');
+	const aside = await activeSpot(page);
+	expect(aside!.left, 'крок убік мусить перейти на сусідню плитку').toBeGreaterThan(
+		below!.left + NEAR
+	);
+	expect(Math.abs(aside!.top - below!.top), 'крок убік поїхав по висоті').toBeLessThanOrEqual(NEAR);
+
+	await page.keyboard.press('ArrowUp');
+	const up = await activeSpot(page);
+	expect(up!.top, 'крок угору мусить піти вище').toBeLessThan(aside!.top);
+
+	/*
+	 * З першої плитки вліво не веде нікуди — горизонталь не закільцьована
+	 * навмисно: «вліво» з початку рядка на його кінець це стрибок через увесь
+	 * екран. Перевіряти це можна лише за ПОРОЖНЬОГО запиту: коли в полі щось
+	 * набрано, стрілка вбік належить каретці (див. окремий тест про це).
+	 */
+	await page.keyboard.press('Home');
+	const first = await activeSpot(page);
+	await page.keyboard.press('ArrowLeft');
+	expect((await activeSpot(page))!.id, 'вліво з першої плитки кудись поїхало').toBe(first!.id);
+});
+
+test('після набору стрілка вниз іде в межах колонки, вбік — у сусідню', async ({ page }) => {
+	await openMenu(page);
+	await typeToNames(page);
 
 	// Початок з відомого місця: Home ставить активним найперший пункт панелі.
 	await page.keyboard.press('Home');
@@ -203,19 +312,13 @@ test('стрілка вниз іде в межах колонки, вбік — 
 		`вправо поїхало по висоті: ${before.text} (${before.top}) → ${right!.text} (${right!.top})`
 	).toBeLessThanOrEqual(88);
 
-	// І назад — у ту саму колонку, звідки прийшли.
-	await page.keyboard.press('ArrowLeft');
-	const back = await activeSpot(page);
-	expect(
-		Math.abs(back!.left - before.left),
-		'стрілка вліво не повернула в колонку'
-	).toBeLessThanOrEqual(NEAR);
-
-	// З першої колонки вліво не веде нікуди: без стрибка через увесь екран.
-	await page.keyboard.press('Home');
-	const first = await activeSpot(page);
-	await page.keyboard.press('ArrowLeft');
-	expect((await activeSpot(page))!.id, 'вліво з першої колонки кудись поїхало').toBe(first!.id);
+	/*
+	 * «Назад тією самою стрілкою» тут НЕ перевіряється, і це не пропуск: у полі
+	 * щось набрано, тож `ArrowLeft` спершу веде КАРЕТКУ — так і задумано, інакше
+	 * набране «німеччнина» неможливо було б виправити, не стерши до помилки. Саме
+	 * цю пару правил перевіряє тест «стрілки вбік не забирають каретку», а
+	 * повернення в ту саму колонку — тест про сітку вище, де запит порожній.
+	 */
 });
 
 test('стрілки вбік не забирають каретку в полі пошуку', async ({ page }) => {

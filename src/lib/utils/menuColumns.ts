@@ -104,13 +104,57 @@ export function columnNeighbourIn(
 	from: number,
 	by: number
 ): number {
+	const spots = spotsIn(panel, count, from);
+	return spots ? columnNeighbour(spots, from, by) : from;
+}
+
+/**
+ * Пункт у СУСІДНЬОМУ РЯДКУ — стрілка вниз або вгору в СІТЦІ прапорів.
+ *
+ * ## Навіщо, якщо є лінійний крок
+ *
+ * У колонках лінійний крок і є «вниз»: multicol заповнює спершу всю першу
+ * колонку, потім другу, тож наступний пункт лежить під поточним. У сітці
+ * (`.menu__group--flags` у `CountryMenu.svelte`) порядок документа йде РЯДКАМИ —
+ * той самий наступний пункт лежить праворуч. Тобто без цієї функції «вниз»
+ * означало б «вправо», і 262 прапори проходилися б по одному.
+ *
+ * ## Чому це та сама арифметика, тільько повернута
+ *
+ * «Найближчий рядок у потрібний бік, а в ньому — найближча колонка» — це
+ * дослівно `columnNeighbour` із переставленими осями. Тому тут не другий
+ * алгоритм, а транспонування: одна правда про сусідство, і зламати її можна
+ * лише в одному місці.
+ */
+export function rowNeighbourIn(
+	panel: HTMLElement | null,
+	count: number,
+	from: number,
+	by: number
+): number {
+	const spots = spotsIn(panel, count, from);
+	if (!spots) return from;
+	const turned = spots.map((spot) => ({ left: spot.top, top: spot.left }));
+	return columnNeighbour(turned, from, by);
+}
+
+/**
+ * Координати всіх пунктів панелі — одним проходом.
+ *
+ * Браузер порахує розкладку раз, на першому `getBoundingClientRect()`, і віддасть
+ * решту 262 з того самого стану.
+ *
+ * `null` означає «питати нема про що»: розмітка розійшлася з порядком, який
+ * тримає компонент. Тоді стрілка не робить нічого — вибрати НЕ ТУ країну гірше,
+ * ніж не зробити нічого.
+ */
+function spotsIn(panel: HTMLElement | null, count: number, from: number): Spot[] | null {
 	const items = panel?.querySelectorAll<HTMLElement>('[role="option"]');
-	if (!items || items.length !== count || from < 0) return from;
-	const spots = [...items].map((item) => {
+	if (!items || items.length !== count || from < 0) return null;
+	return [...items].map((item) => {
 		const box = item.getBoundingClientRect();
 		return { left: box.left, top: box.top };
 	});
-	return columnNeighbour(spots, from, by);
 }
 
 /**

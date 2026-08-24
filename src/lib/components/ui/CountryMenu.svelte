@@ -4,8 +4,8 @@
 	import { loadAccountText } from '$lib/i18n/account';
 	import { countriesByRegion, filterRegions, type RegionGroup } from '$lib/config/regions';
 	import { settings } from '$lib/services/settings.svelte';
-	import { columnNeighbourIn, fitMenu } from '$lib/utils/menuColumns';
-	import Flag from './Flag.svelte';
+	import { columnNeighbourIn, fitMenu, rowNeighbourIn } from '$lib/utils/menuColumns';
+	import CountryOption from './CountryOption.svelte';
 
 	/**
 	 * ПАНЕЛЬ вибору країни: поле пошуку й 262 пункти, розбиті на регіони.
@@ -48,11 +48,25 @@
 		 * панель уже з нею — це те, що нативний `select` робив сам.
 		 */
 		seed?: string;
+		/**
+		 * КОМПАКТНИЙ РЕЖИМ: у списку видно ЛИШЕ ПРАПОРИ, доки нічого не набрано.
+		 *
+		 * Там, де кнопка — сам прапор (склад кімнати), назви в панелі майже нічого
+		 * не додають: людина шукає СВІЙ прапор, і 262 назви поруч роблять сітку
+		 * довгим списком, у якому прапор доводиться вичитувати. Щойно набрано хоч
+		 * літеру, назви вертаються: тоді питання інше — «що саме знайшлося», і
+		 * прапор без назви на нього не відповідає.
+		 *
+		 * Доступність від цього не страждає й не може: назва країни стоїть в
+		 * `aria-label` пункту ЗАВЖДИ, тобто для скрінрідера список не міняється
+		 * зовсім — міняється лише те, що намальовано.
+		 */
+		compact?: boolean;
 		onpick: (code: string) => void;
 		onclose: () => void;
 	}
 
-	let { value, scope, seed = '', onpick, onclose }: Props = $props();
+	let { value, scope, seed = '', compact = false, onpick, onclose }: Props = $props();
 
 	/**
 	 * РЯДКИ ПАНЕЛІ — З ЛІНИВОГО ЧАНКА, і словник тримається тут, а не приходить
@@ -123,6 +137,15 @@
 	 */
 	const withNone = $derived(query.trim() === '');
 
+	/**
+	 * Чи малювати лише прапори. Та сама умова, що у `withNone`, плюс режим.
+	 *
+	 * Умова саме на ПОРОЖНІЙ запит, а не на «мало знахідок»: перехід між двома
+	 * виглядами мусить залежати від дії людини, а не від того, скільки країн
+	 * підійшло, — інакше сітка перебудовувалася б сама собою під час набору.
+	 */
+	const flagsOnly = $derived(compact && query.trim() === '');
+
 	/** Порядок, у якому по пунктах ходять стрілки. Той самий, що на екрані. */
 	const order = $derived([
 		...(withNone ? [''] : []),
@@ -160,7 +183,8 @@
 	 *
 	 * Саме тому перехід на колонки нічого тут не зламав, хоч задача цього й
 	 * очікувала: ламається лінійний крок у СІТЦІ, де порядок документа йде
-	 * рядками, а не в колонках, де він іде стовпцями.
+	 * рядками, а не в колонках, де він іде стовпцями. Сітка з'явилася —
+	 * `flagsOnly`, — і там «вниз» веде `stepRow`, а не цей крок.
 	 */
 	function step(by: number) {
 		if (order.length === 0) return;
@@ -178,6 +202,12 @@
 	function stepColumn(by: number) {
 		const at = order.indexOf(active);
 		cursor = order[columnNeighbourIn(panel, order.length, at, by)] ?? cursor;
+	}
+
+	/** Пункт у сусідньому РЯДКУ — стрілка вниз/вгору в сітці прапорів. */
+	function stepRow(by: number) {
+		const at = order.indexOf(active);
+		cursor = order[rowNeighbourIn(panel, order.length, at, by)] ?? cursor;
 	}
 
 	/**
@@ -207,13 +237,15 @@
 	function onKeydown(event: KeyboardEvent) {
 		switch (event.key) {
 			case 'ArrowDown':
+			case 'ArrowUp': {
 				event.preventDefault();
-				step(1);
+				const down = event.key === 'ArrowDown' ? 1 : -1;
+				// У сітці прапорів «вниз» — це рядок нижче, а не наступний пункт:
+				// наступний лежить праворуч (див. докблок `step`).
+				if (flagsOnly) stepRow(down);
+				else step(down);
 				break;
-			case 'ArrowUp':
-				event.preventDefault();
-				step(-1);
-				break;
+			}
 			case 'ArrowRight':
 			case 'ArrowLeft': {
 				const aside = event.key === 'ArrowRight' ? 1 : -1;
@@ -340,7 +372,13 @@
 		«нічого не знайдено» лежить нижче, а не порожнім рядком у списку.
 	-->
 	<div class="menu__scroll">
-		<div class="menu__list" id="{scope}-list" role="listbox" aria-labelledby="{scope}-label">
+		<div
+			class="menu__list"
+			class:menu__list--flags={flagsOnly}
+			id="{scope}-list"
+			role="listbox"
+			aria-labelledby="{scope}-label"
+		>
 			{#if withNone}
 				<!--
 				«Без прапора» — ПЕРШИЙ пункт, і він не порожній рядок на вигляд.
@@ -349,21 +387,15 @@
 				відповідь «не показувати». Людина, яка не хоче називати країну, мусить
 				бачити цей варіант названим, а не вгадувати.
 			-->
-				<button
-					type="button"
+				<CountryOption
+					code=""
+					name={t('pairs.countryNone')}
 					id={optionId('')}
-					class="menu__option"
-					class:menu__option--chosen={value === ''}
-					class:menu__option--active={active === ''}
-					role="option"
-					aria-selected={value === ''}
-					tabindex="-1"
-					onclick={() => onpick('')}
-					data-testid="{scope}-none-option"
-				>
-					<span class="menu__mark"></span>
-					<span class="menu__name">{@html formatFont(t('pairs.countryNone'))}</span>
-				</button>
+					testId="{scope}-none-option"
+					chosen={value === ''}
+					active={active === ''}
+					{onpick}
+				/>
 			{/if}
 
 			<!--
@@ -375,7 +407,7 @@
 			`aria-required-children`. Так назву чути один раз, а не двічі.
 		-->
 			{#each shown as group (group.id)}
-				<div class="menu__group" role="group" aria-label={group.name}>
+				<div class="menu__group" class:menu__group--flags={flagsOnly} role="group" aria-label={group.name}>
 					<div class="menu__region" aria-hidden="true">{@html formatFont(group.name)}</div>
 					{#each group.countries as country (country.code)}
 						<!--
@@ -391,23 +423,16 @@
 						а керування списком лежить на полі пошуку через
 						`aria-activedescendant`.
 					-->
-						<button
-							type="button"
+						<CountryOption
+							code={country.code}
+							name={country.name}
 							id={optionId(country.code)}
-							class="menu__option"
-							class:menu__option--chosen={value === country.code}
-							class:menu__option--active={active === country.code}
-							role="option"
-							aria-selected={value === country.code}
-							tabindex="-1"
-							onclick={() => onpick(country.code)}
-							data-testid="{scope}-{country.code}-option"
-						>
-							<span class="menu__mark" aria-hidden="true">
-								<Flag code={country.code} height={14} />
-							</span>
-							<span class="menu__name">{@html formatFont(country.name)}</span>
-						</button>
+							testId="{scope}-{country.code}-option"
+							chosen={value === country.code}
+							active={active === country.code}
+							{flagsOnly}
+							{onpick}
+						/>
 					{/each}
 				</div>
 			{/each}
@@ -564,6 +589,19 @@
 	}
 
 	/*
+	 * РЕЖИМ ПРАПОРІВ: multicol ВИМИКАЄТЬСЯ, а не налаштовується.
+	 *
+	 * Колонки й перенос рядків усередині розділу — дві розкладки на одне місце:
+	 * multicol міряє висоту вмісту, а вміст тут переносить сам себе, тож браузер
+	 * рвав колонки посеред сітки прапорів. Без колонок сітка розділу займає всю
+	 * ширину панелі — а це і є те, чого від неї хочуть: побачити багато прапорів
+	 * одразу.
+	 */
+	.menu__list--flags {
+		columns: auto;
+	}
+
+	/*
 	 * РОЗДІЛ НЕ РІЖЕТЬСЯ МІЖ КОЛОНКАМИ — і це рішення з ціною, названою числом.
 	 *
 	 * Без цього рядка колонки виходять ідеально рівні (11 754px на чотири =
@@ -593,6 +631,28 @@
 	}
 
 	/*
+	 * СІТКА ПРАПОРІВ — flex-wrap на самому розділі, БЕЗ обгортки всередині.
+	 *
+	 * Обгортка була б простішою в CSS і неправильною в ARIA: у `role="group"`
+	 * всередині `listbox` не буває нічого, крім `option`, і зайвий вузол дав би
+	 * рівно те `aria-required-children`, через яке заголовок регіону тут
+	 * `aria-hidden`, а «нічого не знайдено» лежить поза списком.
+	 *
+	 * Заголовок при цьому лишається окремим рядком: `flex-basis: 100%` нижче
+	 * забирає йому всю ширину, тобто прапори починаються під ним, а не поруч.
+	 */
+	.menu__group--flags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		align-content: flex-start;
+	}
+
+	.menu__group--flags .menu__region {
+		flex: 0 0 100%;
+	}
+
+	/*
 	 * ЗАГОЛОВОК РЕГІОНУ ЛИПНЕ ДО ВЕРХУ СПИСКУ.
 	 *
 	 * У 262 пунктах головне питання — «де я зараз», і липкий заголовок
@@ -617,121 +677,6 @@
 		font-weight: var(--font-weight-bold);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-	}
-
-	.menu__option {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		width: 100%;
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border: none;
-		border-radius: var(--radius-sm);
-		background: none;
-		color: var(--color-text);
-		font: inherit;
-		font-size: var(--font-size-sm);
-		text-align: left;
-		cursor: pointer;
-		/*
-		 * ПУНКТ ЗА МЕЖАМИ ПРОКРУТКИ НЕ МАЛЮЄТЬСЯ Й НЕ ТЯГНЕ СВІЙ ПРАПОР.
-		 *
-		 * Заміряно на dev-сервері: без цього рядка при відкритті панелі браузер
-		 * брав 111 прапорів із 262 — `loading="lazy"` рахує відстань від ВІКНА, а
-		 * не від коробки прокрутки, тож «поза екраном» для нього починається
-		 * значно нижче. `content-visibility` міряє саме коробку.
-		 *
-		 * `contain-intrinsic-size` обовʼязковий: без нього пропущений пункт має
-		 * нульову висоту, повзунок бреше й `scrollIntoView` цілиться не туди.
-		 */
-		content-visibility: auto;
-		contain-intrinsic-size: auto 44px;
-	}
-
-	/*
-	 * Прапор і його місце в пункті «без прапора».
-	 *
-	 * Фіксована ширина ОБОВʼЯЗКОВА: без неї пункт без прапора зсував би назву
-	 * влівo, і рівний стовпчик назв розсипався б на цьому рядку.
-	 */
-	.menu__mark {
-		display: flex;
-		flex-shrink: 0;
-		align-items: center;
-		justify-content: center;
-		width: 21px;
-	}
-
-	/*
-	 * НАЗВА ПЕРЕНОСИТЬСЯ, А НЕ ОБРІЗАЄТЬСЯ, і в колонці на 180px це вже питання.
-	 *
-	 * Обрізати трьома точками було б рівніше на вигляд, але тут треба ВПІЗНАТИ
-	 * свою країну, а «Центральноафриканська Р…» упізнати не дає. Заміряно, скільки
-	 * це коштує: у колонці 180px у два рядки переходять 19 назв із 263 і жодна з
-	 * них не стає вищою за 44px (рядок тексту 21px, тобто два вкладаються в
-	 * сенсорну висоту), і рівно одна — «Південна Джорджія та Південні Сандвічеві
-	 * Острови» — займає три рядки й 63px. Один вищий рядок із 263 дешевший за 19
-	 * обрізаних назв.
-	 *
-	 * `min-width: 0` і `overflow-wrap` — пара, і поодинці не працює ні той, ні той.
-	 * Без нуля flex не дає елементу стати вужчим за найдовше СЛОВО, тож
-	 * «Центральноафриканська» вилазила в сусідню колонку (заміряно: єдиний пункт із
-	 * 263, у якого `scrollWidth` більший за `clientWidth`). Без `overflow-wrap`
-	 * саме воно й лишилося б нерозривним і просто обрізалося б коробкою.
-	 */
-	.menu__name {
-		min-width: 0;
-		overflow-wrap: break-word;
-	}
-
-	/*
-	 * НАВЕДЕННЯ — ДОМІШКА КОЛЬОРУ ТЕКСТУ, А НЕ АКЦЕНТУ З ПРОЗОРІСТЮ.
-	 *
-	 * Перенесено з `HeaderMenu.svelte` разом із причиною, яку там заміряли:
-	 * прозорий акцент (жовтий у трьох темах із чотирьох) поверх будь-якого тла
-	 * дає бруд, а не крок світліше або темніше. 10% кольору ТЕКСТУ — притінення
-	 * у світлих темах і підсвітка в темних, тобто крок у потрібний бік
-	 * перевертається сам.
-	 */
-	@media (hover: hover) {
-		.menu__option:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 90%);
-		}
-	}
-
-	/*
-	 * ВИБРАНЕ — акцент ЦІЛКОМ, із призначеним для нього кольором тексту.
-	 *
-	 * `--color-text-on-accent` підібраний під акцент у кожній темі окремо
-	 * (7.38–7.79:1 — заміряно в `HeaderMenu.svelte`), тож пара тримається в усіх
-	 * чотирьох без окремих правил.
-	 */
-	.menu__option--chosen {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font-weight: var(--font-weight-bold);
-	}
-
-	@media (hover: hover) {
-		.menu__option--chosen:hover {
-			background: var(--color-accent-hover);
-		}
-	}
-
-	/*
-	 * АКТИВНИЙ ПУНКТ — РАМКА, а не заливка, і це не смак.
-	 *
-	 * «Активний» тут означає `aria-activedescendant`: клавіатура стоїть на цьому
-	 * пункті, але фокус — у полі пошуку, тобто справжнього `:focus-visible`
-	 * браузер тут не намалює. Заливкою його показати не можна: вона зіткнулася б
-	 * і з наведенням, і з вибраним, і на вибраному пункті стан «клавіатура тут»
-	 * зник би зовсім. Рамка складається з будь-яким тлом.
-	 */
-	.menu__option--active {
-		outline: 2px solid var(--color-accent);
-		outline-offset: -2px;
 	}
 
 	.menu__empty {
