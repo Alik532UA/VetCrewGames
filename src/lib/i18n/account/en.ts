@@ -13,10 +13,14 @@
  */
 export const account: Record<string, string> = {
 	'account.signInTitle': 'Sign in or register',
-	'account.infoFriends': 'Friends means following each other, so both sides need an account. The handle and avatar are set after signing in, in the profile.',
-	'account.infoSignIn': 'Signing into an existing account opens that account — its name, its handle, its friends. The score and records from this browser are added to it; unfinished rooms started before the sign-in do not move into the account.',
-	'account.infoRegister': 'Registering does not start over. You stay the same player, what you scored stays with you — and from then on it is kept in the account, so it opens on your other devices.',
-	'account.infoWhy': 'Everything works without an account: playing, creating rooms, scoring. But then the score and records live only in this browser — and go away with its data.',
+	'account.infoFriends':
+		'Friends means following each other, so both sides need an account. The handle and avatar are set after signing in, in the profile.',
+	'account.infoSignIn':
+		'Signing into an existing account opens that account — its name, its handle, its friends. The score and records from this browser are added to it; unfinished rooms started before the sign-in do not move into the account.',
+	'account.infoRegister':
+		'Registering does not start over. You stay the same player, what you scored stays with you — and from then on it is kept in the account, so it opens on your other devices.',
+	'account.infoWhy':
+		'Everything works without an account: playing, creating rooms, scoring. But then the score and records live only in this browser — and go away with its data.',
 	'account.infoOpen': 'How the account works',
 	'account.signIn': 'Sign in',
 	'account.register': 'Register',
@@ -28,8 +32,11 @@ export const account: Record<string, string> = {
 	'account.errorWrong': 'The email or password does not match.',
 	'account.errorOther': 'It did not work. Try again.',
 	'account.profileTitle': 'Profile',
-	'account.handle': 'Handle',
-	'account.handleHint': 'Lower-case Latin letters, digits and underscores; 3 to 20 characters. People find you by it.',
+	'account.gameName': 'Name in game',
+	'account.gameNameHint': 'This is how others see you — in the room and on the leaderboard.',
+	'account.handle': '@handle for search',
+	'account.handleHint':
+		'Lower-case Latin letters, digits and underscores; 3 to 20 characters. This is what friends find you by — the in-game name will not do, because it is not unique.',
 	'account.handleTaken': 'That handle is already taken.',
 	'account.errorNameEmpty': 'The name is empty — it is what others see, so it cannot be left out.',
 	'account.errorHandleShape': 'The handle is too short — at least three characters.',
@@ -93,7 +100,8 @@ export const account: Record<string, string> = {
 	'account.countryNotFound': 'Nothing found',
 	// Privacy switches and the leaderboard.
 	'account.privacyTitle': 'Privacy',
-	'account.privacyHint': 'These switches are held by the database itself: what is off here is hidden from everyone, not just on this screen.',
+	'account.privacyHint':
+		'These switches are held by the database itself: what is off here is hidden from everyone, not just on this screen.',
 	'account.privacy.search': 'Show me in search',
 	'account.privacy.follow': 'Let others follow me',
 	'account.privacy.board': 'Show me on the leaderboard',
@@ -113,9 +121,10 @@ export const account: Record<string, string> = {
 	'account.passwordChanged': 'Password changed.',
 	'account.passwordGoogle': 'You sign in with Google — there is no separate password here.',
 	'account.deleteTitle': 'Delete account',
-	'account.deleteHint': 'Deletion cannot be undone: the profile, handle, follows, score and records all go.',
+	'account.deleteHint':
+		'Deletion cannot be undone: the profile, handle, follows, score and records all go.',
 	'account.deletePassword': 'Password to confirm',
 	'account.deleteConfirm': 'Yes, delete',
 	'account.deleteCancel': 'Cancel',
-	'account.errorPasswordNeeded': 'A password is needed to confirm.',
+	'account.errorPasswordNeeded': 'A password is needed to confirm.'
 };

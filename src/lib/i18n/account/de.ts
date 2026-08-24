@@ -13,10 +13,14 @@
  */
 export const account: Record<string, string> = {
 	'account.signInTitle': 'Anmelden oder registrieren',
-	'account.infoFriends': 'Freunde heißt: einander folgen, also braucht es auf beiden Seiten ein Konto. Kürzel und Avatar werden nach der Anmeldung im Profil gesetzt.',
-	'account.infoSignIn': 'Die Anmeldung in einem vorhandenen Konto öffnet genau dieses Konto — mit seinem Namen, seinem Kürzel, seinen Freunden. Punktestand und Rekorde aus diesem Browser kommen hinzu; unbeendete Räume von vorher ziehen nicht mit um.',
-	'account.infoRegister': 'Die Registrierung fängt nicht von neuem an. Du bleibst derselbe Spieler, das Erspielte bleibt bei dir — und wird von da an im Konto bewahrt, also auch auf deinen anderen Geräten.',
-	'account.infoWhy': 'Ohne Konto funktioniert alles: spielen, Räume erstellen, Punkte sammeln. Punktestand und Rekorde leben dann aber nur in diesem Browser — und verschwinden mit seinen Daten.',
+	'account.infoFriends':
+		'Freunde heißt: einander folgen, also braucht es auf beiden Seiten ein Konto. Kürzel und Avatar werden nach der Anmeldung im Profil gesetzt.',
+	'account.infoSignIn':
+		'Die Anmeldung in einem vorhandenen Konto öffnet genau dieses Konto — mit seinem Namen, seinem Kürzel, seinen Freunden. Punktestand und Rekorde aus diesem Browser kommen hinzu; unbeendete Räume von vorher ziehen nicht mit um.',
+	'account.infoRegister':
+		'Die Registrierung fängt nicht von neuem an. Du bleibst derselbe Spieler, das Erspielte bleibt bei dir — und wird von da an im Konto bewahrt, also auch auf deinen anderen Geräten.',
+	'account.infoWhy':
+		'Ohne Konto funktioniert alles: spielen, Räume erstellen, Punkte sammeln. Punktestand und Rekorde leben dann aber nur in diesem Browser — und verschwinden mit seinen Daten.',
 	'account.infoOpen': 'Wie das Konto funktioniert',
 	'account.signIn': 'Anmelden',
 	'account.register': 'Registrieren',
@@ -28,10 +32,14 @@ export const account: Record<string, string> = {
 	'account.errorWrong': 'E-Mail oder Passwort stimmen nicht.',
 	'account.errorOther': 'Es hat nicht funktioniert. Versuchen Sie es erneut.',
 	'account.profileTitle': 'Profil',
-	'account.handle': 'Kürzel',
-	'account.handleHint': 'Kleine lateinische Buchstaben, Ziffern und Unterstriche; 3 bis 20 Zeichen. Danach findet man Sie.',
+	'account.gameName': 'Name im Spiel',
+	'account.gameNameHint': 'So sehen dich die anderen — im Raum und in der Rangliste.',
+	'account.handle': '@Kürzel für die Suche',
+	'account.handleHint':
+		'Kleine lateinische Buchstaben, Ziffern und Unterstriche; 3 bis 20 Zeichen. Genau daran finden dich Freunde — der Name im Spiel taugt dafür nicht, weil er nicht eindeutig ist.',
 	'account.handleTaken': 'Dieses Kürzel ist schon vergeben.',
-	'account.errorNameEmpty': 'Der Name fehlt — genau ihn sehen die anderen, also geht es ohne ihn nicht.',
+	'account.errorNameEmpty':
+		'Der Name fehlt — genau ihn sehen die anderen, also geht es ohne ihn nicht.',
 	'account.errorHandleShape': 'Das Kürzel ist zu kurz — mindestens drei Zeichen.',
 	'account.avatarColors': 'Farbe',
 	'account.avatarIcons': 'Symbol',
@@ -93,7 +101,8 @@ export const account: Record<string, string> = {
 	'account.countryNotFound': 'Nichts gefunden',
 	// Datenschutz-Schalter und die Rangliste.
 	'account.privacyTitle': 'Privatsphäre',
-	'account.privacyHint': 'Diese Schalter hält die Datenbank selbst: Was hier aus ist, sieht niemand — nicht nur auf diesem Bildschirm.',
+	'account.privacyHint':
+		'Diese Schalter hält die Datenbank selbst: Was hier aus ist, sieht niemand — nicht nur auf diesem Bildschirm.',
 	'account.privacy.search': 'Mich in der Suche zeigen',
 	'account.privacy.follow': 'Anderen erlauben, mir zu folgen',
 	'account.privacy.board': 'Mich in der Rangliste zeigen',
@@ -103,7 +112,8 @@ export const account: Record<string, string> = {
 	'account.boardAll': 'Alle',
 	'account.boardFriends': 'Freunde',
 	'account.boardEmpty': 'Leer: die Rangliste beginnt bei {score} Punkten.',
-	'account.boardNoFriends': 'Hier erscheinen Freunde — gegenseitige Abos, die schon einen Punktestand haben.',
+	'account.boardNoFriends':
+		'Hier erscheinen Freunde — gegenseitige Abos, die schon einen Punktestand haben.',
 	'account.errorNotAllowed': 'Nicht erlaubt — diese Person hat Abos vielleicht geschlossen.',
 	// Passwort und Kontolöschung.
 	'account.securityTitle': 'Passwort und Löschen',
@@ -113,9 +123,10 @@ export const account: Record<string, string> = {
 	'account.passwordChanged': 'Passwort geändert.',
 	'account.passwordGoogle': 'Du meldest dich mit Google an — hier gibt es kein eigenes Passwort.',
 	'account.deleteTitle': 'Konto löschen',
-	'account.deleteHint': 'Das Löschen ist endgültig: Profil, Kürzel, Abos, Punktestand und Rekorde verschwinden.',
+	'account.deleteHint':
+		'Das Löschen ist endgültig: Profil, Kürzel, Abos, Punktestand und Rekorde verschwinden.',
 	'account.deletePassword': 'Passwort zur Bestätigung',
 	'account.deleteConfirm': 'Ja, löschen',
 	'account.deleteCancel': 'Abbrechen',
-	'account.errorPasswordNeeded': 'Zum Bestätigen ist ein Passwort nötig.',
+	'account.errorPasswordNeeded': 'Zum Bestätigen ist ein Passwort nötig.'
 };

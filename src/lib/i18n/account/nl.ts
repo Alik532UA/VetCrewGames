@@ -13,10 +13,14 @@
  */
 export const account: Record<string, string> = {
 	'account.signInTitle': 'Inloggen of registreren',
-	'account.infoFriends': 'Vrienden betekent elkaar volgen, dus beide kanten hebben een account nodig. Handle en avatar stel je na het inloggen in je profiel in.',
-	'account.infoSignIn': 'Inloggen op een bestaand account opent juist dat account — met zijn naam, zijn handle, zijn vrienden. De score en records uit deze browser komen erbij; onafgemaakte kamers van daarvoor verhuizen niet mee.',
-	'account.infoRegister': 'Registreren begint niets opnieuw. Je blijft dezelfde speler, wat je haalde blijft bij je — en wordt vanaf dan in het account bewaard, dus ook op je andere apparaten.',
-	'account.infoWhy': 'Zonder account werkt alles: spelen, kamers maken, punten halen. Maar de score en records leven dan alleen in deze browser — en verdwijnen met de gegevens ervan.',
+	'account.infoFriends':
+		'Vrienden betekent elkaar volgen, dus beide kanten hebben een account nodig. Handle en avatar stel je na het inloggen in je profiel in.',
+	'account.infoSignIn':
+		'Inloggen op een bestaand account opent juist dat account — met zijn naam, zijn handle, zijn vrienden. De score en records uit deze browser komen erbij; onafgemaakte kamers van daarvoor verhuizen niet mee.',
+	'account.infoRegister':
+		'Registreren begint niets opnieuw. Je blijft dezelfde speler, wat je haalde blijft bij je — en wordt vanaf dan in het account bewaard, dus ook op je andere apparaten.',
+	'account.infoWhy':
+		'Zonder account werkt alles: spelen, kamers maken, punten halen. Maar de score en records leven dan alleen in deze browser — en verdwijnen met de gegevens ervan.',
 	'account.infoOpen': 'Hoe het account werkt',
 	'account.signIn': 'Inloggen',
 	'account.register': 'Registreren',
@@ -28,8 +32,11 @@ export const account: Record<string, string> = {
 	'account.errorWrong': 'E-mail of wachtwoord klopt niet.',
 	'account.errorOther': 'Het lukte niet. Probeer opnieuw.',
 	'account.profileTitle': 'Profiel',
-	'account.handle': 'Gebruikersnaam',
-	'account.handleHint': 'Kleine Latijnse letters, cijfers en liggende streepjes; 3 tot 20 tekens. Zo vinden ze je.',
+	'account.gameName': 'Naam in het spel',
+	'account.gameNameHint': 'Zo zien anderen je — in de kamer en op het scorebord.',
+	'account.handle': '@naam om te zoeken',
+	'account.handleHint':
+		'Kleine Latijnse letters, cijfers en onderstrepingstekens; 3 tot 20 tekens. Hieraan vinden vrienden je — de naam in het spel is daarvoor niets, want die is niet uniek.',
 	'account.handleTaken': 'Die gebruikersnaam is al bezet.',
 	'account.errorNameEmpty': 'De naam is leeg — juist die zien anderen, dus zonder gaat het niet.',
 	'account.errorHandleShape': 'De gebruikersnaam is te kort — minstens drie tekens.',
@@ -93,7 +100,8 @@ export const account: Record<string, string> = {
 	'account.countryNotFound': 'Niets gevonden',
 	// Privacyschakelaars en het scorebord.
 	'account.privacyTitle': 'Privacy',
-	'account.privacyHint': 'Deze schakelaars worden door de database zelf bewaakt: wat hier uit staat, ziet niemand — niet alleen op dit scherm.',
+	'account.privacyHint':
+		'Deze schakelaars worden door de database zelf bewaakt: wat hier uit staat, ziet niemand — niet alleen op dit scherm.',
 	'account.privacy.search': 'Toon mij in de zoekresultaten',
 	'account.privacy.follow': 'Anderen mogen mij volgen',
 	'account.privacy.board': 'Toon mij op het scorebord',
@@ -113,9 +121,10 @@ export const account: Record<string, string> = {
 	'account.passwordChanged': 'Wachtwoord gewijzigd.',
 	'account.passwordGoogle': 'Je meldt je aan met Google — hier is geen apart wachtwoord.',
 	'account.deleteTitle': 'Account verwijderen',
-	'account.deleteHint': 'Verwijderen kan niet ongedaan worden gemaakt: profiel, handle, volgers, score en records verdwijnen.',
+	'account.deleteHint':
+		'Verwijderen kan niet ongedaan worden gemaakt: profiel, handle, volgers, score en records verdwijnen.',
 	'account.deletePassword': 'Wachtwoord ter bevestiging',
 	'account.deleteConfirm': 'Ja, verwijderen',
 	'account.deleteCancel': 'Annuleren',
-	'account.errorPasswordNeeded': 'Er is een wachtwoord nodig om te bevestigen.',
+	'account.errorPasswordNeeded': 'Er is een wachtwoord nodig om te bevestigen.'
 };

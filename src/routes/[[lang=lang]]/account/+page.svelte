@@ -2,20 +2,22 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { t, formatFont } from '$lib/i18n';
+	import { formatFont } from '$lib/i18n';
 	import { loadAccountText } from '$lib/i18n/account';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { Account } from '$lib/controllers/account.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
-	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
 	import AuthForm from '$lib/components/auth/AuthForm.svelte';
+	import ProfileForm from '$lib/components/account/ProfileForm.svelte';
 	import PrivacyPanel from '$lib/components/account/PrivacyPanel.svelte';
 	import LeaderBoard from '$lib/components/account/LeaderBoard.svelte';
 	import AccountSecurity from '$lib/components/account/AccountSecurity.svelte';
 	import { AVATAR_KEY, formatAvatar, parseAvatar } from '$lib/config/avatars';
+	import { COUNTRY_KEY, NAME_KEY } from '$lib/config/playerName';
+	import { defaultIdentity } from '$lib/config/accountDefaults';
+	import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 	import { storage } from '$lib/services/storage';
 
 	/**
@@ -96,6 +98,9 @@
 	onMount(() => {
 		const release = settings.claimHeader('account.title', () => goto(langPath(lang, '')));
 		void loadAccountText(settings.locale).then((loaded) => (dict = loaded));
+		// Імена команди — для підстановки в порожній профіль. Приїде після профілю —
+		// підстановка просто не спрацює, і поля лишаться порожніми, а не зіпсованими.
+		void loadCrewNames(settings.locale).then((loaded) => (crew = loaded));
 		void account.load().then(() => {
 			fillFromProfile();
 			// Таблиця читається ПІСЛЯ профілю й підписок: вкладка «друзі» будується з
@@ -109,10 +114,35 @@
 	 * Поля форми заповнюються З ПРОФІЛЮ, а не лишаються порожніми: порожнє поле
 	 * поруч із наявним профілем читається як «профілю немає».
 	 */
+	/**
+	 * Словник імен команди — окремим чанком, і лише коли він тут потрібен.
+	 *
+	 * Потрібен він для ПІДСТАНОВКИ в порожній профіль: імʼя в грі («Мудра Сова») і
+	 * @нік (`owl_482`) виводяться з одного ключа тварини. Ключі латинські за
+	 * побудовою, тож нік не потребує ні транслітерації, ні пошти — див.
+	 * `config/accountDefaults.ts`, там же й причина, чому саме не пошти.
+	 */
+	let crew = $state<Record<string, string>>({});
+
 	function fillFromProfile() {
 		name = account.profile?.name ?? '';
 		handle = account.profile?.handle ?? '';
 		country = account.profile?.country ?? '';
+
+		/*
+		 * ПОРОЖНІ ПОЛЯ ЗАПОВНЮЮТЬСЯ САМІ — але лише порожні.
+		 *
+		 * Профіль без імені буває рівно раз: одразу після реєстрації. Порожня форма
+		 * там означала б «вигадай собі два різні імені, одне з них латиницею» — на
+		 * екрані, куди людина зайшла подивитися на акаунт.
+		 *
+		 * Заповнене НЕ ЧІПАЄТЬСЯ: підстановка поверх вибору людини — це стирання
+		 * вибору, а не допомога.
+		 */
+		if (name !== '' || handle !== '') return;
+		const suggested = defaultIdentity(crewTranslate(crew), Math.random);
+		name = suggested.name;
+		handle = suggested.handle;
 		/*
 		 * Аватар — ЛИШЕ якщо профіль його має.
 		 *
@@ -191,6 +221,21 @@
 		 * запис профілю лишав би у кімнатах аватар, якого в профілі немає.
 		 */
 		storage.set(AVATAR_KEY, avatar);
+		/*
+		 * ІМʼЯ Й ПРАПОР — ТЕЖ У СХОВИЩЕ, і це «одне імʼя», про яке просив автор.
+		 *
+		 * У кімнату підпис і прапор їдуть зі сховища (`controllers/playerIdentity`):
+		 * форма входу в кімнату не читає профіль, бо це був би мережевий запит на
+		 * екрані, який мусить відкритися з першого дотику. Доти профіль і підпис у
+		 * кімнаті жили окремо — тобто імен було ТРИ: імʼя профілю, @нік і підпис у
+		 * кімнаті. Тепер профіль — джерело, а сховище лишається кешем, який читає
+		 * кімната.
+		 *
+		 * Порядок той самий, що в аватара: запис у сховище ПІСЛЯ бази. У зворотному
+		 * невдалий запис профілю лишав би в кімнатах імʼя, якого в профілі немає.
+		 */
+		storage.set(NAME_KEY, name);
+		if (country) storage.set(COUNTRY_KEY, country);
 	}
 
 	/**
@@ -261,81 +306,24 @@
 			onforgot={(email) => void forgotPassword(email)}
 		/>
 	{:else}
-		<!-- ПРОФІЛЬ: те, що бачать інші. -->
-		<section class="account__panel text-panel">
-			<h2 class="account__title">{@html formatFont(text('account.profileTitle'))}</h2>
+		<!--
+			ПРОФІЛЬ — компонентом, як і решта панелей цієї сторінки.
 
-			<!--
-				АВАТАР — ПЕРШИМ у формі, і це не про важливість.
-
-				Він єдине тут, що видно оком, а не читається: рядки скануються зверху,
-				і плитка згори одразу каже, про кого ця форма. Поставлений після
-				текстових полів, він читався б як налаштування наприкінці списку.
-			-->
-			<AvatarPicker bind:value={avatar} {text} scope="account-avatar" />
-
-			<label class="account__label" for="account-name">
-				<span>{@html formatFont(t('pairs.nickname'))}</span>
-			</label>
-			<input
-				id="account-name"
-				class="account__input"
-				type="text"
-				bind:value={name}
-				maxlength="48"
-				data-testid="account-name-input"
-			/>
-
-			<label class="account__label" for="account-handle">
-				<span>{@html formatFont(text('account.handle'))}</span>
-			</label>
-			<!--
-				Псевдонім зводиться до дозволених символів ОДРАЗУ, у значенні.
-				`pattern` лише малює помилку, а мережа однаково отримала б те, що ввели,
-				— і правило бази відкинуло б запис уже після натиску.
-			-->
-			<input
-				id="account-handle"
-				class="account__input"
-				type="text"
-				value={handle}
-				oninput={(event) =>
-					(handle = event.currentTarget.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20))}
-				maxlength="20"
-				autocapitalize="none"
-				autocomplete="off"
-				spellcheck="false"
-				data-testid="account-handle-input"
-			/>
-			<p class="account__hint">{@html formatFont(text('account.handleHint'))}</p>
-
-			<CountryPicker bind:value={country} scope="account-country" />
-
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={submitProfile}
-				aria-disabled={!canSave}
-				data-testid="account-save-btn"
-			>
-				{@html formatFont(text('account.save'))}
-			</button>
-
-			{#if problem}
-				<p class="account__error" role="alert" data-testid="account-profile-error-text">
-					{@html formatFont(text(problem))}
-				</p>
-			{/if}
-
-			<button
-				type="button"
-				class="account__leave"
-				onclick={() => account.leave()}
-				data-testid="account-leave-btn"
-			>
-				{@html formatFont(text('account.signOut'))}
-			</button>
-		</section>
+			Стан лишається тут: сторінка знає, коли профіль приїхав із бази, і саме
+			вона підставляє порожні поля. Форма ж знає, як вони називаються й що з
+			ними можна робити.
+		-->
+		<ProfileForm
+			{text}
+			bind:name
+			bind:handle
+			bind:country
+			bind:avatar
+			{canSave}
+			{problem}
+			onsave={submitProfile}
+			onsignout={() => account.leave()}
+		/>
 
 		<!-- ПОШУК ЛЮДЕЙ за псевдонімом. -->
 		<section class="account__panel text-panel">
@@ -539,12 +527,9 @@
 	}
 
 	/*
-	 * Помилка — АКЦЕНТОМ, а не власним червоним.
-	 *
-	 * Свого токена для помилки в проєкті немає, і вигадувати колір тут
-	 * означало б завести пару, якої гейт контрасту не бачив, — у чотирьох темах
-	 * одразу. Акцент у кожній темі вже підібраний під текст на панелі, а те, що
-	 * це саме помилка, каже `role="alert"` і сам текст.
+	 * Помилка — АКЦЕНТОМ, а не власним червоним: свого токена для помилки в проєкті
+	 * немає, і вигадувати колір означало б завести пару, якої гейт контрасту не
+	 * бачив, — у чотирьох темах одразу.
 	 */
 	.account__error {
 		margin: 0;
@@ -606,8 +591,7 @@
 		font-weight: var(--font-weight-bold);
 	}
 
-	.account__chip,
-	.account__leave {
+	.account__chip {
 		flex-shrink: 0;
 		min-height: 36px;
 		padding: 0 var(--space-md);
@@ -624,11 +608,5 @@
 		border-color: var(--color-accent);
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
-	}
-
-	.account__leave {
-		align-self: flex-start;
-		min-height: 44px;
-		margin-top: var(--space-sm);
 	}
 </style>
