@@ -117,4 +117,17 @@ export const account: Record<string, string> = {
 	'account.boardEmpty': 'Порожньо: у таблицю потрапляють від {score} очок.',
 	'account.boardNoFriends': 'Тут будуть друзі — взаємні підписки, у яких уже є рахунок.',
 	'account.errorNotAllowed': 'Не дозволено — можливо, ця людина закрила підписки на себе.',
+	// Пароль і видалення акаунта — обидві дії незворотні, обидві під підтвердженням.
+	'account.securityTitle': 'Пароль і видалення',
+	'account.passwordCurrent': 'Поточний пароль',
+	'account.passwordNew': 'Новий пароль',
+	'account.passwordChange': 'Змінити пароль',
+	'account.passwordChanged': 'Пароль змінено.',
+	'account.passwordGoogle': 'Вхід через Google — окремого пароля тут немає.',
+	'account.deleteTitle': 'Видалити акаунт',
+	'account.deleteHint': 'Видалення незворотне: зникнуть профіль, псевдонім, підписки, рахунок і рекорди.',
+	'account.deletePassword': 'Пароль для підтвердження',
+	'account.deleteConfirm': 'Так, видалити',
+	'account.deleteCancel': 'Скасувати',
+	'account.errorPasswordNeeded': 'Потрібен пароль, щоб підтвердити.',
 };

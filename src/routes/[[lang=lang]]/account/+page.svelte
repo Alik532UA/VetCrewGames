@@ -14,6 +14,7 @@
 	import AuthForm from '$lib/components/auth/AuthForm.svelte';
 	import PrivacyPanel from '$lib/components/account/PrivacyPanel.svelte';
 	import LeaderBoard from '$lib/components/account/LeaderBoard.svelte';
+	import AccountSecurity from '$lib/components/account/AccountSecurity.svelte';
 	import { AVATAR_KEY, formatAvatar, parseAvatar } from '$lib/config/avatars';
 	import { storage } from '$lib/services/storage';
 
@@ -195,10 +196,20 @@
 			 */
 			case 'PERMISSION_DENIED':
 				return 'account.errorNotAllowed';
+			// Видалення без пароля на акаунті з паролем: підтвердити нічим.
+			case 'auth/missing-password':
+				return 'account.errorPasswordNeeded';
 			default:
 				return 'account.errorOther';
 		}
 	});
+
+	/** Пароль щойно змінено. Гасне при наступній дії, яка може не вийти. */
+	let passwordChanged = $state(false);
+
+	async function changePassword(current: string, next: string) {
+		passwordChanged = await account.changePassword(current, next);
+	}
 
 	const canSave = $derived(
 		name.trim().length > 0 && /^[a-z0-9_]{3,20}$/.test(handle) && !account.busy
@@ -433,6 +444,22 @@
 			friends={account.friendLeaders}
 			{text}
 			me={account.uid}
+		/>
+
+		<!--
+			ПАРОЛЬ І ВИДАЛЕННЯ — останньою панеллю, і це не про верстку.
+
+			Незворотні дії не мусять стояти на тій самій відстані, що «відписатися»:
+			до них треба доїхати. Саме видалення при цьому має ще й другий крок —
+			підтвердження з паролем (`AccountSecurity`).
+		-->
+		<AccountSecurity
+			{text}
+			hasPassword={account.hasPassword}
+			busy={account.busy}
+			{passwordChanged}
+			onchangePassword={(current, next) => void changePassword(current, next)}
+			ondelete={(password) => void account.delete(password)}
 		/>
 	{/if}
 </div>

@@ -119,6 +119,19 @@ const board = {
 	publishLeader: vi.fn<() => Promise<void>>(async () => {})
 };
 
+/**
+ * ПАРОЛЬ І ВИДАЛЕННЯ — теж мокаються: обидві дії ходять у Firebase Auth і в базу.
+ *
+ * Головне, що доводиться тут: після видалення сторінка лишається РОБОЧОЮ. Тобто
+ * після нього робиться те саме, що після виходу (стерти місцеве, почати
+ * заповідник заново), плюс новий анонімний вхід.
+ */
+const erase = {
+	changePassword: vi.fn<(current: string, next: string) => Promise<void>>(async () => {}),
+	deleteAccount: vi.fn<(password?: string) => Promise<void>>(async () => {})
+};
+
+vi.mock('$lib/net/erase', () => erase);
 vi.mock('$lib/net/privacy', () => privacyNet);
 vi.mock('$lib/net/leaders', () => board);
 vi.mock('$lib/net/firebase', () => ({ connect }));
@@ -149,6 +162,8 @@ describe('Account', () => {
 		board.leadersOf.mockReset().mockResolvedValue([]);
 		board.withdrawLeader.mockReset().mockResolvedValue(undefined);
 		follows.friendUids.mockReset().mockResolvedValue([]);
+		erase.changePassword.mockReset().mockResolvedValue(undefined);
+		erase.deleteAccount.mockReset().mockResolvedValue(undefined);
 		play.refreshProfile.mockReset();
 		play.mergeOnSignIn.mockReset();
 		play.signedOut.mockReset();
@@ -731,6 +746,69 @@ describe('Account', () => {
 			expect(account.friendLeaders).toHaveLength(1);
 			// Друзі — ВЗАЄМНІ підписки, тож список береться саме з `friendUids()`.
 			expect(board.leadersOf).toHaveBeenCalledWith(['uid-friend']);
+		});
+	});
+
+	describe('changePassword()', () => {
+		it('успіх', async () => {
+			const account = new Account();
+			await expect(account.changePassword('old-one', 'new-one')).resolves.toBe(true);
+			expect(erase.changePassword).toHaveBeenCalledWith('old-one', 'new-one');
+		});
+
+		it('невірний поточний пароль лишає код на екрані', async () => {
+			erase.changePassword.mockRejectedValueOnce(fbError('auth/invalid-credential'));
+			const account = new Account();
+
+			await expect(account.changePassword('wrong', 'new-one')).resolves.toBe(false);
+
+			expect(account.error).toBe('auth/invalid-credential');
+		});
+	});
+
+	describe('delete()', () => {
+		it('після видалення сторінка лишається робочою', async () => {
+			net.readProfile.mockResolvedValue(profile());
+			const account = new Account();
+			await account.load();
+
+			net.signOut.mockImplementationOnce(async () => {
+				currentUid = 'uid-anon-3';
+			});
+			net.readProfile.mockResolvedValue(null);
+
+			await expect(account.delete('secret')).resolves.toBe(true);
+
+			expect(erase.deleteAccount).toHaveBeenCalledWith('secret');
+			// Те саме, що після виходу: місцеве стерте, заповідник заново.
+			expect(play.signedOut).toHaveBeenCalledTimes(1);
+			expect(reserve.reset).toHaveBeenCalledTimes(1);
+			// І новий анонімний вхід — інакше сторінка лишилася б із мертвим uid.
+			expect(net.signOut).toHaveBeenCalledTimes(1);
+			expect(account.uid).toBe('uid-anon-3');
+			expect(account.profile).toBeNull();
+		});
+
+		it('порожній пароль їде як «пароля немає», а не як порожній рядок', async () => {
+			// Для акаунта на Google пароля немає взагалі: підтвердженням стає вікно,
+			// і порожній рядок замість `undefined` виглядав би як спроба ним увійти.
+			const account = new Account();
+			await account.delete('');
+
+			expect(erase.deleteAccount).toHaveBeenCalledWith(undefined);
+		});
+
+		it('невдале видалення не стирає нічого', async () => {
+			erase.deleteAccount.mockRejectedValueOnce(fbError('auth/wrong-password'));
+			const account = new Account();
+			await account.load();
+
+			await expect(account.delete('nope')).resolves.toBe(false);
+
+			expect(play.signedOut).not.toHaveBeenCalled();
+			expect(reserve.reset).not.toHaveBeenCalled();
+			expect(net.signOut).not.toHaveBeenCalled();
+			expect(account.error).toBe('auth/wrong-password');
 		});
 	});
 });

@@ -1,4 +1,4 @@
-import { connect } from './firebase';
+import { connect, forget } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
@@ -177,6 +177,20 @@ export async function signOut(): Promise<void> {
 	const { signInAnonymously, signOut: leave } = await import('firebase/auth');
 	await leave(auth);
 	await signInAnonymously(auth);
+
+	/*
+	 * СКИНУТИ КЕШ ПІД'ЄДНАННЯ — і це виправлення, а не прибирання.
+	 *
+	 * `connect()` кешує проміс разом із `uid`, і після повторного анонімного входу
+	 * `uid` уже ІНШИЙ. Без цього рядка кожен наступний виклик віддавав би старий:
+	 * профіль читався б за колишнім акаунтом, а запис ішов би в чужу гілку — і
+	 * правило його відкидало б. `forget()` існував саме для цього випадку («потрібне
+	 * тестам і виходу з акаунта»), і не кликав його ніхто.
+	 *
+	 * Повторний `initializeApp` цьому не шкодить: SDK віддає наявний застосунок,
+	 * коли імʼя й конфіг ті самі.
+	 */
+	forget();
 }
 
 /** Чи вільний псевдонім. `false` і коли зайнятий, і коли прочитати не дали. */

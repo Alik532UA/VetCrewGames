@@ -100,4 +100,17 @@ export const account: Record<string, string> = {
 	'account.boardEmpty': 'Leer: die Rangliste beginnt bei {score} Punkten.',
 	'account.boardNoFriends': 'Hier erscheinen Freunde — gegenseitige Abos, die schon einen Punktestand haben.',
 	'account.errorNotAllowed': 'Nicht erlaubt — diese Person hat Abos vielleicht geschlossen.',
+	// Passwort und Kontolöschung.
+	'account.securityTitle': 'Passwort und Löschen',
+	'account.passwordCurrent': 'Aktuelles Passwort',
+	'account.passwordNew': 'Neues Passwort',
+	'account.passwordChange': 'Passwort ändern',
+	'account.passwordChanged': 'Passwort geändert.',
+	'account.passwordGoogle': 'Du meldest dich mit Google an — hier gibt es kein eigenes Passwort.',
+	'account.deleteTitle': 'Konto löschen',
+	'account.deleteHint': 'Das Löschen ist endgültig: Profil, Kürzel, Abos, Punktestand und Rekorde verschwinden.',
+	'account.deletePassword': 'Passwort zur Bestätigung',
+	'account.deleteConfirm': 'Ja, löschen',
+	'account.deleteCancel': 'Abbrechen',
+	'account.errorPasswordNeeded': 'Zum Bestätigen ist ein Passwort nötig.',
 };

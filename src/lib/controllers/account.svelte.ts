@@ -14,6 +14,7 @@ import {
 } from '$lib/net/account';
 import { follow, friendUids, listFollowing, unfollow, type Friend } from '$lib/net/follows';
 import { OPEN_PRIVACY, readPrivacy, savePrivacy, type Privacy } from '$lib/net/privacy';
+import { changePassword, deleteAccount } from '$lib/net/erase';
 import { leadersOf, topLeaders, withdrawLeader, type Leader } from '$lib/net/leaders';
 import { connect } from '$lib/net/firebase';
 import { logService } from '$lib/services/logService.svelte';
@@ -40,6 +41,14 @@ export class Account {
 	state = $state<AccountState>('anonymous');
 	/** Мій `uid`. Порожньо — ще не підʼєдналися. */
 	uid = $state('');
+	/**
+	 * Чи має акаунт пароль — тобто чи є що міняти.
+	 *
+	 * Вхід через Google пароля не створює: панель зміни пароля там показувала б
+	 * поле, яке нічого не змінює. Той самий висновок, що в сусідньому `Slovko`
+	 * (`isGoogleAccount`).
+	 */
+	hasPassword = $state(false);
 	/** Мій профіль. `null` — ще не створений. */
 	profile = $state<Profile | null>(null);
 	/** Мої підписки з позначкою взаємності. */
@@ -78,6 +87,11 @@ export class Account {
 			this.profile = await readProfile(uid);
 			this.following = await listFollowing();
 			this.privacy = await readPrivacy();
+
+			const { auth } = await connect();
+			this.hasPassword =
+				auth.currentUser?.providerData.some((provider) => provider.providerId === 'password') ??
+				false;
 		} catch (error) {
 			logService.warn('network', 'account not loaded', { reason: String(error) });
 		}
@@ -219,6 +233,46 @@ export class Account {
 			await this.load();
 		}
 		return done;
+	}
+
+	/**
+	 * Змінити пароль. Обидві половини — повторна автентифікація й новий пароль —
+	 * лежать у `net/erase.ts`, тут лишається проводка й помилка на екран.
+	 */
+	async changePassword(current: string, next: string): Promise<boolean> {
+		return this.#act('password', () => changePassword(current, next));
+	}
+
+	/**
+	 * Видалити акаунт — незворотно, з прибиранням усього свого.
+	 *
+	 * ПІСЛЯ УСПІХУ сторінка мусить лишитися робочою, тож усе, що робить вихід,
+	 * робиться й тут: місцеві дані стираються, заповідник починається заново, а
+	 * далі — новий анонімний вхід. Різниця з виходом одна: акаунта більше немає, і
+	 * повернутися в нього неможливо.
+	 */
+	async delete(password: string): Promise<boolean> {
+		const done = await this.#act('delete', () => deleteAccount(password || undefined));
+		if (!done) return false;
+
+		signedOut();
+		const { reserve } = await import('$lib/controllers/reserve.svelte');
+		reserve.reset();
+
+		/*
+		 * Новий анонімний вхід — тим самим шляхом, що у виході: `signOut()` знає, що
+		 * після нього треба скинути кеш під'єднання, бо `uid` став іншим. Без цього
+		 * сторінка лишилася б із `uid` видаленого акаунта, і кожне читання впиралося
+		 * б у правило.
+		 */
+		await signOut();
+		this.profile = null;
+		this.following = [];
+		this.found = [];
+		this.leaders = [];
+		this.friendLeaders = [];
+		await this.load();
+		return true;
 	}
 
 	/** Чи вільний псевдонім. Свій власний вважається вільним. */

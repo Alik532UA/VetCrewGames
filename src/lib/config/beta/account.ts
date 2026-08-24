@@ -184,6 +184,47 @@ export const accountTab: BetaTab = {
 		},
 		{
 			id: 'account_16',
+			category: { uk: 'Пароль', en: 'Password' },
+			text: {
+				uk: 'Змініть пароль, вийдіть і зайдіть новим. Старий пароль після цього НЕ мусить пускати.',
+				en: 'Change the password, sign out and sign in with the new one. The old password must NOT work afterwards.'
+			},
+			coverage: 'manual',
+			testid: 'account-password-change-btn'
+		},
+		{
+			id: 'account_17',
+			category: { uk: 'Видалення акаунта', en: 'Deleting the account' },
+			text: {
+				uk: 'Видаліть акаунт із другого пристрою, де ви були в підписках. У першого гравця ваш рядок мусить зникнути з підписок і з таблиці лідерів.',
+				en: 'Delete the account from the second device, where you were in the follows. On the first player your row must disappear from the follows and from the leaderboard.'
+			},
+			coverage: 'manual',
+			testid: 'account-delete-confirm-btn'
+		},
+		{
+			id: 'account_18',
+			category: { uk: 'Видалення акаунта', en: 'Deleting the account' },
+			text: {
+				uk: 'Після видалення спробуйте ввійти тією самою поштою. Мусить бути відмова, а сайт — лишитися робочим: після видалення одразу вертається анонімний вхід.',
+				en: 'After deleting, try to sign in with the same email. It must refuse, and the site must stay working: deleting immediately returns to anonymous.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'auth-login-btn'
+		},
+		{
+			id: 'account_19',
+			category: { uk: 'Видалення акаунта', en: 'Deleting the account' },
+			text: {
+				uk: 'Звільнений псевдонім мусить бути знову вільним: займіть його з іншого акаунта.',
+				en: 'The released handle must be free again: claim it from another account.'
+			},
+			coverage: 'manual',
+			testid: 'account-handle-input'
+		},
+		{
+			id: 'account_20',
 			category: { uk: 'Вихід', en: 'Signing out' },
 			text: {
 				uk: 'Вийдіть з акаунта. Сайт мусить лишитися робочим — перелік кімнат читається, кімнату можна створити: вихід одразу вертає анонімний вхід.',

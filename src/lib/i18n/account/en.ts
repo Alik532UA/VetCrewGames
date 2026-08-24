@@ -100,4 +100,17 @@ export const account: Record<string, string> = {
 	'account.boardEmpty': 'Empty: the board starts at {score} points.',
 	'account.boardNoFriends': 'Friends will appear here — mutual follows that already have a score.',
 	'account.errorNotAllowed': 'Not allowed — this person may have closed follows.',
+	// Password and account deletion.
+	'account.securityTitle': 'Password and deletion',
+	'account.passwordCurrent': 'Current password',
+	'account.passwordNew': 'New password',
+	'account.passwordChange': 'Change password',
+	'account.passwordChanged': 'Password changed.',
+	'account.passwordGoogle': 'You sign in with Google — there is no separate password here.',
+	'account.deleteTitle': 'Delete account',
+	'account.deleteHint': 'Deletion cannot be undone: the profile, handle, follows, score and records all go.',
+	'account.deletePassword': 'Password to confirm',
+	'account.deleteConfirm': 'Yes, delete',
+	'account.deleteCancel': 'Cancel',
+	'account.errorPasswordNeeded': 'A password is needed to confirm.',
 };

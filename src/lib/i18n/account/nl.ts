@@ -100,4 +100,17 @@ export const account: Record<string, string> = {
 	'account.boardEmpty': 'Leeg: het bord begint bij {score} punten.',
 	'account.boardNoFriends': 'Hier komen vrienden — wederzijdse volgers die al een score hebben.',
 	'account.errorNotAllowed': 'Niet toegestaan — deze persoon heeft volgen misschien uitgezet.',
+	// Wachtwoord en accountverwijdering.
+	'account.securityTitle': 'Wachtwoord en verwijderen',
+	'account.passwordCurrent': 'Huidig wachtwoord',
+	'account.passwordNew': 'Nieuw wachtwoord',
+	'account.passwordChange': 'Wachtwoord wijzigen',
+	'account.passwordChanged': 'Wachtwoord gewijzigd.',
+	'account.passwordGoogle': 'Je meldt je aan met Google — hier is geen apart wachtwoord.',
+	'account.deleteTitle': 'Account verwijderen',
+	'account.deleteHint': 'Verwijderen kan niet ongedaan worden gemaakt: profiel, handle, volgers, score en records verdwijnen.',
+	'account.deletePassword': 'Wachtwoord ter bevestiging',
+	'account.deleteConfirm': 'Ja, verwijderen',
+	'account.deleteCancel': 'Annuleren',
+	'account.errorPasswordNeeded': 'Er is een wachtwoord nodig om te bevestigen.',
 };
