@@ -53,4 +53,15 @@ export const account: Record<string, string> = {
 	'account.google': 'Sign in with Google',
 	'account.or': 'or',
 	'account.errorGoogleOff': 'Google sign-in is not enabled yet. Use email instead.',
+	// Region names and the country-picker strings. Why they live here and not in
+	// the main dictionary — see the note in `uk.ts` and `config/regions.ts`.
+	'account.regionEurope': 'Europe',
+	'account.regionAsia': 'Asia',
+	'account.regionAfrica': 'Africa',
+	'account.regionNorthAmerica': 'North America',
+	'account.regionSouthAmerica': 'South America',
+	'account.regionOceania': 'Oceania',
+	'account.regionAntarctic': 'Antarctica',
+	'account.countrySearch': 'Search country',
+	'account.countryNotFound': 'Nothing found',
 };

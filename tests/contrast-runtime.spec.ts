@@ -41,9 +41,14 @@ import { reduceMotion, settlePage } from './support/settle';
  * ## Що ця перевірка НЕ покриває — свідомо, з названою межею
  *
  * 1. **Стани.** Замір бачить сторінку такою, якою вона відкрилася. Наведення,
- *    фокус, відкрите меню, екран підсумку гри — ні. Наведення й фокус звіряє
+ *    фокус, меню шапки, екран підсумку гри — ні. Наведення й фокус звіряє
  *    `src/contrast.test.ts` (він для цього і збирає базовий стан окремо від
  *    `:hover`), екран підсумку — око людини за чеклистом.
+ *
+ *    ОДИН ВИНЯТОК З 2026-08-24: вибір країни розкривається й міряється
+ *    відкритим. Причина — у `countryPickerScopes` нижче: доти цей стан не
+ *    покривався ні тут, ні деінде, бо був нативним `<select>`, і саме в ньому
+ *    прожив дефект «світлий текст на світлому фоні».
  * 2. **Фотографія тла.** `--bg-image` — це знімок, і його місцева яскравість
  *    невідома. Коли найближчий непрозорий шар — той самий елемент, що несе
  *    знімок, у звіті стоїть `фото`, а за тло беруться оголошені `--color-bg`
@@ -70,7 +75,6 @@ import { reduceMotion, settlePage } from './support/settle';
 
 /** Порядок як у `src/contrast.test.ts`, щоб звіти двох перевірок читалися разом. */
 const THEMES = ['dark', 'light-green', 'winter', 'orange-purple'] as const;
-
 
 /** Те, що бачить замір усередині сторінки: про адресу він не знає. */
 type PageFinding = {
@@ -199,9 +203,7 @@ async function measure(page: Page, theme: string): Promise<Report> {
 		 * грані, тобто розпізнається не значком.
 		 */
 		function isMeaningfulIcon(el: Element): boolean {
-			const control = el.closest(
-				'button, a, [role="button"], [role="menuitem"], summary, label'
-			);
+			const control = el.closest('button, a, [role="button"], [role="menuitem"], summary, label');
 			if (!control) return false;
 			if ((control.textContent ?? '').trim() !== '') return false;
 			return control.querySelector('img, picture, video') === null;
@@ -284,6 +286,49 @@ async function measure(page: Page, theme: string): Promise<Report> {
 }
 
 /**
+ * ВИБІР КРАЇНИ РОЗКРИВАЄТЬСЯ ПЕРЕД ЗАМІРОМ — єдиний стан, який цей гейт бачить.
+ *
+ * Раніше пункт 1 у «чого не покриває» стосувався й цієї панелі, і рівно тому
+ * дефект, задля якого її переписали, гейт не бачив узагалі: вибір країни був
+ * нативним `<select>`, а його випадний список НЕ Є ЧАСТИНОЮ DOM — його малює
+ * браузер. Обчислений `background-color` у `<option>` дорівнював
+ * `rgba(0, 0, 0, 0)` в усіх чотирьох темах, тобто складати шари було нічого, і
+ * замір чесно нічого не знаходив. Заміряно перед заміною: успадкований колір
+ * тексту проти світлого списку давав 1.26:1 у `dark` і 1.20:1 у
+ * `orange-purple`, проти темного — 1.35:1 у `light-green` і 1.25:1 у `winter`.
+ *
+ * Відколи панель наша, вона в DOM — і мусить міритися разом з усім іншим,
+ * інакше зміна повернеться тихо. Розкриття зроблено саме тут, а не окремим
+ * тестом: пари кольорів усередині панелі залежать від того, що під нею, тобто
+ * від сторінки й теми, а їх перебирає цей цикл.
+ *
+ * Решта пунктів «чого не покриває» лишається як була: наведення, фокус і меню
+ * шапки цей гейт і далі не бачить.
+ *
+ * Кнопки шукаються за РОЛЛЮ (`aria-haspopup="listbox"`), а не за іменем
+ * локатора: так само знайдеться будь-який наступний вибірник із випадним
+ * списком, і його теж почнуть міряти без правки цього файлу.
+ *
+ * ЗВОРОТНИЙ ЕКСПЕРИМЕНТ (AI-AGENT-PITFALLS-v8 § 1.1) проведено: `color` пункту
+ * зроблено рівним `--color-bg-surface`, тобто кольором тла під ним. Прогін
+ * `тема winter` упав, назвавши сторінку разом зі станом —
+ * «/VetCrewGames/quiz/online/ [pairs-country відкрито] button.menu__option».
+ * Тобто зелений результат тут неможливий через те, що панель не розкрилася.
+ *
+ * @returns основи `data-testid` знайдених вибірників; порожній масив — на цій
+ * сторінці їх немає, і другий замір не робиться.
+ */
+async function countryPickerScopes(page: Page): Promise<string[]> {
+	const triggers = page.locator('button[aria-haspopup="listbox"][data-testid]');
+	const scopes: string[] = [];
+	for (let i = 0; i < (await triggers.count()); i += 1) {
+		const id = (await triggers.nth(i).getAttribute('data-testid')) ?? '';
+		scopes.push(id.replace(/-select$/, ''));
+	}
+	return scopes;
+}
+
+/**
  * Сторінка відкривається у заданій темі.
  *
  * Тема кладеться у СХОВИЩЕ до завантаження, а не атрибутом після: це справжній
@@ -321,10 +366,10 @@ async function openIn(page: Page, url: string, theme: string) {
  */
 for (const theme of THEMES) {
 	test(`контраст у рантаймі: тема ${theme}`, async ({ page }) => {
-		await page.addInitScript(
-			([key, value]) => window.localStorage.setItem(key, value),
-			['vetcrewgames_theme', theme] as const
-		);
+		await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [
+			'vetcrewgames_theme',
+			theme
+		] as const);
 		// Емуляція ставиться ДО першого `goto`: анімації входу починаються з першим
 		// кадром, і настройка, увімкнена пізніше, вже нічого не гасить.
 		await reduceMotion(page);
@@ -339,6 +384,25 @@ for (const theme of THEMES) {
 			checked += report.checked;
 			disabled += report.skippedDisabled;
 			findings.push(...report.findings.map((f) => ({ ...f, page: url })));
+
+			/*
+			 * Кожен вибірник розкривається ОКРЕМО, і після заміру закривається.
+			 *
+			 * Не всі разом: клік по другій кнопці — це `pointerdown` поза першою
+			 * панеллю, тобто вона закрилася б сама (так і задумано в компоненті), і
+			 * звіт стверджував би, що міряв два відкритих меню, маючи одне.
+			 */
+			for (const scope of await countryPickerScopes(page)) {
+				await page.locator(`[data-testid="${scope}-select"]`).click();
+				await page.locator(`[data-testid="${scope}-menu"]`).waitFor({ state: 'visible' });
+				const withPanel = await measure(page, theme);
+				checked += withPanel.checked;
+				disabled += withPanel.skippedDisabled;
+				findings.push(
+					...withPanel.findings.map((f) => ({ ...f, page: `${url} [${scope} відкрито]` }))
+				);
+				await page.keyboard.press('Escape');
+			}
 		}
 
 		/*

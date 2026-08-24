@@ -77,6 +77,22 @@ export const OWN_COUNTRY_NAMES: Readonly<Record<string, TranslationKey>> = {
 };
 
 /**
+ * Назва однієї країни — з урахуванням власних кодів.
+ *
+ * Відрізняється від `countryName` рівно на `OWN_COUNTRY_NAMES`, і саме тому
+ * існує окремо: для ОДНОГО коду (напис на кнопці вибору) будувати весь перелік
+ * із 262 назв не треба, а забути про власний код — означає показати «XR».
+ */
+export function countryLabel(
+	code: string,
+	locale: string,
+	translate: (key: TranslationKey) => string
+): string {
+	const own = OWN_COUNTRY_NAMES[code];
+	return own ? translate(own) : countryName(code, locale);
+}
+
+/**
  * Країни, впорядковані за назвою МОВОЮ ІНТЕРФЕЙСУ.
  *
  * Сортування через `Intl.Collator`, а не `localeCompare` за замовчуванням: у
@@ -91,8 +107,8 @@ export function countriesByName(
 	translate: (key: TranslationKey) => string
 ): Array<{ code: string; name: string }> {
 	const collator = new Intl.Collator(locale);
-	return FLAG_COUNTRIES.map((code) => {
-		const own = OWN_COUNTRY_NAMES[code];
-		return { code, name: own ? translate(own) : countryName(code, locale) };
-	}).sort((a, b) => collator.compare(a.name, b.name));
+	return FLAG_COUNTRIES.map((code) => ({
+		code,
+		name: countryLabel(code, locale, translate)
+	})).sort((a, b) => collator.compare(a.name, b.name));
 }

@@ -53,4 +53,15 @@ export const account: Record<string, string> = {
 	'account.google': 'Inloggen met Google',
 	'account.or': 'of',
 	'account.errorGoogleOff': 'Inloggen met Google is nog niet ingeschakeld. Gebruik e-mail.',
+	// Regionamen en teksten van de landkeuze. Waarom hier en niet in het
+	// hoofdwoordenboek — zie de toelichting in `uk.ts` en `config/regions.ts`.
+	'account.regionEurope': 'Europa',
+	'account.regionAsia': 'Azië',
+	'account.regionAfrica': 'Afrika',
+	'account.regionNorthAmerica': 'Noord-Amerika',
+	'account.regionSouthAmerica': 'Zuid-Amerika',
+	'account.regionOceania': 'Oceanië',
+	'account.regionAntarctic': 'Antarctica',
+	'account.countrySearch': 'Land zoeken',
+	'account.countryNotFound': 'Niets gevonden',
 };

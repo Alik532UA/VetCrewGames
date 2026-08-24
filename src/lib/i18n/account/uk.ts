@@ -53,4 +53,26 @@ export const account: Record<string, string> = {
 	'account.google': 'Увійти через Google',
 	'account.or': 'або',
 	'account.errorGoogleOff': 'Вхід через Google ще не ввімкнений. Скористайтеся поштою.',
+	/*
+	 * НАЗВИ РЕГІОНІВ і рядки панелі вибору прапора.
+	 *
+	 * Живуть тут, а не в головному словнику, з тієї самої причини, що й решта
+	 * цього файлу: головний імпортується кореневим layout усіма чотирма мовами,
+	 * тобто кожні дев'ять рядків тут — це чотири×дев'ять у першому payload
+	 * КОЖНОГО відвідувача, включно з тим, хто панелі вибору не відкриє ніколи.
+	 *
+	 * Чому назви регіонів не з `Intl.DisplayNames`, як назви країн, — виміряно й
+	 * записано в `config/regions.ts`: ICU називає макрорегіони формами, що
+	 * навмисно не збігаються з назвами країн («Північноамериканський регіон»),
+	 * і заголовком у списку це канцелярит.
+	 */
+	'account.regionEurope': 'Європа',
+	'account.regionAsia': 'Азія',
+	'account.regionAfrica': 'Африка',
+	'account.regionNorthAmerica': 'Північна Америка',
+	'account.regionSouthAmerica': 'Південна Америка',
+	'account.regionOceania': 'Океанія',
+	'account.regionAntarctic': 'Антарктика',
+	'account.countrySearch': 'Пошук країни',
+	'account.countryNotFound': 'Нічого не знайдено',
 };

@@ -1,42 +1,63 @@
 <script lang="ts">
-	import { t, formatFont, formatPlain } from '$lib/i18n';
-	import { countriesByName } from '$lib/config/countries';
+	import { ChevronDown } from 'lucide-svelte';
+	import { t, formatFont } from '$lib/i18n';
+	import { countryLabel } from '$lib/config/countries';
 	import { settings } from '$lib/services/settings.svelte';
 	import Flag from './Flag.svelte';
+	import CountryMenu from './CountryMenu.svelte';
 
 	/**
-	 * Вибір країни — з прапором поруч і з можливістю не мати жодного.
+	 * Вибір країни: кнопка з прапором і власне меню з розділами за регіонами.
 	 *
-	 * ## Чому нативний `<select>`, а не власний список
+	 * ## Чому НЕ нативний `<select>`, хоч він тут і був
 	 *
-	 * Двісті шістдесят пʼять пунктів. Власний випадний список тут означав би
-	 * прокрутку, пошук, керування клавіатурою, віртуалізацію й фокус-пастку — і
-	 * все це вже є в нативному елементі, разом із тим, чого не зробити взагалі:
-	 * на телефоні браузер відкриває власний вибірник із набором на всю висоту,
-	 * а введення літери в ньому працює як пошук.
+	 * Доти цей файл доводив протилежне: 262 пункти, прокрутка, пошук, клавіатура
+	 * й фокус-пастка «вже є в нативному елементі». Усе перелічене справді є.
+	 * Немає в ньому одного — ТЕМИ, і саме про це прийшла скарга: «в деяких темах
+	 * світлий текст на світлому фоні».
 	 *
-	 * Ціна названа: у `<option>` не буває картинки, тож прапор стоїть ПОРУЧ із
-	 * полем, а не в кожному рядку. Це не втрата: у списку людина шукає НАЗВУ (вона
-	 * знає, як зветься її країна), а прапор потрібен для підтвердження вибору — і
-	 * саме там він і стоїть.
+	 * ЗАМІРЯНО В БРАУЗЕРІ, а не виведено з міркувань. Обчислений
+	 * `background-color` у `<option>` — `rgba(0, 0, 0, 0)` в УСІХ чотирьох
+	 * темах: жоден токен у випадний список не доїжджав, бо його малює не
+	 * сторінка. Єдине, що з теми туди попадало, — успадкований `color`. Далі
+	 * арифметика:
 	 *
-	 * ## Чому `formatPlain`, а не `formatFont`
+	 * | тема          | колір тексту | на світлому списку | на темному списку |
+	 * | ------------- | ------------ | ------------------ | ----------------- |
+	 * | dark          | `#e5e5e5`    | **1.26:1**         | 8.89:1            |
+	 * | orange-purple | `#f0e6ff`    | **1.20:1**         | 9.32:1            |
+	 * | light-green   | `#262626`    | 15.13:1            | **1.35:1**        |
+	 * | winter        | `#1a2b4d`    | 14.03:1            | **1.25:1**        |
 	 *
-	 * `formatFont` обгортає літеру в `<span>`, а `<option>` розмітки НЕ приймає:
-	 * браузер її просто викине, і в списку лишиться сирий текст без потрібного
-	 * шрифту. Тому тут єдиний у проєкті випадок, де правильна відповідь —
-	 * `formatPlain`, який міняє символ у самому значенні.
+	 * Тобто в КОЖНІЙ темі є розфарбування списку, за якого текст на ньому давав
+	 * 1,2–1,35 при потрібних 4,5 — і вибирав це розфарбування не проєкт.
+	 * Десктопний Chrome бере `color-scheme` (тоді щастить), Android відкриває
+	 * власний діалог, який світлий завжди (тоді щастить рівно світлим темам).
+	 * Це не дефект кольору, який можна виправити кольором: тло було не наше.
 	 *
-	 * Ціна названа: у DOM опції стоїть латинська «i» замість кириличної, тобто
-	 * пошук по сторінці цим словом не знайде його. Для випадного списку це
-	 * дешевше, ніж неправильний шрифт: список шукають його ж власним пошуком
-	 * (введенням літери), а не браузерним.
+	 * Гейт цього не бачив і не міг: `tests/contrast-runtime.spec.ts` міряє DOM, а
+	 * випадного списку в DOM немає взагалі.
 	 *
-	 * ## Назви країн
+	 * ## Що втрачено разом із нативним елементом, і чим замінено
 	 *
-	 * Мовою інтерфейсу, з `Intl.DisplayNames` — тобто з даних ICU в браузері, а не
-	 * зі словника проєкту. Двісті шістдесят пʼять назв × чотири мови не потрапляють
-	 * ні в репозиторій, ні в бандл; подробиці — у `config/countries.ts`.
+	 * | Було безкоштовно                          | Тепер                             |
+	 * | ----------------------------------------- | --------------------------------- |
+	 * | вибірник на всю висоту екрана на телефоні | панель до 60vh із прокруткою      |
+	 * | пошук набором літер                       | поле пошуку; літера на кнопці відкриває панель уже з нею |
+	 * | стрілки, Home/End, Enter, Escape          | ті самі клавіші на полі пошуку    |
+	 *
+	 * ## Взірець
+	 *
+	 * Вибір мови в сусідньому `CV` (`HeaderSection.svelte`): кнопка-тригер, поле
+	 * пошуку в панелі, групи в незмінному порядку, стрілки на самій панелі.
+	 * Узято будову, не код: там два десятки мов рівним списком у колонках, тут
+	 * 262 країни, тобто без груп і прокрутки не обійтися. Локальний родич —
+	 * `components/HeaderMenu.svelte`; звідти взято ЗАМІРЯНІ там кольори станів.
+	 *
+	 * ## Розподіл між файлами
+	 *
+	 * Тут — кнопка, її підпис і стан «відкрито». Панель зі списком, пошуком і
+	 * клавіатурою — `CountryMenu.svelte`; причина розділення названа в ньому.
 	 */
 	interface Props {
 		/** Код країни. Порожній рядок — «без прапора». Двобічне. */
@@ -44,62 +65,132 @@
 		/** Основа `data-testid`: `pairs-country` дає `pairs-country-select`. */
 		scope: string;
 		/**
-		 * КОМПАКТНИЙ РЕЖИМ: видно лише прапор, і він сам є контролом.
+		 * КОМПАКТНИЙ РЕЖИМ: видно лише прапор, і він сам є кнопкою.
 		 *
 		 * Потрібен там, де прапор стоїть ПЕРЕД ніком, а не окремим рядком: підпис
 		 * «Прапор» над полем на п'ятсот пікселів ширини читався як ще одне
 		 * налаштування, хоч це частина того самого підпису гравця.
 		 *
-		 * Нативний `select` при цьому НЕ зникає — він лежить поверх прапора
-		 * прозорим. Це не хитрість, а єдиний спосіб зберегти те, за що він тут і
-		 * вибраний (див. докблок вище): на телефоні браузер відкриває власний
-		 * вибірник на всю висоту, а введення літери в ньому працює як пошук. Кнопка
-		 * з власним списком на 264 пункти все це втратила б.
+		 * Підпис при цьому лишається в DOM візуально прихованим — це єдине, що
+		 * називає контрол для скрінрідера; `title` його не заміняє (браузери
+		 * читають `title` не завжди й не першим).
 		 */
 		compact?: boolean;
 	}
 
 	let { value = $bindable(), scope, compact = false }: Props = $props();
 
-	/*
-	 * Список рахується на вимогу мови, а не тримається готовим: сортування
-	 * двохсот шістдесяти пʼяти назв колатором залежить від мови, а мову
-	 * перемикають на цій самій сторінці.
+	let open = $state(false);
+	/** Із чого починається пошук у щойно відкритій панелі. Див. `onTriggerKeydown`. */
+	let seed = $state('');
+	let root = $state<HTMLElement | null>(null);
+	let trigger = $state<HTMLButtonElement | null>(null);
+
+	const chosen = $derived(
+		value === '' ? t('pairs.countryNone') : countryLabel(value, settings.locale, t)
+	);
+
+	function openPanel(from = '') {
+		seed = from;
+		open = true;
+	}
+
+	function closePanel() {
+		open = false;
+		trigger?.focus();
+	}
+
+	/**
+	 * Клавіатура на КНОПЦІ: стрілка вниз і будь-яка літера відкривають панель.
+	 *
+	 * Літера відкриває панель ІЗ НЕЮ — це те, що нативний `select` робив сам, і
+	 * найдешевший спосіб його не втратити: набране одразу стає запитом. Пробіл
+	 * навмисно НЕ перехоплюється: ним браузер натискає кнопку, і забрати це
+	 * означало б зламати кнопку заради дії, якої ніхто не чекає.
 	 */
-	const countries = $derived(countriesByName(settings.locale, t));
+	function onTriggerKeydown(event: KeyboardEvent) {
+		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+			event.preventDefault();
+			openPanel();
+			return;
+		}
+		const printable =
+			event.key.length === 1 &&
+			!event.ctrlKey &&
+			!event.metaKey &&
+			!event.altKey &&
+			event.key !== ' ';
+		if (printable) {
+			event.preventDefault();
+			openPanel(event.key);
+		}
+	}
 </script>
 
-<div class="country" class:country--compact={compact}>
-	<label class="country__label" for="{scope}-select">
+<!--
+	Клік ПОЗА компонентом закриває панель.
+
+	`pointerdown` на вікні, а не підкладка на весь екран: підкладка ловила б
+	`pointerdown` сама, а `click` після неї доходив би до кнопки й відкривав
+	панель знову — цей дефект уже був у `HeaderMenu`. Перевірка `contains`
+	замість `stopPropagation` на кнопці: так само працює й тоді, коли на сторінці
+	стоять два вибірники. Фокус тут НЕ вертається на кнопку — його щойно забрала
+	мишка, і смикати його назад означало б сперечатися з тим, що зробила людина.
+-->
+<svelte:window
+	onpointerdown={(event) => {
+		if (open && root && !root.contains(event.target as Node)) open = false;
+	}}
+/>
+
+<div class="country" class:country--compact={compact} bind:this={root}>
+	<label class="country__label" id="{scope}-label" for="{scope}-select">
 		<span>{@html formatFont(t('pairs.country'))}</span>
 	</label>
-	<div class="country__row">
-		<Flag code={value} height={18} />
-		<select
-			id="{scope}-select"
-			class="country__select"
-			bind:value
-			data-testid="{scope}-select"
-			title={compact ? t('pairs.country') : undefined}
-		>
-			<!--
-				«Без прапора» — ПЕРШИЙ пункт, і він не порожній рядок на вигляд.
 
-				Порожній `<option>` читається як «ще не вибрано», а це інше: тут це
-				свідома відповідь «не показувати». Людина, яка не хоче називати країну,
-				мусить бачити цей варіант названим, а не вгадувати, що список можна
-				лишити невибраним.
-			-->
-			<option value="">{formatPlain(t('pairs.countryNone'))}</option>
-			{#each countries as country (country.code)}
-				<option value={country.code}>{formatPlain(country.name)}</option>
-			{/each}
-		</select>
-	</div>
+	<!--
+		НАЗВА КОНТРОЛУ — `aria-labelledby` із ДВОХ частин: підпис і поточне
+		значення. Разом читалка вимовляє «Прапор, Україна» — те саме, що казав
+		нативний `select`. Одного `for`/`id` на `<label>` для цього не досить:
+		підпис перекрив би вміст кнопки, і назви країни не було б чути зовсім.
+		`for` при цьому лишається — ним підпис клікається (`<button>` за
+		специфікацією labelable).
+	-->
+	<button
+		type="button"
+		id="{scope}-select"
+		class="country__trigger"
+		bind:this={trigger}
+		onclick={() => (open ? closePanel() : openPanel())}
+		onkeydown={onTriggerKeydown}
+		aria-haspopup="listbox"
+		aria-expanded={open}
+		aria-labelledby="{scope}-label {scope}-value"
+		data-testid="{scope}-select"
+	>
+		<span class="country__mark" aria-hidden="true"><Flag code={value} height={18} /></span>
+		<span class="country__value" id="{scope}-value">{@html formatFont(chosen)}</span>
+		<span class="country__chevron" aria-hidden="true"><ChevronDown size={16} /></span>
+	</button>
+
+	{#if open}
+		<CountryMenu
+			{value}
+			{scope}
+			{seed}
+			onpick={(code) => {
+				value = code;
+				closePanel();
+			}}
+			onclose={closePanel}
+		/>
+	{/if}
 </div>
 
 <style>
+	/* `relative` — коробка для панелі: вона позиційована абсолютно й живе в CountryMenu. */
 	.country {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-xs);
@@ -110,20 +201,16 @@
 		color: var(--color-text-on-panel);
 	}
 
-	.country__row {
+	/*
+	 * Кнопка міряється НЕ вмістом: назви країн різної довжини («Чад» і
+	 * «Центральноафриканська Республіка»), і кнопка, що міряється написом,
+	 * стрибала б на кожному виборі.
+	 */
+	.country__trigger {
 		display: flex;
 		align-items: center;
 		gap: var(--space-sm);
-	}
-
-	/*
-	 * `flex: 1` на самому полі, а не на обгортці: назви країн різної довжини
-	 * («Чад» і «Центральноафриканська Республіка»), і поле, що міряється вмістом,
-	 * стрибало б на кожному виборі.
-	 */
-	.country__select {
-		flex: 1;
-		min-width: 0;
+		width: 100%;
 		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
 		min-height: 44px;
 		padding: 0 var(--space-sm);
@@ -133,20 +220,43 @@
 		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
+		text-align: left;
+		cursor: pointer;
 	}
+
+	/* Назва обрізається, а не розпирає кнопку й не переносить рядок. */
+	.country__value {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
 	/*
-	 * КОМПАКТНИЙ РЕЖИМ: прапор — контрол, `select` лежить поверх прозорим.
+	 * Місце під прапор фіксоване: `Flag` навмисно не малює нічого для порожнього
+	 * й невідомого коду, і без цієї ширини напис стрибав би між станами.
+	 */
+	.country__mark {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		width: 27px;
+	}
+
+	.country__chevron {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+	}
+
+	/*
+	 * КОМПАКТНИЙ РЕЖИМ: прапор — сама кнопка.
 	 *
-	 * Підпис прибирається з очей, але лишається в DOM: `for`/`id` — єдине, що
-	 * називає цей контрол для скрінрідера, і `title` на самому `select` його не
-	 * заміняє (браузери читають `title` не завжди й не першим).
-	 *
-	 * `opacity: 0` замість `visibility: hidden` чи `appearance: none`: прихований
-	 * інакше `select` перестає приймати кліки, а весь сенс тут — щоб натиснули
-	 * саме по прапору й відкрився НАТИВНИЙ список.
-	 *
-	 * 44px — власний стандарт сенсорної цілі. Прапор усередині 18px, решта —
-	 * область натискання, тобто цілі 44px без роздування рядка.
+	 * Прапор усередині 18px, решта — область натискання, тобто ціль 44px без
+	 * роздування рядка. Тла й рамки в кнопки немає: у ряду з полем імені вона
+	 * мусить читатися як прапор, а не як друге поле.
 	 */
 	.country--compact {
 		flex-direction: row;
@@ -162,39 +272,36 @@
 		white-space: nowrap;
 	}
 
-	.country--compact .country__row {
-		position: relative;
+	.country--compact .country__trigger {
 		width: 44px;
 		height: 44px;
+		padding: 0;
 		justify-content: center;
 		gap: 0;
-		border-radius: var(--radius-sm);
-		cursor: pointer;
-	}
-
-	.country--compact .country__select {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		min-height: 0;
-		padding: 0;
 		border: none;
 		background: none;
-		opacity: 0;
-		cursor: pointer;
 	}
 
 	/*
-	 * Фокус клавіатурою мусить бути видимий, а сам `select` прозорий — тож рамку
-	 * малює обгортка. Без цього рядка прапор у фокусі не відрізнявся б ніяк.
+	 * Назва країни в компактному режимі лишається в DOM, але не на екрані: вона
+	 * потрібна `aria-labelledby`, щоб читалка вимовила «Прапор, Україна». Значок
+	 * стрілки просто зникає — там, де кнопка це сам прапор, він зайвий.
 	 */
-	.country--compact .country__row:focus-within {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 2px;
+	.country--compact .country__value {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.country--compact .country__chevron {
+		display: none;
 	}
 
 	@media (hover: hover) {
-		.country--compact .country__row:hover {
+		.country--compact .country__trigger:hover {
 			background: color-mix(in srgb, var(--color-text), transparent 90%);
 		}
 	}

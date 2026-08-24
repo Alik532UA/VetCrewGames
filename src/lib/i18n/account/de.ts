@@ -53,4 +53,15 @@ export const account: Record<string, string> = {
 	'account.google': 'Mit Google anmelden',
 	'account.or': 'oder',
 	'account.errorGoogleOff': 'Google-Anmeldung ist noch nicht aktiviert. Bitte E-Mail verwenden.',
+	// Regionsnamen und Texte der Länderauswahl. Warum hier und nicht im
+	// Hauptwörterbuch — siehe Hinweis in `uk.ts` und `config/regions.ts`.
+	'account.regionEurope': 'Europa',
+	'account.regionAsia': 'Asien',
+	'account.regionAfrica': 'Afrika',
+	'account.regionNorthAmerica': 'Nordamerika',
+	'account.regionSouthAmerica': 'Südamerika',
+	'account.regionOceania': 'Ozeanien',
+	'account.regionAntarctic': 'Antarktis',
+	'account.countrySearch': 'Land suchen',
+	'account.countryNotFound': 'Nichts gefunden',
 };
