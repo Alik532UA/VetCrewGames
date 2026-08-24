@@ -82,6 +82,13 @@ export interface OwnRoom {
 	status: 'lobby' | 'playing' | 'over';
 	hostUid: string;
 	amHost: boolean;
+	/**
+	 * Коли в кімнаті востаннє хтось був — СЕРВЕРНИЙ час, `info.aliveAt`.
+	 *
+	 * `undefined` — кімната зі старішої збірки, яка позначки ще не має; такі
+	 * вважаються живими (`config/roomLife.ts`).
+	 */
+	aliveAt?: number;
 }
 
 /**
@@ -224,7 +231,8 @@ export async function listOwnRooms(): Promise<OwnRoom[]> {
 				gameId: info.gameId,
 				status: info.status,
 				hostUid: info.hostUid,
-				amHost: info.hostUid === uid
+				amHost: info.hostUid === uid,
+				aliveAt: info.aliveAt
 			});
 		}
 

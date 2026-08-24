@@ -1,0 +1,68 @@
+# ПРИБИРАЛЬНИК ПОКИНУТИХ КІМНАТ — раз на добу.
+#
+# Чому не Cloud Functions: гуглівський планувальник вимагає тарифу Blaze, а
+# провайдером розкладу не мусить бути Google. Репозиторій публічний, тобто
+# хвилини Actions безлімітні, а сервісний акаунт у секретах уже є — той самий,
+# яким викладаються правила бази.
+#
+# Що саме зноситься — у `scripts/sweep-rooms.mjs`: кімнати з тишею понад шість
+# годин за серверною позначкою. На екрані мертві кімнати зникають набагато
+# раніше (п'ять хвилин, `config/roomLife.ts`), тож тут ідеться не про те, що
+# бачить людина, а про те, що лежить у базі.
+name: Sweep abandoned rooms
+
+on:
+  schedule:
+    # 03:17 UTC — не рівна година навмисно: о рівній у GitHub черга найдовша, і
+    # запуск може відкластися на десятки хвилин.
+    - cron: '17 3 * * *'
+  # Кнопка «запустити зараз»: без неї перший прогін довелося б чекати добу, а
+  # перевірити роботу — ніяк.
+  workflow_dispatch:
+
+# Прибиральник нічого не пише в репозиторій, тож прав йому не треба жодних.
+permissions: {}
+
+# Два прогони одночасно зносили б ті самі кімнати й сварилися про вже видалене.
+concurrency:
+  group: sweep-rooms
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Зрозуміла відмова замість незрозумілої: без секрету `firebase` падає з
+      # «not logged in», і причина виглядає як поломка інструмента.
+      - name: Service account is configured
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Немає секрету FIREBASE_SERVICE_ACCOUNT — того самого, яким викладаються правила."
+            exit 1
+          fi
+
+      # Секрет приходить через `env`, а не через `${{ }}` у тілі скрипта, і
+      # ключ прибирається `trap`, а не останнім рядком: причини детально
+      # розписані в тому самому кроці у `deploy.yml`.
+      - name: Sweep
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: |
+          trap 'rm -f "$GOOGLE_APPLICATION_CREDENTIALS"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          npm run rooms:sweep

@@ -1,3 +1,4 @@
+import { roomLife } from '$lib/config/roomLife';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { OwnRoom } from '$lib/net/ownRooms';
 import { friendUids } from '$lib/net/follows';
@@ -130,6 +131,29 @@ export class LobbyFeed {
 	}
 
 	/**
+	 * Закрити свою покинуту кімнату просто зі списку.
+	 *
+	 * Тут, а не на сторінці, з тієї самої причини, що й решта цього файлу: сторінок
+	 * дві, і копія цього виклику розійшлася б із першою ж правкою. Рядок
+	 * прибирається МІСЦЕВО, без перечитування: кімнати вже немає, і другий запит до
+	 * бази відповів би те саме, тільки за такт і за трафік.
+	 *
+	 * `false` замість винятку: сторінка вирішує, чи показувати про це повідомлення,
+	 * а список від невдачі не ламається — рядок просто лишається на місці.
+	 */
+	async close(code: string): Promise<boolean> {
+		try {
+			const net = await import('$lib/net/rtdbRoom');
+			await net.closeRoom(code);
+			this.own = this.own.filter((room) => room.code !== code);
+			return true;
+		} catch (error) {
+			logService.warn('network', 'own room not closed', { code, reason: String(error) });
+			return false;
+		}
+	}
+
+	/**
 	 * Свої розпочаті партії — ОДИН запит, а не підписка.
 	 *
 	 * Вони не з'являються самі: з'являються тоді, коли я сам зайшов у кімнату, — а
@@ -151,9 +175,20 @@ export class LobbyFeed {
 			 */
 			const [rooms, friends] = await Promise.all([own.listOwnRooms(), friendUids()]);
 			if (dead) return;
-			// Свої партії — з індексу, спільного для всіх ігор: тут гра відсіюється,
-			// бо «вернутися» можна лише в кімнату цієї гри, а не в будь-яку свою.
-			this.own = rooms.filter((room) => room.gameId === this.#gameId);
+			/*
+			 * Гра відсіюється тут, бо індекс `myRooms` спільний для всіх ігор:
+			 * «вернутися» можна лише в кімнату цієї гри, а не в будь-яку свою.
+			 *
+			 * А МЕРТВІ КІМНАТИ НЕ ПОКАЗУЮТЬСЯ ЗОВСІМ. Доти в списку висіли рядки
+			 * кімнат, у яких давно нікого не було: індекс знає лише те, що кімната
+			 * існує, а це правда і за тиждень після того, як звідти всі пішли.
+			 * Тепер кожна кімната несе серверну позначку останньої присутності, і
+			 * тиша понад п'ять хвилин прибирає рядок з очей.
+			 */
+			const now = Date.now();
+			this.own = rooms.filter(
+				(room) => room.gameId === this.#gameId && roomLife(room.aliveAt, now) !== 'dead'
+			);
 			this.friends = friends;
 		})();
 

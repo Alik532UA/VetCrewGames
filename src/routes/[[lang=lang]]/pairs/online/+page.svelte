@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
+	import { startRoomBeat } from '$lib/net/roomBeat';
 	import { playerData } from '$lib/services/playerData.svelte';
 	import { PAIRS_DRAW_POINTS, PAIRS_WIN_POINTS } from '$lib/config/scoring';
 	import { toast } from '$lib/controllers/toast.svelte';
@@ -803,6 +804,16 @@
 		else if (match.drawn) playerData.awardOnline(PAIRS_DRAW_POINTS);
 	});
 
+	/*
+	 * Серцебиття кімнати, поки вона відкрита: від нього список «продовжити партію»
+	 * відрізняє покинуту кімнату від тієї, з якої щойно вийшли. Сам такт — у
+	 * `net/roomBeat.ts`, бо сторінок дві.
+	 */
+	$effect(() => {
+		if (!browser || !match || !code) return;
+		return startRoomBeat(code);
+	});
+
 	onMount(() => {
 		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
 
@@ -864,6 +875,10 @@
 					hasMore={lobby.hasMore}
 					unavailable={lobby.unavailable}
 					{busy}
+					onClose={(dead) =>
+						void lobby.close(dead).then((done) => {
+							if (!done) toast.error('pairs.actionFailed');
+						})}
 					onEnter={(chosen) => {
 						joinCode = chosen;
 						void enter('join');

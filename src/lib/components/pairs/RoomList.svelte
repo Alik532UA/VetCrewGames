@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
+	import { roomLife } from '$lib/config/roomLife';
 	import type { LobbyRoom } from '$lib/net/lobby';
 	import type { OwnRoom } from '$lib/net/ownRooms';
 	import Flag from '$lib/components/ui/Flag.svelte';
@@ -70,9 +71,27 @@
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
 		onEnter: (code: string) => void;
+		/**
+		 * Закрити свою кімнату, у якій уже нікого немає. `undefined` — кнопки немає.
+		 *
+		 * Показується лише господареві й лише поки кімната ЩЕ СВІЖА (до п'яти
+		 * хвилин тиші): доти людина пам'ятає, що це за партія. Далі рядок зникає сам,
+		 * і питати вже нема про що.
+		 */
+		onClose?: (code: string) => void;
 	}
 
-	let { rooms, resume, friends, hasMore, unavailable, busy, onEnter }: Props = $props();
+	let { rooms, resume, friends, hasMore, unavailable, busy, onEnter, onClose }: Props = $props();
+
+	/*
+	 * Стан кімнати рахується РАЗ, коли малюється список.
+	 *
+	 * Годинник тут не потрібен: перелік своїх партій читається при відкритті
+	 * сторінки й не оновлюється сам, тож секунда в секунду ці рядки однаково не
+	 * живуть. Тикати таймером заради того, щоб кнопка зникла на очах, — це
+	 * розряджений акумулятор і нічого більше.
+	 */
+	const drawnAt = Date.now();
 
 	/*
 	 * Дві групи з одного масиву, і порядок усередині кожної НЕ міняється:
@@ -113,11 +132,31 @@
 	{#if resume.length > 0}
 		<ul class="rooms__list rooms__list--resume" data-testid="pairs-resume-list">
 			{#each resume as room (room.code)}
+				{@const life = roomLife(room.aliveAt, drawnAt)}
 				<li class="rooms__item rooms__item--resume" data-testid="pairs-resume-{room.code}-item">
 					<span class="rooms__who">
-						<span class="rooms__host">{@html formatFont(t('pairs.resume'))}</span>
+						<!--
+							КОД У САМОМУ РЯДКУ, а не лише в локаторі: три партії підряд
+							виглядали однаково, і вибрати «ту саму» було неможливо — тільки
+							вгадати.
+						-->
+						<span class="rooms__host">
+							{@html formatFont(t('pairs.resume'))}
+							<span class="rooms__code">#{room.code}</span>
+						</span>
 						<span class="rooms__players">{@html formatFont(t('pairs.resumeHint'))}</span>
 					</span>
+					{#if onClose && room.amHost && life === 'idle'}
+						<button
+							type="button"
+							class="rooms__close"
+							onclick={() => onClose(room.code)}
+							aria-label="{t('pairs.closeRoom')}: {room.code}"
+							data-testid="pairs-resume-{room.code}-close-btn"
+						>
+							{@html formatFont(t('pairs.closeRoom'))}
+						</button>
+					{/if}
 					<button
 						type="button"
 						class="rooms__enter rooms__enter--resume"
@@ -160,29 +199,29 @@
 			<h3 class="rooms__group">{@html formatFont(t('pairs.friendsRooms'))}</h3>
 			<ul class="rooms__list" data-testid="pairs-friend-rooms-list">
 				{#each friendly as room (room.code)}
-				<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
-					<span class="rooms__who">
-						<span class="rooms__host">
-							<Avatar avatar={room.hostAvatar} />
-							<Flag code={room.hostCountry} />
-							{room.hostName}
+					<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
+						<span class="rooms__who">
+							<span class="rooms__host">
+								<Avatar avatar={room.hostAvatar} />
+								<Flag code={room.hostCountry} />
+								{room.hostName}
+							</span>
+							<span class="rooms__players">
+								<Users size={14} aria-hidden="true" />
+								{@html formatFont(t('pairs.players'))}: {room.players}
+							</span>
 						</span>
-						<span class="rooms__players">
-							<Users size={14} aria-hidden="true" />
-							{@html formatFont(t('pairs.players'))}: {room.players}
-						</span>
-					</span>
-					<button
-						type="button"
-						class="rooms__enter"
-						onclick={() => onEnter(room.code)}
-						aria-disabled={busy}
-						aria-label="{t('pairs.enter')}: {room.hostName}"
-						data-testid="pairs-room-{room.code}-btn"
-					>
-						{@html formatFont(t('pairs.enter'))}
-					</button>
-				</li>
+						<button
+							type="button"
+							class="rooms__enter"
+							onclick={() => onEnter(room.code)}
+							aria-disabled={busy}
+							aria-label="{t('pairs.enter')}: {room.hostName}"
+							data-testid="pairs-room-{room.code}-btn"
+						>
+							{@html formatFont(t('pairs.enter'))}
+						</button>
+					</li>
 				{/each}
 			</ul>
 		{/if}
@@ -190,29 +229,29 @@
 		{#if others.length > 0}
 			<ul class="rooms__list" data-testid="pairs-rooms-list">
 				{#each others as room (room.code)}
-				<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
-					<span class="rooms__who">
-						<span class="rooms__host">
-							<Avatar avatar={room.hostAvatar} />
-							<Flag code={room.hostCountry} />
-							{room.hostName}
+					<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
+						<span class="rooms__who">
+							<span class="rooms__host">
+								<Avatar avatar={room.hostAvatar} />
+								<Flag code={room.hostCountry} />
+								{room.hostName}
+							</span>
+							<span class="rooms__players">
+								<Users size={14} aria-hidden="true" />
+								{@html formatFont(t('pairs.players'))}: {room.players}
+							</span>
 						</span>
-						<span class="rooms__players">
-							<Users size={14} aria-hidden="true" />
-							{@html formatFont(t('pairs.players'))}: {room.players}
-						</span>
-					</span>
-					<button
-						type="button"
-						class="rooms__enter"
-						onclick={() => onEnter(room.code)}
-						aria-disabled={busy}
-						aria-label="{t('pairs.enter')}: {room.hostName}"
-						data-testid="pairs-room-{room.code}-btn"
-					>
-						{@html formatFont(t('pairs.enter'))}
-					</button>
-				</li>
+						<button
+							type="button"
+							class="rooms__enter"
+							onclick={() => onEnter(room.code)}
+							aria-disabled={busy}
+							aria-label="{t('pairs.enter')}: {room.hostName}"
+							data-testid="pairs-room-{room.code}-btn"
+						>
+							{@html formatFont(t('pairs.enter'))}
+						</button>
+					</li>
 				{/each}
 			</ul>
 		{/if}
@@ -226,6 +265,30 @@
 </section>
 
 <style>
+	/* Код — тим самим кеглем, що підпис, але тихішим кольором: він потрібен для
+	   розрізнення, а не для читання вголос. */
+	.rooms__code {
+		font-variant-numeric: tabular-nums;
+		color: var(--color-text-muted);
+	}
+
+	/*
+	 * «Закрити» навмисно тихіша за «Вернутися»: це дія на випадок «я туди більше
+	 * не піду», і вона не мусить конкурувати з тією, по яку сюди прийшли.
+	 */
+	.rooms__close {
+		flex-shrink: 0;
+		min-height: 44px;
+		padding: 0 var(--space-sm);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: none;
+		color: var(--color-text);
+		font: inherit;
+		font-size: var(--font-size-sm);
+		cursor: pointer;
+	}
+
 	.rooms {
 		display: flex;
 		flex-direction: column;

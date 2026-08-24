@@ -413,6 +413,18 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			await update(ref(db, `rooms/${code}/info`), { autoStart: on, countdownAt: null });
 		},
 
+		async touch() {
+			// Позначку ставить СЕРВЕР: правило вимагає час у вікні пʼяти секунд, тож
+			// клієнтське число сюди просто не запишеться.
+			try {
+				await set(ref(db, `rooms/${code}/info/aliveAt`), serverTimestamp());
+			} catch (error) {
+				// Не кидаємо: це довідка про кімнату, а не хід. Найгірший наслідок —
+				// кімната зайвий раз повисить у списку «продовжити».
+				logService.warn('network', 'room heartbeat skipped', { code, reason: String(error) });
+			}
+		},
+
 		async removeMember(uid: string) {
 			/*
 			 * Саме `remove`, а не запис `null` у поле: прибирається ВЕСЬ рядок
