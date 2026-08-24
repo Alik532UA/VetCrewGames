@@ -90,6 +90,74 @@ export async function signInEmail(email: string, password: string): Promise<void
 }
 
 /**
+ * Вхід через Google — привʼязкою до наявного входу, а не окремим входом.
+ *
+ * `linkWithPopup`, а не `signInWithPopup`, і це те саме міркування, що в
+ * `linkEmail`: анонімний `uid` уже має профіль, кімнати в індексі й підписки.
+ * Звичайний вхід дав би НОВИЙ `uid`, тобто тихо загубив би все це.
+ *
+ * Коли акаунт Google уже привʼязаний до іншого користувача, Firebase кидає
+ * `auth/credential-already-in-use`. Тоді єдиний правильний шлях — зайти в той
+ * акаунт, і ми це й робимо: `signInWithCredential` із тим самим підтвердженням.
+ * Так поводиться й привʼязка пошти, тільки там про це вирішує людина, а тут
+ * вибору немає — вікно Google уже закрилося.
+ *
+ * ЦІНА НАЗВАНА: у другому випадку `uid` міняється, і анонімний доробок лишається
+ * під старим. Інакше було б гірше — «не вдалося» на кнопці, яка не має жодного
+ * іншого способу спрацювати.
+ */
+export async function signInGoogle(): Promise<void> {
+	const { auth } = await connect();
+	const user = auth.currentUser;
+	const {
+		GoogleAuthProvider,
+		linkWithPopup,
+		signInWithCredential,
+		signInWithPopup
+	} = await import('firebase/auth');
+
+	const provider = new GoogleAuthProvider();
+	if (!user) {
+		await signInWithPopup(auth, provider);
+		return;
+	}
+
+	try {
+		await linkWithPopup(user, provider);
+	} catch (error) {
+		const code = (error as { code?: string }).code ?? '';
+		if (code !== 'auth/credential-already-in-use') throw error;
+
+		/*
+		 * Підтвердження з ПОМИЛКИ, а не друге вікно.
+		 *
+		 * Firebase кладе в помилку те саме підтвердження, яке щойно отримав, — і
+		 * це єдиний спосіб продовжити: показати вікно Google удруге означало б
+		 * попросити людину підтвердити те, що вона підтвердила секунду тому, і
+		 * частина браузерів друге вікно вже заблокує як не викликане кліком.
+		 */
+		const credential = GoogleAuthProvider.credentialFromError(
+			error as Parameters<typeof GoogleAuthProvider.credentialFromError>[0]
+		);
+		if (!credential) throw error;
+		await signInWithCredential(auth, credential);
+	}
+}
+
+/**
+ * Надіслати лист для відновлення пароля.
+ *
+ * Помилку `auth/user-not-found` викликач НЕ показує: різний текст для наявної
+ * й відсутньої пошти дозволяє перебирати акаунти. Тому тут вона не гаситься —
+ * рішення про повідомлення належить шару вище, і воно там однакове для обох.
+ */
+export async function resetPassword(email: string): Promise<void> {
+	const { auth } = await connect();
+	const { sendPasswordResetEmail } = await import('firebase/auth');
+	await sendPasswordResetEmail(auth, email);
+}
+
+/**
  * Вийти з акаунта — і одразу зайти анонімно.
  *
  * Без другої половини сторінка лишилася б без користувача, а без користувача не

@@ -9,7 +9,7 @@
 	import { Account } from '$lib/controllers/account.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
-	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
+	import AuthForm from '$lib/components/auth/AuthForm.svelte';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -36,9 +36,12 @@
 	const lang = $derived(languageFromParam(page.params.lang));
 	const account = new Account();
 
-	let mode = $state<'register' | 'signin'>('register');
-	let email = $state('');
-	let password = $state('');
+	/** Який режим форми показано: вхід/реєстрація чи відновлення пароля. */
+	let mode = $state<'auth' | 'forgot'>('auth');
+	/** Що робить кнопка входу. Поля живуть у самій формі, не тут. */
+	let intent = $state<'register' | 'signin'>('register');
+	/** Лист відновлення надіслано: повідомлення однакове для будь-якої пошти. */
+	let resetSent = $state(false);
 	let name = $state('');
 	let handle = $state('');
 	let country = $state('');
@@ -79,18 +82,28 @@
 		return release;
 	});
 
-	async function submitAuth() {
+	async function submitAuth(email: string, password: string) {
 		const done =
-			mode === 'register'
+			intent === 'register'
 				? await account.register(email, password)
 				: await account.signIn(email, password);
 		if (!done) return;
-		password = '';
-		if (mode === 'signin') {
+		if (intent === 'signin') {
 			name = account.profile?.name ?? '';
 			handle = account.profile?.handle ?? '';
 			country = account.profile?.country ?? '';
 		}
+	}
+
+	/**
+	 * Відновлення пароля: результат ОДНАКОВИЙ для наявної й відсутньої пошти.
+	 *
+	 * Контролер ковтає `auth/user-not-found` саме для цього, а тут лишається не
+	 * зіпсувати: показати «немає такої пошти» означало б дати спосіб перебирати
+	 * акаунти.
+	 */
+	async function submitReset(email: string) {
+		resetSent = await account.resetPassword(email);
 	}
 
 	async function submitProfile() {
@@ -130,7 +143,6 @@
 		}
 	});
 
-	const canAuth = $derived(email.trim().length > 3 && password.length >= 6 && !account.busy);
 	const canSave = $derived(
 		name.trim().length > 0 && /^[a-z0-9_]{3,20}$/.test(handle) && !account.busy
 	);
@@ -139,74 +151,34 @@
 <div class="account-page">
 	{#if account.state === 'anonymous'}
 		<!--
-			ФОРМА ВХОДУ. Поля спільні, наслідки різні — тому вибір над ними.
+			ФОРМА ВХОДУ — ОКРЕМИМ КОМПОНЕНТОМ, і сторінка від цього меншає.
+			
+			Тут стояли поля, вибір режиму й кнопка просто в розмітці. Відновлення
+			пароля не було зовсім, а Google-вхід був записаний боргом. Обидва
+			вимагає AUTH-FORM-v8 § 1, і обидва додати на місці було нікуди: сторінка
+			вже на 515 рядків при орієнтирі 400.
+			
+			Сторінка лишає собі те, що знає лише вона: як перекласти код помилки й
+			що робити після входу.
 		-->
 		<section class="account__panel text-panel">
-			<h2 class="account__title">{@html formatFont(text('account.signInTitle'))}</h2>
-			<p class="account__hint">{@html formatFont(text('account.why'))}</p>
-
-			<SegmentedChoice
-				legend={text('account.mode')}
-				scope="account-mode"
-				value={mode}
-				onchange={(id) => (mode = id as 'register' | 'signin')}
-				options={[
-					{ id: 'register', label: text('account.modeRegister') },
-					{ id: 'signin', label: text('account.modeSignIn') }
-				]}
+			<AuthForm
+				{text}
+				{mode}
+				intent={intent}
+				busy={account.busy}
+				error={errorKey ? text(errorKey) : ''}
+				info={resetSent ? text('account.resetSent') : ''}
+				withGoogle
+				onsubmit={submitAuth}
+				onforgot={submitReset}
+				ongoogle={() => account.google()}
+				onmode={(next) => {
+					mode = next;
+					resetSent = false;
+				}}
+				onintent={(next) => (intent = next)}
 			/>
-
-			<p class="account__hint" data-testid="account-mode-hint">
-				{@html formatFont(
-					text(mode === 'register' ? 'account.registerHint' : 'account.signInHint')
-				)}
-			</p>
-
-			<label class="account__label" for="account-email">
-				<span>{@html formatFont(text('account.email'))}</span>
-			</label>
-			<input
-				id="account-email"
-				class="account__input"
-				type="email"
-				bind:value={email}
-				autocomplete="email"
-				inputmode="email"
-				data-testid="account-email-input"
-			/>
-
-			<label class="account__label" for="account-password">
-				<span>{@html formatFont(text('account.password'))}</span>
-			</label>
-			<!--
-				`autocomplete` різний за режимом: браузер мусить знати, пропонувати
-				новий пароль чи підставити збережений. Однакове значення робить одне з
-				двох незручним.
-			-->
-			<input
-				id="account-password"
-				class="account__input"
-				type="password"
-				bind:value={password}
-				autocomplete={mode === 'register' ? 'new-password' : 'current-password'}
-				data-testid="account-password-input"
-			/>
-
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={submitAuth}
-				aria-disabled={!canAuth}
-				data-testid="account-submit-btn"
-			>
-				{@html formatFont(text(mode === 'register' ? 'account.modeRegister' : 'account.modeSignIn'))}
-			</button>
-
-			{#if errorKey}
-				<p class="account__error" role="alert" data-testid="account-error-text">
-					{@html formatFont(text(errorKey))}
-				</p>
-			{/if}
 		</section>
 	{:else}
 		<!-- ПРОФІЛЬ: те, що бачать інші. -->

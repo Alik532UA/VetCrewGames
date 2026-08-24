@@ -80,7 +80,26 @@ const config = {
 				// gtag.js вантажиться з googletagmanager вже як зовнішній файл, і
 				// без цього домену браузер його блокує, а аналітика мовчки не
 				// стартує.
-				'script-src': ['self', inlineScriptHash, 'https://www.googletagmanager.com'],
+				// `apis.google.com` — ВХІД ЧЕРЕЗ GOOGLE, і це рішення про політику, а
+				// не про код. Firebase піднімає вікно провайдера через `gapi`, тобто
+				// вантажить звідти скрипт; без домену браузер блокує саме його, і в
+				// консолі стоїть «Loading the script 'https://apis.google.com/js/api.js'
+				// violates … Content-Security-Policy» — заміряно, доки кнопки не було.
+				//
+				// Ціна названа: у політику додається чужий домен, якому дозволено
+				// виконувати скрипти. Автор попросив вхід через Google як у `Slovko`,
+				// де цей домен теж дозволений; альтернатива — лишити пошту єдиним
+				// способом, і тоді обидва рядки треба прибрати разом із кнопкою.
+				'script-src': [
+					'self',
+					inlineScriptHash,
+					'https://www.googletagmanager.com',
+					'https://apis.google.com'
+				],
+				// Вікно провайдера — це iframe із `*.firebaseapp.com`, і без цього
+				// рядка воно відкривається порожнім: скрипт уже дозволений вище, а
+				// вставити рамку політика ще не дає.
+				'frame-src': ['self', 'https://*.firebaseapp.com', 'https://accounts.google.com'],
 				// А тут `unsafe-inline` лишається свідомо: інлайнові `style="…"`
 				// пише і Svelte (переходи fly/fade/slide), і `formatFont()` для
 				// літер, яких немає в основному шрифті. Атрибути стилю хешами не

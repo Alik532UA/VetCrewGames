@@ -35,6 +35,17 @@ function walk(dir: string, out: string[] = []): string[] {
  * компонент не вставляють просто на сторінку.
  */
 const BACKED_BY_PARENT: Record<string, string> = {
+	// Форма входу лежить у `.account__panel.text-panel` на сторінці акаунта — і
+	// лише там. Власний фон тут був би панеллю на панелі: двома шарами того
+	// самого кольору з видимим швом на межі.
+	'src/lib/components/auth/AuthForm.svelte': 'форма входу, фон дає .account__panel',
+	// Режим відновлення пароля — вміст тієї самої картки, всередині `.auth`.
+	// Окремо його не вставляють нікуди: `mode` тримає `AuthForm`.
+	'src/lib/components/auth/ResetPanel.svelte': 'режим форми входу, фон дає та сама картка',
+	// Поле пароля з попередженнями під ним — примітив із `ui/`, і кладуть його
+	// лише в панель форми. Фон під попередженням тут був би третім шаром: панель
+	// сторінки, картка форми, і ще плашка під двома рядками тексту.
+	'src/lib/components/ui/PasswordInput.svelte': 'поле форми, фон дає панель-господар',
 	'src/lib/components/RoundIndicator.svelte': 'лічильник раундів — усередині шапки гри',
 	'src/lib/components/FeedingVerdicts.svelte': 'кожен присуд має власну картку .verdict',
 	'src/lib/components/GameOverCard.svelte': 'уся розмітка лежить у картці .game-over-card',

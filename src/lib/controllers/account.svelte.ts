@@ -3,9 +3,11 @@ import {
 	handleFree,
 	linkEmail,
 	readProfile,
+	resetPassword,
 	saveProfile,
 	searchHandles,
 	signInEmail,
+	signInGoogle,
 	signOut,
 	type AccountState,
 	type Profile
@@ -115,6 +117,38 @@ export class Account {
 		const done = await this.#act('sign-in', () => signInEmail(email, password));
 		if (done) await this.load();
 		return done;
+	}
+
+	/**
+	 * Вхід через Google.
+	 *
+	 * `load()` після успіху, а не `accountState()`: привʼязка лишає `uid`, але
+	 * вхід у вже наявний акаунт Google його МІНЯЄ — і тоді профіль із підписками
+	 * на екрані стосувалися б чужого. Перечитати дешевше, ніж угадати, який із
+	 * двох шляхів спрацював.
+	 */
+	async google(): Promise<boolean> {
+		const done = await this.#act('google', () => signInGoogle());
+		if (done) await this.load();
+		return done;
+	}
+
+	/**
+	 * Лист для відновлення пароля.
+	 *
+	 * Повертає `true` і тоді, коли пошти не існує: різний результат для наявної
+	 * й відсутньої дозволяв би перебирати акаунти. Тому `auth/user-not-found`
+	 * ковтається ТУТ і тільки він — решта помилок (немережева пошта, забагато
+	 * спроб) людині потрібна.
+	 */
+	async resetPassword(email: string): Promise<boolean> {
+		const done = await this.#act('reset', () => resetPassword(email));
+		if (done) return true;
+		if (this.error === 'auth/user-not-found' || this.error === 'auth/invalid-credential') {
+			this.error = '';
+			return true;
+		}
+		return false;
 	}
 
 	async leave(): Promise<boolean> {
