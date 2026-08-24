@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { formatFont } from '$lib/i18n';
+	import EmailField from './EmailField.svelte';
+	import GoogleMark from './GoogleMark.svelte';
+	import ResetPanel from './ResetPanel.svelte';
+	import PasswordInput from '$lib/components/ui/PasswordInput.svelte';
 
 	/**
-	 * ФОРМА ВХОДУ: спільні поля, ДВІ КНОПКИ, жодного вибору режиму.
+	 * ФОРМА ВХОДУ: чотири шляхи ввійти, ДВІ КНОПКИ, жодного вибору режиму.
 	 *
-	 * ## Що тут було й чому це прибрано
+	 * ## Вибір режиму прибрано — і це не те саме, що прибрати спосіб входу
 	 *
 	 * Доти над полями стояв сегментований вибір «Що зробити: Створити акаунт /
 	 * Зайти в наявний», а кнопка внизу була одна й міняла підпис. Міркування було
@@ -14,32 +18,48 @@
 	 * Міркування хибне на одному кроці: воно додає РІШЕННЯ там, де його немає.
 	 * Людина не вибирає «режим форми» — вона або має акаунт, або ні, і знає це до
 	 * того, як побачила екран. Вибір режиму змушує сказати те саме двічі: спершу
-	 * перемикачем, потім кнопкою. Автор сказав про це прямо, показавши знімок
-	 * сусіднього `Slovko`, де вибору немає зовсім.
+	 * перемикачем, потім кнопкою.
 	 *
 	 * Тепер намір виражає САМА КНОПКА, і їх дві: «Увійти» — submit форми (частіший
 	 * випадок і той, що спрацьовує з клавіатури), «Зареєструватись» — звичайна
 	 * кнопка поруч. Той самий склад, що в `Slovko/src/lib/components/auth` і в
 	 * каноні AUTH-FORM-v8 § 6 (`auth-login-btn` і `auth-register-btn`).
 	 *
-	 * ## Попередження лишилося, бо воно НЕ про режим
+	 * ## Чому Google і відновлення пароля стоять ТУТ, а не «повернуті»
 	 *
-	 * Вхід у ІНШИЙ акаунт міняє `uid`, тобто анонімний доробок лишається під
-	 * старим — це не деталь інтерфейсу, а незворотна річ. Тому текст стоїть
-	 * рядком ПІД кнопкою «Увійти»: попередження мусить бути там, де дія, а не в
-	 * підказці до перемикача, якого більше немає.
+	 * Одна редакція цієї форми прибрала разом із перемикачем ще три речі: кнопку
+	 * Google, посилання «Відновити пароль» і поле пароля з інструментами (око,
+	 * CapsLock, попередження про розкладку). Мережевий шар при цьому лишився
+	 * цілий — `net/account.ts` мав `signInGoogle()` і `resetPassword()`, контролер
+	 * мав `google()` і `resetPassword()`, — тобто це були не «незроблені»
+	 * можливості, а ВІДʼЄДНАНІ: код на місці, викликати нікому.
 	 *
-	 * Симетричну підказку про реєстрацію («профіль і кімнати збережуться»)
-	 * ПРИБРАНО, і це рішення, а не недогляд: вона заспокоювала, а не
-	 * застерігала. Її відсутність нічим не загрожує, тоді як відсутність
-	 * попередження про зміну `uid` — загрожує.
+	 * Це найгірший різновид втрати, і саме тому він описаний тут. Гейти його не
+	 * бачать: `svelte-check` не скаржиться на функцію, якої ніхто не викликає,
+	 * тести на форму перевіряють те, що в ній є, а не те, чого немає, а `lint`
+	 * мовчить, бо експорт із `net/` законно може не мати споживача. Червоного
+	 * ніде, а на екрані немає двох із чотирьох способів увійти.
+	 *
+	 * Звідси правило для цієї форми: **шляхів входу чотири** — Google, пошта з
+	 * паролем, реєстрація, відновлення пароля — і жоден із них не є деталлю
+	 * розкладки. Змінюючи вигляд, перевіряй, що всі чотири лишилися на екрані.
+	 *
+	 * ## «Відновити пароль» — окрема панель, і це НЕ вибір режиму
+	 *
+	 * Різниця в тому, що саме питають. Вибір «створити чи зайти» питав про намір,
+	 * який людина вже знає, — і тому був зайвий. Відновлення ж міняє САМУ ФОРМУ:
+	 * поле пароля тут зашкодило б (його ж і забули), кнопок дві не потрібно, а
+	 * підтвердження мусить бути однакове для будь-якої пошти, щоб не казати
+	 * стороннім, хто в базі є. Тобто це інший екран, а не інший підпис на кнопці.
+	 * Так само зроблено в `Slovko`, де перемикача входу/реєстрації немає, а панель
+	 * відновлення є.
 	 *
 	 * ## `autocomplete` — `current-password`, і це вибір
 	 *
-	 * Форма більше не знає заздалегідь, що робить людина, а браузеру треба сказати
-	 * рівно одне значення. Вхід частіший за реєстрацію, тож підставити збережений
-	 * пароль корисніше, ніж запропонувати новий. Ціна названа: менеджер паролів
-	 * при реєстрації сам нового не запропонує.
+	 * Форма не знає заздалегідь, що робить людина, а браузеру треба сказати рівно
+	 * одне значення. Вхід частіший за реєстрацію, тож підставити збережений пароль
+	 * корисніше, ніж запропонувати новий. Ціна названа: менеджер паролів при
+	 * реєстрації сам нового не запропонує.
 	 */
 	interface Props {
 		/**
@@ -54,14 +74,33 @@
 		errorKey: string | null;
 		/** Триває мережева дія: повторні натискання нічого не роблять. */
 		busy: boolean;
+		/** Лист відновлення надіслано. Текст однаковий для будь-якої пошти. */
+		resetSent: boolean;
 		onlogin: (email: string, password: string) => void;
 		onregister: (email: string, password: string) => void;
+		ongoogle: () => void;
+		onforgot: (email: string) => void;
 	}
 
-	let { text, errorKey, busy, onlogin, onregister }: Props = $props();
+	let {
+		text,
+		errorKey,
+		busy,
+		resetSent,
+		onlogin,
+		onregister,
+		ongoogle,
+		onforgot
+	}: Props = $props();
 
 	let email = $state('');
 	let password = $state('');
+	/**
+	 * Яка панель на екрані. Стан ЛОКАЛЬНИЙ, бо він суто про вигляд: сторінка не
+	 * має чого з ним робити, а тримати його там означало б проп туди й проп назад
+	 * заради значення, яке нікого, крім цієї розмітки, не стосується.
+	 */
+	let forgot = $state(false);
 
 	/**
 	 * Чи є що надсилати. Межі ті самі, що в Firebase: пошта з символом і пароль
@@ -88,69 +127,124 @@
 </script>
 
 <section class="auth text-panel" data-testid="auth-panel">
-	<h2 class="auth__title">{@html formatFont(text('account.signInTitle'))}</h2>
-	<p class="auth__hint">{@html formatFont(text('account.why'))}</p>
-
-	<form class="auth__form" onsubmit={submit} data-testid="auth-form">
-		<label class="auth__label" for="account-email">
-			<span>{@html formatFont(text('account.email'))}</span>
-		</label>
-		<input
-			id="account-email"
-			class="auth__input"
-			type="email"
-			bind:value={email}
-			autocomplete="email"
-			inputmode="email"
-			data-testid="account-email-input"
+	{#if forgot}
+		<!--
+			Панель відновлення отримує ГОТОВІ тексти, а не ключі: помилку сторінка
+			вже переклала для решти форми, і другий переклад того самого коду
+			розійшовся б із першим.
+		-->
+		<ResetPanel
+			{text}
+			{busy}
+			error={errorKey === null ? '' : text(errorKey)}
+			info={resetSent ? text('account.resetSent') : ''}
+			{onforgot}
+			onback={() => (forgot = false)}
 		/>
+	{:else}
+		<h2 class="auth__title">{@html formatFont(text('account.signInTitle'))}</h2>
+		<p class="auth__hint">{@html formatFont(text('account.why'))}</p>
 
-		<label class="auth__label" for="account-password">
-			<span>{@html formatFont(text('account.password'))}</span>
-		</label>
-		<input
-			id="account-password"
-			class="auth__input"
-			type="password"
-			bind:value={password}
-			autocomplete="current-password"
-			data-testid="account-password-input"
-		/>
-
-		{#if errorKey}
-			<p class="auth__error" role="alert" data-testid="account-error-text">
-				{@html formatFont(text(errorKey))}
-			</p>
-		{/if}
-
+		<!--
+			GOOGLE СТОЇТЬ ПЕРШИМ, а не під формою.
+			Це найкоротший шлях: жодного поля, жодного пароля, який треба вигадати
+			й запамʼятати. Поставити його під формою означало б показати спершу
+			довгий шлях, а короткий — тим, хто долистав.
+		-->
 		<button
-			type="submit"
-			class="auth__btn auth__btn--main"
-			aria-disabled={!ready}
-			data-testid="auth-login-btn"
+			type="button"
+			class="auth__btn auth__btn--google"
+			onclick={ongoogle}
+			aria-disabled={busy}
+			data-testid="auth-google-btn"
 		>
-			{@html formatFont(text('account.signIn'))}
+			<GoogleMark />
+			<span>{@html formatFont(text('account.google'))}</span>
 		</button>
 
 		<!--
-			Попередження стоїть МІЖ кнопками, і саме тому воно тут, а не під обома:
-			воно стосується рівно «Увійти». Ціна названа — пара кнопок не злита в
-			одну смугу, як у `Slovko`; натомість кожна відповідає сама за себе.
+			Розділювач зі словом «або» — саме словом, а не рискою.
+			Дві кнопки без нього читаються як послідовність («спершу це, тоді те»),
+			тоді як вони альтернативи.
 		-->
-		<p class="auth__hint" data-testid="auth-signin-hint">
-			{@html formatFont(text('account.signInHint'))}
-		</p>
+		<p class="auth__or"><span>{@html formatFont(text('account.or'))}</span></p>
 
-		<button
-			type="button"
-			class="auth__btn auth__btn--alt"
-			onclick={register}
-			aria-disabled={!ready}
-			data-testid="auth-register-btn"
-		>
-			{@html formatFont(text('account.register'))}
-		</button>
-	</form>
+		<form class="auth__form" onsubmit={submit} data-testid="auth-form">
+			<EmailField
+				id="account-email"
+				label={text('account.email')}
+				testId="account-email-input"
+				bind:value={email}
+			/>
+
+			<!--
+				Поле пароля — з інструментами В ПОЛІ (око, CapsLock, розкладка), а не
+				звичайний `input type="password"`. Це вимога INPUT-TOOLS-v8, і вона
+				не про красу: пароль не видно, тож помилку розкладки чи CapsLock
+				людина інакше знаходить лише по відмові сервера.
+			-->
+			<PasswordInput
+				{text}
+				id="account-password"
+				label={text('account.password')}
+				testId="account-password"
+				autocomplete="current-password"
+				bind:value={password}
+			/>
+
+			<!--
+				«Відновити пароль» — ПІД полем і праворуч, окремим рядком.
+				Не в полі: там уже живуть око, CapsLock і розкладка, і четвертий
+				знак у тому самому рядку перетворив би поле на панель кнопок.
+			-->
+			<button
+				type="button"
+				class="auth__forgot"
+				onclick={() => (forgot = true)}
+				data-testid="auth-forgot-btn"
+			>
+				{@html formatFont(text('account.forgotPassword'))}
+			</button>
+
+			{#if errorKey}
+				<p class="auth__error" role="alert" data-testid="account-error-text">
+					{@html formatFont(text(errorKey))}
+				</p>
+			{/if}
+
+			<button
+				type="submit"
+				class="auth__btn auth__btn--main"
+				aria-disabled={!ready}
+				data-testid="auth-login-btn"
+			>
+				{@html formatFont(text('account.signIn'))}
+			</button>
+
+			<!--
+				Попередження стоїть МІЖ кнопками, і саме тому воно тут, а не під
+				обома: воно стосується рівно «Увійти». Вхід у ІНШИЙ акаунт міняє
+				`uid`, тобто анонімний доробок лишається під старим — річ незворотна,
+				і сказати про неї треба там, де дія.
+
+				Симетричну підказку про реєстрацію («профіль і кімнати збережуться»)
+				прибрано, і це рішення: вона заспокоювала, а не застерігала.
+			-->
+			<p class="auth__hint" data-testid="auth-signin-hint">
+				{@html formatFont(text('account.signInHint'))}
+			</p>
+
+			<button
+				type="button"
+				class="auth__btn auth__btn--alt"
+				onclick={register}
+				aria-disabled={!ready}
+				data-testid="auth-register-btn"
+			>
+				{@html formatFont(text('account.register'))}
+			</button>
+		</form>
+	{/if}
 </section>
 
 <style>
@@ -172,11 +266,6 @@
 		font-size: var(--font-size-md);
 	}
 
-	.auth__label {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-on-panel);
-	}
-
 	/*
 	 * Підказки — КЕГЛЕМ, а не прозорістю: `opacity` на тексті цієї панелі
 	 * опускає пару під 4.5:1, і жодне значення прозорості її не рятує. Те саме
@@ -186,6 +275,50 @@
 		margin: 0;
 		font-size: var(--font-size-xs);
 		color: var(--color-text-on-panel);
+	}
+
+	/*
+	 * Розділювач: слово посередині, риски по боках через `::before`/`::after`.
+	 *
+	 * Риски саме псевдоелементами, а не двома `<span>`: вони нічого не значать
+	 * для читалки, і як вузли розмітки їх довелося б окремо ховати.
+	 */
+	.auth__or {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		margin: var(--space-xs) 0;
+		font-size: var(--font-size-xs);
+		color: var(--color-text-on-panel);
+	}
+
+	.auth__or::before,
+	.auth__or::after {
+		content: '';
+		flex: 1;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	/*
+	 * «Відновити пароль» — посиланням, а не кнопкою, і праворуч.
+	 *
+	 * Кнопка тут читалася б як третій рівноправний варіант поруч із «Увійти» й
+	 * «Зареєструватись», хоч це шлях для рідкого випадку. Підкреслення
+	 * обовʼязкове: без нього акцентний колір лишається єдиною ознакою, що це
+	 * можна натиснути, — а колір як єдина ознака заборонений (ACCESSIBILITY-v8).
+	 */
+	.auth__forgot {
+		align-self: flex-end;
+		/* 44px сенсорної цілі набирається відступами, а не висотою рядка. */
+		min-height: 44px;
+		padding: 0 var(--space-xs);
+		border: none;
+		background: none;
+		color: var(--color-accent);
+		font: inherit;
+		font-size: var(--font-size-sm);
+		text-decoration: underline;
+		cursor: pointer;
 	}
 
 	/*
@@ -200,27 +333,20 @@
 		font-weight: var(--font-weight-bold);
 	}
 
-	.auth__input {
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: var(--color-text);
-		font: inherit;
-	}
-
 	/*
-	 * ОБИДВІ КНОПКИ — на всю ширину й тієї самої висоти, що поля.
+	 * УСІ ТРИ КНОПКИ — на всю ширину й тієї самої висоти, що поля.
 	 *
-	 * Глобальний `.btn-primary` тут не годиться: у нього `max-width: 320px` і
-	 * кегль `--font-size-lg`, тобто в цій панелі він вийшов би і вужчим за
-	 * поля, і вищим за 44px. Дві кнопки різної ваги, але однакової міри
-	 * читаються як пара варіантів; різної міри — як головна дія і випадковий
-	 * додаток.
+	 * Саме про це автор сказав «кнопки та поля різного розміру». Глобальний
+	 * `.btn-primary` тут не годиться: у нього `max-width: 320px` і кегль
+	 * `--font-size-lg`, тобто в цій панелі він вийшов би і вужчим за поля, і
+	 * вищим за 44px. Кнопки різної ваги, але однакової міри читаються як набір
+	 * варіантів; різної міри — як головна дія і випадковий додаток.
 	 */
 	.auth__btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
 		width: 100%;
 		min-height: 44px;
 		padding: 0 var(--space-sm);
@@ -241,7 +367,8 @@
 	 * кнопки поруч із яскравою легко не побачити зовсім, а реєстрація — не
 	 * другорядна дія, лише рідша.
 	 */
-	.auth__btn--alt {
+	.auth__btn--alt,
+	.auth__btn--google {
 		border: 1px solid var(--color-border);
 		background: var(--color-bg-card);
 		color: var(--color-text);

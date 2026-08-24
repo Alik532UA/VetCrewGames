@@ -110,6 +110,32 @@
 		if (await account.signIn(email, password)) fillFromProfile();
 	}
 
+	/**
+	 * Google перечитує профіль із тієї самої причини, що й вхід поштою.
+	 *
+	 * Обидва шляхи ведуть у два різні наслідки: привʼязка до анонімного
+	 * користувача (`uid` той самий) або вхід у вже наявний акаунт (`uid` інший).
+	 * Який саме спрацював, знає контролер, а сторінці дешевше перечитати, ніж
+	 * угадувати.
+	 */
+	async function signInGoogle() {
+		if (await account.google()) fillFromProfile();
+	}
+
+	/**
+	 * Лист відновлення надіслано.
+	 *
+	 * Прапорець ЖИВЕ ТУТ, а не у формі: `account.resetPassword()` віддає `true`
+	 * і для пошти, якої в базі немає (інакше різна відповідь дозволяла б
+	 * перебирати акаунти), і саме тому підтвердження — стан сторінки, а не
+	 * висновок форми з того, що не сталося помилки.
+	 */
+	let resetSent = $state(false);
+
+	async function forgotPassword(email: string) {
+		resetSent = await account.resetPassword(email);
+	}
+
 	async function submitProfile() {
 		taken = false;
 		if (!(await account.checkHandle(handle))) {
@@ -171,8 +197,11 @@
 			{text}
 			{errorKey}
 			busy={account.busy}
+			{resetSent}
 			onlogin={(email, password) => void signIn(email, password)}
 			onregister={(email, password) => void account.register(email, password)}
+			ongoogle={() => void signInGoogle()}
+			onforgot={(email) => void forgotPassword(email)}
 		/>
 	{:else}
 		<!-- ПРОФІЛЬ: те, що бачать інші. -->
