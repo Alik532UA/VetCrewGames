@@ -59,8 +59,19 @@
 	const saved = parseAvatar(storage.get(AVATAR_KEY));
 	let avatar = $state(formatAvatar(saved.icon, saved.color));
 	let query = $state('');
-	/** Псевдонім зайнятий — перевірено перед збереженням. */
-	let taken = $state(false);
+	/**
+	 * ЧОМУ САМЕ не вдалося зберегти — ключ словника, а не прапорець «зайнято».
+	 *
+	 * Доти тут стояв `taken`, і будь-яка невдача підпису показувалася як «Цей
+	 * псевдонім уже зайнятий». На порожньому полі це була чиста вигадка, та ще й
+	 * найгіршого роду: `handleFree('')` читає КОРІНЬ реєстру (`handles/`), правило
+	 * такого читання не дає, а невдалий запит у тому коді означав «зайнятий».
+	 * Тобто перший користувач бази чув, що його псевдонім у когось є.
+	 *
+	 * Тепер причина називається та, що справді спрацювала, і перевіряється до
+	 * мережі — у тому ж порядку, у якому людина заповнює форму.
+	 */
+	let problem = $state<string | null>(null);
 
 	/**
 	 * Рядки цієї сторінки ДОВАНТАЖУЮТЬСЯ окремим чанком.
@@ -145,9 +156,25 @@
 	}
 
 	async function submitProfile() {
-		taken = false;
+		problem = null;
+		/*
+		 * Порядок той самий, у якому стоять поля: людина читає повідомлення й
+		 * дивиться вгору, а не шукає, до чого воно.
+		 *
+		 * Кнопка каже `aria-disabled`, але лишається натискною навмисно: відключена
+		 * кнопка не пояснює нічого, і саме тому натиск мусить назвати причину
+		 * (ACCESSIBILITY-v8 § 6).
+		 */
+		if (!name.trim()) {
+			problem = 'account.errorNameEmpty';
+			return;
+		}
+		if (!handleOk) {
+			problem = 'account.errorHandleShape';
+			return;
+		}
 		if (!(await account.checkHandle(handle))) {
-			taken = true;
+			problem = 'account.handleTaken';
 			return;
 		}
 		if (!(await account.save(name, handle, country, avatar))) return;
@@ -211,9 +238,14 @@
 		passwordChanged = await account.changePassword(current, next);
 	}
 
-	const canSave = $derived(
-		name.trim().length > 0 && /^[a-z0-9_]{3,20}$/.test(handle) && !account.busy
-	);
+	/**
+	 * Псевдонім у допустимому вигляді — той самий взірець, що в правилі бази
+	 * (`database.rules.json`, `users/$uid/profile/handle`). Закріплений дослівно
+	 * у `src/rtdb-keys.test.ts`: ключем стає те, що набрала людина.
+	 */
+	const handleOk = $derived(/^[a-z0-9_]{3,20}$/.test(handle));
+
+	const canSave = $derived(name.trim().length > 0 && handleOk && !account.busy);
 </script>
 
 <div class="account-page">
@@ -289,9 +321,9 @@
 				{@html formatFont(text('account.save'))}
 			</button>
 
-			{#if taken}
-				<p class="account__error" role="alert" data-testid="account-handle-taken-text">
-					{@html formatFont(text('account.handleTaken'))}
+			{#if problem}
+				<p class="account__error" role="alert" data-testid="account-profile-error-text">
+					{@html formatFont(text(problem))}
 				</p>
 			{/if}
 

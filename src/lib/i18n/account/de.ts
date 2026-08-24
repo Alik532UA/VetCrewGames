@@ -31,6 +31,8 @@ export const account: Record<string, string> = {
 	'account.handle': 'Kürzel',
 	'account.handleHint': 'Kleine lateinische Buchstaben, Ziffern und Unterstriche; 3 bis 20 Zeichen. Danach findet man Sie.',
 	'account.handleTaken': 'Dieses Kürzel ist schon vergeben.',
+	'account.errorNameEmpty': 'Der Name fehlt — genau ihn sehen die anderen, also geht es ohne ihn nicht.',
+	'account.errorHandleShape': 'Das Kürzel ist zu kurz — mindestens drei Zeichen.',
 	'account.avatarColors': 'Farbe',
 	'account.avatarIcons': 'Symbol',
 	'account.avatarColor.red': 'Rot',

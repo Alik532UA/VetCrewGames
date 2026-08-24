@@ -31,6 +31,8 @@ export const account: Record<string, string> = {
 	'account.handle': 'Псевдонім',
 	'account.handleHint': 'Малі латинські літери, цифри й підкреслення; від 3 до 20 символів. За ним вас знайдуть.',
 	'account.handleTaken': 'Цей псевдонім уже зайнятий.',
+	'account.errorNameEmpty': 'Імʼя порожнє — саме його бачать інші, тож без нього не зберегти.',
+	'account.errorHandleShape': 'Псевдонім надто короткий — щонайменше три символи.',
 	'account.avatarColors': 'Колір',
 	'account.avatarIcons': 'Значок',
 	'account.avatarColor.red': 'Червоний',

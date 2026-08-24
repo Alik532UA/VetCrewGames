@@ -213,6 +213,13 @@ export async function signOut(): Promise<void> {
 
 /** Чи вільний псевдонім. `false` і коли зайнятий, і коли прочитати не дали. */
 export async function handleFree(handle: string): Promise<boolean> {
+	/*
+	 * Порожній рядок дав би шлях `handles/` — тобто читання КОРЕНЯ реєстру
+	 * замість одного ключа. Правило такого читання не дає, невдача поверталася б
+	 * як «зайнятий», і сторінка казала б людині вигадану причину. Порожній
+	 * псевдонім вільним не буває за визначенням, тож мережі тут робити нічого.
+	 */
+	if (!handle) return false;
 	try {
 		const { db } = await connect();
 		const { get, ref } = await import('firebase/database');

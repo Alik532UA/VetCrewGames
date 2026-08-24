@@ -79,7 +79,24 @@ export const accountTab: BetaTab = {
 			},
 			negative: true,
 			coverage: 'manual',
-			testid: 'account-handle-taken-text'
+			testid: 'account-profile-error-text'
+		},
+		/*
+			Номер НЕ за порядком навмисно: `id` — ключ прогресу у сховищі, тож
+			перенумерувати наступні означало б переставити вже поставлені галочки
+			на сусідні пункти. Місце в переліку — за змістом, номер — наступний
+			вільний.
+		*/
+		{
+			id: 'account_30',
+			category: { uk: 'Профіль', en: 'Profile' },
+			text: {
+				uk: 'Натисніть «Зберегти» з порожнім або надто коротким псевдонімом. Повідомлення мусить назвати САМЕ це — «щонайменше три символи», а не «уже зайнятий».',
+				en: 'Press “Save” with the handle empty or shorter than three characters. The message must say exactly that — “at least three characters”, not “already taken”.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'account-profile-error-text'
 		},
 		{
 			id: 'account_5',

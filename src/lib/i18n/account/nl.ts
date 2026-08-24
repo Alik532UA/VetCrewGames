@@ -31,6 +31,8 @@ export const account: Record<string, string> = {
 	'account.handle': 'Gebruikersnaam',
 	'account.handleHint': 'Kleine Latijnse letters, cijfers en liggende streepjes; 3 tot 20 tekens. Zo vinden ze je.',
 	'account.handleTaken': 'Die gebruikersnaam is al bezet.',
+	'account.errorNameEmpty': 'De naam is leeg — juist die zien anderen, dus zonder gaat het niet.',
+	'account.errorHandleShape': 'De gebruikersnaam is te kort — minstens drie tekens.',
 	'account.avatarColors': 'Kleur',
 	'account.avatarIcons': 'Pictogram',
 	'account.avatarColor.red': 'Rood',

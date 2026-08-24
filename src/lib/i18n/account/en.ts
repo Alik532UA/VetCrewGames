@@ -31,6 +31,8 @@ export const account: Record<string, string> = {
 	'account.handle': 'Handle',
 	'account.handleHint': 'Lower-case Latin letters, digits and underscores; 3 to 20 characters. People find you by it.',
 	'account.handleTaken': 'That handle is already taken.',
+	'account.errorNameEmpty': 'The name is empty — it is what others see, so it cannot be left out.',
+	'account.errorHandleShape': 'The handle is too short — at least three characters.',
 	'account.avatarColors': 'Colour',
 	'account.avatarIcons': 'Icon',
 	'account.avatarColor.red': 'Red',
