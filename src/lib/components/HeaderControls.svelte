@@ -9,8 +9,8 @@
 	import { langPath, languageFromParam, routeRestFromId, type Language } from '$lib/i18n/routing';
 	import { THEME_OPTIONS, type Theme } from '$lib/config/themes';
 	import HeaderMenu from './HeaderMenu.svelte';
-	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
+	import { paintAvatar } from '$lib/features/headerAvatar';
 
 	/**
 	 * Тема й мова — два, що відвідувач міняє в шапці.
@@ -262,7 +262,30 @@
 	{#if playerAvatar.value === ''}
 		<CircleUser size={20} />
 	{:else}
-		<Avatar avatar={playerAvatar.value} size={24} />
+		<!--
+			Плитку малює `features/headerAvatar` — імперативно, і причина там же:
+			`Avatar` тягне чотирнадцять значків `lucide`, а чанк кореневого layout
+			стоїть рівно на бюджеті (заміряно: статичний імпорт дає 123 КБ зі стелі
+			120). Так значки приїжджають лише тому, хто аватарку вибрав.
+
+			`{@attach}` читає `playerAvatar.value`, тобто перемальовує плитку сам,
+			щойно вибір змінився, — і прибирає попередню своїм поверненням.
+		-->
+		<span
+			class="header-btn__badge"
+			{@attach (node) => {
+				let stop: (() => void) | null = null;
+				let dead = false;
+				void paintAvatar(node, playerAvatar.value).then((off) => {
+					if (dead) off();
+					else stop = off;
+				});
+				return () => {
+					dead = true;
+					stop?.();
+				};
+			}}
+		></span>
 	{/if}
 </a>
 
@@ -271,6 +294,11 @@
 	 * Посилання в ряду іконок мусить виглядати кнопкою: клас той самий, що в
 	 * решти, а підкреслення тексту тут нема чого підкреслювати.
 	 */
+	/* Вузол під плитку: розмір задає сама плитка, тут лише вирівнювання. */
+	.header-btn__badge {
+		display: inline-flex;
+	}
+
 	a.header-btn {
 		display: inline-flex;
 		align-items: center;

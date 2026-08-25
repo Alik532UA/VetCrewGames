@@ -68,7 +68,7 @@
 	 * пропом.
 	 *
 	 * Чому чанк: головний словник стоїть рівно на межі бюджету (120 КБ gzip зі
-	 * стелі 120), тож дев'ять нових ключів × чотири мови впали б на
+	 * стелі 121), тож дев'ять нових ключів × чотири мови впали б на
 	 * `npm run check:build`. Ключі живуть у `i18n/account/`, і `t()` про них не
 	 * знає в принципі — він типізований по головному словнику.
 	 *
@@ -413,7 +413,12 @@
 			`aria-required-children`. Так назву чути один раз, а не двічі.
 		-->
 			{#each shown as group (group.id)}
-				<div class="menu__group" class:menu__group--flags={flagsOnly} role="group" aria-label={group.name}>
+				<div
+					class="menu__group"
+					class:menu__group--flags={flagsOnly}
+					role="group"
+					aria-label={group.name}
+				>
 					<div class="menu__region" aria-hidden="true">{@html formatFont(group.name)}</div>
 					{#each group.countries as country (country.code)}
 						<!--

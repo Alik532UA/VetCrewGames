@@ -177,8 +177,10 @@
 	.security {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 		width: 100%;
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 	}
 
 	.security__title {
@@ -197,7 +199,7 @@
 		min-height: 44px;
 		margin-top: var(--space-md);
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
+		border: 1px solid var(--account-line, var(--color-border));
 		border-radius: var(--radius-sm);
 		background: color-mix(in srgb, var(--color-text), transparent 90%);
 		color: var(--color-text);
@@ -232,10 +234,10 @@
 
 	.security__btn {
 		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
+		min-height: var(--account-control);
+		padding: 0 var(--account-pad);
+		border: 1px solid var(--account-line, var(--color-border));
+		border-radius: var(--account-field-radius);
 		background: color-mix(in srgb, var(--color-text), transparent 90%);
 		color: var(--color-text);
 		font: inherit;

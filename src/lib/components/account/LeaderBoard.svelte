@@ -79,7 +79,11 @@
 	{:else}
 		<ul class="board__list" data-testid="account-board-list">
 			{#each rows as row (row.uid)}
-				<li class="board__row" class:board__row--me={row.uid === me} data-testid="account-board-{row.uid}-item">
+				<li
+					class="board__row"
+					class:board__row--me={row.uid === me}
+					data-testid="account-board-{row.uid}-item"
+				>
 					<Avatar avatar={row.avatar} size={28} />
 					<span class="board__who">
 						<span class="board__name">{@html formatFont(row.name)}</span>
@@ -99,8 +103,10 @@
 	.board {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 		width: 100%;
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 	}
 
 	.board__title {
@@ -116,9 +122,9 @@
 	.board__tab {
 		flex: 1;
 		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
+		min-height: var(--account-control);
+		border: 1px solid var(--account-line, var(--color-border));
+		border-radius: var(--account-field-radius);
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;

@@ -102,7 +102,7 @@
 
 	<button
 		type="button"
-		class="btn-primary"
+		class="btn-primary profile__save"
 		onclick={onsave}
 		aria-disabled={!canSave}
 		data-testid="account-save-btn"
@@ -123,11 +123,17 @@
 	 * того, що розмітку витягли в компонент. Змінилися лише назви класів — на
 	 * власний префікс, як у решти панелей акаунта (`privacy__`, `security__`).
 	 */
+	/*
+	 * Міри — з `--account-*`, оголошених на сторінці: панелей тут вісім, і
+	 * однакові числа у восьми файлах розійшлися б на першій же правці.
+	 */
 	.profile {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 		width: 100%;
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 	}
 
 	.profile__title {
@@ -135,7 +141,9 @@
 		font-size: var(--font-size-md);
 	}
 
+	/* Підпис ближче до свого поля, ніж до сусіднього блоку: інакше пари не видно. */
 	.profile__label {
+		margin-top: var(--space-xs);
 		font-size: var(--font-size-sm);
 		color: var(--color-text-on-panel);
 	}
@@ -167,13 +175,38 @@
 	}
 
 	.profile__input {
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
+		min-height: var(--account-control);
+		padding: 0 var(--account-pad);
+		border: 1px solid var(--account-line, var(--color-border));
+		border-radius: var(--account-field-radius);
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;
+		transition: border-color var(--transition-fast);
+	}
+
+	/* Фокус — рамкою акценту: тінь на скляній панелі дає брудний ореол. */
+	.profile__input:focus {
+		border-color: var(--color-accent);
+	}
+
+	/*
+	 * «ЗБЕРЕГТИ» — ТІЄЇ САМОЇ МІРИ, ЩО ПОЛЯ.
+	 *
+	 * Глобальний `.btn-primary` тут не годиться як є: у нього `max-width: 320px` і
+	 * кегль `--font-size-lg`, тобто в панелі він виходив вужчим за поля й вищим за
+	 * них (заміряно: 59px проти 48). Кнопка, яка не збігається з полями ні
+	 * шириною, ні висотою, читається як випадковий додаток, а не як дія над цією
+	 * формою — те саме міркування вже записане у формі входу.
+	 *
+	 * Колір, тінь і поведінка на натиску лишаються глобальні: перевизначаються
+	 * рівно міри.
+	 */
+	.profile__save {
+		max-width: none;
+		min-height: var(--account-control);
+		padding: 0 var(--account-pad);
+		border-radius: var(--account-field-radius);
+		font-size: var(--font-size-md);
 	}
 </style>

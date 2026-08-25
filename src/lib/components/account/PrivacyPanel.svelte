@@ -72,7 +72,9 @@
 	.privacy {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 		width: 100%;
 	}
 
@@ -98,8 +100,8 @@
 		justify-content: space-between;
 		gap: var(--space-sm);
 		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: var(--space-xs) var(--space-sm);
+		min-height: var(--account-control);
+		padding: var(--space-xs) var(--account-pad);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
 		background: var(--color-bg-card);

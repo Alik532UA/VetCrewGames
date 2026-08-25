@@ -106,7 +106,7 @@
 	.auth__form {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 	}
 
 	/* Кегль, а не прозорість: `opacity` тут опускає пару під 4.5:1. */
@@ -124,15 +124,15 @@
 		font-weight: var(--font-weight-bold);
 	}
 
-	/* Та сама міра, що в полів і кнопок форми входу: 44px і на всю ширину. */
+	/* Та сама міра, що в полів і кнопок форми входу — і з того самого джерела. */
 	.auth__btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		width: 100%;
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border-radius: var(--radius-sm);
+		min-height: var(--account-control);
+		padding: 0 var(--account-pad);
+		border-radius: var(--account-field-radius);
 		font: inherit;
 		font-weight: var(--font-weight-bold);
 		cursor: pointer;

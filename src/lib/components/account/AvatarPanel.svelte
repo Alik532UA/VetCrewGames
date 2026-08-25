@@ -87,8 +87,10 @@
 	.avatar-panel {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-sm);
+		gap: var(--account-gap);
 		width: 100%;
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 	}
 
 	.avatar-panel__title {

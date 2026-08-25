@@ -177,16 +177,41 @@
 
 	.pass__input {
 		width: 100%;
-		/* 44px — власний стандарт сенсорної цілі. */
-		min-height: 44px;
+		min-height: var(--account-control, 48px);
 		/* Ліворуч місце під замок, праворуч — під око. */
 		padding: 0 3rem 0 3rem;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
+		border: 1px solid var(--account-line, var(--color-border));
+		border-radius: var(--account-field-radius, var(--radius-md));
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
+		transition: border-color var(--transition-fast);
+	}
+
+	.pass__input:focus {
+		border-color: var(--color-accent);
+	}
+
+	/*
+	 * ДРУГЕ ОКО — БРАУЗЕРНЕ, і саме його тут ховаємо.
+	 *
+	 * Автор надіслав знімок із ДВОМА очима в одному полі. Друге — не наше: Edge
+	 * малює власну кнопку показу пароля (`::-ms-reveal`) у кожному
+	 * `type="password"`, і стоїть вона поруч із нашою. Два ока в рядку не просто
+	 * негарні: вони роблять різні речі — наше перемикає `type` (тобто стан видно
+	 * через `aria-pressed`), браузерне показує символи, поки кнопку тримають, і
+	 * читалці про це не каже.
+	 *
+	 * Прибирається саме браузерне, бо наше несе підпис, стан і локатор для тестів.
+	 * `::-ms-clear` заразом: та сама кнопка-хрестик у полях Edge, і в полі пароля
+	 * вона теж зайва — очищення вже є в `InputTools` там, де воно доречне.
+	 *
+	 * Chrome і Safari таких кнопок не малюють, тож правило їх не стосується.
+	 */
+	.pass__input::-ms-reveal,
+	.pass__input::-ms-clear {
+		display: none;
 	}
 
 	/*

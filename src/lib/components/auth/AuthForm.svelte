@@ -83,16 +83,8 @@
 		onforgot: (email: string) => void;
 	}
 
-	let {
-		text,
-		errorKey,
-		busy,
-		resetSent,
-		onlogin,
-		onregister,
-		ongoogle,
-		onforgot
-	}: Props = $props();
+	let { text, errorKey, busy, resetSent, onlogin, onregister, ongoogle, onforgot }: Props =
+		$props();
 
 	let email = $state('');
 	let password = $state('');
@@ -250,23 +242,36 @@
 			>
 				{@html formatFont(text('account.register'))}
 			</button>
-
 		</form>
 	{/if}
 </section>
 
 <style>
+	/*
+	 * КАРТКА ВХОДУ: скруглення картки, проміжок у зріст рядка, відступи від країв.
+	 *
+	 * Автор про попередній вигляд: «скомкано, квадратні елементи без скруглень», і
+	 * показав `Slovko` — там картка 20px, поля й кнопки 14px, проміжок 1rem. Тут
+	 * стояв проміжок 4px (`--space-xs`) і скруглення 8px, тобто поля злипалися в
+	 * одну сходинку, а кути читалися як прямі.
+	 *
+	 * Міри — спільні для всієї сторінки акаунта (`--account-*` на `.account-page`):
+	 * форма входу й кабінет — той самий екран, і різні числа в них читалися б як
+	 * два різні застосунки.
+	 */
 	.auth {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 		width: 100%;
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 	}
 
 	.auth__form {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 	}
 
 	/*
@@ -388,12 +393,28 @@
 		justify-content: center;
 		gap: var(--space-sm);
 		width: 100%;
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border-radius: var(--radius-sm);
+		min-height: var(--account-control);
+		padding: 0 var(--account-pad);
+		border-radius: var(--account-field-radius);
 		font: inherit;
 		font-weight: var(--font-weight-bold);
 		cursor: pointer;
+		/*
+		 * Перехід ЛИШЕ на кольорі: `all` ловив би ще й `outline` фокусу, і рамка
+		 * приїжджала б із запізненням (те саме рішення в `SegmentedChoice`).
+		 */
+		transition: background-color var(--transition-fast);
+	}
+
+	@media (hover: hover) {
+		.auth__btn--main:hover {
+			background: var(--color-accent-hover);
+		}
+
+		.auth__btn--alt:hover,
+		.auth__btn--google:hover {
+			background: color-mix(in srgb, var(--color-text), var(--color-bg-card) 88%);
+		}
 	}
 
 	.auth__btn--main {
@@ -409,7 +430,7 @@
 	 */
 	.auth__btn--alt,
 	.auth__btn--google {
-		border: 1px solid var(--color-border);
+		border: 1px solid var(--account-line, var(--color-border));
 		background: var(--color-bg-card);
 		color: var(--color-text);
 	}

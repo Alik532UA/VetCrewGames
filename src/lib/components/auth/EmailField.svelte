@@ -66,10 +66,11 @@
 	.mail__input {
 		width: 100%;
 		/* 44px — власний стандарт сенсорної цілі, той самий, що в кнопок форми. */
-		min-height: 44px;
+		min-height: var(--account-control);
 		padding: 0 var(--space-md) 0 3rem;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
+		border: 1px solid var(--account-line, var(--color-border));
+		border-radius: var(--account-field-radius);
+		transition: border-color var(--transition-fast);
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;

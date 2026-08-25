@@ -579,7 +579,45 @@
 </div>
 
 <style>
+	/*
+	 * МІРИ СТОРІНКИ АКАУНТА — ОГОЛОШЕНІ ТУТ, УЖИТІ В ПАНЕЛЯХ.
+	 *
+	 * Автор сказав про цей екран: «скомкано, квадратні елементи без скруглень»,
+	 * і показав, як це зроблено в `Slovko`. Там картка має 20px скруглення й
+	 * 2rem відступів, поля й кнопки — 14px і повний зріст 0,85rem, а проміжок у
+	 * формі — 1rem. У нас стояло 8px скруглення й проміжок 4px, тобто елементи
+	 * тулилися один до одного й виглядали прямокутними.
+	 *
+	 * Змінні, а не значення на місці: панелей на цій сторінці ВІСІМ, і кожна —
+	 * окремий компонент зі своїм скоупованим CSS. Однакові числа, вписані в
+	 * вісім файлів, розійшлися б на першій же правці; тут вони каскадом дістають
+	 * усіх, бо всі вісім лежать усередині `.account-page`.
+	 *
+	 * Токени беруться наявні (`--radius-lg` 24px для карток, `--radius-md` 16px
+	 * для полів) — нових не заводжу: різниця між карткою й полем усередині неї
+	 * тримається саме на цій парі, а третє скруглення поруч читалося б як
+	 * випадковість.
+	 */
 	.account-page {
+		/* Названі в `src/css-variables.test.ts` як крос-компонентні: панелі читають
+		   їх звичайним каскадом, і гейт стежить, щоб оголошення не зникло. */
+		--account-card-radius: var(--radius-lg);
+		--account-field-radius: var(--radius-md);
+		/*
+		 * РАМКА ПОЛЯ — ВІД КОЛЬОРУ ТЕКСТУ, а не `--color-border`.
+		 *
+		 * У темах цього проєкту `--color-border` часто майже дорівнює тлу самого
+		 * поля: у `dark` (світлий режим) це #93bf4c на #6ea347, у `orange-purple`
+		 * рамка й панель обидві #4a2e7a. Тобто поле переставало читатися як поле —
+		 * рівно те, що автор назвав «скомкано». Те саме рішення й з тієї самої
+		 * причини вже стоїть у `.seg__track` і в наборі ігор вікторини.
+		 */
+		--account-line: color-mix(in srgb, var(--color-text), transparent 72%);
+		--account-gap: var(--space-sm);
+		--account-pad: var(--space-md);
+		/* 48px, а не 44: сенсорний мінімум лишається, але поле перестає бути смужкою. */
+		--account-control: 48px;
+
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -595,8 +633,10 @@
 	.account__panel {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs);
+		gap: var(--account-gap);
 		width: 100%;
+		border-radius: var(--account-card-radius);
+		padding: var(--account-pad);
 	}
 
 	.account__title {
@@ -632,15 +672,23 @@
 		font-weight: var(--font-weight-bold);
 	}
 
+	/*
+	 * Поле: рамка світлішає на фокусі, і саме РАМКА, а не тінь — тінь на скляній
+	 * панелі (`backdrop-filter`) дає брудний ореол.
+	 */
 	.account__input {
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
+		min-height: var(--account-control);
+		padding: 0 var(--account-pad);
+		border: 1px solid var(--account-line);
+		border-radius: var(--account-field-radius);
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;
+		transition: border-color var(--transition-fast);
+	}
+
+	.account__input:focus {
+		border-color: var(--color-accent);
 	}
 
 	.account__list {
