@@ -51,6 +51,18 @@ export const reserve = {
 
 	'reserve.subsidy': 'Subsidy: food and medicine continue, expansion is blocked.',
 	'reserve.gameOver': 'The reserve harms more than it helps. The game is over.',
+	'reserve.news.death': 'An animal died of illness.',
+	'reserve.news.healed': 'An animal has recovered.',
+	'reserve.news.raid': 'Poachers are in the reserve! A decision is needed.',
+	'reserve.news.raidHeld': 'The poachers were stopped — the animal stayed.',
+	'reserve.news.raidLost': 'Poachers took an animal.',
+	'reserve.news.raidExpired': 'You did not answer the poachers — the animal was taken.',
+	'reserve.news.hunger': 'Someone went without feed. Buy portions for the larder.',
+	'reserve.news.contractOffered': 'A donor task has appeared.',
+	'reserve.news.contractMissed': 'A task ran out of time — reputation dropped.',
+	'reserve.news.offerExpired': 'The donors did not wait for an answer and left.',
+	'reserve.news.collapse':
+		'The fund has shut down: planetary benefit stayed negative for too long.',
 	'reserve.milestone': 'Milestone reached! The reserve has done the planet even more good.',
 	'reserve.newGame': 'Start over',
 	'reserve.saveBroken': 'The save could not be read — a new game has started.',

@@ -2,6 +2,7 @@ import { roll } from './roll';
 import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { RESERVE_BIOMES, type ReserveBiome } from './species';
 import type { Animal, RaidTactic, ReserveState } from './types';
+import type { EventSink } from './events';
 
 /**
  * Браконьєри: подія, у якій рішення ухвалює людина, а не таблиця.
@@ -133,7 +134,7 @@ const targets = (state: ReserveState): Array<{ biome: ReserveBiome; animal: Anim
  * послідовність кидків, і той самий сейв розгортався б інакше залежно від
  * персоналу. Захист впливає на ПОРІГ, а не на кількість кидків.
  */
-export function maybeRaid(state: ReserveState, day: number): void {
+export function maybeRaid(state: ReserveState, day: number, onEvent?: EventSink): void {
 	// Один наліт за раз: другий поверх невирішеного першого нікому не зрозумілий.
 	if (state.raid || day < RAID_FIRST_DAY) return;
 
@@ -152,6 +153,7 @@ export function maybeRaid(state: ReserveState, day: number): void {
 
 	const victim = prey[Math.floor(roll(state) * prey.length)];
 	state.raid = { animalId: victim.animal.id, biome: victim.biome, day };
+	onEvent?.({ kind: 'raid', speciesId: victim.animal.speciesId, biome: victim.biome });
 }
 
 /**
@@ -160,7 +162,12 @@ export function maybeRaid(state: ReserveState, day: number): void {
  * Повертає `false`, якщо тактика неможлива (засідка без патруля) — рішення про
  * повідомлення людині ухвалює той, хто викликав.
  */
-export function resolveRaid(state: ReserveState, tactic: RaidTactic): boolean {
+export function resolveRaid(
+	state: ReserveState,
+	tactic: RaidTactic,
+	/** Кому оголосити наслідок. Див. `reserve/events.ts`. */
+	onEvent?: EventSink
+): boolean {
 	const raid = state.raid;
 	if (!raid) return false;
 
@@ -181,13 +188,20 @@ export function resolveRaid(state: ReserveState, tactic: RaidTactic): boolean {
 		spend(state, INJURY_PRICE, 'injury');
 	}
 
+	// Вид читається ДО того, як тварину заберуть зі списку: після фільтра назвати
+	// втрачену вже нічим, а сповіщення без виду не скаже, кого саме не стало.
+	const prey = site.animals.find((a) => a.id === raid.animalId);
+	const speciesId = prey?.speciesId ?? '';
+
 	if (success) {
 		addReputation(state, RAID_SAVED_REPUTATION, 'raidSaved');
+		onEvent?.({ kind: 'raid-held', speciesId, biome: raid.biome });
 	} else {
 		site.animals = site.animals.filter((a) => a.id !== raid.animalId);
 		addImpact(state, RAID_LOST_IMPACT, 'raidLost');
 		addReputation(state, RAID_LOST_REPUTATION, 'raidLost');
 		countAnimal(state, 'inReserve', -1, 'raidLost');
+		onEvent?.({ kind: 'raid-lost', speciesId, biome: raid.biome });
 	}
 
 	state.raid = null;
@@ -207,6 +221,19 @@ function successOf(tactic: RaidTactic): number {
  * Саме як ігнорування, а не як пощада: не відповісти — це теж рішення, і воно
  * має ту саму ціну. Інакше найдешевшою тактикою було б закрити вкладку.
  */
-export function expireRaid(state: ReserveState, day: number): void {
-	if (state.raid && day - state.raid.day >= RAID_PATIENCE_DAYS) resolveRaid(state, 'ignore');
+export function expireRaid(state: ReserveState, day: number, onEvent?: EventSink): void {
+	if (!state.raid || day - state.raid.day < RAID_PATIENCE_DAYS) return;
+
+	/*
+	 * Про це оголошується ОКРЕМОЮ подією, хоч наслідок той самий, що в
+	 * `raid-lost`. Різниця в тому, ХТО ухвалив рішення: тут його ухвалив час, а не
+	 * людина, — і саме цей випадок виглядав як «тварина зникла без причини».
+	 *
+	 * Подія йде ПЕРЕД розвʼязанням: після нього наліт уже `null`, а тварини в
+	 * списку може не бути.
+	 */
+	const { animalId, biome } = state.raid;
+	const prey = state.sites[biome].animals.find((a) => a.id === animalId);
+	onEvent?.({ kind: 'raid-expired', speciesId: prey?.speciesId ?? '', biome });
+	resolveRaid(state, 'ignore');
 }

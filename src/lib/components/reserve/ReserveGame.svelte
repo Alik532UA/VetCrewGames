@@ -6,6 +6,7 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
+	import type { ReserveEvent } from '$lib/reserve/events';
 	import { createMilestoneWatch } from '$lib/reserve/milestones.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
 	import type { Quality } from '$lib/reserve/constants';
@@ -92,8 +93,47 @@
 	const watchMilestones = createMilestoneWatch();
 	$effect(() => void (watchMilestones(game.state.impact) && toast.success('reserve.milestone')));
 
+	/**
+	 * ПОДІЇ ДОБИ — СПОВІЩЕННЯМИ, і саме тут вони перекладаються.
+	 *
+	 * Скарга автора: «взяв тварину, а наступний день вона зникла, без сповіщення і
+	 * без пояснень». Причин зникнення дві — хвороба й браконьєри, — і на екрані
+	 * вони виглядали однаково: ніяк.
+	 *
+	 * Тон вибраний за наслідком, а не за подією: втрата тварини — помилка (сім
+	 * секунд), голод і прострочене завдання — попередження (пʼять), одужання й
+	 * зупинені браконьєри — успіх. Наліт, що ЩОЙНО почався, теж попередження, і
+	 * поруч із ним відкривається вікно рішення: тост тут каже «подивись сюди», а
+	 * не заміняє вікно.
+	 *
+	 * Мапа, а не `switch`: перелік подій закритий (`reserve/events.ts`), і
+	 * компілятор перевіряє, що жодну не забуто. `switch` дав би те саме лише з
+	 * `default: never`, і забути гілку в ньому легше.
+	 */
+	const NEWS: Record<ReserveEvent['kind'], () => void> = {
+		death: () => toast.error('reserve.news.death'),
+		healed: () => toast.success('reserve.news.healed'),
+		raid: () => toast.warn('reserve.news.raid'),
+		'raid-held': () => toast.success('reserve.news.raidHeld'),
+		'raid-lost': () => toast.error('reserve.news.raidLost'),
+		'raid-expired': () => toast.error('reserve.news.raidExpired'),
+		hunger: () => toast.warn('reserve.news.hunger'),
+		'contract-offered': () => toast.info('reserve.news.contractOffered'),
+		'contract-missed': () => toast.warn('reserve.news.contractMissed'),
+		'offer-expired': () => toast.info('reserve.news.offerExpired'),
+		collapse: () => toast.error('reserve.news.collapse')
+	};
+
 	onMount(() => {
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, backTo)));
+		/*
+		 * Слухач ставиться ДО `start()`: партія може піднятися й одразу прожити добу,
+		 * якщо гравець вернувся на сторінку з увімкненою швидкістю.
+		 *
+		 * Знімається у прибиранні — інакше друга сторінка ділянки додала б другий
+		 * слухач до того самого синглтона, і кожна подія показувала б два тости.
+		 */
+		game.onEvent = (event) => NEWS[event.kind]();
 		game.start();
 
 		// Сейв, який не прочитався, каже про себе одразу: людина мусить знати, що
@@ -108,6 +148,7 @@
 
 		const stop = game.startClock();
 		return () => {
+			game.onEvent = null;
 			stop();
 			release();
 		};

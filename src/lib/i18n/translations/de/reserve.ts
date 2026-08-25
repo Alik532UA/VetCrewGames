@@ -52,6 +52,18 @@ export const reserve = {
 
 	'reserve.subsidy': 'Subvention: Futter und Medizin laufen weiter, Ausbau ist gesperrt.',
 	'reserve.gameOver': 'Das Reservat schadet mehr, als es hilft. Das Spiel ist vorbei.',
+	'reserve.news.death': 'Ein Tier ist an einer Krankheit gestorben.',
+	'reserve.news.healed': 'Ein Tier ist gesund geworden.',
+	'reserve.news.raid': 'Wilderer im Reservat! Eine Entscheidung ist nötig.',
+	'reserve.news.raidHeld': 'Die Wilderer wurden gestoppt — das Tier blieb.',
+	'reserve.news.raidLost': 'Wilderer haben ein Tier mitgenommen.',
+	'reserve.news.raidExpired': 'Du hast den Wilderern nicht geantwortet — das Tier ist weg.',
+	'reserve.news.hunger': 'Jemand bekam kein Futter. Kaufe Portionen für die Vorratskammer.',
+	'reserve.news.contractOffered': 'Eine Aufgabe von Spendern ist da.',
+	'reserve.news.contractMissed': 'Die Frist einer Aufgabe ist verstrichen — der Ruf sank.',
+	'reserve.news.offerExpired': 'Die Spender haben nicht auf eine Antwort gewartet.',
+	'reserve.news.collapse':
+		'Die Stiftung hat aufgegeben: der Nutzen für den Planeten war zu lange negativ.',
 	'reserve.milestone': 'Meilenstein erreicht! Das Reservat hat dem Planeten noch mehr Gutes getan.',
 	'reserve.newGame': 'Neu beginnen',
 	'reserve.saveBroken': 'Der Spielstand war nicht lesbar — ein neues Spiel hat begonnen.',

@@ -22,9 +22,10 @@ import {
 } from './constants';
 import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { HEAL_IMPACT, HEAL_REPUTATION } from './constants';
-import { comfortOf, speciesById } from './species';
+import { comfortOf, speciesById, type ReserveBiome } from './species';
 import { unmetNeeds } from './modules';
 import type { Animal, Enclosure, ReserveState, Site } from './types';
+import type { EventSink } from './events';
 
 /**
  * Доба однієї ДІЛЯНКИ: знос, витрати, одужання, стрес.
@@ -76,7 +77,22 @@ function comfortFor(site: Site, animal: Animal): number {
  * робить четверту землю рішенням, а не безкоштовним додатком. А от ветеринар
  * лікує лише своїх: штат належить землі.
  */
-export function siteDay(state: ReserveState, site: Site, hungry: number): number {
+export function siteDay(
+	state: ReserveState,
+	site: Site,
+	hungry: number,
+	/**
+	 * Куди й кому оголосити про смерть і одужання.
+	 *
+	 * Одним параметром, а не двома: подія несе біом, а `Site` його не знає — біом
+	 * тут ключ у `state.sites`, і питати його в самої ділянки нема в кого. Разом
+	 * вони або є, або їх немає, і тип це й каже.
+	 *
+	 * Необовʼязковий: тести симуляції прогонюють сотні діб, і слухач їм не
+	 * потрібен (`reserve/events.ts`).
+	 */
+	news?: { at: ReserveBiome; emit: EventSink }
+): number {
 	// Вольєри зношуються щодня — незалежно від того, живе там хтось чи ні.
 	// Порожній вольєр, який стоїть п'ятдесят днів, теж потребує ремонту.
 	for (const enclosure of site.enclosures) {
@@ -168,10 +184,17 @@ export function siteDay(state: ReserveState, site: Site, hungry: number): number
 
 			if (animal.health <= 0) {
 				dead.push(animal.id);
+				// Саме тут і зникала тварина «без причини»: запис лишався тільки в
+				// реєстрі показників рядком «−30, причина death».
+				news?.emit({ kind: 'death', speciesId: animal.speciesId, biome: news.at });
 				continue;
 			}
 			if (animal.health >= 1) {
+				const recovered = animal.stage !== 'healthy';
 				animal.stage = 'healthy';
+				if (recovered) {
+					news?.emit({ kind: 'healed', speciesId: animal.speciesId, biome: news.at });
+				}
 				// Вилікувана тварина в неволі допомагає природі мало (+1), а от
 				// публіці видно саме одужання (+5).
 				addImpact(state, HEAL_IMPACT, 'heal');

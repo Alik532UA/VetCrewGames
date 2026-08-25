@@ -18,6 +18,7 @@ import { DRONE_PRICE, resolveRaid } from './raids';
 import { addImpact, addReputation, countAnimal, spend } from './ledger';
 import { restock } from './larder';
 import { endOfDay } from './day';
+import type { EventSink } from './events';
 import { occupant } from './readers';
 import type { CommandResult, ReserveCommand, ReserveState, Site } from './types';
 
@@ -208,11 +209,11 @@ export function execute(
  * телефоні розвивалася б інакше, ніж на швидкому, — а в спільній партії це
  * означало б два різні світи.
  */
-export function tick(state: ReserveState, count = 1): void {
+export function tick(state: ReserveState, count = 1, onEvent?: EventSink): void {
 	for (let i = 0; i < count; i++) {
 		if (state.gameOver) return;
 		state.ticks += 1;
-		if (state.ticks % TICKS_PER_DAY === 0) endOfDay(state);
+		if (state.ticks % TICKS_PER_DAY === 0) endOfDay(state, onEvent);
 	}
 }
 

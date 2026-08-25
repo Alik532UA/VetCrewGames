@@ -3,6 +3,8 @@ import type { CommandResult, ReserveCommand, ReserveState } from '$lib/reserve/t
 import { loadReserve, saveReserve } from '$lib/services/reserveSave';
 import type { RestoreFailure } from '$lib/reserve/save';
 import type { ReserveBiome } from '$lib/reserve/species';
+import type { ReserveEvent } from '$lib/reserve/events';
+import { logService } from '$lib/services/logService.svelte';
 
 /**
  * Партія заповідника в рунах: місток між чистою симуляцією й екраном.
@@ -102,6 +104,40 @@ export class ReserveController {
 		this.selectedEnclosureId = null;
 	}
 
+	/**
+	 * Кому розповідати про події доби, крім журналу. Ставить екран.
+	 *
+	 * Логування живе ТУТ і завжди: воно відповідає на питання «що сталося», яке
+	 * ставлять уже після того, як щось сталося. Сповіщення ставить екран, бо лише
+	 * він знає мову й місце на екрані.
+	 */
+	onEvent: ((event: ReserveEvent) => void) | null = null;
+
+	/**
+	 * Записати подію в журнал і віддати екрану.
+	 *
+	 * ## Навіщо це взагалі
+	 *
+	 * Скарга автора: «взяв тварину, а наступний день вона зникла, без сповіщення і
+	 * без пояснень». Причин зникнення дві — смерть від хвороби й браконьєри, — і
+	 * жодна не лишала слідів, окрім рядка в реєстрі показників. Тобто відповісти на
+	 * питання «що сталося вчора» не міг ніхто, зокрема й я.
+	 *
+	 * Тепер кожна подія доби йде в журнал `game_engine` разом із днем: журнал
+	 * зберігається в сесії й видний у чеклисті, тож розбір «чому зникла тварина»
+	 * зводиться до читання, а не до припущень.
+	 *
+	 * ## Чому категорія `game_engine`, а не `app`
+	 *
+	 * Це події СИМУЛЯЦІЇ, а не застосунку: вони походять від того самого коду, що
+	 * рахує добу, і читати їх треба разом із рештою того, що робить світ. `app`
+	 * лишається для життєвого циклу сторінки.
+	 */
+	#announce(event: ReserveEvent): void {
+		logService.info('game_engine', `reserve: ${event.kind}`, { day: this.day, ...event });
+		this.onEvent?.(event);
+	}
+
 	/** Недокручені мілісекунди: те, що не дотягнуло до цілого тіку. */
 	#carry = 0;
 	#frame: number | null = null;
@@ -128,9 +164,23 @@ export class ReserveController {
 		if (restored.ok) {
 			this.state = restored.state;
 			this.#savedDay = dayOf(restored.state);
+			logService.info('game_engine', 'reserve: restored', { day: this.#savedDay });
 		} else {
 			// «Збереження немає» — це звичайний перший запуск, а не проблема.
 			this.restoreProblem = restored.reason === 'empty' ? null : restored;
+			/*
+			 * ЧОМУ партія не піднялася — у журнал, і саме тут.
+			 *
+			 * `empty` — звичайний перший запуск. Решта причин означає, що запис БУВ, а
+			 * прочитати його не вдалося: несумісний формат, зіпсований JSON. Для
+			 * гравця це виглядає точно як «моя партія зникла», і без цього рядка
+			 * відрізнити одне від одного неможливо навіть мені.
+			 */
+			logService[restored.reason === 'empty' ? 'info' : 'warn'](
+				'game_engine',
+				'reserve: fresh start',
+				{ reason: restored.reason }
+			);
 			this.reset();
 		}
 	}
@@ -171,7 +221,7 @@ export class ReserveController {
 		if (ticks <= 0) return;
 
 		this.#carry -= ticks * TICK_MS;
-		tick(this.state, ticks);
+		tick(this.state, ticks, (event) => this.#announce(event));
 
 		// Зберігаємося на межі доби, а не щокадру: сховище синхронне, і запис
 		// шістдесят разів на секунду підвісив би саме той кадр, який малює гру.
@@ -183,13 +233,37 @@ export class ReserveController {
 	 */
 	run(command: ReserveCommand, at: ReserveBiome): CommandResult {
 		const result = execute(this.state, command, at);
+		/*
+		 * КОЖЕН ХІД У ЖУРНАЛ — і вдалий, і відкинутий.
+		 *
+		 * Відкинутий важливіший: гравець бачить тост із причиною й закриває його, а
+		 * за годину питає, чому тварини немає. Без цього рядка відповідь доводилося
+		 * вгадувати за станом, а стан до того часу вже інший.
+		 *
+		 * Причина відмови пишеться кодом (`no-money`, `enclosure-too-small`) — тим
+		 * самим, що йде в переклад: шукати в журналі за словом із екрана тоді
+		 * можна, а за вигаданим тут описом — ні.
+		 */
+		logService.info('game_engine', `reserve: ${command.type}`, {
+			day: this.day,
+			at,
+			...command,
+			...(result.ok ? { ok: true } : { ok: false, reason: result.reason })
+		});
 		if (result.ok) this.save();
 		return result;
 	}
 
 	save(): boolean {
 		this.#savedDay = this.day;
-		return saveReserve(this.state);
+		const done = saveReserve(this.state);
+		/*
+		 * Невдача запису — `warn`, а не тиша. Партія при цьому ЖИВА: вона в памʼяті,
+		 * і гра йде далі. Але наступне відкриття сторінки покаже вчорашній фонд, і
+		 * саме цей рядок відрізнить «сховище повне» від «партія зникла сама».
+		 */
+		if (!done) logService.warn('game_engine', 'reserve: save failed', { day: this.day });
+		return done;
 	}
 
 	/** Цикл кадрів. Повертає функцію зупинки — просто в `onMount`. */

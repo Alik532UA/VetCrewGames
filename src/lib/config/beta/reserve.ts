@@ -156,6 +156,27 @@ export const reserveTab: BetaTab = {
 			},
 			coverage: 'manual',
 			negative: true
+		},
+		{
+			id: 'reserve_15',
+			category: { uk: 'Сповіщення подій', en: 'Event notifications' },
+			text: {
+				uk: 'Візьміть врятовану тварину без ветеринара й пустіть час на ×5. Коли здоровʼя дійде нуля, ЗВЕРХУ ЛІВОРУЧ мусить прийти сповіщення «Тварина померла від хвороби» — тварина не має зникати молча. Найміть ветеринара до іншої: коли вилікується, мусить прийти «Тварина одужала».',
+				en: 'Take a rescued animal without a vet and run time at ×5. When health reaches zero a notification «An animal died of illness» must appear TOP LEFT — the animal must not vanish silently. Hire a vet for another one: when it recovers, «An animal has recovered» must appear.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-card-health'
+		},
+		{
+			id: 'reserve_16',
+			category: { uk: 'Сповіщення подій', en: 'Event notifications' },
+			text: {
+				uk: 'Дочекайтеся браконьєрів і НЕ відповідайте на вікно. Коли терпіння вийде, мусить прийти окреме сповіщення про те, що тварину забрали, бо ви не відповіли, — а не тиша. Сповіщення НЕ мусить накривати показники зверху.',
+				en: 'Wait for poachers and do NOT answer the window. When their patience runs out a separate notification must say the animal was taken because you did not answer — not silence. The notification must NOT cover the stats at the top.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'reserve-hud-header'
 		}
 	]
 };

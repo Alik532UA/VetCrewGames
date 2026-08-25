@@ -12,6 +12,7 @@ import { expireRaid, maybeRaid } from './raids';
 import { RESERVE_BIOMES } from './species';
 import { siteDay } from './siteDay';
 import type { ReserveState } from './types';
+import type { EventSink } from './events';
 
 /*
  * Доба ДІЛЯНКИ — у `siteDay.ts`: знос, одужання, стрес, витрати на місці. Тут
@@ -41,15 +42,19 @@ export { effectiveQuality } from './siteDay';
  * Провал коштує РЕПУТАЦІЇ, а не грошей: спонсор нічого не забирає, але про
  * невиконану обіцянку дізнаються. Саме тому брати все підряд невигідно.
  */
-function settleContracts(state: ReserveState, day: number): void {
+function settleContracts(state: ReserveState, day: number, onEvent?: EventSink): void {
 	const missed = state.contracts.filter((c) => day > c.dueDay && !isDone(state, c));
 	for (const contract of missed) {
 		addReputation(state, -contract.penalty, 'penalty');
+		onEvent?.({ kind: 'contract-missed', contractId: contract.id });
 	}
 	state.contracts = state.contracts.filter((c) => !missed.includes(c));
 
 	// Пропозиція, яку не взяли, теж не висить вічно: спонсор іде до інших.
-	if (state.offered && day > state.offered.dueDay) state.offered = null;
+	if (state.offered && day > state.offered.dueDay) {
+		onEvent?.({ kind: 'offer-expired', contractId: state.offered.id });
+		state.offered = null;
+	}
 
 	const canOffer =
 		!state.offered &&
@@ -59,10 +64,11 @@ function settleContracts(state: ReserveState, day: number): void {
 		state.offered = offerContract(state, day);
 		state.lastOfferDay = day;
 		state.nextContractId += 1;
+		onEvent?.({ kind: 'contract-offered', contractId: state.offered.id });
 	}
 }
 
-export function endOfDay(state: ReserveState): void {
+export function endOfDay(state: ReserveState, onEvent?: EventSink): void {
 	const day = Math.floor(state.ticks / TICKS_PER_DAY);
 
 	/*
@@ -98,7 +104,12 @@ export function endOfDay(state: ReserveState): void {
 	 * мандрує між ними.
 	 */
 	let hungry = serveFeed(state);
-	for (const biome of RESERVE_BIOMES) hungry = siteDay(state, state.sites[biome], hungry);
+	// Скільком не дісталося корму — відомо ДО ділянок: `serveFeed` віддає решту,
+	// а далі це число тільки зменшується, розходячись по землях.
+	if (hungry > 0) onEvent?.({ kind: 'hunger', count: hungry });
+	for (const biome of RESERVE_BIOMES) {
+		hungry = siteDay(state, state.sites[biome], hungry, onEvent && { at: biome, emit: onEvent });
+	}
 
 	state.subsidy = state.budget < 0;
 
@@ -107,7 +118,7 @@ export function endOfDay(state: ReserveState): void {
 	 * мінусі. Вихід у нуль обнуляє лічильник: тридцять днів із перервою не
 	 * означають, що фонд шкодить постійно.
 	 */
-	settleContracts(state, day);
+	settleContracts(state, day, onEvent);
 
 	/*
 	 * Публіка забуває — але тільки про те, що знала.
@@ -125,7 +136,10 @@ export function endOfDay(state: ReserveState): void {
 	}
 
 	state.collapseDays = state.impact < 0 ? state.collapseDays + 1 : 0;
-	if (state.collapseDays >= COLLAPSE_DAYS) state.gameOver = true;
+	if (state.collapseDays >= COLLAPSE_DAYS && !state.gameOver) {
+		state.gameOver = true;
+		onEvent?.({ kind: 'collapse' });
+	}
 
 	/*
 	 * Браконьєри — остання подія доби, і порядок тут важливий.
@@ -134,8 +148,8 @@ export function endOfDay(state: ReserveState): void {
 	 * кидається новий: інакше сьогоднішнє вікно перетерло б учорашнє, і людина
 	 * втратила б тварину, навіть не побачивши, що її прийшли крати.
 	 */
-	expireRaid(state, day);
-	maybeRaid(state, day);
+	expireRaid(state, day, onEvent);
+	maybeRaid(state, day, onEvent);
 
 	// Журнал — ОСТАННІМ рядком: він міряє добу, тож мусить бачити її всю.
 	closeDay(state, day);
