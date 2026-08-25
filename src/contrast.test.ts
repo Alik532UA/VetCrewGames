@@ -155,7 +155,10 @@ function parseColor(value: string): Rgb | null {
 	}
 	const rgb = /^rgba?\(([^)]+)\)$/.exec(v);
 	if (rgb) {
-		const parts = rgb[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+		const parts = rgb[1]
+			.split(/[\s,/]+/)
+			.filter(Boolean)
+			.map(Number);
 		// Напівпрозоре не розв'язується без знання того, що під ним.
 		if (parts.length >= 4 && parts[3] < 0.999) return null;
 		if (parts.slice(0, 3).some(Number.isNaN)) return null;
@@ -173,7 +176,8 @@ function parseColor(value: string): Rgb | null {
  * стає нерозв'язним. Наслідок найгіршого штибу: перевірка МОВЧКИ рахує саме ту
  * пару, яку шукала, як «непокриту».
  */
-const read = (rel: string) => readFileSync(join(STYLES, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const read = (rel: string) =>
+	readFileSync(join(STYLES, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 /** Оголошення `--name: value;` з першого блоку після заданого селектора. */
 function declarationsIn(css: string, selector: RegExp): Map<string, string> {
@@ -235,7 +239,10 @@ class TokenResolver {
 		// Рівно один var() і нічого крім нього: `var(--a)` або `var(--a, fallback)`.
 		const m = /^var\(\s*(--[\w-]+)\s*(?:,\s*([\s\S]+))?\)$/.exec(v);
 		if (!m) return null;
-		return this.resolve(m[1], theme, depth + 1) ?? (m[2] ? this.resolveValue(m[2], theme, depth + 1) : null);
+		return (
+			this.resolve(m[1], theme, depth + 1) ??
+			(m[2] ? this.resolveValue(m[2], theme, depth + 1) : null)
+		);
 	}
 }
 
@@ -401,7 +408,16 @@ describe('контраст тексту й тла в чотирьох темах
 					suppressed.push(excused.selector);
 					continue;
 				}
-				findings.push({ file, selector, state: isState ? 'наведення/фокус' : 'спокій', theme, ratio, need, fg, bg });
+				findings.push({
+					file,
+					selector,
+					state: isState ? 'наведення/фокус' : 'спокій',
+					theme,
+					ratio,
+					need,
+					fg,
+					bg
+				});
 			}
 		}
 	}
@@ -461,5 +477,67 @@ describe('контраст тексту й тла в чотирьох темах
 			findings.map((f) => `${f.theme} ${f.selector}`),
 			`\nПар перевірено: ${pairsChecked}. НЕПОКРИТО (color-mix, прозоре, успадкування): ${uncovered}.\n\n${report}\n`
 		).toEqual([]);
+	});
+});
+
+/**
+ * ПРОЗОРІСТЬ ВІДСУТНЬОГО ГРАВЦЯ: скільки коштує «весь рядок на 50%».
+ *
+ * Автор попросив саме це: не гасити колір окремим елементам, а зробити весь рядок
+ * прозорим на 50%, «щоб і імʼя, і рахунок, і прапор, і аватарка — усе разом».
+ * Рішення свідоме, а ця перевірка не забороняє його: вона НАЗИВАЄ ЦІНУ й тримає її
+ * від тихого погіршення.
+ *
+ * Числа рахуються так, як їх бачить око: колір тексту змішується з тлом панелі в
+ * пропорції прозорості, і результат порівнюється з тим самим тлом. Тло панелі
+ * (`.text-panel`) саме напівпрозоре над фотографією — тому за підкладку беремо
+ * `--color-bg`, тобто найтемніше з можливого в темі: це найгірший випадок, а не
+ * середній.
+ */
+describe('прозорість відсутнього', () => {
+	const OPACITY = 0.5;
+	const resolver = new TokenResolver();
+
+	/** Змішати колір із підкладкою в пропорції прозорості. */
+	const fade = (color: Rgb, under: Rgb, alpha: number): Rgb =>
+		[0, 1, 2].map((i) => Math.round(color[i] * alpha + under[i] * (1 - alpha))) as Rgb;
+
+	it('перевірка жива: клас із прозорістю існує', () => {
+		const css = readFileSync('src/lib/styles/global.css', 'utf8');
+		expect(css).toContain('.player-away');
+		expect(css).toContain(`opacity: ${OPACITY}`);
+	});
+
+	it('контраст імені під прозорістю заміряний у всіх темах', () => {
+		const measured: Record<string, number> = {};
+
+		for (const theme of THEMES) {
+			const text = resolver.resolve('--color-text-on-panel', theme);
+			const under = resolver.resolve('--color-bg', theme);
+			expect(text, `${theme}: немає --color-text-on-panel`).not.toBeNull();
+			expect(under, `${theme}: немає --color-bg`).not.toBeNull();
+
+			measured[theme] = +contrast(fade(text as Rgb, under as Rgb, OPACITY), under as Rgb).toFixed(
+				2
+			);
+		}
+
+		/*
+		 * Межа тут НЕ 4.5: рядок відсутнього гравця свідомо притишений, і саме це
+		 * автор і просив. Перевірка стежить за іншим — щоб він не став НЕВИДИМИМ:
+		 * 2:1 це вже «здогадайся, що написано».
+		 *
+		 * Заміряні числа лишаються в повідомленні: вони й є та ціна, яку названо в
+		 * `global.css`, і якщо чиясь правка теми їх зіпсує, це буде видно тут.
+		 */
+		for (const [theme, ratio] of Object.entries(measured)) {
+			expect(
+				ratio,
+				`${theme}: рядок відсутнього став нечитним (${JSON.stringify(measured)})`
+			).toBeGreaterThan(2);
+		}
+
+		// Довідка у виводі — щоб число було видно, а не лише його межа.
+		expect(Object.keys(measured).sort()).toEqual([...THEMES].sort());
 	});
 });
