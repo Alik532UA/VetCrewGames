@@ -365,6 +365,27 @@ export const accountTab: BetaTab = {
 			testid: 'quiz-scores-list'
 		},
 		{
+			id: 'account_32',
+			category: { uk: 'Імʼя в грі', en: 'Name in the game' },
+			text: {
+				uk: 'Змініть імʼя в профілі, збережіть і відкрийте сторінку спільної гри: у полі «Як вас звати?» мусить стояти те саме імʼя. Потім змініть його там, зайдіть у кімнату й вернітесь у профіль — імʼя мусить бути новим і тут.',
+				en: 'Change the name in the profile, save it and open the shared-game page: the “What is your name?” field must show the same name. Then change it there, join a room and go back to the profile — the name must be the new one here too.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-name-input'
+		},
+		{
+			id: 'account_33',
+			category: { uk: 'Імʼя в грі', en: 'Name in the game' },
+			text: {
+				uk: 'На сторінці спільної гри почніть друкувати своє імʼя й не спиняйтеся кілька секунд. Поле НЕ мусить перескочити на імʼя з профілю посеред набору — підтягується воно лише в те, чого ви не торкалися.',
+				en: 'On the shared-game page start typing your name and keep typing for a few seconds. The field must NOT jump to the profile name mid-typing — it is pulled in only where you have not touched it.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'pairs-name-input'
+		},
+		{
 			id: 'account_29',
 			category: { uk: 'Вибір країни', en: 'Choosing a country' },
 			text: {

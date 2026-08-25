@@ -4,6 +4,7 @@ import { NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
 import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 import { storage } from '$lib/services/storage';
 import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
+import { profileName, pushName } from '$lib/services/nameSync';
 
 /**
  * ХТО Я В КІМНАТІ: підпис і прапор.
@@ -49,8 +50,25 @@ export class PlayerIdentity {
 	 */
 	#dict = $state<Record<string, string>>({});
 
-	/** Що з поля підставили МИ. Порожньо — вибір людини. */
+	/** Що з поля ВИГАДАЛИ ми. Порожньо — імʼя прийшло не з кубика. */
 	#assigned = '';
+
+	/**
+	 * Що ми в поле ПОСТАВИЛИ — байдуже, звідки: кубик, сховище чи профіль.
+	 *
+	 * Два прапорці, і різниця між ними робоча:
+	 *
+	 *  • `#assigned` відповідає «чи можна це перекинути, коли імʼя виявилось
+	 *    зайнятим» — перекидати можна лише СВОЮ вигадку;
+	 *  • `#shown` відповідає «чи людина торкалася поля» — якщо значення й далі те,
+	 *    що ми поставили, то ні, і профільне імʼя має право його замінити.
+	 *
+	 * Без другого прапорця імʼя зі сховища не відрізнити від набраного руками:
+	 * `initialName` віддає збережене з порожнім `assigned`, тобто як «вибір
+	 * людини». Саме через це профіль не міг перебити випадкове імʼя, яке колись
+	 * потрапило у сховище при вході в кімнату.
+	 */
+	#shown = '';
 
 	/**
 	 * Код країни для прапора. Порожньо — «без прапора», і це ВІДПОВІДЬ.
@@ -102,10 +120,51 @@ export class PlayerIdentity {
 	 */
 	async load(locale: string, taken: readonly string[]): Promise<void> {
 		this.#dict = await loadCrewNames(locale);
+		/*
+		 * ІМʼЯ З ПРОФІЛЮ ТЯГНЕТЬСЯ ПАРАЛЕЛЬНО, а не перед підстановкою.
+		 *
+		 * Порядок тут вирішує, чи блимне поле порожнім: спершу ставимо те, що є під
+		 * рукою (сховище або кубик), і лише потім, коли приїде, замінюємо профільним.
+		 * Чекати на мережу до першої підстановки означало б порожнє поле на весь час
+		 * запиту — на повільному звʼязку це секунди.
+		 *
+		 * Виклик безпечний при кожному перезапуску ефекту: профіль читається раз на
+		 * сесію (`services/nameSync` кешує), а `adopt` не чіпає того, що людина
+		 * встигла набрати.
+		 */
+		void profileName().then((name) => this.adopt(name));
+
 		if (this.value !== '') return;
 		const chosen = initialName(storage.get(NAME_KEY), this.text, this.#random, taken);
 		this.value = chosen.name;
 		this.#assigned = chosen.assigned;
+		this.#shown = chosen.name;
+	}
+
+	/**
+	 * ПРИЙНЯТИ ІМʼЯ З ПРОФІЛЮ — але не поверх того, що людина набрала.
+	 *
+	 * Профіль головніший за сховище: він на сервері, один для всіх пристроїв і
+	 * заповнений свідомо. Тому він перебиває і кубик, і збережене — усе, що в поле
+	 * поставили МИ.
+	 *
+	 * Чого він не перебиває — набраного в цьому сеансі. Якщо значення розійшлося з
+	 * `#shown`, значить людина щось надрукувала, і поле, яке «саме перескочило»
+	 * посеред набору, — це найгірший різновид цієї помилки: він видний лише тому,
+	 * хто саме друкував.
+	 *
+	 * Кеш сховища наздоганяє профіль ТУТ: інакше наступне відкриття сторінки знову
+	 * почалося б зі старого імені, і профіль перебивав би його щоразу заново.
+	 */
+	adopt(name: string): void {
+		if (name === '' || name === this.value) return;
+		if (this.value !== '' && this.value !== this.#shown) return;
+
+		this.value = name;
+		this.#shown = name;
+		// Не наша вигадка, тож перекидати його як «зайняте» не можна.
+		this.#assigned = '';
+		storage.set(NAME_KEY, name);
 	}
 
 	/**
@@ -136,6 +195,7 @@ export class PlayerIdentity {
 	reroll(taken: readonly string[]): void {
 		this.value = randomCrewName(this.text, this.#random, [...taken, this.value.trim()]);
 		this.#assigned = this.value;
+		this.#shown = this.value;
 	}
 
 	/**
@@ -150,6 +210,7 @@ export class PlayerIdentity {
 		if (swap === null) return;
 		this.value = swap;
 		this.#assigned = swap;
+		this.#shown = swap;
 	}
 
 	/**
@@ -161,6 +222,14 @@ export class PlayerIdentity {
 	forEntry(taken: readonly string[]): string {
 		const who = this.value.trim() || randomCrewName(this.text, this.#random, taken);
 		storage.set(NAME_KEY, who);
+		/*
+		 * І В ПРОФІЛЬ — саме тут, а не при кожній зміні поля.
+		 *
+		 * Це мить, коли імʼя вперше стає публічним, і мить, коли мережа в коді вже є.
+		 * Нічого не робить для того, хто акаунта не має, і не кидає: невдача лишає
+		 * профіль позаду на одне імʼя, а не ламає вхід у кімнату.
+		 */
+		void pushName(who);
 		// Прапор памʼятається ТУТ, а не при кожній зміні списку: запис у сховище
 		// має сенс тоді, коли вибір уже поїхав у кімнату. Через `rememberCountry`,
 		// бо «без прапора» — теж вибір, і записати його мусить те саме місце.

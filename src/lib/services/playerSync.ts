@@ -3,6 +3,7 @@ import { readMyProfile, type Profile } from '$lib/net/account';
 import { publishLeader } from '$lib/net/leaders';
 import { playerData } from './playerData.svelte';
 import { logService } from './logService.svelte';
+import { forgetName } from './nameSync';
 
 /**
  * СИНХРОНІЗАЦІЯ РАХУНКУ Й РЕКОРДІВ: мережева половина `playerData`.
@@ -144,10 +145,16 @@ export async function mergeOnSignIn(): Promise<void> {
 	await startPlaySync();
 }
 
-/** Вихід: підписка знімається, місцеве стирається (див. `clearLocal`). */
+/**
+ * Вихід: підписка знімається, місцеве стирається (див. `clearLocal`).
+ *
+ * Заразом забувається кеш імені профілю: далі підпис належить браузеру, а не
+ * акаунту, і порівнювати нове імʼя з чужим профілем нема сенсу.
+ */
 export function signedOut(): void {
 	stopPlaySync();
 	playerData.clearLocal();
+	forgetName();
 }
 
 function same(a: PlayData, b: PlayData | null): boolean {

@@ -22,6 +22,7 @@
 	import { storage } from '$lib/services/storage';
 	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
 	import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
+	import { rememberName } from '$lib/services/nameSync';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -163,6 +164,22 @@
 		if (account.profile?.avatar) {
 			avatar = account.profile.avatar;
 			playerAvatar.set(account.profile.avatar);
+		}
+
+		/*
+		 * ІМʼЯ — ТЕЖ У КЕШ, і тією самою парою причин, що аватар.
+		 *
+		 * Профіль — джерело правди, сховище — кеш для екранів, які не мають права
+		 * ходити в мережу. Без цього рядка кеш наздоганяв акаунт лише після натиску
+		 * «Зберегти»: на новому пристрої в профілі стояло одне імʼя, а в лобі
+		 * підставлене кубиком інше — скарга автора саме про це.
+		 *
+		 * `rememberName` заразом: сервіс синхронізації мусить знати, що в профілі
+		 * тепер саме це, інакше перший же вхід у кімнату зробив би зайвий запис.
+		 */
+		if (account.profile?.name) {
+			storage.set(NAME_KEY, account.profile.name);
+			rememberName(account.profile.name);
 		}
 
 		/*
@@ -310,6 +327,9 @@
 		 * невдалий запис профілю лишав би в кімнатах імʼя, якого в профілі немає.
 		 */
 		storage.set(NAME_KEY, name);
+		// Сервіс синхронізації знає, що в профілі тепер саме це: інакше наступний
+		// вхід у кімнату записав би те саме імʼя вдруге.
+		rememberName(name);
 		/*
 		 * ПРАПОР — через `rememberCountry`, і порожній теж.
 		 *

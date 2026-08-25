@@ -36,6 +36,19 @@ const detectCountry = vi.fn<() => Promise<string | null>>(async () => null);
 vi.mock('$lib/services/storage', () => ({ storage: storageMock }));
 vi.mock('$lib/net/country', () => ({ detectCountry }));
 
+/**
+ * Синхронізація імені з профілем — підставна, і саме тут межа цього тесту.
+ *
+ * Контролер тепер запитує імʼя профілю (`profileName`) і віддає своє при вході в
+ * кімнату (`pushName`). Обидва — мережа; сам модуль тягне `logService`, який у
+ * цьому файлі не працює, бо тут підмінене сховище (`sessionStore` живе в тому ж
+ * модулі). Тож підміняється саме межа мережі, а правила «профіль перебиває
+ * підставлене, але не набране» перевіряються тут же, на справжньому контролері.
+ */
+const profileName = vi.fn<() => Promise<string>>(async () => '');
+const pushName = vi.fn<(name: string) => Promise<void>>(async () => {});
+vi.mock('$lib/services/nameSync', () => ({ profileName, pushName }));
+
 const { PlayerIdentity } = await import('./playerIdentity.svelte');
 
 /** Кидок за списком: перевірка стверджує «перше», «друге», а не «щось». */
@@ -53,6 +66,8 @@ describe('PlayerIdentity', () => {
 		storageMock.get.mockClear();
 		storageMock.set.mockClear();
 		detectCountry.mockReset().mockResolvedValue(null);
+		profileName.mockReset().mockResolvedValue('');
+		pushName.mockReset().mockResolvedValue(undefined);
 	});
 
 	describe('аватар читається у конструкторі', () => {
@@ -250,6 +265,87 @@ describe('PlayerIdentity', () => {
 			const who = me.forEntry([]);
 			expect(who.trim()).not.toBe('');
 			expect(store.get(NAME_KEY)).toBe(who);
+		});
+	});
+
+	/**
+	 * ОДНЕ ІМʼЯ НА ВЕСЬ ЗАСТОСУНОК: профіль — правда, сховище — кеш.
+	 *
+	 * Доти імен було два, і синхронізація йшла в один бік і в одній точці —
+	 * натиск «Зберегти» у формі профілю. Тому на новому пристрої в профілі стояв
+	 * «Уважний Олень», а в лобі «Швидкий Леопард» від кубика: автор надіслав знімок
+	 * саме цього.
+	 *
+	 * Тонкість, через яку самої синхронізації не досить: `forEntry` пише у сховище
+	 * ПІДСТАВЛЕНЕ імʼя, тож при наступному відкритті воно виглядає як вибір
+	 * людини. Тому профіль мусить перебивати й збережене — і саме це тут
+	 * перевіряється, разом із межею, якої він перебивати НЕ має права.
+	 */
+	describe('імʼя з профілю', () => {
+		/** Дати мікрозадачам добігти: профіль тягнеться паралельно з підстановкою. */
+		const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+		it('перебиває підставлене кубиком', async () => {
+			profileName.mockResolvedValue('Уважний Олень');
+			const me = new PlayerIdentity(first);
+
+			await me.load('uk', []);
+			await settle();
+
+			expect(me.value).toBe('Уважний Олень');
+			expect(store.get(NAME_KEY), 'кеш мусить наздогнати профіль').toBe('Уважний Олень');
+		});
+
+		/**
+		 * ГОЛОВНИЙ ВИПАДОК СКАРГИ: у сховищі лежить старе імʼя, у профілі інше.
+		 *
+		 * Зворотний експеримент (§ 1.1): прибрати `#shown` і повернути перевірку на
+		 * `#assigned` — червоніє саме цей випадок, бо збережене імʼя виглядає як
+		 * вибір людини.
+		 */
+		it('перебиває збережене у сховищі', async () => {
+			store.set(NAME_KEY, 'Швидкий Леопард');
+			profileName.mockResolvedValue('Уважний Олень');
+			const me = new PlayerIdentity(first);
+
+			await me.load('uk', []);
+			await settle();
+
+			expect(me.value).toBe('Уважний Олень');
+		});
+
+		/** А ось набране руками — недоторкане: поле, що «саме перескочило», гірше. */
+		it('не перебиває того, що людина набрала', async () => {
+			let release: (name: string) => void = () => {};
+			profileName.mockReturnValue(new Promise((resolve) => (release = resolve)));
+			const me = new PlayerIdentity(first);
+			await me.load('uk', []);
+
+			me.value = 'Моє власне';
+			release('Уважний Олень');
+			await settle();
+
+			expect(me.value).toBe('Моє власне');
+		});
+
+		it('порожній профіль нічого не міняє', async () => {
+			store.set(NAME_KEY, 'Швидкий Леопард');
+			profileName.mockResolvedValue('');
+			const me = new PlayerIdentity(first);
+
+			await me.load('uk', []);
+			await settle();
+
+			expect(me.value).toBe('Швидкий Леопард');
+		});
+
+		it('вхід у кімнату віддає імʼя в профіль', async () => {
+			const me = new PlayerIdentity(first);
+			await me.load('uk', []);
+
+			const who = me.forEntry([]);
+
+			expect(pushName).toHaveBeenCalledWith(who);
 		});
 	});
 
