@@ -38,6 +38,15 @@
 		 */
 		text: (key: string) => string;
 		players: Member[];
+		/**
+		 * КОГО НЕМАЄ ОНЛАЙН — за uid.
+		 *
+		 * Табло між раундами показує той самий склад, що смуга над дошкою й
+		 * підсумок, тож і зниклого мусить показувати так само. Пропустити його тут
+		 * означало б, що з трьох переліків гравця видно у двох — а питання «хто
+		 * дізконект» ставлять саме на таблі, коли дивляться на рахунок.
+		 */
+		away?: string[];
 		/** Підсумковий рахунок кожного — після цього раунду. */
 		scores: Record<string, number>;
 		/** Скільки дав саме цей раунд. Нуль — не встиг або схибив. */
@@ -47,7 +56,7 @@
 		duration?: number;
 	}
 
-	let { text, players, scores, gains, me, duration = 700 }: Props = $props();
+	let { text, players, scores, gains, me, away = [], duration = 700 }: Props = $props();
 
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 
@@ -99,7 +108,11 @@
 
 	<ul class="reveal__list">
 		{#each ranked as player, place (player.uid)}
-			<li class="reveal__row" data-testid="quiz-reveal-{player.uid}-row">
+			<li
+				class="reveal__row"
+				class:player-away={away.includes(player.uid)}
+				data-testid="quiz-reveal-{player.uid}-row"
+			>
 				<b class="reveal__place">{place + 1}</b>
 				<span class="reveal__who">
 					<Avatar avatar={player.avatar} />
