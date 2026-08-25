@@ -97,7 +97,15 @@ export interface Contract {
 export type { JournalDay, JournalNote, LedgerMetric, LedgerReason, MetricSet } from './metrics';
 
 /** Тактика проти браконьєрів. Три рішення з технічного завдання. */
-export type RaidTactic = 'drone' | 'ambush' | 'ignore';
+/**
+ * Чим відповісти браконьєрам.
+ *
+ * `self` — вийти самому: гроші не платяться й патруль не потрібен, але замість
+ * кидка справу вирішує ПЕРЕВІРКА на екрані (пʼять раундів, поріг 70% очок).
+ * Тому в неї, на відміну від решти, немає власної ймовірності — результат
+ * приходить іззовні разом із ходом.
+ */
+export type RaidTactic = 'drone' | 'ambush' | 'ignore' | 'self';
 
 /** Наліт, який чекає на рішення. */
 export interface Raid {
@@ -229,11 +237,35 @@ export type ReserveCommand =
 	| { type: 'acquire'; origin: AnimalOrigin; speciesId: string; enclosureId: number }
 	| { type: 'release'; animalId: number }
 	| { type: 'hire'; role: StaffRole }
+	/**
+	 * ЗРОБИТИ САМОМУ: гравець сам відпрацював день замість працівника.
+	 *
+	 * `ok` — чи вийшло. Симуляція не знає, звідки це відомо: рішення ухвалює
+	 * перевірка на екрані (пʼять раундів міні-гри, поріг 70% очок), а сюди
+	 * приїжджає готова відповідь. Так світ лишається чистою функцією від ходів:
+	 * той самий журнал ходів дасть той самий заповідник, хоч би хто ті раунди
+	 * грав.
+	 *
+	 * Провал — теж ХІД, а не відсутність ходу: він означає «день витрачено, і
+	 * нічого не вийшло», і саме тому пишеться в журнал.
+	 */
+	| { type: 'self-care'; role: StaffRole; animalId: number; ok: boolean }
 	| { type: 'dismiss'; role: StaffRole }
 	| { type: 'campaign' }
 	| { type: 'accept'; contractId: number }
 	| { type: 'claim'; contractId: number }
-	| { type: 'raid'; tactic: RaidTactic };
+	| {
+			type: 'raid';
+			tactic: RaidTactic;
+			/**
+			 * Чи вийшло — ЛИШЕ для тактики `self`.
+			 *
+			 * Решта тактик кидає кубик усередині симуляції; «вийти самому» вирішує
+			 * перевірка на екрані, і світ мусить лишитися чистою функцією від ходів:
+			 * той самий журнал дасть той самий заповідник, хоч би хто ті раунди грав.
+			 */
+			ok?: boolean;
+	  };
 
 /*
  * Перелік відмов живе в `rejects.ts` — там він читається разом зі словником

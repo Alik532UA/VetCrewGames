@@ -166,7 +166,17 @@ export function resolveRaid(
 	state: ReserveState,
 	tactic: RaidTactic,
 	/** Кому оголосити наслідок. Див. `reserve/events.ts`. */
-	onEvent?: EventSink
+	onEvent?: EventSink,
+	/**
+	 * Готовий результат — ЛИШЕ для тактики «вийти самому».
+	 *
+	 * Її успіх вирішує перевірка на екрані (пʼять раундів, поріг 70% очок), а не
+	 * кидок: інакше гравець грав би раунди, а долю тварини однаково вирішував би
+	 * кубик, і сама перевірка була б декорацією.
+	 *
+	 * `undefined` для решти тактик означає «кинути як завжди».
+	 */
+	outcome?: boolean
 ): boolean {
 	const raid = state.raid;
 	if (!raid) return false;
@@ -179,7 +189,16 @@ export function resolveRaid(
 	const site = state.sites[raid.biome];
 	if (tactic === 'ambush' && site.staff.ranger === 0) return false;
 
-	const success = roll(state) < successOf(tactic);
+	/*
+	 * ПОРЯДОК КИДКІВ НЕ МІНЯЄТЬСЯ, і саме тому кидок робиться завжди.
+	 *
+	 * Стан генератора лежить у сейві (`roll`), тож пропущений кидок зсунув би всю
+	 * подальшу партію в інший світ — включно з тим, які саме браконьєри прийдуть
+	 * далі. Тому для «вийти самому» кидок теж робиться, а результат просто
+	 * заміняється тим, що приїхав із перевірки.
+	 */
+	const rolled = roll(state) < successOf(tactic);
+	const success = tactic === 'self' ? (outcome ?? false) : rolled;
 
 	if (tactic === 'ambush' && roll(state) < AMBUSH_INJURY) {
 		// Поранення трапляється незалежно від того, чи затримали браконьєрів:
@@ -212,6 +231,9 @@ export function resolveRaid(
 function successOf(tactic: RaidTactic): number {
 	if (tactic === 'drone') return DRONE_SUCCESS;
 	if (tactic === 'ambush') return AMBUSH_SUCCESS;
+	// «Вийти самому» власної ймовірності не має: її заміняє перевірка на екрані.
+	// Число тут потрібне лише щоб кидок відбувся й порядок генератора не зсунувся.
+	if (tactic === 'self') return 0;
 	return 1 - IGNORE_LOSS;
 }
 

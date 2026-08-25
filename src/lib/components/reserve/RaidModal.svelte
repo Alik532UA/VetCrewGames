@@ -16,6 +16,13 @@
 	 * б четвертою тактикою, дешевшою за всі три.
 	 */
 	interface Props {
+		/**
+		 * Перекладач ЛІНИВОГО словника (`i18n/reserveCare`) — лише для «вийти
+		 * самому»: цей рядок живе разом із рештою вибору «найняти / зробити самому»,
+		 * поза головним словником. Три інші тактики лишаються в головному, бо вікно
+		 * нальоту показується й без заповідникового вибору.
+		 */
+		careText: (key: string) => string;
 		/** Кого прийшли крати. `null` — тварини вже немає (крайній випадок). */
 		target: Animal | null;
 		hasRanger: boolean;
@@ -24,7 +31,7 @@
 		onTactic: (tactic: RaidTactic) => void;
 	}
 
-	let { target, hasRanger, budget, onTactic }: Props = $props();
+	let { careText, target, hasRanger, budget, onTactic }: Props = $props();
 
 	const species = $derived(target ? speciesById(target.speciesId) : null);
 
@@ -37,29 +44,53 @@
 	 */
 	const tactics: Array<{
 		id: RaidTactic;
-		label: 'reserve.raid.drone' | 'reserve.raid.ambush' | 'reserve.raid.ignore';
-		hint: 'reserve.raid.droneHint' | 'reserve.raid.ambushHint' | 'reserve.raid.ignoreHint';
+		/**
+		 * Готові рядки, а не ключі.
+		 *
+		 * «Вийти самому» живе в ЛІНИВОМУ словнику (`i18n/reserveCare`) — разом із
+		 * рештою рядків вибору «найняти / зробити самому», і з тієї самої причини:
+		 * кілобайт у чанку, який везе кожен відвідувач. Мішати ключ головного
+		 * словника з ключем лінивого в одному полі не можна — типи в них різні, — тож
+		 * переклад робить той, хто тримає обидва.
+		 */
+		label: string;
+		hint: string;
 		cost: string;
 		off: boolean;
 	}> = $derived([
 		{
 			id: 'drone',
-			label: 'reserve.raid.drone',
-			hint: 'reserve.raid.droneHint',
+			label: t('reserve.raid.drone'),
+			hint: t('reserve.raid.droneHint'),
 			cost: `−${DRONE_PRICE.toLocaleString(settings.locale)}`,
 			off: budget < DRONE_PRICE
 		},
 		{
 			id: 'ambush',
-			label: 'reserve.raid.ambush',
-			hint: 'reserve.raid.ambushHint',
+			label: t('reserve.raid.ambush'),
+			hint: t('reserve.raid.ambushHint'),
 			cost: '',
 			off: !hasRanger
 		},
+		/*
+		 * «ВИЙТИ САМОМУ» — між засідкою й байдужістю, і місце тут не випадкове.
+		 *
+		 * Порядок кнопок — від найдорожчої грошима до найдешевшої: дрон, патруль,
+		 * власні руки, нічого. Ця тактика не коштує ні монети, ні рейнджера, тож
+		 * доступна завжди — платить вона вмінням: пʼять раундів міні-гри з порогом
+		 * 70% очок, і провал коштує тварини так само, як байдужість.
+		 */
+		{
+			id: 'self',
+			label: careText('reserve.raid.self'),
+			hint: careText('reserve.raid.selfHint'),
+			cost: '',
+			off: false
+		},
 		{
 			id: 'ignore',
-			label: 'reserve.raid.ignore',
-			hint: 'reserve.raid.ignoreHint',
+			label: t('reserve.raid.ignore'),
+			hint: t('reserve.raid.ignoreHint'),
 			cost: '',
 			off: false
 		}
@@ -109,10 +140,10 @@
 					data-testid="reserve-raid-{tactic.id}-btn"
 				>
 					<span class="raid__name">
-						{@html formatFont(t(tactic.label))}
+						{@html formatFont(tactic.label)}
 						{#if tactic.cost}<span class="raid__cost">{tactic.cost}</span>{/if}
 					</span>
-					<span class="raid__hint">{@html formatFont(t(tactic.hint))}</span>
+					<span class="raid__hint">{@html formatFont(tactic.hint)}</span>
 				</button>
 			</li>
 		{/each}

@@ -6,6 +6,7 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
+	import { loadReserveCareText } from '$lib/i18n/reserveCare';
 	import type { ReserveEvent } from '$lib/reserve/events';
 	import { createMilestoneWatch } from '$lib/reserve/milestones.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
@@ -27,6 +28,8 @@
 	import ReserveSheet from './ReserveSheet.svelte';
 	import MapSelection from './MapSelection.svelte';
 	import ReserveRaid from './ReserveRaid.svelte';
+	import CareChoice from './CareChoice.svelte';
+	import { WAGES } from '$lib/reserve/constants';
 	import DevPanel from './DevPanel.svelte';
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { dev } from '$app/environment';
@@ -89,6 +92,20 @@
 	 */
 	let anchorX = $state<number | null>(null);
 
+	/**
+	 * Словник ВИБОРУ «найняти / зробити самому» — ЛІНИВИЙ (`i18n/reserveCare`).
+	 *
+	 * Тринадцять його рядків коштували кілобайт у чанку кореневого layout — того,
+	 * що везе кожен відвідувач, — заради вікна, яке побачить лише той, хто дійшов
+	 * до заповідника й лишився без працівника. Той самий прийом і та сама причина,
+	 * що у вікторині (`i18n/quiz`) та в акаунті.
+	 *
+	 * У стані лежить САМ СЛОВНИК, а перекладач похідний: функція в `$state` не
+	 * оновлювала екран — рядки лишалися ключами, хоч словник і приїхав.
+	 */
+	let care = $state<Record<string, string>>({});
+	const careText = $derived((key: string) => care[key] ?? key);
+
 	/** Віха — єдина нагорода, яку гра оголошує сама; логіка у `milestones.svelte.ts`. */
 	const watchMilestones = createMilestoneWatch();
 	$effect(() => void (watchMilestones(game.state.impact) && toast.success('reserve.milestone')));
@@ -118,6 +135,15 @@
 		'raid-lost': () => toast.error('reserve.news.raidLost'),
 		'raid-expired': () => toast.error('reserve.news.raidExpired'),
 		hunger: () => toast.warn('reserve.news.hunger'),
+		/*
+		 * ПОТРЕБА ДІЇ — НЕ ТОСТ, а вікно вибору: `game.pending` уже стоїть, і час
+		 * спинений. Тост поруч із вікном сказав би те саме двічі, а зникнувши, ще й
+		 * забрав би на себе увагу з кнопок.
+		 *
+		 * Гілка потрібна попри це: мапа закрита за типом, і компілятор вимагає
+		 * назвати кожну подію. Забути тут щось — червоне, а не тихе.
+		 */
+		'needs-care': () => {},
 		'contract-offered': () => toast.info('reserve.news.contractOffered'),
 		'contract-missed': () => toast.warn('reserve.news.contractMissed'),
 		'offer-expired': () => toast.info('reserve.news.offerExpired'),
@@ -134,6 +160,7 @@
 		 * слухач до того самого синглтона, і кожна подія показувала б два тости.
 		 */
 		game.onEvent = (event) => NEWS[event.kind]();
+		void loadReserveCareText(settings.locale).then((loaded) => (care = loaded));
 		game.start();
 
 		// Сейв, який не прочитався, каже про себе одразу: людина мусить знати, що
@@ -260,7 +287,47 @@
 			<DevPanel {game} at={biome} />
 		{/if}
 
-		<ReserveRaid {game} />
+		<ReserveRaid {game} {careText} />
+
+		<!--
+			ВИБІР, КОЛИ ПРАЦІВНИКА НЕМА. Час уже спинений контролером, тож вікно не
+			мусить нічого спиняти саме — воно лише збирає рішення.
+
+			Модальне тло тут те саме, що в нальоту (`RaidModal`): обидва питання
+			однакової ваги — доба не йде, поки на них не відповіли.
+		-->
+		{#if game.pending}
+			{@const need = game.pending}
+			<div class="care-backdrop" aria-hidden="true"></div>
+			<div class="care-window" role="alertdialog" aria-modal="true">
+				<CareChoice
+					text={careText}
+					{need}
+					canHire={game.state.budget >= WAGES[need.role]}
+					onhire={() => {
+						/*
+						 * Найм — звичайний хід, тож іде через `command`: він і в журнал
+						 * запише, і відмову покаже, якщо грошей не хопило.
+						 */
+						command({ type: 'hire', role: need.role });
+						game.answer('hired');
+					}}
+					onself={(ok) => {
+						command({ type: 'self-care', role: need.role, animalId: need.animalId, ok });
+						/*
+						 * `say`, а не `success`/`warn` із ключем: ці два рядки живуть у
+						 * лінивому словнику, і `TranslationKey` їх не знає за побудовою.
+						 */
+						toast.say(
+							ok ? 'success' : 'warn',
+							careText(ok ? 'reserve.care.done' : 'reserve.care.failed')
+						);
+						game.answer('self');
+					}}
+					onignore={() => game.answer('ignored')}
+				/>
+			</div>
+		{/if}
 
 		<MapSelection
 			{game}
@@ -301,6 +368,41 @@
 </div>
 
 <style>
+	/*
+	 * Вікно вибору — та сама форма, що в нальоту: тло, центр, межа й тінь. Дві
+	 * копії правил тут навмисно: `RaidModal` тримає ще й перетягування за
+	 * заголовок, і зводити їх в один компонент означало б тягнути ту механіку в
+	 * вікно, якому вона не потрібна.
+	 */
+	.care-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 40;
+		background: rgb(0 0 0 / 60%);
+	}
+
+	.care-window {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		z-index: 41;
+		/*
+		 * 46rem, а не 26: усередину може стати дошка міні-гри, а «Де живем?» показує
+		 * дев'ять природних зон у ряд — на 26rem їхні підписи налазять один на одного
+		 * (заміряно в браузері). Сам вибір при цьому лишається вузьким стовпчиком:
+		 * його обмежує `.care__choice`.
+		 */
+		width: min(46rem, calc(100% - 2 * var(--space-md)));
+		max-height: 85dvh;
+		padding: var(--space-md);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-panel);
+		box-shadow: 0 10px 40px rgb(0 0 0 / 55%);
+		transform: translate(-50%, -50%);
+		overflow-y: auto;
+	}
+
 	.reserve-page {
 		position: relative;
 		/*

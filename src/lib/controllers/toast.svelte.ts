@@ -20,7 +20,16 @@ export interface ToastAction {
 export interface ToastMessage {
 	id: number;
 	type: ToastType;
-	messageKey: TranslationKey;
+	/**
+	 * Ключ головного словника. Відсутній — текст уже готовий (`message`).
+	 *
+	 * Два поля, а не одне: ключ мусить перекладатися В МИТЬ ПОКАЗУ, бо мову можна
+	 * перемкнути, поки тост на екрані. Готовий текст перекласти вже нічим — його
+	 * дає той, хто тримає лінивий словник (`toast.say`).
+	 */
+	messageKey?: TranslationKey;
+	/** Готовий текст — для рядків із лінивих словників. */
+	message?: string;
 	action?: ToastAction;
 	/** Скільки живе. Те саме число йде і в таймер, і в анімацію смужки. */
 	duration: number;
@@ -57,6 +66,31 @@ class ToastState {
 	add(type: ToastType, messageKey: TranslationKey, duration: number, action?: ToastAction) {
 		const id = this.#nextId++;
 		this.messages.push({ id, type, messageKey, action, duration });
+		if (this.messages.length > MAX_TOASTS) this.remove(this.messages[0].id);
+
+		const info: TimerInfo = { id, timerId: null, startTime: 0, elapsed: 0, duration, holds: 0 };
+		this.#timers.set(id, info);
+		this.#arm(info);
+	}
+
+	/**
+	 * ТОСТ ІЗ ГОТОВИМ ТЕКСТОМ, а не з ключем головного словника.
+	 *
+	 * Потрібен тим екранам, чиї рядки лежать у ЛІНИВОМУ чанку: словник вибору
+	 * «найняти / зробити самому» (`i18n/reserveCare`) не входить у головний
+	 * навмисно — він коштував кілобайт у чанку, який везе кожен відвідувач, заради
+	 * вікна, яке побачить лише той, хто дійшов до заповідника.
+	 *
+	 * Ключ тут не підійшов би за побудовою: `TranslationKey` перелічує саме
+	 * головний словник, і лінивого рядка в цьому типі немає й не мусить бути.
+	 *
+	 * Перекладає той, хто кличе — він і тримає завантажений словник. Тост лише
+	 * показує; підстановку шрифту (`formatFont`) робить сам компонент, як і для
+	 * ключів.
+	 */
+	say(type: ToastType, message: string, duration = 4000) {
+		const id = this.#nextId++;
+		this.messages.push({ id, type, message, duration });
 		if (this.messages.length > MAX_TOASTS) this.remove(this.messages[0].id);
 
 		const info: TimerInfo = { id, timerId: null, startTime: 0, elapsed: 0, duration, holds: 0 };

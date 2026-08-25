@@ -47,7 +47,13 @@
 					він тут виконується перевіркою. Розбіжність свідома.
 				-->
 				<p class="toast__text" data-testid="toast-body-text">
-					{@html formatFont(t(message.messageKey))}
+					<!--
+						Ключ перекладається В МИТЬ ПОКАЗУ (мову можна перемкнути, поки тост
+						на екрані), а готовий текст показується як є: його дав той, хто
+						тримає лінивий словник (`toast.say`). `formatFont` однаково потрібен
+						обом — кирилична «і» інакше доїде чужим шрифтом.
+					-->
+					{@html formatFont(message.messageKey ? t(message.messageKey) : (message.message ?? ''))}
 				</p>
 				{#if message.action}
 					<button

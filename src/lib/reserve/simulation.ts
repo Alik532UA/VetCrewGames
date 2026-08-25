@@ -1,8 +1,10 @@
 import {
 	CAMPAIGN_PRICE,
 	CAMPAIGN_REPUTATION,
+	RECOVERY_PER_VET_DAY,
 	RELEASE_IMPACT,
 	RELEASE_REPUTATION,
+	STRESS_RELIEF_PER_DAY,
 	STARTING_BUDGET,
 	STARTING_FEED,
 	STARTING_REPUTATION,
@@ -159,6 +161,38 @@ export function execute(
 			site.staff[command.role] += 1;
 			return { ok: true };
 
+		/*
+		 * ЗРОБИТИ САМОМУ — рівно один день роботи, і ЛИШЕ для тварини, якій вона
+		 * потрібна.
+		 *
+		 * Ефект той самий, що дає працівник за добу: `RECOVERY_PER_VET_DAY` здоровʼя
+		 * або `STRESS_RELIEF_PER_DAY` спокою. Не більше й не менше — інакше «зробити
+		 * самому» стало б або марним, або кращим за наймання, і найм перетворився б
+		 * на податок для тих, хто не хоче грати в міні-ігри.
+		 *
+		 * Множників тут немає навмисно. Голод, тіснота й стрес гальмують працівника,
+		 * бо він робить те саме щодня для всіх; тут же гравець витратив свій час на
+		 * одну тварину, і зʼїдати цей результат за те, що в коморі порожньо, було б
+		 * покаранням за те, чого він щойно не пропустив.
+		 *
+		 * ПРОВАЛ — законний хід: день витрачено, нічого не змінилося. Він
+		 * повертається `ok: true`, бо сам хід відбувся; результат самої роботи несе
+		 * поле `ok` у команді.
+		 */
+		case 'self-care': {
+			const animal = site.animals.find((a) => a.id === command.animalId);
+			if (!animal) return { ok: false, reason: 'no-such-animal' };
+			if (!command.ok) return { ok: true };
+
+			if (command.role === 'vet') {
+				animal.health = Math.min(1, animal.health + RECOVERY_PER_VET_DAY);
+				if (animal.health >= 1) animal.stage = 'healthy';
+			} else if (command.role === 'keeper') {
+				animal.stress = Math.max(0, animal.stress - STRESS_RELIEF_PER_DAY);
+			}
+			return { ok: true };
+		}
+
 		case 'campaign': {
 			// Раз на день: другий допис того самого дня нікого не переконує.
 			if (state.lastCampaignDay === dayOf(state)) return { ok: false, reason: 'campaign-done' };
@@ -190,7 +224,15 @@ export function execute(
 			if (command.tactic === 'drone' && state.budget < DRONE_PRICE)
 				return { ok: false, reason: 'no-money' };
 
-			resolveRaid(state, command.tactic);
+			/*
+			 * Результат перевірки їде РАЗОМ із ходом, а не питається зсередини.
+			 *
+			 * Для решти тактик `resolveRaid` кидає свій кубик; для «вийти самому»
+			 * кубка немає — справу вирішили пʼять раундів на екрані, і симуляція
+			 * лише застосовує їхній підсумок. Так журнал ходів лишається повним
+			 * описом світу.
+			 */
+			resolveRaid(state, command.tactic, undefined, command.ok);
 			return { ok: true };
 		}
 

@@ -177,6 +177,47 @@ export const reserveTab: BetaTab = {
 			negative: true,
 			coverage: 'manual',
 			testid: 'reserve-hud-header'
+		},
+		{
+			id: 'reserve_17',
+			category: { uk: 'Вибір без працівника', en: 'Choice without a worker' },
+			text: {
+				uk: 'Візьміть врятовану тварину й НЕ наймайте лікаря. Коли її здоровʼя впаде нижче половини, мусить зʼявитися вікно з трьома кнопками — найняти, зробити самому, нічого не робити — і час мусить СТАТИ, поки вікно відкрите.',
+				en: 'Take a rescued animal and do NOT hire a vet. When its health drops below half, a window with three buttons must appear — hire, do it yourself, do nothing — and time must STOP while the window is open.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-care-panel'
+		},
+		{
+			id: 'reserve_18',
+			category: { uk: 'Вибір без працівника', en: 'Choice without a worker' },
+			text: {
+				uk: 'Натисніть «Зробити самому»: мусить запуститися міні-гра на пʼять раундів (лічильник «1 / 5»). Наберіть понад 70% балів — здоровʼя тварини мусить підрости так само, як від дня роботи лікаря. Наберіть менше — день витрачено, здоровʼя не змінилося.',
+				en: 'Press “Do it yourself”: a five-round mini-game must start (counter “1 / 5”). Score over 70% of points — the animal’s health must rise as much as from one day of a vet. Score less — the day is spent and health does not change.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-trial-panel'
+		},
+		{
+			id: 'reserve_19',
+			category: { uk: 'Вибір без працівника', en: 'Choice without a worker' },
+			text: {
+				uk: 'Натисніть «Нічого не робити». Наступного дня про ЦЮ САМУ тварину питати НЕ мусить — витримка пʼять діб, щоб питання не стало щоденним. Про іншу тварину спитати може.',
+				en: 'Press “Do nothing”. The next day it must NOT ask about THAT SAME animal — there is a five-day cooldown so the question does not become daily. It may ask about another animal.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'reserve-care-ignore-btn'
+		},
+		{
+			id: 'reserve_20',
+			category: { uk: 'Браконьєри', en: 'Poachers' },
+			text: {
+				uk: 'Коли прийдуть браконьєри, виберіть «Вийти самому». Замість списку тактик мусить відкритися та сама міні-гра на пʼять раундів: понад 70% балів — тварина лишається, менше — її забирають. Кнопка мусить бути доступна без грошей і без рейнджера.',
+				en: 'When poachers come, choose “Go out yourself”. Instead of the tactic list the same five-round mini-game must open: over 70% of points keeps the animal, less loses it. The button must be available without money and without a ranger.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-trial-panel'
 		}
 	]
 };

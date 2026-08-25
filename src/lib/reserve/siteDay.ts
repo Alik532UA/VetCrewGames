@@ -5,6 +5,7 @@ import {
 	DEATH_REPUTATION,
 	HEALTH_DECAY_PER_DAY,
 	HEALTH_SELF_RECOVERY_ABOVE,
+	STRESS_BLOCKS_RELEASE,
 	HEALTH_SELF_RECOVERY_PER_DAY,
 	QUALITY_SPEED,
 	RECOVERY_PER_VET_DAY,
@@ -152,6 +153,23 @@ export function siteDay(
 			// стрес не спадає, а росте.
 			const cared = place < treated;
 			/*
+			 * НЕМАЄ КОМУ ЛІКУВАТИ — це питання до гравця, а не приговор тварині.
+			 *
+			 * Оголошується лише для тих, хто НЕ пройшов межу самоодужання: вище неї
+			 * організм дає раду сам, і питати там нема про що — лікар лише прискорює.
+			 * Нижче межі відсутність лікаря означає смерть, і саме тоді рішення варте
+			 * того, щоб спинити час і спитати.
+			 */
+			if (!cared && animal.health <= HEALTH_SELF_RECOVERY_ABOVE) {
+				news?.emit({
+					kind: 'needs-care',
+					role: 'vet',
+					animalId: animal.id,
+					speciesId: animal.speciesId,
+					biome: news.at
+				});
+			}
+			/*
 			 * Голод спиняє одужання ПОВНІСТЮ, а не гальмує.
 			 *
 			 * Єдина причина в грі, яка діє так. Решта — стрес, тіснота, знос — множники:
@@ -216,6 +234,24 @@ export function siteDay(
 		// у тісноті стрес росте з тією самою швидкістю, а сходить уп'ятеро довше.
 		const change =
 			index < cared ? -STRESS_RELIEF_PER_DAY * comfortFor(site, animal) : STRESS_PER_DAY;
+
+		/*
+		 * НЕМАЄ КОМУ ДОГЛЯДАТИ — так само питання, як і з лікарем.
+		 *
+		 * Але межа інша: стрес питає не з першого відсотка, а з половини. Нижче того
+		 * він лише гальмує одужання, і спиняти час заради цього означало б питати
+		 * щодня про кожну тварину. Від половини він уже наближається до порогу, за
+		 * яким випуск неможливий (`STRESS_BLOCKS_RELEASE`), — і ось це вже рішення.
+		 */
+		if (index >= cared && animal.stress >= STRESS_BLOCKS_RELEASE / 2) {
+			news?.emit({
+				kind: 'needs-care',
+				role: 'keeper',
+				animalId: animal.id,
+				speciesId: animal.speciesId,
+				biome: news.at
+			});
+		}
 
 		/*
 		 * Незакрита потреба вольєра ставить ДНО, а не додає щодня.
