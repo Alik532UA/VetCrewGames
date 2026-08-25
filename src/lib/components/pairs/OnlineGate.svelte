@@ -116,8 +116,21 @@
 	const normaliseCode = (raw: string) => raw.replace(/\D/g, '').slice(0, CODE_MAX);
 </script>
 
-<div class="gate">
-	<!--
+<!--
+	ОБГОРТКА ІСНУЄ ЗАРАДИ ОДНОГО РЯДКА CSS — `container-type` на ній.
+
+	Три стовпці залежать від того, скільки місця ДАЛИ формі, а не від того, який
+	у людини екран. Медіазапит цієї різниці не бачить: та сама форма у вузькій
+	колонці на широкому екрані отримала б розкладку «як на десктопі» й
+	розсипалася б (FLUID-SIZING-v8, `FS-CONTAINER`).
+
+	Контейнером не може бути сама `.gate`: запит дивиться на предка, а ширина
+	`.gate` — це рівно те, що ми міняємо. Звідси зайвий на вигляд `<div>`: він не
+	малює нічого, він лише оголошує, що місце міряється тут.
+-->
+<div class="gate-shell">
+	<div class="gate">
+		<!--
 		── 1. ШВИДКА ГРА ─────────────────────────────────────────────────────────
 
 		Без панелі, як просив автор. Підпис-пояснення теж не в панелі — його тут
@@ -126,24 +139,24 @@
 		блискавкою й назвою зрозуміла без абзацу. Подробиця лишилася в `title` —
 		для того, хто її шукає.
 	-->
-	<button
-		type="button"
-		class="gate__quick"
-		onclick={onQuickGame}
-		aria-disabled={busy}
-		title={t('pairs.quickGameHint')}
-		data-testid="pairs-quick-btn"
-	>
-		<Zap size={20} aria-hidden="true" />
-		{@html formatFont(t('pairs.quickGame'))}
-	</button>
+		<button
+			type="button"
+			class="gate__quick"
+			onclick={onQuickGame}
+			aria-disabled={busy}
+			title={t('pairs.quickGameHint')}
+			data-testid="pairs-quick-btn"
+		>
+			<Zap size={20} aria-hidden="true" />
+			{@html formatFont(t('pairs.quickGame'))}
+		</button>
 
-	<!-- ── 2. Хто я ─────────────────────────────────────────────────────────── -->
-	<section class="gate__panel gate__panel--name">
-		<label class="gate__label" for="pairs-name">
-			<span>{@html formatFont(t('pairs.yourName'))}</span>
-		</label>
-		<!--
+		<!-- ── 2. Хто я ─────────────────────────────────────────────────────────── -->
+		<section class="gate__panel gate__panel--name">
+			<label class="gate__label" for="pairs-name">
+				<span>{@html formatFont(t('pairs.yourName'))}</span>
+			</label>
+			<!--
 			КНОПКИ — ЧАСТИНА ПОЛЯ, а не сусіди праворуч від нього.
 
 			Рамку й тло малює ОБГОРТКА, а не сам `input`, тож кнопки стоять усередині
@@ -156,34 +169,34 @@
 			`:focus-within` на обгортці ОБОВʼЯЗКОВИЙ: рамка більше не на полі, тож без
 			цього рядка фокус клавіатурою став би невидимим.
 		-->
-		<div class="gate__row">
-			<!--
+			<div class="gate__row">
+				<!--
 				ПРАПОР — ПЕРЕД НІКОМ, а не окремим рядком.
 				
 				Окремий рядок із підписом «Прапор» читався як ще одне налаштування
 				кімнати, хоч це частина того самого підпису гравця: прапор і імʼя — одна
 				річ, яку бачать інші. Тепер вони й стоять як одна.
 			-->
-			<CountryPicker bind:value={country} scope="pairs-country" compact />
-			<div class="gate__field has-input-tools">
-				<input
-					id="pairs-name"
-					type="text"
-					bind:this={nameInput}
-					bind:value={name}
-					maxlength="48"
-					placeholder={t('pairs.nickname')}
-					data-testid="pairs-name-input"
-				/>
-				<InputTools
-					bind:value={name}
-					input={nameInput}
-					tools={['paste', 'clear']}
-					scope="pairs-name"
-					fieldLabel={t('pairs.yourName')}
-				/>
-			</div>
-			<!--
+				<CountryPicker bind:value={country} scope="pairs-country" compact />
+				<div class="gate__field has-input-tools">
+					<input
+						id="pairs-name"
+						type="text"
+						bind:this={nameInput}
+						bind:value={name}
+						maxlength="48"
+						placeholder={t('pairs.nickname')}
+						data-testid="pairs-name-input"
+					/>
+					<InputTools
+						bind:value={name}
+						input={nameInput}
+						tools={['paste', 'clear']}
+						scope="pairs-name"
+						fieldLabel={t('pairs.yourName')}
+					/>
+				</div>
+				<!--
 				КУБИК — ПОЗА ПОЛЕМ, праворуч від нього, і це вибір автора.
 
 				Я був поставив його всередину заодно з «вставити» й «очистити», бо одна
@@ -206,29 +219,29 @@
 				технічно правильний і практично шкідливий — два однакових рядки в
 				списку роблять неможливим вибір «до кого зайти».
 			-->
-			<button
-				type="button"
-				class="gate__dice"
-				onclick={onRandomName}
-				aria-label={t('pairs.otherName')}
-				data-testid="pairs-name-random-btn"
-			>
-				<Dices size={18} aria-hidden="true" />
-			</button>
-		</div>
+				<button
+					type="button"
+					class="gate__dice"
+					onclick={onRandomName}
+					aria-label={t('pairs.otherName')}
+					data-testid="pairs-name-random-btn"
+				>
+					<Dices size={18} aria-hidden="true" />
+				</button>
+			</div>
 
-		<!--
+			<!--
 			ПРАПОР — У ТОМУ САМОМУ БЛОЦІ, що імʼя.
 		
 			Це одна відповідь на одне питання — «як мене видно іншим», — і саме
 			тому вони поруч, а не в окремій панелі. Окремий блок читався б як ще
 			один спосіб зайти в кімнату, а це не спосіб зайти, а підпис.
 		-->
-	</section>
+		</section>
 
-	<!-- ── 3. Створити кімнату ──────────────────────────────────────────────── -->
-	<section class="gate__panel gate__panel--create">
-		<!--
+		<!-- ── 3. Створити кімнату ──────────────────────────────────────────────── -->
+		<section class="gate__panel gate__panel--create">
+			<!--
 			ДВА НАЗВАНІ СТАНИ, а не прапорець. Стоять ПЕРЕД кнопкою, і це не смак:
 			вибір міняє те, що кнопка зробить, тож прочитати його треба до натиску.
 
@@ -247,82 +260,83 @@
 			передали; кімната в списку не потребує нічого, і саме вона робить корисними
 			і список, і швидку гру.
 		-->
-		<SegmentedChoice
-			legend={t('pairs.visibility')}
-			scope="pairs-visibility"
-			value={isPrivate ? 'friends' : 'everyone'}
-			onchange={(id) => (isPrivate = id === 'friends')}
-			options={[
-				{ id: 'friends', label: t('pairs.friendsOnly') },
-				{ id: 'everyone', label: t('pairs.everyone') }
-			]}
-		/>
-		<p class="gate__hint">{@html formatFont(t('pairs.visibilityHint'))}</p>
+			<SegmentedChoice
+				legend={t('pairs.visibility')}
+				scope="pairs-visibility"
+				value={isPrivate ? 'friends' : 'everyone'}
+				onchange={(id) => (isPrivate = id === 'friends')}
+				options={[
+					{ id: 'friends', label: t('pairs.friendsOnly') },
+					{ id: 'everyone', label: t('pairs.everyone') }
+				]}
+			/>
+			<p class="gate__hint">{@html formatFont(t('pairs.visibilityHint'))}</p>
 
-		<button
-			type="button"
-			class="btn-primary"
-			onclick={onCreate}
-			aria-disabled={busy}
-			data-testid="pairs-create-btn"
-		>
-			{@html formatFont(t('pairs.createRoom'))}
-		</button>
-	</section>
+			<button
+				type="button"
+				class="btn-primary"
+				onclick={onCreate}
+				aria-disabled={busy}
+				data-testid="pairs-create-btn"
+			>
+				{@html formatFont(t('pairs.createRoom'))}
+			</button>
+		</section>
 
-	<!-- ── 4. Зайти за кодом ────────────────────────────────────────────────── -->
-	<section class="gate__panel gate__panel--join">
-		<label class="gate__label" for="pairs-code">
-			<span>{@html formatFont(t('pairs.roomCode'))}</span>
-		</label>
-		<!--
+		<!-- ── 4. Зайти за кодом ────────────────────────────────────────────────── -->
+		<section class="gate__panel gate__panel--join">
+			<label class="gate__label" for="pairs-code">
+				<span>{@html formatFont(t('pairs.roomCode'))}</span>
+			</label>
+			<!--
 			`inputmode="numeric"` — цифрова клавіатура на телефоні.
 
 			Не `type="number"`: той дає стрілки збільшення, ковтає провідні нулі («07»
 			стало б «7») і на частині браузерів приймає `e` та знак мінус. Код — це
 			рядок цифр, а не число, і саме тому `type` лишається `text`.
 		-->
-		<div class="gate__field has-input-tools">
-			<input
-				id="pairs-code"
-				type="text"
-				bind:this={codeInput}
-				bind:value={joinCode}
-				oninput={() => (joinCode = normaliseCode(joinCode))}
-				maxlength={CODE_MAX}
-				class="gate__code"
-				inputmode="numeric"
-				pattern="[0-9]*"
-				autocomplete="off"
-				spellcheck="false"
-				data-testid="pairs-code-input"
-			/>
-			<InputTools
-				bind:value={joinCode}
-				input={codeInput}
-				scope="pairs-code"
-				fieldLabel={t('pairs.roomCode')}
-				onchange={(raw) => (joinCode = normaliseCode(raw))}
-			/>
-		</div>
+			<div class="gate__field has-input-tools">
+				<input
+					id="pairs-code"
+					type="text"
+					bind:this={codeInput}
+					bind:value={joinCode}
+					oninput={() => (joinCode = normaliseCode(joinCode))}
+					maxlength={CODE_MAX}
+					class="gate__code"
+					inputmode="numeric"
+					pattern="[0-9]*"
+					autocomplete="off"
+					spellcheck="false"
+					data-testid="pairs-code-input"
+				/>
+				<InputTools
+					bind:value={joinCode}
+					input={codeInput}
+					scope="pairs-code"
+					fieldLabel={t('pairs.roomCode')}
+					onchange={(raw) => (joinCode = normaliseCode(raw))}
+				/>
+			</div>
 
-		<button
-			type="button"
-			class="btn-primary"
-			onclick={onJoin}
-			aria-disabled={busy || joinCode.trim().length < CODE_MIN}
-			data-testid="pairs-join-btn"
-		>
-			{@html formatFont(t('pairs.joinRoom'))}
-		</button>
-	</section>
-
-	<!-- ── 5. Список кімнат ─────────────────────────────────────────────────── -->
-	{#if roomList}
-		<section class="gate__panel gate__panel--rooms">
-			{@render roomList()}
+			<button
+				type="button"
+				class="btn-primary"
+				onclick={onJoin}
+				aria-disabled={busy || joinCode.trim().length < CODE_MIN}
+				data-testid="pairs-join-btn"
+			>
+				{@html formatFont(t('pairs.joinRoom'))}
+			</button>
 		</section>
-	{/if}
+
+		<!-- ── 5. Список кімнат ─────────────────────────────────────────────────── -->
+		{#if roomList}
+			<section class="gate__panel gate__panel--rooms">
+				{@render roomList()}
+			</section>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -360,10 +374,24 @@
 	 *
 	 * Межа 64rem — не смак: три стовпці по 20rem плюс два проміжки вимагають
 	 * приблизно стільки, а нижче вони почали б тиснути поле коду й кнопки.
+	 *
+	 * `@container`, а не `@media`: тут ідеться про місце, яке дали формі, а не про
+	 * екран. Різницю видно там, де форму вставляють у вужчий стовпець — тоді
+	 * медіазапит однаково побачив би широкий екран і дав три колонки в колонку на
+	 * 30rem. Це перший погашений рядок боргу з `src/container-queries.test.ts`.
 	 * `align-items: start` обовʼязковий: без нього панелі в рядку тягнуться до
 	 * висоти найвищої, і «Швидка гра» стала б кнопкою на пів екрана.
 	 */
-	@media (min-width: 64rem) {
+	/*
+	 * Контейнер оголошений на обгортці, а не на самій формі: запит дивиться на
+	 * ПРЕДКА, а ширина `.gate` — це те, що він і вирішує.
+	 */
+	.gate-shell {
+		container-type: inline-size;
+		width: 100%;
+	}
+
+	@container (min-width: 64rem) {
 		.gate {
 			display: grid;
 			grid-template-columns: repeat(3, minmax(0, 1fr));

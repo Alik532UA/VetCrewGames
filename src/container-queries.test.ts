@@ -60,7 +60,9 @@ const SIZE_QUERY = /@media[^{]*\((min|max)-(width|height)\s*:/g;
  * Число — саме кількість запитів, а не «є/немає»: компонент, який перевели
  * наполовину, мусить бути видним як наполовину переведений.
  *
- * Погашений рядок прибирається зі списку — його стереже третя перевірка.
+ * Погашений рядок прибирається зі списку — його стереже третя перевірка. Перший
+ * такий уже є: `pairs/OnlineGate` переведено на `@container`, і саме тому його
+ * тут немає.
  */
 const MEDIA_DEBT: Record<string, number> = {
 	'src/lib/components/FeedingBoard.svelte': 2,
@@ -69,7 +71,6 @@ const MEDIA_DEBT: Record<string, number> = {
 	'src/lib/components/HabitatBoard.svelte': 1,
 	'src/lib/components/HabitatOptions.svelte': 2,
 	'src/lib/components/HabitatRound.svelte': 1,
-	'src/lib/components/pairs/OnlineGate.svelte': 1,
 	'src/lib/components/PopulationBoard.svelte': 1,
 	'src/lib/components/quiz/QuizBoard.svelte': 2
 };
