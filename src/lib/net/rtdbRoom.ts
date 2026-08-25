@@ -310,6 +310,46 @@ export async function closeRoom(code: string): Promise<void> {
 }
 
 /** Чи є така кімната і чи та сама в неї гра. */
+/**
+ * СТЕЖИТИ ЗА ОДНИМ ВУЗЛОМ `info` — для сповіщення «вас чекають у грі».
+ *
+ * Не транспорт кімнати: транспорт тягне журнал ходів і склад, тобто все, що
+ * потрібно партії. Тут потрібне рівно одне — чи партія ще йде й чи кімната жива.
+ * Підписка на `info` коштує один вузол і оживає лише на його зміни.
+ *
+ * `null` у колбеку означає, що кімнати більше немає.
+ */
+export async function watchRoomInfo(
+	code: string,
+	onInfo: (info: RoomInfo | null) => void
+): Promise<() => void> {
+	const { db } = await connect();
+	const { onValue, ref } = await import('firebase/database');
+	return onValue(ref(db, `rooms/${code}/info`), (snapshot) => {
+		onInfo(snapshot.exists() ? (snapshot.val() as RoomInfo) : null);
+	});
+}
+
+/**
+ * ПІТИ З КІМНАТИ НАЗОВСІМ — прибрати свій рядок складу.
+ *
+ * Правило бази це дозволяє й без нового права: «кожен пише лише про себе — і про
+ * себе ж може піти». Тобто це не адміністрування, а власна дія.
+ *
+ * Наслідок для решти настає САМ: `away` виводиться як «склад мінус присутні», тож
+ * щойно рядка немає, чекати стає нема на кого — вікно очікування зникає в усіх, і
+ * голосувати не доводиться. Саме цього й просив автор: «кімната дізнається, що
+ * гравець остаточно вийшов, і його не варто чекати».
+ *
+ * Індекс своїх кімнат чиститься теж: інакше сповіщення «вас чекають» показувало б
+ * кімнату, з якої я щойно свідомо пішов.
+ */
+export async function leaveRoom(code: string): Promise<void> {
+	const { uid, db } = await connect();
+	const { ref, remove } = await import('firebase/database');
+	await remove(ref(db, `rooms/${code}/members/${uid}`));
+}
+
 export async function peekRoom(code: string): Promise<RoomInfo | null> {
 	const { db } = await connect();
 	const { get, ref } = await import('firebase/database');

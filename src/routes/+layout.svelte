@@ -34,6 +34,18 @@
 	let { children } = $props();
 
 	/**
+	 * Смуга «вас чекають у грі» — уся за одним динамічним імпортом.
+	 *
+	 * Тут лишається рівно виклик: кореневий layout вантажить кожен відвідувач, і
+	 * компонент із контролером перевищували його бюджет (заміряно: 121,1 КБ проти
+	 * 120). Причина ваги — не сам компонент, а помічник Svelte для змінних
+	 * компонентів, який тягне за собою `{#if Cmp}<Cmp />{/if}`. Тому смуга
+	 * монтується сама, у `features/awaitedBanner`.
+	 */
+	const checkAwaited = () =>
+		void import('$lib/features/awaitedBanner').then((m) => m.showAwaitedRoom());
+
+	/**
 	 * Мова сторінки береться з АДРЕСИ, і присвоюється тут — у layout, ДО рендеру
 	 * дітей (SVELTE-CORE-v8 § 5.1, I18N-v8 § 5.1).
 	 *
@@ -105,7 +117,12 @@
 	// Fires on the initial load too, so this covers the first view and each
 	// client-side move between the games. trackPageView initialises analytics
 	// itself, so there is no ordering to get wrong against onMount.
-	afterNavigate(() => trackPageView());
+	afterNavigate(({ from }) => {
+		trackPageView();
+		// Кімната, у якій на мене чекають, з'являється саме тоді, коли я пішов зі
+		// сторінки онлайну — решта переходів індексу не чіпає.
+		if (from?.url.pathname.includes('/online')) checkAwaited();
+	});
 
 	// Handle transition direction
 	let transitionDirection = $state(1);
@@ -153,6 +170,8 @@
 	$effect(() => {
 		document.documentElement.classList.toggle('has-custom-scrollbar', scrollbar.hidesNative);
 	});
+
+	onMount(() => checkAwaited());
 
 	onMount(() => {
 		// Підписка на системну тему. `settings` — module-level singleton, тож
@@ -288,6 +307,18 @@
 <ServiceBadge />
 
 <Toast />
+
+<!--
+	«Вас чекають у грі» — поза сторінкою навмисно: сповіщення потрібне саме тоді,
+	коли людина пішла зі сторінки партії. Тут же, поруч із тостом, бо це те саме
+	місце в дереві: поверх усього й поза розміткою сторінок.
+
+	САМА СМУГА ДОВАНТАЖУЄТЬСЯ. Кореневий layout стоїть рівно на бюджеті (120 КБ
+	gzip зі стелі 120), і компонент із контролером його перевищили — заміряно
+	`npm run check:build`: 121 проти 120. Тому тут лишилася тонка обв'язка, а
+	смуга й контролер приїжджають лише тоді, коли кімната справді знайдена.
+-->
+
 <PageScrollbar />
 
 <!-- Меню в корені: після перемикання на системну смуга зникає — разом із меню,
