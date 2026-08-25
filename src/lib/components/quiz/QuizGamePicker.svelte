@@ -93,23 +93,46 @@
 	}
 
 	/*
-	 * Вибране — суцільний акцент, невибране — тло картки.
+	 * Вибране — суцільний акцент, НЕВИБРАНЕ — НІЯКЕ.
 	 *
-	 * Те саме рішення, що в `SegmentedChoice`: два стани одного кольору під різною
-	 * прозорістю майже не відрізняються, а `--color-text-on-accent` існує саме для
-	 * пари з акцентом і в кожній темі підібраний окремо.
+	 * Скарга автора: невибрані ігри читалися як «другий акцентний колір». Так і
+	 * було: тут стояло `--color-bg-card`, а це в темі orange-purple насичений
+	 * фіолетовий (#6b44a3) поруч із оранжевим акцентом (#ff8c00) — два насичені
+	 * кольори поспіль, з яких жоден не означає «не вибрано». Різниця читалася як
+	 * «два різні види вибраного».
+	 *
+	 * Узято рішення `SegmentedChoice` (`.seg__item`), на яке автор і показав:
+	 * невибране — прозоре, тобто тло панелі; вибране — суцільний акцент.
+	 *
+	 * Рамка — ВІД КОЛЬОРУ ТЕКСТУ, а не `--color-border`: у цій темі
+	 * `--color-border` дорівнює `--color-bg-panel` (обидва #4a2e7a), тож на панелі
+	 * такої рамки не видно взагалі, і прозора кнопка втратила б межі. Те саме
+	 * джерело кольору й із тієї самої причини — у `.seg__track`.
 	 */
 	.games__item {
 		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
 		min-height: 44px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
+		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: var(--color-text);
+		background: transparent;
+		color: var(--color-text-on-panel);
 		font: inherit;
 		font-size: var(--font-size-sm);
 		cursor: pointer;
+		/*
+		 * Перехід лише на тому, що справді міняється: `all` ловив би ще й `outline`
+		 * фокусу, і рамка приїжджала б із запізненням (те саме в `SegmentedChoice`).
+		 */
+		transition:
+			background-color var(--transition-fast),
+			color var(--transition-fast);
+	}
+
+	@media (hover: hover) {
+		.games__item:hover:not(.games__item--on) {
+			background: color-mix(in srgb, var(--color-text-on-panel), transparent 88%);
+		}
 	}
 
 	.games__item--on {
