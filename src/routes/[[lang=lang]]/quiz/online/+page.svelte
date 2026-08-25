@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withRoom, withoutRoom } from '$lib/utils/roomUrl';
 	import { awaySecondsLeft, awayStamps, awayWaitState } from '$lib/utils/awayWait';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -80,7 +81,6 @@
 	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
 	const lobby = new LobbyFeed('quiz');
 	let unlist: (() => void) | null = null;
-	let releaseHold: (() => void) | null = null;
 	let me = $state('');
 	let online = $state<string[]>([]);
 	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
@@ -129,9 +129,7 @@
 	 */
 	async function rememberInUrl(value: string) {
 		if (!browser) return;
-		const url = new URL(page.url);
-		url.searchParams.set('room', value);
-		await goto(url, { noScroll: true, keepFocus: true });
+		await goto(withRoom(page.url, value), { noScroll: true, keepFocus: true });
 	}
 
 	/** Вийти з кімнати на форму входу. Кімнату не закриває. */
@@ -140,7 +138,6 @@
 		playerData.endOnline();
 		for (const stop of stops) stop();
 		stops = [];
-		releaseHold = null;
 		unlist = null;
 		match = null;
 		code = '';
@@ -236,8 +233,21 @@
 			);
 
 			if (action === 'create') {
-				releaseHold = await live.holdRoom(code);
-				stops.push(() => releaseHold?.());
+				/*
+				 * ХВАТА БІЛЬШЕ НЕМА, і це виправлення, а не спрощення.
+				 *
+				 * Доти тут стояв `holdRoom(code)`: домовленість `onDisconnect().remove()`
+				 * на ВСЮ кімнату, щоб покинуте лобі не лишалося в базі. Але
+				 * перезавантаження сторінки — це теж розрив зʼєднання, тож кімната
+				 * зникала під господарем: «Такої кімнати немає», і повернутися в неї не
+				 * виходило нічим. Скарга автора саме про це.
+				 *
+				 * Покинуте прибирається й без хвата, двома засобами, які вже є: рядок
+				 * зникає з переліку через дві хвилини тишини (`config/roomLife` за
+				 * `info.aliveAt`), а сам запис зносить збирач своїх кімнат через 12 годин
+				 * (`net/ownRooms`). Ціна — запис живе довше, ніж потрібно; виграш —
+				 * перезавантаження перестало бути втратою кімнати.
+				 */
 
 				if (!isPrivate || quick) {
 					const list = await import('$lib/net/lobby');
@@ -308,8 +318,6 @@
 		}
 		const net = await import('$lib/net/rtdbRoom');
 		await (await net.roomTransport(code)).setStatus('playing');
-		releaseHold?.();
-		releaseHold = null;
 		unlist?.();
 		unlist = null;
 	}
@@ -490,7 +498,25 @@
 	});
 
 	onMount(() => {
-		const release = settings.claimHeader('menu.quiz', () => goto(langPath(lang, 'quiz')));
+		/*
+		 * «НАЗАД» РОБИТЬ ОДИН КРОК, і крок залежить від того, де я стою.
+		 *
+		 * Доти тут стояв один жорсткий напрямок на два різні екрани: із кімнати
+		 * «назад» вело в розділ «Вікторина», перескочивши форму входу. Скарга автора
+		 * саме про це: з `?room=##` мусить вести на `/quiz/online/`.
+		 *
+		 * У кімнаті крок — це ЗНЯТИ `?room`: адреса тут джерело правди, і ефект
+		 * нижче сам розбирає кімнату, коли параметр зникає. Тобто «назад» не
+		 * дублює вихід, а користується тим самим шляхом.
+		 */
+		const release = settings.claimHeader(
+			'menu.quiz',
+			() =>
+				void goto(code === '' ? langPath(lang, 'quiz') : withoutRoom(page.url), {
+					noScroll: true,
+					keepFocus: true
+				})
+		);
 		void player.loadCountry();
 		void loadQuizText(settings.locale).then((loaded) => (dict = loaded));
 

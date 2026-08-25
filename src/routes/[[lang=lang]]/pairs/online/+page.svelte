@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withoutRoom } from '$lib/utils/roomUrl';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -124,7 +125,6 @@
 	/** Годинник сторінки. Контролер часу не питає — йому його передають. */
 	let clock = $state(Date.now());
 	/** Скасувати домовленість «зникла вкладка господаря — зникла кімната». */
-	let releaseHold: (() => void) | null = null;
 
 	const myRole = $derived<Role>(
 		match?.members.find((member) => member.uid === me)?.role ?? 'player'
@@ -244,7 +244,7 @@
 	 * перелік. Кімната при цьому лишається — у ній можуть сидіти інші, а покинуту
 	 * приберуть `onDisconnect` (у лобі) або збирач власних кімнат.
 	 *
-	 * Домовленості (`releaseHold`, `unlist`) занулюються ПІСЛЯ прогону `stops`:
+	 * Домовленість (`unlist`) занулюється ПІСЛЯ прогону `stops`:
 	 * саме `stops` їх і викликає, тож зворотний порядок лишив би їх невиконаними.
 	 */
 	function leaveRoom() {
@@ -252,7 +252,6 @@
 		playerData.endOnline();
 		for (const stop of stops) stop();
 		stops = [];
-		releaseHold = null;
 		unlist = null;
 		match = null;
 		code = '';
@@ -364,8 +363,21 @@
 			 * видаляти ЧУЖЕ (CLOUD-DATABASE-v8 § 9.3).
 			 */
 			if (action === 'create') {
-				releaseHold = await live.holdRoom(code);
-				stops.push(() => releaseHold?.());
+				/*
+				 * ХВАТА БІЛЬШЕ НЕМА, і це виправлення, а не спрощення.
+				 *
+				 * Доти тут стояв `holdRoom(code)`: домовленість `onDisconnect().remove()`
+				 * на ВСЮ кімнату, щоб покинуте лобі не лишалося в базі. Але
+				 * перезавантаження сторінки — це теж розрив зʼєднання, тож кімната
+				 * зникала під господарем: «Такої кімнати немає», і повернутися в неї не
+				 * виходило нічим. Скарга автора саме про це.
+				 *
+				 * Покинуте прибирається й без хвата, двома засобами, які вже є: рядок
+				 * зникає з переліку через дві хвилини тишини (`config/roomLife` за
+				 * `info.aliveAt`), а сам запис зносить збирач своїх кімнат через 12 годин
+				 * (`net/ownRooms`). Ціна — запис живе довше, ніж потрібно; виграш —
+				 * перезавантаження перестало бути втратою кімнати.
+				 */
 
 				/*
 				 * ВІДКРИТА кімната потрапляє в перелік; закрита — ні, і в цьому вся
@@ -491,13 +503,6 @@
 		}
 		const net = await import('$lib/net/rtdbRoom');
 		await (await net.roomTransport(code)).setStatus('playing');
-		/*
-		 * Партія почалася — домовленість «зникла вкладка, зникла кімната»
-		 * скасовується. Обрив звʼязку посеред гри не має нищити партію, у яку ще
-		 * хочуть повернутися.
-		 */
-		releaseHold?.();
-		releaseHold = null;
 
 		/*
 		 * І з переліку теж: у списку мусять бути лише кімнати, куди ще можна зайти.
@@ -815,7 +820,19 @@
 	});
 
 	onMount(() => {
-		const release = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
+		/*
+		 * «Назад» робить ОДИН крок: у кімнаті знімає `?room`, на формі входу веде в
+		 * розділ. Той самий дефект і та сама правка, що у «Вікторині»: доти один
+		 * жорсткий напрямок перескакував форму входу.
+		 */
+		const release = settings.claimHeader(
+			'memory.title',
+			() =>
+				void goto(code === '' ? langPath(lang, 'pairs') : withoutRoom(page.url), {
+					noScroll: true,
+					keepFocus: true
+				})
+		);
 
 		/*
 		 * Прапор питається РІВНО ОДИН РАЗ, і тому тут, а не в ефекті.
