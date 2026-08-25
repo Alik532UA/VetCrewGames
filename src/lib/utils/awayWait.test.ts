@@ -5,10 +5,12 @@ import {
 	AWAY_GRACE_MS,
 	awaySecondsLeft,
 	awayStamps,
-	awayWaitState,
 	goOnDecided,
+	pauseSecondsLeft,
 	shouldHoldRound,
-	votesNeeded
+	votesNeeded,
+	waitView,
+	type WaitSource
 } from './awayWait';
 import type { Member } from '$lib/net/roomTypes';
 import { readFileSync } from 'node:fs';
@@ -137,26 +139,72 @@ describe('мить зникнення', () => {
 	});
 });
 
-describe('стан чекання одним обʼєктом', () => {
-	const match = (over: Partial<Parameters<typeof awayWaitState>[0]> = {}) => ({
+describe('стан чекання одним викликом', () => {
+	const NOW = 50_000;
+
+	const source = (over: Partial<WaitSource> = {}): WaitSource => ({
 		away: [member('a')],
-		answered: [] as string[],
-		goOn: [] as string[],
+		answered: [],
+		goOn: [],
 		present: ['b', 'c'],
+		players: [member('a'), member('b'), member('c')],
+		pausedBy: null,
+		pausedAt: 0,
+		graceSpent: () => 0,
+		pauseReadyAt: () => 0,
 		...over
 	});
 
-	it('збирає паузу й межу голосів із полів матчу', () => {
-		expect(awayWaitState(match())).toEqual({ hold: true, needed: 2 });
+	it('збирає паузу, межу голосів і відлік', () => {
+		const view = waitView(source(), { a: NOW }, NOW, 'b');
+		expect(view.hold).toBe(true);
+		expect(view.needed).toBe(2);
+		expect(view.left).toBe(AWAY_GRACE_MS / 1000);
+		expect(view.pausedBy).toBeNull();
 	});
 
-	it('досить голосів — пауза знята', () => {
-		expect(awayWaitState(match({ goOn: ['b', 'c'] })).hold).toBe(false);
+	it('досить голосів — партія не стоїть', () => {
+		expect(waitView(source({ goOn: ['b', 'c'] }), {}, NOW, 'b').hold).toBe(false);
 	});
 
 	/** Матчу ще немає — чекати нема на що, і це не «пауза за замовчуванням». */
 	it('без матчу партія не стоїть', () => {
-		expect(awayWaitState(null)).toEqual({ hold: false, needed: 1 });
+		expect(waitView(null, {}, NOW, 'b')).toEqual({
+			hold: false,
+			needed: 1,
+			left: 0,
+			pausedBy: null,
+			canPause: false
+		});
+	});
+
+	/** Пауза й зникнення дають ОДИН відлік: на екрані це одне вікно. */
+	it('під паузою відлік рахується від ходу, а не від пільги зникнення', () => {
+		const view = waitView(
+			source({ away: [], pausedBy: 'a', pausedAt: NOW }),
+			{},
+			NOW + 5_000,
+			'b'
+		);
+		expect(view.pausedBy?.uid).toBe('a');
+		expect(view.left).toBe(AWAY_GRACE_MS / 1000 - 5);
+		expect(view.hold, 'паузу знімає людина або голос, а не відлік').toBe(true);
+	});
+
+	/**
+	 * ВИТРИМКА після своєї паузи — щоб кнопкою не смикали партію. Вимога автора:
+	 * «після того як зняли паузу той самий гравець не може ставити паузу протягом
+	 * хвилини».
+	 */
+	it('своя витримка закриває кнопку паузи', () => {
+		const ready = { pauseReadyAt: (uid: string) => (uid === 'b' ? NOW + 10_000 : 0) };
+		expect(waitView(source({ away: [], ...ready }), {}, NOW, 'b').canPause).toBe(false);
+		expect(waitView(source({ away: [], ...ready }), {}, NOW, 'c').canPause).toBe(true);
+		expect(waitView(source({ away: [], ...ready }), {}, NOW + 10_000, 'b').canPause).toBe(true);
+	});
+
+	it('під паузою кнопки паузи немає ні в кого', () => {
+		expect(waitView(source({ pausedBy: 'a' }), {}, NOW, 'b').canPause).toBe(false);
 	});
 });
 
@@ -182,7 +230,21 @@ describe('вікно очікування', () => {
 
 	it('малюється лише поки партія чекає', () => {
 		expect(source, 'вікно мусить залежати від `waiting`, а не лише від складу').toContain(
-			'{#if waiting && away.length > 0}'
+			'{#if waiting && listed.length > 0}'
+		);
+	});
+
+	/**
+	 * ДВІ ПРИЧИНИ, ОДНЕ ВІКНО: зникнення й пауза. Тримати два майже однакові вікна
+	 * означало б розійтися в них першою ж правкою — а стан на екрані один і той
+	 * самий: «партія стоїть, і ось чому».
+	 */
+	it('те саме вікно показує й паузу', () => {
+		expect(source, 'рядок мусить називати причину').toContain(
+			"pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait'"
+		);
+		expect(source, 'автор паузи знімає її сам і без відліку').toContain(
+			'data-testid="quiz-pause-resume-btn"'
 		);
 	});
 
@@ -267,5 +329,49 @@ describe('накопичувальна пільга', () => {
 
 		// `a` витратив усе (лишилося 3 с), `b` не витратив нічого (15 с) — чекаємо 15.
 		expect(awaySecondsLeft(two, since, NOW, spent)).toBe(AWAY_GRACE_MS / 1000);
+	});
+});
+
+/**
+ * ПАУЗА: той самий стан, що зникнення, лише з іншою причиною.
+ *
+ * Легального способу спинити партію доти не було — лише «вийти, щоб зупинити»,
+ * як назвав це автор. Тому пауза бере ту саму механіку: ті самі п'ятнадцять
+ * секунд, той самий накопичувальний запас, те саме вікно поверх гри.
+ *
+ * Різниця, яку перевіряють ці випадки: пауза тримає раунд БЕЗЗАСТЕРЕЖНО. Зникнення
+ * можна не чекати, якщо зниклий уже відповів; паузу поставили навмисно, і зняти її
+ * може або автор, або голосування.
+ */
+describe('пауза', () => {
+	it('тримає раунд, навіть коли всі відповіли', () => {
+		expect(shouldHoldRound([], ['a', 'b'], [], 2, 'a')).toBe(true);
+	});
+
+	it('знімається голосуванням присутніх', () => {
+		// Один голос із двох потрібних — пауза тримається.
+		expect(shouldHoldRound([], [], ['b'], 2, 'a')).toBe(true);
+		expect(shouldHoldRound([], [], ['b', 'c'], 2, 'a')).toBe(false);
+	});
+
+	it('без паузи правило працює як доти', () => {
+		expect(shouldHoldRound([member('a')], [], [], 2, null)).toBe(true);
+		expect(shouldHoldRound([], [], [], 2, null)).toBe(false);
+	});
+
+	/** Відлік паузи — той самий запас, що в зникнення, і та сама підлога. */
+	it('відлік паузи зменшується витраченим', () => {
+		const now = 100_000;
+		expect(pauseSecondsLeft(now, 0, now)).toBe(AWAY_GRACE_MS / 1000);
+		expect(pauseSecondsLeft(now, 3000, now)).toBe(12);
+		expect(pauseSecondsLeft(now, AWAY_GRACE_MS, now)).toBe(AWAY_GRACE_FLOOR_MS / 1000);
+	});
+
+	/**
+	 * НУЛЬ НЕ ЗНІМАЄ ПАУЗУ. Він лише відкриває решті кнопку — саме тому автор і
+	 * просив, щоб пауза працювала й без запасу: «інші можуть ОДРАЗУ зняти паузу».
+	 */
+	it('нуль на відліку не знімає паузу сам', () => {
+		expect(shouldHoldRound([], [], [], 2, 'a')).toBe(true);
 	});
 });

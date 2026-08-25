@@ -66,6 +66,22 @@
 		/** Мій голос «грати далі» — від будь-кого присутнього, не лише лідера. */
 		onGoOn: () => void;
 		/**
+		 * ХТО ПОСТАВИВ ПАУЗУ — і `null`, якщо це просто зникнення.
+		 *
+		 * Вікно те саме навмисно: стан однаковий («партія стоїть, і ось чому»), і
+		 * тримати два майже однакові вікна означало б розійтися в них першою ж
+		 * правкою. Різниця в одному рядку тексту й у тому, чия кнопка.
+		 */
+		pausedBy?: Member | null;
+		/**
+		 * Зняти СВОЮ паузу. `undefined` — паузу ставив не я.
+		 *
+		 * Автор паузи знімає її ОДРАЗУ, не чекаючи відліку: він її й ставив. Решта
+		 * чекає, поки відлік відкриє «грати далі» — і це та сама асиметрія, яку
+		 * просив автор.
+		 */
+		onResume?: () => void;
+		/**
 		 * Прибрати гравця з кімнати. `undefined` — я не лідер, і кнопки немає.
 		 *
 		 * Не `disabled`: кнопка, якої натиснути не можна, у гостя лише питала б, чому
@@ -74,10 +90,25 @@
 		onkick?: (uid: string) => void;
 	}
 
-	let { text, away, secondsLeft, waiting, voted, needed, iVoted, onGoOn, onkick }: Props = $props();
+	let {
+		text,
+		away,
+		secondsLeft,
+		waiting,
+		voted,
+		needed,
+		iVoted,
+		onGoOn,
+		onkick,
+		pausedBy = null,
+		onResume
+	}: Props = $props();
+
+	/** Кого показує рядок: автора паузи або тих, кого немає. */
+	const listed = $derived(pausedBy ? [pausedBy] : away);
 </script>
 
-{#if waiting && away.length > 0}
+{#if waiting && listed.length > 0}
 	<!--
 		ВІКНО ІСНУЄ, ЛИШЕ ПОКИ ПАРТІЯ ЧЕКАЄ — і тому підкладка тут беззастережна.
 
@@ -99,14 +130,16 @@
 				«Чекаємо: Могутній Бізон» — і граматика ціла, і рід ні до чого.
 			-->
 			<p class="away__line">
-				<span class="away__label">{@html formatFont(text('quiz.awayWait'))}</span>
+				<span class="away__label">
+					{@html formatFont(text(pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait'))}
+				</span>
 
-				{#each away as member, index (member.uid)}
+				{#each listed as member, index (member.uid)}
 					<span class="away__who" data-testid="quiz-away-{member.uid}-item">
 						<Flag code={member.country} />
 						<Avatar avatar={member.avatar} />
 						<span class="away__name">{member.name}</span>
-					</span>{#if index < away.length - 1},{/if}
+					</span>{#if index < listed.length - 1},{/if}
 				{/each}
 
 				{#if secondsLeft > 0}
@@ -117,6 +150,21 @@
 					<b class="away__count" data-testid="quiz-away-timer-value">{secondsLeft}</b>
 				{/if}
 			</p>
+
+			{#if onResume}
+				<!--
+					КНОПКА АВТОРА ПАУЗИ — без відліку. Він її ставив, він і знімає; чекати
+					власного дозволу було б безглуздо.
+				-->
+				<button
+					type="button"
+					class="away__goon"
+					onclick={onResume}
+					data-testid="quiz-pause-resume-btn"
+				>
+					{@html formatFont(text('quiz.pauseResume'))}
+				</button>
+			{/if}
 
 			{#if secondsLeft === 0}
 				<!--
@@ -140,7 +188,7 @@
 					<b class="away__count" data-testid="quiz-away-goon-count">{voted}/{needed}</b>
 				</button>
 
-				{#if onkick}
+				{#if onkick && !pausedBy}
 					<!-- Лідер може прибрати зниклого назовсім — це інша дія, ніж «грати далі». -->
 					<div class="away__kicks">
 						{#each away as member (member.uid)}

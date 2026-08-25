@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { withRoom, withoutRoom } from '$lib/utils/roomUrl';
-	import { awaySecondsLeft, awayStamps, awayWaitState } from '$lib/utils/awayWait';
+	import { awayStamps, waitView } from '$lib/utils/awayWait';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
@@ -407,24 +407,19 @@
 	});
 
 	/**
-	 * Скільки ще чекаємо, чи чекаємо взагалі й скільки голосів треба.
+	 * Усе про чекання одним викликом — правила живуть у `utils/awayWait`.
 	 *
-	 * Пільговий час тепер РОЗБЛОКОВУЄ КНОПКУ, а не знімає паузу: рішення «граємо
-	 * далі» належить присутнім. Обидва правила — в `utils/awayWait`.
+	 * Пауза й зникнення дають один відлік і одне вікно: на екрані це один стан
+	 * («партія стоїть, і ось чому»), і два різні числа читалися б як випадковість.
 	 */
-	const awayLeft = $derived(
-		awaySecondsLeft(match?.away ?? [], awaySince, clock, (uid) => match?.graceSpent(uid) ?? 0)
-	);
-	const wait = $derived(awayWaitState(match));
+	const wait = $derived(waitView(match, awaySince, clock, me));
 
 	/*
-	 * Пауза раунду — наслідок умови вище. Саме `$effect`, а не похідна: зсув
+	 * Пауза раунду — наслідок стану вище. Саме `$effect`, а не похідна: зсув
 	 * дедлайну це ЗМІНА стану партії, і робити її в похідній означало б писати з
 	 * читання.
 	 */
-	$effect(() => {
-		match?.setHold(wait.hold, clock);
-	});
+	$effect(() => void match?.setHold(wait.hold, clock));
 
 	const countdownLeft = $derived(
 		match?.countdownAt === null || match?.countdownAt === undefined
@@ -617,8 +612,12 @@
 			{lang}
 			{amHost}
 			{clock}
-			{awayLeft}
+			awayLeft={wait.left}
 			awayHold={wait.hold}
+			pausedBy={wait.pausedBy}
+			canPause={wait.canPause}
+			onPause={() => void match?.pause()}
+			onResume={match.pausedBy === me ? () => void match?.resume() : undefined}
 			goOn={match.goOn}
 			goOnNeeded={wait.needed}
 			onGoOn={() => void match?.voteGoOn()}

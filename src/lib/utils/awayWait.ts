@@ -97,8 +97,18 @@ export function shouldHoldRound(
 	missing: readonly Member[],
 	answered: readonly string[],
 	votes: readonly string[],
-	presentCount: number
+	presentCount: number,
+	pausedBy: string | null = null
 ): boolean {
+	/*
+	 * ПАУЗА ТРИМАЄ РАУНД БЕЗЗАСТЕРЕЖНО, і це головна різниця з зникненням.
+	 *
+	 * Зникнення можна не чекати: якщо зниклий уже відповів, він нічого не тримає.
+	 * Паузу поставили НАВМИСНО — і зняти її може або той, хто ставив, або
+	 * голосування присутніх. Інакше кнопка «пауза» була б пропозицією, а не дією.
+	 */
+	if (pausedBy !== null) return !goOnDecided(votes, presentCount);
+
 	if (missing.length === 0) return false;
 	if (goOnDecided(votes, presentCount)) return false;
 	return missing.some((member) => !answered.includes(member.uid));
@@ -125,28 +135,70 @@ export function awayStamps(
 }
 
 /**
- * Усе про чекання одним обʼєктом: чи стоїть партія й скільки голосів треба.
+ * Скільки СЕКУНД лишилося з паузи, поставленої навмисно.
  *
- * Складання тут, а не на сторінці, бо сторінка стоїть на межі розміру (400
- * рядків), а це не розмітка й не мережа — це те саме правило, що вище, лише
- * зібране з полів матчу. Заразом воно перестає залежати від того, чи матч уже
- * існує: `null` означає «чекати нема на що».
- *
- * Пільгового часу тут немає навмисно: він відповідає лише за те, ЯКА фаза вікна
- * намальована, і саме вікно розрізняє її по `secondsLeft`. Поле «кнопка
- * розблокована» в цьому обʼєкті було б другим джерелом тієї самої відповіді.
+ * Той самий запас, що в зникнення (вимога автора: одна межа на два стани), і та
+ * сама підлога. Нуль означає рівно те, що й там: решта може зняти паузу — але
+ * НЕ те, що пауза скінчилася сама. Паузу знімає людина або голос.
  */
-export function awayWaitState(
-	match: {
-		away: readonly Member[];
-		answered: readonly string[];
-		goOn: readonly string[];
-		present: readonly string[];
-	} | null
-): { hold: boolean; needed: number } {
-	const present = Math.max(1, match?.present.length ?? 1);
+export function pauseSecondsLeft(pausedAt: number, spent: number, now: number): number {
+	const left = Math.max(AWAY_GRACE_FLOOR_MS, AWAY_GRACE_MS - spent);
+	return Math.max(0, Math.ceil((pausedAt + left - now) / 1000));
+}
+
+/** Те, що вміє матч і потрібно чеканню. Інтерфейс, а не клас: тут немає мережі. */
+export interface WaitSource {
+	away: readonly Member[];
+	answered: readonly string[];
+	goOn: readonly string[];
+	present: readonly string[];
+	players: readonly Member[];
+	pausedBy: string | null;
+	pausedAt: number;
+	graceSpent(uid: string): number;
+	pauseReadyAt(uid: string): number;
+}
+
+/** Усе, що екран показує про чекання. Одна відповідь замість семи похідних. */
+export interface WaitView {
+	hold: boolean;
+	needed: number;
+	/** Скільки секунд показувати: пільга зникнення або відлік паузи. */
+	left: number;
+	pausedBy: Member | null;
+	canPause: boolean;
+}
+
+/**
+ * ЗІБРАТИ СТАН ЧЕКАННЯ — і зібрати його ТУТ, а не на сторінці.
+ *
+ * Сторінка кімнати стоїть на межі розміру (400 рядків), а це не розмітка й не
+ * мережа: це ті самі правила, що вище, лише прикладені до полів матчу. Заразом
+ * вони перестають залежати від того, чи матч уже існує: `null` означає «чекати
+ * нема на що».
+ *
+ * Пауза й зникнення дають ОДИН відлік навмисно: на екрані це одне вікно з однією
+ * межею, і два різні числа в ньому читалися б як випадковість.
+ */
+export function waitView(
+	match: WaitSource | null,
+	since: Record<string, number>,
+	now: number,
+	me: string
+): WaitView {
+	if (!match) return { hold: false, needed: 1, left: 0, pausedBy: null, canPause: false };
+
+	const present = Math.max(1, match.present.length);
+	const paused = match.pausedBy;
+
 	return {
-		hold: match ? shouldHoldRound(match.away, match.answered, match.goOn, present) : false,
-		needed: votesNeeded(present)
+		hold: shouldHoldRound(match.away, match.answered, match.goOn, present, paused),
+		needed: votesNeeded(present),
+		left:
+			paused === null
+				? awaySecondsLeft(match.away, since, now, (uid) => match.graceSpent(uid))
+				: pauseSecondsLeft(match.pausedAt, match.graceSpent(paused), now),
+		pausedBy: paused === null ? null : (match.players.find((p) => p.uid === paused) ?? null),
+		canPause: paused === null && now >= match.pauseReadyAt(me)
 	};
 }

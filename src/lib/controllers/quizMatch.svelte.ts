@@ -1,5 +1,7 @@
 import type { Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import {
+	PAUSE_COOLDOWN_MS,
 	RESUME_BONUS_MS,
 	REVEAL_MS,
 	SETTLE_MS,
@@ -12,14 +14,6 @@ import {
 
 /** Що зараз на екрані партії. */
 export type QuizPhase = 'round' | 'reveal' | 'over';
-
-/** Відповідь одного гравця на один раунд. */
-interface Answer {
-	/** Серверний час ходу. */
-	at: number;
-	/** Частка правильного: 1 — усе, 0 — нічого. */
-	correct: number;
-}
 
 /**
  * Спільна вікторина: РАУНД як одиниця, рахунок як чиста функція від журналу.
@@ -84,7 +78,7 @@ export class QuizMatch {
 	/** Голоси «граємо далі» за раундами. Порожньо — ніхто не голосував. */
 	#goOnVotes = $state<Record<number, string[]>>({});
 	/** Відповіді: раунд → гравець → коли й наскільки правильно. */
-	answers = $state<Record<number, Record<string, Answer>>>({});
+	answers = $state<Record<number, Record<string, QuizAnswer>>>({});
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -283,6 +277,12 @@ export class QuizMatch {
 	#pending = $state(0);
 	/** Скільки пільги вже витратив кожен — із журналу. */
 	#graceSpent = $state<Record<string, number>>({});
+	/** Хто поставив паузу в кожному раунді. Знята пауза — знову `undefined`. */
+	#pausedBy = $state<Record<number, string>>({});
+	/** Коли поставили — серверний час ходу. */
+	#pausedAt = $state<Record<number, number>>({});
+	/** Коли гравець останній раз ЗНІМАВ паузу — для хвилинної витримки. */
+	#pauseUsedAt = $state<Record<string, number>>({});
 
 	/**
 	 * Увімкнути або зняти паузу очікування.
@@ -316,6 +316,72 @@ export class QuizMatch {
 		return Math.max(recorded, this.#pending) + running;
 	}
 
+	/**
+	 * ХТО ПОСТАВИВ ПАУЗУ — і `null`, якщо паузи немає.
+	 *
+	 * Легального способу спинити партію доти не існувало, і це не «забули кнопку»:
+	 * пауза в грі БУЛА, але дістатися до неї можна було лише закривши вкладку —
+	 * тобто зникнувши. Автор назвав це прямо: «гравець може вийти, щоб зупинити
+	 * гру».
+	 *
+	 * Тому пауза — той самий стан, що зникнення, лише з іншою причиною: ті самі
+	 * п'ятнадцять секунд, той самий накопичувальний запас, те саме вікно поверх
+	 * гри. Різниця одна: автор паузи може зняти її САМ і одразу, а решта — коли
+	 * відлік вичерпано.
+	 */
+	get pausedBy(): string | null {
+		return this.#pausedBy[this.round] ?? null;
+	}
+
+	/**
+	 * Коли паузу поставили — СЕРВЕРНИМ часом ходу.
+	 *
+	 * Не «коли я це побачив»: інакше відлік у кожного свій, а він показує спільну
+	 * межу. Той самий принцип, що з початком раунду.
+	 */
+	get pausedAt(): number {
+		return this.#pausedAt[this.round] ?? 0;
+	}
+
+	/**
+	 * Коли цьому гравцеві знову можна ставити паузу (серверний час).
+	 *
+	 * ХВИЛИНА ПІСЛЯ ЗНЯТТЯ — вимога автора, і вона не про запас часу, а про
+	 * настирливість: без неї можна тиснути паузу знову й знову, і партія
+	 * перетворюється на смикання, навіть коли пільги вже нуль.
+	 */
+	pauseReadyAt(uid: string): number {
+		return this.#pauseUsedAt[uid] === undefined ? 0 : this.#pauseUsedAt[uid] + PAUSE_COOLDOWN_MS;
+	}
+
+	/** Поставити паузу. Дозволено будь-кому, хто в партії. */
+	async pause(): Promise<void> {
+		if (this.round < 0 || this.pausedBy !== null) return;
+		await this.#transport.append({
+			seq: this.applied + 1,
+			by: this.#me,
+			type: 'pause',
+			payload: { round: this.round }
+		});
+	}
+
+	/**
+	 * Зняти свою паузу. Чужу зняти цим не можна — для цього є голосування.
+	 *
+	 * Перевірка тут, а не в правилі бази: правило не знає, хто ставив паузу, і
+	 * дізнатися це може лише перепрогін. Тому «зняв не той» — це хід, який
+	 * ПЕРЕПРОГІН не зараховує, а не запис, який відкидає база.
+	 */
+	async resume(): Promise<void> {
+		if (this.pausedBy !== this.#me) return;
+		await this.#transport.append({
+			seq: this.applied + 1,
+			by: this.#me,
+			type: 'resume',
+			payload: { round: this.round }
+		});
+	}
+
 	/** Скільки пільгового часу цей гравець уже витратив за партію. */
 	graceSpent(uid: string): number {
 		return this.#graceSpent[uid] ?? 0;
@@ -333,6 +399,23 @@ export class QuizMatch {
 	 */
 	async #writeHeld(ms: number): Promise<void> {
 		const spent = Math.max(0, ms - RESUME_BONUS_MS);
+
+		/*
+		 * ПАУЗА СПИСУЄ ТОЙ САМИЙ ЗАПАС, що зникнення, і саме тому зловживати нею
+		 * нічим: у того, хто ставить її раз за разом, просто закінчується час — так
+		 * само, як у того, хто зникав. Одна межа на два стани, а не дві схожі.
+		 */
+		const paused = this.pausedBy;
+		if (paused !== null) {
+			await this.#transport.append({
+				seq: this.applied + 1,
+				by: this.#me,
+				type: 'held',
+				payload: { round: this.round, ms, uid: paused, spent }
+			});
+			return;
+		}
+
 		for (const member of this.away) {
 			await this.#transport.append({
 				seq: this.applied + 1,
@@ -476,77 +559,18 @@ export class QuizMatch {
 		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.games = configToGames(snapshot.info.config);
 
-		/*
-		 * Журнал перечитується З НУЛЯ, і порядок ходів не має значення.
-		 *
-		 * Рахунок — сума незалежних доданків, тож пропуск у нумерації (хід ще не
-		 * приїхав) нічого не ламає: він додасться, коли приїде. У «Знайди пару»
-		 * інакше — там кожен хід міняє дошку, і пропуск зупиняє все.
-		 */
-		const startedAt: Record<number, number> = {};
-		const answers: Record<number, Record<string, Answer>> = {};
-		const goOnVotes: Record<number, string[]> = {};
-		const held: Record<number, number> = {};
-		const graceSpent: Record<string, number> = {};
+		const log = replayQuizLog(snapshot);
 
-		for (const move of snapshot.moves) {
-			const round = Number(move.payload?.round);
-			if (!Number.isInteger(round) || round < 0) continue;
-			// Час ходу ставить СЕРВЕР. Хід без нього не рахується: без часу очки
-			// порахувати нічим, а вигадати їх — це те саме, що дати клієнту право
-			// назвати свою швидкість.
-			const at = Number(move.at);
-			if (!Number.isFinite(at)) continue;
-
-			if (move.type === 'round') {
-				// Лише господар оголошує раунди. Правило бази цього не перевіряє —
-				// підписати хід чужим uid не можна, але оголосити раунд від себе може
-				// будь-хто. Тому перевірка тут: інакше гість зміг би перескочити раунд.
-				if (move.by !== snapshot.info.hostUid) continue;
-				// Перше оголошення виграє: повторне не мусить рухати дедлайн.
-				if (startedAt[round] === undefined) startedAt[round] = at;
-				continue;
-			}
-
-			if (move.type === 'held') {
-				// Лише господар: інакше кожен дописував би собі час.
-				if (move.by !== snapshot.info.hostUid) continue;
-				const ms = Number(move.payload?.ms);
-				if (Number.isFinite(ms) && ms > 0) held[round] = (held[round] ?? 0) + ms;
-
-				const uid = move.payload?.uid;
-				const spent = Number(move.payload?.spent);
-				if (typeof uid === 'string' && Number.isFinite(spent) && spent > 0) {
-					graceSpent[uid] = (graceSpent[uid] ?? 0) + spent;
-				}
-				continue;
-			}
-
-			if (move.type === 'goon') {
-				// ОДИН ГРАВЕЦЬ — ОДИН ГОЛОС у раунді. Повторний нічого не додає:
-				// інакше повторне натискання саме собою давало б «більшість».
-				const forRound = (goOnVotes[round] ??= []);
-				if (!forRound.includes(move.by)) forRound.push(move.by);
-				continue;
-			}
-
-			if (move.type !== 'answer') continue;
-			const correct = Number(move.payload?.correct);
-			if (!Number.isFinite(correct)) continue;
-
-			const forRound = (answers[round] ??= {});
-			// ОДИН РАУНД — ОДНА ВІДПОВІДЬ. Повторна нічого не додає: інакше повтор
-			// надсилання давав би подвійні очки.
-			if (forRound[move.by] === undefined) forRound[move.by] = { at, correct };
-		}
-
-		this.startedAt = startedAt;
-		this.answers = answers;
-		this.#goOnVotes = goOnVotes;
-		this.#heldByRound = held;
-		this.#graceSpent = graceSpent;
+		this.startedAt = log.startedAt;
+		this.answers = log.answers;
+		this.#goOnVotes = log.goOn;
+		this.#heldByRound = log.held;
+		this.#graceSpent = log.graceSpent;
+		this.#pausedBy = log.pausedBy;
+		this.#pausedAt = log.pausedAt;
+		this.#pauseUsedAt = log.pauseUsedAt;
 		// Хід приїхав — оптимістичне число більше не потрібне.
-		if ((held[this.round] ?? 0) >= this.#pending) this.#pending = 0;
+		if ((log.held[this.round] ?? 0) >= this.#pending) this.#pending = 0;
 		this.applied = snapshot.moves.length;
 	}
 }

@@ -572,3 +572,98 @@ describe('пауза однакова в усіх', () => {
 		stop();
 	});
 });
+
+/**
+ * ПАУЗА: легальний спосіб спинити партію.
+ *
+ * Доти його не було, і це не «забули кнопку»: пауза в грі БУЛА, але дістатися до
+ * неї можна було лише зникнувши — тобто закривши вкладку. Автор назвав це прямо:
+ * «гравець може вийти, щоб зупинити гру».
+ *
+ * Пауза бере ту саму механіку, що зникнення: той самий запас часу, те саме вікно,
+ * те саме голосування. Різниця в двох речах, і кожна тут перевіряється: автор
+ * знімає паузу САМ і одразу, а після зняття не може ставити її хвилину.
+ *
+ * Зворотний експеримент (§ 1.1): прибрати перевірку `pausedBy[round] !== move.by` у
+ * перепрогоні — червоніє «чужу паузу не зняти».
+ */
+describe('пауза', () => {
+	it('ставиться й видна обом', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+
+		await guest.pause();
+
+		expect(guest.pausedBy).toBe(GUEST);
+		expect(host.pausedBy, 'пауза — це хід у журналі, тобто вона в усіх').toBe(GUEST);
+		stop();
+	});
+
+	it('автор знімає свою', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		await guest.pause();
+
+		await guest.resume();
+
+		expect(guest.pausedBy).toBeNull();
+		expect(host.pausedBy).toBeNull();
+		stop();
+	});
+
+	/**
+	 * Чужу паузу не зняти кнопкою — для цього є голосування присутніх. Правило бази
+	 * цього не знає (вона не знає, хто ставив), тож стереже перепрогін.
+	 */
+	it('чужу паузу не зняти', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		await guest.pause();
+
+		// Кнопкою — не виходить: контролер не дасть.
+		await host.resume();
+		expect(guest.pausedBy, 'кнопка чужу паузу не знімає').toBe(GUEST);
+
+		/*
+		 * І ПІДРОБЛЕНИМ ХОДОМ — теж. Пишемо в журнал напряму, тобто робимо те, що
+		 * може зробити змінений клієнт: правило бази цього не спинить, бо вона не
+		 * знає, ХТО ставив паузу. Стереже перепрогін, і саме він тут перевіряється.
+		 */
+		await room.transport().append({
+			seq: 99,
+			by: HOST,
+			type: 'resume',
+			payload: { round: 0 }
+		});
+
+		expect(guest.pausedBy, 'підроблений хід не мусить нічого означати').toBe(GUEST);
+		stop();
+	});
+
+	it('двічі підряд паузу не поставити', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		await guest.pause();
+		await host.pause();
+
+		expect(guest.pausedBy, 'перша пауза виграє').toBe(GUEST);
+		stop();
+	});
+
+	/**
+	 * ВИТРИМКА ХВИЛИНУ після зняття своєї — щоб кнопкою не смикали партію. До
+	 * зняття витримки немає: людина ще нічого не витратила.
+	 */
+	it('після зняття своєї — витримка хвилину', async () => {
+		const { guest, host, stop } = table();
+		await host.startRound(0);
+		expect(guest.pauseReadyAt(GUEST), 'доти витримки немає').toBe(0);
+
+		await guest.pause();
+		await guest.resume();
+
+		expect(guest.pauseReadyAt(GUEST)).toBeGreaterThan(0);
+		expect(guest.pauseReadyAt(HOST), 'витримка своя в кожного').toBe(0);
+		stop();
+	});
+});
