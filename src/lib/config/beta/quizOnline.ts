@@ -177,7 +177,13 @@ export const quizOnlineTab: BetaTab = {
 				en: 'Open the set of games before creating the room. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
 			},
 			coverage: 'manual',
-			testid: 'quiz-game-*-toggle'
+			/*
+			 * ГРУПА, а не окрема кнопка. Пункт перевіряє склад переліку, тобто
+			 * рахує кнопки ВСЕРЕДИНІ — і мусить показувати на те, у межах чого
+			 * рахує. Доти тут стояло `quiz-game-*-toggle`: зірочка підходила до
+			 * будь-якої з шести кнопок і не називала жодної певної коробки.
+			 */
+			testid: 'quiz-games-fieldset'
 		}
 	]
 };
