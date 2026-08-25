@@ -9,6 +9,8 @@
 	import { langPath, languageFromParam, routeRestFromId, type Language } from '$lib/i18n/routing';
 	import { THEME_OPTIONS, type Theme } from '$lib/config/themes';
 	import HeaderMenu from './HeaderMenu.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
 
 	/**
 	 * Тема й мова — два, що відвідувач міняє в шапці.
@@ -244,7 +246,24 @@
 	title={t('account.title')}
 	data-testid="header-account-link"
 >
-	<CircleUser size={20} />
+	<!--
+		СВІЙ АВАТАР, ЯКЩО ЙОГО ВИБРАЛИ, і звичайний значок, якщо ні.
+
+		Прохання автора: «якщо користувач виставив собі власну аватарку, то посилання
+		виглядає як ця вибрана аватарка». Порожнеча тут значуща — `playerAvatar`
+		віддає `''`, поки вибору не було, і це НЕ те саме, що типова плитка: типова
+		плитка в шапці читалася б як «я вже щось вибрав».
+
+		Аватар приїжджає зі сховища, а не з бази: шапка стоїть на кожній сторінці, і
+		мережевий запит тут означав би SDK Firebase у чанку кореневого layout —
+		бюджет якого вже вичерпаний. Профіль наздоганяє сховище при збереженні й при
+		вході (`services/playerAvatar.svelte.ts`).
+	-->
+	{#if playerAvatar.value === ''}
+		<CircleUser size={20} />
+	{:else}
+		<Avatar avatar={playerAvatar.value} size={24} />
+	{/if}
 </a>
 
 <style>

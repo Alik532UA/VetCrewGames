@@ -14,11 +14,12 @@
 	import PrivacyPanel from '$lib/components/account/PrivacyPanel.svelte';
 	import LeaderBoard from '$lib/components/account/LeaderBoard.svelte';
 	import AccountSecurity from '$lib/components/account/AccountSecurity.svelte';
-	import { AVATAR_KEY, formatAvatar, parseAvatar } from '$lib/config/avatars';
+	import { formatAvatar, parseAvatar } from '$lib/config/avatars';
 	import { COUNTRY_KEY, NAME_KEY } from '$lib/config/playerName';
 	import { defaultIdentity } from '$lib/config/accountDefaults';
 	import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 	import { storage } from '$lib/services/storage';
+	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -50,15 +51,15 @@
 	/**
 	 * Аватар — рядок `значок:колір`.
 	 *
-	 * Початкове значення зі СХОВИЩА, а не типове: у кімнату аватар їде саме
-	 * звідти (`controllers/playerIdentity`), і форма профілю мусить показувати те,
-	 * що вже вибрано, а не пропонувати вибрати вдруге.
+	 * Початкове значення з `playerAvatar` — спільного джерела, яке читає та сама
+	 * шапка. Доти воно читалося зі сховища ТУТ, окремим `parseAvatar`, і це було
+	 * третє місце, що робило те саме.
 	 *
-	 * Через `parseAvatar`, а не прямо: зіпсоване значення у сховищі дало б
-	 * вибір, у якому не позначено нічого, і перше збереження записало б у базу
-	 * рядок, який правило відкине.
+	 * Через `parseAvatar` однаково: сервіс віддає порожньо, поки вибору не було, а
+	 * вибір у формі мусить бути позначений — інакше перше збереження записало б у
+	 * базу порожній рядок, який правило відкине.
 	 */
-	const saved = parseAvatar(storage.get(AVATAR_KEY));
+	const saved = parseAvatar(playerAvatar.value);
 	let avatar = $state(formatAvatar(saved.icon, saved.color));
 	let query = $state('');
 	/**
@@ -151,7 +152,18 @@
 		 * кімнати. Скинути її вибір на типовий через відсутність поля в базі
 		 * означало б стерти те, чого база не знає.
 		 */
-		if (account.profile?.avatar) avatar = account.profile.avatar;
+		if (account.profile?.avatar) {
+			avatar = account.profile.avatar;
+			/*
+			 * КЕШ НАЗДОГАНЯЄ АКАУНТ, і саме тут.
+			 *
+			 * Профіль — джерело правди, сховище — кеш для екранів, які не мають права
+			 * ходити в мережу. На НОВОМУ пристрої кеш порожній, тобто до цієї правки
+			 * свій аватар людина бачила в профілі, а в шапці й у кімнаті — типовий,
+			 * аж поки не натисне «Зберегти» те, що й так уже збережено.
+			 */
+			playerAvatar.set(account.profile.avatar);
+		}
 	}
 
 	/** Вхід МІНЯЄ `uid`, тож профіль на екрані стосувався б чужого акаунта. */
@@ -220,7 +232,7 @@
 		 * Порядок обовʼязковий: запис у сховище ПІСЛЯ бази. У зворотному невдалий
 		 * запис профілю лишав би у кімнатах аватар, якого в профілі немає.
 		 */
-		storage.set(AVATAR_KEY, avatar);
+		playerAvatar.set(avatar);
 		/*
 		 * ІМʼЯ Й ПРАПОР — ТЕЖ У СХОВИЩЕ, і це «одне імʼя», про яке просив автор.
 		 *
