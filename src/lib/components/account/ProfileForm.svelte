@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { formatFont } from '$lib/i18n';
-	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
 
 	/**
-	 * ПРОФІЛЬ: те, що бачать інші. Два імені, аватар і прапор.
+	 * ПРОФІЛЬ: те, що бачать інші. Два імені й прапор.
 	 *
 	 * ## Чому окремим компонентом
 	 *
@@ -12,6 +11,17 @@
 	 * панелей — приватність, таблиця лідерів, пароль і видалення — уже давно
 	 * компоненти зі своїм префіксом класів. Профіль лишався єдиною панеллю
 	 * всередині маршруту, тобто виносити було що й без межі.
+	 *
+	 * ## АВАТАР І «ВИЙТИ» ЗВІДСИ ПІШЛИ
+	 *
+	 * Аватар — у власну панель (`AvatarPanel`), бо він зберігається САМИМ вибором:
+	 * натиск на плитку вже і є рішення, а кнопка після нього питає те саме вдруге.
+	 * Тут лишилося те, що ПИШУТЬ і хочуть перечитати перед відправкою, — і рівно
+	 * тому кнопка «Зберегти» тепер відповідає за все, що в панелі, а не за половину.
+	 *
+	 * «Вийти з акаунта» переїхало в панель «Пароль і видалення» — до решти дій над
+	 * САМИМ акаунтом. Тут вона стояла під формою свого підпису, тобто пропонувала
+	 * вийти тому, хто щойно правив імʼя.
 	 *
 	 * ## ДВА ІМЕНІ, НАЗВАНІ ЗА ФУНКЦІЄЮ
 	 *
@@ -28,13 +38,11 @@
 		name: string;
 		handle: string;
 		country: string;
-		avatar: string;
 		/** Чи можна зберігати — імʼя непорожнє, нік допустимий, мережа вільна. */
 		canSave: boolean;
 		/** Ключ причини, чому не збереглося. `null` — нічого не сталося. */
 		problem: string | null;
 		onsave: () => void;
-		onsignout: () => void;
 	}
 
 	let {
@@ -42,25 +50,14 @@
 		name = $bindable(),
 		handle = $bindable(),
 		country = $bindable(),
-		avatar = $bindable(),
 		canSave,
 		problem,
-		onsave,
-		onsignout
+		onsave
 	}: Props = $props();
 </script>
 
 <section class="profile text-panel">
 	<h2 class="profile__title">{@html formatFont(text('account.profileTitle'))}</h2>
-
-	<!--
-		АВАТАР — ПЕРШИМ у формі, і це не про важливість.
-
-		Він єдине тут, що видно оком, а не читається: рядки скануються зверху, і
-		плитка згори одразу каже, про кого ця форма. Поставлений після текстових
-		полів, він читався б як налаштування наприкінці списку.
-	-->
-	<AvatarPicker bind:value={avatar} {text} scope="account-avatar" />
 
 	<label class="profile__label" for="account-name">
 		<span>{@html formatFont(text('account.gameName'))}</span>
@@ -118,10 +115,6 @@
 			{@html formatFont(text(problem))}
 		</p>
 	{/if}
-
-	<button type="button" class="profile__leave" onclick={onsignout} data-testid="account-leave-btn">
-		{@html formatFont(text('account.signOut'))}
-	</button>
 </section>
 
 <style>
@@ -182,24 +175,5 @@
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;
-	}
-
-	/*
-	 * «Вийти з акаунта» — навмисно тиха кнопка: дія зворотна, але не та, по яку
-	 * сюди приходять, тож вона не мусить конкурувати з «Зберегти».
-	 */
-	.profile__leave {
-		flex-shrink: 0;
-		align-self: flex-start;
-		min-height: 44px;
-		margin-top: var(--space-sm);
-		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 90%);
-		color: var(--color-text);
-		font: inherit;
-		font-size: var(--font-size-sm);
-		cursor: pointer;
 	}
 </style>

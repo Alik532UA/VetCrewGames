@@ -62,6 +62,7 @@ const net = {
 	linkEmail: vi.fn<(email: string, password: string) => Promise<void>>(async () => {}),
 	readProfile: vi.fn<(uid: string) => Promise<Profile | null>>(async () => null),
 	resetPassword: vi.fn<(email: string) => Promise<void>>(async () => {}),
+	saveAvatar: vi.fn<(avatar: string) => Promise<void>>(async () => {}),
 	saveProfile: vi.fn<(next: Omit<Profile, 'uid'>, previous?: string) => Promise<void>>(
 		async () => {}
 	),
@@ -159,6 +160,7 @@ describe('Account', () => {
 		net.linkEmail.mockReset().mockResolvedValue(undefined);
 		net.readProfile.mockReset().mockResolvedValue(null);
 		net.resetPassword.mockReset().mockResolvedValue(undefined);
+		net.saveAvatar.mockReset().mockResolvedValue(undefined);
 		net.saveProfile.mockReset().mockResolvedValue(undefined);
 		net.searchHandles.mockReset().mockResolvedValue([]);
 		net.signInEmail.mockReset().mockResolvedValue(undefined);
@@ -847,5 +849,63 @@ describe('стан до відповіді мережі', () => {
 		const { Account } = await import('./account.svelte');
 
 		expect(new Account().state).toBe('anonymous');
+	});
+});
+
+/**
+ * АВАТАР ЗБЕРІГАЄТЬСЯ САМ — і саме тому окремою дією, а не через `save()`.
+ *
+ * Плитку аватара тепер зберігає натиск (прохання автора: «без кнопки зберегти,
+ * бо зберігання автоматичне при виборі»). Через `saveProfile` це означало б
+ * переписувати заразом імʼя, псевдонім і країну — тобто відправляти в базу вміст
+ * полів, яких людина не торкалася, і платити перевіркою вільності псевдоніма за
+ * зміну картинки.
+ *
+ * Друга межа важливіша: БЕЗ ПРОФІЛЮ в базу не пишемо. `.validate` батьківського
+ * вузла (`hasChildren(['name','handle'])`) при записі в дитину не
+ * переоцінюється, тож такий запис створив би профіль з одного аватара — без
+ * імені й псевдоніма, і прочитався б він як профіль, якого людина не заповнювала.
+ */
+describe('окреме збереження аватара', () => {
+	const mine = (over: Partial<Profile> = {}) => profile({ uid: 'uid-anon', ...over });
+
+	/*
+	 * Свій `beforeEach`, бо цей блок — сусід головного, а не його дитина. Перша
+	 * редакція про це забула, і «без профілю в базу не пише нічого» червонів на
+	 * виклику з ПОПЕРЕДНЬОГО випадку: перевірка була права, а не зайва.
+	 */
+	beforeEach(() => {
+		net.saveAvatar.mockReset().mockResolvedValue(undefined);
+		net.saveProfile.mockReset().mockResolvedValue(undefined);
+		net.readProfile.mockReset().mockResolvedValue(null);
+	});
+
+	it('пише лише аватар, а не весь профіль', async () => {
+		net.readProfile.mockResolvedValue(mine());
+		const account = new Account();
+		await account.load();
+
+		expect(await account.saveAvatar('cat:blue')).toBe(true);
+		expect(net.saveAvatar).toHaveBeenCalledWith('cat:blue');
+		expect(net.saveProfile, 'імʼя й нік лишаються недоторкані').not.toHaveBeenCalled();
+	});
+
+	it('без профілю в базу не пише нічого', async () => {
+		net.readProfile.mockResolvedValue(null);
+		const account = new Account();
+		await account.load();
+
+		expect(await account.saveAvatar('cat:blue')).toBe(false);
+		expect(net.saveAvatar, 'інакше вийшов би профіль з одного аватара').not.toHaveBeenCalled();
+	});
+
+	it('невдача мережі не міняє профіль на екрані', async () => {
+		net.readProfile.mockResolvedValue(mine({ avatar: 'dog:red' }));
+		const account = new Account();
+		await account.load();
+		net.saveAvatar.mockRejectedValueOnce(fbError('PERMISSION_DENIED'));
+
+		expect(await account.saveAvatar('cat:blue')).toBe(false);
+		expect(account.profile?.avatar).toBe('dog:red');
 	});
 });

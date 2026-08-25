@@ -131,12 +131,8 @@ export async function signInEmail(email: string, password: string): Promise<void
 export async function signInGoogle(): Promise<void> {
 	const { auth } = await connect();
 	const user = auth.currentUser;
-	const {
-		GoogleAuthProvider,
-		linkWithPopup,
-		signInWithCredential,
-		signInWithPopup
-	} = await import('firebase/auth');
+	const { GoogleAuthProvider, linkWithPopup, signInWithCredential, signInWithPopup } =
+		await import('firebase/auth');
 
 	const provider = new GoogleAuthProvider();
 	if (!user) {
@@ -248,6 +244,28 @@ export async function handleFree(handle: string): Promise<boolean> {
  * Якщо звільнити його першим, а новий зайняти не вдасться, людина лишиться без
  * псевдоніма зовсім — гірше, ніж із двома на мить.
  */
+/**
+ * ЗБЕРЕГТИ ЛИШЕ АВАТАР — одним записом у `profile/avatar`.
+ *
+ * Навіщо окремо від `saveProfile`. Аватар вибирають ПЛИТКОЮ, тобто без кнопки
+ * «зберегти»: натиск на плитку і є рішення (прохання автора — «зберігання
+ * автоматичне при виборі»). Через `saveProfile` це означало б переписувати
+ * заразом імʼя, псевдонім і країну — тобто відправляти в базу вміст полів, яких
+ * людина в цю мить не торкалася, і платити перевіркою вільності псевдоніма за
+ * зміну картинки.
+ *
+ * ВИКЛИКАЄТЬСЯ ЛИШЕ ДЛЯ НАЯВНОГО ПРОФІЛЮ, і межу тримає той, хто кличе. Причина
+ * в правилах: `.validate` батьківського вузла (`hasChildren(['name','handle'])`)
+ * при записі в ДИТИНУ не переоцінюється, тож цей виклик на порожньому місці
+ * створив би профіль з одного аватара — без імені й псевдоніма. Такий вузол
+ * прочитався б як профіль, якого людина не заповнювала.
+ */
+export async function saveAvatar(avatar: string): Promise<void> {
+	const { uid, db } = await connect();
+	const { ref, set } = await import('firebase/database');
+	await set(ref(db, `users/${uid}/profile/avatar`), avatar);
+}
+
 export async function saveProfile(
 	profile: Omit<Profile, 'uid'>,
 	previous?: string,
@@ -372,9 +390,8 @@ export async function searchHandles(prefix: string): Promise<Profile[]> {
 
 	try {
 		const { db } = await connect();
-		const { endAt, get, limitToFirst, orderByKey, query, ref, startAt } = await import(
-			'firebase/database'
-		);
+		const { endAt, get, limitToFirst, orderByKey, query, ref, startAt } =
+			await import('firebase/database');
 		const found = await get(
 			query(
 				ref(db, 'find'),

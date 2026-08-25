@@ -4,6 +4,7 @@ import {
 	linkEmail,
 	readProfile,
 	resetPassword,
+	saveAvatar,
 	saveProfile,
 	searchHandles,
 	signInEmail,
@@ -322,6 +323,31 @@ export class Account {
 			this.profile = await readProfile(this.uid);
 			// Рядок у таблиці лідерів несе імʼя, аватар і країну — без цього виклику
 			// він показував би те, що було до збереження.
+			await refreshProfile();
+		}
+		return done;
+	}
+
+	/**
+	 * ЗМІНИТИ ЛИШЕ АВАТАР — і лише коли профіль уже є.
+	 *
+	 * Плитку аватара тепер зберігає сам вибір, без кнопки (прохання автора). Тому
+	 * тут окрема дія, а не `save()`: та переписала б заразом імʼя, псевдонім і
+	 * країну — тобто відправила б у базу вміст полів, яких людина не торкалася, і
+	 * заплатила б перевіркою вільності псевдоніма за зміну картинки.
+	 *
+	 * `false` без жодної мережі, поки профілю немає, і це не обережність: запис у
+	 * `profile/avatar` на порожньому місці створив би профіль З ОДНОГО АВАТАРА
+	 * (батьківський `.validate` при записі в дитину не переоцінюється), тобто
+	 * профіль, якого людина не заповнювала. Доти аватар живе у сховищі й поїде в
+	 * базу першим «Зберегти».
+	 */
+	async saveAvatar(avatar: string): Promise<boolean> {
+		if (!this.profile) return false;
+		const done = await this.#act('profile', () => saveAvatar(avatar));
+		if (done) {
+			this.profile = { ...this.profile, avatar };
+			// Рядок у таблиці лідерів несе аватар — без цього він показував би старий.
 			await refreshProfile();
 		}
 		return done;

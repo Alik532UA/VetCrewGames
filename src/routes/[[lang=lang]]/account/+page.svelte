@@ -10,16 +10,18 @@
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import AuthForm from '$lib/components/auth/AuthForm.svelte';
+	import AvatarPanel from '$lib/components/account/AvatarPanel.svelte';
 	import ProfileForm from '$lib/components/account/ProfileForm.svelte';
 	import PrivacyPanel from '$lib/components/account/PrivacyPanel.svelte';
 	import LeaderBoard from '$lib/components/account/LeaderBoard.svelte';
 	import AccountSecurity from '$lib/components/account/AccountSecurity.svelte';
-	import { formatAvatar, parseAvatar } from '$lib/config/avatars';
-	import { COUNTRY_KEY, NAME_KEY } from '$lib/config/playerName';
+	import { DEFAULT_AVATAR, formatAvatar, parseAvatar } from '$lib/config/avatars';
+	import { NAME_KEY } from '$lib/config/playerName';
 	import { defaultIdentity } from '$lib/config/accountDefaults';
 	import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 	import { storage } from '$lib/services/storage';
 	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
+	import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -140,10 +142,6 @@
 		 * Заповнене НЕ ЧІПАЄТЬСЯ: підстановка поверх вибору людини — це стирання
 		 * вибору, а не допомога.
 		 */
-		if (name !== '' || handle !== '') return;
-		const suggested = defaultIdentity(crewTranslate(crew), Math.random);
-		name = suggested.name;
-		handle = suggested.handle;
 		/*
 		 * Аватар — ЛИШЕ якщо профіль його має.
 		 *
@@ -151,19 +149,51 @@
 		 * необовʼязковий), а у сховищі вже лежить вибір, з яким людина ходить у
 		 * кімнати. Скинути її вибір на типовий через відсутність поля в базі
 		 * означало б стерти те, чого база не знає.
+		 *
+		 * КЕШ НАЗДОГАНЯЄ АКАУНТ: профіль — джерело правди, сховище — кеш для
+		 * екранів, які не мають права ходити в мережу. На НОВОМУ пристрої кеш
+		 * порожній, тобто доти свій аватар людина бачила у формі профілю, а в шапці
+		 * й у кімнаті — типовий, аж поки не натисне «Зберегти» те, що й так
+		 * збережено.
+		 *
+		 * Стоїть ПЕРЕД раннім `return` нижче, і це виправлення: там ця гілка
+		 * діставалася лише профілю БЕЗ імені, тобто рівно тому єдиному випадку,
+		 * коли аватара в базі ще нема.
 		 */
 		if (account.profile?.avatar) {
 			avatar = account.profile.avatar;
-			/*
-			 * КЕШ НАЗДОГАНЯЄ АКАУНТ, і саме тут.
-			 *
-			 * Профіль — джерело правди, сховище — кеш для екранів, які не мають права
-			 * ходити в мережу. На НОВОМУ пристрої кеш порожній, тобто до цієї правки
-			 * свій аватар людина бачила в профілі, а в шапці й у кімнаті — типовий,
-			 * аж поки не натисне «Зберегти» те, що й так уже збережено.
-			 */
 			playerAvatar.set(account.profile.avatar);
 		}
+
+		/*
+		 * ПРАПОР ЗА ЗАМОВЧУВАННЯМ — ТАКИЙ САМИЙ, ЯК У ЛОБІ.
+		 *
+		 * Скарга автора: «прапор за замовчуванням: без прапору, хоча в грі
+		 * правильно детектить країну». Так і було: лобі питало підказку служби й
+		 * памʼятало її у сховищі, а ця сторінка починала з «без прапора» — тобто
+		 * та сама людина мала прапор у кімнаті й не мала його в профілі.
+		 *
+		 * Правила підказки живуть в одному місці (`services/countryPref`): свій
+		 * вибір головніший, служба питається РАЗ, відповідь памʼятається. Тож
+		 * другого запиту з IP тут не буде — у сховищі вже лежить те, що спитало
+		 * лобі, і навпаки.
+		 *
+		 * У БАЗУ це не пишеться без натиску: панель має кнопку «Зберегти», і
+		 * мовчазний запис поруч із нею означав би, що вона відповідає не за все, що
+		 * в панелі. Друга причина названа в `net/country.ts`: прапор — річ
+		 * навантажена, і відповідальність за нього належить людині, а не службі.
+		 */
+		if (country === '') {
+			void preferredCountry().then((code) => {
+				// Ще раз перевіряємо: поки їхала відповідь, людина могла вибрати сама.
+				if (country === '') country = code;
+			});
+		}
+
+		if (name !== '' || handle !== '') return;
+		const suggested = defaultIdentity(crewTranslate(crew), Math.random);
+		name = suggested.name;
+		handle = suggested.handle;
 	}
 
 	/** Вхід МІНЯЄ `uid`, тож профіль на екрані стосувався б чужого акаунта. */
@@ -195,6 +225,39 @@
 
 	async function forgotPassword(email: string) {
 		resetSent = await account.resetPassword(email);
+	}
+
+	/**
+	 * ВИБРАЛИ АВАТАР — зберігаємо одразу, без кнопки.
+	 *
+	 * Дві половини, і порядок між ними важливий. Спершу СХОВИЩЕ: аватар мусить
+	 * подіяти в шапці й у кімнаті негайно, а мережа може й не відповісти. Потім
+	 * база — але лише якщо профіль уже є: запис `profile/avatar` на порожньому
+	 * місці створив би профіль з одного аватара, без імені (див.
+	 * `Account.saveAvatar`).
+	 *
+	 * `true`, коли профілю немає, означає «зроблено все, що можна»: вибір
+	 * збережений місцево й доїде в базу першим «Зберегти» в сусідній панелі. Це не
+	 * невдача, і показувати її як невдачу було б брехнею.
+	 */
+	async function pickAvatar(next: string): Promise<boolean> {
+		const before = playerAvatar.value;
+		playerAvatar.set(next);
+		avatar = next;
+		if (!account.profile) return true;
+		if (await account.saveAvatar(next)) return true;
+
+		/*
+		 * НЕ ЗБЕРЕГЛОСЯ — ВЕРТАЄМО ВИДИМЕ. Інакше на екрані, у шапці й у кімнаті
+		 * лишався б аватар, якого в акаунті немає, і людина дізналася б про це на
+		 * іншому пристрої.
+		 *
+		 * `before` може бути порожнім — тоді вертається саме «нічого не вибирав», а
+		 * не типова плитка: у шапці це звичайний значок акаунта.
+		 */
+		playerAvatar.set(before);
+		avatar = before === '' ? DEFAULT_AVATAR : before;
+		return false;
 	}
 
 	async function submitProfile() {
@@ -247,7 +310,15 @@
 		 * невдалий запис профілю лишав би в кімнатах імʼя, якого в профілі немає.
 		 */
 		storage.set(NAME_KEY, name);
-		if (country) storage.set(COUNTRY_KEY, country);
+		/*
+		 * ПРАПОР — через `rememberCountry`, і порожній теж.
+		 *
+		 * Доти стояло `if (country)`, тобто «без прапора» у профіль записувалося, а
+		 * у сховище — ні: людина знімала прапор у профілі й далі заходила в кімнату
+		 * під ним. Профіль — джерело правди, і «без прапора» це відповідь, а не
+		 * відсутність відповіді.
+		 */
+		rememberCountry(country);
 	}
 
 	/**
@@ -325,16 +396,26 @@
 			вона підставляє порожні поля. Форма ж знає, як вони називаються й що з
 			ними можна робити.
 		-->
+		<!--
+			АВАТАР — ПЕРШОЮ ПАНЕЛЛЮ Й ОКРЕМОЮ, і зберігається сам.
+
+			Прохання автора: «окремо меню аватарки (без кнопки зберегти, бо
+			зберігання автоматичне при виборі) і окреме меню імені та ніку та
+			прапор (з кнопкою зберегти)».
+
+			Першим — бо він єдине тут, що видно оком, а не читається: плитка згори
+			одразу каже, про кого ця сторінка.
+		-->
+		<AvatarPanel {text} value={avatar} busy={account.busy} onpick={pickAvatar} />
+
 		<ProfileForm
 			{text}
 			bind:name
 			bind:handle
 			bind:country
-			bind:avatar
 			{canSave}
 			{problem}
 			onsave={submitProfile}
-			onsignout={() => account.leave()}
 		/>
 
 		<!-- ПОШУК ЛЮДЕЙ за псевдонімом. -->
@@ -492,6 +573,7 @@
 			{passwordChanged}
 			onchangePassword={(current, next) => void changePassword(current, next)}
 			ondelete={(password) => void account.delete(password)}
+			onsignout={() => account.leave()}
 		/>
 	{/if}
 </div>

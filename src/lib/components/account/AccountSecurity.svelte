@@ -36,9 +36,19 @@
 		passwordChanged: boolean;
 		onchangePassword: (current: string, next: string) => void;
 		ondelete: (password: string) => void;
+		/**
+		 * ВИЙТИ З АКАУНТА — тут, а не під формою профілю.
+		 *
+		 * Прохання автора, і воно про змісти: у цій панелі живуть дії над САМИМ
+		 * акаунтом (змінити пароль, видалити), а не над тим, як мене видно іншим.
+		 * Під формою підпису кнопка «вийти» пропонувала вихід тому, хто щойно правив
+		 * своє імʼя, — тобто стояла в найгіршому можливому місці.
+		 */
+		onsignout: () => void;
 	}
 
-	let { text, hasPassword, busy, passwordChanged, onchangePassword, ondelete }: Props = $props();
+	let { text, hasPassword, busy, passwordChanged, onchangePassword, ondelete, onsignout }: Props =
+		$props();
 
 	let current = $state('');
 	let next = $state('');
@@ -149,6 +159,18 @@
 			{@html formatFont(text('account.deleteTitle'))}
 		</button>
 	{/if}
+
+	<!--
+		ВИЙТИ — ПОСЛІДОВНО ПІСЛЯ ВИДАЛЕННЯ, і це порядок за незворотністю: змінити
+		пароль, видалити акаунт, вийти. Кнопка тиха навмисно: дія зворотна (заходять
+		назад тим самим паролем) і не конкурує з тими, що вище.
+
+		Стоїть ПОЗА гілкою підтвердження видалення: людина, яка передумала видаляти,
+		не мусить втрачати єдиний спосіб вийти.
+	-->
+	<button type="button" class="security__leave" onclick={onsignout} data-testid="account-leave-btn">
+		{@html formatFont(text('account.signOut'))}
+	</button>
 </section>
 
 <style>
@@ -162,6 +184,26 @@
 	.security__title {
 		margin: 0 0 var(--space-xs);
 		font-size: var(--font-size-md);
+	}
+
+	/*
+	 * «Вийти з акаунта» — тиха кнопка й окремий відступ понад рештою.
+	 *
+	 * Відступ тут значущий: він відділяє вихід від видалення, щоб дві кнопки
+	 * поспіль не читалися як одна пара «підтвердити / скасувати».
+	 */
+	.security__leave {
+		align-self: flex-start;
+		min-height: 44px;
+		margin-top: var(--space-md);
+		padding: 0 var(--space-md);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: color-mix(in srgb, var(--color-text), transparent 90%);
+		color: var(--color-text);
+		font: inherit;
+		font-size: var(--font-size-sm);
+		cursor: pointer;
 	}
 
 	/* Підказка — кеглем, а не прозорістю: див. `PrivacyPanel`. */

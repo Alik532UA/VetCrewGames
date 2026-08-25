@@ -1,11 +1,6 @@
 <script lang="ts">
 	import { formatFont } from '$lib/i18n';
-	import {
-		AVATAR_COLORS,
-		AVATAR_ICONS,
-		formatAvatar,
-		parseAvatar
-	} from '$lib/config/avatars';
+	import { AVATAR_COLORS, AVATAR_ICONS, formatAvatar, parseAvatar } from '$lib/config/avatars';
 	import Avatar from './Avatar.svelte';
 
 	/**
@@ -56,9 +51,21 @@
 		 * кнопки в одну групу.
 		 */
 		scope: string;
+		/**
+		 * ВИБІР ВІДДАЄТЬСЯ ВГОРУ, а не пишеться двобічним звʼязком.
+		 *
+		 * Доти тут стояло `bind:value`, і для форми з кнопкою «Зберегти» цього було
+		 * досить. Тепер аватар зберігається САМИМ вибором, тобто натиск — це
+		 * мережева дія, яка може не вдатися: власник значення мусить побачити її
+		 * відповідь і, якщо не вийшло, повернути попереднє. Двобічний звʼязок такого
+		 * не дає — він уже переписав значення до того, як хтось про це дізнався.
+		 */
+		onchange: (avatar: string) => void;
+		/** Поки триває запис, вибір не приймає натисків: другий дав би дві дії. */
+		disabled?: boolean;
 	}
 
-	let { value = $bindable(), text, scope }: Props = $props();
+	let { value, text, scope, onchange, disabled = false }: Props = $props();
 
 	/*
 	 * Розібраний аватар, а не два окремих стани.
@@ -87,7 +94,8 @@
 						name="{scope}-color"
 						value={color}
 						checked={look.color === color}
-						onchange={() => (value = formatAvatar(look.icon, color))}
+						onchange={() => onchange(formatAvatar(look.icon, color))}
+						{disabled}
 						aria-label={text(`account.avatarColor.${color}`)}
 						data-testid="{scope}-color-{color}-radio"
 					/>
@@ -113,7 +121,8 @@
 						name="{scope}-icon"
 						value={icon}
 						checked={look.icon === icon}
-						onchange={() => (value = formatAvatar(icon, look.color))}
+						onchange={() => onchange(formatAvatar(icon, look.color))}
+						{disabled}
 						aria-label={text(`account.avatarIcon.${icon}`)}
 						data-testid="{scope}-icon-{icon}-radio"
 					/>

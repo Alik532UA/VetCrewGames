@@ -1,10 +1,9 @@
 import { randomCrewName } from '$lib/config/crewNames';
-import { isCountry } from '$lib/config/countries';
 import { AVATAR_KEY, DEFAULT_AVATAR, isAvatar } from '$lib/config/avatars';
-import { detectCountry } from '$lib/net/country';
-import { COUNTRY_KEY, NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
+import { NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
 import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 import { storage } from '$lib/services/storage';
+import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
 
 /**
  * ХТО Я В КІМНАТІ: підпис і прапор.
@@ -124,17 +123,10 @@ export class PlayerIdentity {
 	 * Чому IP лише підказка, а не факт, розписано в `net/country.ts`.
 	 */
 	async loadCountry(): Promise<void> {
-		const saved = storage.get(COUNTRY_KEY);
-		if (saved !== null) {
-			this.country = isCountry(saved) ? saved : '';
-			return;
-		}
-		const guess = await detectCountry();
-		if (guess === null) return;
-		this.country = guess;
-		// Запамʼятовуємо ПІДКАЗКУ теж: інакше служба питалася б на кожному
-		// відкритті сторінки, тобто IP їхав би туди щоразу.
-		storage.set(COUNTRY_KEY, guess);
+		// Три правила («вибір головніший за підказку», «служба питається раз»,
+		// «відповідь памʼятається») живуть у `services/countryPref`: та сама
+		// відповідь потрібна й сторінці акаунта, а дві копії розійшлися б.
+		this.country = await preferredCountry();
 	}
 
 	/**
@@ -170,8 +162,9 @@ export class PlayerIdentity {
 		const who = this.value.trim() || randomCrewName(this.text, this.#random, taken);
 		storage.set(NAME_KEY, who);
 		// Прапор памʼятається ТУТ, а не при кожній зміні списку: запис у сховище
-		// має сенс тоді, коли вибір уже поїхав у кімнату.
-		storage.set(COUNTRY_KEY, this.country);
+		// має сенс тоді, коли вибір уже поїхав у кімнату. Через `rememberCountry`,
+		// бо «без прапора» — теж вибір, і записати його мусить те саме місце.
+		rememberCountry(this.country);
 		return who;
 	}
 
