@@ -28,6 +28,7 @@ export const quiz: Record<string, string> = {
 	'quiz.awayTitle': 'Keine Verbindung',
 	'quiz.awayWait': 'Warten:',
 	'quiz.awayDecide': 'Wir warten auf ihn. Ohne ihn weiterspielen?',
+	'quiz.awayWaiting': 'Wir warten auf die Entscheidung der anderen.',
 	'quiz.awayGoOn': 'Ohne ihn weiterspielen',
 	'quiz.awayVoted': 'Deine Stimme ist gezählt',
 	'quiz.awayKick': 'Entfernen',

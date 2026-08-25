@@ -28,6 +28,7 @@ export const quiz: Record<string, string> = {
 	'quiz.awayTitle': 'Lost connection',
 	'quiz.awayWait': 'Waiting:',
 	'quiz.awayDecide': 'Waiting for them. Continue without them?',
+	'quiz.awayWaiting': 'Waiting for the others to decide.',
 	'quiz.awayGoOn': 'Continue without them',
 	'quiz.awayVoted': 'Your vote is counted',
 	'quiz.awayKick': 'Remove',
