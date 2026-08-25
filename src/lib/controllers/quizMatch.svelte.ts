@@ -1,5 +1,6 @@
 import type { Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import {
+	RESUME_BONUS_MS,
 	REVEAL_MS,
 	SETTLE_MS,
 	answerPoints,
@@ -241,17 +242,64 @@ export class QuizMatch {
 	}
 
 	/**
+	 * ЧАС, ВІДДАНИЙ ЗА ЧЕКАННЯ: пауза плюс надбавка після неї.
+	 *
+	 * Вікно очікування перекриває питання, тож поки воно висить, раунд не мусить
+	 * витрачатися. Пауза тут — не спинений таймер, а зсув дедлайну: у цьому
+	 * контролері немає жодного таймера навмисно (час приходить аргументом, інакше
+	 * перевірка мусила б чекати справжні секунди).
+	 *
+	 * ЧОМУ ЦЕ РАХУЄТЬСЯ МІСЦЕВО, а не журналом. Умова паузи вже місцева: хто
+	 * присутній — це присутність, і на ній тримається і вікно очікування, і кінець
+	 * раунду по `awaited`. Писати паузу в журнал означало б новий тип ходу з
+	 * власним правилом бази, а заразом і те, що пауза не станеться взагалі, якщо в
+	 * господаря обірвався зв'язок — тобто рівно тоді, коли вона потрібна.
+	 *
+	 * МЕЖА ЧЕСНОСТІ: розбіжність між гравцями обмежена дрижанням присутності
+	 * (RTDB віддає її за секунду-дві). Хто саме оголошує наступний раунд, це не
+	 * зачіпає — оголошує господар, і його рішення лишається єдиним.
+	 */
+	#heldMs = $state(0);
+	#holdSince: number | null = null;
+
+	/**
+	 * Увімкнути або зняти паузу очікування.
+	 *
+	 * Кличе екран: умова («когось немає І він ще не відповів І пільговий час не
+	 * вичерпано») складається з присутності й пільги, а їх тримає сторінка.
+	 * Зняття паузи додає надбавку — один раз на кожне чекання, а не на секунду.
+	 */
+	setHold(active: boolean, now: number): void {
+		if (active) {
+			this.#holdSince ??= now;
+			return;
+		}
+		if (this.#holdSince === null) return;
+		this.#heldMs += Math.max(0, now - this.#holdSince) + RESUME_BONUS_MS;
+		this.#holdSince = null;
+	}
+
+	/** Скільки часу вже віддано за чекання, разом із поточною паузою. */
+	heldMs(now: number): number {
+		const running = this.#holdSince === null ? 0 : Math.max(0, now - this.#holdSince);
+		return this.#heldMs + running;
+	}
+
+	/**
 	 * Коли поточний раунд мусить закінчитися, за серверним часом.
 	 *
 	 * Дві причини закінчитися, і ближча перемагає: вийшов час або відповіли всі
 	 * (тоді ще секунда, щоб останній побачив власну відповідь на дошці).
 	 * `null` — раунду немає.
+	 *
+	 * `now` потрібен саме для паузи: поки вона триває, дедлайн їде разом із часом,
+	 * тобто стоїть на місці на екрані.
 	 */
-	deadlineAt(): number | null {
+	deadlineAt(now = 0): number | null {
 		const start = this.startedAt[this.round];
 		if (start === undefined) return null;
 
-		const byTime = start + this.limitMs;
+		const byTime = start + this.limitMs + this.heldMs(now);
 		if (!this.everyoneAnswered) return byTime;
 
 		const last = Math.max(...Object.values(this.answers[this.round] ?? {}).map((a) => a.at));
@@ -269,7 +317,7 @@ export class QuizMatch {
 		if (this.status === 'over') return 'over';
 		if (this.round >= this.programme.length && this.programme.length > 0) return 'over';
 
-		const deadline = this.deadlineAt();
+		const deadline = this.deadlineAt(now);
 		if (deadline === null) return 'round';
 		return now >= deadline ? 'reveal' : 'round';
 	}
@@ -283,14 +331,14 @@ export class QuizMatch {
 	 * фактично закінчився.
 	 */
 	leftMs(now: number): number {
-		const deadline = this.deadlineAt();
+		const deadline = this.deadlineAt(now);
 		if (deadline === null) return 0;
 		return Math.max(0, deadline - now);
 	}
 
 	/** Чи час господареві оголошувати наступний раунд. */
 	nextDue(now: number): boolean {
-		const deadline = this.deadlineAt();
+		const deadline = this.deadlineAt(now);
 		if (deadline === null) return false;
 		return now >= deadline + REVEAL_MS;
 	}

@@ -184,6 +184,20 @@ export const quizOnlineTab: BetaTab = {
 			 * будь-якої з шести кнопок і не називала жодної певної коробки.
 			 */
 			testid: 'quiz-games-fieldset'
+		},
+		{
+			id: 'quizonline_14',
+			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
+			text: {
+				uk: 'Під час раунду закрийте вкладку другого гравця. У першого мусить з’явитися вікно ПО ЦЕНТРУ, яке перекриває гру, а смуга часу мусить СТАТИ. За 15 секунд вікно скаже «граємо далі», час піде знову й додасться три секунди.',
+				en: 'During a round, close the second player’s tab. The first player must get a window IN THE CENTRE that covers the game, and the time bar must STOP. After 15 seconds the window says the game goes on, time runs again and three seconds are added.'
+			},
+			coverage: 'manual',
+			/*
+			 * Підкладка, а не сама панель: перевіряється саме те, що гра ПЕРЕКРИТА.
+			 * Панель видно й у стані «граємо далі», коли перекриття вже немає.
+			 */
+			testid: 'quiz-away-backdrop'
 		}
 	]
 };

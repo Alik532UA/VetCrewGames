@@ -451,3 +451,60 @@ describe('очки за відповідь — чиста функція', () =>
 		expect(answerPoints(99999, 1000, 7000, 1)).toBe(50);
 	});
 });
+
+/**
+ * ПАУЗА ОЧІКУВАННЯ: раунд не витрачається, поки вікно перекриває питання.
+ *
+ * Вимога автора: «поки чекаєте гравця, то у грі зупиняється таймер і до таймера
+ * додається +3 секунди, бо це відволікаючий фактор для гравців і треба це
+ * компенсувати».
+ *
+ * Таймера тут немає навмисно — час приходить аргументом, тож «пауза» це зсув
+ * дедлайну. Умову паузи складає екран (`utils/awayWait`), контролер бере з неї
+ * лише «так» або «ні».
+ *
+ * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): прибрати `heldMs` із
+ * `deadlineAt` — червоніють обидві перевірки нижче.
+ */
+describe('пауза очікування', () => {
+	it('поки чекаємо, до кінця раунду лишається стільки ж', async () => {
+		const { host, stop } = table();
+		await host.startRound(0);
+		const start = host.deadlineAt(0) as number;
+
+		host.setHold(true, 1_000);
+
+		// Минуло 5 секунд чекання — дедлайн мусить поїхати на ті самі 5 секунд.
+		expect(host.deadlineAt(6_000)).toBe(start + 5_000);
+		expect(host.leftMs(6_000)).toBe(host.leftMs(1_000));
+		stop();
+	});
+
+	it('після чекання додаються три секунди', async () => {
+		const { host, stop } = table();
+		await host.startRound(0);
+		const start = host.deadlineAt(0) as number;
+
+		host.setHold(true, 1_000);
+		host.setHold(false, 5_000);
+
+		// 4 секунди чекання + 3 секунди надбавки, і далі час іде як звичайно.
+		expect(host.deadlineAt(9_000)).toBe(start + 4_000 + 3_000);
+		expect(host.deadlineAt(20_000)).toBe(start + 7_000);
+		stop();
+	});
+
+	it('надбавка додається раз на чекання, а не на кожен виклик', async () => {
+		const { host, stop } = table();
+		await host.startRound(0);
+		const start = host.deadlineAt(0) as number;
+
+		host.setHold(true, 1_000);
+		host.setHold(false, 2_000);
+		host.setHold(false, 3_000);
+		host.setHold(false, 4_000);
+
+		expect(host.deadlineAt(9_000)).toBe(start + 1_000 + 3_000);
+		stop();
+	});
+});

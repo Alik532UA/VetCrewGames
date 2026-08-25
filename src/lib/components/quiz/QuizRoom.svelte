@@ -47,6 +47,13 @@
 		clock: number;
 		/** Скільки секунд лишилося з пільгового часу зниклим. */
 		awayLeft: number;
+		/**
+		 * ЧИ ЧЕКАЄ ПАРТІЯ САМЕ ЗАРАЗ.
+		 *
+		 * Умову складає сторінка: у ній і присутність, і пільговий час. Кімната її
+		 * лише передає — вона про показ, а не про правила.
+		 */
+		awayHold: boolean;
 		onanswer: (correct: number) => void;
 		onRematch: () => void;
 		onClose: () => void;
@@ -62,6 +69,7 @@
 		amHost,
 		clock,
 		awayLeft,
+		awayHold,
 		onanswer,
 		onRematch,
 		onClose,
@@ -73,12 +81,17 @@
 	<section class="over text-panel" data-testid="quiz-over-panel">
 		<h2 class="over__title">{@html formatFont(t('common.gameOver'))}</h2>
 
+		<!--
+			Відсутні позначені й у підсумку, а не лише під час партії: рядок «хто зник»
+			і є відповідь на питання, чому в когось менше очок.
+		-->
 		<QuizScores
 			players={match.players}
 			answered={match.answered}
 			scores={match.scores}
 			withScores
 			layout="table"
+			away={match.away.map((player) => player.uid)}
 			{me}
 		/>
 
@@ -112,10 +125,17 @@
 	</section>
 {:else}
 	<!--
-		Вікно очікування стоїть НАД таблом: воно про кімнату, а не про раунд, і
-		саме тому не накриває питання.
+		Вікно очікування має ДВА стани, і обирає між ними `awayHold`: поки партія
+		справді чекає — воно по центру й перекриває гру; коли граємо далі без
+		зниклого — та сама смуга над таблом, що була доти.
 	-->
-	<QuizAway {text} away={match.away} secondsLeft={awayLeft} onkick={amHost ? onkick : undefined} />
+	<QuizAway
+		{text}
+		away={match.away}
+		secondsLeft={awayLeft}
+		blocking={awayHold}
+		onkick={amHost ? onkick : undefined}
+	/>
 
 	{@const phase = match.phase(clock)}
 	{#if phase === 'reveal'}
@@ -147,6 +167,7 @@
 			answered={match.answered}
 			scores={match.scores}
 			withScores={false}
+			away={match.away.map((player) => player.uid)}
 			{me}
 		/>
 

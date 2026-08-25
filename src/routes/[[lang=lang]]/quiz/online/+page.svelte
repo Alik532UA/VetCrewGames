@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { awaySecondsLeft, awayStamps, shouldHoldRound } from '$lib/utils/awayWait';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
@@ -67,18 +68,6 @@
 	 */
 	const RULES_VERSION = 1;
 	const CLOCK_MS = 1000;
-	/**
-	 * Скільки чекаємо того, хто зник, перш ніж сказати, що більше не чекаємо.
-	 *
-	 * Пʼятнадцять секунд — те саме число, що в `MindStep` (`reconnectionState`),
-	 * і взято воно звідти навмисно: автор попросив зробити «по прикладу з
-	 * MindStep», а два різні пільгові часи в двох його проєктах були б різницею
-	 * без причини.
-	 *
-	 * Партія на цей час НЕ СТАЄ: раунд закінчується, коли відповіли присутні. Це
-	 * лише те, доки на екрані стоїть відлік замість рядка «більше не чекають».
-	 */
-	const AWAY_GRACE_MS = 15000;
 	const COUNTDOWN_MS = 5000;
 	/** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
 	const MIN_PLAYERS = 2;
@@ -241,18 +230,8 @@
 					 * зайшов (`members` не прибираються ніколи).
 					 */
 					started.present = uids;
-					/*
-					 * Мить зникнення запамʼятовується ТУТ, бо тільки тут видно перехід.
-					 * Із самого переліку її не вивести: він каже, кого немає, а не
-					 * відколи.
-					 */
-					const now = Date.now();
-					const next: Record<string, number> = {};
-					for (const member of started.players) {
-						if (uids.includes(member.uid)) continue;
-						next[member.uid] = awaySince[member.uid] ?? now;
-					}
-					awaySince = next;
+					// Мить зникнення запамʼятовується ТУТ, бо тільки тут видно перехід.
+					awaySince = awayStamps(started.players, uids, awaySince, Date.now());
 				})
 			);
 
@@ -419,16 +398,17 @@
 		return () => clearTimeout(timer);
 	});
 
-	/**
-	 * Скільки лишилося з пільгового часу — за тим, кого не стало НАЙПОЗІШЕ.
-	 *
-	 * Не за найранішим: інакше поява другого зниклого не подовжила б відлік, і
-	 * вікно сказало б «більше не чекають» про того, хто зник секунду тому.
+	/** Скільки ще чекаємо — і чи чекаємо взагалі. Обидва правила в `utils/awayWait`. */
+	const awayLeft = $derived(awaySecondsLeft(match?.away ?? [], awaySince, clock));
+	const awayHold = $derived(shouldHoldRound(match?.away ?? [], match?.answered ?? [], awayLeft));
+
+	/*
+	 * Пауза раунду — наслідок умови вище. Саме `$effect`, а не похідна: зсув
+	 * дедлайну це ЗМІНА стану партії, і робити її в похідній означало б писати з
+	 * читання.
 	 */
-	const awayLeft = $derived.by(() => {
-		const stamps = (match?.away ?? []).map((member) => awaySince[member.uid] ?? clock);
-		if (stamps.length === 0) return 0;
-		return Math.max(0, Math.ceil((Math.max(...stamps) + AWAY_GRACE_MS - clock) / 1000));
+	$effect(() => {
+		match?.setHold(awayHold, clock);
 	});
 
 	const countdownLeft = $derived(
@@ -605,6 +585,7 @@
 			{amHost}
 			{clock}
 			{awayLeft}
+			{awayHold}
 			onanswer={answer}
 			onRematch={rematch}
 			onClose={close}

@@ -44,6 +44,20 @@
 		/** Скільки секунд лишилося з пільгового часу. `0` — вичерпано. */
 		secondsLeft: number;
 		/**
+		 * ЧИ ЧЕКАЄ ПАРТІЯ САМЕ ЗАРАЗ — і від цього залежить сам вигляд вікна.
+		 *
+		 * `true` — вікно стоїть ПО ЦЕНТРУ й перекриває гру підкладкою: партія на
+		 * паузі, натискати нема чого, а повідомлення мусить бути прочитане. Вимога
+		 * автора: «вікно що перекриває гру з очікуванням гравця».
+		 *
+		 * `false` — та сама смуга вгорі, що була доти. Це стан «граємо далі без
+		 * нього»: пільговий час вичерпано або зниклий уже відповів у цьому раунді,
+		 * тобто чекати нема на що. Блокувати екран у цьому стані було б гірше за
+		 * будь-яку смугу — гравець лишався б замкнутим доти, доки суперник не
+		 * повернеться, а він може не повернутися ніколи.
+		 */
+		blocking: boolean;
+		/**
 		 * Прибрати гравця з кімнати. `undefined` — я не лідер, і кнопки немає.
 		 *
 		 * Не `disabled`: кнопка, якої натиснути не можна, у гостя лише питала б, чому
@@ -52,56 +66,107 @@
 		onkick?: (uid: string) => void;
 	}
 
-	let { text, away, secondsLeft, onkick }: Props = $props();
+	let { text, away, secondsLeft, blocking, onkick }: Props = $props();
 </script>
 
 {#if away.length > 0}
-	<section class="away text-panel" role="status" data-testid="quiz-away-panel">
-		<h2 class="away__title">{@html formatFont(text('quiz.awayTitle'))}</h2>
+	<!--
+		ПІДКЛАДКА — ТІЛЬКИ ПОКИ ЧЕКАЄМО. Сама панель та сама в обох станах: інакше
+		довелося б тримати дві розмітки того самого повідомлення.
 
-		<ul class="away__list" data-testid="quiz-away-list">
-			{#each away as member (member.uid)}
-				<li class="away__row" data-testid="quiz-away-{member.uid}-item">
-					<Avatar avatar={member.avatar} />
-					<Flag code={member.country} />
-					<span class="away__name">{member.name}</span>
-					{#if onkick && secondsLeft === 0}
-						<button
-							type="button"
-							class="away__kick"
-							onclick={() => onkick(member.uid)}
-							data-testid="quiz-away-{member.uid}-btn"
-						>
-							{@html formatFont(text('quiz.awayKick'))}
-						</button>
-					{/if}
-				</li>
-			{/each}
-		</ul>
+		`aria-modal` НЕ ставиться: вікно нічого не питає й фокус у ньому тримати
+		нема на чому (кнопка «Виключити» з'являється лише в лідера й лише після
+		відліку). `role="status"` лишається — читалка мусить оголосити появу, а не
+		вимагати дії.
+	-->
+	<div class="away-scrim" class:away-scrim--blocking={blocking} data-testid="quiz-away-backdrop">
+		<section
+			class="away text-panel"
+			class:away--centred={blocking}
+			role="status"
+			data-testid="quiz-away-panel"
+		>
+			<h2 class="away__title">{@html formatFont(text('quiz.awayTitle'))}</h2>
 
-		{#if secondsLeft > 0}
-			<!--
+			<ul class="away__list" data-testid="quiz-away-list">
+				{#each away as member (member.uid)}
+					<li class="away__row" data-testid="quiz-away-{member.uid}-item">
+						<Avatar avatar={member.avatar} />
+						<Flag code={member.country} />
+						<span class="away__name">{member.name}</span>
+						{#if onkick && secondsLeft === 0}
+							<button
+								type="button"
+								class="away__kick"
+								onclick={() => onkick(member.uid)}
+								data-testid="quiz-away-{member.uid}-btn"
+							>
+								{@html formatFont(text('quiz.awayKick'))}
+							</button>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+
+			{#if secondsLeft > 0}
+				<!--
 				Число окремим елементом: воно змінюється щосекунди, і читалка мусить
 				оголосити зміну, а не перечитувати весь абзац.
 			-->
-			<p class="away__note">
-				{@html formatFont(text('quiz.awayWait'))}
-				<b class="away__count" data-testid="quiz-away-timer-value">{secondsLeft}</b>
-			</p>
-		{:else}
-			<p class="away__note" data-testid="quiz-away-gone-text">
-				{@html formatFont(text('quiz.awayGone'))}
-			</p>
-		{/if}
-	</section>
+				<p class="away__note">
+					{@html formatFont(text('quiz.awayWait'))}
+					<b class="away__count" data-testid="quiz-away-timer-value">{secondsLeft}</b>
+				</p>
+			{:else}
+				<p class="away__note" data-testid="quiz-away-gone-text">
+					{@html formatFont(text('quiz.awayGone'))}
+				</p>
+			{/if}
+		</section>
+	</div>
 {/if}
 
 <style>
 	/*
-	 * Вікно стоїть НАД дошкою в потоці, а не поверх неї: партія йде далі, і
-	 * накривати питання повідомленням про чужу вкладку означало б заважати тому,
-	 * хто ще відповідає.
+	 * ДВА СТАНИ ОДНОГО ВІКНА, і різниця між ними — чи чекає партія.
+	 *
+	 * Доти вікно завжди стояло смугою над дошкою: партія йшла далі, і накривати
+	 * питання повідомленням про чужу вкладку означало б заважати тому, хто ще
+	 * відповідає. Автор попросив інакше — і має рацію рівно для того часу, поки
+	 * партія СПРАВДІ чекає: тоді відповідати нема сенсу, а повідомлення мусить бути
+	 * прочитане.
+	 *
+	 * Тому підкладка вмикається разом із паузою й гасне разом із нею. Стан «граємо
+	 * далі без нього» лишається смугою: інакше гравець був би замкнутий доти, доки
+	 * суперник не повернеться, а той може не повернутися ніколи.
 	 */
+	.away-scrim {
+		width: 100%;
+	}
+
+	.away-scrim--blocking {
+		position: fixed;
+		inset: 0;
+		z-index: 7000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-md);
+		box-sizing: border-box;
+		/*
+		 * Затемнення ПРОЗОРЕ: фонове фото теми мусить лишатися видимим (це стежить
+		 * `backdrop.test.ts`), а гра під вікном — вгадуватися, щоб пауза читалася як
+		 * пауза, а не як перехід на інший екран.
+		 */
+		background: color-mix(in srgb, var(--color-bg), transparent 35%);
+		backdrop-filter: var(--blur-glass);
+	}
+
+	.away--centred {
+		width: auto;
+		max-width: min(92vw, 28rem);
+	}
+
 	.away {
 		display: flex;
 		flex-direction: column;
