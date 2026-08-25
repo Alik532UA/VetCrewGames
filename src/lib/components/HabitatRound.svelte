@@ -32,7 +32,6 @@
 	const game = new HabitatGameController();
 	const lang = $derived(languageFromParam(page.params.lang));
 
-
 	onMount(() => {
 		game.chooseMode(mode);
 
@@ -77,7 +76,7 @@
 		align-items: center;
 		flex: 1;
 		width: 95%;
-		max-width: 560px;
+		max-width: var(--measure-habitat);
 		padding: 4svh 0 var(--space-lg);
 		gap: clamp(var(--space-xs), 2svh, var(--space-md));
 		margin: 0 auto;
@@ -90,12 +89,6 @@
 		width: 100%;
 	}
 
-
-
-
-
-
-
 	/*
 	 * Від 1000px варіанти стають одним рядом (див. HabitatOptions), і сторінка
 	 * ширшає під нього. Ширшає САМЕ вона: картка тварини, питання й розбір
@@ -106,13 +99,7 @@
 	 */
 	@media (min-width: 1000px) {
 		.game-page {
-			max-width: min(96%, 1100px);
+			max-width: var(--measure-habitat-wide);
 		}
 	}
-
-
-
-
-
-
 </style>

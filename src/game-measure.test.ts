@@ -31,17 +31,46 @@ import { readFileSync } from 'node:fs';
 const TOKENS = 'src/lib/styles/global.css';
 const BOARD = 'src/lib/components/quiz/QuizBoard.svelte';
 
-/** Гра → (соло-сторінка, назва токена, клас дошки в кімнаті). */
+/**
+ * Гра → де живе СОЛО-варіант, назва токена й (якщо є) широкого токена.
+ *
+ * Соло-варіант не завжди сторінка: «Де живем?» живе в `HabitatRound.svelte`, а
+ * `game-habitat/+page.svelte` — це вибір режиму, тобто меню. Перша редакція цієї
+ * перевірки дивилася саме на меню, і тому пропустила, що в гри є ДРУГА міра — та,
+ * під яку ряд із дев'яти зон ширшає від 1000px. У кімнаті через це зони тиснулися
+ * в 560px: скарга автора «навпаки звужене в онлайні».
+ */
 const GAMES = [
-	{ kind: 'myths', page: 'game-mythbusters', token: '--measure-myths' },
-	{ kind: 'feeding', page: 'game-feeding', token: '--measure-feeding' },
-	{ kind: 'habitat', page: 'game-habitat', token: '--measure-habitat' },
-	{ kind: 'family', page: 'game-family', token: '--measure-family' },
-	{ kind: 'population', page: 'game-population', token: '--measure-population' }
+	{
+		kind: 'myths',
+		solo: 'src/routes/[[lang=lang]]/game-mythbusters/+page.svelte',
+		token: '--measure-myths'
+	},
+	{
+		kind: 'feeding',
+		solo: 'src/routes/[[lang=lang]]/game-feeding/+page.svelte',
+		token: '--measure-feeding'
+	},
+	{
+		kind: 'habitat',
+		solo: 'src/lib/components/HabitatRound.svelte',
+		token: '--measure-habitat',
+		wide: '--measure-habitat-wide'
+	},
+	{
+		kind: 'family',
+		solo: 'src/routes/[[lang=lang]]/game-family/+page.svelte',
+		token: '--measure-family',
+		wide: '--measure-family-wide'
+	},
+	{
+		kind: 'population',
+		solo: 'src/routes/[[lang=lang]]/game-population/+page.svelte',
+		token: '--measure-population'
+	}
 ] as const;
 
 const read = (file: string) => readFileSync(file, 'utf8');
-const pageOf = (name: string) => read(`src/routes/[[lang=lang]]/${name}/+page.svelte`);
 
 describe('міра гри — одна на соло й кімнату', () => {
 	const tokens = read(TOKENS);
@@ -50,13 +79,33 @@ describe('міра гри — одна на соло й кімнату', () => {
 	it('перевірка жива: токени мір оголошені', () => {
 		for (const game of GAMES) {
 			expect(tokens, `${game.token} не оголошений`).toContain(`${game.token}:`);
+			if ('wide' in game) {
+				expect(tokens, `${game.wide} не оголошений`).toContain(`${game.wide}:`);
+			}
 		}
 	});
 
-	it('соло-сторінка бере міру з токена, а не з пікселів', () => {
+	it('соло бере міру з токена, а не з пікселів', () => {
 		for (const game of GAMES) {
-			expect(pageOf(game.page), `${game.page}: міра мусить бути токеном`).toContain(
+			expect(read(game.solo), `${game.solo}: міра мусить бути токеном`).toContain(
 				`max-width: var(${game.token})`
+			);
+		}
+	});
+
+	/**
+	 * ШИРОКА МІРА — В ОБОХ МІСЦЯХ. Саме її й бракувало в кімнаті: гра, що ширшає в
+	 * соло під ряд варіантів, у кімнаті лишалася вузькою, і підписи ламалися в
+	 * стовпчик по слову.
+	 */
+	it('гра, що ширшає, ширшає в обох режимах', () => {
+		for (const game of GAMES) {
+			if (!('wide' in game)) continue;
+			expect(read(game.solo), `${game.solo}: широка міра мусить бути токеном`).toContain(
+				`max-width: var(${game.wide})`
+			);
+			expect(board, `.board--${game.kind} мусить ширшати так само, як соло`).toContain(
+				`max-width: var(${game.wide})`
 			);
 		}
 	});

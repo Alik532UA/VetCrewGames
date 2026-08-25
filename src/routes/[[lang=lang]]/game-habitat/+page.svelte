@@ -41,7 +41,13 @@
 		align-items: center;
 		flex: 1;
 		width: 95%;
-		max-width: var(--measure-habitat);
+		/*
+		 * Своє число, а не `--measure-habitat`: це сторінка ВИБОРУ РЕЖИМУ, тобто
+		 * меню з двох карток, а не сама гра. Позичати в гри її міру означало б
+		 * зв'язати два розміри, які міняються з різних причин: гра ширшає під ряд
+		 * варіантів, меню — ні.
+		 */
+		max-width: 560px;
 		padding: 4dvh 0 var(--space-lg);
 		gap: clamp(var(--space-xs), 2dvh, var(--space-md));
 		margin: 0 auto;

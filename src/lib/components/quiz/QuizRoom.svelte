@@ -184,12 +184,18 @@
 {/if}
 
 <style>
+	/*
+	 * ПІДСУМОК ВУЗЬКИЙ, хоч стовпець під партію й широкий: це таблиця з кількох
+	 * рядків, і на 1100px вона перетворюється на рядок, який око не проходить за
+	 * раз. Те саме число, що в соло-підсумках ігор.
+	 */
 	.over {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-md);
 		width: 100%;
+		max-width: var(--measure-feeding);
 		padding: var(--space-md);
 		box-sizing: border-box;
 	}
