@@ -212,22 +212,51 @@ body::after {
 	opacity: 0;
 }
 
-[data-theme='light-green'] body::before {
+/*
+ * `:root` ПОПЕРЕДУ АТРИБУТА — І ЦЕ НЕ ПРИКРАСА (SVELTE-UI-v8 § 3.6).
+ *
+ * Svelte дописує в селектор компонента власний клас скоупу, і той клас
+ * СПРАВЖНІЙ — він рахується:
+ *
+ *     .app-shell            у компоненті   ->   .app-shell.svelte-12qhfyh   (0,2,0)
+ *     [data-fake-fullscreen='true'] .app-shell                              (0,2,0)
+ *
+ * Нічия. А нічию CSS розвʼязує порядком підключення — і порядок тут не
+ * властивість коду:
+ *
+ *   зібраний сайт   `0.*.css` (стилі layout) -> `global.css`   виграє global
+ *   `vite dev`      стилі компонентів інжектяться скриптом     виграє компонент
+ *
+ * Це не теорія. ЗАМІРЯНО в браузері на dev 2026-08-26: при
+ * `data-fake-fullscreen="true"` `.app-shell` отримував `z-index: 1` звідси (бо
+ * компонент z-index не задає), але `position` лишався `relative` — тобто
+ * повноекранний режим у розробника не працював, а у відвідувача працював. Те
+ * саме з `.game-header`, який у компоненті `position: sticky`.
+ *
+ * `:root` додає рівно один клас ваги (0,3,0 проти 0,2,0) і описує те, що вже є:
+ * обидва атрибути живуть на `html`.
+ *
+ * Два правила тем нижче цілять у `::before`/`::after`, яких компонент не
+ * стилізує, тож нічиєї там сьогодні немає. `:root` вони отримали разом з
+ * рештою навмисно: `.app-shell` — клас, який компонент СТИЛІЗУЄ, і наступний
+ * рядок у ньому створить нічию мовчки. Стереже це `src/theme-specificity.test.ts`.
+ */
+:root[data-theme='light-green'] body::before {
 	opacity: 1;
 	animation: blur-bg-in 30s ease-out both;
 }
 
-[data-theme='dark'] body::after {
+:root[data-theme='dark'] body::after {
 	opacity: 1;
 	animation: blur-bg-in 30s ease-out both;
 }
 
-[data-theme='winter'] .app-shell::before {
+:root[data-theme='winter'] .app-shell::before {
 	opacity: 1;
 	animation: blur-bg-in 30s ease-out both;
 }
 
-[data-theme='orange-purple'] .app-shell::after {
+:root[data-theme='orange-purple'] .app-shell::after {
 	opacity: 1;
 	animation: blur-bg-in 30s ease-out both;
 }
@@ -775,7 +804,7 @@ img {
  * (справжнє значення каскаду, з клона без переходу), `z-index: 9999` проти
  * `100` у шапки, обидва псевдоелементи `display: none`.
  */
-[data-fake-fullscreen='true'] .app-shell {
+:root[data-fake-fullscreen='true'] .app-shell {
 	position: fixed;
 	inset: 0;
 	/*
@@ -792,7 +821,7 @@ img {
 	 */
 }
 
-[data-fake-fullscreen='true'] .game-header {
+:root[data-fake-fullscreen='true'] .game-header {
 	position: fixed;
 	top: 0;
 	left: 0;
