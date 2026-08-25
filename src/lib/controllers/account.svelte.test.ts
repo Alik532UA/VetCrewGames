@@ -51,6 +51,9 @@ const friend = (uid: string, mutual = true): Friend => ({
 /** Хто ми зараз для `connect()`. Вхід у інший акаунт це значення МІНЯЄ. */
 let currentUid = 'uid-anon';
 
+/** Чи каже сховище «цей браузер уже входив в акаунт». */
+let flagged = false;
+
 const connect = vi.fn(async () => ({ uid: currentUid }));
 
 const net = {
@@ -135,6 +138,11 @@ vi.mock('$lib/net/erase', () => erase);
 vi.mock('$lib/net/privacy', () => privacyNet);
 vi.mock('$lib/net/leaders', () => board);
 vi.mock('$lib/net/firebase', () => ({ connect }));
+/*
+ * Прапорець «цей браузер входив в акаунт» — підставний, бо саме з нього
+ * контролер бере ПОЧАТКОВИЙ стан, ще до будь-якої мережі.
+ */
+vi.mock('$lib/services/accountFlag', () => ({ hasAccount: () => flagged }));
 vi.mock('$lib/net/account', () => net);
 vi.mock('$lib/net/follows', () => follows);
 vi.mock('$lib/services/playerSync', () => play);
@@ -156,7 +164,9 @@ describe('Account', () => {
 		net.signInEmail.mockReset().mockResolvedValue(undefined);
 		net.signInGoogle.mockReset().mockResolvedValue(undefined);
 		net.signOut.mockReset().mockResolvedValue(undefined);
-		privacyNet.readPrivacy.mockReset().mockResolvedValue({ search: true, follow: true, board: true });
+		privacyNet.readPrivacy
+			.mockReset()
+			.mockResolvedValue({ search: true, follow: true, board: true });
 		privacyNet.savePrivacy.mockReset().mockResolvedValue(undefined);
 		board.topLeaders.mockReset().mockResolvedValue([]);
 		board.leadersOf.mockReset().mockResolvedValue([]);
@@ -494,8 +504,10 @@ describe('Account', () => {
 			await expect(account.leave()).resolves.toBe(true);
 
 			expect(play.signedOut).toHaveBeenCalledTimes(1);
-			expect(reserve.reset, 'фонд заповідника лишився б наступному власнику браузера')
-				.toHaveBeenCalledTimes(1);
+			expect(
+				reserve.reset,
+				'фонд заповідника лишився б наступному власнику браузера'
+			).toHaveBeenCalledTimes(1);
 		});
 
 		it('невдалий вихід не стирає нічого', async () => {
@@ -681,9 +693,9 @@ describe('Account', () => {
 			const account = new Account();
 			await account.load();
 
-			await expect(
-				account.setPrivacy({ search: false, follow: true, board: true })
-			).resolves.toBe(true);
+			await expect(account.setPrivacy({ search: false, follow: true, board: true })).resolves.toBe(
+				true
+			);
 
 			expect(privacyNet.savePrivacy).toHaveBeenCalledWith(
 				{ search: false, follow: true, board: true },
@@ -721,9 +733,7 @@ describe('Account', () => {
 				account.setPrivacy({ search: false, follow: false, board: false })
 			).resolves.toBe(false);
 
-			expect(account.privacy.search, 'екран показував би вибір, якого база не прийняла').toBe(
-				true
-			);
+			expect(account.privacy.search, 'екран показував би вибір, якого база не прийняла').toBe(true);
 			expect(board.withdrawLeader).not.toHaveBeenCalled();
 			expect(account.error).toBe('PERMISSION_DENIED');
 		});
@@ -810,5 +820,32 @@ describe('Account', () => {
 			expect(net.signOut).not.toHaveBeenCalled();
 			expect(account.error).toBe('auth/wrong-password');
 		});
+	});
+});
+
+/**
+ * ПЕРШИЙ КАДР: що на екрані, поки мережа ще не відповіла.
+ *
+ * Доти контролер починав із `'anonymous'`, і сторінка малювала форму входу
+ * КОЖНОМУ — зокрема тому, хто ввійшов місяць тому: правду знає лише `load()`,
+ * а він мусить підняти SDK Firebase і дочекатися відновлення сесії. Автор
+ * побачив це як «знову буде вікно логіну».
+ *
+ * Зворотний експеримент (§ 1.1): повернути `$state('anonymous')` — червоніє
+ * перший випадок.
+ */
+describe('стан до відповіді мережі', () => {
+	it('браузер, що входив в акаунт, бачить кабінет, а не форму', async () => {
+		flagged = true;
+		const { Account } = await import('./account.svelte');
+
+		expect(new Account().state).toBe('linked');
+	});
+
+	it('браузер без акаунта бачить форму входу', async () => {
+		flagged = false;
+		const { Account } = await import('./account.svelte');
+
+		expect(new Account().state).toBe('anonymous');
 	});
 });

@@ -17,6 +17,7 @@ import { OPEN_PRIVACY, readPrivacy, savePrivacy, type Privacy } from '$lib/net/p
 import { changePassword, deleteAccount } from '$lib/net/erase';
 import { leadersOf, topLeaders, withdrawLeader, type Leader } from '$lib/net/leaders';
 import { connect } from '$lib/net/firebase';
+import { hasAccount } from '$lib/services/accountFlag';
 import { logService } from '$lib/services/logService.svelte';
 import { mergeOnSignIn, refreshProfile, signedOut } from '$lib/services/playerSync';
 
@@ -37,8 +38,28 @@ import { mergeOnSignIn, refreshProfile, signedOut } from '$lib/services/playerSy
  * англійське повідомлення Firebase. Порожньо — усе гаразд.
  */
 export class Account {
-	/** Анонімний вхід чи справжній акаунт. */
-	state = $state<AccountState>('anonymous');
+	/**
+	 * Анонімний вхід чи справжній акаунт.
+	 *
+	 * ПОЧАТКОВЕ ЗНАЧЕННЯ — З ПІДКАЗКИ СХОВИЩА, а не «анонім, поки не спитаємо».
+	 *
+	 * Доти тут стояло `'anonymous'`, і сторінка на першому кадрі малювала ФОРМУ
+	 * ВХОДУ навіть тому, хто ввійшов місяць тому: `load()` мусить підняти SDK
+	 * Firebase (динамічний імпорт), дочекатися відновлення сесії й лише тоді
+	 * сказати правду. На локальній машині це мигання, на мобільній мережі —
+	 * секунда з формою входу перед власним кабінетом.
+	 *
+	 * `hasAccount()` відповідає на те саме питання БЕЗ мережі: цей браузер уже
+	 * входив в акаунт (`services/accountFlag.ts`, той самий прапорець, за яким
+	 * кореневий layout вирішує, чи вантажити синхронізацію). Тобто це не здогадка
+	 * навмання, а те, що ми самі записали при вході й стерли при виході.
+	 *
+	 * Ціна названа: якщо сховище каже «входив», а сесії вже немає (почистили
+	 * IndexedDB руками), перший кадр покаже порожній кабінет, і `load()` за
+	 * мілісекунди замінить його формою. Це рідший і дешевший різновид помилки, ніж
+	 * форма входу перед кабінетом у КОЖНОГО залогіненого при кожному відкритті.
+	 */
+	state = $state<AccountState>(hasAccount() ? 'linked' : 'anonymous');
 	/** Мій `uid`. Порожньо — ще не підʼєдналися. */
 	uid = $state('');
 	/**
@@ -318,9 +339,7 @@ export class Account {
 	 * рахунку, бо перемикач у базі ще дозволяв би показ.
 	 */
 	async setPrivacy(next: Privacy): Promise<boolean> {
-		const done = await this.#act('privacy', () =>
-			savePrivacy(next, this.profile?.handle ?? null)
-		);
+		const done = await this.#act('privacy', () => savePrivacy(next, this.profile?.handle ?? null));
 		if (!done) return false;
 
 		this.privacy = next;
