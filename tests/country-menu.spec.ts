@@ -374,6 +374,51 @@ test('стрілки вбік не забирають каретку в полі
 	expect((await caret(page)).value, 'набране не мусило змінитися').toBe('а');
 });
 
+/**
+ * ПАНЕЛЬ СТОЇТЬ НЕ В КАРТЦІ, А В `<body>` — і саме під кнопкою.
+ *
+ * Скарга автора зі знімком: на сторінці акаунта панель лежить ПІД картками
+ * «Приватність», «Мої підписки» й «Таблиця лідерів». `z-index` тут ні до чого:
+ * глобальний `.text-panel` має `backdrop-filter`, а це власний контекст
+ * накладання — число 9500 порівнюється лише з сусідами всередині тієї самої
+ * картки, тоді як картки малюються в порядку документа, кожна поверх попередньої
+ * ЦІЛКОМ.
+ *
+ * Сам симптом тут не відтворити: єдина сторінка з такою карткою — акаунт, а вона
+ * за входом, і в прогоні видно лише форму входу. Тому тут перевіряється те, чим
+ * симптом лікується, і рівно там, де його можна зламати непомітно: зв'язка
+ * «кнопка → панель». Забрати `anchor` — панель поїде в куток екрана, забрати
+ * переїзд — вернеться в картку; обидва рази ця перевірка червоніє, а решта файлу
+ * лишається зеленою.
+ *
+ * Сама механіка переїзду (координати, фокус, прибирання) — у
+ * `src/lib/utils/fitMenu.test.ts`, разом із заміром із браузера.
+ */
+test('панель живе в body і стоїть під кнопкою', async ({ page }) => {
+	await openMenu(page);
+
+	const place = await page.evaluate((scope) => {
+		const menu = document.querySelector<HTMLElement>(`[data-testid="${scope}-menu"]`)!;
+		const button = document.querySelector<HTMLElement>(`[data-testid="${scope}-select"]`)!;
+		const box = menu.getBoundingClientRect();
+		const trigger = button.getBoundingClientRect();
+		return {
+			parent: menu.parentElement?.tagName,
+			position: getComputedStyle(menu).position,
+			gap: Math.round(box.top - trigger.bottom),
+			shift: Math.round(box.left - trigger.left),
+			atLeastAsWide: box.width >= trigger.width - 1
+		};
+	}, SCOPE);
+
+	expect(place.parent, 'у картці панель нічим не підняти над сусідніми картками').toBe('BODY');
+	expect(place.position, 'у `<body>` немає кнопки, від якої відкладати `absolute`').toBe('fixed');
+	// 6px — той самий проміжок, що доти стояв у CSS як `calc(100% + 6px)`.
+	expect(place.gap, 'панель мусить стояти саме під кнопкою').toBe(6);
+	expect(place.shift, 'ліві межі панелі й кнопки збігаються').toBe(0);
+	expect(place.atLeastAsWide, 'панель не вужча за кнопку').toBe(true);
+});
+
 test('набір, Enter, Escape і порожній результат', async ({ page }) => {
 	await openMenu(page);
 

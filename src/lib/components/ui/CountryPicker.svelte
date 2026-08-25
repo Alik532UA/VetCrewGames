@@ -111,6 +111,26 @@
 	 * навмисно НЕ перехоплюється: ним браузер натискає кнопку, і забрати це
 	 * означало б зламати кнопку заради дії, якої ніхто не чекає.
 	 */
+	/**
+	 * Чи належить клік цьому вибірнику. ДВА місця, а не одне.
+	 *
+	 * Панель живе в `<body>`, а не в цьому вузлі (причина — у
+	 * `utils/menuColumns.ts`), тож `root.contains` про неї не знає. Без другої
+	 * перевірки клік по країні закривав би панель ДО того, як вибір дійде: сам
+	 * вибір ще спрацював би (він на `click`, а це `pointerdown`), але панель
+	 * блимала б, а прокрутка списку мишкою закривала б її на першому ж натиску.
+	 *
+	 * За `data-testid`, а не за посиланням на вузол: панель віддавати назовні
+	 * нема потреби, а цей атрибут у неї є завжди — на ньому тримається весь
+	 * `tests/country-menu.spec.ts`.
+	 */
+	function inside(target: EventTarget | null): boolean {
+		const node = target as Node | null;
+		if (!node) return false;
+		if (root?.contains(node)) return true;
+		return !!(node as Element).closest?.(`[data-testid="${scope}-menu"]`);
+	}
+
 	function onTriggerKeydown(event: KeyboardEvent) {
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			event.preventDefault();
@@ -135,14 +155,14 @@
 
 	`pointerdown` на вікні, а не підкладка на весь екран: підкладка ловила б
 	`pointerdown` сама, а `click` після неї доходив би до кнопки й відкривав
-	панель знову — цей дефект уже був у `HeaderMenu`. Перевірка `contains`
-	замість `stopPropagation` на кнопці: так само працює й тоді, коли на сторінці
-	стоять два вибірники. Фокус тут НЕ вертається на кнопку — його щойно забрала
-	мишка, і смикати його назад означало б сперечатися з тим, що зробила людина.
+	панель знову — цей дефект уже був у `HeaderMenu`. Перевірка вмісту замість
+	`stopPropagation` на кнопці: так само працює й тоді, коли на сторінці стоять
+	два вибірники. Фокус тут НЕ вертається на кнопку — його щойно забрала мишка, і
+	смикати його назад означало б сперечатися з тим, що зробила людина.
 -->
 <svelte:window
 	onpointerdown={(event) => {
-		if (open && root && !root.contains(event.target as Node)) open = false;
+		if (open && !inside(event.target)) open = false;
 	}}
 />
 
@@ -182,6 +202,7 @@
 			{scope}
 			{seed}
 			{compact}
+			anchor={trigger}
 			onpick={(code) => {
 				value = code;
 				closePanel();
@@ -192,9 +213,13 @@
 </div>
 
 <style>
-	/* `relative` — коробка для панелі: вона позиційована абсолютно й живе в CountryMenu. */
+	/*
+	 * `relative` тут БІЛЬШЕ НЕ ПОТРІБЕН і навмисно прибраний: панель більше не
+	 * позиціюється від цієї коробки — вона живе в `<body>` і стоїть за заміром
+	 * кнопки (`utils/menuColumns.ts`). Лишити його означало б лишити підказку, що
+	 * панель усередині, — а саме це припущення й було дефектом.
+	 */
 	.country {
-		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-xs);
