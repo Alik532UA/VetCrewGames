@@ -15,7 +15,7 @@
 		User,
 		Zap
 	} from 'lucide-svelte';
-	import { parseAvatar, type AvatarIcon } from '$lib/config/avatars';
+	import { isCustomAvatar, parseAvatar, type AvatarIcon } from '$lib/config/avatars';
 
 	/**
 	 * АВАТАР ГРАВЦЯ — плитка зі значком на кольоровому тлі.
@@ -48,9 +48,26 @@
 		avatar: string | null | undefined;
 		/** Сторона плитки в пікселях. Значок займає дві третини. */
 		size?: number;
+		/**
+		 * Малювати ТИПОВИЙ аватар теж. Типово — ні, і це головне правило цього
+		 * компонента.
+		 *
+		 * Причина в тому, що плитка робить у рядку імені: вона каже «це той самий,
+		 * кого я бачив у лобі». Типова плитка цього не каже — вона стоїть однакова в
+		 * кожного, хто аватарки не вибирав, і лише розсуває прапор та імʼя. Автор
+		 * попросив прямо: показувати лише те, що відрізняється від типового.
+		 *
+		 * Вмикає це рівно один вжиток — ВИБІР аватара (`AvatarPicker`). Там типовий і
+		 * є один із варіантів, і сховати його означало б порожню клітинку в переліку.
+		 *
+		 * Типове значення саме `false`, а не `true`: місць-списків девʼять, а вибір
+		 * один, і забути прапорець у десятому списку — це та сама помилка, яку автор
+		 * уже ловив у прозорості зниклого гравця («фарбувала лише перший і третій»).
+		 */
+		showDefault?: boolean;
 	}
 
-	let { avatar, size = 22 }: Props = $props();
+	let { avatar, size = 22, showDefault = false }: Props = $props();
 
 	const ICONS: Record<AvatarIcon, typeof User> = {
 		user: User,
@@ -78,16 +95,21 @@
 	 * значок урівень із краєм читається як обрізаний.
 	 */
 	const glyph = $derived(Math.round(size * 0.66));
+
+	/** Чи є що показувати: власний аватар — або вибір, де типовий теж вибір. */
+	const visible = $derived(showDefault || isCustomAvatar(avatar));
 </script>
 
-<span
-	class="avatar avatar--{look.color}"
-	style:width="{size}px"
-	style:height="{size}px"
-	aria-hidden="true"
->
-	<Icon size={glyph} strokeWidth={2.25} />
-</span>
+{#if visible}
+	<span
+		class="avatar avatar--{look.color}"
+		style:width="{size}px"
+		style:height="{size}px"
+		aria-hidden="true"
+	>
+		<Icon size={glyph} strokeWidth={2.25} />
+	</span>
+{/if}
 
 <style>
 	/*

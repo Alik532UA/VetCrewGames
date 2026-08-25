@@ -354,6 +354,17 @@ export const accountTab: BetaTab = {
 			testid: 'account-avatar-icon-*-radio'
 		},
 		{
+			id: 'account_31',
+			category: { uk: 'Аватарка', en: 'Avatar' },
+			text: {
+				uk: 'Лишіть аватарку типовою (людина на бірюзовому) і зайдіть у спільну партію. Між прапором та іменем у переліку гравців плитки бути НЕ мусить — вона зʼявляється лише тоді, коли аватарка відрізняється від типової. Так само в шапці: типова аватарка лишає звичайний значок акаунта.',
+				en: 'Leave the avatar at its default (the person on teal) and join a shared game. There must be NO tile between the flag and the name in the player list — it appears only when the avatar differs from the default. Same in the header: a default avatar keeps the plain account icon.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'quiz-scores-list'
+		},
+		{
 			id: 'account_29',
 			category: { uk: 'Вибір країни', en: 'Choosing a country' },
 			text: {

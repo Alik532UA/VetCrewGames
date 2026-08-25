@@ -216,8 +216,8 @@ export const commonTab: BetaTab = {
 			id: 'common_15',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Натисніть кнопку розгортання на весь екран у шапці. Сторінка мусить зайняти весь екран, значок — змінитися на протилежний, а повторне натискання мусить повернути як було.',
-				en: 'Press the full-screen button in the header. The page must fill the screen, the icon must switch to its opposite, and pressing it again must bring back the previous view.'
+				uk: 'Натисніть кнопку розгортання на весь екран у шапці. Сторінка мусить зайняти весь екран, а значок зі стрілок НАЗОВНІ мусить стати стрілками ВСЕРЕДИНУ; повторне натискання мусить повернути як було.',
+				en: 'Press the full-screen button in the header. The page must fill the screen, and the arrows pointing OUT must become arrows pointing IN; pressing it again must bring back the previous view.'
 			},
 			coverage: 'manual',
 			testid: 'header-fullscreen-btn'

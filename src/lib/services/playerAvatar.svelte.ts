@@ -1,4 +1,4 @@
-import { AVATAR_KEY, DEFAULT_AVATAR, isAvatar } from '$lib/config/avatars';
+import { AVATAR_KEY, DEFAULT_AVATAR, isAvatar, isCustomAvatar } from '$lib/config/avatars';
 import { storage } from './storage';
 
 /**
@@ -57,6 +57,17 @@ class PlayerAvatar {
 		if (!isAvatar(next)) return;
 		this.value = next;
 		storage.set(AVATAR_KEY, next);
+	}
+
+	/**
+	 * Чи вибрано ВЛАСНИЙ аватар — не порожньо й не типовий.
+	 *
+	 * Саме на це питання відповідає шапка: типова плитка там означала б «я вже щось
+	 * вибрав», хоч людина або не вибирала, або вибрала саме типовий. В обох
+	 * випадках правильний малюнок — звичайний значок акаунта.
+	 */
+	get custom(): boolean {
+		return isCustomAvatar(this.value);
 	}
 
 	/** Аватар для кімнати: типовий не передається — його підставить показ. */

@@ -80,7 +80,7 @@
 
 <div class="pick">
 	<div class="pick__preview">
-		<Avatar avatar={formatAvatar(look.icon, look.color)} size={72} />
+		<Avatar avatar={formatAvatar(look.icon, look.color)} size={72} showDefault />
 	</div>
 
 	<fieldset class="pick__group">
@@ -104,7 +104,7 @@
 						кружок: людина вибирає не «синій», а «синього кота», і саме його й
 						мусить бачити до натиску.
 					-->
-					<Avatar avatar={formatAvatar(look.icon, color)} size={30} />
+					<Avatar avatar={formatAvatar(look.icon, color)} size={30} showDefault />
 				</label>
 			{/each}
 		</div>
@@ -126,7 +126,7 @@
 						aria-label={text(`account.avatarIcon.${icon}`)}
 						data-testid="{scope}-icon-{icon}-radio"
 					/>
-					<Avatar avatar={formatAvatar(icon, look.color)} size={30} />
+					<Avatar avatar={formatAvatar(icon, look.color)} size={30} showDefault />
 				</label>
 			{/each}
 		</div>

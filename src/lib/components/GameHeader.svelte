@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Maximize, Minimize } from 'lucide-svelte';
+	import { Expand, Shrink } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
 	import HeaderControls from './HeaderControls.svelte';
@@ -105,10 +105,24 @@
 				aria-keyshortcuts={settings.shortcutsEnabled ? 'F' : undefined}
 				data-testid="header-fullscreen-btn"
 			>
+				<!--
+					СТРІЛКИ, а не кути — на прохання автора, за взірцем `DigitalWorkshop`.
+					Там стоять `arrows-maximize` / `arrows-minimize` із Tabler: чотири
+					діагональні стрілки в кути й ті самі стрілки всередину.
+
+					`Expand` / `Shrink` — той самий малюнок у бібліотеці, яку проєкт уже
+					вживає. Копіювати SVG із сусіднього проєкту було б гірше двічі: зайві
+					байти в чанку кореневого layout (шапка стоїть на кожній сторінці, і
+					бюджет там вичерпаний) і другий спосіб малювати значки — поруч із
+					`lucide`, яким намальовано решту шапки.
+
+					Кути (`Maximize` / `Minimize`) читалися як «рамка», а не як дія: у них
+					немає напрямку, тобто вони не кажуть, куди саме поїде екран.
+				-->
 				{#if fullscreen.active}
-					<Minimize size={20} />
+					<Shrink size={20} />
 				{:else}
-					<Maximize size={20} />
+					<Expand size={20} />
 				{/if}
 			</button>
 		</div>
