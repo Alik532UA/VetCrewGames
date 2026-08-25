@@ -31,7 +31,10 @@ const major = (value: string | undefined) => value?.match(/(\d+)/)?.[1] ?? null;
 
 describe('перевірка жива', () => {
 	it('workflow знайдено', () => {
-		expect(files.length, 'у .github/workflows немає жодного yml — перевіряти нема що').toBeGreaterThan(0);
+		expect(
+			files.length,
+			'у .github/workflows немає жодного yml — перевіряти нема що'
+		).toBeGreaterThan(0);
 	});
 });
 
@@ -41,9 +44,7 @@ describe('CI', () => {
 	});
 
 	it('використовується npm ci, а не npm install', () => {
-		expect(/run:\s*npm install\b/.test(all), 'npm install робить білд невідтворюваним').toBe(
-			false
-		);
+		expect(/run:\s*npm install\b/.test(all), 'npm install робить білд невідтворюваним').toBe(false);
 	});
 
 	it('Playwright має крок встановлення браузерів (§ 1.3)', () => {
@@ -256,6 +257,37 @@ describe('гейти не ховають один одного (CI-CD-AND-TOOLS-
 			offenders,
 			`перший червоний гейт забере звіт у цих кроків:\n${offenders.join('\n')}`
 		).toEqual([]);
+	});
+
+	it('аудит залежностей лишається строгішим за канон — свідомо', () => {
+		/*
+		 * ЦЕЙ ПУНКТ СТЕРЕЖЕ РІШЕННЯ ВЛАСНИКА ВІД ЧЕРГОВОГО «ВИПРАВЛЕННЯ ЗА КАНОНОМ».
+		 *
+		 * `DEPENDENCIES-v8` (`GATE-AUDIT`) радить `npm audit --omit=dev`: у браузер
+		 * їде лише прод-дерево. Тут аудит навмисно дивиться й на інструментарій —
+		 * вразливий `eslint` чи `vite` виконується на машині розробника з доступом
+		 * до всього репозиторію, а ціна заміряна й мала: різниця між двома
+		 * командами — одна знахідка `low`.
+		 *
+		 * Відхилення записане в PROJECT-CONTEXT.md, розділ «Свідомі відхилення». І
+		 * запису виявилося МАЛО: 2026-08-26 аудит за пакетом прочитав `GATE-AUDIT`,
+		 * не прочитав того рядка й додав прапорець як «розходження з каноном».
+		 * Рішення, яке живе лише в документі, скасовується читанням іншого
+		 * документа; рішення, яке валить прогін, — ні.
+		 *
+		 * Якщо власник колись передумає — міняється цей пункт РАЗОМ із рядком у
+		 * PROJECT-CONTEXT.md, і саме ця пара змін і є свідомий вибір.
+		 *
+		 * Реверсний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): додано `--omit=dev`
+		 * назад у крок — пункт червоніє.
+		 */
+		const audit = gates.filter((g) => /npm audit/.test(g.body));
+		expect(audit.length, 'крок аудиту мусить існувати').toBe(1);
+		expect(audit[0].body, 'поріг high, а не moderate').toMatch(/--audit-level=high/);
+		expect(
+			audit[0].body,
+			'`--omit=dev` тут не помилка канону, а записане відхилення — див. PROJECT-CONTEXT.md'
+		).not.toMatch(/--omit=dev/);
 	});
 
 	it('`continue-on-error` не стоїть на гейтах', () => {
