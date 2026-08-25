@@ -154,6 +154,7 @@ export const ui = {
 
 	// Log report button, enabled in production by debug mode.
 	'debug.copyLogs': 'Copy log report',
+	'debug.copyFailed': 'Copying failed. Select the text and copy it by hand:',
 
 	// Errors
 	'error.title': 'Something went wrong',

@@ -158,6 +158,7 @@ export const ui = {
 
 	// Schaltfläche für den Protokollbericht, im Betrieb per Debug-Modus aktiv.
 	'debug.copyLogs': 'Protokollbericht kopieren',
+	'debug.copyFailed': 'Kopieren fehlgeschlagen. Markiere den Text und kopiere ihn von Hand:',
 
 	// Fehler
 	'error.title': 'Etwas ist schiefgelaufen',

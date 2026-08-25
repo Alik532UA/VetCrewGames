@@ -3,7 +3,7 @@
 	import { browser, dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { onDestroy } from 'svelte';
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import { debugMode } from '$lib/services/debugMode.svelte';
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { createKeySequence } from '$lib/services/keySequence';
@@ -67,6 +67,14 @@
 	const isVisible = $derived(urlDebug || debugMode.enabled);
 
 	let copied = $state(false);
+	/**
+	 * Текст звіту, який не вдалося покласти в буфер. Порожньо — усе гаразд.
+	 *
+	 * Живе в стані, а не в DOM: поле зʼявляється лише після відмови, і його вміст
+	 * — саме той звіт, який щойно склали, а не новий (журнал за цю мить міг
+	 * поповнитися).
+	 */
+	let manual = $state('');
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
 	/**
@@ -138,7 +146,21 @@
 				copied = false;
 			}, 1500);
 		} catch (err) {
+			/*
+			 * ВІДМОВА БУФЕРА НЕ ЗʼїДАЄ ЗВІТ (BETA-CHECKLIST-v8, `BETA-REPORT-FALLBACK`).
+			 *
+			 * Доти тут стояв самий лише `warn` у журнал — тобто натиск не робив НІЧОГО
+			 * видимого, і людина, яка мала надіслати звіт, лишалася без нього. Причин
+			 * відмови дві, і жодна не рідкісна: `navigator.clipboard` не існує поза
+			 * захищеним контекстом (http на телефоні в локальній мережі), а в частині
+			 * браузерів запис вимагає жесту, який до `await` уже «згорів».
+			 *
+			 * Тому текст показується поруч — у полі, з якого його можна виділити
+			 * рукою. Це не «краще, ніж нічого»: рівно так звіт і потрапляє в
+			 * повідомлення тестувальника.
+			 */
 			logService.warn('ui', 'Failed to copy logs', { reason: String(err) });
+			manual = report;
 		}
 	}
 
@@ -174,9 +196,87 @@
 		{/if}
 		<span class="version">{appVersion}</span>
 	</button>
+
+	<!--
+		Поле показується ЛИШЕ після відмови буфера — і з ним кнопка закриття:
+		інакше воно лишалося б на екрані до перезавантаження, накриваючи кут, у
+		якому живе саме табло.
+	-->
+	{#if manual !== ''}
+		<div class="manual" data-testid="app-report-fallback-panel">
+			<p class="manual__hint">{@html formatFont(t('debug.copyFailed'))}</p>
+			<textarea
+				class="manual__text"
+				readonly
+				rows="6"
+				value={manual}
+				data-testid="app-report-fallback-input"
+			></textarea>
+			<button
+				type="button"
+				class="manual__close"
+				onclick={() => (manual = '')}
+				data-testid="app-report-fallback-close-btn"
+			>
+				{@html formatFont(t('common.close'))}
+			</button>
+		</div>
+	{/if}
 {/if}
 
 <style>
+	/*
+	 * Поле запасного шляху стоїть НАД табло, у тому самому куті: воно зʼявляється
+	 * від натиску на нього, і шукати текст деінде людині нема причини.
+	 */
+	.manual {
+		position: fixed;
+		bottom: 60px;
+		left: 16px;
+		z-index: 9000;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+		width: min(30rem, calc(100vw - 2 * var(--space-md)));
+		padding: var(--space-sm);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-panel);
+		box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+	}
+
+	.manual__hint {
+		margin: 0;
+		font-size: var(--font-size-xs);
+		color: var(--color-text-on-panel);
+	}
+
+	.manual__text {
+		width: 100%;
+		box-sizing: border-box;
+		resize: vertical;
+		padding: var(--space-xs);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
+		color: var(--color-text);
+		font-family: monospace;
+		font-size: var(--font-size-xs);
+	}
+
+	.manual__close {
+		align-self: flex-end;
+		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
+		color: var(--color-text);
+		font: inherit;
+		cursor: pointer;
+	}
+
 	.service-badge {
 		position: fixed;
 		bottom: 16px;

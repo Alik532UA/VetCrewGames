@@ -155,6 +155,7 @@ export const ui = {
 
 	// Knop voor het lograpport, in productie aan via de debugmodus.
 	'debug.copyLogs': 'Lograpport kopiëren',
+	'debug.copyFailed': 'Kopiëren mislukt. Selecteer de tekst en kopieer hem met de hand:',
 
 	// Fouten
 	'error.title': 'Er is iets misgegaan',

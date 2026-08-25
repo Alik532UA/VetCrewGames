@@ -146,6 +146,30 @@ describe('службове табло', () => {
 		expect(badge, 'ONLINE переданий').toMatch(/online: navigator\.onLine/);
 	});
 
+	it('5б. відмова буфера НЕ зʼїдає звіт: текст лишається на екрані', () => {
+		/*
+		 * Реверсний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): прибрано `manual =
+		 * report` з гілки `catch` — впав перший `expect`; прибрано саме поле з
+		 * розмітки — впав другий.
+		 *
+		 * Чому це взагалі пункт, а не дрібниця. `navigator.clipboard` немає поза
+		 * захищеним контекстом, тобто на телефоні, відкритому по http у локальній
+		 * мережі, — а це рівно те середовище, у якому бета-тестувальник і ловить
+		 * помилки. Доти єдиним наслідком натиску був рядок у журнал: людина тисне
+		 * кнопку «скопіювати звіт», не бачить нічого й іде без звіту
+		 * (BETA-CHECKLIST-v8, `BETA-REPORT-FALLBACK`).
+		 */
+		const failure = badge.slice(badge.indexOf('} catch (err)'));
+		expect(failure, 'звіт мусить лягти у стан, а не лише в журнал').toMatch(/manual = report/);
+		expect(badge, 'і показатися полем, з якого його можна виділити').toMatch(
+			/data-testid="app-report-fallback-input"/
+		);
+		// Поле мусить бути закриваним: воно стоїть у тому самому куті, що й табло.
+		expect(badge, 'закрити').toMatch(/data-testid="app-report-fallback-close-btn"/);
+		// Читальне поле, а не редаговане: змінений звіт нічого не пояснює.
+		expect(badge, 'readonly').toMatch(/readonly/);
+	});
+
 	it('6. помилки міняють вигляд на червоний лічильник — ПОРУЧ із номером версії', () => {
 		expect(badge).toMatch(/class:has-errors=\{logService\.errorCount > 0\}/);
 		expect(badge, 'лічильник помилок у розмітці').toMatch(/logService\.errorCount > 99 \? '99\+'/);
