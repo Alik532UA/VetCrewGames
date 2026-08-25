@@ -611,6 +611,93 @@ if (!entryFiles.length || !nodeFiles.length) {
 	}
 }
 
+// --- Сирі ключі i18n у пререндері (I18N-v8) ---------------------------------
+//
+// ЦЕЙ ДЕФЕКТ НЕ ВИДНО НІДЕ, КРІМ `build/`.
+//
+// Лінивий словник довантажується окремим чанком, і доти, доки він не приїхав,
+// `t()` віддає САМ КЛЮЧ. У `src/` це виглядає нешкідливо — «на мить». Але
+// пререндер малює сторінку ДО будь-якого чанку, тож ключ потрапляє в HTML і
+// лишається там назавжди: його бачить пошуковик, прев'ю посилання в месенджері
+// й кожен відвідувач, поки виконується JavaScript.
+//
+// Заміряно 2026-08-26: `build/account/index.html` містив п'ятнадцять ключів —
+// весь підпис форми входу (`account.signInTitle`, `account.email`,
+// `account.password`, `account.signIn`), і так у кожній із чотирьох мов.
+// Лікується тим, що словник тягне `load` у `+page.ts`, а не `onMount`.
+//
+// ОБЛІК, А НЕ ЗАБОРОНА — той самий взірець, що в `container-queries.test.ts`:
+// `/reserve/` і `/quiz/online/` ще не переведені, і кожен переклад треба
+// дивитися очима. Число лише СПАДАЄ, і нова сторінка з ключами валить прогін.
+const LAZY_DICTS = [
+	'src/lib/i18n/account/uk.ts',
+	'src/lib/i18n/quiz/uk.ts',
+	'src/lib/i18n/reserve/uk.ts',
+	'src/lib/i18n/crew/uk.ts'
+];
+
+/**
+ * Скільки сирих ключів ще лежить у пререндері кожної сторінки.
+ *
+ * Ключ — шлях відносно `build/`, без мовного префікса: мовні варіанти тієї
+ * самої сторінки містять ті самі ідентифікатори, тож число одне на всі чотири.
+ *
+ * ЗАРАЗ ПОРОЖНІЙ, і це не «перевірка нічого не тримає»: борг погашено цілком —
+ * `/account/` (15), `/quiz/online/` (3), `/reserve/` (21) і чотири ділянки
+ * заповідника (по 20). Перелік лишається як місце, куди можна записати
+ * НАЗВАНИЙ виняток, якщо колись зʼявиться сторінка, яку доведеться перекладати
+ * окремо; порожній він означає «винятків немає».
+ */
+const RAW_KEY_DEBT = {};
+
+{
+	const keys = new Set();
+	for (const file of LAZY_DICTS) {
+		let source;
+		try {
+			source = readFileSync(file, 'utf8');
+		} catch {
+			fail(`перевірка сирих ключів мертва: немає ${file}`);
+			continue;
+		}
+		for (const match of source.matchAll(/^\s*'([\w.]+)':/gm)) keys.add(match[1]);
+	}
+	// Перевірка жива: без ключів вона проходила б на будь-якому сайті.
+	if (keys.size < 50) fail(`перевірка сирих ключів мертва: зібрано ${keys.size} ключів`);
+
+	const found = new Map();
+	for (const file of htmlFiles) {
+		const html = readFileSync(file, 'utf8');
+		let hits = 0;
+		for (const key of keys) if (html.includes(key)) hits += 1;
+		if (hits === 0) continue;
+		// Мовний префікс відкидається: борг рахується на сторінку, а не на мову.
+		const relative = file.slice(BUILD.length + 1);
+		const page = relative.replace(/^(en|de|nl)\//, '');
+		found.set(page, Math.max(found.get(page) ?? 0, hits));
+	}
+
+	for (const [page, hits] of found) {
+		const allowed = RAW_KEY_DEBT[page];
+		if (allowed === undefined) {
+			fail(
+				`${page}: ${hits} сирих ключів i18n у пререндері — словник має тягнути \`load\`, а не \`onMount\``
+			);
+		} else if (hits > allowed) {
+			fail(`${page}: сирих ключів побільшало — ${hits} проти ${allowed} у переліку`);
+		}
+	}
+	for (const page of Object.keys(RAW_KEY_DEBT)) {
+		if (!found.has(page))
+			fail(`${page}: ключів більше немає — рядок треба прибрати з RAW_KEY_DEBT`);
+	}
+	console.log(
+		found.size === 0
+			? 'check-build: сирих ключів i18n у пререндері немає'
+			: `check-build: сирі ключі i18n — сторінок із ключами: ${found.size}`
+	);
+}
+
 // --- Секретів у бандлі немає (SECURITY-v8 § 16) -----------------------------
 const SECRET_NAMES = /API_SECRET|PRIVATE_KEY|SERVICE_ACCOUNT|SENTRY_AUTH_TOKEN/;
 const leaked = allFiles

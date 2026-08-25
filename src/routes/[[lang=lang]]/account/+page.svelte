@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { formatFont } from '$lib/i18n';
-	import { loadAccountText } from '$lib/i18n/account';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { Account } from '$lib/controllers/account.svelte';
@@ -23,6 +22,10 @@
 	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
 	import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
 	import { rememberName } from '$lib/services/nameSync';
+	import type { PageData } from './$types';
+
+	/** Дані маршруту: словник цієї сторінки, завантажений у `+page.ts`. */
+	let { data }: { data: PageData } = $props();
 
 	/**
 	 * АКАУНТ: вхід, профіль, пошук людей і підписки.
@@ -80,28 +83,31 @@
 	let problem = $state<string | null>(null);
 
 	/**
-	 * Рядки цієї сторінки ДОВАНТАЖУЮТЬСЯ окремим чанком.
+	 * Рядки цієї сторінки ДОВАНТАЖУЮТЬСЯ окремим чанком — але приїжджають РАЗОМ
+	 * зі сторінкою, а не після неї.
 	 *
-	 * Причина в `i18n/account/index.ts`: 28 рядків на кожну з чотирьох мов
+	 * Причина виносу в `i18n/account/index.ts`: 28 рядків на кожну з чотирьох мов
 	 * важили 2 КБ gzip у першому payload КОЖНОГО відвідувача, а відкриє цю
 	 * сторінку далеко не кожен.
 	 *
-	 * До приїзду словника перекладач віддає сам ключ — тобто на екрані на мить
-	 * видно «account.signInTitle». Це видимий стан, а не порожнеча: чанк
-	 * локальний і приїжджає за один такт, а порожні підписи читалися б як
-	 * зламана сторінка.
+	 * Причина, чому чанк тягне `load`, а не `onMount`, — у `+page.ts`. Тут
+	 * стояло: «на мить видно `account.signInTitle`; це видимий стан, а не
+	 * порожнеча». Мить виявилася не миттю: в `build/account/index.html` лежало
+	 * пʼятнадцять сирих ключів, тобто весь підпис форми входу — назавжди, для
+	 * пошуковика й для кожного, у кого JS ще не виконався.
 	 *
-	 * У стані лежить СЛОВНИК, а перекладач похідний. Перша редакція тримала в
-	 * `$state` саму функцію — і екран не оновлювався: словник приїжджав, а
-	 * підписи лишалися ключами. Заміряно в браузері; той самий взірець
-	 * (обʼєкт у стані, функція похідна) уже стоїть в іменах команди.
+	 * `?? key` лишається запобіжником: `load` віддає порожній словник на
+	 * невідомій мові, і тоді краще ключ, ніж порожнеча.
+	 *
+	 * Словник більше не в `$state`: він приходить пропом і міняється разом із
+	 * маршрутом, тобто його реактивність — це реактивність `data`. Перша
+	 * редакція тримала в `$state` саму ФУНКЦІЮ, і екран не оновлювався;
+	 * `$derived` над обʼєктом лишився саме тому.
 	 */
-	let dict = $state<Record<string, string>>({});
-	const text = $derived((key: string) => dict[key] ?? key);
+	const text = $derived((key: string) => data.accountText[key] ?? key);
 
 	onMount(() => {
 		const release = settings.claimHeader('account.title', () => goto(langPath(lang, '')));
-		void loadAccountText(settings.locale).then((loaded) => (dict = loaded));
 		// Імена команди — для підстановки в порожній профіль. Приїде після профілю —
 		// підстановка просто не спрацює, і поля лишаться порожніми, а не зіпсованими.
 		void loadCrewNames(settings.locale).then((loaded) => (crew = loaded));

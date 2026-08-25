@@ -9,7 +9,6 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { startRoomBeat } from '$lib/net/roomBeat';
 	import { COUNTDOWN_MS } from '$lib/config/roomLife';
-	import { loadQuizText } from '$lib/i18n/quiz';
 	import { playerData } from '$lib/services/playerData.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
@@ -27,6 +26,10 @@
 	import QuizRooms from '$lib/components/quiz/QuizRooms.svelte';
 	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
+	import type { PageData } from './$types';
+
+	/** Дані маршруту: словник цієї сторінки, завантажений у `+page.ts`. */
+	let { data }: { data: PageData } = $props();
 
 	/**
 	 * СПІЛЬНА ВІКТОРИНА: усі відповідають одночасно, кожен на своєму екрані.
@@ -63,8 +66,12 @@
 	 * оновлювала екран — рядки лишалися ключами, хоч словник і приїхав. Той самий
 	 * взірець, що на сторінці акаунта, і та сама причина.
 	 */
-	let dict = $state<Record<string, string>>({});
-	const text = $derived((key: string) => dict[key] ?? key);
+	/*
+	 * Словник приходить пропом із `load` (`+page.ts`), а не з `onMount`: інакше
+	 * сирі ключі лишаються в пререндері назавжди. `?? key` — запобіжник на
+	 * невідому мову.
+	 */
+	const text = $derived((key: string) => data.quizText[key] ?? key);
 
 	/**
 	 * Версія ПРАВИЛ спільної вікторини. Різні версії в кімнату не пускають.
@@ -538,7 +545,6 @@
 				})
 		);
 		void player.loadCountry();
-		void loadQuizText(settings.locale).then((loaded) => (dict = loaded));
 
 		const saved = roomFromUrl();
 		if (saved) {
