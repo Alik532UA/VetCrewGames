@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.355",
+	"version": "0.6.356",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"

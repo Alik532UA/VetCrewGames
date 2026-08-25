@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
+	import { flip } from 'svelte/animate';
+	import { cubicOut } from 'svelte/easing';
+	import { rankedByPhase } from '$lib/utils/revealOrder';
 	import { formatFont } from '$lib/i18n';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
@@ -54,9 +57,29 @@
 		me: string;
 		/** Скільки триває набір, мс. Нуль — без анімації. */
 		duration?: number;
+		/**
+		 * Пауза між кінцем набору й переїздом рядків, мс.
+		 *
+		 * Не оздоба: без неї два рухи зливаються в один, і питання «як змінилося
+		 * моє становище» знову лишається без відповіді — око не встигає відокремити
+		 * «долічили» від «поїхали».
+		 */
+		settle?: number;
+		/** Скільки триває переїзд рядків на нові місця, мс. */
+		travel?: number;
 	}
 
-	let { text, players, scores, gains, me, away = [], duration = 700 }: Props = $props();
+	let {
+		text,
+		players,
+		scores,
+		gains,
+		me,
+		away = [],
+		duration = 700,
+		settle = 250,
+		travel = 500
+	}: Props = $props();
 
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 
@@ -86,6 +109,32 @@
 		return () => cancelAnimationFrame(frame);
 	});
 
+	/**
+	 * ЧИ ВЖЕ ПЕРЕЇХАЛИ РЯДКИ. Друга фаза табла, окрема від набору чисел.
+	 *
+	 * Доти рядки стояли на КІНЦЕВИХ місцях від першого кадру, і в коді була
+	 * записана причина: інакше вони стрибали б місцями протягом самої анімації.
+	 * Занепокоєння правильне, а рішення викидало половину сенсу — числа рухалися, а
+	 * на питання «як змінилося моє становище» табло не відповідало.
+	 *
+	 * Скарга автора саме про це: «не видно на якому місці був гравець до цього
+	 * раунду і як змінилось його положення».
+	 *
+	 * Тепер фаз дві, і стрибків так само немає: під час набору порядок МИНУЛОГО
+	 * раунду й не міняється, а після паузи всі рядки їдуть РАЗОМ, один раз.
+	 */
+	let moved = $state(false);
+
+	$effect(() => {
+		if (reduceMotion.current || duration <= 0) {
+			moved = true;
+			return;
+		}
+		moved = false;
+		const timer = setTimeout(() => (moved = true), duration + settle);
+		return () => clearTimeout(timer);
+	});
+
 	const shown = (uid: string) => {
 		const total = scores[uid] ?? 0;
 		const gain = gains[uid] ?? 0;
@@ -93,14 +142,13 @@
 	};
 
 	/**
-	 * Порядок — за ПІДСУМКОМ, а не за поточним показаним числом.
+	 * Порядок — за МИНУЛИМ рахунком, поки рядки не переїхали, і за підсумковим
+	 * після. Саме правило живе в `utils/revealOrder` — там його й перевірено.
 	 *
-	 * Інакше рядки стрибали б місцями протягом самої анімації: той, кому ще не
-	 * долічили, опускався б униз і піднімався назад.
+	 * Ключем `{#each}` лишається `uid`, тому переїзд малює `animate:flip`: Svelte
+	 * бачить, що ті самі вузли змінили місця, і рухає їх плавно.
 	 */
-	const ranked = $derived(
-		[...players].sort((a, b) => (scores[b.uid] ?? 0) - (scores[a.uid] ?? 0) || a.order - b.order)
-	);
+	const ranked = $derived(rankedByPhase(players, scores, gains, moved));
 </script>
 
 <section class="reveal text-panel" data-testid="quiz-reveal-panel">
@@ -112,7 +160,13 @@
 				class="reveal__row"
 				class:player-away={away.includes(player.uid)}
 				data-testid="quiz-reveal-{player.uid}-row"
+				animate:flip={{ duration: reduceMotion.current ? 0 : travel, easing: cubicOut }}
 			>
+				<!--
+					Номер місця їде РАЗОМ із рядком, а не перемальовується раніше: інакше
+					гравець бачив би нове число на старому місці — тобто саме те
+					протиріччя, яке табло й мусить розв'язати.
+				-->
 				<b class="reveal__place">{place + 1}</b>
 				<span class="reveal__who">
 					<Avatar avatar={player.avatar} />
