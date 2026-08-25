@@ -176,7 +176,28 @@
 	);
 </script>
 
-<div class="board" data-testid="quiz-board-panel">
+<!--
+	МІРА — ВІД ГРИ, А НЕ ВІД КІМНАТИ.
+
+	Скарга автора зі знімками: «онлайн режим ламає, розтягує інтерфейс ігор», і соло
+	на тому ж знімку правильний. Так і було: міру задавала СТОРІНКА. Соло-екран
+	«Правда чи міф?» стоїть у стовпці на 500px, кімната — у стовпці на 900px, і та
+	сама картка виходила майже вдвічі ширшою разом із кнопками на всю ширину.
+
+	Ширина кімнати лишається 900px — вона потрібна смузі гравців і вікну очікування
+	над дошкою. А сама дошка тепер бере ту саму міру, що й соло, з одного джерела
+	(`--measure-*` у `global.css`). Тобто елементи над грою більше не можуть змінити
+	гру: у них своя ширина, у гри — своя.
+-->
+<div
+	class="board"
+	class:board--myths={created?.kind === 'myths'}
+	class:board--family={created?.kind === 'family'}
+	class:board--population={created?.kind === 'population'}
+	class:board--habitat={created?.kind === 'habitat'}
+	class:board--feeding={created?.kind === 'feeding'}
+	data-testid="quiz-board-panel"
+>
 	{#if created === null}
 		<!--
 			Гра з новішої збірки. Крок пропускається з нулем очок — інакше партія
@@ -245,6 +266,38 @@
 		align-items: center;
 		gap: var(--space-sm);
 		width: 100%;
+	}
+
+	/*
+	 * Міри — ті самі токени, що на соло-сторінках, і саме тому вони тут не числа.
+	 * Число, вписане поруч, розійшлося б із соло при першій же правці, а «однаково
+	 * в обох режимах» перестало б мати спільне джерело.
+	 */
+	.board--myths {
+		max-width: var(--measure-myths);
+	}
+
+	.board--feeding {
+		max-width: var(--measure-feeding);
+	}
+
+	.board--habitat {
+		max-width: var(--measure-habitat);
+	}
+
+	.board--family {
+		max-width: var(--measure-family);
+	}
+
+	.board--population {
+		max-width: var(--measure-population);
+	}
+
+	/* Той самий поріг, що на соло-сторінці «Хто з іншої родини?». */
+	@media (min-width: 700px) {
+		.board--family {
+			max-width: var(--measure-family-wide);
+		}
 	}
 
 	.board__prompt,

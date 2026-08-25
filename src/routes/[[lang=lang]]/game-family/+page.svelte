@@ -54,7 +54,7 @@
 		align-items: center;
 		flex: 1;
 		width: 95%;
-		max-width: 560px;
+		max-width: var(--measure-family);
 		/* Верхній відступ теж від екрана: на низькому вікні 4svh — це ті самі
 		   кілька рядків, яких бракує поясненню (FLUID-SIZING-v8 § 6). */
 		padding: clamp(var(--space-sm), 3svh, var(--space-xl)) 0 var(--space-lg);
@@ -83,7 +83,7 @@
 	 */
 	@media (min-width: 700px) {
 		.game-page {
-			max-width: min(96%, 980px);
+			max-width: var(--measure-family-wide);
 		}
 
 

@@ -84,7 +84,7 @@
 		justify-content: flex-start;
 		flex: 1;
 		width: 95%;
-		max-width: 500px;
+		max-width: var(--measure-myths);
 		padding: 10svh 0 var(--space-lg);
 		gap: clamp(var(--space-xs), 2svh, var(--space-lg));
 		margin: 0 auto;

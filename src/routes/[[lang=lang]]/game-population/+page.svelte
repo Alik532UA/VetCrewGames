@@ -80,7 +80,7 @@
 		justify-content: center;
 		flex: 1;
 		width: 95%;
-		max-width: 600px;
+		max-width: var(--measure-population);
 		padding: var(--space-md) 0;
 		gap: clamp(var(--space-xs), 2svh, var(--space-lg));
 		margin: 0 auto;

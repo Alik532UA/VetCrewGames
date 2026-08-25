@@ -41,7 +41,7 @@
 		align-items: center;
 		flex: 1;
 		width: 95%;
-		max-width: 560px;
+		max-width: var(--measure-habitat);
 		padding: 4dvh 0 var(--space-lg);
 		gap: clamp(var(--space-xs), 2dvh, var(--space-md));
 		margin: 0 auto;
