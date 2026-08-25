@@ -7,6 +7,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import BiomePicker from '$lib/components/reserve/BiomePicker.svelte';
+	import { loadReserveText } from '$lib/i18n/reserve';
 	import ReserveHud from '$lib/components/reserve/ReserveHud.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
 	import { populatedSites, released, residents } from '$lib/reserve/simulation';
@@ -33,6 +34,13 @@
 	const game = reserve;
 
 	onMount(() => {
+		/*
+		 * Рядки заповідника довантажуються й тут, а не лише в самій грі: сторінка
+		 * вибору ділянки показує шапку, назви біомів і кнопку скидання, тобто читає
+		 * той самий словник. Виклик ідемпотентний — на переході в ділянку другого
+		 * імпорту не буде (`i18n/reserve/index.ts`).
+		 */
+		void loadReserveText(settings.locale);
 		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, '')));
 		game.start();
 

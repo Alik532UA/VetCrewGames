@@ -7,6 +7,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { loadReserveCareText } from '$lib/i18n/reserveCare';
+	import { loadReserveText } from '$lib/i18n/reserve';
 	import type { ReserveEvent } from '$lib/reserve/events';
 	import { createMilestoneWatch } from '$lib/reserve/milestones.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
@@ -160,6 +161,18 @@
 		 * слухач до того самого синглтона, і кожна подія показувала б два тости.
 		 */
 		game.onEvent = (event) => NEWS[event.kind]();
+		/*
+		 * РЯДКИ ЗАПОВІДНИКА ДОВАНТАЖУЮТЬСЯ ТУТ — і це найбільший виніс у проєкті.
+		 *
+		 * Їх 14,88 КБ gzip на чотири мови, і доти вони їхали в чанку кореневого
+		 * layout кожному відвідувачеві, зокрема тому, хто зайшов у вікторину й до
+		 * заповідника не дійде ніколи (`i18n/reserve/index.ts`).
+		 *
+		 * До приїзду чанку `t()` віддає ключ. Видно це не буває: сцена в цей час
+		 * показує власний екран завантаження, а він приходить із того самого чанку
+		 * сторінки, що й ця розмітка.
+		 */
+		void loadReserveText(settings.locale);
 		void loadReserveCareText(settings.locale).then((loaded) => (care = loaded));
 		game.start();
 

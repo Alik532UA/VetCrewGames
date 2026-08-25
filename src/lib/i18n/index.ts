@@ -1,4 +1,5 @@
-import { uk, type TranslationKey } from './translations/uk';
+import { uk, type LazyTranslationKey, type TranslationKey } from './translations/uk';
+import { lazyText } from './lazyText.svelte';
 import { en } from './translations/en';
 import { de } from './translations/de';
 import { nl } from './translations/nl';
@@ -14,7 +15,13 @@ import { settings } from '$lib/services/settings.svelte';
  * в об'єкт, а тест іде від оголошених мов до файлів на диску й ловить
  * протилежне — мову, обіцяну в `LANGUAGES`, у якої словника немає.
  */
-type Translations = Record<TranslationKey, string>;
+/**
+ * Контракт повноти НЕ поширюється на ліниві ключі: їх у зібраному словнику немає
+ * за побудовою — вони приїжджають окремим чанком (`i18n/reserve`). Паритет тих
+ * ключів між мовами стереже `src/i18n-reserve.test.ts`, бо `check:i18n` звіряє
+ * саме зібрані словники й після виносу їх більше не бачить.
+ */
+type Translations = Record<Exclude<TranslationKey, LazyTranslationKey>, string>;
 
 const translations: Record<string, Translations> = {
 	uk,
@@ -23,12 +30,39 @@ const translations: Record<string, Translations> = {
 	nl
 };
 
+/**
+ * ДОДАТИ ДОВАНТАЖЕНІ РЯДКИ у той самий реєстр, з якого читає `t()`.
+ *
+ * Прийом інший, ніж у `i18n/quiz` та `i18n/account`, і причина названа в
+ * `i18n/reserve/index.ts`: ті словники читають один-два екрани, і перекладач
+ * туди приходить пропом. Заповідник читають двадцять чотири компоненти в пʼять
+ * рівнів завглибшки — проп довелося б протягнути через кожен.
+ *
+ * Реєстр при цьому лишається звичайним обʼєктом, а сигнал «словник змінився»
+ * живе окремою руною (`lazyText`): рун у цьому файлі бути не може, бо його
+ * читають і юніт-тести під `environment: node`.
+ */
+export function addTranslations(locale: string, dict: Record<string, string>): void {
+	const target = translations[locale] as Record<string, string> | undefined;
+	if (!target) return;
+	Object.assign(target, dict);
+	lazyText.bump();
+}
+
 export const t = (key: TranslationKey): string => {
-	return translations[settings.locale]?.[key] ?? key;
+	/*
+	 * Читання версії робить КОЖЕН виклик залежним від довантаження: без цього
+	 * рядка компонент, намальований до приїзду чанку, лишився б із ключем на
+	 * екрані назавжди — руна `settings.locale` міняється лише при зміні мови.
+	 */
+	void lazyText.version;
+	const dict = translations[settings.locale] as Record<string, string> | undefined;
+	return dict?.[key] ?? key;
 };
 
 /** For dynamic keys from data (e.g. animal names, facts) */
 export const td = (key: string): string => {
+	void lazyText.version;
 	const dict = translations[settings.locale] as Record<string, string> | undefined;
 	return dict?.[key] ?? key;
 };
