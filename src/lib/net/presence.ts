@@ -79,3 +79,41 @@ export async function watchPresence(
 	const handler = onValue(branch, (snapshot) => onChange(Object.keys(snapshot.val() ?? {})));
 	return () => off(branch, 'value', handler);
 }
+
+/**
+ * ЧИ Є В КІМНАТІ ХТОСЬ, КРІМ МЕНЕ — одним читанням.
+ *
+ * Потрібно це сповіщенню «вас чекають у грі»: скарга автора була саме про те, що
+ * воно висіло, коли чекати вже нікому. Кімната при цьому виглядала живою — і
+ * законно: позначку `aliveAt` оновлює КОЖЕН, хто в ній сидить, тобто моє власне
+ * серцебиття лишало її свіжою ще дві хвилини після мого виходу.
+ *
+ * Присутність відповідає на інше питання, і саме на потрібне: не «коли тут
+ * останній раз хтось був», а «хто тут ЗАРАЗ». Вона гасне сама (`onDisconnect`),
+ * тож привидів у ній не буває.
+ */
+export async function othersPresent(code: string): Promise<number> {
+	const { uid, db } = await connect();
+	const { get, ref } = await import('firebase/database');
+	const snapshot = await get(ref(db, `presence/${code}`));
+	return Object.keys(snapshot.val() ?? {}).filter((other) => other !== uid).length;
+}
+
+/**
+ * Підписка на те саме: скільки в кімнаті інших.
+ *
+ * Потрібна, щоб сповіщення гасло САМО, коли останній вийшов, — а не висіло, поки
+ * людина не перейде на іншу сторінку.
+ */
+export async function watchOthers(
+	code: string,
+	onCount: (others: number) => void
+): Promise<() => void> {
+	const { uid, db } = await connect();
+	const { off, onValue, ref } = await import('firebase/database');
+	const branch = ref(db, `presence/${code}`);
+	const handler = onValue(branch, (snapshot) =>
+		onCount(Object.keys(snapshot.val() ?? {}).filter((other) => other !== uid).length)
+	);
+	return () => off(branch, 'value', handler);
+}

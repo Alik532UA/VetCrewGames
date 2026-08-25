@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { roomAwaitingMe, roomQuery, roomRoute } from './awaitedRoom';
+import { roomQuery, roomRoute, roomsAwaitingMe } from './awaitedRoom';
 import { ROOM_IDLE_MS } from '$lib/config/roomLife';
 import type { OwnRoom } from '$lib/net/ownRooms';
 
@@ -31,49 +31,51 @@ const room = (over: Partial<OwnRoom> = {}): OwnRoom => ({
 
 const NOW = 1_000_000;
 
-describe('яка кімната чекає', () => {
-	it('жива партія чекає', () => {
-		expect(roomAwaitingMe([room()], NOW)?.code).toBe('abcd');
+describe('які кімнати варті питання', () => {
+	const codes = (rooms: ReturnType<typeof roomsAwaitingMe>) => rooms.map((r) => r.code);
+
+	it('жива партія — кандидат', () => {
+		expect(codes(roomsAwaitingMe([room()], NOW))).toEqual(['abcd']);
 	});
 
-	it('порожній перелік не чекає', () => {
-		expect(roomAwaitingMe([], NOW)).toBeNull();
+	it('порожній перелік не дає кандидатів', () => {
+		expect(roomsAwaitingMe([], NOW)).toEqual([]);
 	});
 
 	/** Лобі нікого не тримає: там партія ще не почалася. */
-	it('лобі не чекає', () => {
-		expect(roomAwaitingMe([room({ status: 'lobby' })], NOW)).toBeNull();
+	it('лобі не кандидат', () => {
+		expect(roomsAwaitingMe([room({ status: 'lobby' })], NOW)).toEqual([]);
 	});
 
-	it('скінчена партія не чекає', () => {
-		expect(roomAwaitingMe([room({ status: 'over' })], NOW)).toBeNull();
+	it('скінчена партія не кандидат', () => {
+		expect(roomsAwaitingMe([room({ status: 'over' })], NOW)).toEqual([]);
 	});
 
 	/**
-	 * ГОЛОВНА МЕЖА. Без неї сповіщення пропонувало б вернутися в партію, з якої
-	 * всі пішли — і кнопка «повернутися» вела б у порожню кімнату.
+	 * Дешевий відсів: кімната, у якій дві хвилини тиші, не варта навіть питання про
+	 * присутність. Остаточне слово все одно за присутністю — див. контролер.
 	 */
-	it('кімната, у якій давно нікого, не чекає', () => {
+	it('кімната, у якій давно нікого, не кандидат', () => {
 		const silent = room({ aliveAt: NOW - ROOM_IDLE_MS - 1_000 });
-		expect(roomAwaitingMe([silent], NOW)).toBeNull();
+		expect(roomsAwaitingMe([silent], NOW)).toEqual([]);
 	});
 
-	it('кімната старішої збірки без позначки лишається придатною', () => {
-		expect(roomAwaitingMe([room({ aliveAt: undefined })], NOW)?.code).toBe('abcd');
+	it('кімната старішої збірки без позначки лишається кандидатом', () => {
+		expect(codes(roomsAwaitingMe([room({ aliveAt: undefined })], NOW))).toEqual(['abcd']);
 	});
 
-	it('із кількох живих — найсвіжіша', () => {
+	it('свіжіші спершу', () => {
 		const older = room({ code: 'old', aliveAt: NOW - 60_000 });
 		const newer = room({ code: 'new', aliveAt: NOW - 1_000 });
-		expect(roomAwaitingMe([older, newer], NOW)?.code).toBe('new');
-		expect(roomAwaitingMe([newer, older], NOW)?.code).toBe('new');
+		expect(codes(roomsAwaitingMe([older, newer], NOW))).toEqual(['new', 'old']);
+		expect(codes(roomsAwaitingMe([newer, older], NOW))).toEqual(['new', 'old']);
 	});
 
 	/** Кімната з позначкою — краща підстава, ніж кімната без неї. */
-	it('позначка часу перемагає її відсутність', () => {
+	it('позначка часу йде перед її відсутністю', () => {
 		const stamped = room({ code: 'stamped', aliveAt: NOW - 1_000 });
 		const bare = room({ code: 'bare', aliveAt: undefined });
-		expect(roomAwaitingMe([bare, stamped], NOW)?.code).toBe('stamped');
+		expect(codes(roomsAwaitingMe([bare, stamped], NOW))).toEqual(['stamped', 'bare']);
 	});
 });
 

@@ -1,6 +1,6 @@
 import { logService } from '$lib/services/logService.svelte';
 import type { OwnRoom } from '$lib/net/ownRooms';
-import { roomAwaitingMe } from '$lib/utils/awaitedRoom';
+import { roomsAwaitingMe } from '$lib/utils/awaitedRoom';
 
 /**
  * «ВАС ЧЕКАЮТЬ У ГРІ» — стан сповіщення, яке живе поза сторінкою партії.
@@ -46,11 +46,30 @@ export class AwaitedRoom {
 	 */
 	async refresh(now = Date.now()): Promise<void> {
 		try {
-			const { listOwnRooms } = await import('$lib/net/ownRooms');
-			const found = roomAwaitingMe(await listOwnRooms(), now);
-			this.room = found;
-			if (found) this.#watch(found.code);
-			else this.#drop();
+			const [{ listOwnRooms }, { othersPresent }] = await Promise.all([
+				import('$lib/net/ownRooms'),
+				import('$lib/net/presence')
+			]);
+
+			/*
+			 * ЧЕКАЄ ЛИШЕ ТА КІМНАТА, У ЯКІЙ ХТОСЬ Є. Свіжість (`aliveAt`) цього не
+			 * доводить: позначку оновлює кожен, хто в кімнаті сидить, тобто моє власне
+			 * серцебиття лишає її свіжою ще дві хвилини після мого виходу. Саме тому
+			 * сповіщення й висіло над порожньою кімнатою — скарга автора.
+			 *
+			 * Присутність питається лише в КАНДИДАТІВ, а їх зазвичай нуль або один:
+			 * дешевий відсів іде першим.
+			 */
+			for (const room of roomsAwaitingMe(await listOwnRooms(), now)) {
+				if ((await othersPresent(room.code)) > 0) {
+					this.room = room;
+					this.#watch(room.code);
+					return;
+				}
+			}
+
+			this.room = null;
+			this.#drop();
 		} catch (error) {
 			logService.warn('network', 'awaited room not read', { reason: String(error) });
 		}
@@ -91,22 +110,35 @@ export class AwaitedRoom {
 	 * Підписка на ОДИН вузол `info`: партія скінчилася або кімната опустіла —
 	 * сповіщення гасне саме.
 	 */
+	/**
+	 * ДВІ ПІДПИСКИ, і кожна відповідає на своє питання.
+	 *
+	 *  * `info` — чи партія ще йде. Скінчилася — смуга не має про що казати;
+	 *  * присутність — чи хтось там ще є. Вийшов останній — чекати нікому, і смуга
+	 *    мусить згаснути САМА, а не висіти до наступного переходу сторінкою.
+	 *
+	 * Обидві — по одному вузлу, і живуть лише поки смуга видна.
+	 */
 	#watch(code: string): void {
 		this.#drop();
 		void (async () => {
 			try {
-				const { watchRoomInfo } = await import('$lib/net/rtdbRoom');
-				this.#stopWatch = await watchRoomInfo(code, (info) => {
-					if (!info) {
-						this.room = null;
-						return;
-					}
-					const still = roomAwaitingMe(
-						[{ ...(this.room as OwnRoom), status: info.status, aliveAt: info.aliveAt }],
-						Date.now()
-					);
-					if (!still) this.room = null;
+				const [{ watchRoomInfo }, { watchOthers }] = await Promise.all([
+					import('$lib/net/rtdbRoom'),
+					import('$lib/net/presence')
+				]);
+
+				const stopInfo = await watchRoomInfo(code, (info) => {
+					if (!info || info.status !== 'playing') this.room = null;
 				});
+				const stopOthers = await watchOthers(code, (others) => {
+					if (others === 0) this.room = null;
+				});
+
+				this.#stopWatch = () => {
+					stopInfo();
+					stopOthers();
+				};
 			} catch (error) {
 				logService.warn('network', 'awaited room not watched', { code, reason: String(error) });
 			}
