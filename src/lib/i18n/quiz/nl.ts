@@ -27,7 +27,9 @@ export const quiz: Record<string, string> = {
 	'quiz.answered': 'Wachten op de rest.',
 	'quiz.awayTitle': 'Geen verbinding',
 	'quiz.awayWait': 'Wachten:',
-	'quiz.awayGone': 'We spelen zonder hem verder.',
+	'quiz.awayDecide': 'We wachten op hem. Zonder hem doorgaan?',
+	'quiz.awayGoOn': 'Zonder hem doorgaan',
+	'quiz.awayVoted': 'Je stem is geteld',
 	'quiz.awayKick': 'Verwijderen',
 	'quiz.nextRound': 'Volgende ronde'
 };

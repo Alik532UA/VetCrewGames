@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { AWAY_GRACE_MS, awaySecondsLeft, awayStamps, shouldHoldRound } from './awayWait';
+import {
+	AWAY_GRACE_MS,
+	awaySecondsLeft,
+	awayStamps,
+	awayWaitState,
+	goOnDecided,
+	shouldHoldRound,
+	votesNeeded
+} from './awayWait';
 import type { Member } from '$lib/net/roomTypes';
 
 /**
@@ -46,8 +54,8 @@ describe('пільговий час', () => {
 });
 
 describe('чи стоїть партія', () => {
-	it('стоїть, поки зниклий не відповів і пільга не вичерпана', () => {
-		expect(shouldHoldRound([member('a')], [], 7)).toBe(true);
+	it('стоїть, поки зниклий не відповів і рішення не ухвалене', () => {
+		expect(shouldHoldRound([member('a')], [], [], 2)).toBe(true);
 	});
 
 	/**
@@ -55,19 +63,57 @@ describe('чи стоїть партія', () => {
 	 * закрив вкладку» дарувало б присутнім чужий час.
 	 */
 	it('не стоїть, якщо зниклий уже відповів', () => {
-		expect(shouldHoldRound([member('a')], ['a'], 7)).toBe(false);
+		expect(shouldHoldRound([member('a')], ['a'], [], 2)).toBe(false);
 	});
 
-	it('не стоїть після пільгового часу', () => {
-		expect(shouldHoldRound([member('a')], [], 0)).toBe(false);
+	/**
+	 * ПІЛЬГОВИЙ ЧАС БІЛЬШЕ НЕ ЗНІМАЄ ПАУЗУ — і це головна зміна правила.
+	 *
+	 * Доти партія йшла далі сама за 15 секунд. Вимога автора: «після таймеру
+	 * автоматично НЕ зникає вікно і не продовжується гра, а кнопка
+	 * розблоковується». Причина в житті: гравець перезавантажує комп'ютер, і
+	 * рішення чекати чи ні належить тим, хто грає.
+	 */
+	it('стоїть і після пільгового часу, поки не проголосували', () => {
+		expect(shouldHoldRound([member('a')], [], [], 2)).toBe(true);
+	});
+
+	it('не стоїть, коли голосів досить', () => {
+		// Двоє присутніх — треба два голоси.
+		expect(shouldHoldRound([member('a')], [], ['b'], 2)).toBe(true);
+		expect(shouldHoldRound([member('a')], [], ['b', 'c'], 2)).toBe(false);
 	});
 
 	it('не стоїть, коли всі на місці', () => {
-		expect(shouldHoldRound([], [], 7)).toBe(false);
+		expect(shouldHoldRound([], [], [], 2)).toBe(false);
 	});
 
 	it('двоє зниклих: досить одного, хто не відповів', () => {
-		expect(shouldHoldRound([member('a'), member('b')], ['a'], 7)).toBe(true);
+		expect(shouldHoldRound([member('a'), member('b')], ['a'], [], 3)).toBe(true);
+	});
+});
+
+describe('скільки голосів потрібно', () => {
+	it('більшість присутніх', () => {
+		expect(votesNeeded(2)).toBe(2);
+		expect(votesNeeded(3)).toBe(2);
+		expect(votesNeeded(4)).toBe(3);
+		expect(votesNeeded(5)).toBe(3);
+	});
+
+	/**
+	 * Один присутній — один голос. Це не помилка округлення: коли решта пішла,
+	 * рішення нема з ким ділити, і вимагати двох означало б замкнути людину в
+	 * кімнаті назавжди.
+	 */
+	it('один присутній вирішує сам', () => {
+		expect(votesNeeded(1)).toBe(1);
+		expect(goOnDecided(['a'], 1)).toBe(true);
+	});
+
+	it('свій голос рахується один раз — це вже забезпечує журнал', () => {
+		expect(goOnDecided(['a'], 2)).toBe(false);
+		expect(goOnDecided(['a', 'b'], 2)).toBe(true);
 	});
 });
 
@@ -86,5 +132,28 @@ describe('мить зникнення', () => {
 	it('той, хто повернувся, зникає з переліку', () => {
 		const players = [member('a')];
 		expect(awayStamps(players, ['a'], { a: 1_000 }, 9_000)).toEqual({});
+	});
+});
+
+describe('стан чекання одним обʼєктом', () => {
+	const match = (over: Partial<Parameters<typeof awayWaitState>[0]> = {}) => ({
+		away: [member('a')],
+		answered: [] as string[],
+		goOn: [] as string[],
+		present: ['b', 'c'],
+		...over
+	});
+
+	it('збирає паузу й межу голосів із полів матчу', () => {
+		expect(awayWaitState(match())).toEqual({ hold: true, needed: 2 });
+	});
+
+	it('досить голосів — пауза знята', () => {
+		expect(awayWaitState(match({ goOn: ['b', 'c'] })).hold).toBe(false);
+	});
+
+	/** Матчу ще немає — чекати нема на що, і це не «пауза за замовчуванням». */
+	it('без матчу партія не стоїть', () => {
+		expect(awayWaitState(null)).toEqual({ hold: false, needed: 1 });
 	});
 });

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { awaySecondsLeft, awayStamps, shouldHoldRound } from '$lib/utils/awayWait';
+	import { awaySecondsLeft, awayStamps, awayWaitState } from '$lib/utils/awayWait';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
@@ -398,9 +398,14 @@
 		return () => clearTimeout(timer);
 	});
 
-	/** Скільки ще чекаємо — і чи чекаємо взагалі. Обидва правила в `utils/awayWait`. */
+	/**
+	 * Скільки ще чекаємо, чи чекаємо взагалі й скільки голосів треба.
+	 *
+	 * Пільговий час тепер РОЗБЛОКОВУЄ КНОПКУ, а не знімає паузу: рішення «граємо
+	 * далі» належить присутнім. Обидва правила — в `utils/awayWait`.
+	 */
 	const awayLeft = $derived(awaySecondsLeft(match?.away ?? [], awaySince, clock));
-	const awayHold = $derived(shouldHoldRound(match?.away ?? [], match?.answered ?? [], awayLeft));
+	const wait = $derived(awayWaitState(match));
 
 	/*
 	 * Пауза раунду — наслідок умови вище. Саме `$effect`, а не похідна: зсув
@@ -408,7 +413,7 @@
 	 * читання.
 	 */
 	$effect(() => {
-		match?.setHold(awayHold, clock);
+		match?.setHold(wait.hold, clock);
 	});
 
 	const countdownLeft = $derived(
@@ -585,7 +590,10 @@
 			{amHost}
 			{clock}
 			{awayLeft}
-			{awayHold}
+			awayHold={wait.hold}
+			goOn={match.goOn}
+			goOnNeeded={wait.needed}
+			onGoOn={() => void match?.voteGoOn()}
 			onanswer={answer}
 			onRematch={rematch}
 			onClose={close}

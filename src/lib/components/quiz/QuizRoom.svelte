@@ -54,6 +54,12 @@
 		 * лише передає — вона про показ, а не про правила.
 		 */
 		awayHold: boolean;
+		/** Хто вже проголосував «граємо далі» в цьому раунді. */
+		goOn: string[];
+		/** Скільки голосів потрібно — більшість присутніх. */
+		goOnNeeded: number;
+		/** Мій голос «граємо далі». */
+		onGoOn: () => void;
 		onanswer: (correct: number) => void;
 		onRematch: () => void;
 		onClose: () => void;
@@ -70,6 +76,9 @@
 		clock,
 		awayLeft,
 		awayHold,
+		goOn,
+		goOnNeeded,
+		onGoOn,
 		onanswer,
 		onRematch,
 		onClose,
@@ -134,6 +143,10 @@
 		away={match.away}
 		secondsLeft={awayLeft}
 		blocking={awayHold}
+		voted={goOn.length}
+		needed={goOnNeeded}
+		iVoted={goOn.includes(me)}
+		{onGoOn}
 		onkick={amHost ? onkick : undefined}
 	/>
 

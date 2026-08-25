@@ -81,6 +81,8 @@ export class QuizMatch {
 
 	/** Серверний час початку кожного раунду. Ключ — номер раунду. */
 	startedAt = $state<Record<number, number>>({});
+	/** Голоси «граємо далі» за раундами. Порожньо — ніхто не голосував. */
+	#goOnVotes = $state<Record<number, string[]>>({});
 	/** Відповіді: раунд → гравець → коли й наскільки правильно. */
 	answers = $state<Record<number, Record<string, Answer>>>({});
 
@@ -364,6 +366,32 @@ export class QuizMatch {
 		});
 	}
 
+	/**
+	 * ГОЛОС «ГРАЄМО ДАЛІ БЕЗ НЬОГО» — звичайний хід у журналі.
+	 *
+	 * Правил бази правити не довелося: конверт ходу вже дозволяє свій тип (рядок до
+	 * 16 знаків) і числа в payload, підпис перевіряє сама база (`by == auth.uid`),
+	 * час ставить сервер, а повторний запис того самого номера відкидається. Тобто
+	 * голосування вкладається в наявну модель ЦІЛКОМ.
+	 *
+	 * Номер раунду їде разом із голосом: чекання буває в кожному раунді, і голос за
+	 * попередній не має права зняти паузу в наступному.
+	 */
+	async voteGoOn(): Promise<void> {
+		if (this.round < 0 || this.goOn.includes(this.#me)) return;
+		await this.#transport.append({
+			seq: this.applied + 1,
+			by: this.#me,
+			type: 'goon',
+			payload: { round: this.round }
+		});
+	}
+
+	/** Хто вже проголосував «граємо далі» в ЦЬОМУ раунді. */
+	get goOn(): string[] {
+		return this.#goOnVotes[this.round] ?? [];
+	}
+
 	/** Оголосити початок раунду. Пише лише господар. */
 	async startRound(round: number): Promise<void> {
 		if (this.startedAt[round] !== undefined) return;
@@ -393,6 +421,7 @@ export class QuizMatch {
 		 */
 		const startedAt: Record<number, number> = {};
 		const answers: Record<number, Record<string, Answer>> = {};
+		const goOnVotes: Record<number, string[]> = {};
 
 		for (const move of snapshot.moves) {
 			const round = Number(move.payload?.round);
@@ -413,6 +442,14 @@ export class QuizMatch {
 				continue;
 			}
 
+			if (move.type === 'goon') {
+				// ОДИН ГРАВЕЦЬ — ОДИН ГОЛОС у раунді. Повторний нічого не додає:
+				// інакше повторне натискання саме собою давало б «більшість».
+				const forRound = (goOnVotes[round] ??= []);
+				if (!forRound.includes(move.by)) forRound.push(move.by);
+				continue;
+			}
+
 			if (move.type !== 'answer') continue;
 			const correct = Number(move.payload?.correct);
 			if (!Number.isFinite(correct)) continue;
@@ -425,6 +462,7 @@ export class QuizMatch {
 
 		this.startedAt = startedAt;
 		this.answers = answers;
+		this.#goOnVotes = goOnVotes;
 		this.applied = snapshot.moves.length;
 	}
 }

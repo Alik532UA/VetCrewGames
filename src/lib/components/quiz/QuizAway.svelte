@@ -57,6 +57,21 @@
 		 * повернеться, а він може не повернутися ніколи.
 		 */
 		blocking: boolean;
+		/** Скільки присутніх уже проголосували «граємо далі». */
+		voted: number;
+		/** Скільки голосів потрібно — більшість присутніх. */
+		needed: number;
+		/** Чи мій голос уже врахований. */
+		iVoted: boolean;
+		/**
+		 * ГОЛОС «ГРАЄМО ДАЛІ БЕЗ НЬОГО» — від будь-кого присутнього, не лише лідера.
+		 *
+		 * Доти партія знімалася з паузи сама, за 15 секунд. Автор попросив інакше, і
+		 * причина в житті: гравець перезавантажує комп'ютер, а решта хоче його
+		 * дочекатися — 15 секунд на це не хватає нікому. Тепер відлік лише
+		 * РОЗБЛОКОВУЄ кнопку, а рішення ухвалює більшість присутніх.
+		 */
+		onGoOn: () => void;
 		/**
 		 * Прибрати гравця з кімнати. `undefined` — я не лідер, і кнопки немає.
 		 *
@@ -66,7 +81,8 @@
 		onkick?: (uid: string) => void;
 	}
 
-	let { text, away, secondsLeft, blocking, onkick }: Props = $props();
+	let { text, away, secondsLeft, blocking, voted, needed, iVoted, onGoOn, onkick }: Props =
+		$props();
 </script>
 
 {#if away.length > 0}
@@ -118,9 +134,25 @@
 					<b class="away__count" data-testid="quiz-away-timer-value">{secondsLeft}</b>
 				</p>
 			{:else}
+				<!--
+					ВІДЛІК ВИЧЕРПАНО — і саме тут з'являється рішення, а не автоматичний
+					перехід. Кнопка одна на всіх присутніх; лічильник поруч показує, чого
+					вона чекає, бо кнопка без числа виглядала б як «натиснув і не працює».
+				-->
 				<p class="away__note" data-testid="quiz-away-gone-text">
-					{@html formatFont(text('quiz.awayGone'))}
+					{@html formatFont(text('quiz.awayDecide'))}
 				</p>
+
+				<button
+					type="button"
+					class="away__goon"
+					disabled={iVoted}
+					onclick={onGoOn}
+					data-testid="quiz-away-goon-btn"
+				>
+					{@html formatFont(text(iVoted ? 'quiz.awayVoted' : 'quiz.awayGoOn'))}
+					<b class="away__count" data-testid="quiz-away-goon-count">{voted}/{needed}</b>
+				</button>
 			{/if}
 		</section>
 	</div>
@@ -176,6 +208,35 @@
 		padding: var(--space-sm) var(--space-md);
 		box-sizing: border-box;
 		text-align: center;
+	}
+
+	/*
+	 * Кнопка рішення — акцентна, бо це єдина дія у вікні, яка щось міняє.
+	 * `disabled` після свого голосу: повторний натиск нічого не додає (журнал
+	 * рахує один голос на гравця), і кнопка мусить це показувати, а не мовчати.
+	 */
+	.away__goon {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border: 1px solid var(--color-accent);
+		border-radius: var(--radius-sm);
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
+		font: inherit;
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-bold);
+		cursor: pointer;
+	}
+
+	.away__goon:disabled {
+		border-color: color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
+		background: transparent;
+		color: var(--color-text-on-panel);
+		cursor: default;
 	}
 
 	.away__title {
