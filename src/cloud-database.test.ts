@@ -75,9 +75,9 @@ describe('хмарна база', () => {
 	});
 
 	it('у правилах немає безумовного дозволу (§ 1.3)', () => {
-		const open = [
-			...rulesCode.matchAll(/"\.(?:read|write)"\s*:\s*(?:true|"true")\s*[,}]/g)
-		].map((m) => m[0]);
+		const open = [...rulesCode.matchAll(/"\.(?:read|write)"\s*:\s*(?:true|"true")\s*[,}]/g)].map(
+			(m) => m[0]
+		);
 		expect(open, `безумовний дозвіл у правилах:\n${open.join('\n')}`).toEqual([]);
 	});
 
@@ -116,7 +116,9 @@ describe('хмарна база', () => {
 
 	it('видалення дозволене лише як видалення (§ 4.3)', () => {
 		// `!newData.exists()` не дає під виглядом видалення переписати вміст.
-		const deletions = [...rulesCode.matchAll(/"\.write"\s*:\s*"([^"]*!newData\.exists\(\)[^"]*)"/g)];
+		const deletions = [
+			...rulesCode.matchAll(/"\.write"\s*:\s*"([^"]*!newData\.exists\(\)[^"]*)"/g)
+		];
 		expect(deletions.length, 'немає жодного правила «лише знести»').toBeGreaterThan(0);
 	});
 
@@ -185,7 +187,9 @@ describe('хмарна база', () => {
 	});
 
 	it('присутність перевіряється на форму й серверний час (§ 4.6)', () => {
-		const presence = rulesCode.match(/"presence"\s*:\s*\{[\s\S]*?"\$uid"\s*:\s*\{([\s\S]*?)\n\s{8}\}/);
+		const presence = rulesCode.match(
+			/"presence"\s*:\s*\{[\s\S]*?"\$uid"\s*:\s*\{([\s\S]*?)\n\s{8}\}/
+		);
 		expect(presence, 'правила для presence/$code/$uid не знайдено').not.toBeNull();
 		expect(presence?.[1], 'форма присутності не перевіряється').toContain('".validate"');
 		expect(presence?.[1], 'час присутності не серверний').toContain('now');
@@ -218,7 +222,20 @@ describe('хмарна база', () => {
 		// зростаючий рахунок, а не помилка.
 		const bad: string[] = [];
 		for (const file of sources) {
-			for (const m of readFileSync(file, 'utf8').matchAll(/orderByChild\s*\(\s*['"]([\w.]+)['"]/g)) {
+			/*
+			 * ВКЛАДЕНИЙ ШЛЯХ теж рахується: `orderByChild('info/hostUid')` — законний
+			 * запит RTDB, і без `.indexOn` він так само тягне гілку цілком. Клас
+			 * символів тут був `[\w.]+`, тобто без скісної риски, і такий запит
+			 * перевірка мовчки пропускала.
+			 *
+			 * Коментарі знімаються, бо саме `info/hostUid` згадане в докблоці
+			 * `ownRooms.ts` як приклад запиту, якого тут НЕМАЄ. Доти вузький клас
+			 * символів випадково рятував від цієї згадки; тепер рятує розбір.
+			 */
+			const code = readFileSync(file, 'utf8')
+				.replace(/\/\*[\s\S]*?\*\//g, ' ')
+				.replace(/(^|[^:])\/\/.*/g, '$1 ');
+			for (const m of code.matchAll(/orderByChild\s*\(\s*['"]([\w./-]+)['"]/g)) {
 				if (!new RegExp(`"\\.indexOn"\\s*:\\s*(?:"${m[1]}"|\\[[^\\]]*"${m[1]}")`).test(rulesCode)) {
 					bad.push(`${file}: orderByChild('${m[1]}') без ".indexOn"`);
 				}
@@ -236,7 +253,9 @@ describe('хмарна база', () => {
 		 * переліку кімнат.
 		 */
 		expect(rulesCode, 'гілки myRooms у правилах немає').toContain('"myRooms"');
-		const index = rulesCode.match(/"myRooms"\s*:\s*\{\s*"\$uid"\s*:\s*\{\s*"\.read"\s*:\s*"([^"]+)"/);
+		const index = rulesCode.match(
+			/"myRooms"\s*:\s*\{\s*"\$uid"\s*:\s*\{\s*"\.read"\s*:\s*"([^"]+)"/
+		);
 		expect(index, 'правила для myRooms/$uid не знайдено').not.toBeNull();
 		expect(index?.[1], 'чужий індекс кімнат читається').toContain('$uid === auth.uid');
 
