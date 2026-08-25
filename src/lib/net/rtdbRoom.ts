@@ -453,6 +453,21 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			await update(ref(db, `rooms/${code}/info`), { autoStart: on, countdownAt: null });
 		},
 
+		async setConfig(config: Record<string, number>) {
+			/*
+			 * `set`, а не `update`, і саме на гілку `config`.
+			 *
+			 * Набір ігор — це ВСЕ, що там лежить, тож `update` лишав би прапорці
+			 * вимкнених ігор із попереднього набору: вимкнена гра зникала б не як
+			 * `0`, а як «ключ, якого не переписали». Читач цього не відрізнить.
+			 *
+			 * Правило доступу тут те саме, що на решту `info`: пише лише господар
+			 * (`.write` на `info` вище в `database.rules.json`). Окремого дозволу
+			 * не додано, і `.validate` на `config/$key` лишився той самий — число.
+			 */
+			await set(ref(db, `rooms/${code}/info/config`), config);
+		},
+
 		async touch() {
 			// Позначку ставить СЕРВЕР: правило вимагає час у вікні пʼяти секунд, тож
 			// клієнтське число сюди просто не запишеться.

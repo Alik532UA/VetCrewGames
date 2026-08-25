@@ -78,6 +78,7 @@ export const ui = {
 	'pairs.quickGame': 'Schnelles Spiel',
 	'pairs.quickGameHint': 'Wir treten einem freien Raum bei oder erstellen einen neuen offenen.',
 	'pairs.shownNewest': 'Neueste angezeigt — es gibt weitere',
+	'pairs.roomsFiltered': 'Vom Filter ausgeblendet',
 	'pairs.startingIn': 'Start in',
 	'pairs.seconds': 's',
 	'pairs.roomsUnavailable':

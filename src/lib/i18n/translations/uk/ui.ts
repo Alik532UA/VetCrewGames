@@ -82,6 +82,7 @@ export const ui = {
 	'pairs.quickGame': 'Швидка гра',
 	'pairs.quickGameHint': 'Зайдемо у вільну кімнату, а якщо таких немає — створимо нову, відкриту.',
 	'pairs.shownNewest': 'Показано найновіші — є ще',
+	'pairs.roomsFiltered': 'Фільтр приховав кімнат',
 	'pairs.startingIn': 'Починаємо за',
 	'pairs.seconds': 'с',
 	'pairs.roomsUnavailable':

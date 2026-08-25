@@ -8,6 +8,7 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { startRoomBeat } from '$lib/net/roomBeat';
+	import { COUNTDOWN_MS } from '$lib/config/roomLife';
 	import { loadQuizText } from '$lib/i18n/quiz';
 	import { playerData } from '$lib/services/playerData.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
@@ -15,12 +16,16 @@
 	import { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
-	import { DEV_TIME_FACTOR, ONLINE_GAMES, gamesToConfig } from '$lib/config/quizOnline';
+	import {
+		DEV_TIME_FACTOR,
+		ONLINE_GAMES,
+		gamesToConfig,
+		roomFitsGames
+	} from '$lib/config/quizOnline';
 	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
-	import RoomList from '$lib/components/pairs/RoomList.svelte';
-	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
-	import QuizGamePicker from '$lib/components/quiz/QuizGamePicker.svelte';
+	import QuizRooms from '$lib/components/quiz/QuizRooms.svelte';
+	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
 
 	/**
@@ -69,7 +74,7 @@
 	 */
 	const RULES_VERSION = 1;
 	const CLOCK_MS = 1000;
-	const COUNTDOWN_MS = 5000;
+
 	/** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
 	const MIN_PLAYERS = 2;
 
@@ -80,7 +85,6 @@
 	/** Перелік кімнат і свої партії — спільний контролер, див. `lobbyFeed`. */
 	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
 	const lobby = new LobbyFeed('quiz');
-	let unlist: (() => void) | null = null;
 	let me = $state('');
 	let online = $state<string[]>([]);
 	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
@@ -100,9 +104,6 @@
 
 	const takenNames = $derived(lobby.takenNames);
 	const amHost = $derived(Boolean(me) && match?.hostUid === me);
-	const myRole = $derived<Role>(
-		match?.members.find((member) => member.uid === me)?.role ?? 'player'
-	);
 	const joinUrl = $derived(browser && code !== '' ? page.url.href : '');
 
 	const roomFromUrl = () => (browser ? (page.url.searchParams.get('room') ?? '') : '');
@@ -138,7 +139,6 @@
 		playerData.endOnline();
 		for (const stop of stops) stop();
 		stops = [];
-		unlist = null;
 		match = null;
 		code = '';
 		online = [];
@@ -250,18 +250,22 @@
 				 */
 
 				if (!isPrivate || quick) {
-					const list = await import('$lib/net/lobby');
-					unlist = await list.publishRoom({
+					await lobby.publish({
 						code,
 						hostUid: me,
 						hostName: who,
 						hostCountry: player.country,
 						hostAvatar: player.forRoom(),
-						gameId: 'quiz',
 						rulesVersion: RULES_VERSION,
-						players: 1
+						players: 1,
+						/*
+						 * НАБІР ІГОР ЇДЕ В ЗАПИС ПЕРЕЛІКУ — без нього фільтр списку
+						 * неможливий: `rooms` перелічувати заборонено, тож про чужу
+						 * кімнату видно рівно те, що в самому записі.
+						 */
+						games: gamesToConfig(picked)
 					});
-					stops.push(() => unlist?.());
+					stops.push(() => lobby.unpublish());
 				}
 			}
 
@@ -279,7 +283,15 @@
 
 	/** Зайти у вільну кімнату вікторини, а якщо таких немає — створити нову. */
 	async function quickGame() {
-		const free = lobby.rooms.find((room) => room.gameId === 'quiz' && room.players < MIN_PLAYERS);
+		/*
+		 * ФІЛЬТР ДІЄ І ТУТ, і це не педантизм: «швидка гра» без нього кидала б у
+		 * кімнату з іграми, які людина щойно зняла. Не знайшлося такої — створимо
+		 * свою з вибраним набором, тобто вибір спрацює в обох гілках.
+		 */
+		const free = lobby.rooms.find(
+			(room) =>
+				room.gameId === 'quiz' && room.players < MIN_PLAYERS && roomFitsGames(room.games, picked)
+		);
 		if (free) {
 			joinCode = free.code;
 			await enter('join', true);
@@ -301,6 +313,26 @@
 	}
 
 	const switchAutoStart = (on: boolean) => hostAction((transport) => transport.setAutoStart(on));
+
+	/**
+	 * ЗМІНИТИ НАБІР ІГОР У КІМНАТІ — і, якщо кімната в переліку, там ТЕЖ.
+	 *
+	 * Два записи, бо це два різні місця з різним призначенням: `info.config`
+	 * визначає ПАРТІЮ, а запис у `lobby` — те, за чим кімнату вибирають зі списку.
+	 * Не оновити другий означало б, що фільтр бреше саме тому, хто ним
+	 * скористався: у списку кімната обіцяє одні ігри, а зіграє в інші.
+	 *
+	 * Порядок саме такий: спершу кімната, потім довідка. Навпаки був би момент, у
+	 * який список обіцяє те, чого в кімнаті ще немає.
+	 *
+	 * Чи кімната взагалі в переліку, знає сам перелік: закрита («лише друзі») туда
+	 * не писалася, і `lobby.setGames` тоді нічого не робить.
+	 */
+	async function changeGames(games: string[]) {
+		if (!match) return;
+		await match.setGames(games);
+		await lobby.setGames(code, gamesToConfig(games));
+	}
 	/**
 	 * Прибрати того, хто зник. Дія лідера, і правило бази дозволяє саме її:
 	 * ВИДАЛЕННЯ чужого рядка складу, а не зміну.
@@ -318,15 +350,13 @@
 		}
 		const net = await import('$lib/net/rtdbRoom');
 		await (await net.roomTransport(code)).setStatus('playing');
-		unlist?.();
-		unlist = null;
+		lobby.unpublish();
 	}
 
 	async function close() {
 		if (!match || !amHost) return;
 		try {
-			unlist?.();
-			unlist = null;
+			lobby.unpublish();
 			const net = await import('$lib/net/rtdbRoom');
 			await net.closeRoom(code);
 			await goto(langPath(lang, 'quiz'));
@@ -421,12 +451,6 @@
 	 */
 	$effect(() => void match?.setHold(wait.hold, clock));
 
-	const countdownLeft = $derived(
-		match?.countdownAt === null || match?.countdownAt === undefined
-			? null
-			: Math.max(0, Math.ceil((match.countdownAt + COUNTDOWN_MS - clock) / 1000))
-	);
-
 	/*
 	 * Годинник іде, поки на нього чекають: відлік у лобі АБО раунд партії.
 	 *
@@ -435,14 +459,15 @@
 	 * розряджений акумулятор і нічого більше.
 	 */
 	const clockNeeded = $derived(
-		countdownLeft !== null ||
+		(match?.countdownAt ?? null) !== null ||
 			(match !== null && match.status === 'playing' && !match.over) ||
 			(match !== null && match.away.length > 0)
 	);
 
 	$effect(() => {
 		if (!browser || !clockNeeded) return;
-		const every = countdownLeft !== null && match?.status !== 'playing' ? CLOCK_MS : ROUND_CLOCK_MS;
+		const counting = (match?.countdownAt ?? null) !== null;
+		const every = counting && match?.status !== 'playing' ? CLOCK_MS : ROUND_CLOCK_MS;
 		clock = Date.now();
 		const timer = setInterval(() => (clock = Date.now()), every);
 		return () => clearInterval(timer);
@@ -529,7 +554,11 @@
 	});
 </script>
 
-<div class="quiz-online" class:quiz-online--playing={match !== null && match.status !== 'lobby'}>
+<div
+	class="quiz-online"
+	class:quiz-online--gate={match === null}
+	class:quiz-online--playing={match !== null && match.status !== 'lobby'}
+>
 	{#if !match}
 		<OnlineGate
 			bind:name={player.value}
@@ -544,22 +573,29 @@
 		>
 			{#snippet roomList()}
 				<!--
-					НАБІР ІГОР ВИБИРАЄТЬСЯ ДО СТВОРЕННЯ, а не тільки в лобі.
+					НАБІР ІГОР ТУТ — ФІЛЬТР, а не панель налаштувань.
 
-					Він міняє те, у що зіграють, тож прочитати його треба там, де
-					натискають «створити кімнату». У лобі його теж видно — але вже як
-					налаштування наявної кімнати.
+					Доти він стояв окремою панеллю над списком і робив одне: задавав
+					`config` кімнаті, яку ти створиш. Автор попросив прибрати його
+					звідси у фільтр, а правити набір — у самій кімнаті. Обидві
+					половини цього тепер справджені: тут фільтр (`QuizRooms`), а в
+					лобі кімнати той самий набір править господар.
+
+					Вибір лишається ОДИН, і це навмисно: «у що я хочу грати» сіє чужі
+					кімнати й задає свою. Два різні набори на ті самі шість кнопок
+					означали б, що людина мусить тримати в голові, який із них зараз
+					діє.
 				-->
-				<div class="quiz-online__games text-panel">
-					<QuizGamePicker {text} bind:selected={picked} editable={true} />
-				</div>
-				<RoomList
+				<QuizRooms
+					{text}
 					rooms={lobby.rooms}
 					resume={lobby.own}
 					friends={lobby.friends}
 					hasMore={lobby.hasMore}
 					unavailable={lobby.unavailable}
 					{busy}
+					{picked}
+					onPick={(games) => (picked = games)}
 					onClose={(dead) =>
 						void lobby.close(dead).then((done) => {
 							if (!done) toast.error('pairs.actionFailed');
@@ -572,30 +608,26 @@
 			{/snippet}
 		</OnlineGate>
 	{:else if match.status === 'lobby'}
-		<OnlineLobby
+		<!--
+			Лобі вікторини — спільне лобі ПЛЮС набір ігор кімнати, і зʼєднані вони в
+			`QuizLobby`, а не тут: `OnlineLobby` спільне з «Знайди пару» й про ігри не
+			знає, а ця сторінка стоїть на межі розміру. Той самий взірець, що
+			`QuizRooms` для списку кімнат.
+		-->
+		<QuizLobby
+			{text}
+			{match}
 			{code}
 			{joinUrl}
-			members={match.members}
 			{online}
 			{me}
 			{amHost}
-			{myRole}
-			{countdownLeft}
-			autoStart={match.autoStart}
+			{clock}
 			onRole={setRole}
 			onStart={start}
 			onAutoStart={switchAutoStart}
+			onGames={changeGames}
 		/>
-		<!--
-			У лобі набір показується ОБОМ, але править його лідер.
-
-			Гість мусить знати, у що зіграє, до початку — інакше перше питання стає
-			несподіванкою. Право правити звужене правилом бази, а не тільки екраном:
-			`info.config` пише лише господар.
-		-->
-		<div class="quiz-online__games text-panel">
-			<QuizGamePicker {text} selected={match.games} editable={false} />
-		</div>
 	{:else}
 		<!--
 			ПАРТІЯ Й ПІДСУМОК — в окремому компоненті.
@@ -612,14 +644,10 @@
 			{lang}
 			{amHost}
 			{clock}
-			awayLeft={wait.left}
-			awayHold={wait.hold}
-			pausedBy={wait.pausedBy}
-			canPause={wait.canPause}
+			{wait}
 			onPause={() => void match?.pause()}
-			onResume={match.pausedBy === me ? () => void match?.resume() : undefined}
+			onResume={() => void match?.resume()}
 			goOn={match.goOn}
-			goOnNeeded={wait.needed}
 			onGoOn={() => void match?.voteGoOn()}
 			onanswer={answer}
 			onRematch={rematch}
@@ -670,7 +698,20 @@
 		max-width: var(--measure-habitat-wide);
 	}
 
-	.quiz-online__games {
-		width: 100%;
+	/*
+	 * ПІД ФОРМОЮ ВХОДУ СТОВПЕЦЬ ШИРШАЄ — бо там уже не стовпець.
+	 *
+	 * `OnlineGate` на широкому екрані розкладається в три стовпці (лівий: код і
+	 * «хто може зайти», середина: швидка гра й імʼя, правий: кімнати), а в 900px
+	 * три стовпці не влазять: вони починаються з 64rem, тобто самі просять близько
+	 * 1100. Скарга автора була саме про цю пустку — «в один стовпчик, а праворуч і
+	 * ліворуч купа вільного місця».
+	 *
+	 * Міркування «лобі лишається вузьким навмисно» (нижче) стосувалося ОДНОГО
+	 * стовпця: рядок списку кімнат на 1100px око не проходить за раз. У трьох
+	 * стовпцях кожен вужчий за ті самі 900 — тобто рядки стали КОРОТШІ, а не довші.
+	 */
+	.quiz-online--gate {
+		max-width: 1120px;
 	}
 </style>

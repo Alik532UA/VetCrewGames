@@ -106,6 +106,11 @@ export class LocalRoom {
 				this.#emit();
 			},
 
+			setConfig: async (config) => {
+				this.#info = { ...this.#info, config };
+				this.#emit();
+			},
+
 			touch: async () => {
 				// Той самий контракт, що в справжній базі: позначка серверного часу.
 				this.#info = { ...this.#info, aliveAt: this.#now };

@@ -11,7 +11,8 @@ import {
 	roundLimitMs,
 	configToGames,
 	gamesToConfig,
-	quizProgramme
+	quizProgramme,
+	roomFitsGames
 } from '$lib/config/quizOnline';
 
 /*
@@ -100,6 +101,85 @@ describe('набір ігор у кімнаті', () => {
 	 */
 	it('кімната без жодного прапорця дає всі ігри', () => {
 		expect(configToGames({})).toEqual(ONLINE_GAMES.map((game) => game.id));
+	});
+
+	/**
+	 * ФІЛЬТР СПИСКУ: набір кімнати мусить УКЛАДАТИСЯ у вибране.
+	 *
+	 * Не перетин, і різниця тут не теоретична. Перетин («хоч одна спільна») пускав
+	 * би в список кімнату з усіма шістьма іграми за будь-якого фільтра: вибравши
+	 * одні «Міфи», людина потрапила б у партію, де пʼять раундів із шести — те, що
+	 * вона щойно зняла. Тобто фільтр працював би, а результат був би той самий.
+	 *
+	 * Зворотний експеримент (§ 1.1): замінити `every` на `some` у `roomFitsGames` —
+	 * червоніє перший же випадок.
+	 */
+	it('фільтр пускає кімнату, набір якої вкладається у вибране', () => {
+		const [first, second] = ONLINE_GAMES;
+		const roomTwo = gamesToConfig([first.id, second.id]);
+
+		expect(roomFitsGames(roomTwo, [first.id]), 'зайва гра — не показуємо').toBe(false);
+		expect(roomFitsGames(roomTwo, [first.id, second.id])).toBe(true);
+		expect(roomFitsGames(gamesToConfig([first.id]), [first.id, second.id])).toBe(true);
+	});
+
+	/**
+	 * Кімната, яка НАБОРУ НЕ ОГОЛОСИЛА, читається як «будь-які ігри».
+	 *
+	 * Такі є в базі: запис переліку, зроблений до появи поля. Показувати їх при
+	 * звуженому фільтрі означало б обіцяти те, чого ніхто не обіцяв, — тож вони
+	 * видні, поки вибрані всі, і ховаються разом із першим звуженням.
+	 */
+	it('кімната без оголошеного набору видна лише за повного вибору', () => {
+		const all = ONLINE_GAMES.map((game) => game.id);
+		expect(roomFitsGames(undefined, all)).toBe(true);
+		expect(roomFitsGames(undefined, [ONLINE_GAMES[0].id])).toBe(false);
+	});
+});
+
+/**
+ * НАБІР ІГОР ПРАВИТЬ ГОСПОДАР, І ЛИШЕ В ЛОБІ.
+ *
+ * Доти набір після створення кімнати не міняло ніщо — автор попросив саме цього:
+ * «можна налаштувати поміняти саме тут, у кімнаті». Дві межі цієї правки й
+ * перевіряються: хто (господар) і коли (доки партія не почалася).
+ *
+ * Друга важливіша за першу й не є обережністю: програма раундів — чиста функція
+ * від (зерна, набору), тож зміна набору посеред партії перемалювала б УЖЕ ЗІГРАНІ
+ * раунди. Зворотний експеримент (§ 1.1): прибрати `this.status !== 'lobby'` із
+ * `setGames` — червоніє «в партії набір не міняється».
+ */
+describe('зміна набору ігор', () => {
+	const twoGames = [ONLINE_GAMES[0].id, ONLINE_GAMES[1].id];
+
+	it('господар міняє набір у лобі, і його бачать обоє', async () => {
+		const { host, guest, stop } = table(info({ status: 'lobby' }));
+
+		await host.setGames(twoGames);
+
+		expect(host.games).toEqual(twoGames);
+		expect(guest.games, 'набір лежить у кімнаті, тобто він у всіх один').toEqual(twoGames);
+		stop();
+	});
+
+	it('гість набору не міняє', async () => {
+		const { host, guest, stop } = table(info({ status: 'lobby' }));
+		const before = [...host.games];
+
+		await guest.setGames(twoGames);
+
+		expect(host.games).toEqual(before);
+		stop();
+	});
+
+	it('у партії набір не міняється', async () => {
+		const { host, stop } = table(info({ status: 'playing' }));
+		const before = [...host.games];
+
+		await host.setGames(twoGames);
+
+		expect(host.games, 'інакше перемалювалися б уже зіграні раунди').toEqual(before);
+		stop();
 	});
 });
 

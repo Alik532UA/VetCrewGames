@@ -40,11 +40,16 @@ import { logService } from '$lib/services/logService.svelte';
  * ## Що тут лежить, а чого немає
  *
  * Лише те, що й так побачить кожен, хто зайде: імʼя господаря (воно вже в
- * `members`) і скільки гравців. НЕМАЄ `seed` і `config` — вони визначають
- * роздачу, і читати їх, не заходячи, означало б бачити дошку суперника до
- * першого ходу. Правило бази це не просто не радить, а забороняє (`$other:
- * false`), і негативний випадок «у перелік кладуть зерно роздачі» стоїть у
+ * `members`), скільки гравців і НАБІР ІГОР. НЕМАЄ `seed` — він визначає роздачу, і
+ * читати його, не заходячи, означало б бачити дошку суперника до першого ходу.
+ * Правило бази це не просто не радить, а забороняє (`$other: false`), і
+ * негативний випадок «у перелік кладуть зерно роздачі» стоїть у
  * `npm run check:rules`.
+ *
+ * Набір ігор — межа між цими двома купками, і вона проведена НЕ на око: набір
+ * каже, У ЩО тут зіграють, а зерно — ЯК саме роздадуть. Перше і є те, за чим
+ * вибирають кімнату (без нього фільтр списку неможливий); друге не дає нічого,
+ * крім переваги. Тому набір їде в запис, а `config` цілком — ні.
  *
  * ## Хто пише
  *
@@ -74,6 +79,23 @@ export interface LobbyRoom {
 	gameId: string;
 	rulesVersion: number;
 	players: number;
+	/**
+	 * НАБІР ІГОР КІМНАТИ — прапорці 1/0, той самий конверт, що `info.config`.
+	 *
+	 * Тут він непрозорий НАВМИСНО: перелік кімнат спільний на всі спільні ігри, а
+	 * імена прапорців — справа вікторини (`config/quizOnline.ts` кодує їх тією
+	 * самою парою функцій, що для кімнати). Розібрати цей обʼєкт — робота того,
+	 * хто знає гру.
+	 *
+	 * Навіщо він у переліку взагалі: фільтр списку «у що я хочу грати» інакше
+	 * неможливий. Набір лежить в `info.config`, а `rooms` перелічувати заборонено
+	 * (код кімнати і є її пароль), тож про чужі кімнати клієнт не знав нічого,
+	 * крім того, що в самому записі.
+	 *
+	 * Відсутнє = кімната набору НЕ ОГОЛОСИЛА: «Знайди пару» його не має зовсім, а
+	 * запис вікторини, зроблений до цієї зміни, його не писав.
+	 */
+	games?: Record<string, number>;
 	/** Серверний час публікації. За ним список упорядковується. */
 	at: number;
 }
@@ -114,6 +136,9 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
 		gameId: entry.gameId,
 		rulesVersion: entry.rulesVersion,
 		players: entry.players,
+		// Та сама умовна вставка й із тієї самої причини: `undefined` усередині
+		// `set()` Firebase КИДАЄ, а гра без наборів (`pairs`) його не передає.
+		...(entry.games ? { games: entry.games } : {}),
 		at: serverTimestamp()
 	});
 
@@ -135,6 +160,31 @@ export async function updatePlayers(gameId: string, code: string, players: numbe
 		await set(ref(db, `lobby/${gameId}/${code}/players`), players);
 	} catch (error) {
 		logService.warn('network', 'lobby player count not updated', { code, reason: reasonOf(error) });
+	}
+}
+
+/**
+ * Оновити НАБІР ІГОР у своєму записі.
+ *
+ * Потрібно тому, що набір тепер правиться В КІМНАТІ, а запис переліку лежить
+ * окремо: без цього виклику список показував би набір, з яким кімнату створили,
+ * а грали б у інший — тобто фільтр брехав би саме тим, хто ним скористався.
+ *
+ * НЕ КИДАЄ, як і `updatePlayers`, і з тієї самої причини: перелік — довідка, а не
+ * стан партії. Невдале оновлення лишає в списку старий набір; зламати через це
+ * лобі господаря було б гірше.
+ */
+export async function updateGames(
+	gameId: string,
+	code: string,
+	games: Record<string, number>
+): Promise<void> {
+	try {
+		const { db } = await connect();
+		const { ref, set } = await import('firebase/database');
+		await set(ref(db, `lobby/${gameId}/${code}/games`), games);
+	} catch (error) {
+		logService.warn('network', 'lobby games not updated', { code, reason: reasonOf(error) });
 	}
 }
 
@@ -221,9 +271,7 @@ export interface LobbyWatcher {
 
 export async function watchLobby(gameId: string, watcher: LobbyWatcher): Promise<() => void> {
 	const { db } = await connect();
-	const { limitToLast, off, onValue, orderByChild, query, ref } = await import(
-		'firebase/database'
-	);
+	const { limitToLast, off, onValue, orderByChild, query, ref } = await import('firebase/database');
 	/*
 	 * ЗАПИТ, А НЕ ЧИТАННЯ ГІЛКИ, і без нього правило тепер відмовить.
 	 *

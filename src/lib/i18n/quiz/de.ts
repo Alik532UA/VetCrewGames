@@ -20,6 +20,10 @@
  */
 export const quiz: Record<string, string> = {
 	'quiz.gamesInRoom': 'Spiele in diesem Raum',
+	'quiz.gamesFilter': 'Spielfilter',
+	'quiz.gamesWanted': 'Was ich spielen will',
+	'quiz.gamesFilterHint':
+		'Filtert die Raumliste — und legt die Spiele für einen Raum fest, den du erstellst.',
 	'quiz.gamesLast': 'Mindestens ein Spiel muss bleiben',
 	'quiz.unknownGame': 'Dieses Spiel kommt aus einer neueren Version. Seite neu laden.',
 	'quiz.skipStep': 'Überspringen',

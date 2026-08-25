@@ -46,8 +46,15 @@ const own = (over: Partial<OwnRoom> = {}): OwnRoom => ({
 const watchLobby = vi.fn<(gameId: string, watcher: LobbyWatcher) => Promise<() => void>>();
 const listOwnRooms = vi.fn<() => Promise<OwnRoom[]>>(async () => []);
 const friendUids = vi.fn<() => Promise<string[]>>(async () => []);
+const unlist = vi.fn<() => void>();
+const publishRoom = vi.fn<(entry: Omit<LobbyRoom, 'at'>) => Promise<() => void>>(
+	async () => unlist
+);
+const updateGames = vi.fn<
+	(gameId: string, code: string, games: Record<string, number>) => Promise<void>
+>(async () => {});
 
-vi.mock('$lib/net/lobby', () => ({ watchLobby }));
+vi.mock('$lib/net/lobby', () => ({ watchLobby, publishRoom, updateGames }));
 
 /**
  * Гра переліку. Тепер це АДРЕСА гілки (`lobby/{gameId}`), а не фільтр: кімнати
@@ -67,6 +74,9 @@ describe('LobbyFeed', () => {
 		watchLobby.mockReset().mockResolvedValue(() => {});
 		listOwnRooms.mockReset().mockResolvedValue([]);
 		friendUids.mockReset().mockResolvedValue([]);
+		unlist.mockReset();
+		publishRoom.mockReset().mockResolvedValue(unlist);
+		updateGames.mockReset().mockResolvedValue(undefined);
 	});
 
 	it('перевірка жива: спочатку порожньо й доступно', () => {
@@ -246,5 +256,82 @@ describe('LobbyFeed', () => {
 			expect(feed.own, 'відповідь записалася в контролер після демонтажу').toEqual([]);
 			expect(feed.friends).toEqual([]);
 		});
+	});
+});
+
+/**
+ * МІЙ РЯДОК У ПЕРЕЛІКУ: опублікувати, наздогнати набором, зняти.
+ *
+ * Доти цим господарювала сторінка — тримала нульовану замикачку `unlist` і
+ * розкладала її по чотирьох місцях. Поки операція була одна, це трималося; щойно
+ * набір ігор став правитися просто в кімнаті, з'явилася друга, і виявилося, що
+ * стан без господаря. Перевіряється тут саме те, що зламалося б непомітно: чи
+ * знає перелік, що кімната в ньому Є.
+ */
+describe('свій рядок у переліку', () => {
+	const entry = { code: 'AAAA', hostUid: 'uid-me', hostName: 'Я', rulesVersion: 1, players: 1 };
+
+	/*
+	 * Свій `beforeEach`, бо цей блок — сусід головного, а не його дитина. Перша
+	 * редакція про це забула, і «знятий рядок більше не оновлюється» червонів на
+	 * виклику з ПОПЕРЕДНЬОГО випадку: перевірка була права, а не зайва.
+	 */
+	beforeEach(() => {
+		unlist.mockReset();
+		publishRoom.mockReset().mockResolvedValue(unlist);
+		updateGames.mockReset().mockResolvedValue(undefined);
+	});
+
+	it('гру бере із себе, а не з виклику', async () => {
+		const feed = new LobbyFeed(GAME);
+
+		await feed.publish(entry);
+
+		expect(publishRoom).toHaveBeenCalledWith({ ...entry, gameId: GAME });
+	});
+
+	it('знімає рядок, і другий раз нічого не робить', async () => {
+		const feed = new LobbyFeed(GAME);
+		await feed.publish(entry);
+
+		feed.unpublish();
+		feed.unpublish();
+
+		expect(unlist).toHaveBeenCalledTimes(1);
+	});
+
+	/**
+	 * Закрита кімната («лише друзі») у перелік не писалася — оновлювати нічого. Це
+	 * не тихе ігнорування, а відповідь: без цієї межі кожна зміна набору в закритій
+	 * кімнаті стукала б у базу за записом, якого немає.
+	 *
+	 * Зворотний експеримент (§ 1.1): прибрати `if (!this.#unlist) return` —
+	 * червоніє «поза переліком оновлювати нічого».
+	 */
+	it('поза переліком оновлювати нічого', async () => {
+		const feed = new LobbyFeed(GAME);
+
+		await feed.setGames('AAAA', { game_myths: 1 });
+
+		expect(updateGames).not.toHaveBeenCalled();
+	});
+
+	it('опублікованій кімнаті набір наздоганяє', async () => {
+		const feed = new LobbyFeed(GAME);
+		await feed.publish(entry);
+
+		await feed.setGames('AAAA', { game_myths: 1 });
+
+		expect(updateGames).toHaveBeenCalledWith(GAME, 'AAAA', { game_myths: 1 });
+	});
+
+	it('знятий рядок більше не оновлюється', async () => {
+		const feed = new LobbyFeed(GAME);
+		await feed.publish(entry);
+		feed.unpublish();
+
+		await feed.setGames('AAAA', { game_myths: 1 });
+
+		expect(updateGames, 'кімната вже не в переліку').not.toHaveBeenCalled();
 	});
 });

@@ -174,18 +174,14 @@ describe('стан чекання одним викликом', () => {
 			needed: 1,
 			left: 0,
 			pausedBy: null,
-			canPause: false
+			canPause: false,
+			canResume: false
 		});
 	});
 
 	/** Пауза й зникнення дають ОДИН відлік: на екрані це одне вікно. */
 	it('під паузою відлік рахується від ходу, а не від пільги зникнення', () => {
-		const view = waitView(
-			source({ away: [], pausedBy: 'a', pausedAt: NOW }),
-			{},
-			NOW + 5_000,
-			'b'
-		);
+		const view = waitView(source({ away: [], pausedBy: 'a', pausedAt: NOW }), {}, NOW + 5_000, 'b');
 		expect(view.pausedBy?.uid).toBe('a');
 		expect(view.left).toBe(AWAY_GRACE_MS / 1000 - 5);
 		expect(view.hold, 'паузу знімає людина або голос, а не відлік').toBe(true);
@@ -205,6 +201,22 @@ describe('стан чекання одним викликом', () => {
 
 	it('під паузою кнопки паузи немає ні в кого', () => {
 		expect(waitView(source({ pausedBy: 'a' }), {}, NOW, 'b').canPause).toBe(false);
+	});
+
+	/**
+	 * «ПРОДОВЖИТИ» ОДРАЗУ — тільки в того, хто паузу й поставив.
+	 *
+	 * Він тут, він бачить, що готовий, і голосувати сам із собою йому нема з ким.
+	 * Решта чекає відліку — інакше пауза не була б паузою.
+	 */
+	it('свою паузу знімає автор, і лише він', () => {
+		const paused = source({ away: [], pausedBy: 'a' });
+		expect(waitView(paused, {}, NOW, 'a').canResume).toBe(true);
+		expect(waitView(paused, {}, NOW, 'b').canResume).toBe(false);
+	});
+
+	it('без паузи знімати нічого', () => {
+		expect(waitView(source(), {}, NOW, 'b').canResume).toBe(false);
 	});
 });
 

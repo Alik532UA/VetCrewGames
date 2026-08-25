@@ -173,8 +173,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_13',
 			category: { uk: 'Набір ігор', en: 'The set of games' },
 			text: {
-				uk: 'Відкрийте набір ігор перед створенням кімнати. У переліку мусить бути ШІСТЬ ігор, серед них дві про те, де живуть тварини — про континенти й про природні зони.',
-				en: 'Open the set of games before creating the room. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
+				uk: 'Відкрийте «Фільтр ігор» над списком кімнат. У переліку мусить бути ШІСТЬ ігор, серед них дві про те, де живуть тварини — про континенти й про природні зони.',
+				en: 'Open “Game filter” above the room list. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
 			},
 			coverage: 'manual',
 			/*
@@ -198,6 +198,48 @@ export const quizOnlineTab: BetaTab = {
 			 * Панель видно й у стані «граємо далі», коли перекриття вже немає.
 			 */
 			testid: 'quiz-away-backdrop'
+		},
+		{
+			id: 'quizonline_15',
+			category: { uk: 'Пауза', en: 'Pause' },
+			text: {
+				uk: 'Під час раунду натисніть «Пауза». Смуга часу мусить СТАТИ в обох, і обидва мусять побачити, ХТО поставив паузу. У того, хто ставив, кнопка «Продовжити» є одразу; у другого «грати далі» відкривається лише після відліку.',
+				en: 'During a round press “Pause”. The time bar must STOP for both, and both must see WHO paused. Whoever paused has “Resume” at once; the other gets “go on” only after the countdown.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-pause-btn'
+		},
+		{
+			id: 'quizonline_16',
+			category: { uk: 'Пауза', en: 'Pause' },
+			text: {
+				uk: 'Знявши свою паузу, спробуйте поставити її знову. Кнопка НЕ мусить приймати натиск ще хвилину — інакше нею можна смикати партію без кінця.',
+				en: 'After lifting your own pause, try to pause again. The button must NOT accept a press for another minute — otherwise it can be used to jerk the game around endlessly.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'quiz-pause-btn'
+		},
+		{
+			id: 'quizonline_17',
+			category: { uk: 'Набір ігор', en: 'The set of games' },
+			text: {
+				uk: 'Зніміть у фільтрі всі ігри, крім однієї, і подивіться на список кімнат. Кімнати з іншими іграми мусять зникнути, а рядок під списком — сказати, скільки їх приховано.',
+				en: 'In the filter leave a single game and look at the room list. Rooms with other games must disappear, and a line under the list must say how many are hidden.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-games-filter-toggle'
+		},
+		{
+			id: 'quizonline_18',
+			category: { uk: 'Набір ігор', en: 'The set of games' },
+			text: {
+				uk: 'Уже в кімнаті, до початку партії, змініть набір ігор. Другий гравець мусить побачити зміну в себе; сам він набір змінити НЕ мусить — правити його може лише той, хто кімнату створив.',
+				en: 'Already in the room, before the game starts, change the set of games. The other player must see the change; they must NOT be able to change the set themselves — only whoever created the room can.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'quiz-games-fieldset'
 		}
 	]
 };

@@ -68,6 +68,19 @@
 		hasMore: boolean;
 		/** Перелік не читається (правила не викладені). Показуємо чому, а не порожнечу. */
 		unavailable: boolean;
+		/**
+		 * СКІЛЬКИ КІМНАТ ВІДСІЯВ ФІЛЬТР — щоб про них сказати, а не змовчати.
+		 *
+		 * Сам фільтр цей компонент не знає й знати не мусить: він спільний із
+		 * «Знайди пару», де наборів ігор немає зовсім (`components/quiz/QuizRooms`
+		 * сіє список і передає сюди число). Але СКАЗАТИ про відсіяне мусить саме
+		 * той, хто малює порожнечу: інакше звужений фільтр дає «Відкритих кімнат
+		 * поки немає» — напис, який не бреше про факт і веде до хибного висновку.
+		 *
+		 * Нуль — фільтра немає або він нічого не приховав. Це й типове значення,
+		 * тобто «Знайди пару» лишається такою, як була.
+		 */
+		hidden?: number;
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
 		onEnter: (code: string) => void;
@@ -81,7 +94,17 @@
 		onClose?: (code: string) => void;
 	}
 
-	let { rooms, resume, friends, hasMore, unavailable, busy, onEnter, onClose }: Props = $props();
+	let {
+		rooms,
+		resume,
+		friends,
+		hasMore,
+		unavailable,
+		busy,
+		hidden = 0,
+		onEnter,
+		onClose
+	}: Props = $props();
 
 	/*
 	 * Стан кімнати рахується РАЗ, коли малюється список.
@@ -177,10 +200,21 @@
 			{@html formatFont(t('pairs.roomsUnavailable'))}
 		</p>
 	{:else if rooms.length === 0}
-		<p class="rooms__empty" data-testid="pairs-rooms-empty-hint">
-			{@html formatFont(t('pairs.noRooms'))}
-		</p>
-		<p class="rooms__hint">{@html formatFont(t('pairs.noRoomsHint'))}</p>
+		<!--
+			ПОРОЖНЬО ЧЕРЕЗ ФІЛЬТР — це інше повідомлення, ніж «кімнат немає».
+			Перше має що робити (розширити фільтр), друге — ні, і плутати їх означало
+			б радити створити кімнату тому, хто щойно сам відсіяв двадцять.
+		-->
+		{#if hidden > 0}
+			<p class="rooms__empty" data-testid="pairs-rooms-filtered-hint">
+				{@html formatFont(t('pairs.roomsFiltered'))}: {hidden}
+			</p>
+		{:else}
+			<p class="rooms__empty" data-testid="pairs-rooms-empty-hint">
+				{@html formatFont(t('pairs.noRooms'))}
+			</p>
+			<p class="rooms__hint">{@html formatFont(t('pairs.noRoomsHint'))}</p>
+		{/if}
 	{:else}
 		<!--
 			ДВІ ГРУПИ, а не інший порядок в одному списку.
@@ -259,6 +293,13 @@
 		{#if hasMore}
 			<p class="rooms__hint" data-testid="pairs-rooms-trimmed-hint">
 				{@html formatFont(t('pairs.shownNewest'))}: {rooms.length}
+			</p>
+		{/if}
+		<!-- Фільтр приховав частину — але не все: список не порожній, тож це рядок
+		     під ним, а не замість нього. -->
+		{#if hidden > 0}
+			<p class="rooms__hint" data-testid="pairs-rooms-hidden-hint">
+				{@html formatFont(t('pairs.roomsFiltered'))}: {hidden}
 			</p>
 		{/if}
 	{/if}

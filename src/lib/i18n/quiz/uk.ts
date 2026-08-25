@@ -20,6 +20,9 @@
  */
 export const quiz: Record<string, string> = {
 	'quiz.gamesInRoom': 'Ігри в кімнаті',
+	'quiz.gamesFilter': 'Фільтр ігор',
+	'quiz.gamesWanted': 'У що хочу грати',
+	'quiz.gamesFilterHint': 'Сіє список кімнат — і задає ігри тій кімнаті, яку створите.',
 	'quiz.gamesLast': 'Хоч одна гра мусить лишитися',
 	'quiz.unknownGame': 'Ця гра з новішої версії. Оновіть сторінку.',
 	'quiz.skipStep': 'Пропустити',

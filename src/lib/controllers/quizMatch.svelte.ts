@@ -7,6 +7,7 @@ import {
 	SETTLE_MS,
 	answerPoints,
 	configToGames,
+	gamesToConfig,
 	quizProgramme,
 	roundLimitMs,
 	type QuizStep
@@ -352,6 +353,27 @@ export class QuizMatch {
 	 */
 	pauseReadyAt(uid: string): number {
 		return this.#pauseUsedAt[uid] === undefined ? 0 : this.#pauseUsedAt[uid] + PAUSE_COOLDOWN_MS;
+	}
+
+	/**
+	 * ЗМІНИТИ НАБІР ІГОР — господар, і тільки в лобі.
+	 *
+	 * Чому не хід у журналі, як пауза: набір не подія партії, а її УМОВА. Програма
+	 * раундів — чиста функція від (зерна, набору), тож набір мусить бути відомий до
+	 * першого раунду й однаковий для всіх; ходом він приїжджав би ПІСЛЯ того, як
+	 * хтось уже дивиться на перше питання.
+	 *
+	 * `status === 'lobby'` — не обережність, а те саме: зміна набору посеред партії
+	 * перемалювала б уже зіграні раунди, бо програма перерахувалася б від нового
+	 * набору. Кнопки в партії немає (`QuizGamePicker` там не показується), але
+	 * перевірка стоїть ТУТ, бо саме тут вона правда для всіх викликів.
+	 *
+	 * Тихо не робить нічого, коли не дозволено: це кнопка, якої в такому стані не
+	 * мусить бути видно, а не дія, що може не вдатися.
+	 */
+	async setGames(games: readonly string[]): Promise<void> {
+		if (this.hostUid !== this.#me || this.status !== 'lobby') return;
+		await this.#transport.setConfig(gamesToConfig(games));
 	}
 
 	/** Поставити паузу. Дозволено будь-кому, хто в партії. */

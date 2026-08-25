@@ -78,6 +78,7 @@ export const ui = {
 	'pairs.quickGame': 'Snel spel',
 	'pairs.quickGameHint': 'We stappen in een vrije kamer, of maken een nieuwe open kamer.',
 	'pairs.shownNewest': 'Nieuwste weergegeven — er zijn meer',
+	'pairs.roomsFiltered': 'Verborgen door de filter',
 	'pairs.startingIn': 'Start over',
 	'pairs.seconds': 's',
 	'pairs.roomsUnavailable':

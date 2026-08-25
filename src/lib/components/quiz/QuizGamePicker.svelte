@@ -27,13 +27,35 @@
 		 * (`i18n/quiz`), бо головний словник вантажать усі відвідувачі.
 		 */
 		text: (key: string) => string;
-		/** Вибрані ігри. Двобічне. */
-		selected: string[];
+		/** Вибрані ігри. */
+		selected: readonly string[];
 		/** Чи можна міняти. Гість бачить набір, але не править його. */
 		editable: boolean;
+		/**
+		 * НАБІР ВІДДАЄТЬСЯ ВГОРУ, а не пишеться двобічним звʼязком.
+		 *
+		 * Доти тут стояло `bind:selected`, і для форми входу цього було досить:
+		 * набір жив у стані сторінки. У КІМНАТІ так не виходить — там набір живе в
+		 * базі, і шлях у нього один: господар пише `info.config`, а назад він
+		 * приїжджає знімком. Двобічний звʼязок означав би, що компонент пише в
+		 * `match.games` напряму, тобто на такт показує те, чого в кімнаті ще немає,
+		 * а потім його перетирає знімок — і в гостя набір мигав би.
+		 *
+		 * Тому напрям один: сюда — що вибрано, звідси — що натиснули.
+		 */
+		onchange: (games: string[]) => void;
+		/**
+		 * Підпис групи. Ключ, а не готовий рядок: перекладач тут свій (`text`).
+		 *
+		 * Не константа, бо той самий елемент відповідає на два різні питання: у
+		 * кімнаті — «які ігри в цій кімнаті», у фільтрі списку — «у що я хочу
+		 * грати». Один підпис на обидва означав би, що в одному з місць він
+		 * неправда.
+		 */
+		legendKey?: string;
 	}
 
-	let { text, selected = $bindable(), editable }: Props = $props();
+	let { text, selected, editable, onchange, legendKey = 'quiz.gamesInRoom' }: Props = $props();
 
 	const isLast = $derived(selected.length === 1);
 
@@ -42,10 +64,10 @@
 		if (selected.includes(id)) {
 			// Остання ввімкнена лишається ввімкненою: партія без питань неможлива.
 			if (isLast) return;
-			selected = selected.filter((game) => game !== id);
+			onchange(selected.filter((game) => game !== id));
 			return;
 		}
-		selected = [...selected, id];
+		onchange([...selected, id]);
 	}
 </script>
 
@@ -66,7 +88,7 @@
 	підкладки `.text-panel`. Назвати тест, який їх шукатиме, неможливо.
 -->
 <fieldset class="games" data-testid="quiz-games-fieldset">
-	<legend class="games__legend">{@html formatFont(text('quiz.gamesInRoom'))}</legend>
+	<legend class="games__legend">{@html formatFont(text(legendKey))}</legend>
 	<div class="games__list">
 		{#each ONLINE_GAMES as game (game.id)}
 			{@const on = selected.includes(game.id)}

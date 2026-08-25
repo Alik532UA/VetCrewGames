@@ -4,7 +4,7 @@
 	import type { Language } from '$lib/i18n/routing';
 	import type { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { Pause } from 'lucide-svelte';
-	import type { Member } from '$lib/net/roomTypes';
+	import type { WaitView } from '$lib/utils/awayWait';
 	import QuizScores from './QuizScores.svelte';
 	import QuizAway from './QuizAway.svelte';
 	import QuizRound from './QuizRound.svelte';
@@ -47,29 +47,24 @@
 		amHost: boolean;
 		/** Час однією величиною — фази й смуга рахуються від нього. */
 		clock: number;
-		/** Скільки секунд лишилося з пільгового часу зниклим. */
-		awayLeft: number;
 		/**
-		 * ЧИ ЧЕКАЄ ПАРТІЯ САМЕ ЗАРАЗ.
+		 * УСЕ ПРО ЧЕКАННЯ ОДНИМ ЗНАЧЕННЯМ: чи стоїть партія, скільки ще чекаємо,
+		 * хто поставив паузу, скільки голосів треба й що можу я сам.
 		 *
-		 * Умову складає сторінка: у ній і присутність, і пільговий час. Кімната її
-		 * лише передає — вона про показ, а не про правила.
+		 * Доти це були пʼять окремих пропів, і сторінка розбирала `wait` на частини,
+		 * щоб кімната склала їх назад. Розбирати нічого: це один стан («партія
+		 * стоїть, і ось чому»), а правила, що його складають, живуть у
+		 * `utils/awayWait` і перевіряються без браузера.
 		 */
-		awayHold: boolean;
+		wait: WaitView;
 		/** Хто вже проголосував «граємо далі» в цьому раунді. */
 		goOn: string[];
-		/** Скільки голосів потрібно — більшість присутніх. */
-		goOnNeeded: number;
 		/** Мій голос «граємо далі». */
 		onGoOn: () => void;
-		/** Чи можу я поставити паузу зараз: хвилинна витримка після своєї минулої. */
-		canPause: boolean;
 		/** Поставити паузу. */
 		onPause: () => void;
-		/** Зняти СВОЮ паузу. `undefined` — паузу ставив не я. */
-		onResume?: () => void;
-		/** Хто поставив паузу. `null` — паузи немає. */
-		pausedBy?: Member | null;
+		/** Зняти свою паузу. Кнопки не буде, поки пауза не моя (`wait.canResume`). */
+		onResume: () => void;
 		onanswer: (correct: number) => void;
 		onRematch: () => void;
 		onClose: () => void;
@@ -84,15 +79,11 @@
 		lang,
 		amHost,
 		clock,
-		awayLeft,
-		awayHold,
+		wait,
 		goOn,
-		goOnNeeded,
 		onGoOn,
-		canPause,
 		onPause,
 		onResume,
-		pausedBy = null,
 		onanswer,
 		onRematch,
 		onClose,
@@ -155,14 +146,14 @@
 	<QuizAway
 		{text}
 		away={match.away}
-		secondsLeft={awayLeft}
-		waiting={awayHold}
+		secondsLeft={wait.left}
+		waiting={wait.hold}
 		voted={goOn.length}
-		needed={goOnNeeded}
+		needed={wait.needed}
 		iVoted={goOn.includes(me)}
 		{onGoOn}
-		{pausedBy}
-		{onResume}
+		pausedBy={wait.pausedBy}
+		onResume={wait.canResume ? onResume : undefined}
 		onkick={amHost ? onkick : undefined}
 	/>
 
@@ -211,11 +202,11 @@
 				{me}
 			/>
 
-			{#if pausedBy === null}
+			{#if wait.pausedBy === null}
 				<button
 					type="button"
 					class="room__pause text-panel"
-					disabled={!canPause}
+					disabled={!wait.canPause}
 					onclick={onPause}
 					data-testid="quiz-pause-btn"
 				>

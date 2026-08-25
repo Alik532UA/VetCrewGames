@@ -167,6 +167,15 @@ export interface WaitView {
 	left: number;
 	pausedBy: Member | null;
 	canPause: boolean;
+	/**
+	 * Чи можу я зняти паузу ОДРАЗУ — тобто чи ставив її я.
+	 *
+	 * Автор паузи не голосує сам із собою: він тут, він бачить, що готовий, і
+	 * кнопка «Продовжити» в нього з першої секунди. Решта чекає відліку. Прапорець
+	 * тут, а не на сторінці, бо це та сама відповідь на те саме питання — «що
+	 * зараз можна зробити з чеканням».
+	 */
+	canResume: boolean;
 }
 
 /**
@@ -186,7 +195,9 @@ export function waitView(
 	now: number,
 	me: string
 ): WaitView {
-	if (!match) return { hold: false, needed: 1, left: 0, pausedBy: null, canPause: false };
+	if (!match) {
+		return { hold: false, needed: 1, left: 0, pausedBy: null, canPause: false, canResume: false };
+	}
 
 	const present = Math.max(1, match.present.length);
 	const paused = match.pausedBy;
@@ -199,6 +210,7 @@ export function waitView(
 				? awaySecondsLeft(match.away, since, now, (uid) => match.graceSpent(uid))
 				: pauseSecondsLeft(match.pausedAt, match.graceSpent(paused), now),
 		pausedBy: paused === null ? null : (match.players.find((p) => p.uid === paused) ?? null),
-		canPause: paused === null && now >= match.pauseReadyAt(me)
+		canPause: paused === null && now >= match.pauseReadyAt(me),
+		canResume: paused === me
 	};
 }
