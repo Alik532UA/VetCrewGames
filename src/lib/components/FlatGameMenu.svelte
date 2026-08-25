@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { t, formatFont } from '$lib/i18n';
-	import { langPath, type Language, type RouteRest } from '$lib/i18n/routing';
+	import { langPath, type Language } from '$lib/i18n/routing';
 	import { pickRandomRoute } from '$lib/services/randomGame';
 	import type { MenuGame } from '$lib/config/menu-games';
 
@@ -16,20 +16,25 @@
 	interface Props {
 		lang: Language;
 		games: readonly MenuGame[];
-		/**
-		 * Звідки вибирати «Випадкову гру».
+		/*
+		 * НАБОРУ ДЛЯ «ВИПАДКОВОЇ ГРИ» ТУТ БІЛЬШЕ НЕ ПЕРЕДАЮТЬ.
 		 *
-		 * Окремо від переліку кнопок: у меню кнопка веде до «Де живем?», а
-		 * випадкова гра мусить одразу давати підрежим — континенти або природні
-		 * зони, — бо обіцяла ГРУ, а не ще один вибір.
+		 * Він існував, поки цей перелік малював ще й головне меню збірки для людей:
+		 * там стояло шість ігор, і випадкова мусила давати будь-яку з шести. Тепер
+		 * головна показує розділи (як і в роботі), а цей компонент лишився лише за
+		 * «Грати» у вікторині — тобто набір завжди той самий, її пʼятірка, і
+		 * тримати його параметром означало б тримати вибір, якого ніхто не робить.
+		 *
+		 * Правило «випадкова гра дає ГРУ, а не ще один вибір» лишилося на місці, у
+		 * `services/randomGame`: підрежими «Де живем?» у переліку є, а сама сторінка
+		 * вибору підрежиму — ні.
 		 */
-		pool?: readonly Exclude<RouteRest, ''>[];
 	}
 
-	let { lang, games, pool }: Props = $props();
+	let { lang, games }: Props = $props();
 
 	/** «Випадкова гра» — не посилання: ціль відома лише в момент кліку. */
-	const playRandom = () => goto(langPath(lang, pickRandomRoute(Math.random, pool)));
+	const playRandom = () => goto(langPath(lang, pickRandomRoute()));
 </script>
 
 <button

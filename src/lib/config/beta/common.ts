@@ -153,13 +153,24 @@ export const commonTab: BetaTab = {
 			id: 'common_11',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Натисніть «Випадкова гра» пʼять разів. Щоразу мусить відкриватися ГРА — жодного разу меню чи сторінка вибору режиму.',
-				en: 'Press «Random game» five times. Each time a GAME must open — never a menu or a mode-choice screen.'
+				uk: 'Відкрийте «Вікторина» → «Грати» і натисніть «Випадкова гра» пʼять разів. Щоразу мусить відкриватися ГРА — жодного разу меню чи сторінка вибору режиму.',
+				en: 'Open «Quiz» → «Play» and press «Random game» five times. Each time a GAME must open — never a menu or a mode-choice screen.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/services/randomGame.test.ts',
 			testid: 'menu-random-btn',
 			negative: true
+		},
+		{
+			id: 'common_26',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'На головній мусить бути ДВА розділи — «Вікторина» й «Знайди пару» — і жодного окремого пункту гри. «Заповідник» у зібраному сайті поки не показується: він ще будується.',
+				en: 'The home screen must show TWO sections — «Quiz» and «Find a pair» — and no separate game entries. «Reserve» is not shown on the built site yet: it is still being built.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'menu-quiz-link'
 		},
 		{
 			id: 'common_12',

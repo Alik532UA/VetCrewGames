@@ -111,11 +111,12 @@ test('головна сторінка не має машинно-виявних 
 	// Очікування конкретного елемента, а не `networkidle`: axe на недомальованій
 	// сторінці дав би нуль порушень і зелений результат ні про що.
 	//
-	// `menu-memory-link`, а не `menu-pairs-link`: другий існує лише під `{#if dev}`,
-	// а прогін іде по ЗІБРАНОМУ сайту, де меню віддає `FlatGameMenu`. Перша
-	// редакція цього файлу впала саме на цьому — і добре, бо інакше довелося б
-	// дізнатися, що dev і збірка мають різні меню, якось інакше.
-	await expect(page.getByTestId('menu-memory-link')).toBeVisible();
+	// `menu-quiz-link` — розділ «Вікторина». Тут стояв `menu-memory-link` із
+	// плоского переліку ігор: доти головне меню в збірці й у роботі було РІЗНЕ, і
+	// в збірці головна показувала ігри, а не розділи. Тепер меню одне, і різниця
+	// звелася до «Заповідника», який лишається під `{#if dev}`, — тобто чекати
+	// треба на пункт, який є в обох.
+	await expect(page.getByTestId('menu-quiz-link')).toBeVisible();
 	await audit(page, 'home');
 });
 
@@ -132,7 +133,7 @@ test.describe('темна тема', () => {
 
 	test('головна сторінка не має машинно-виявних порушень WCAG', async ({ page }) => {
 		await page.goto('/VetCrewGames/');
-		await expect(page.getByTestId('menu-memory-link')).toBeVisible();
+		await expect(page.getByTestId('menu-quiz-link')).toBeVisible();
 		await audit(page, 'homeDark');
 	});
 });
