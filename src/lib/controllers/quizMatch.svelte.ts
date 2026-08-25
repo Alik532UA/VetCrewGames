@@ -261,8 +261,28 @@ export class QuizMatch {
 	 * (RTDB віддає її за секунду-дві). Хто саме оголошує наступний раунд, це не
 	 * зачіпає — оголошує господар, і його рішення лишається єдиним.
 	 */
-	#heldMs = $state(0);
+	/**
+	 * Пауза, ЗАПИСАНА В ЖУРНАЛ, за раундами. Одне число на всіх.
+	 *
+	 * Доти пауза жила лише в памʼяті кожного клієнта, і саме це й був дефект, який
+	 * автор побачив: той, кого не було, паузи не бачив, тож надбавки в нього не
+	 * з'являлося — і дедлайн у нього ставав інший. «Розбіжність на дрижання
+	 * присутності», яку я записав як межу, насправді означала різні дедлайни.
+	 *
+	 * Пише господар, і лише коли пауза ЗАКІНЧИЛАСЯ: тоді її тривалість уже відома
+	 * числом, а число в журналі однакове в усіх — включно з тим, хто повернувся.
+	 */
+	#heldByRound = $state<Record<number, number>>({});
 	#holdSince: number | null = null;
+	/**
+	 * Пауза, яку я вже відпустив, але хід про неї ще не приїхав.
+	 *
+	 * Без цього рядка смуга часу СТРИБАЛА Б НАЗАД на мить між відпусканням і
+	 * приходом ходу: місцева пауза вже нуль, а журнальної ще немає.
+	 */
+	#pending = $state(0);
+	/** Скільки пільги вже витратив кожен — із журналу. */
+	#graceSpent = $state<Record<string, number>>({});
 
 	/**
 	 * Увімкнути або зняти паузу очікування.
@@ -277,14 +297,58 @@ export class QuizMatch {
 			return;
 		}
 		if (this.#holdSince === null) return;
-		this.#heldMs += Math.max(0, now - this.#holdSince) + RESUME_BONUS_MS;
+
+		const paused = Math.max(0, now - this.#holdSince) + RESUME_BONUS_MS;
 		this.#holdSince = null;
+		this.#pending = paused;
+
+		/*
+		 * ПИШЕ ГОСПОДАР, бо число мусить бути одне. Гість нічого не пише: його
+		 * власна пауза вже врахована `#pending`, а спільну правду принесе хід.
+		 */
+		if (this.hostUid === this.#me) void this.#writeHeld(paused);
 	}
 
 	/** Скільки часу вже віддано за чекання, разом із поточною паузою. */
 	heldMs(now: number): number {
 		const running = this.#holdSince === null ? 0 : Math.max(0, now - this.#holdSince);
-		return this.#heldMs + running;
+		const recorded = this.#heldByRound[this.round] ?? 0;
+		return Math.max(recorded, this.#pending) + running;
+	}
+
+	/** Скільки пільгового часу цей гравець уже витратив за партію. */
+	graceSpent(uid: string): number {
+		return this.#graceSpent[uid] ?? 0;
+	}
+
+	/**
+	 * Записати паузу й витрачену пільгу ОДНИМ ходом.
+	 *
+	 * Пільга рахується тим самим числом: гравець, якого не було три секунди,
+	 * витратив три секунди — і наступного разу відлік почнеться з решти. Саме це й
+	 * ламало гру доти: відлік починався з повних п'ятнадцяти щоразу, тож зникати на
+	 * чотирнадцять секунд можна було безкінечно.
+	 *
+	 * `uid` у payload вміщається: рядок там до 32 знаків, а uid Firebase — 28.
+	 */
+	async #writeHeld(ms: number): Promise<void> {
+		const spent = Math.max(0, ms - RESUME_BONUS_MS);
+		for (const member of this.away) {
+			await this.#transport.append({
+				seq: this.applied + 1,
+				by: this.#me,
+				type: 'held',
+				payload: { round: this.round, ms, uid: member.uid, spent }
+			});
+			return;
+		}
+		// Ніхто не був відсутній — пауза все одно записується, пільга ні.
+		await this.#transport.append({
+			seq: this.applied + 1,
+			by: this.#me,
+			type: 'held',
+			payload: { round: this.round, ms }
+		});
 	}
 
 	/**
@@ -422,6 +486,8 @@ export class QuizMatch {
 		const startedAt: Record<number, number> = {};
 		const answers: Record<number, Record<string, Answer>> = {};
 		const goOnVotes: Record<number, string[]> = {};
+		const held: Record<number, number> = {};
+		const graceSpent: Record<string, number> = {};
 
 		for (const move of snapshot.moves) {
 			const round = Number(move.payload?.round);
@@ -439,6 +505,20 @@ export class QuizMatch {
 				if (move.by !== snapshot.info.hostUid) continue;
 				// Перше оголошення виграє: повторне не мусить рухати дедлайн.
 				if (startedAt[round] === undefined) startedAt[round] = at;
+				continue;
+			}
+
+			if (move.type === 'held') {
+				// Лише господар: інакше кожен дописував би собі час.
+				if (move.by !== snapshot.info.hostUid) continue;
+				const ms = Number(move.payload?.ms);
+				if (Number.isFinite(ms) && ms > 0) held[round] = (held[round] ?? 0) + ms;
+
+				const uid = move.payload?.uid;
+				const spent = Number(move.payload?.spent);
+				if (typeof uid === 'string' && Number.isFinite(spent) && spent > 0) {
+					graceSpent[uid] = (graceSpent[uid] ?? 0) + spent;
+				}
 				continue;
 			}
 
@@ -463,6 +543,10 @@ export class QuizMatch {
 		this.startedAt = startedAt;
 		this.answers = answers;
 		this.#goOnVotes = goOnVotes;
+		this.#heldByRound = held;
+		this.#graceSpent = graceSpent;
+		// Хід приїхав — оптимістичне число більше не потрібне.
+		if ((held[this.round] ?? 0) >= this.#pending) this.#pending = 0;
 		this.applied = snapshot.moves.length;
 	}
 }

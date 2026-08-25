@@ -25,11 +25,8 @@ export const quiz: Record<string, string> = {
 	'quiz.skipStep': 'Skip',
 	'quiz.roundTimer': 'Round time',
 	'quiz.answered': 'Waiting for the others.',
-	'quiz.awayTitle': 'Lost connection',
 	'quiz.awayWait': 'Waiting:',
-	'quiz.awayDecide': 'Waiting for them. Continue without them?',
-	'quiz.awayWaiting': 'Waiting for the others to decide.',
-	'quiz.awayGoOn': 'Continue without them',
+	'quiz.awayGoOn': 'Play on',
 	'quiz.awayVoted': 'Your vote is counted',
 	'quiz.awayKick': 'Remove',
 	'quiz.nextRound': 'Next round'

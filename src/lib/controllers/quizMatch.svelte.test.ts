@@ -508,3 +508,67 @@ describe('пауза очікування', () => {
 		stop();
 	});
 });
+
+/**
+ * ПАУЗА В ЖУРНАЛІ: у всіх однакова, включно з тим, хто повернувся.
+ *
+ * Дефект, який описав автор: «всі окрім гравця що підключився мають бонус до
+ * таймеру +3 секунди, розсинхронний таймер». Так і було — пауза жила в памʼяті
+ * кожного клієнта, а той, кого не було, її не бачив. Я цю межу назвав раніше як
+ * «розбіжність на дрижання присутності», і недооцінив: дедлайни ставали різні.
+ *
+ * Тепер тривалість паузи дописує ГОСПОДАР, і всі беруть її з журналу — тобто з
+ * одного числа. Заразом там же їде витрачена пільга.
+ *
+ * Зворотний експеримент (§ 1.1): прибрати `#writeHeld` — червоніє «гість бачить ту
+ * саму паузу, що господар».
+ */
+describe('пауза однакова в усіх', () => {
+	it('гість бачить ту саму паузу, що господар', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		const before = host.deadlineAt(0) as number;
+
+		host.setHold(true, 1_000);
+		host.setHold(false, 5_000);
+		await Promise.resolve();
+		await Promise.resolve();
+
+		// 4 секунди чекання + 3 надбавки — і в господаря, і в гостя.
+		expect(host.deadlineAt(9_000)).toBe(before + 7_000);
+		expect(guest.deadlineAt(9_000)).toBe(before + 7_000);
+		stop();
+	});
+
+	it('витрачена пільга видна обом', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+
+		// Господар бачить, що гість зник, і відпускає паузу через 4 секунди.
+		host.present = [HOST];
+		host.setHold(true, 1_000);
+		host.setHold(false, 5_000);
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(host.graceSpent(GUEST), 'витрачене мусить бути в журналі').toBe(4_000);
+		expect(guest.graceSpent(GUEST), 'і однакове в усіх').toBe(4_000);
+		stop();
+	});
+
+	it('гість паузу не пише: число мусить бути одне', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		const before = host.deadlineAt(0) as number;
+
+		guest.setHold(true, 1_000);
+		guest.setHold(false, 5_000);
+		await Promise.resolve();
+		await Promise.resolve();
+
+		// У самого гостя пауза лишається місцевою (щоб смуга не стрибнула назад),
+		// а в господаря її немає: журнал чистий.
+		expect(host.deadlineAt(9_000)).toBe(before);
+		stop();
+	});
+});

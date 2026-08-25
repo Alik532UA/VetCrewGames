@@ -18,15 +18,42 @@ import type { Member } from '$lib/net/roomTypes';
  */
 export const AWAY_GRACE_MS = 15000;
 
-/** Скільки СЕКУНД ще чекаємо. Нуль — пільговий час вичерпано. */
+/**
+ * Найменша пільга, яку лишаємо навіть тому, хто вже все витратив.
+ *
+ * Три секунди — не поступка зловживанню, а захист від протилежного: у гравця з
+ * поганим звʼязком, що відпадає по дві секунди, пільга скінчилася б за пʼять
+ * разів, і далі його виключали б МИТТЮ. Три секунди дають шанс на кожне
+ * зникнення, але не дають чекати нескінченно.
+ */
+export const AWAY_GRACE_FLOOR_MS = 3000;
+
+/**
+ * Скільки СЕКУНД ще чекаємо. Нуль — пільговий час вичерпано.
+ *
+ * ПІЛЬГА НАКОПИЧУВАЛЬНА: `spent` — це те, що гравець уже витратив за партію, і
+ * відлік починається з решти. Автор описав дефект точно: «можна відключатися на
+ * 14 секунд і повертатися, і знову буде таймер на 15 секунд». Так і було —
+ * позначка зникнення скидалася разом із поверненням, тобто повний відлік
+ * повертався щоразу.
+ */
 export function awaySecondsLeft(
 	missing: readonly Member[],
 	since: Record<string, number>,
-	now: number
+	now: number,
+	spent: (uid: string) => number = () => 0
 ): number {
-	const stamps = missing.map((member) => since[member.uid] ?? now);
-	if (stamps.length === 0) return 0;
-	return Math.max(0, Math.ceil((Math.max(...stamps) + AWAY_GRACE_MS - now) / 1000));
+	if (missing.length === 0) return 0;
+
+	/*
+	 * За НАЙПІЗНІШИМ зникненням, і в кожного своя решта пільги: чекаємо доти, доки
+	 * чекає хоч один. Інакше поява другого зниклого не подовжила б відлік.
+	 */
+	const ends = missing.map((member) => {
+		const left = Math.max(AWAY_GRACE_FLOOR_MS, AWAY_GRACE_MS - spent(member.uid));
+		return (since[member.uid] ?? now) + left;
+	});
+	return Math.max(0, Math.ceil((Math.max(...ends) - now) / 1000));
 }
 
 /**

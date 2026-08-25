@@ -25,11 +25,8 @@ export const quiz: Record<string, string> = {
 	'quiz.skipStep': 'Пропустити',
 	'quiz.roundTimer': 'Час раунду',
 	'quiz.answered': 'Чекаємо на решту.',
-	'quiz.awayTitle': 'Немає звʼязку',
 	'quiz.awayWait': 'Чекаємо:',
-	'quiz.awayDecide': 'Чекаємо на нього. Продовжити без нього?',
-	'quiz.awayWaiting': 'Чекаємо на рішення решти.',
-	'quiz.awayGoOn': 'Продовжити без нього',
+	'quiz.awayGoOn': 'Грати далі',
 	'quiz.awayVoted': 'Ваш голос враховано',
 	'quiz.awayKick': 'Виключити',
 	'quiz.nextRound': 'Наступний раунд'

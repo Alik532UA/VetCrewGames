@@ -404,7 +404,9 @@
 	 * Пільговий час тепер РОЗБЛОКОВУЄ КНОПКУ, а не знімає паузу: рішення «граємо
 	 * далі» належить присутнім. Обидва правила — в `utils/awayWait`.
 	 */
-	const awayLeft = $derived(awaySecondsLeft(match?.away ?? [], awaySince, clock));
+	const awayLeft = $derived(
+		awaySecondsLeft(match?.away ?? [], awaySince, clock, (uid) => match?.graceSpent(uid) ?? 0)
+	);
 	const wait = $derived(awayWaitState(match));
 
 	/*
