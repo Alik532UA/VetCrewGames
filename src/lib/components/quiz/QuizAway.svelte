@@ -107,8 +107,8 @@
 			<ul class="away__list" data-testid="quiz-away-list">
 				{#each away as member (member.uid)}
 					<li class="away__row" data-testid="quiz-away-{member.uid}-item">
-						<Avatar avatar={member.avatar} />
 						<Flag code={member.country} />
+						<Avatar avatar={member.avatar} />
 						<span class="away__name">{member.name}</span>
 						{#if onkick && secondsLeft === 0}
 							<button

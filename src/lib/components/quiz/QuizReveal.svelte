@@ -169,8 +169,8 @@
 				-->
 				<b class="reveal__place">{place + 1}</b>
 				<span class="reveal__who">
-					<Avatar avatar={player.avatar} />
 					<Flag code={player.country} />
+					<Avatar avatar={player.avatar} />
 					{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}
 				</span>
 				<!--

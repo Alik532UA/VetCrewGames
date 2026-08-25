@@ -201,8 +201,8 @@
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
-				<Avatar avatar={match.members.find((m) => m.uid === player.uid)?.avatar} />
 				<Flag code={match.members.find((m) => m.uid === player.uid)?.country} />
+				<Avatar avatar={match.members.find((m) => m.uid === player.uid)?.avatar} />
 				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}: {scoreOf(
 					player.uid
 				)}<!--

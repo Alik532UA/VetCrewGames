@@ -140,8 +140,8 @@
 				class:lobby__member--away={!online.includes(member.uid)}
 				data-testid="pairs-member-{member.uid}-item"
 			>
-				<Avatar avatar={member.avatar} />
 				<Flag code={member.country} />
+				<Avatar avatar={member.avatar} />
 				{member.name}{#if member.uid === me} <YouTag />{/if}
 				<span class="lobby__role">
 					{@html formatFont(

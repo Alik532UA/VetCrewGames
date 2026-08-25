@@ -104,8 +104,8 @@
 				<b class="scores__place" data-testid="quiz-score-{player.uid}-count">{place + 1}</b>
 			{/if}
 			<span class="scores__who">
-				<Avatar avatar={player.avatar} />
 				<Flag code={player.country} />
+				<Avatar avatar={player.avatar} />
 				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}
 			</span>
 			{#if withScores}

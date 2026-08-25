@@ -202,8 +202,8 @@
 					<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
 						<span class="rooms__who">
 							<span class="rooms__host">
-								<Avatar avatar={room.hostAvatar} />
 								<Flag code={room.hostCountry} />
+								<Avatar avatar={room.hostAvatar} />
 								{room.hostName}
 							</span>
 							<span class="rooms__players">
@@ -232,8 +232,8 @@
 					<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
 						<span class="rooms__who">
 							<span class="rooms__host">
-								<Avatar avatar={room.hostAvatar} />
 								<Flag code={room.hostCountry} />
+								<Avatar avatar={room.hostAvatar} />
 								{room.hostName}
 							</span>
 							<span class="rooms__players">

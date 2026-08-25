@@ -357,8 +357,8 @@
 					{#if person.uid !== account.uid}
 						<li class="account__row" data-testid="account-found-{person.uid}-item">
 							<span class="account__who">
-								<Avatar avatar={person.avatar} />
 								<Flag code={person.country} />
+								<Avatar avatar={person.avatar} />
 								{person.name}
 								<span class="account__handle">@{person.handle}</span>
 							</span>
@@ -431,8 +431,8 @@
 				{#each account.following as friend (friend.profile.uid)}
 					<li class="account__row" data-testid="account-following-{friend.profile.uid}-item">
 						<span class="account__who">
-							<Avatar avatar={friend.profile.avatar} />
 							<Flag code={friend.profile.country} />
+							<Avatar avatar={friend.profile.avatar} />
 							{friend.profile.name}
 							<span class="account__handle">@{friend.profile.handle}</span>
 						</span>
