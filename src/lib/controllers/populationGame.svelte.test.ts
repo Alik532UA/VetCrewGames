@@ -256,6 +256,56 @@ describe('PopulationGameController', () => {
 		expect(game.sessionScore).toBe(game.maxScore);
 	});
 
+	/**
+	 * ЧАС ВИЙШОВ — ЗАРАХУЙ ТЕ, ЩО СТОЇТЬ.
+	 *
+	 * Скарга автора про онлайн-вікторину: «фіксується відповідь, що була на момент
+	 * закінчення таймера, тобто кінець таймера замість гравця натискає кнопку
+	 * „ПЕРЕВІРИТИ“ — щоб гравець, який відповів, але забув чи не встиг натиснути,
+	 * отримав бали за поточну свою відповідь».
+	 *
+	 * Тут перевіряється рівно та частина, що живе в правилах: `force`. Обидві
+	 * половини обовʼязкові — дозвіл мусить діяти, і мусить лишатися ЯВНИМ, бо кнопка
+	 * на дошці має бути вимкненою, доки ряд не повний.
+	 *
+	 * Зворотні експерименти (AI-AGENT-PITFALLS-v8 § 1.1): умову `!force` прибрано —
+	 * червоніє «без дозволу недороблений ряд не зараховується»; `force` знято з
+	 * умови зовсім — червоніє «з дозволом зараховується те, що стоїть». Обидва
+	 * зроблені.
+	 */
+	describe('час вийшов', () => {
+		it('з дозволом зараховується те, що стоїть', () => {
+			const game = started(3, 1);
+			// Дві картки з трьох, і саме на своїх місцях: `correctOrder` — від більшої.
+			game.moveTo(game.correctOrder[0], 'slot', 0);
+			game.moveTo(game.correctOrder[1], 'slot', 1);
+
+			game.check(true);
+
+			expect(game.checked, 'ряд не зарахований').toBe(true);
+			expect(game.roundResults, 'дві з трьох — це не «нічого»').toEqual(['partial']);
+			expect(game.sessionScore, 'бали за те, що гравець знав, не нараховано').toBeGreaterThan(0);
+		});
+
+		it('без дозволу недороблений ряд не зараховується', () => {
+			// Умова існує для людини: випадковий дотик не мусить витрачати раунд.
+			const game = started(3, 1);
+			game.moveTo(game.correctOrder[0], 'slot', 0);
+
+			game.check();
+
+			expect(game.checked).toBe(false);
+			expect(game.roundResults).toEqual([]);
+		});
+
+		it('порожній ряд із дозволом дає нуль, а не вигадані бали', () => {
+			const game = started(3, 1);
+			game.check(true);
+			expect(game.roundResults).toEqual(['incorrect']);
+			expect(game.sessionScore).toBe(0);
+		});
+	});
+
 	it('reset() повертає партію на початок', () => {
 		const game = started(3, 1);
 		game.moveTo(DECK[0], 'slot', 0);
