@@ -34,6 +34,7 @@ import { join } from 'node:path';
 const BADGE = 'src/lib/components/ui/PlayerBadge.svelte';
 const YOU = 'src/lib/components/ui/YouTag.svelte';
 const ROOM = 'src/lib/components/pairs/OnlineRoom.svelte';
+const SCORES = 'src/lib/components/quiz/QuizScores.svelte';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
@@ -125,6 +126,28 @@ describe('позначки гравця', () => {
 		expect(away, 'позначки «немає звʼязку» в плитці немає').toBeGreaterThan(-1);
 		expect(you, 'позначка «ви» після прапора').toBeLessThan(flag);
 		expect(away, 'позначка «немає звʼязку» після прапора').toBeLessThan(flag);
+	});
+
+	it('табло ВІКТОРИНИ — теж плитки, і позначка теж попереду', () => {
+		/*
+		 * «Окремі візуальні контейнери (як в грі з „знайти пару“)». Той самий інваріант,
+		 * що двома пунктами вище, тільки в іншій грі — і саме тому він тут, а не в
+		 * окремому файлі: два вигляди того самого рядка гравця розійшлися б непомітно,
+		 * бо кожен виглядав би правильним у своїй грі.
+		 *
+		 * Перевіряються ОБИДВІ розкладки одним селектором: `text-panel` стоїть на
+		 * `li`, а не на `ul`, тобто плитки й у смузі над дошкою, і в підсумку стовпцем.
+		 */
+		const quiz = code(SCORES);
+		expect(quiz, 'перелік знову спільна панель').not.toMatch(/class="scores text-panel"/);
+		expect(quiz, 'у рядка гравця немає своєї плитки').toMatch(/class="scores__row text-panel"/);
+
+		const each = quiz.slice(quiz.indexOf('{#each ranked'));
+		const row = each.slice(0, each.indexOf('{/each}'));
+		expect(row.indexOf('<YouTag'), 'позначки «ви» в рядку немає').toBeGreaterThan(-1);
+		expect(row.indexOf('<YouTag'), 'позначка «ви» після прапора').toBeLessThan(
+			row.indexOf('<Flag')
+		);
 	});
 
 	it('слово написано правильно: «звʼязку», а не «зʼязку»', () => {
