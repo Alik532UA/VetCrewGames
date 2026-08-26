@@ -367,13 +367,18 @@
 		<HabitatBoard game={created.game} mode={created.mode} hideNext={!solo} />
 	{:else if created.kind === 'feeding' && created.game.round}
 		<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
-		<FeedingBoard game={created.game} {targets} />
+		<FeedingBoard game={created.game} {targets} hideNext={!solo} />
 		<!--
 			КНОПКИ «ДАЛІ» ТУТ НЕМА, і це не пропуск.
 
 			Після `feed()` наступний раунд оголошує сама дошка — `FeedingTable`
 			всередині `FeedingBoard`. Своя кнопка поруч давала б два способи зробити те
 			саме, і другий натиск перескочив би раунд.
+
+			А в КІМНАТІ її немає й там: `hideNext` вище. Прохання автора: «після вибору
+			відповіді немає кнопки „Далі“, бо це онлайн режим і далі буде автоматично,
+			коли всі зроблять вибір». Доти «Роздай страви» лишалася єдиною грою з такою
+			кнопкою — у решти чотирьох проп уже стояв, а тут його просто не існувало.
 		-->
 		{#if !created.game.fed}
 			<button

@@ -22,9 +22,11 @@
 	interface Props {
 		game: FeedingGameController;
 		targets: QuickTarget[];
+		/** Онлайн: кнопки «Далі» немає — передається далі в `FeedingTable`, де вона й живе. */
+		hideNext?: boolean;
 	}
 
-	let { game, targets }: Props = $props();
+	let { game, targets, hideNext = false }: Props = $props();
 
 	/**
 	 * Раунд тут завжди є: дошку показують лише всередині `{#if game.round}`.
@@ -69,7 +71,7 @@
 			/>
 		</div>
 
-		<FeedingTable {game} {targets} />
+		<FeedingTable {game} {targets} {hideNext} />
 
 		<div class="cell cell--zone1">
 			<FeedingZone
