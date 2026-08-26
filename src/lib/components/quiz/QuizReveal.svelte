@@ -9,6 +9,7 @@
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
+	import TimerBar from '$lib/components/ui/TimerBar.svelte';
 	import type { RoundStatus } from '$lib/types/game';
 
 	/**
@@ -87,6 +88,16 @@
 		 * гравця. Два різні `total` в одному файлі читалися б як одне.
 		 */
 		roundsTotal?: number;
+		/**
+		 * Скільки лишилося ТАБЛУ, мс. Нуль — смуги немає.
+		 *
+		 * Скарга автора: «між раундами немає таймера — невідомо, скільки чекати
+		 * наступний раунд». Число приходить готовим із контролера, як і в раунді:
+		 * свій відлік тут дав би другий годинник, і смуга в двох гравців розійшлася б.
+		 */
+		leftMs?: number;
+		/** Скільки триває табло, мс. Нуль — без смуги. */
+		limitMs?: number;
 	}
 
 	let {
@@ -100,7 +111,9 @@
 		settle = 250,
 		travel = 500,
 		rounds = [],
-		roundsTotal = 0
+		roundsTotal = 0,
+		leftMs = 0,
+		limitMs = 0
 	}: Props = $props();
 
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
@@ -174,6 +187,21 @@
 </script>
 
 <section class="reveal text-panel" data-testid="quiz-reveal-panel">
+	<!--
+		СКІЛЬКИ ЧЕКАТИ НАСТУПНИЙ РАУНД — тією самою смугою, що в раунді.
+
+		Прохання автора: «між раундами немає таймера, невідомо, скільки чекати… є
+		таймер (по прикладу як під час раунду)». Компонент справді той самий
+		(`ui/TimerBar`), і це головне: два схожі, але різні відліки на сусідніх
+		екранах читалися б як різні речі.
+
+		ЗВЕРХУ, як і в раунді: смуга відповідає на «скільки лишилося цьому екрану», і
+		питання це ставлять, щойно екран зʼявився, а не прочитавши рахунок.
+	-->
+	{#if limitMs > 0}
+		<TimerBar {leftMs} {limitMs} label={text('quiz.revealTimer')} testId="quiz-reveal-progress" />
+	{/if}
+
 	<h2 class="reveal__title">{@html formatFont(text('quiz.nextRound'))}</h2>
 
 	<ul class="reveal__list">

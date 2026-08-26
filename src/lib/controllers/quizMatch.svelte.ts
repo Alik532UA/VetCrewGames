@@ -6,7 +6,8 @@ import {
 	deadlineAt,
 	limitLeftMs,
 	nextDue,
-	phaseAt
+	phaseAt,
+	revealLeftMs
 } from '$lib/utils/quizClock';
 import {
 	roundGains,
@@ -279,10 +280,6 @@ export class QuizMatch {
 	/** Скільки очок дав САМЕ ЦЕЙ раунд — кожному. Табло між раундами показує приріст. */
 	get roundGains(): Record<string, number> {
 		return roundGains(this.#log, this.round);
-	}
-
-	get myScore(): number {
-		return this.scores[this.#me] ?? 0;
 	}
 
 	/** Мої результати по зіграних раундах — для смужок прогресу в таблі. */
@@ -592,9 +589,8 @@ export class QuizMatch {
 
 	/** Що показувати ЗАРАЗ. Час передається, а не читається з годинника. */
 	phase(now: number): QuizPhase {
-		// «Скінчилася» — стан КІМНАТИ, а не висновок про час: годинник її не бачить.
-		if (this.status === 'over' || this.over) return 'over';
-		return phaseAt(this, now);
+		// «Скінчилася» — не висновок про час: годинник цього не бачить, тому питаємо тут.
+		return this.over ? 'over' : phaseAt(this, now);
 	}
 
 	/** Що показує смуга таймера. Застигає, щойно відповіли всі. */
@@ -611,8 +607,26 @@ export class QuizMatch {
 	nextDue(now: number): boolean {
 		return nextDue(this, now);
 	}
+	/** Скільки лишилося таблу між раундами — для смуги на ньому. */
+	revealLeftMs(now: number): number {
+		return revealLeftMs(this, now);
+	}
 
+	/**
+	 * ПАРТІЯ СКІНЧИЛАСЯ — з двох причин, і обидві тут.
+	 *
+	 * Раундів більше немає (програма дограна) АБО кімната в стані `over`.
+	 *
+	 * Доти друга умова жила окремо, у `phase()`, — тобто «скінчилася» означало
+	 * різне залежно від того, кого спитати: екран підсумку питав `over`, а фаза
+	 * перевіряла ще й статус. ДЕФЕКТУ З ЦЬОГО ПОКИ НЕ ВИХОДИЛО: у вікторині
+	 * `setStatus('over')` не кличе ніщо — перевірено пошуком. Тобто це не
+	 * виправлення, а прибирання другого джерела правди, поки воно ще нікого не
+	 * розвело: варто комусь колись закрити партію статусом, і два читання
+	 * розійшлися б — а розійшлися б тихо, бо кожне виглядає правильним окремо.
+	 */
 	get over(): boolean {
+		if (this.status === 'over') return true;
 		return this.programme.length > 0 && this.round >= this.programme.length;
 	}
 

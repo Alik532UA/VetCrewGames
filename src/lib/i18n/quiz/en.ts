@@ -27,6 +27,7 @@ export const quiz: Record<string, string> = {
 	'quiz.unknownGame': 'This game comes from a newer version. Reload the page.',
 	'quiz.skipStep': 'Skip',
 	'quiz.roundTimer': 'Round time',
+	'quiz.revealTimer': 'Until the next round',
 	'quiz.answered': 'Waiting for the others.',
 	'quiz.awayWait': 'Waiting:',
 	'quiz.pauseBy': 'Paused by:',

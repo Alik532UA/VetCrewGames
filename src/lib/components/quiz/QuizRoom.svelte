@@ -200,6 +200,8 @@
 			away={match.away.map((player) => player.uid)}
 			rounds={match.myRounds}
 			roundsTotal={match.programme.length}
+			leftMs={match.revealLeftMs(clock)}
+			limitMs={match.revealMs}
 			{me}
 		/>
 	{:else}

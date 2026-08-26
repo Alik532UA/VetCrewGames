@@ -28,6 +28,7 @@ export const quiz: Record<string, string> = {
 	'quiz.unknownGame': 'Dit spel komt uit een nieuwere versie. Herlaad de pagina.',
 	'quiz.skipStep': 'Overslaan',
 	'quiz.roundTimer': 'Rondetijd',
+	'quiz.revealTimer': 'Tot de volgende ronde',
 	'quiz.answered': 'Wachten op de rest.',
 	'quiz.awayWait': 'Wachten:',
 	'quiz.pauseBy': 'Pauze door:',

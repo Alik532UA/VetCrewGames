@@ -555,7 +555,7 @@
 		if (!browser || !match || !match.over) return;
 		if (match.seed === awardedSeed) return;
 		awardedSeed = match.seed;
-		playerData.awardQuizMatch(match.myScore);
+		playerData.awardQuizMatch(match.scores[me] ?? 0);
 	});
 
 	/*

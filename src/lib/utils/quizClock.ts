@@ -145,3 +145,20 @@ export function nextDue(view: QuizClockView, now: number): boolean {
 	if (deadline === null) return false;
 	return now >= deadline + view.revealMs;
 }
+
+/**
+ * Скільки лишилося ТАБЛУ між раундами. Нуль — табла немає або воно вже минуло.
+ *
+ * Скарга автора: «між раундами, там де показує рахунок, немає таймера — невідомо,
+ * скільки чекати наступний раунд». Число для цього вже існувало, але лише як
+ * умова: `nextDue` відповідає «пора чи ні», а на екрані потрібне «скільки ще».
+ *
+ * Та сама пара, що й у раунді: одна функція вирішує, коли фаза кінчається, а друга
+ * віддає залишок для смуги. Виводяться обидві з `deadlineAt`, тож розійтися не
+ * можуть — а два незалежні відліки на одному екрані розійшлися б обовʼязково.
+ */
+export function revealLeftMs(view: QuizClockView, now: number): number {
+	const deadline = deadlineAt(view, now);
+	if (deadline === null) return 0;
+	return Math.max(0, deadline + view.revealMs - now);
+}
