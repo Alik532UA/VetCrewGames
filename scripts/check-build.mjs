@@ -233,6 +233,22 @@ const ROUTE_JS_BUDGET_KB = 300;
  */
 const REQUIRED_CSP = [
 	['script-src', 'https://www.googletagmanager.com'],
+	/*
+	 * ДОВГЕ ОПИТУВАННЯ БАЗИ — у `script-src`, і це не описка.
+	 *
+	 * Realtime Database тримає зʼєднання вебсокетом, а де вебсокет не пройшов —
+	 * падає на довге опитування. Зроблене воно НЕ запитом: SDK вставляє в сторінку
+	 * `<script src="…/.lp?…">`. Тобто дозволу в `connect-src` (він є) не досить, і
+	 * без цього рядка кімната не відкривається зовсім — у консолі нескінченний цикл
+	 * «вставили тег → CSP відмовив → звʼязок утрачено → пробуємо знову».
+	 *
+	 * Дефект прожив непоміченим саме тому, що виглядав закритим: у `connect-src`
+	 * потрібний домен стояв, з коментарем про фолбек. Тому перевірка тут тепер
+	 * дивиться на ОБИДВІ директиви окремо.
+	 */
+	['script-src', 'https://*.firebasedatabase.app'],
+	['connect-src', 'https://*.firebasedatabase.app'],
+	['connect-src', 'wss://*.firebasedatabase.app'],
 	['connect-src', 'https://*.google-analytics.com'],
 	['style-src', 'https://fonts.googleapis.com'],
 	['font-src', 'https://fonts.gstatic.com']
