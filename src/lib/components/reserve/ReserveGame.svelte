@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
@@ -210,6 +211,44 @@
 	});
 
 	/**
+	 * ЧИ ВМІЩАЮТЬСЯ ДВА ВІКНА ПОРУЧ.
+	 *
+	 * Скарга автора: «іноді вікна можуть налазити один на одне», і рішення —
+	 * розводити, а не закривати. Розвести можна не завжди, і це арифметика, а не
+	 * смак: картка мапи 20rem, панель 34rem, три проміжки по `--space-sm` — разом
+	 * 55.5rem. Отже нижче 56rem обидві просто не стоять поруч на жодній ширині.
+	 *
+	 * SYNC: те саме число в `.sheet--beside` (`BottomSheet`), де воно стискає
+	 * панель. Медіазапит не вміє посилатися на чужий CSS, тож воно неминуче у двох
+	 * місцях.
+	 *
+	 * Питання САМЕ ПРО ЕКРАН, а не про місце в розкладці (FLUID-SIZING § FS-CONTAINER
+	 * тут не діє): обидва вікна `position: fixed` і змагаються за ширину вікна
+	 * браузера, а не за ширину якогось контейнера.
+	 */
+	const sideBySide = new MediaQuery('(min-width: 56rem)');
+
+	/**
+	 * Показати картку мапи. Вузький екран — панель закривається.
+	 *
+	 * Новіше вікно виграє, і це єдине правило, яке людина може передбачити: вона
+	 * щойно тицьнула саме туди. Тримати обидва на 380px означало б показувати
+	 * картку поверх списку, з якого її відкрили.
+	 */
+	function showCard(kind: 'animal' | 'enclosure', id: number) {
+		if (!sideBySide.current) panel = null;
+		if (kind === 'animal') game.selectAnimal(id);
+		else game.selectEnclosure(id);
+	}
+
+	/** Відкрити панель. Вузький екран — картка закривається. */
+	function showPanel(id: Panel, x: number) {
+		anchorX = x;
+		panel = panel === id ? null : id;
+		if (panel !== null && !sideBySide.current) game.clearSelection();
+	}
+
+	/**
 	 * Кожна відмова пояснює причину.
 	 *
 	 * «Не можна» без пояснення читається як поламана кнопка. А тут кожна
@@ -289,8 +328,7 @@
 			animals={here}
 			selectedId={game.selectedId}
 			selectedEnclosureId={game.selectedEnclosureId}
-			onSelect={(kind, id) =>
-				kind === 'animal' ? game.selectAnimal(id) : game.selectEnclosure(id)}
+			onSelect={showCard}
 			placingSize={pending?.size ?? null}
 			onGround={placeAt}
 			showMinimap={!panel}
@@ -319,10 +357,7 @@
 			<ReserveBar
 				{panel}
 				placing={pending !== null}
-				onPanel={(id, x) => {
-					anchorX = x;
-					panel = panel === id ? null : id;
-				}}
+				onPanel={showPanel}
 				onCampaign={() => command({ type: 'campaign' })}
 				onCancel={() => (pending = null)}
 			/>
@@ -396,7 +431,8 @@
 				freeEnclosures={free}
 				{occupied}
 				selectedId={game.selectedId}
-				onSelect={(id: number) => game.selectAnimal(id)}
+				beside={game.selected !== null || game.selectedEnclosure !== null}
+				onSelect={(id: number) => showCard('animal', id)}
 				onCommand={command}
 				{buildSize}
 				onBuildFor={(size: number) => {

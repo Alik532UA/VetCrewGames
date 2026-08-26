@@ -39,6 +39,8 @@
 		onBuildFor: (size: number) => void;
 		/** Розмір, з яким відкрилася панель вольєрів; `undefined` — типовий. */
 		buildSize?: number;
+		/** Ліворуч стоїть картка мапи — панель мусить її обійти (`BottomSheet`). */
+		beside: boolean;
 		onClose: () => void;
 		/** Центр кнопки, з якої відкрили: панель спливає саме над нею. */
 		anchorX: number | null;
@@ -60,7 +62,8 @@
 		onBuildFor,
 		buildSize,
 		onClose,
-		anchorX
+		anchorX,
+		beside
 	}: Props = $props();
 
 	const TITLE: Record<
@@ -74,7 +77,7 @@
 	};
 </script>
 
-<BottomSheet title={t(TITLE[panel])} id={panel} {anchorX} {onClose}>
+<BottomSheet title={t(TITLE[panel])} id={panel} {anchorX} {beside} {onClose}>
 	{#if panel === 'animals'}
 		<AnimalsPanel
 			biome={at}
