@@ -17,13 +17,23 @@
 		slot: MemorySlot;
 		/** Партія триває, а картку чіпати не можна: лежать уже дві. */
 		disabled: boolean;
+		/**
+		 * Ходить ІНШИЙ: сорочка сіріє.
+		 *
+		 * Окремий проп, а не `disabled`, і це не зайва деталь. `disabled` означає
+		 * «цю картку зараз не перевернути», і в одиночній грі він стоїть, поки
+		 * лежать дві відкриті, — тобто сорочки блимали б сірим двічі на хід. Тут
+		 * питання інше: чи взагалі МІЙ хід. Типово `false`, тож одиночна гра лишається
+		 * такою, як була.
+		 */
+		waiting?: boolean;
 		/** Номер у колоді — ним називається закрита картка для читалок. */
 		position: number;
 		onflip: () => void;
 		testId: string;
 	}
 
-	let { slot, disabled, position, onflip, testId }: Props = $props();
+	let { slot, disabled, waiting = false, position, onflip, testId }: Props = $props();
 
 	const open = $derived(slot.faceUp || slot.takenBy !== null);
 
@@ -41,6 +51,7 @@
 	class="card"
 	class:card--open={open}
 	class:card--taken={slot.takenBy !== null}
+	class:card--waiting={waiting}
 	disabled={disabled || open}
 	aria-label={label}
 	onclick={onflip}
@@ -120,6 +131,26 @@
 	.card__face--back {
 		background: color-mix(in srgb, var(--color-bg-panel), transparent 15%);
 		color: color-mix(in srgb, var(--color-accent), transparent 35%);
+	}
+
+	/*
+	 * СОРОЧКА СІРІЄ, КОЛИ ХОДИТЬ ІНШИЙ.
+	 *
+	 * Прохання автора: «лапка кольорова тільки коли мій хід, а коли інший гравець
+	 * ходить, то сірий колір». Це не оздоба: дошка на цей час і так не клікається,
+	 * але сказано про це було лише курсором — тобто дізнатися можна, тицьнувши.
+	 * Тепер стан видно з самої дошки, а не з реакції на дотик.
+	 *
+	 * Сірий рахується від `--color-text`, а не з літерала: тем чотири, і будь-який
+	 * зашитий сірий у якійсь із них або зникне у тлі, або стане плямою.
+	 *
+	 * Плавність окремо не задається — у `global.css` `color` уже під переходом для
+	 * майже всього, тож лапка не перескакує, а гасне. Специфічність тут вища за
+	 * `.card__face--back` (два класи проти одного), тобто перекриття навмисне, а не
+	 * нічия порядку правил (SVELTE-UI-v8 § 3.6).
+	 */
+	.card--waiting .card__face--back {
+		color: color-mix(in srgb, var(--color-text), transparent 55%);
 	}
 
 	.card:hover:not(:disabled) .card__face--back {

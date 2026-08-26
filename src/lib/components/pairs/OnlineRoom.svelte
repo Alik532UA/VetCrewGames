@@ -270,6 +270,7 @@
 				{slot}
 				position={index + 1}
 				disabled={!match.myTurn || match.over}
+				waiting={!match.myTurn}
 				onflip={() => match.flip(index)}
 				testId="pairs-card-btn-{slot.card.id}"
 			/>
