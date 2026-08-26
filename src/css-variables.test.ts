@@ -200,3 +200,183 @@ describe('CSS variables', () => {
 		).toEqual([]);
 	});
 });
+
+/**
+ * `light-dark()` with a NON-COLOUR argument (UI-UX-v8 § 1.5.1.3,
+ * `UIUX-LIGHT-DARK-COLOR-ONLY`).
+ *
+ * Same consequence as the check above — the property disappears entirely — but a
+ * different cause, which is why that check could not see it: the variable IS
+ * declared, its value is simply invalid where it gets used.
+ *
+ * `light-dark()` is a COLOUR function: `light-dark(<color>, <color>)`. A length,
+ * a `url()` or a whole shadow with offsets is not a colour, so the value is
+ * invalid at computed-value time and the property falls back to its initial
+ * value. Measured in Chrome 148:
+ *
+ *     box-shadow: light-dark(0 4px 16px #0002, 0 4px 16px #0008)  → none
+ *     background-image: light-dark(url(a.webp), url(b.webp))      → none
+ *     box-shadow: 0 4px 16px light-dark(#0002, #0008)             → works
+ *
+ * THIS PROJECT GOT AWAY WITH IT, AND THAT IS THE REASON THE GATE IS HERE.
+ *
+ * Commit `9cec6f8` (23.08) moved the dark/light-green pair onto `light-dark()`,
+ * and seven of the tokens were not colours: the six `--shadow-*` and `--bg-image`.
+ * On the deployed site the shadows were fine — because this is the only one of
+ * the eight repositories on `vite@^8`, and Vite 8 hands CSS to Lightning CSS,
+ * which LOWERS `light-dark()` into a pair of `--lightningcss-light` /
+ * `--lightningcss-dark` substitutions for any value type. Measured in production
+ * on 26.08: `--shadow-card` arrived as `0 4px 16px #00000080`.
+ *
+ * The siblings on `vite@^7` (esbuild lowers nothing) with the same source shape
+ * lost their shadows outright: `as5` had 0 of 6 shadow rules render, and
+ * `teatralo4ka` shipped raw `light-dark(0 4px 20px …)` in `build/`.
+ *
+ * So what kept this project working was the BUNDLER VERSION, not the decision. A
+ * downgrade, or a change to Vite's CSS default, would take it away with no gate
+ * going red. That is what this check replaces.
+ *
+ * Those two `--lightningcss-*` names are written WITHOUT the `var(` prefix on
+ * purpose: `read()` above strips comments, but only block and line-start ones —
+ * a doc comment inside a `describe` body would still be scanned by the check
+ * above if it ever stops stripping. Cheap to avoid, expensive to debug.
+ *
+ * Reverse experiment (AI-AGENT-PITFALLS-v8 § 1.1): put
+ * `--shadow-card: light-dark(4px, 8px)` into `themes/dark.css` — the check must
+ * name that call and that file. Done, it fails.
+ */
+
+/** Functions that yield a COLOUR. `url()` is absent, and that is the whole point. */
+const COLOUR_FUNCTIONS = new Set([
+	'rgb',
+	'rgba',
+	'hsl',
+	'hsla',
+	'hwb',
+	'lab',
+	'lch',
+	'oklab',
+	'oklch',
+	'color',
+	'color-mix',
+	'light-dark',
+	// `var()` passes straight through: what is inside it is the check above's job.
+	'var'
+]);
+
+/** The arguments of every `light-dark(...)`, respecting nested parentheses. */
+function lightDarkCalls(text: string): { args: string[]; raw: string }[] {
+	const calls: { args: string[]; raw: string }[] = [];
+	const needle = 'light-dark(';
+
+	for (let start = text.indexOf(needle); start !== -1; start = text.indexOf(needle, start + 1)) {
+		let depth = 0;
+		let end = -1;
+		for (let i = start + needle.length - 1; i < text.length; i++) {
+			if (text[i] === '(') depth++;
+			else if (text[i] === ')' && --depth === 0) {
+				end = i;
+				break;
+			}
+		}
+		// Unbalanced parentheses are not this check's business — the build says so.
+		if (end === -1) continue;
+
+		const args: string[] = [];
+		let level = 0;
+		let current = '';
+		for (const ch of text.slice(start + needle.length, end)) {
+			if (ch === '(') level++;
+			else if (ch === ')') level--;
+			if (ch === ',' && level === 0) {
+				args.push(current.trim());
+				current = '';
+				continue;
+			}
+			current += ch;
+		}
+		args.push(current.trim());
+		calls.push({ args, raw: text.slice(start, end + 1) });
+	}
+	return calls;
+}
+
+function isColour(arg: string): boolean {
+	if (arg === '') return false;
+	if (/^#[0-9a-fA-F]{3,8}$/.test(arg)) return true;
+	// A named colour, `transparent`, `currentColor` — letters only, no units.
+	if (/^[a-zA-Z]+$/.test(arg)) return true;
+
+	const open = arg.indexOf('(');
+	if (open === -1) return false;
+	const name = arg.slice(0, open).trim();
+	if (!/^[a-zA-Z-]+$/.test(name) || !COLOUR_FUNCTIONS.has(name.toLowerCase())) return false;
+
+	/*
+	 * The function's parenthesis must close at the very END of the argument.
+	 *
+	 * Without that condition `0 4px 16px rgba(0, 0, 0, 0.1)` would be rejected
+	 * correctly, but `rgba(0, 0, 0, 0.1) 0 4px 16px` would PASS: a greedy parse
+	 * takes the first function name and decides the argument is a colour. The
+	 * check would then be silent on the very defect it stands against, depending
+	 * on the word order inside the value.
+	 */
+	let depth = 0;
+	for (let i = open; i < arg.length; i++) {
+		if (arg[i] === '(') depth++;
+		else if (arg[i] === ')' && --depth === 0) return i === arg.length - 1;
+	}
+	return false;
+}
+
+describe('light-dark() takes colours only (UI-UX-v8 § 1.5.1.3)', () => {
+	const styleFiles = walk(
+		'src',
+		(n) => n.endsWith('.css') || n.endsWith('.svelte') || n.endsWith('.html')
+	);
+	// `read()` already strips comments, and it must: the theme files describe the
+	// `light-dark()` mechanism in prose, including the broken forms this check
+	// forbids. Without that the gate would report its own documentation.
+	const calls = styleFiles.flatMap((file) =>
+		lightDarkCalls(read(file)).map((call) => ({ file, ...call }))
+	);
+
+	it('the check is alive: light-dark() calls were found', () => {
+		expect(
+			calls.length,
+			'no light-dark() in the styles at all — either the scanner is looking in ' +
+				'the wrong place, or the palette was rewritten, in which case this gate ' +
+				'should be removed rather than repaired'
+		).toBeGreaterThan(20);
+	});
+
+	it('the argument parser is alive: a colour is told apart from a length and a url()', () => {
+		// Without this the check below would be green on an always-true isColour.
+		expect(isColour('#93bf4c')).toBe(true);
+		expect(isColour('rgba(0, 0, 0, 0.1)')).toBe(true);
+		expect(isColour('color-mix(in srgb, #000000, transparent 25%)')).toBe(true);
+		expect(isColour('transparent')).toBe(true);
+		expect(isColour('16px'), 'a length is not a colour').toBe(false);
+		expect(isColour("url('/images/background/bg-dark-v01.webp')"), 'url() is not a colour').toBe(
+			false
+		);
+		expect(isColour('0 4px 16px rgba(0, 0, 0, 0.1)'), 'a whole shadow is not a colour').toBe(false);
+		expect(isColour('rgba(0, 0, 0, 0.1) 0 4px 16px'), 'colour plus offsets is not a colour').toBe(
+			false
+		);
+	});
+
+	it('both arguments of every call are colours', () => {
+		const broken = calls
+			.filter((call) => call.args.length !== 2 || !call.args.every(isColour))
+			.map((call) => `${call.file}: ${call.raw}`)
+			.sort();
+
+		expect(
+			broken,
+			'a non-colour argument makes the value invalid and the property vanishes ' +
+				`ENTIRELY. On Vite 8 Lightning CSS lowers it and hides that; on Vite 7 it ` +
+				`ships as written:\n  ${broken.join('\n  ')}`
+		).toEqual([]);
+	});
+});
