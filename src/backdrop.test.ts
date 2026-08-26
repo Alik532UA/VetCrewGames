@@ -217,6 +217,14 @@ function nakedTexts(file: string, source: string, globalBacked: Set<string>): Na
 	const backed = classesWithBackground(style);
 	for (const cls of globalBacked) backed.add(cls);
 	backed.add(PANEL_CLASS);
+	/*
+	 * `.visually-hidden` — не підкладка, а ВІДСУТНІСТЬ на екрані: обрізаний до
+	 * пікселя елемент для скрінрідера. Фон йому не потрібен, бо фону під ним ніхто
+	 * не бачить, і вимагати `.text-panel` означало б вимагати підкладку під те, що
+	 * не малюється. Стоїть тут, бо прапорець колектора відповідає не на «чи є тло»,
+	 * а на «чи треба перевіряти вміст».
+	 */
+	backed.add('visually-hidden');
 
 	const markup = source
 		.slice(source.indexOf('</script>') + 1)

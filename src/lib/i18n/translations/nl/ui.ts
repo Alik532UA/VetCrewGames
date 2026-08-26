@@ -48,6 +48,7 @@ export const ui = {
 	'pairs.netFailed': 'Kon niet in de ruimte komen. Probeer het opnieuw.',
 	'pairs.opponentGone': 'De tegenstander speelt al een tijd niet.',
 	'pairs.takeTurn': 'Zet overnemen',
+	'pairs.turnTimer': 'Zettijd',
 	'pairs.away': 'geen verbinding',
 	'pairs.yieldIn': 'Zet overnemen kan over',
 	'pairs.endMatch': 'Spel beëindigen',

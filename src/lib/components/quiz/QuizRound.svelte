@@ -3,6 +3,7 @@
 	import type { QuizPhase } from '$lib/controllers/quizMatch.svelte';
 	import type { QuizStep } from '$lib/config/quizOnline';
 	import QuizBoard from './QuizBoard.svelte';
+	import TimerBar from '$lib/components/ui/TimerBar.svelte';
 
 	/**
 	 * Один раунд спільної вікторини: таймер, дошка, табло між раундами.
@@ -41,7 +42,6 @@
 
 	let { text, phase, step, leftMs, limitMs, answered, onanswer }: Props = $props();
 
-	const leftPercent = $derived(limitMs === 0 ? 0 : Math.round((leftMs / limitMs) * 100));
 </script>
 
 {#if phase === 'round' && step}
@@ -49,14 +49,7 @@
 		Смуга таймера. Ширина рахується від СЕРВЕРНОГО старту раунду, тож у двох
 		гравців вона в одному місці, а не в кожного своя.
 	-->
-	<div
-		class="timer"
-		role="timer"
-		aria-label={text('quiz.roundTimer')}
-		data-testid="quiz-round-progress"
-	>
-		<span class="timer__fill" style="width: {leftPercent}%"></span>
-	</div>
+	<TimerBar {leftMs} {limitMs} label={text('quiz.roundTimer')} testId="quiz-round-progress" />
 
 	<!--
 		ДОШКА ЛИШАЄТЬСЯ ПІСЛЯ ВІДПОВІДІ, і це виправлення, а не смак.
@@ -92,29 +85,7 @@
 -->
 
 <style>
-	/*
-	 * Смуга таймера: тонка, на всю ширину, без цифр.
-	 *
-	 * Без числа навмисно — цифра, що біжить, тягне погляд сильніше за саму смугу,
-	 * а знати треба не «скільки лишилося», а «встигаю чи ні».
-	 */
-	.timer {
-		width: 100%;
-		height: 6px;
-		border-radius: var(--radius-full);
-		background: color-mix(in srgb, var(--color-text), transparent 88%);
-		overflow: hidden;
-		flex-shrink: 0;
-	}
-
-	.timer__fill {
-		display: block;
-		height: 100%;
-		background: var(--color-accent);
-		/* Лінійно й без згладжування: смуга мусить показувати час, а не наздоганяти його. */
-		transition: width 0.1s linear;
-	}
-
+	/* Вигляд смуги переїхав у `ui/TimerBar.svelte`: та сама смуга тепер і в парах. */
 	.round__wait {
 		margin: 0;
 		text-align: center;

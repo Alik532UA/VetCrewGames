@@ -48,6 +48,7 @@ export const ui = {
 	'pairs.netFailed': 'Beitritt zum Raum fehlgeschlagen. Bitte erneut versuchen.',
 	'pairs.opponentGone': 'Die Gegenseite spielt schon lange nicht.',
 	'pairs.takeTurn': 'Zug übernehmen',
+	'pairs.turnTimer': 'Zugzeit',
 	'pairs.away': 'keine Verbindung',
 	'pairs.yieldIn': 'Zug übernehmen in',
 	'pairs.endMatch': 'Partie beenden',

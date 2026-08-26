@@ -1,6 +1,6 @@
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
 import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
-import { isStallActionLegal, yieldReadyAt, type TurnState } from './turnLimit';
+import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
 
 /**
  * Скільки невдала пара лишається на екрані, перш ніж перегорнутися.
@@ -298,6 +298,28 @@ export class PairsMatch {
 	/** Коли чергу можна буде забрати — серверним часом; `null` — не можна. */
 	get yieldReadyAt(): number | null {
 		return yieldReadyAt(this.#me, this.#turnState);
+	}
+
+	/**
+	 * Коли поточний хід дійде до межі — серверним часом; `null` — ходу немає.
+	 *
+	 * Це НЕ те саме, що `yieldReadyAt`, і різниця тут важлива. Той відповідає на
+	 * «чи маю я право забрати цю чергу» й повертає `null` на власному ході — бо
+	 * свою чергу віддати не можна. Цей відповідає на «скільки лишилося ходові» й
+	 * не питає, чий він: смуга часу мусить іти в обох, інакше вона зникає й
+	 * зʼявляється на кожному ході, зсуваючи дошку.
+	 *
+	 * Межа лишається в `turnLimit.ts`: екран отримує готову позначку часу й не
+	 * тримає власної копії `TURN_LIMIT_MS`.
+	 */
+	get turnEndsAt(): number | null {
+		if (this.turnSince === null || this.over || this.status !== 'playing') return null;
+		return this.turnSince + TURN_LIMIT_MS;
+	}
+
+	/** Скільки часу дано одному ходові — знаменник смуги на екрані. */
+	get turnLimitMs(): number {
+		return TURN_LIMIT_MS;
 	}
 
 	/** Чи вже можна забрати чергу, якщо на годиннику `now`. */

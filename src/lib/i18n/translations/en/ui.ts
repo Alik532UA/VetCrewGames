@@ -48,6 +48,7 @@ export const ui = {
 	'pairs.netFailed': 'Could not join the room. Please try again.',
 	'pairs.opponentGone': 'Your opponent has been idle for a while.',
 	'pairs.takeTurn': 'Take the turn',
+	'pairs.turnTimer': 'Turn time',
 	'pairs.away': 'no connection',
 	'pairs.yieldIn': 'You can take the turn in',
 	'pairs.endMatch': 'End the game',
