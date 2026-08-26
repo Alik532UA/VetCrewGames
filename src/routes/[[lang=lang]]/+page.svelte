@@ -3,6 +3,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
+	import { siblingUrl } from '$lib/siblings';
 
 	/**
 	 * Головне меню — РОЗДІЛИ, і тепер однакові в роботі й у збірці для людей.
@@ -39,16 +40,30 @@
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
 
-	const links = [
+	/**
+	 * Два зовнішні посилання, і мову несе лише одне з них.
+	 *
+	 * «Замовити сайт» веде в сусідній DigitalWorkshop, а той на голій адресі
+	 * віддає українську — тобто читач англійської сторінки натискав
+	 * англійський підпис і потрапляв на український сайт. Тепер адресу будує
+	 * `siblingUrl()` із таблиці `src/lib/siblings.ts`: мову, яку сусід кладе в
+	 * шлях, називає шлях (`/DigitalWorkshop/en/`), а його ТИПОВУ мову — `?lang=`,
+	 * бо `/DigitalWorkshop/uk/` не існує з тієї самої причини, з якої тут не існує
+	 * `/VetCrewGames/uk/`.
+	 *
+	 * Сайт ветеринарної команди на `sites.google.com` мов не має взагалі, тож
+	 * передавати туди нема чого — і таблиця про нього нічого не знає.
+	 */
+	const links = $derived([
 		{
 			key: 'menu.link.vetcrew' as const,
 			href: 'https://sites.google.com/view/vetcrew'
 		},
 		{
 			key: 'menu.link.order' as const,
-			href: 'https://alik532ua.github.io/DigitalWorkshop'
+			href: siblingUrl('digitalworkshop', lang)
 		}
-	];
+	]);
 </script>
 
 <div class="menu-page">
