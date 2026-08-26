@@ -4,6 +4,8 @@
 	import { COUNTDOWN_MS } from '$lib/config/roomLife';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import QuizGamePicker from './QuizGamePicker.svelte';
+	import QuizPacePicker from './QuizPacePicker.svelte';
+	import type { QuizPace } from '$lib/config/quizOnline';
 
 	/**
 	 * ЛОБІ ВІКТОРИНИ = спільне лобі плюс НАБІР ІГОР цієї кімнати.
@@ -45,6 +47,8 @@
 		onAutoStart: (on: boolean) => void;
 		/** Змінити набір ігор. Мережу знає сторінка — сюда приходить лише виклик. */
 		onGames: (games: string[]) => void;
+		/** Змінити швидкість кімнати: час на раунд і час на перегляд відповіді. */
+		onPace: (round: QuizPace, reveal: QuizPace) => void;
 	}
 
 	let {
@@ -59,7 +63,8 @@
 		onRole,
 		onStart,
 		onAutoStart,
-		onGames
+		onGames,
+		onPace
 	}: Props = $props();
 
 	/**
@@ -105,8 +110,22 @@
 	{onAutoStart}
 />
 
+<!--
+	НАБІР ІГОР І ШВИДКІСТЬ — В ОДНІЙ ПАНЕЛІ: це два налаштування тієї самої кімнати.
+
+	Друга панель поруч читалася б як інша річ, а вони обидві відповідають на «у що й
+	як швидко граємо». Заразом це не додає рядка на вузькому екрані: групи
+	переносяться самі.
+-->
 <div class="quiz-lobby__games text-panel">
 	<QuizGamePicker {text} selected={match.games} editable={amHost} onchange={onGames} />
+	<QuizPacePicker
+		{text}
+		round={match.roundPace}
+		reveal={match.revealPace}
+		editable={amHost}
+		onpick={onPace}
+	/>
 </div>
 
 <style>
@@ -116,5 +135,10 @@
 	 */
 	.quiz-lobby__games {
 		width: 100%;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: center;
+		gap: var(--space-md);
 	}
 </style>

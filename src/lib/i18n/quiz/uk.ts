@@ -30,6 +30,15 @@ export const quiz: Record<string, string> = {
 	'quiz.answered': 'Чекаємо на решту.',
 	'quiz.awayWait': 'Чекаємо:',
 	'quiz.pauseBy': 'Пауза:',
+	/*
+	 * ШВИДКІСТЬ КІМНАТИ. Дві шкали, бо це два різні питання: скільки думати над
+	 * питанням і скільки дивитися на розбір.
+	 */
+	'quiz.paceRound': 'Час на раунд',
+	'quiz.paceReveal': 'Час на перегляд відповіді',
+	'quiz.pace.fast': 'Швидко',
+	'quiz.pace.normal': 'Стандартно',
+	'quiz.pace.slow': 'Повільно',
 	'quiz.pause': 'Пауза',
 	'quiz.pauseResume': 'Продовжити',
 	'quiz.awayGoOn': 'Грати далі',

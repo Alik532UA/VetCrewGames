@@ -5,15 +5,17 @@ import {
 	GAME_FLAG_PREFIX,
 	ONLINE_GAMES,
 	QUIZ_ROUNDS,
-	REVEAL_MS,
-	SETTLE_MS,
 	answerPoints,
 	roundLimitMs,
 	configToGames,
 	gamesToConfig,
 	quizProgramme,
 	distinctProgramme,
-	roomFitsGames
+	roomFitsGames,
+	DEFAULT_PACE,
+	REVEAL_PACE,
+	ROUND_PACE,
+	quizConfig
 } from '$lib/config/quizOnline';
 
 /*
@@ -181,6 +183,104 @@ describe('зміна набору ігор', () => {
 
 		expect(host.games, 'інакше перемалювалися б уже зіграні раунди').toEqual(before);
 		stop();
+	});
+});
+
+/**
+ * ШВИДКІСТЬ КІМНАТИ: два незалежні налаштування.
+ *
+ * Прохання автора: «треба, щоб у кімнаті це можна було налаштовувати… поточні
+ * значення будуть використовуватися в швидкому режимі… і ці дві — час на раунд і
+ * час на перегляд відповіді — окремі налаштування, наприклад можна поставити „час
+ * на раунд“ повільний, а „час на перегляд відповіді“ швидкий».
+ *
+ * Найважливіший пункт тут — останній. `setConfig` пише обʼєкт налаштувань
+ * ПОВНІСТЮ, тож зміна швидкості легко стирає набір ігор, а зміна набору — швидкість.
+ * Це та поломка, якої не видно на екрані: вибрані ігри просто вертаються до всіх, і
+ * виглядає це як «кімната сама себе перенастроїла».
+ *
+ * Зворотні експерименти (AI-AGENT-PITFALLS-v8 § 1.1) — чотири, кожен червонив рівно
+ * свій пункт: `DEFAULT_PACE` змінено на `fast`; `ROUND_PACE.slow` зведено до 1;
+ * `REVEAL_PACE` прибрано з `settleMs`; у `setPace` набір ігор замінено на порожній.
+ * Усі чотири зроблені.
+ */
+describe('швидкість кімнати', () => {
+	it('типова швидкість — стандартна, і саме її має кімната без налаштування', () => {
+		const { host, stop } = table(info({ config: {} }));
+		expect(host.roundPace).toBe('normal');
+		expect(host.revealPace).toBe('normal');
+		expect(DEFAULT_PACE, 'типова швидкість перестала бути стандартною').toBe('normal');
+		stop();
+	});
+
+	it('швидкий режим — рівно те, що було до налаштування', () => {
+		// Автор попросив саме цього; будь-яке інше число тут тихо змінило б гру тим,
+		// кому вона й так підходила.
+		expect(ROUND_PACE.fast).toBe(1);
+		expect(REVEAL_PACE.fast).toBe(1);
+	});
+
+	it('швидкості вибираються НЕЗАЛЕЖНО одна від одної', async () => {
+		const { host, stop } = table(info({ status: 'lobby' }));
+
+		await host.setPace('slow', 'fast');
+
+		expect(host.roundPace).toBe('slow');
+		expect(host.revealPace, 'один рівень на дві потреби').toBe('fast');
+		stop();
+	});
+
+	it('швидкість масштабує ВСІ три числа, а не одне', async () => {
+		const { room, host, stop } = table(info({ status: 'lobby' }));
+		const fast = { round: 0, settle: 0, reveal: 0 };
+
+		await host.setPace('fast', 'fast');
+		await room.transport().setStatus('playing');
+		await host.startRound(0);
+		fast.round = host.limitMs;
+		fast.settle = host.settleMs;
+		fast.reveal = host.revealMs;
+
+		const slow = table(info({ status: 'lobby', config: quizConfig(host.games, 'slow', 'slow') }));
+		await slow.room.transport().setStatus('playing');
+		await slow.host.startRound(0);
+
+		expect(slow.host.limitMs, 'час раунду не залежить від швидкості').toBeGreaterThan(fast.round);
+		expect(slow.host.settleMs, '«побач свою відповідь» не залежить').toBeGreaterThan(fast.settle);
+		expect(slow.host.revealMs, 'табло не залежить').toBeGreaterThan(fast.reveal);
+		slow.stop();
+		stop();
+	});
+
+	it('зміна швидкості не стирає набір ігор, і навпаки', async () => {
+		const { host, stop } = table(info({ status: 'lobby' }));
+		const two = [ONLINE_GAMES[0].id, ONLINE_GAMES[1].id];
+
+		await host.setGames(two);
+		await host.setPace('slow', 'slow');
+		expect(host.games, 'швидкість стерла вибір ігор').toEqual(two);
+
+		await host.setGames(two);
+		expect(host.roundPace, 'набір ігор стер швидкість').toBe('slow');
+		expect(host.revealPace).toBe('slow');
+		stop();
+	});
+
+	it('гість швидкості не міняє, і в партії вона не міняється', async () => {
+		/*
+		 * Друга половина — не обережність: очки залежать від того, скільки тривав
+		 * раунд, а рахунок перепрогонюється з журналу цілком. Зміна швидкості посеред
+		 * партії перерахувала б уже зіграні раунди — минуле змінилося б заднім числом.
+		 */
+		const lobby = table(info({ status: 'lobby' }));
+		await lobby.guest.setPace('slow', 'slow');
+		expect(lobby.host.roundPace).toBe('normal');
+		lobby.stop();
+
+		const playing = table(info({ status: 'playing' }));
+		await playing.host.setPace('slow', 'slow');
+		expect(playing.host.roundPace, 'минуле змінилося заднім числом').toBe('normal');
+		playing.stop();
 	});
 });
 
@@ -423,8 +523,8 @@ describe('фази раунду', () => {
 
 		const last = host.answers[0][GUEST].at;
 		expect(host.phase(last)).toBe('round');
-		expect(host.phase(last + SETTLE_MS - 1)).toBe('round');
-		expect(host.phase(last + SETTLE_MS)).toBe('reveal');
+		expect(host.phase(last + host.settleMs - 1)).toBe('round');
+		expect(host.phase(last + host.settleMs)).toBe('reveal');
 		stop();
 	});
 
@@ -434,8 +534,8 @@ describe('фази раунду', () => {
 		const deadline = host.deadlineAt() as number;
 
 		expect(host.nextDue(deadline)).toBe(false);
-		expect(host.nextDue(deadline + REVEAL_MS - 1)).toBe(false);
-		expect(host.nextDue(deadline + REVEAL_MS)).toBe(true);
+		expect(host.nextDue(deadline + host.revealMs - 1)).toBe(false);
+		expect(host.nextDue(deadline + host.revealMs)).toBe(true);
 		stop();
 	});
 
@@ -507,7 +607,7 @@ describe('той, хто зник із кімнати', () => {
 		expect(host.everyoneAnswered).toBe(true);
 
 		const mine = host.answers[0][HOST].at;
-		expect(host.phase(mine + SETTLE_MS)).toBe('reveal');
+		expect(host.phase(mine + host.settleMs)).toBe('reveal');
 		room.tick(0);
 		stop();
 	});
@@ -572,7 +672,7 @@ describe('той, хто зник із кімнати', () => {
 			host.limitMs - (at - start)
 		);
 		expect(host.leftMs(at + 500), 'смуга рухається після останньої відповіді').toBe(frozen);
-		expect(host.deadlineAt(at), 'правило зникло разом зі стрибком').toBe(at + SETTLE_MS);
+		expect(host.deadlineAt(at), 'правило зникло разом зі стрибком').toBe(at + host.settleMs);
 		room.tick(0);
 		stop();
 	});
@@ -603,10 +703,10 @@ describe('той, хто зник із кімнати', () => {
 
 		expect(host.everyoneAnswered, 'відповіли не всі — умова іншої гілки').toBe(false);
 		expect(host.deadlineAt(at), 'розбір знову зникає за мілісекунди').toBeGreaterThanOrEqual(
-			at + SETTLE_MS - 1
+			at + host.settleMs - 1
 		);
 		expect(host.deadlineAt(at), 'продовження без стелі').toBeLessThanOrEqual(
-			start + host.limitMs + SETTLE_MS
+			start + host.limitMs + host.settleMs
 		);
 		room.tick(0);
 		stop();

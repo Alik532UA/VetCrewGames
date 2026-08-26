@@ -2,6 +2,13 @@ import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTyp
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import {
+	barLeftMs,
+	deadlineAt,
+	limitLeftMs,
+	nextDue,
+	phaseAt
+} from '$lib/utils/quizClock';
+import {
 	roundGains,
 	roundOutcomes,
 	totalScores,
@@ -12,8 +19,14 @@ import {
 	RESUME_BONUS_MS,
 	REVEAL_MS,
 	SETTLE_MS,
+	REVEAL_PACE,
+	ROUND_PACE,
+	PACE_REVEAL_KEY,
+	PACE_ROUND_KEY,
 	configToGames,
-	gamesToConfig,
+	paceFromConfig,
+	quizConfig,
+	type QuizPace,
 	quizProgramme,
 	roundLimitMs,
 	type QuizStep
@@ -90,6 +103,19 @@ export class QuizMatch {
 	countdownAt = $state<number | null>(null);
 	/** Які ігри вибрані в кімнаті. Порожньо — ще не приїхав знімок. */
 	games = $state<string[]>([]);
+	/**
+	 * ШВИДКОСТІ КІМНАТИ: часу на раунд і часу на перегляд відповіді.
+	 *
+	 * Дві незалежні, бо це різні потреби: часу на раунд бракує тому, хто читає
+	 * повільно, а часу на розбір — тому, хто хоче зрозуміти, чому відповідь така.
+	 * Один рівень на партію змушував би платити другим за перший.
+	 *
+	 * Читаються з `info.config` як числа: конверт кімнати нічого, крім чисел, у
+	 * налаштуваннях не приймає, і саме тому нова редакція ПРАВИЛ бази для цього не
+	 * потрібна — а редакція правил ГРИ потрібна, див. `RULES_VERSION` на сторінці.
+	 */
+	roundPace = $state<QuizPace>('normal');
+	revealPace = $state<QuizPace>('normal');
 
 	/**
 	 * ХТО ЗАРАЗ ОНЛАЙН — приходить іззовні, з `presence`.
@@ -158,7 +184,7 @@ export class QuizMatch {
 	/** Скільки триває поточний раунд. Нуль — раунду немає. */
 	get limitMs(): number {
 		const step = this.step;
-		return step === null ? 0 : roundLimitMs(step.game, this.#factor);
+		return step === null ? 0 : roundLimitMs(step.game, this.#factor * ROUND_PACE[this.roundPace]);
 	}
 
 	/** Хто вже відповів у поточному раунді. Саме ФАКТ, без правильності. */
@@ -227,7 +253,9 @@ export class QuizMatch {
 			players: this.players.map((player) => player.uid),
 			limitOf: (round) => {
 				const game = this.programme[round]?.game;
-				return game === undefined ? undefined : roundLimitMs(game, this.#factor);
+				return game === undefined
+					? undefined
+					: roundLimitMs(game, this.#factor * ROUND_PACE[this.roundPace]);
 			}
 		};
 	}
@@ -410,7 +438,23 @@ export class QuizMatch {
 	 */
 	async setGames(games: readonly string[]): Promise<void> {
 		if (this.hostUid !== this.#me || this.status !== 'lobby') return;
-		await this.#transport.setConfig(gamesToConfig(games));
+		await this.#transport.setConfig(quizConfig(games, this.roundPace, this.revealPace));
+	}
+
+	/**
+	 * Змінити швидкість кімнати. Умови ті самі, що в набору ігор, і не випадково.
+	 *
+	 * ЛИШЕ ГОСПОДАР І ЛИШЕ В ЛОБІ. Друга половина тут важливіша за першу: очки
+	 * залежать від того, скільки тривав раунд, і рахунок перепрогонюється з журналу
+	 * ЦІЛКОМ на кожному знімку. Зміна швидкості посеред партії перерахувала б уже
+	 * зіграні раунди за новою межею — тобто минуле змінилося б заднім числом.
+	 *
+	 * Набір ігор передається разом, бо `setConfig` пише обʼєкт повністю: інакше
+	 * зміна швидкості стерла б вибір ігор.
+	 */
+	async setPace(round: QuizPace, reveal: QuizPace): Promise<void> {
+		if (this.hostUid !== this.#me || this.status !== 'lobby') return;
+		await this.#transport.setConfig(quizConfig(this.games, round, reveal));
 	}
 
 	/** Поставити паузу. Дозволено будь-кому, хто в партії. */
@@ -498,117 +542,62 @@ export class QuizMatch {
 	 * `now` потрібен саме для паузи: поки вона триває, дедлайн їде разом із часом,
 	 * тобто стоїть на місці на екрані.
 	 */
+	/*
+	 * УСЕ ПРО ЧАС — В ОДНОМУ МІСЦІ, і це місце не тут (`utils/quizClock.ts`).
+	 *
+	 * Контролер уже оголошував: таймера в ньому немає навмисно, час приходить
+	 * аргументом, інакше перевірка мусила б чекати справжні секунди. Виніс — логічне
+	 * завершення тієї самої думки: якщо час лише аргумент, то й усі відповіді про
+	 * час — чисті функції.
+	 *
+	 * КОНТРОЛЕР ВІДДАЄ СЕБЕ (`this`), а не складений обʼєкт: усі поля знімка в нього
+	 * вже публічні, тож адаптер лише переписував би їхні імена — п'ятнадцять рядків,
+	 * які нічого не вирішують і при кожній правці розходяться з інтерфейсом.
+	 *
+	 * Три числа нижче РІЗНІ, і сплутати їх легко: `limitLeftMs` — до межі часу (на
+	 * нього дивиться автовідповідь), `leftMs` — що показує смуга (застигає, щойно
+	 * відповіли всі), `deadlineAt` — коли раунд справді кінчається.
+	 */
+	/**
+	 * Скільки чекати після останньої відповіді, перш ніж показати табло.
+	 *
+	 * Похідне, а не константа: цим і налаштовується «час на перегляд відповіді».
+	 * Множник той самий, що в табла, — інакше налаштування міняло б половину.
+	 */
+	get settleMs(): number {
+		return SETTLE_MS * REVEAL_PACE[this.revealPace];
+	}
+
+	/** Скільки видно табло між раундами. Той самий множник. */
+	get revealMs(): number {
+		return REVEAL_MS * REVEAL_PACE[this.revealPace];
+	}
+
+	/** Коли поточний раунд мусить закінчитися, за серверним часом. */
 	deadlineAt(now = 0): number | null {
-		const byTime = this.#limitAt(now);
-		if (byTime === null) return null;
-
-		const last = this.#lastAnswerAt;
-		if (last === null) return byTime;
-
-		/*
-		 * ПІСЛЯ ОСТАННЬОЇ ВІДПОВІДІ — секунда, ЩОБ ЇЇ ПОБАЧИТИ. У обидві сторони.
-		 *
-		 * Тут стояло `Math.min(byTime, last + SETTLE_MS)`, тобто затримка вміла лише
-		 * СКОРОЧУВАТИ раунд: відповіли всі — не чекаємо решти. Але та сама умова
-		 * зʼїдала секунду, коли відповідь приходила в кінці, і саме це автор побачив:
-		 * «відповідь зʼявляється на мікросекунду, а потім вже табло результатів».
-		 * Найгостріше — з автовідповіддю, яка за побудовою спрацьовує за 300 мс до
-		 * межі: розбір показувався рівно ці 300 мс.
-		 *
-		 * Тепер правило одне на два випадки: раунд не кінчається раніше, ніж через
-		 * `SETTLE_MS` після останньої відповіді. Відповіли всі — рахуємо від неї
-		 * (раунд може скінчитися задовго до межі); відповіли не всі — межа, але не
-		 * раніше за ту саму секунду.
-		 *
-		 * Продовження ОБМЕЖЕНЕ однією секундою поверх межі. Без цієї стелі кожна
-		 * відповідь під кінець зсувала б дедлайн наступній, і в кімнаті на дванадцять
-		 * гравців раунд міг би тягнутися на дванадцять секунд довше.
-		 */
-		const settle = last + SETTLE_MS;
-		const end = this.everyoneAnswered ? settle : Math.max(byTime, settle);
-		return Math.min(end, byTime + SETTLE_MS);
+		return deadlineAt(this, now);
 	}
 
-	/** Коли виходить сам ЧАС раунду — без затримок на розбір. `null` — раунду немає. */
-	#limitAt(now: number): number | null {
-		const start = this.startedAt[this.round];
-		if (start === undefined) return null;
-		return start + this.limitMs + this.heldMs(now);
-	}
-
-	/** Коли відповіли ОСТАННІМ у цьому раунді. `null` — ще ніхто. */
-	get #lastAnswerAt(): number | null {
-		const times = Object.values(this.answers[this.round] ?? {}).map((answer) => answer.at);
-		return times.length === 0 ? null : Math.max(...times);
-	}
-
-	/**
-	 * Що показувати ЗАРАЗ. Час передається, а не читається з годинника.
-	 *
-	 * Той самий підхід, що в межі очікування «Знайди пару»: контролер не тримає
-	 * таймера, бо тоді його неможливо перевірити тестом — тест мусив би чекати
-	 * справжні секунди.
-	 */
+	/** Що показувати ЗАРАЗ. Час передається, а не читається з годинника. */
 	phase(now: number): QuizPhase {
-		if (this.status === 'over') return 'over';
-		if (this.round >= this.programme.length && this.programme.length > 0) return 'over';
-
-		const deadline = this.deadlineAt(now);
-		if (deadline === null) return 'round';
-		return now >= deadline ? 'reveal' : 'round';
+		// «Скінчилася» — стан КІМНАТИ, а не висновок про час: годинник її не бачить.
+		if (this.status === 'over' || this.over) return 'over';
+		return phaseAt(this, now);
 	}
 
-	/**
-	 * Скільки лишилося до кінця раунду. Для смуги таймера.
-	 *
-	 * Від ДЕДЛАЙНУ, а не від межі часу: коли відповіли всі, дедлайн переїжджає на
-	 * секунду після останньої відповіді — і смуга мусить це показати. Доти вона
-	 * рахувалася від `start + limitMs` і бігла далі на екрані, де раунд уже
-	 * фактично закінчився.
-	 */
+	/** Що показує смуга таймера. Застигає, щойно відповіли всі. */
 	leftMs(now: number): number {
-		/*
-		 * СМУГА СТОЇТЬ, А НЕ СТРИБАЄ, коли відповіли всі.
-		 *
-		 * Скарга автора: «коли всі відповіли, візуально таймер перестрибує на останні
-		 * 1–2 секунди… нехай таймер зупиняється де був на момент відповіді останнього
-		 * гравця». Так і було, і саме через правильну логіку: дедлайн переїжджає на
-		 * секунду після останньої відповіді, а смуга рахувалася від дедлайну — тобто
-		 * стрибала з половини на майже нуль.
-		 *
-		 * Тому тут дві різні відповіді на схожі питання. «Скільки лишилося раундові»
-		 * — це `deadlineAt`, і на ньому тримається кінець раунду. «Що показує смуга» —
-		 * це залишок ЧАСУ, і коли відповіли всі, він застигає на тому значенні, яке
-		 * мав у мить останньої відповіді.
-		 *
-		 * Застигає саме показник, не правило: раунд однаково кінчається через
-		 * `SETTLE_MS`, просто ці секунду-дві смуга стоїть на місці, а не добігає.
-		 */
-		if (this.everyoneAnswered) {
-			const last = this.#lastAnswerAt;
-			const limit = last === null ? null : this.#limitAt(last);
-			return limit === null || last === null ? 0 : Math.max(0, limit - last);
-		}
-		return this.limitLeftMs(now);
+		return barLeftMs(this, now);
 	}
 
-	/**
-	 * Скільки лишилося до самої МЕЖІ ЧАСУ — без затримок на розбір і без застигання.
-	 *
-	 * На це число дивиться автовідповідь: воно й є «скільки в мене лишилося, щоб
-	 * підтвердити». `leftMs` для цього не годиться — він застигає, щойно відповіли
-	 * всі, а `deadlineAt` уміє з'їхати вперед на секунду розбору.
-	 */
+	/** Скільки лишилося до самої МЕЖІ ЧАСУ. На це дивиться автовідповідь. */
 	limitLeftMs(now: number): number {
-		const limit = this.#limitAt(now);
-		return limit === null ? 0 : Math.max(0, limit - now);
+		return limitLeftMs(this, now);
 	}
 
 	/** Чи час господареві оголошувати наступний раунд. */
 	nextDue(now: number): boolean {
-		const deadline = this.deadlineAt(now);
-		if (deadline === null) return false;
-		return now >= deadline + REVEAL_MS;
+		return nextDue(this, now);
 	}
 
 	get over(): boolean {
@@ -702,6 +691,8 @@ export class QuizMatch {
 		this.autoStart = snapshot.info.autoStart === true;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.games = configToGames(snapshot.info.config);
+		this.roundPace = paceFromConfig(snapshot.info.config, PACE_ROUND_KEY);
+		this.revealPace = paceFromConfig(snapshot.info.config, PACE_REVEAL_KEY);
 
 		const log = replayQuizLog(snapshot);
 
