@@ -2,6 +2,7 @@
 	import { T } from '@threlte/core';
 	import type { Animal } from '$lib/reserve/types';
 	import AnimalMark from './AnimalMark.svelte';
+	import AnimalVitals from './AnimalVitals.svelte';
 	import { bodyOf } from './anatomy';
 	import { spur, hipY, headX, headY, neckOf, tailLength, tailOf } from './figure';
 
@@ -23,9 +24,16 @@
 	 */
 	interface Props {
 		animal: Animal;
+		/**
+		 * Курсор на тварині або вона вибрана — смужки стану стають непрозорими.
+		 *
+		 * Приходить пропом, а не читається тут: хто під курсором, знає промінь у
+		 * `SceneBody`, і другого відповідача на це питання бути не мусить.
+		 */
+		attention?: boolean;
 	}
 
-	let { animal }: Props = $props();
+	let { animal, attention = false }: Props = $props();
 
 	const b = $derived(bodyOf(animal.speciesId));
 
@@ -208,4 +216,19 @@
 	{/if}
 
 	<AnimalMark body={b} />
+
+	<!--
+		СМУЖКИ СТАНУ НЕ ПОВЕРТАЮТЬСЯ РАЗОМ ІЗ ТВАРИНОЮ.
+
+		Ця група має `rotation.y = turn` — куди тварина дивиться. Смужка мусить
+		читатися однаково, куди б вона не дивилася, тож поворот тут ГАСИТЬСЯ: свій
+		власний, потрібний для читання, `AnimalVitals` додає сам.
+
+		Гасіння, а не виніс за межі групи: `turn` колись стане рухомим (тварина
+		почне ходити), і віднімання лишиться правильним само, тоді як другий
+		вузол-сусід довелося б синхронізувати руками.
+	-->
+	<T.Group rotation.y={-turn}>
+		<AnimalVitals body={b} health={animal.health} stress={animal.stress} {attention} />
+	</T.Group>
 </T.Group>

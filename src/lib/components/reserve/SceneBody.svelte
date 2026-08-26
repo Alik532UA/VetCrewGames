@@ -86,6 +86,32 @@
 	 */
 	let hover = $state<{ cell: Cell; problem: PlacementProblem } | null>(null);
 
+	/**
+	 * ЯКА ТВАРИНА ПІД КУРСОРОМ. `null` — жодна.
+	 *
+	 * Потрібно рівно для одного: смужки стану над твариною стоять на 30%, а під
+	 * курсором стають непрозорими (`AnimalVitals`). Тап туди ж не веде — він
+	 * ВИБИРАЄ, і вибір робить те саме через `selected`, бо на телефоні наведення
+	 * не існує.
+	 *
+	 * Живе тут, бо тут промінь: сторінка про полотно не знає.
+	 */
+	let hovered = $state<number | null>(null);
+
+	/**
+	 * Як часто питати промінь, поки курсор їде.
+	 *
+	 * `pointermove` приходить під сотню разів на секунду, а промінь шукає по всій
+	 * сцені — а це шістсот сімдесят фігур рельєфу плюс вольєри. Вісімдесят
+	 * мілісекунд — дванадцять запитів на секунду: людина зміни підсвітки на такій
+	 * частоті не відрізняє, а роботи вдвадцятеро менше.
+	 *
+	 * Малюємо ж лише коли підсвітка СПРАВДІ змінилася: сцена працює в режимі
+	 * on-demand (`invalidate`), і кадр без причини тут дорожчий за сам промінь.
+	 */
+	const HOVER_EVERY_MS = 80;
+	let lastProbe = 0;
+
 	const { invalidate, renderer, scene } = useThrelte();
 
 	/**
@@ -136,17 +162,30 @@
 		if (!lens) return;
 		const canvas = renderer.domElement;
 
-		/** Куди дивиться палець у режимі розміщення. Поза ним нічого не рахуємо. */
+		/** Куди дивиться палець: у режимі розміщення — клітинка, поза ним — тварина. */
 		const trace = (event: PointerEvent) => {
-			if (!placing) return;
-			const cell = picker.cellAt(event.clientX, event.clientY);
-			hover = cell
-				? { cell, problem: placementProblem(enclosures, cell, placingSize ?? 1, plotHalf) }
-				: null;
+			if (placing) {
+				const cell = picker.cellAt(event.clientX, event.clientY);
+				hover = cell
+					? { cell, problem: placementProblem(enclosures, cell, placingSize ?? 1, plotHalf) }
+					: null;
+				invalidate();
+				return;
+			}
+
+			const now = performance.now();
+			if (now - lastProbe < HOVER_EVERY_MS) return;
+			lastProbe = now;
+
+			const found = picker.at(event.clientX, event.clientY);
+			const next = found?.kind === 'animal' ? found.id : null;
+			if (next === hovered) return;
+			hovered = next;
 			invalidate();
 		};
 		const forget = () => {
 			hover = null;
+			hovered = null;
 			invalidate();
 		};
 		canvas.addEventListener('pointermove', trace);
@@ -250,5 +289,6 @@
 		span={spot.span}
 		selected={spot.enclosure.id === selectedEnclosureId ||
 			(spot.animal !== null && spot.animal.id === selectedId)}
+		hovered={spot.animal !== null && spot.animal.id === hovered}
 	/>
 {/each}

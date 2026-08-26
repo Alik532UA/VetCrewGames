@@ -31,9 +31,11 @@
 		/** Сторона сліду в клітинках. */
 		span: number;
 		selected: boolean;
+		/** Курсор саме на цій тварині: смужки стану над нею стають непрозорими. */
+		hovered?: boolean;
 	}
 
-	let { enclosure, animal, x, z, span, selected }: Props = $props();
+	let { enclosure, animal, x, z, span, selected, hovered = false }: Props = $props();
 	const enclosureId = $derived(enclosure.id);
 
 	/** Півсторона паркана у світових одиницях, із невеликим відступом усередину. */
@@ -165,6 +167,10 @@
 	{/if}
 
 	{#if animal}
-		<AnimalFigure {animal} />
+		<!--
+			`selected` тут теж означає «увага»: на телефоні наведення не існує, і без
+			цього смужки стану лишалися б напівпрозорими назавжди. Тап — це вибір.
+		-->
+		<AnimalFigure {animal} attention={hovered || selected} />
 	{/if}
 </T.Group>
