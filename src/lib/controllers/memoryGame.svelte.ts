@@ -1,4 +1,5 @@
 import { buildDeck, MEMORY_PAIRS, type MemoryCard } from '$lib/config/memory-game';
+import { seededRandom } from '$lib/utils/seededRandom';
 import { playerData } from '$lib/services/playerData.svelte';
 import { GAME_ID } from '$lib/config/menu-games';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
@@ -126,7 +127,26 @@ export class MemoryGameController {
 			takenBy: null
 		}));
 		this.players = players.map((player) => ({ ...player, score: 0 }));
-		this.currentPlayerIndex = 0;
+		/*
+		 * ПЕРШИЙ ХІД — ВІД ЗЕРНА, а не завжди перший у списку.
+		 *
+		 * Скарга автора: «перший ходить хост; очікуваний результат — перший ходить
+		 * випадковий гравець». Так і було: тут стояв нуль, а порядок гравців — за
+		 * входом у кімнату, тобто господар починав кожну партію.
+		 *
+		 * ВІД ЗЕРНА, А НЕ ВІД `Math.random()`, і це не стиль. Стан спільної партії —
+		 * чиста функція від (зерно, склад, журнал): свій випадковий вибір на кожному
+		 * пристрої дав би двом гравцям різну чергу з першої ж секунди, і дошки
+		 * розійшлися б ще до першого ходу.
+		 *
+		 * Генератор, а не остача зерна: `seed % 2` — це парність числа, яке в кімнаті
+		 * береться з часу, тож перший гравець мінявся б рівномірно лише випадково.
+		 * Зерно тут СВОЄ (`seed + 1`), тобто інший потік, ніж у колоди: вибір не
+		 * повторює її перший крок і нічого про неї не виказує.
+		 *
+		 * «Зіграти ще» ставить нове зерно, отже й перший хід змінюється щопартії.
+		 */
+		this.currentPlayerIndex = Math.floor(seededRandom(seed + 1)() * this.players.length);
 		this.moves = 0;
 		this.gameOver = false;
 		this.#peek = [];
