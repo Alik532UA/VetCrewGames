@@ -30,10 +30,45 @@ const ROOT = process.cwd().replace(/\\/g, '/');
 /** Каталоги, у яких взагалі можуть лежати файли перевірок. */
 const SEARCH_DIRS = ['src', 'tests', 'e2e'];
 
+/**
+ * `.setup.` — теж файл перевірки, і саме він найлегше стає сиротою.
+ *
+ * Типовий `testMatch` Playwright бере лише `*.spec` і `*.test`, тобто `*.setup.ts`
+ * він НЕ виконує, поки той не названий окремим проєктом у конфігу. Доти сканер
+ * сюди не дивився зовсім, і `tests/identity.setup.ts` — перевірка, що стереже
+ * всі інші браузерні гейти, — сама лишалася поза інваріантом, який існує рівно
+ * для цього класу.
+ */
+const SPEC_FILE = /\.(spec|test|setup)\.(ts|js)$/;
+
+/** Що Playwright бере без окремого `testMatch`. */
+const PLAYWRIGHT_DEFAULT_MATCH = /\.(spec|test)\.(ts|js)$/;
+
 const RUNNERS = [
 	{ imports: '@playwright/test', dep: '@playwright/test', config: /^playwright\.config\./ },
 	{ imports: 'vitest', dep: 'vitest', config: /^vitest\.config\.|^vite\.config\./ }
 ];
+
+/**
+ * Чи називає файл хоч один `testMatch` у конфігу Playwright.
+ *
+ * Звіряється БАЗОВЕ ІМʼЯ проти тексту конфігу, а не виконується справжній
+ * `testMatch`: імпортувати конфіг сюди означало б затягти в vitest увесь
+ * Playwright разом із його плагінами. Груба перевірка тут доречна — вона ловить
+ * саме той випадок, коли файл перейменували, а рядок у конфігу лишився старим.
+ *
+ * Крапки в імені пропускаються через `\\.?` — у конфігу вони стоять у регулярці
+ * екранованими (`/identity\\.setup\\.ts$/`), тобто буквального збігу з іменем
+ * файлу там немає ніколи.
+ */
+function namedByTestMatch(file: string): boolean {
+	const config = readdirSync(ROOT).find((f) => /^playwright\.config\./.test(f));
+	if (!config) return false;
+	const source = readFileSync(join(ROOT, config), 'utf8');
+	const base = (file.split('/').pop() ?? file).replace(/\./g, '\\\\?\\.');
+	const declarations = source.match(/testMatch\s*:\s*[^,\n]+/g) ?? [];
+	return declarations.some((entry) => new RegExp(base).test(entry));
+}
 
 function playwrightTestDir(): string | null {
 	const config = readdirSync(ROOT).find((f) => /^playwright\.config\./.test(f));
@@ -56,12 +91,14 @@ function walk(dir: string, out: string[] = []): string[] {
 	for (const entry of readdirSync(dir)) {
 		const full = join(dir, entry);
 		if (statSync(full).isDirectory()) walk(full, out);
-		else if (/\.(spec|test)\.(ts|js)$/.test(entry)) out.push(full.replace(/\\/g, '/'));
+		else if (SPEC_FILE.test(entry)) out.push(full.replace(/\\/g, '/'));
 	}
 	return out;
 }
 
-const specFiles = SEARCH_DIRS.flatMap((dir) => walk(join(ROOT, dir))).map((f) => f.slice(ROOT.length + 1));
+const specFiles = SEARCH_DIRS.flatMap((dir) => walk(join(ROOT, dir))).map((f) =>
+	f.slice(ROOT.length + 1)
+);
 
 describe('файли перевірок', () => {
 	it('перевірка жива: файли перевірок узагалі знайдено', () => {
@@ -77,7 +114,9 @@ describe('файли перевірок', () => {
 		for (const file of specFiles) {
 			const source = withoutComments(readFileSync(join(ROOT, file), 'utf8'));
 			const runner = RUNNERS.find((r) =>
-				new RegExp(`from\\s*['"]${r.imports.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]`).test(source)
+				new RegExp(`from\\s*['"]${r.imports.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]`).test(
+					source
+				)
 			);
 
 			if (!runner) {
@@ -95,7 +134,21 @@ describe('файли перевірок', () => {
 			if (runner.dep === '@playwright/test') {
 				const dir = playwrightTestDir();
 				if (dir && !file.startsWith(`${dir}/`)) {
-					orphans.push(`${file}: під Playwright, але поза testDir «${dir}» — раннер його не бачить`);
+					orphans.push(
+						`${file}: під Playwright, але поза testDir «${dir}» — раннер його не бачить`
+					);
+				}
+				/*
+				 * ЧЕТВЕРТИЙ спосіб зникнути, якого не було в переліку вгорі: файл лежить
+				 * усередині `testDir`, раннер і конфіг на місці — а типовий `testMatch`
+				 * його не бере. Так поводиться будь-який `*.setup.ts`: доки його не
+				 * назве окремий проєкт, він не виконується жодного разу й мовчить про це.
+				 */
+				if (!PLAYWRIGHT_DEFAULT_MATCH.test(file) && !namedByTestMatch(file)) {
+					orphans.push(
+						`${file}: під Playwright і в testDir, але типовий testMatch бере лише ` +
+							'*.spec / *.test, і жоден проєкт у конфігу цього файлу не називає'
+					);
 				}
 			}
 		}

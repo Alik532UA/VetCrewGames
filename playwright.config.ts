@@ -61,7 +61,24 @@ export default defineConfig({
 		 */
 		reducedMotion: 'reduce'
 	},
-	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+	projects: [
+		/*
+		 * ПЕРЕВІРКА, ЩО ДИВИТЬСЯ НА САМ ПРОГІН, і вона мусить бути першою.
+		 *
+		 * Порт свій, `--strictPort` стоїть, `reuseExistingServer: false` теж — і
+		 * цього НЕ ДОСИТЬ. Заміряно 2026-08-27: на 5399 висів `vite dev` сусіднього
+		 * MindStep, `vite preview --strictPort` чесно впав із «port is already in
+		 * use», а Playwright цього не помітив, бо готовність сервера він визначає за
+		 * тим, чи відповідає порт. Відповідав — чужий. Увесь прогін пішов на чужий
+		 * застосунок, і чужий SPA-фолбек віддавав 200 та HTML на будь-яку адресу.
+		 *
+		 * Тому окремий крок звіряє, що на порті САМЕ цей проєкт і САМЕ щойно зібраний
+		 * (`tests/identity.setup.ts`). Другої збірки він не додає: `webServer` тут
+		 * один на прогін, а не на проєкт.
+		 */
+		{ name: 'setup', testMatch: /identity\.setup\.ts$/ },
+		{ name: 'chromium', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] }
+	],
 	webServer: {
 		/*
 		 * ПРЕВ'Ю ЗІБРАНОГО САЙТУ, а не dev-сервер (CODE-QUALITY-v8 § 5.7).
@@ -74,6 +91,13 @@ export default defineConfig({
 		 *
 		 * `--strictPort`: зайнятий порт мусить УПАСТИ, а не тихо з'їхати на
 		 * наступний, інакше `port` нижче вказував би на чужий сервер.
+		 *
+		 * ЦЬОГО НЕ ДОСИТЬ, і це заміряно, а не припущено. `vite preview` справді
+		 * падає на зайнятому порті — але Playwright цього падіння не бачить: він
+		 * чекає, поки порт ВІДПОВІСТЬ, а відповідає той, хто його зайняв. Тобто
+		 * `--strictPort` і `reuseExistingServer: false` разом захищають від
+		 * «сервер тихо з'їхав на 5400» і НЕ захищають від «на 5399 чужий сервер».
+		 * Другий випадок закриває проєкт `setup` вище.
 		 */
 		command: `npm run build && npm run preview -- --port ${TEST_PORT} --strictPort`,
 		port: TEST_PORT,
