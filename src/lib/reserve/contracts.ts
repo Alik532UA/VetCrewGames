@@ -1,5 +1,6 @@
 import { seededRandom } from '$lib/utils/seededRandom';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
+import { REPUTATION_MAX } from './constants';
 import { RESERVE_BIOMES } from './species';
 import type { Animal, Contract, ReserveState } from './types';
 
@@ -119,15 +120,90 @@ export function progressOf(state: ReserveState, goal: ContractGoal): number {
 }
 
 /**
+ * ЧИ МОЖНА ЦЮ ЦІЛЬ ДОСЯГТИ ВЗАГАЛІ.
+ *
+ * ## Дефект, через який ця функція існує
+ *
+ * Скарга автора зі знімком: «завдання підняти репутацію на 15, а в мене більше
+ * 80; завдання не виконується і провалено». Так і було, і провалитися воно
+ * мусило за побудовою.
+ *
+ * Умова контракту — це ПРИРІСТ від лічильника на момент підписання
+ * (`startedAt`), а репутація має стелю: `REPUTATION_MAX` дорівнює 100. При
+ * репутації 88.46 «підняти на 15» означало «дійти до 103.46» — тобто вийти за
+ * стелю самої шкали. Контракт неможливо було ні виконати, ні навіть просунути:
+ * рядок так і показував «0 / 15», а на дедлайні спонсор забирав чотири пункти
+ * репутації за невиконану обіцянку, якої гра сама й не дозволяла виконати.
+ *
+ * ## Чому саме тут, а не в перевірці виконання
+ *
+ * Бо це властивість ЦІЛІ, а не поточного стану: `startedAt + amount` не
+ * змінюється ніколи, тож недосяжність — довічна ознака контракту, а не
+ * тимчасова невдача. Тому одна функція відповідає на два різні питання: «чи
+ * пропонувати» (`offerContract` нижче) і «чи не тримаємо ми вже приреченого»
+ * (`doomed`).
+ *
+ * Цілі-лічильники (`release`, `heal`) стелі не мають: тварин можна брати й
+ * випускати без межі, тож для них відповідь завжди «так».
+ */
+export function reachable(goal: ContractGoal, from: number, amount: number): boolean {
+	return goal === 'reputation' ? from + amount <= REPUTATION_MAX : true;
+}
+
+/**
+ * Контракт, який неможливо виконати. Такі знімаються БЕЗ штрафу (`day.ts`).
+ *
+ * Потрібен не лише для старих сейвів: вимога «не пропонувати недосяжне» і
+ * вимога «не карати за недосяжне» — різні, і друга рятує того, хто підписав
+ * контракт до появи першої.
+ */
+export const doomed = (contract: Contract): boolean =>
+	!reachable(contract.goal, contract.startedAt, contract.amount);
+
+/**
+ * ЩО ПОКАЗАТИ В РЯДКУ ПРОГРЕСУ.
+ *
+ * Для лічильників — приріст: «0 / 3» означає «трьох НОВИХ», і це правильно.
+ *
+ * Для репутації — АБСОЛЮТНІ числа, і це друга половина того самого дефекту.
+ * Автор прочитав «0 / 15» як «дійти до 15» і мав рацію, що це не в'яжеться з 88
+ * у шапці: шкала репутації абсолютна, тож приріст на ній читається як чуже
+ * число. «88 / 103» відповідає на те саме питання й не суперечить шапці.
+ */
+export const shownProgress = (
+	state: ReserveState,
+	contract: Contract
+): { now: number; need: number } =>
+	contract.goal === 'reputation'
+		? {
+				now: Math.round(progressOf(state, 'reputation')),
+				need: Math.round(contract.startedAt + contract.amount)
+			}
+		: { now: doneOf(state, contract), need: contract.amount };
+
+/**
  * Новий контракт із шаблону, прив'язаний до поточного дня й лічильника.
  *
  * `startedAt` — це знімок лічильника на момент видачі. Умова «випустити двох»
  * означає ДВОХ НОВИХ, а не двох за всю партію: інакше вже виконаний контракт
  * приходив би виконаним.
+ *
+ * НЕДОСЯЖНЕ НЕ ПРОПОНУЄТЬСЯ. Шаблони спершу відсіюються за `reachable`, і лише
+ * потім із них вибирається один. Причина — у самій `reachable`: спонсор, що
+ * просить вийти за стелю шкали, дає контракт, який неможливо ні виконати, ні
+ * просунути, зате можна провалити.
+ *
+ * `null` тут не буває: цілі-лічильники досяжні завжди, тож перелік не порожніє.
+ * Але порожній випадок усе одно оброблений — інакше додана колись четверта ціль
+ * зі своєю стелею впала б тут `undefined`, і це виглядало б як зламаний сейв.
  */
-export function offerContract(state: ReserveState, day: number): Contract {
+export function offerContract(state: ReserveState, day: number): Contract | null {
 	const random = seededRandom(state.seed + day * 7919);
-	const template = CONTRACT_TEMPLATES[Math.floor(random() * CONTRACT_TEMPLATES.length)];
+	const open = CONTRACT_TEMPLATES.filter((candidate) =>
+		reachable(candidate.goal, progressOf(state, candidate.goal), candidate.amount)
+	);
+	if (open.length === 0) return null;
+	const template = open[Math.floor(random() * open.length)];
 
 	return {
 		id: state.nextContractId,

@@ -162,6 +162,12 @@
 		 * `t()`, тобто заводити другий спосіб складати текст.
 		 */
 		'contract-done': () => toast.success('reserve.news.contractDone', WORLD_EVENT_MS),
+		/*
+		 * `info`, а не `warn`: гравець нічого не зробив не так, і штрафу немає.
+		 * Сказати про це однак треба — контракт зник із панелі завдань, і без
+		 * рядка це виглядало б як ще один тихий провал.
+		 */
+		'contract-void': () => toast.info('reserve.news.contractVoid', WORLD_EVENT_MS),
 		'contract-missed': () => toast.warn('reserve.news.contractMissed', WORLD_EVENT_MS),
 		'offer-expired': () => toast.info('reserve.news.offerExpired', WORLD_EVENT_MS),
 		collapse: () => toast.error('reserve.news.collapse', WORLD_EVENT_MS)

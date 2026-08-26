@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
-	import { doneOf } from '$lib/reserve/contracts';
+	import { shownProgress } from '$lib/reserve/contracts';
 	import type { ReserveCommand, ReserveState } from '$lib/reserve/types';
 
 	/**
@@ -66,7 +66,17 @@
 	<article class="card" data-testid="reserve-contract-{contract.id}-card">
 		<p class="card__what">{@html formatFont(t(contract.titleKey))}</p>
 		<p class="card__terms" class:card__terms--late={late}>
-			{doneOf(state, contract)} / {contract.amount} · {@html formatFont(t('reserve.dueDay'))}
+			<!--
+				ЧИСЛА ДЛЯ РЕПУТАЦІЇ — АБСОЛЮТНІ, а не приріст.
+
+				Автор прочитав «0 / 15» як «дійти до 15» і мав рацію, що це не вʼяжеться
+				з 88 у шапці: шкала репутації абсолютна, тож приріст на ній читається як
+				чуже число. Для лічильників («випустити двох») приріст лишається
+				правильним — там «двоє» справді означає двоє НОВИХ. Розбір — у
+				`contracts.shownProgress`.
+			-->
+			{shownProgress(state, contract).now} / {shownProgress(state, contract).need} ·
+			{@html formatFont(t('reserve.dueDay'))}
 			{contract.dueDay} · {@html formatFont(t('reserve.reward'))}
 			{money(contract.reward)}
 		</p>

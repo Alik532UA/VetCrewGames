@@ -268,6 +268,27 @@ export const reserveTab: BetaTab = {
 			negative: true,
 			coverage: 'manual',
 			testid: 'reserve-speed-toolbar'
+		},
+		{
+			id: 'reserve_26',
+			category: { uk: 'Завдання', en: 'Tasks' },
+			text: {
+				uk: 'Підніміть репутацію вище 85 і дочекайтеся нової пропозиції спонсора. Завдання «підняти репутацію на 15» прийти НЕ мусить: стеля репутації 100, і при 88 таке завдання неможливо ні виконати, ні просунути. Мусить прийти інше — про тварин.',
+				en: 'Raise reputation above 85 and wait for a new sponsor offer. A “raise reputation by 15” task must NOT arrive: the reputation ceiling is 100, so at 88 such a task can neither be completed nor advanced. A different one — about animals — must arrive instead.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'reserve-no-contracts-text'
+		},
+		{
+			id: 'reserve_27',
+			category: { uk: 'Завдання', en: 'Tasks' },
+			text: {
+				uk: 'Рядок завдання про репутацію мусить показувати АБСОЛЮТНІ числа — «88 / 95», тобто «зараз / потрібно», — а не приріст «0 / 15». Завдання про тварин лишаються приростом: «0 / 3» означає трьох НОВИХ.',
+				en: 'The reputation task row must show ABSOLUTE numbers — “88 / 95”, that is “now / needed” — not the increment “0 / 15”. Animal tasks stay incremental: “0 / 3” means three NEW ones.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-sheet-panel'
 		}
 	]
 };

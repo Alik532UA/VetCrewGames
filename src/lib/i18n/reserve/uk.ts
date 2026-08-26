@@ -65,6 +65,7 @@ export const reserve = {
 	'reserve.news.hunger': 'Комусь не дісталося корму. Купіть порції в коморі.',
 	'reserve.news.contractOffered': 'Зʼявилося завдання від донорів.',
 	'reserve.news.contractDone': 'Завдання виконано — нагороду зараховано.',
+	'reserve.news.contractVoid': 'Спонсор відкликав завдання: його умову вже неможливо виконати.',
 	'reserve.news.contractMissed': 'Термін завдання вийшов — репутація впала.',
 	'reserve.news.offerExpired': 'Донори не дочекалися відповіді й пішли.',
 	'reserve.news.collapse': 'Фонд припинив роботу: «Користь планеті» надто довго була відʼємною.',

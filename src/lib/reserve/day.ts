@@ -4,7 +4,13 @@ import {
 	REPUTATION_DECAY_RATE,
 	TICKS_PER_DAY
 } from './constants';
-import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
+import {
+	CONTRACT_INTERVAL_DAYS,
+	doomed,
+	isDone,
+	MAX_ACTIVE_CONTRACTS,
+	offerContract
+} from './contracts';
 import { claimDone } from './contractMoves';
 import { closeDay } from './journal';
 import { serveFeed } from './larder';
@@ -54,6 +60,22 @@ function settleContracts(state: ReserveState, day: number, onEvent?: EventSink):
 	 */
 	claimDone(state, onEvent);
 
+	/*
+	 * ПРИРЕЧЕНИЙ КОНТРАКТ ЗНІМАЄТЬСЯ БЕЗ ШТРАФУ, і стоїть це ПЕРЕД перевіркою
+	 * прострочення — інакше він потрапив би саме в неї.
+	 *
+	 * Дефект, який це лікує, назвав автор: «підняти репутацію на 15, а в мене
+	 * більше 80; завдання не виконується і провалено». Репутація має стелю 100, а
+	 * умова — це приріст від підписання, тож при 88 ціль 103 недосяжна за
+	 * побудовою. Тепер таких не пропонують (`offerContract`), але той, хто
+	 * підписав раніше, не мусить за це платити: спонсор просто відкликає обіцянку.
+	 *
+	 * Без штрафу навмисно: провалом карають за невиконане, а не за неможливе.
+	 */
+	const void_ = state.contracts.filter((c) => doomed(c));
+	for (const contract of void_) onEvent?.({ kind: 'contract-void', contractId: contract.id });
+	if (void_.length > 0) state.contracts = state.contracts.filter((c) => !void_.includes(c));
+
 	const missed = state.contracts.filter((c) => day > c.dueDay && !isDone(state, c));
 	for (const contract of missed) {
 		addReputation(state, -contract.penalty, 'penalty');
@@ -72,10 +94,18 @@ function settleContracts(state: ReserveState, day: number, onEvent?: EventSink):
 		state.contracts.length < MAX_ACTIVE_CONTRACTS &&
 		day - state.lastOfferDay >= CONTRACT_INTERVAL_DAYS;
 	if (canOffer) {
-		state.offered = offerContract(state, day);
-		state.lastOfferDay = day;
-		state.nextContractId += 1;
-		onEvent?.({ kind: 'contract-offered', contractId: state.offered.id });
+		/*
+		 * `null` означає «жодна ціль зараз не досяжна» — тоді пропозиції просто
+		 * немає, і `lastOfferDay` не рухається: спонсор спитає знову, коли стан
+		 * зміниться, а не через вісім діб від невдалої спроби.
+		 */
+		const offer = offerContract(state, day);
+		if (offer) {
+			state.offered = offer;
+			state.lastOfferDay = day;
+			state.nextContractId += 1;
+			onEvent?.({ kind: 'contract-offered', contractId: offer.id });
+		}
 	}
 }
 

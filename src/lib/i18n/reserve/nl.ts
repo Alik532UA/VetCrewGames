@@ -61,6 +61,8 @@ export const reserve = {
 	'reserve.news.hunger': 'Iemand kreeg geen voer. Koop porties voor de voorraad.',
 	'reserve.news.contractOffered': 'Er is een opdracht van donateurs.',
 	'reserve.news.contractDone': 'Opdracht voltooid — de beloning staat in het budget.',
+	'reserve.news.contractVoid':
+		'De sponsor trok de opdracht terug: aan de voorwaarde kan niet meer worden voldaan.',
 	'reserve.news.contractMissed': 'De termijn van een opdracht is verstreken — de reputatie daalde.',
 	'reserve.news.offerExpired': 'De donateurs hebben niet op antwoord gewacht.',
 	'reserve.news.collapse': 'Het fonds is gestopt: het nut voor de planeet bleef te lang negatief.',

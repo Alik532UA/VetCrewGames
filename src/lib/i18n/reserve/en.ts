@@ -61,6 +61,7 @@ export const reserve = {
 	'reserve.news.hunger': 'Someone went without feed. Buy portions for the larder.',
 	'reserve.news.contractOffered': 'A donor task has appeared.',
 	'reserve.news.contractDone': 'Task complete — the reward is in the budget.',
+	'reserve.news.contractVoid': 'The sponsor withdrew the task: its condition can no longer be met.',
 	'reserve.news.contractMissed': 'A task ran out of time — reputation dropped.',
 	'reserve.news.offerExpired': 'The donors did not wait for an answer and left.',
 	'reserve.news.collapse':

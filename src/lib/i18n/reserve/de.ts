@@ -62,6 +62,8 @@ export const reserve = {
 	'reserve.news.hunger': 'Jemand bekam kein Futter. Kaufe Portionen für die Vorratskammer.',
 	'reserve.news.contractOffered': 'Eine Aufgabe von Spendern ist da.',
 	'reserve.news.contractDone': 'Aufgabe erfüllt — die Belohnung ist im Budget.',
+	'reserve.news.contractVoid':
+		'Der Sponsor hat die Aufgabe zurückgezogen: ihre Bedingung ist nicht mehr erfüllbar.',
 	'reserve.news.contractMissed': 'Die Frist einer Aufgabe ist verstrichen — der Ruf sank.',
 	'reserve.news.offerExpired': 'Die Spender haben nicht auf eine Antwort gewartet.',
 	'reserve.news.collapse':

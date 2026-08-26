@@ -23,6 +23,7 @@ import {
 	STARTING_REPUTATION,
 	TICKS_PER_DAY,
 	CAMPAIGN_PRICE,
+	REPUTATION_MAX,
 	CAMPAIGN_REPUTATION,
 	ENCLOSURE_IMPACT,
 	HEAL_IMPACT,
@@ -36,7 +37,16 @@ import {
 import { enclosurePrice, repairPrice } from './prices';
 import { comfortOf, RESERVE_BIOMES, speciesById, speciesOfBiome } from './species';
 import { CELL_WORLD, cellsOf, worldOf } from './grid';
-import { CONTRACT_INTERVAL_DAYS, doneOf, MAX_ACTIVE_CONTRACTS, progressOf } from './contracts';
+import {
+	CONTRACT_INTERVAL_DAYS,
+	doneOf,
+	doomed,
+	MAX_ACTIVE_CONTRACTS,
+	offerContract,
+	progressOf,
+	reachable,
+	shownProgress
+} from './contracts';
 import { reserveHalf } from './plot';
 import { IMPACT_MILESTONES, milestonesReached } from './milestones';
 import { MAX_ENCLOSURE_SIZE, type ReserveBiome } from './species';
@@ -1120,6 +1130,161 @@ describe('перемога', () => {
 		const state = ready();
 		state.gameOver = true;
 		expect(move(state, { type: 'campaign' })).toEqual({ ok: false, reason: 'game-over' });
+	});
+});
+
+/**
+ * НЕДОСЯЖНА УМОВА — ЦЕ ДЕФЕКТ ГРИ, А НЕ НЕВДАЧА ГРАВЦЯ.
+ *
+ * Скарга автора зі знімком: «завдання підняти репутацію на 15, а в мене більше
+ * 80; завдання не виконується і провалено». Він сам і назвав арифметику: «наразі
+ * 88, а максимум 100, а це різниця в 12 — і до 15 ніколи не буде підняти».
+ *
+ * Умова контракту — ПРИРІСТ від лічильника на момент підписання, а репутація має
+ * стелю `REPUTATION_MAX`. Отже «+15» при 88 означало «дійти до 103» — вийти за
+ * межі шкали. Контракт неможливо було ні виконати, ні просунути, зате на
+ * дедлайні він забирав чотири пункти репутації.
+ *
+ * Тут перевіряються обидві половини лікування: недосяжне не пропонується, а
+ * підписане раніше знімається без штрафу.
+ */
+describe('контракт не буває недосяжним', () => {
+	/** Той самий фонд, що в сусідньому блоці: грошей досить, партія почалася. */
+	const running = () => {
+		const state = createReserve(1);
+		state.budget = 1_000_000;
+		return state;
+	};
+
+	it('стеля репутації робить приріст недосяжним', () => {
+		// Саме випадок автора: 88.46 + 15 = 103.46 при стелі 100.
+		expect(reachable('reputation', 88.46, 15)).toBe(false);
+		expect(reachable('reputation', REPUTATION_MAX - 15, 15), 'рівно в стелю — можна').toBe(true);
+		expect(reachable('reputation', 40, 15)).toBe(true);
+	});
+
+	it('цілі-лічильники досяжні завжди', () => {
+		// Тварин можна брати й випускати без межі — стелі в цих шкал немає.
+		expect(reachable('release', 999, 2)).toBe(true);
+		expect(reachable('heal', 999, 3)).toBe(true);
+	});
+
+	it('при високій репутації репутаційний контракт НЕ пропонується', () => {
+		/*
+		 * Реверсний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): прибрано відсів
+		 * `open` в `offerContract` — пункт червоніє вже на першому зерні.
+		 *
+		 * Днів багато, бо шаблон вибирається з зерна дня: одна проба нічого не
+		 * доводить, вона могла випасти на іншу ціль.
+		 */
+		const state = running();
+		state.reputation = 88.46;
+		for (let day = 1; day < 60; day++) {
+			const offer = offerContract(state, day);
+			expect(offer, 'пропозиції немає взагалі').not.toBeNull();
+			expect(offer?.goal, `день ${day}: запропоновано недосяжне`).not.toBe('reputation');
+		}
+	});
+
+	it('при низькій репутації репутаційний контракт усе ще буває', () => {
+		// Без цього пункту попередній проходив би й на коді, який не пропонує
+		// репутаційних контрактів НІКОЛИ.
+		const state = running();
+		state.reputation = 0;
+		const goals = new Set<string>();
+		for (let day = 1; day < 60; day++) goals.add(offerContract(state, day)?.goal ?? 'none');
+		expect(goals.has('reputation')).toBe(true);
+	});
+
+	it('підписаний недосяжний контракт знімається без штрафу', () => {
+		const state = running();
+		state.reputation = 88.46;
+		/*
+		 * Ставимо руками саме той контракт, який був у сейві автора: гра такого вже
+		 * не пропонує, а перевірити треба, що старий сейв не карається.
+		 */
+		state.contracts = [
+			{
+				id: 1,
+				goal: 'reputation',
+				titleKey: 'reserve.contract.reputation',
+				amount: 15,
+				startedAt: 88.46,
+				dueDay: dayOf(state) + 1,
+				reward: 15_000,
+				penalty: 4
+			}
+		];
+		expect(doomed(state.contracts[0]), 'контракт мусить читатися як приречений').toBe(true);
+
+		const before = state.reputation;
+		const seen: string[] = [];
+		day(state, 1, (event) => seen.push(event.kind));
+
+		expect(state.contracts, 'приречений контракт знято').toEqual([]);
+		expect(seen, 'подія про відкликання оголошена').toContain('contract-void');
+		expect(seen, 'штрафу за неможливе бути не мусить').not.toContain('contract-missed');
+		/*
+		 * Репутація сама спадає щодня, тож порівнюємо зі штрафом: без лікування тут
+		 * було б щонайменше −4 понад звичайний спад.
+		 */
+		expect(before - state.reputation, 'схоже на штраф за провал').toBeLessThan(4);
+	});
+
+	it('досяжний прострочений контракт і далі штрафує', () => {
+		// Половина, яку легко зламати разом із лікуванням: відкликання не мусить
+		// стати способом не платити за справжній провал.
+		const state = running();
+		state.reputation = 20;
+		state.contracts = [
+			{
+				id: 1,
+				goal: 'release',
+				titleKey: 'reserve.contract.release',
+				amount: 2,
+				startedAt: progressOf(state, 'release'),
+				dueDay: dayOf(state),
+				reward: 36_000,
+				penalty: 8
+			}
+		];
+		const seen: string[] = [];
+		day(state, 2, (event) => seen.push(event.kind));
+
+		expect(seen).toContain('contract-missed');
+		expect(seen).not.toContain('contract-void');
+	});
+
+	it('репутація показується абсолютними числами, лічильники — приростом', () => {
+		/*
+		 * Друга половина скарги: «0 / 15» поруч із 88 у шапці читається як «дійти до
+		 * 15». Шкала репутації абсолютна, тож приріст на ній — чуже число.
+		 */
+		const state = running();
+		state.reputation = 60;
+		const reputation = {
+			id: 1,
+			goal: 'reputation' as const,
+			titleKey: 'reserve.contract.reputation' as const,
+			amount: 15,
+			startedAt: 50,
+			dueDay: 99,
+			reward: 15_000,
+			penalty: 4
+		};
+		expect(shownProgress(state, reputation)).toEqual({ now: 60, need: 65 });
+
+		const release = {
+			id: 2,
+			goal: 'release' as const,
+			titleKey: 'reserve.contract.release' as const,
+			amount: 2,
+			startedAt: 0,
+			dueDay: 99,
+			reward: 36_000,
+			penalty: 8
+		};
+		expect(shownProgress(state, release)).toEqual({ now: 0, need: 2 });
 	});
 });
 
