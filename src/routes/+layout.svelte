@@ -14,8 +14,8 @@
 	import { onMount } from 'svelte';
 	import { asset } from '$app/paths';
 	import { ogLocale } from '$lib/i18n/languages';
-	import { page } from '$app/state';
-	import { afterNavigate, goto } from '$app/navigation';
+	import { page, updated } from '$app/state';
+	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { trackPageView } from '$lib/services/analytics';
 	import { webVitals } from '$lib/controllers/webVitals.svelte';
 	import { fly } from 'svelte/transition';
@@ -113,6 +113,34 @@
 
 	// Start RUM Core Web Vitals collection (OBSERVABILITY-v8 § 2.1)
 	$effect(() => webVitals.start());
+
+	/**
+	 * НОВА ЗБІРКА — ПЕРЕХІД ПОВНИМ ЗАВАНТАЖЕННЯМ, а не через маршрутизатор.
+	 *
+	 * Тут лікується дефект, який автор побачив на проді: натиск «дім» зі сторінки
+	 * результатів давав `404` на частину застосунку й слідом «Internal Error».
+	 * Причина не в кнопці — сторінку відкрили до деплою. Кожна збірка перейменовує
+	 * частини за хешем вмісту, тож перелік адрес у відкритій вкладці показує на
+	 * файли, яких на сервері вже немає, і перший же перехід падає.
+	 *
+	 * `updated.current` каже, що на сервері вже інша версія (опитування вмикається
+	 * `version.pollInterval` у `svelte.config.js`). Тоді перехід віддається браузеру:
+	 * повне завантаження приносить свіжий перелік частин, і гравець просто
+	 * опиняється там, куди йшов, — без екрана помилки.
+	 *
+	 * `willUnload` — це вже вихід зі сторінки (закрита вкладка, зовнішнє посилання):
+	 * там нема чого підмінювати, а `location.href` посеред такого переходу лише
+	 * скасував би те, що вже відбувається.
+	 *
+	 * Запасний шар — у `hooks.client.ts`: він ловить те, що прослизнуло між двома
+	 * опитуваннями. Обидва потрібні, і жоден не покриває другого: цей прибирає
+	 * помилку ДО появи, той рятує, коли вона вже сталася.
+	 */
+	beforeNavigate((navigation) => {
+		if (!updated.current || navigation.willUnload || !navigation.to?.url) return;
+		logService.info('app', 'new build — full navigation', { to: navigation.to.url.pathname });
+		window.location.href = navigation.to.url.href;
+	});
 
 	// Fires on the initial load too, so this covers the first view and each
 	// client-side move between the games. trackPageView initialises analytics
