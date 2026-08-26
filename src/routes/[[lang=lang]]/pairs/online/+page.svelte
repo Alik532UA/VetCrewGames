@@ -12,7 +12,7 @@
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { layoutForViewport } from '$lib/config/memory-game';
-	import { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
+	import { PairsMatch, PEEK_MS } from '$lib/controllers/pairsMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import type { Role, RoomTransport } from '$lib/net/roomTypes';
@@ -36,7 +36,11 @@
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	/** Скільки видно невдалу пару, перш ніж її оголосять закритою. */
-	const PEEK_MS = 1200;
+	/*
+	 * Витримка показу живе в контролері (`PairsMatch`): те саме число тримає й
+	 * затримку застосування чужого перегортання. Два числа розійшлися б, і
+	 * розходження виглядало б як мигання карток.
+	 */
 
 	/**
 	 * Версія ПРАВИЛ цієї гри. Різні версії в кімнату не пускають.
@@ -271,6 +275,24 @@
 		busy = true;
 		try {
 			const net = await import('$lib/net/rtdbRoom');
+			/*
+			 * СЛОВНИК ІМЕН ДОЧЕКАТИСЯ, і лише потім питати імʼя.
+			 *
+			 * Дефект, який автор побачив: «гравець, що зайшов за посиланням —
+			 * `pairs.crew.squirrel`, ключ замість назви». Причина рівно тут.
+			 *
+			 * Імена команди лежать у ЛІНИВОМУ чанку (`i18n/crew`), і сторінка тягне
+			 * його ефектом — тобто не дочекавшись. При вході за посиланням
+			 * `enter('join')` кличеться з `onMount` ОДРАЗУ, тож у першого гостя поле
+			 * імені ще порожнє, а `randomCrewName` перекладає ключі порожнім
+			 * словником — і `crewTranslate` чесно віддає сам ключ. Це імʼя й їхало в
+			 * кімнату, де його бачили всі.
+			 *
+			 * `loadCrewNames` кешує, тож на другому виклику це не мережа, а вже
+			 * готовий обʼєкт. Ціна — нуль там, де словник уже приїхав, і одна
+			 * коротка пауза там, де інакше в кімнату поїхав би ключ.
+			 */
+			await player.load(settings.locale, takenNames);
 			const who = player.forEntry(takenNames);
 			const layout = layoutForViewport();
 

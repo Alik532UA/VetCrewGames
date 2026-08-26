@@ -634,6 +634,92 @@ describe('пауза очікування', () => {
 		stop();
 	});
 
+	/**
+	 * ПАУЗА НАЛЕЖИТЬ СВОЄМУ РАУНДОВІ, і не переїжджає в наступні.
+	 *
+	 * Дефект, який автор побачив: «таймер візуально не працює і прогружає
+	 * оновлений стан тільки після вибору відповіді». Причина була рівно тут.
+	 *
+	 * `heldMs` брала `Math.max(recorded, pending)`, де `recorded` — з журналу
+	 * ЗА РАУНД, а `pending` — одне число на всю партію. Тобто пауза з першого
+	 * раунду додавалася до дедлайну КОЖНОГО наступного.
+	 *
+	 * Наслідків два, і оба видно на екрані:
+	 *
+	 *  * `leftMs` більша за `limitMs`, тож смуга таймера отримує ширину понад
+	 *    100% і СТОЇТЬ повною, поки зайвий час не витече;
+	 *  * `nextDue` теж відсунутий, тож господар не оголошує наступний раунд — і
+	 *    партія рухається лише тоді, коли відповіли всі (тоді дедлайн переїжджає
+	 *    на `last + SETTLE_MS`). Це і є «оновлюється тільки після відповіді».
+	 *
+	 * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): повернути `#pending`
+	 * одним числом замість переліку за раундами — обидві перевірки нижче
+	 * червоніють. Зроблено.
+	 */
+	it('пауза першого раунду не з’їдає таймер наступного', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+
+		/*
+		 * ЧЕКАННЯ В ГОСТЯ ДОВШЕ, ніж у господаря, — і це не штучний випадок, а
+		 * звичайний: присутність доїжджає до двох клієнтів у різні миті, тож умова
+		 * паузи в них вимикається не одночасно. Пише журнал ЛИШЕ господар.
+		 */
+		host.setHold(true, 1_000);
+		guest.setHold(true, 1_000);
+		host.setHold(false, 6_000);
+		guest.setHold(false, 21_000);
+
+		await host.startRound(1);
+		const start = guest.startedAt[1];
+		expect(start, 'раунд не почався').toBeDefined();
+
+		expect(guest.heldMs(start as number), 'пауза переїхала в наступний раунд').toBe(0);
+		expect(guest.leftMs(start as number), 'на початку раунду лишається рівно межа').toBe(
+			guest.limitMs
+		);
+		stop();
+	});
+
+	it('смуга таймера не буває понад сто відсотків', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		host.setHold(true, 1_000);
+		guest.setHold(true, 1_000);
+		host.setHold(false, 6_000);
+		guest.setHold(false, 21_000);
+		await host.startRound(1);
+
+		const start = guest.startedAt[1] as number;
+		// Саме це число йде в `width: {…}%` (`QuizRound`).
+		for (const at of [start, start + 500, start + guest.limitMs - 1]) {
+			expect(guest.leftMs(at), `на ${at - start} мс від початку`).toBeLessThanOrEqual(
+				guest.limitMs
+			);
+		}
+		stop();
+	});
+
+	it('господар не оголошує наступний раунд лише через чужу стару паузу', async () => {
+		/*
+		 * Друга половина скарги: «прогружає оновлений стан тільки після вибору
+		 * відповіді». Дедлайн, зсунутий чужою старою паузою, відсуває й `nextDue` —
+		 * тобто раунд не міняється сам, і партія рухається лише відповідями.
+		 */
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		host.setHold(true, 1_000);
+		guest.setHold(true, 1_000);
+		host.setHold(false, 6_000);
+		guest.setHold(false, 21_000);
+		await host.startRound(1);
+
+		const start = guest.startedAt[1] as number;
+		const wellPast = start + guest.limitMs + 10_000;
+		expect(guest.nextDue(wellPast), 'раунд не закінчується сам').toBe(true);
+		stop();
+	});
+
 	it('надбавка додається раз на чекання, а не на кожен виклик', async () => {
 		const { host, stop } = table();
 		await host.startRound(0);

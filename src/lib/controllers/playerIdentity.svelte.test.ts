@@ -364,3 +364,74 @@ describe('PlayerIdentity', () => {
 		});
 	});
 });
+
+/**
+ * ІМʼЯ, ЯКЕ ЇДЕ В КІМНАТУ, НЕ БУВАЄ КЛЮЧЕМ СЛОВНИКА.
+ *
+ * ## Дефект
+ *
+ * Скарга автора зі знімком: «гравець, що зайшов за посиланням —
+ * `pairs.crew.squirrel`, ключ замість назви». Причина складається з трьох
+ * правильних поодинці рішень:
+ *
+ *  1. імена команди лежать у ЛІНИВОМУ чанку (`i18n/crew`) — 86 імен на чотири
+ *     мови коштували 3 КБ gzip у першому payload кожного відвідувача;
+ *  2. `crewTranslate` віддає САМ КЛЮЧ, коли перекладу немає, — щоб дефект було
+ *     видно, а не щоб він тихо зникав;
+ *  3. вхід за посиланням кличеться з `onMount` ОДРАЗУ, не чекаючи нічого.
+ *
+ * Разом це давало: поле імені ще порожнє, `randomCrewName` перекладає ключі
+ * порожнім словником, і в кімнату їде ключ — де його бачать усі.
+ *
+ * ## Чому перевірка по джерелах
+ *
+ * Умова — це ПОРЯДОК двох асинхронних речей на сторінці, і зловити його в
+ * `jsdom` означало б підняти сторінку з мережею й вгадати такт. Джерело ж
+ * відповідає на те саме питання однозначно: чи стоїть очікування словника ПЕРЕД
+ * тим, як питати імʼя.
+ *
+ * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): прибрати `await
+ * player.load(...)` перед `forEntry` — пункт червоніє на обох сторінках.
+ * Зроблено.
+ */
+describe('імʼя для кімнати не буває ключем', () => {
+	const PAGES = [
+		'src/routes/[[lang=lang]]/pairs/online/+page.svelte',
+		'src/routes/[[lang=lang]]/quiz/online/+page.svelte'
+	];
+
+	it('перевірка жива: сторінки просять імʼя саме так', async () => {
+		const { readFileSync } = await import('node:fs');
+		for (const page of PAGES) {
+			expect(readFileSync(page, 'utf8'), `${page}: виклику імені немає`).toContain(
+				'player.forEntry('
+			);
+		}
+	});
+
+	it('словник імен дочекано ПЕРЕД тим, як питати імʼя', async () => {
+		const { readFileSync } = await import('node:fs');
+		for (const page of PAGES) {
+			const source = readFileSync(page, 'utf8');
+			const waited = source.indexOf('await player.load(');
+			const asked = source.indexOf('player.forEntry(');
+			expect(waited, `${page}: словник не дочекано зовсім`).toBeGreaterThan(-1);
+			expect(waited, `${page}: імʼя питають раніше, ніж приїхав словник`).toBeLessThan(asked);
+		}
+	});
+
+	it('порожній словник справді віддає ключ — тобто чекати є для чого', async () => {
+		/*
+		 * Без цього пункту попередній нічого не доводить: він тримає порядок, а не
+		 * причину. Тут — сама причина, і саме вона робить порядок обовʼязковим.
+		 */
+		const { crewTranslate } = await import('$lib/i18n/crew');
+		const { CREW_NAME_KEYS, randomCrewName } = await import('$lib/config/crewNames');
+		const key = CREW_NAME_KEYS[0];
+		expect(crewTranslate({})(key), 'порожній словник мусить віддавати ключ').toBe(key);
+		expect(
+			randomCrewName(crewTranslate({}), () => 0),
+			'імʼя з порожнього словника — це ключ'
+		).toBe(key);
+	});
+});

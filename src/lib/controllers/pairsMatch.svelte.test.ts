@@ -9,7 +9,7 @@ import type { Member, RoomInfo } from '$lib/net/roomTypes';
 const addScore = vi.fn();
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { addScore } }));
 
-const { PairsMatch } = await import('./pairsMatch.svelte');
+const { PairsMatch, PEEK_MS } = await import('./pairsMatch.svelte');
 const { TURN_LIMIT_MS } = await import('./turnLimit');
 
 /**
@@ -47,12 +47,59 @@ const members = (): Member[] => [
 ];
 
 /** Кімната з двома гравцями й двома підключеними пристроями. */
+/**
+ * ПІДСТАВНИЙ ГОДИННИК ВИТРИМКИ ПОКАЗУ.
+ *
+ * Невдала пара тепер лишається на екрані свій час, і перегортання застосовується
+ * лише після нього (`PEEK_MS`, `PairsMatch.#shownAt`). Справжній `setTimeout` у
+ * перевірці означав би чекати справжню секунду на кожен промах; тут час рухає
+ * `seen()`.
+ *
+ * `slow()` — те, що дає ЖИВИЙ годинник: витримка не проходить, поки її не
+ * промотали. Так перевіряється саме те, чого просив автор: пара не зникає раніше
+ * за свій час, хоч би як швидко тиснув суперник.
+ */
+function fakeClock() {
+	let now = 0;
+	const pending: Array<{ at: number; run: () => void }> = [];
+	return {
+		clock: {
+			now: () => now,
+			after(ms: number, run: () => void) {
+				const task = { at: now + ms, run };
+				pending.push(task);
+				return () => {
+					const index = pending.indexOf(task);
+					if (index !== -1) pending.splice(index, 1);
+				};
+			}
+		},
+		/** Промотати час і виконати те, що дозріло. */
+		tick(ms: number) {
+			now += ms;
+			for (const task of pending.filter((item) => item.at <= now)) {
+				pending.splice(pending.indexOf(task), 1);
+				task.run();
+			}
+		}
+	};
+}
+
 function table(extra: Member[] = []) {
 	const room = new LocalRoom(info(), [...members(), ...extra]);
-	const host = new PairsMatch(HOST, room.transport());
-	const guest = new PairsMatch(GUEST, room.transport());
+	const paced = fakeClock();
+	const host = new PairsMatch(HOST, room.transport(), paced.clock);
+	const guest = new PairsMatch(GUEST, room.transport(), paced.clock);
 	const stop = [host.listen(), guest.listen()];
-	return { room, host, guest, stop: () => stop.forEach((off) => off()) };
+	return {
+		room,
+		host,
+		guest,
+		/** Пара побула на екрані свій час — перегортання дозріло. */
+		seen: () => paced.tick(PEEK_MS),
+		tick: paced.tick,
+		stop: () => stop.forEach((off) => off())
+	};
 }
 
 /** Як виглядає дошка: цього досить, щоб два стани збіглися або ні. */
@@ -156,7 +203,7 @@ describe('хід їде журналом', () => {
 	});
 
 	it('невдала пара передає хід — але лише коли її оголосили', async () => {
-		const { host, guest, stop } = table();
+		const { host, guest, seen, stop } = table();
 		const [a, b] = findMismatch(host);
 
 		await host.flip(a);
@@ -165,6 +212,14 @@ describe('хід їде журналом', () => {
 		expect(host.game.awaitingPeek).toBe(true);
 
 		await host.resolve();
+		/*
+		 * ХІД ЗАПИСАНО, АЛЕ ЩЕ НЕ ЗАСТОСОВАНО: пара мусить побути на екрані свій
+		 * час. Доти хід міняв дошку в ту саму мить, і суперник, який тиснув швидко,
+		 * знімав пару в сусіда за мілісекунди — саме на це й скаржився автор.
+		 */
+		expect(host.actor?.id, 'пара зникла раніше за свій час').toBe(HOST);
+
+		seen();
 		expect(host.actor?.id).toBe(GUEST);
 		expect(guest.myTurn, 'сусід дізнався про це з журналу').toBe(true);
 		expect(board(guest)).toBe(board(host));
@@ -379,7 +434,7 @@ describe('швидкий клік не грає за суперника', () => 
 	 * картка ставала ЙОГО першою — вибраною мною.
 	 */
 	it('клік по третій картці перегортає, а не відкриває суперникові його першу', async () => {
-		const { host, guest, stop } = table();
+		const { host, guest, seen, stop } = table();
 		const [a, b] = findMismatch(host);
 		await host.flip(a);
 		await host.flip(b);
@@ -389,6 +444,16 @@ describe('швидкий клік не грає за суперника', () => 
 		);
 		await host.flip(third);
 
+		/*
+		 * ТРЕТІЙ КЛІК БІЛЬШЕ НЕ ВКОРОЧУЄ ПОКАЗ, і це вимога автора: «не можна
+		 * впливати на інших гравців на скільки швидко у них не зникає картки».
+		 *
+		 * Хід `peek` записано одразу, тож черга поїде — але лише коли пара побула
+		 * на екрані свій час. Доти третій клік знімав її в усіх негайно.
+		 */
+		expect(host.actor?.id, 'пара зникла раніше за свій час').toBe(HOST);
+		seen();
+
 		expect(host.actor?.id, 'хід перейшов').toBe(GUEST);
 		expect(host.game.slots[third].faceUp, 'третя картка НЕ відкрита').toBe(false);
 		expect(
@@ -396,6 +461,79 @@ describe('швидкий клік не грає за суперника', () => 
 			'дошка чиста'
 		).toHaveLength(0);
 		expect(board(guest)).toBe(board(host));
+		stop();
+	});
+
+	/**
+	 * ХІД СУПЕРНИКА ПОКАЗУЄТЬСЯ ПОВНІСТЮ — скільки завгодно швидко він не тисни.
+	 *
+	 * Скарга автора: «іноді хід противника показується на пару мілісекунд… не
+	 * можна впливати на інших гравців на скільки швидко у них не зникає картки».
+	 *
+	 * Тут перевіряється саме те, що суперник цього більше не вирішує: журнал уже
+	 * має `peek`, а дошка гостя пару ще ТРИМАЄ — доти, доки не витекла витримка
+	 * ЙОГО годинника.
+	 *
+	 * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): прибрати виклик
+	 * `#holdPeek` із `#apply` — пункт червоніє на першому ж `expect`. Зроблено.
+	 */
+	it('пара суперника не зникає раніше за свою витримку', async () => {
+		const { room, host, guest, seen, tick, stop } = table();
+		const [a, b] = findMismatch(host);
+		await host.flip(a);
+		await host.flip(b);
+		expect(guest.game.awaitingPeek, 'гість побачив пару').toBe(true);
+
+		// Суперник тисне третю картку одразу — це посилає `peek`.
+		const third = host.game.slots.findIndex(
+			(slot, index) => index !== a && index !== b && !slot.faceUp
+		);
+		await host.flip(third);
+		expect(
+			room.moves.some((move) => move.type === 'peek'),
+			'перегортання мусило дійти до журналу'
+		).toBe(true);
+
+		// Майже вся витримка минула — пара все ще на екрані в обох.
+		tick(PEEK_MS - 1);
+		expect(guest.game.slots[a].faceUp, 'пара зникла в гостя раніше часу').toBe(true);
+		expect(host.game.slots[a].faceUp, 'пара зникла у господаря раніше часу').toBe(true);
+
+		tick(1);
+		expect(guest.game.slots[a].faceUp, 'пара не зникла й після витримки').toBe(false);
+		expect(board(guest), 'дошки розійшлися').toBe(board(host));
+		seen();
+		stop();
+	});
+
+	/**
+	 * НАЗДОГАНЯННЯ ЖУРНАЛУ НЕ ЧЕКАЄ. Пізній учасник, перезавантаження сторінки —
+	 * там пари, на які ніхто вже не дивиться, і витримка перетворила б вхід у
+	 * партію на перегляд її в реальному часі.
+	 */
+	it('пізній учасник доганяє журнал без витримок', async () => {
+		const { room, host, guest, seen, stop } = table();
+		const [a, b] = findMismatch(host);
+		await host.flip(a);
+		await host.flip(b);
+		await host.resolve();
+		seen();
+		/*
+		 * Хід ПІСЛЯ перегортання, і робить його ГІСТЬ: перегортання передало чергу,
+		 * тож господар зараз нічого дописати не може. Саме цей хід і означає
+		 * «журнал поїхав далі», тобто на пару вже ніхто не дивиться.
+		 */
+		const next = guest.game.slots.findIndex((slot) => !slot.faceUp && slot.takenBy === null);
+		await guest.flip(next);
+		expect(room.moves.length, 'журнал не поїхав далі').toBeGreaterThan(3);
+
+		const clock = { now: () => 0, after: () => () => {} };
+		const late = new PairsMatch('uid-late', room.transport(), clock);
+		const off = late.listen();
+
+		expect(late.applied, 'новачок застряг на перегортанні').toBe(room.moves.length);
+		expect(board(late), 'дошка новачка не збіглася').toBe(board(host));
+		off();
 		stop();
 	});
 
