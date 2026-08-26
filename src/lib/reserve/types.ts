@@ -253,7 +253,6 @@ export type ReserveCommand =
 	| { type: 'dismiss'; role: StaffRole }
 	| { type: 'campaign' }
 	| { type: 'accept'; contractId: number }
-	| { type: 'claim'; contractId: number }
 	| {
 			type: 'raid';
 			tactic: RaidTactic;

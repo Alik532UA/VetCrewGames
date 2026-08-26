@@ -5,6 +5,7 @@ import {
 	TICKS_PER_DAY
 } from './constants';
 import { CONTRACT_INTERVAL_DAYS, isDone, MAX_ACTIVE_CONTRACTS, offerContract } from './contracts';
+import { claimDone } from './contractMoves';
 import { closeDay } from './journal';
 import { serveFeed } from './larder';
 import { addReputation, earn } from './ledger';
@@ -43,6 +44,16 @@ export { effectiveQuality } from './siteDay';
  * невиконану обіцянку дізнаються. Саме тому брати все підряд невигідно.
  */
 function settleContracts(state: ReserveState, day: number, onEvent?: EventSink): void {
+	/*
+	 * ЗАРАХУВАННЯ ПЕРШИМ, і порядок тут важить.
+	 *
+	 * `heal` рахує тварин, чий `stage` перестав бути `recovering`, а це щойно
+	 * зробила доба; `reputation` теж виросла без жодного ходу. Якби прострочення
+	 * перевірялося раніше, контракт, довершений САМОЮ ДОБОЮ в останній свій день,
+	 * зарахувався б як провал — виконаний, але «пізно».
+	 */
+	claimDone(state, onEvent);
+
 	const missed = state.contracts.filter((c) => day > c.dueDay && !isDone(state, c));
 	for (const contract of missed) {
 		addReputation(state, -contract.penalty, 'penalty');

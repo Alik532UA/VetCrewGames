@@ -61,6 +61,7 @@ export const reserve = {
 	'reserve.news.raidExpired': 'Du hast den Wilderern nicht geantwortet — das Tier ist weg.',
 	'reserve.news.hunger': 'Jemand bekam kein Futter. Kaufe Portionen für die Vorratskammer.',
 	'reserve.news.contractOffered': 'Eine Aufgabe von Spendern ist da.',
+	'reserve.news.contractDone': 'Aufgabe erfüllt — die Belohnung ist im Budget.',
 	'reserve.news.contractMissed': 'Die Frist einer Aufgabe ist verstrichen — der Ruf sank.',
 	'reserve.news.offerExpired': 'Die Spender haben nicht auf eine Antwort gewartet.',
 	'reserve.news.collapse':
@@ -155,7 +156,6 @@ export const reserve = {
 	'reserve.contracts': 'Verträge',
 	'reserve.offer': 'Sponsorenangebot',
 	'reserve.accept': 'Annehmen',
-	'reserve.claim': 'Belohnung abholen',
 	'reserve.dueDay': 'bis Tag',
 	'reserve.reward': 'Belohnung',
 	'reserve.penalty': 'Strafe bei Scheitern',

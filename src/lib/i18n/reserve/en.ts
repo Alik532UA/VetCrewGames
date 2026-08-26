@@ -60,6 +60,7 @@ export const reserve = {
 	'reserve.news.raidExpired': 'You did not answer the poachers — the animal was taken.',
 	'reserve.news.hunger': 'Someone went without feed. Buy portions for the larder.',
 	'reserve.news.contractOffered': 'A donor task has appeared.',
+	'reserve.news.contractDone': 'Task complete — the reward is in the budget.',
 	'reserve.news.contractMissed': 'A task ran out of time — reputation dropped.',
 	'reserve.news.offerExpired': 'The donors did not wait for an answer and left.',
 	'reserve.news.collapse':
@@ -154,7 +155,6 @@ export const reserve = {
 	'reserve.contracts': 'Contracts',
 	'reserve.offer': 'Sponsor offer',
 	'reserve.accept': 'Accept',
-	'reserve.claim': 'Claim reward',
 	'reserve.dueDay': 'by day',
 	'reserve.reward': 'reward',
 	'reserve.penalty': 'penalty for failure',

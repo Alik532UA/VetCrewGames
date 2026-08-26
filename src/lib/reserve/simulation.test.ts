@@ -12,6 +12,7 @@ import {
 	effectiveQuality
 } from './simulation';
 import type { ReserveCommand, ReserveState } from './types';
+import type { EventSink } from './events';
 import {
 	COLLAPSE_DAYS,
 	NO_VET_REPUTATION,
@@ -40,7 +41,8 @@ import { reserveHalf } from './plot';
 import { IMPACT_MILESTONES, milestonesReached } from './milestones';
 import { MAX_ENCLOSURE_SIZE, type ReserveBiome } from './species';
 
-const day = (state: ReserveState, days = 1) => tick(state, TICKS_PER_DAY * days);
+const day = (state: ReserveState, days = 1, onEvent?: EventSink) =>
+	tick(state, TICKS_PER_DAY * days, onEvent);
 
 /**
  * Хід на ділянці. Типова земля — «savanna»: там живе більшість перевірок цього файлу.
@@ -1161,14 +1163,24 @@ describe('контракти зі спонсорами', () => {
 		const state = running();
 		day(state, CONTRACT_INTERVAL_DAYS);
 		move(state, { type: 'accept', contractId: state.offered!.id });
+		const before = state.budget;
 
-		expect(move(state, { type: 'claim', contractId: state.contracts[0].id })).toEqual({
-			ok: false,
-			reason: 'contract-unfinished'
-		});
+		// Хід, який контракту не стосується: зарахування не мусить спрацювати.
+		move(state, { type: 'campaign' });
+		day(state, 1);
+
+		expect(state.contracts, 'контракт лишається активним').toHaveLength(1);
+		expect(state.budget - before, 'нагороди немає').toBeLessThan(0);
 	});
 
-	it('виконаний контракт платить і зникає', () => {
+	/**
+	 * ЗАРАХУВАННЯ ПІСЛЯ ХОДУ — перший із двох шляхів.
+	 *
+	 * Прогрес рухає сам хід («випустити двох» закривається випуском), і нагорода
+	 * мусить прийти в ту саму мить: чекати до півночі означало б тридцять секунд
+	 * реального часу на ×1.
+	 */
+	it('виконаний контракт платить сам після ходу', () => {
 		const state = running();
 		day(state, CONTRACT_INTERVAL_DAYS);
 		move(state, { type: 'accept', contractId: state.offered!.id });
@@ -1178,9 +1190,56 @@ describe('контракти зі спонсорами', () => {
 		contract.startedAt = progressOf(state, contract.goal) - contract.amount;
 		const before = state.budget;
 
-		expect(move(state, { type: 'claim', contractId: contract.id })).toEqual({ ok: true });
-		expect(state.budget - before).toBe(contract.reward);
-		expect(state.contracts).toEqual([]);
+		// Будь-який ВДАЛИЙ хід — і нагорода вже в бюджеті.
+		expect(move(state, { type: 'campaign' })).toEqual({ ok: true });
+		expect(state.budget - before).toBe(contract.reward - CAMPAIGN_PRICE);
+		expect(state.contracts, 'закритий контракт зникає').toEqual([]);
+	});
+
+	/**
+	 * ЗАРАХУВАННЯ НА МЕЖІ ДОБИ — другий шлях, і без нього перший неповний.
+	 *
+	 * Цілі `heal` і `reputation` рухає сама доба, без жодного ходу: гравець,
+	 * який нічого не натискає, інакше не отримав би нагороду ніколи.
+	 */
+	it('виконаний контракт платить сам на межі доби', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		move(state, { type: 'accept', contractId: state.offered!.id });
+
+		const contract = state.contracts[0];
+		contract.startedAt = progressOf(state, contract.goal) - contract.amount;
+		const before = state.budget;
+
+		const seen: string[] = [];
+		day(state, 1, (event) => seen.push(event.kind));
+
+		expect(state.contracts, 'закритий контракт зникає').toEqual([]);
+		expect(state.budget - before, 'нагорода прийшла').toBeGreaterThan(0);
+		expect(seen, 'подія оголошена').toContain('contract-done');
+	});
+
+	/**
+	 * Виконаний контракт НЕ рахується простроченим.
+	 *
+	 * Порядок у `settleContracts` тут і перевіряється: зарахування стоїть ПЕРШИМ,
+	 * тож умова, довершена самою добою в останній свій день, платить, а не карає.
+	 */
+	it('виконаний в останній день платить, а не штрафує', () => {
+		const state = running();
+		day(state, CONTRACT_INTERVAL_DAYS);
+		move(state, { type: 'accept', contractId: state.offered!.id });
+
+		const contract = state.contracts[0];
+		contract.startedAt = progressOf(state, contract.goal) - contract.amount;
+		contract.dueDay = dayOf(state);
+		const reputation = state.reputation;
+		const before = state.budget;
+
+		day(state, 2);
+
+		expect(state.budget - before, 'нагорода прийшла').toBeGreaterThan(0);
+		expect(state.reputation, 'штрафу немає').toBeGreaterThanOrEqual(reputation);
 	});
 
 	/**

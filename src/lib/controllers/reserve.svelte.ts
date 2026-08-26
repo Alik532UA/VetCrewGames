@@ -313,7 +313,13 @@ export class ReserveController {
 	 * Єдиний шлях зміни фонду. Пара «де + що» колись прийде мережею саме такою.
 	 */
 	run(command: ReserveCommand, at: ReserveBiome): CommandResult {
-		const result = execute(this.state, command, at);
+		/*
+		 * Сток подій іде і в хід, а не лише в `tick`: хід може довершити контракт
+		 * («випустити двох» закривається саме випуском), і тоді нагорода
+		 * нараховується всередині `execute`, а сказати про це нікому, крім цього
+		 * слухача.
+		 */
+		const result = execute(this.state, command, at, (event) => this.#announce(event));
 		/*
 		 * КОЖЕН ХІД У ЖУРНАЛ — і вдалий, і відкинутий.
 		 *

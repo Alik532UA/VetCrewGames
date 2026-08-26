@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import { settings } from '$lib/services/settings.svelte';
-	import { doneOf, isDone } from '$lib/reserve/contracts';
+	import { doneOf } from '$lib/reserve/contracts';
 	import type { ReserveCommand, ReserveState } from '$lib/reserve/types';
 
 	/**
@@ -51,8 +51,18 @@
 {/if}
 
 {#each state.contracts as contract (contract.id)}
-	{@const done = isDone(state, contract)}
 	{@const late = day > contract.dueDay}
+	<!--
+		КНОПКИ «ОТРИМАТИ НАГОРОДУ» ТУТ БІЛЬШЕ НЕМА.
+
+		Виконане зараховується саме — у мить ходу, який довершив умову, і на межі
+		доби (`reserve/contractMoves.ts`, `claimDone`). Кнопка питала про те, на що
+		є одна відповідь, і водночас була єдиним способом дізнатися, що контракт
+		закрито; тепер про це каже сповіщення.
+
+		Через це виконаний контракт у цьому переліку майже не буває видним: він
+		зникає тим самим кроком, що й нараховує гроші.
+	-->
 	<article class="card" data-testid="reserve-contract-{contract.id}-card">
 		<p class="card__what">{@html formatFont(t(contract.titleKey))}</p>
 		<p class="card__terms" class:card__terms--late={late}>
@@ -60,16 +70,6 @@
 			{contract.dueDay} · {@html formatFont(t('reserve.reward'))}
 			{money(contract.reward)}
 		</p>
-		{#if done}
-			<button
-				type="button"
-				class="btn-primary card__go"
-				onclick={() => onCommand({ type: 'claim', contractId: contract.id })}
-				data-testid="reserve-claim-{contract.id}-btn"
-			>
-				{@html formatFont(t('reserve.claim'))}
-			</button>
-		{/if}
 	</article>
 {/each}
 

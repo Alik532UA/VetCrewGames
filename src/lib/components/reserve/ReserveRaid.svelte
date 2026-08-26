@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { toast } from '$lib/controllers/toast.svelte';
+	import { toast, REJECT_MS, WORLD_EVENT_MS } from '$lib/controllers/toast.svelte';
 	import type { ReserveController } from '$lib/controllers/reserve.svelte';
 	import type { RaidTactic } from '$lib/reserve/types';
 	import RaidModal from './RaidModal.svelte';
@@ -43,17 +43,20 @@
 		// Хід адресується тій ділянці, на яку прийшли, а не тій, де стоїть гравець.
 		const result = game.run({ type: 'raid', tactic, ok }, raid.biome);
 		if (!result.ok) {
-			toast.error(`reserve.reject.${result.reason}` as const);
+			// `REJECT_MS`: відмова тактики — відповідь на клік, а не подія світу.
+			toast.error(`reserve.reject.${result.reason}` as const, REJECT_MS);
 			return;
 		}
 
 		const site = game.state.sites[raid.biome];
 		if (site.animals.some((animal) => animal.id === raid.animalId)) {
-			toast.success('reserve.raid.saved');
+			toast.success('reserve.raid.saved', WORLD_EVENT_MS);
 		} else {
-			toast.error('reserve.raid.lost');
+			toast.error('reserve.raid.lost', WORLD_EVENT_MS);
 		}
-		if (site.staff.ranger < rangers) toast.warn('reserve.raid.injured');
+		// Наслідок нальоту — подія світу, хоч і викликана рішенням: тварини вже
+		// немає, і про це треба встигнути прочитати.
+		if (site.staff.ranger < rangers) toast.warn('reserve.raid.injured', WORLD_EVENT_MS);
 		trial = false;
 	}
 </script>

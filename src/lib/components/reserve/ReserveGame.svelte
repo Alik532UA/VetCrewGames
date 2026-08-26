@@ -5,7 +5,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { toast } from '$lib/controllers/toast.svelte';
+	import { toast, REJECT_MS, WORLD_EVENT_MS } from '$lib/controllers/toast.svelte';
 	import { loadReserveCareText } from '$lib/i18n/reserveCare';
 	import { loadReserveText } from '$lib/i18n/reserve';
 	import type { ReserveEvent } from '$lib/reserve/events';
@@ -128,15 +128,22 @@
 	 * Мапа, а не `switch`: перелік подій закритий (`reserve/events.ts`), і
 	 * компілятор перевіряє, що жодну не забуто. `switch` дав би те саме лише з
 	 * `default: never`, і забути гілку в ньому легше.
+	 *
+	 * ТРИВАЛІСТЬ У КОЖНОМУ РЯДКУ — `WORLD_EVENT_MS`, тридцять секунд.
+	 *
+	 * Прохання автора: «таймер сповіщень занадто швидкий». Число не кругле: доба
+	 * на ×1 триває рівно тридцять секунд, тобто новина живе стільки, скільки той
+	 * день, про який вона розповідає. Відмови на власний клік (`command()` нижче)
+	 * лишаються короткими — це відповідь на щойно натиснуту кнопку, а не подія.
 	 */
 	const NEWS: Record<ReserveEvent['kind'], () => void> = {
-		death: () => toast.error('reserve.news.death'),
-		healed: () => toast.success('reserve.news.healed'),
-		raid: () => toast.warn('reserve.news.raid'),
-		'raid-held': () => toast.success('reserve.news.raidHeld'),
-		'raid-lost': () => toast.error('reserve.news.raidLost'),
-		'raid-expired': () => toast.error('reserve.news.raidExpired'),
-		hunger: () => toast.warn('reserve.news.hunger'),
+		death: () => toast.error('reserve.news.death', WORLD_EVENT_MS),
+		healed: () => toast.success('reserve.news.healed', WORLD_EVENT_MS),
+		raid: () => toast.warn('reserve.news.raid', WORLD_EVENT_MS),
+		'raid-held': () => toast.success('reserve.news.raidHeld', WORLD_EVENT_MS),
+		'raid-lost': () => toast.error('reserve.news.raidLost', WORLD_EVENT_MS),
+		'raid-expired': () => toast.error('reserve.news.raidExpired', WORLD_EVENT_MS),
+		hunger: () => toast.warn('reserve.news.hunger', WORLD_EVENT_MS),
 		/*
 		 * ПОТРЕБА ДІЇ — НЕ ТОСТ, а вікно вибору: `game.pending` уже стоїть, і час
 		 * спинений. Тост поруч із вікном сказав би те саме двічі, а зникнувши, ще й
@@ -146,10 +153,17 @@
 		 * назвати кожну подію. Забути тут щось — червоне, а не тихе.
 		 */
 		'needs-care': () => {},
-		'contract-offered': () => toast.info('reserve.news.contractOffered'),
-		'contract-missed': () => toast.warn('reserve.news.contractMissed'),
-		'offer-expired': () => toast.info('reserve.news.offerExpired'),
-		collapse: () => toast.error('reserve.news.collapse')
+		'contract-offered': () => toast.info('reserve.news.contractOffered', WORLD_EVENT_MS),
+		/*
+		 * Суми в тексті немає навмисно — як і в решти новин цієї мапи. Гроші видно
+		 * там, де на них дивляться: бюджет у шапці стрибає, а підказка над ним
+		 * називає причину `contract`. Число в тості довелося б вставляти повз
+		 * `t()`, тобто заводити другий спосіб складати текст.
+		 */
+		'contract-done': () => toast.success('reserve.news.contractDone', WORLD_EVENT_MS),
+		'contract-missed': () => toast.warn('reserve.news.contractMissed', WORLD_EVENT_MS),
+		'offer-expired': () => toast.info('reserve.news.offerExpired', WORLD_EVENT_MS),
+		collapse: () => toast.error('reserve.news.collapse', WORLD_EVENT_MS)
 	};
 
 	onMount(() => {
@@ -204,7 +218,9 @@
 	 */
 	function command(cmd: ReserveCommand) {
 		const result = game.run(cmd, biome);
-		if (!result.ok) toast.error(`reserve.reject.${result.reason}` as const);
+		// `REJECT_MS`, а не типові сім секунд: поруч із тридцятисекундними новинами
+		// довга відмова читалася б як щось важливіше за них.
+		if (!result.ok) toast.error(`reserve.reject.${result.reason}` as const, REJECT_MS);
 	}
 
 	/** Тап по землі в режимі розміщення: ставимо замовлений вольєр і виходимо. */
@@ -212,7 +228,7 @@
 		if (!pending) return;
 		const result = game.run({ type: 'build', ...pending, cell }, biome);
 		if (!result.ok) {
-			toast.error(`reserve.reject.${result.reason}` as const);
+			toast.error(`reserve.reject.${result.reason}` as const, REJECT_MS);
 			return;
 		}
 		// Вийшло — режим знімається. Ставити десять вольєрів поспіль ніхто не

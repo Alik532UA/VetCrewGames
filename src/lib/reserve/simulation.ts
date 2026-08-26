@@ -12,7 +12,7 @@ import {
 	TICKS_PER_DAY
 } from './constants';
 import { buildings } from './buildings';
-import { contractMove } from './contractMoves';
+import { claimDone, contractMove } from './contractMoves';
 import { RESERVE_BIOMES, type ReserveBiome } from './species';
 import { startMetrics } from './journal';
 import { intake } from './intake';
@@ -107,6 +107,27 @@ const EXPANDS = new Set<ReserveCommand['type']>(['acquire', 'hire', 'build']);
  * кампанія в соцмережах не буває лісовою. У мережу колись піде саме ця пара.
  */
 export function execute(
+	state: ReserveState,
+	command: ReserveCommand,
+	at: ReserveBiome,
+	onEvent?: EventSink
+): CommandResult {
+	const result = applyCommand(state, command, at);
+	/*
+	 * ВИКОНАНІ КОНТРАКТИ ЗАРАХОВУЮТЬСЯ ОДРАЗУ ПІСЛЯ ХОДУ.
+	 *
+	 * Саме тут, а не в інтерфейсі: нарахування змінює бюджет, тобто стан, і
+	 * зроблене на екрані воно робило б світ залежним від того, чи відкрита панель
+	 * завдань. Причина, чому ще й у `endOfDay`, — у `claimDone`.
+	 *
+	 * Лише на вдалому ході: відкинутий нічого не змінив, і рахувати нема чого.
+	 */
+	if (result.ok) claimDone(state, onEvent);
+	return result;
+}
+
+/** Сам хід. Виділено з `execute`, щоб зарахування контрактів стояло рівно раз. */
+function applyCommand(
 	state: ReserveState,
 	command: ReserveCommand,
 	at: ReserveBiome
@@ -205,8 +226,12 @@ export function execute(
 			return { ok: true };
 		}
 
+		/*
+		 * Тільки «прийняти». Ходу «забрати нагороду» більше немає: виконане
+		 * зараховується саме — `claimDone` вище й у `endOfDay`. Кнопка питала про
+		 * те, на що є одна відповідь.
+		 */
 		case 'accept':
-		case 'claim':
 			return contractMove(state, command);
 
 		/*
