@@ -9,6 +9,7 @@
 	import QuizAway from './QuizAway.svelte';
 	import QuizRound from './QuizRound.svelte';
 	import QuizReveal from './QuizReveal.svelte';
+	import type { CrossGameLinks } from '$lib/utils/crossGame';
 
 	/**
 	 * ЕКРАН КІМНАТИ: партія й підсумок. Мережі тут немає зовсім.
@@ -68,6 +69,8 @@
 		onanswer: (correct: number) => void;
 		onRematch: () => void;
 		onClose: () => void;
+		/** Адреси переїзду в другу гру. Будує їх сторінка, бо це навігація. */
+		cross: CrossGameLinks;
 		/** Прибрати зниклого. Лише лідер — тобто в гостя цього немає зовсім. */
 		onkick: (uid: string) => void;
 	}
@@ -87,7 +90,8 @@
 		onanswer,
 		onRematch,
 		onClose,
-		onkick
+		onkick,
+		cross
 	}: Props = $props();
 </script>
 
@@ -133,6 +137,27 @@
 			Вихід у меню — посиланням, а не кнопкою: це навігація, і «відкрити в новій
 			вкладці» мусить працювати.
 		-->
+		<!--
+			ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом.
+		
+			Прохання автора: «після фіналу можна повторити і поточну гру „Грати
+			знову“, і іншу гру». Кнопки дві, бо це два різні кроки: господар створює
+			кімнату іншої гри (посилання несе код цієї, щоб нова могла про себе
+			сказати), а решта чекає й переходить за оголошеним кодом.
+		
+			Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці» мусить
+			працювати. Той самий взірець, що у виході в меню поруч.
+		-->
+		{#if cross.next}
+			<a href={cross.next} class="btn-primary" data-testid="room-next-link">
+				{@html formatFont(t('room.goNext'))}
+			</a>
+		{:else if amHost}
+			<a href={cross.create} class="chip" data-testid="room-other-game-link">
+				{@html formatFont(t(cross.createLabel))}
+			</a>
+		{/if}
+
 		<a href={langPath(lang)} class="chip" data-testid="quiz-main-menu-link">
 			{@html formatFont(t('common.mainMenu'))}
 		</a>

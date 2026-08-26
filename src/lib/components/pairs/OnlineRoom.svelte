@@ -6,6 +6,7 @@
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import TimerBar from '$lib/components/ui/TimerBar.svelte';
+	import type { CrossGameLinks } from '$lib/utils/crossGame';
 	import type { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 
 	/**
@@ -54,6 +55,15 @@
 		hovers?: Record<string, number>;
 		/** Сказати кімнаті, на що я дивлюся. `null` — ні на що. */
 		onpoint?: (card: number | null) => void;
+		/** Чи я господар: лише він створює кімнату іншої гри. */
+		amHost?: boolean;
+		/**
+		 * Адреси переїзду в другу гру. Будує їх сторінка, бо це навігація.
+		 *
+		 * Дошка про маршрути не знає навмисно: інакше компонент показу тягнув би
+		 * `langPath` і перелік маршрутів, тобто знав би, де в проєкті лежать ігри.
+		 */
+		cross: CrossGameLinks;
 	}
 
 	let {
@@ -66,7 +76,9 @@
 		onEnd,
 		turnLeftMs = null,
 		hovers = {},
-		onpoint
+		onpoint,
+		amHost = false,
+		cross
 	}: Props = $props();
 
 	/**
@@ -215,6 +227,27 @@
 				</button>
 			{:else}
 				<span class="board__wait">{@html formatFont(t('pairs.waitingHost'))}</span>
+			{/if}
+
+			<!--
+				ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом.
+			
+				Прохання автора: «після фіналу можна повторити і поточну гру „Грати
+				знову“, і іншу гру». Кнопки дві, бо це два різні кроки: господар створює
+				кімнату іншої гри (посилання несе код цієї, щоб нова могла про себе
+				сказати), а решта чекає й переходить за оголошеним кодом.
+			
+				Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці» мусить
+				працювати. Той самий взірець, що у виході в меню поруч.
+			-->
+			{#if cross.next}
+				<a href={cross.next} class="btn-primary" data-testid="room-next-link">
+					{@html formatFont(t('room.goNext'))}
+				</a>
+			{:else if amHost}
+				<a href={cross.create} class="chip" data-testid="room-other-game-link">
+					{@html formatFont(t(cross.createLabel))}
+				</a>
 			{/if}
 		</div>
 	{/if}

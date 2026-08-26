@@ -100,6 +100,18 @@ export class QuizMatch {
 	/** Зерно кімнати. Із нього виводиться програма — однакова в усіх. */
 	seed = $state(0);
 	autoStart = $state(false);
+	/**
+	 * КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА. `null` — нікуди.
+	 *
+	 * Прохання автора: після фіналу можна зіграти не лише в ту саму гру, а й в
+	 * іншу — «господар створює кімнату іншої гри, а решті в старій кімнаті
+	 * зʼявляється кнопка „перейти“ з її кодом».
+	 *
+	 * Кімната й далі знає одну гру: це не зміна гри тут, а вказівник на нову. Тому
+	 * поле живе в `info`, а не в журналі ходів — воно не про партію, яка вже
+	 * скінчилася.
+	 */
+	nextCode = $state<string | null>(null);
 	countdownAt = $state<number | null>(null);
 	/** Які ігри вибрані в кімнаті. Порожньо — ще не приїхав знімок. */
 	games = $state<string[]>([]);
@@ -689,6 +701,7 @@ export class QuizMatch {
 		this.hostUid = snapshot.info.hostUid;
 		this.seed = snapshot.info.seed;
 		this.autoStart = snapshot.info.autoStart === true;
+		this.nextCode = snapshot.info.nextCode ?? null;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.games = configToGames(snapshot.info.config);
 		this.roundPace = paceFromConfig(snapshot.info.config, PACE_ROUND_KEY);

@@ -21,6 +21,7 @@
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
+	import { announceFrom, crossGameLinks } from '$lib/utils/crossGame';
 
 	/**
 	 * Спільна партія «Знайди пару»: створити кімнату або зайти за кодом.
@@ -156,6 +157,7 @@
 	 * хтось із меншим `uid`.
 	 */
 	const amHost = $derived(Boolean(me) && match?.hostUid === me);
+
 
 	/**
 	 * АДРЕСА — ДЖЕРЕЛО ПРАВДИ ПРО КІМНАТУ, і цей ефект робить її такою.
@@ -347,6 +349,19 @@
 					 */
 					isPrivate: quick ? false : isPrivate
 				});
+				/*
+				 * ПЕРЕЇЗД: сказати СТАРІЙ кімнаті, куда переїхала гра.
+				 *
+				 * `?from` в адресі ставить кнопка «зіграти в іншу гру» на екрані підсумку
+				 * тієї кімнати. Тобто новий код доходить до решти гравців через саму стару
+				 * кімнату, і група лишається разом — інакше кожен опинявся б у переліку
+				 * кімнат і шукав одне одного заново.
+				 *
+				 * Прав це не додає: писати в чужу кімнату дозволено лише її господареві, а
+				 * ним тут і є той, хто натиснув. Не кидає — переїзд це зручність, і партія,
+				 * яка щойно почалася, не мусить ламатися через невдалу довідку.
+				 */
+				await announceFrom(page.url, code);
 			} else {
 				const wanted = joinCode.replace(/\D/g, '');
 				const room = await net.peekRoom(wanted);
@@ -1000,6 +1015,8 @@
 			{match}
 			{me}
 			{online}
+			{amHost}
+			cross={crossGameLinks(lang, 'pairs', code, match?.nextCode ?? null)}
 			onRematch={amHost ? rematch : undefined}
 			onClose={amHost ? close : undefined}
 			onYield={canTakeTurn ? takeTurn : undefined}

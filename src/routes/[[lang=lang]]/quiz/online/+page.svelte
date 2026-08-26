@@ -26,6 +26,7 @@
 	import QuizRooms from '$lib/components/quiz/QuizRooms.svelte';
 	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
+	import { announceFrom, crossGameLinks } from '$lib/utils/crossGame';
 	import type { PageData } from './$types';
 
 	/** Дані маршруту: словник цієї сторінки, завантажений у `+page.ts`. */
@@ -121,6 +122,7 @@
 
 	const takenNames = $derived(lobby.takenNames);
 	const amHost = $derived(Boolean(me) && match?.hostUid === me);
+
 	const joinUrl = $derived(browser && code !== '' ? page.url.href : '');
 
 	const roomFromUrl = () => (browser ? (page.url.searchParams.get('room') ?? '') : '');
@@ -213,6 +215,19 @@
 					autoStart: quick,
 					isPrivate: quick ? false : isPrivate
 				});
+				/*
+				 * ПЕРЕЇЗД: сказати СТАРІЙ кімнаті, куда переїхала гра.
+				 *
+				 * `?from` в адресі ставить кнопка «зіграти в іншу гру» на екрані підсумку
+				 * тієї кімнати. Тобто новий код доходить до решти гравців через саму стару
+				 * кімнату, і група лишається разом — інакше кожен опинявся б у переліку
+				 * кімнат і шукав одне одного заново.
+				 *
+				 * Прав це не додає: писати в чужу кімнату дозволено лише її господареві, а
+				 * ним тут і є той, хто натиснув. Не кидає — переїзд це зручність, і партія,
+				 * яка щойно почалася, не мусить ламатися через невдалу довідку.
+				 */
+				await announceFrom(page.url, code);
 			} else {
 				const wanted = joinCode.replace(/\D/g, '');
 				const room = await net.peekRoom(wanted);
@@ -684,6 +699,7 @@
 			{match}
 			{me}
 			{lang}
+			cross={crossGameLinks(lang, 'quiz', code, match?.nextCode ?? null)}
 			{amHost}
 			{clock}
 			{wait}
