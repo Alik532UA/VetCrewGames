@@ -45,10 +45,37 @@
 		 * обох гравців, інакше вона зникає й зʼявляється на кожному ході.
 		 */
 		turnLeftMs?: number | null;
+		/**
+		 * НА ЯКІ КАРТКИ ДИВЛЯТЬСЯ ІНШІ: uid → індекс.
+		 *
+		 * Прохання автора: «наведення на картку — бачать усі в грі». Свого тут немає:
+		 * його гравець і так бачить курсором.
+		 */
+		hovers?: Record<string, number>;
+		/** Сказати кімнаті, на що я дивлюся. `null` — ні на що. */
+		onpoint?: (card: number | null) => void;
 	}
 
-	let { match, me, online, onRematch, onClose, onYield, onEnd, turnLeftMs = null }: Props =
-		$props();
+	let {
+		match,
+		me,
+		online,
+		onRematch,
+		onClose,
+		onYield,
+		onEnd,
+		turnLeftMs = null,
+		hovers = {},
+		onpoint
+	}: Props = $props();
+
+	/**
+	 * Індекси, на які дивляться інші. Множина, бо питання до неї — «а цей?».
+	 *
+	 * Хто саме дивиться, дошка не показує навмисно: у партії на двох це відомо
+	 * без підпису, а підпис на картці закрив би саму картку.
+	 */
+	const pointedAt = $derived(new Set(Object.values(hovers)));
 
 	/**
 	 * Хто з гравців зник із гілки присутності.
@@ -271,6 +298,8 @@
 				position={index + 1}
 				disabled={!match.myTurn || match.over}
 				waiting={!match.myTurn}
+				pointed={pointedAt.has(index)}
+				onpoint={(over) => onpoint?.(over ? index : null)}
 				onflip={() => match.flip(index)}
 				testId="pairs-card-btn-{slot.card.id}"
 			/>

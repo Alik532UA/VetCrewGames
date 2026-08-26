@@ -39,6 +39,62 @@ export async function trackPresence(code: string): Promise<() => void> {
 	return () => void remove(mine);
 }
 
+/**
+ * СКАЗАТИ, НА ЯКУ КАРТКУ Я ДИВЛЮСЯ. `null` — ні на яку.
+ *
+ * Прохання автора: «наведення на картку — бачать усі в грі». Живе це в
+ * присутності, а не в журналі ходів: журнал — правда про партію, з якої кожен
+ * відтворює дошку, а наведення стану партії не змінює. У журналі воно ще й
+ * лишалося б назавжди — сотні записів, які всі перепрогонюють щознімка.
+ *
+ * ПИШЕТЬСЯ ПОДІЯ, А НЕ РУХ, і це поправка автора: «не треба кожний рух курсора
+ * записувати, а тільки саму подію наведення — навіщо знати, що гравець водить по
+ * картці курсором, і забивати трафік». Тому виклик стоїть на `pointerenter` і
+ * `pointerleave`, тобто кілька записів на хід, а не кілька на секунду.
+ *
+ * НЕ КИДАЄ: підсвітка — довідка, і її несправність не має права ламати партію.
+ * Той самий підхід, що в `touch()` у транспорті кімнати.
+ */
+export async function setHover(code: string, card: number | null): Promise<void> {
+	try {
+		const { uid, db } = await connect();
+		const { ref, remove, set } = await import('firebase/database');
+		const mine = ref(db, `presence/${code}/${uid}/hover`);
+		await (card === null ? remove(mine) : set(mine, card));
+	} catch {
+		// Тихо: наступне наведення спробує знову, а партія від цього не залежить.
+	}
+}
+
+/**
+ * На що дивляться ІНШІ: uid → індекс картки.
+ *
+ * Окрема підписка на ту саму гілку, а не розширення `watchPresence`: той
+ * відповідає на «хто онлайн» і потрібен ОБОМ іграм, а підсвітка — лише «Знайди
+ * пару». Обидві слухають один шлях, тож база віддає його один раз.
+ *
+ * Себе з переліку прибираємо тут, а не на екрані: свою підсвітку гравець і так
+ * бачить курсором, а власна пунктирна рамка поверх наведення читалася б як другий,
+ * незрозумілий стан.
+ */
+export async function watchHovers(
+	code: string,
+	onChange: (byUid: Record<string, number>) => void
+): Promise<() => void> {
+	const { uid, db } = await connect();
+	const { off, onValue, ref } = await import('firebase/database');
+	const branch = ref(db, `presence/${code}`);
+	const handler = onValue(branch, (snapshot) => {
+		const out: Record<string, number> = {};
+		const all = (snapshot.val() ?? {}) as Record<string, { hover?: number }>;
+		for (const [who, node] of Object.entries(all)) {
+			if (who !== uid && typeof node?.hover === 'number') out[who] = node.hover;
+		}
+		onChange(out);
+	});
+	return () => off(branch, 'value', handler);
+}
+
 /** Хто зараз на звʼязку. Підписка, бо це найшвидша частина стану. */
 export async function watchPresence(
 	code: string,

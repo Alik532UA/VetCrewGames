@@ -15,6 +15,7 @@
 	import { PairsMatch, PEEK_MS } from '$lib/controllers/pairsMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
+	import { HoverBeam } from '$lib/controllers/hoverBeam.svelte';
 	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
@@ -133,6 +134,13 @@
 	let unlist: (() => void) | null = null;
 	let me = $state('');
 	let online = $state<string[]>([]);
+	/**
+	 * Підсвітка чужого наведення — окремий контролер.
+	 *
+	 * У ньому зійшлися підписка, канал надсилання й затримка проти сплеску: на
+	 * сторінці вони читалися як «щось про курсор», а разом мають один обовʼязок.
+	 */
+	const beam = new HoverBeam();
 	let busy = $state(false);
 	let stops: Array<() => void> = [];
 	/** Годинник сторінки. Контролер часу не питає — йому його передають. */
@@ -383,6 +391,12 @@
 			const live = await import('$lib/net/presence');
 			stops.push(await live.trackPresence(code));
 			stops.push(await live.watchPresence(code, (uids) => (online = uids)));
+			/*
+			 * Підсвітка чужого наведення. Вона тут, а не в журналі ходів: журнал —
+			 * правда про партію, а наведення її стану не змінює. Присутність гасне сама,
+			 * тож чужа підсвітка зникає разом із вкладкою, а не висить назавжди.
+			 */
+			stops.push(await beam.listen(code));
 
 			/*
 			 * Кімната, у яку ніхто не зайшов, зникає разом із вкладкою господаря.
@@ -813,6 +827,19 @@
 	 */
 	const switchAutoStart = (on: boolean) => hostAction((t) => t.setAutoStart(on));
 
+	/*
+	 * НАВЕДЕННЯ ТРАНСЛЮЄТЬСЯ ЛИШЕ В СВОЮ ЧЕРГУ — вибір автора з двох варіантів.
+	 *
+	 * Це і є цікава інформація: «він зараз тицьне ось у цю». У того, хто чекає,
+	 * курсор нікому нічого не каже, зате писав би в базу так само часто.
+	 *
+	 * Умова стоїть ТУТ, а не в контролері: «чия черга» — правило гри, і контролер
+	 * підсвітки про партію не знає нічого.
+	 */
+	$effect(() => {
+		if (match?.myTurn === false) beam.clear();
+	});
+
 	/** Кнопка «забрати чергу» існує лише коли межа вже вийшла. */
 	const canTakeTurn = $derived(Boolean(match?.canYieldAt(clock)));
 
@@ -978,6 +1005,8 @@
 			onYield={canTakeTurn ? takeTurn : undefined}
 			onEnd={canTakeTurn ? endMatch : undefined}
 			{turnLeftMs}
+			hovers={beam.seen}
+			onpoint={(card) => void (match?.myTurn && beam.point(card))}
 		/>
 	{/if}
 </div>

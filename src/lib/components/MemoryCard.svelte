@@ -27,13 +27,38 @@
 		 * такою, як була.
 		 */
 		waiting?: boolean;
+		/**
+		 * СЮДИ ДИВИТЬСЯ СУПЕРНИК — підсвітити пунктиром.
+		 *
+		 * Прохання автора: «наведення на картку — бачать усі в грі». Свого наведення
+		 * тут не буває: його гравець і так бачить курсором, а друга рамка поверх
+		 * читалася б як інший, незрозумілий стан.
+		 */
+		pointed?: boolean;
+		/**
+		 * Курсор зайшов на картку або пішов із неї.
+		 *
+		 * Саме ПОДІЯ, а не рух: наведення й відведення спрацьовують раз на картку,
+		 * тобто кілька разів на хід. Слухати рух означало б писати в базу кілька
+		 * разів на секунду за ту саму інформацію.
+		 */
+		onpoint?: (over: boolean) => void;
 		/** Номер у колоді — ним називається закрита картка для читалок. */
 		position: number;
 		onflip: () => void;
 		testId: string;
 	}
 
-	let { slot, disabled, waiting = false, position, onflip, testId }: Props = $props();
+	let {
+		slot,
+		disabled,
+		waiting = false,
+		pointed = false,
+		position,
+		onflip,
+		onpoint,
+		testId
+	}: Props = $props();
 
 	const open = $derived(slot.faceUp || slot.takenBy !== null);
 
@@ -52,9 +77,12 @@
 	class:card--open={open}
 	class:card--taken={slot.takenBy !== null}
 	class:card--waiting={waiting}
+	class:card--pointed={pointed}
 	disabled={disabled || open}
 	aria-label={label}
 	onclick={onflip}
+	onpointerenter={() => onpoint?.(true)}
+	onpointerleave={() => onpoint?.(false)}
 	data-testid={testId}
 >
 	<span class="card__inner">
@@ -167,6 +195,22 @@
 	 */
 	.card--waiting .card__face--back {
 		color: color-mix(in srgb, var(--color-text), transparent 55%);
+	}
+
+	/*
+	 * СЮДИ ДИВИТЬСЯ СУПЕРНИК.
+	 *
+	 * Пунктир, а не суцільна рамка: суцільною акцентною вже позначено «моя черга» в
+	 * таблі, і третій суцільний контур на дошці читався б як те саме. Пунктир каже
+	 * «увага, але це не дія» — і читається без кольору, тобто працює й на
+	 * монохромному екрані (WCAG 1.4.1).
+	 *
+	 * Обводка, а не рамка: рамка змінила б розмір картки, тобто чужий курсор штовхав
+	 * би дошку. Зсув усередину — щоб пунктир не зливався з рамкою сорочки.
+	 */
+	.card--pointed .card__face--back {
+		outline: 2px dashed var(--color-accent);
+		outline-offset: -4px;
 	}
 
 	.card:hover:not(:disabled) .card__face--back {
