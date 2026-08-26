@@ -221,6 +221,7 @@
 			{phase}
 			step={match.step}
 			leftMs={match.leftMs(clock)}
+			limitLeftMs={match.limitLeftMs(clock)}
 			limitMs={match.limitMs}
 			answered={match.iAnswered}
 			{onanswer}

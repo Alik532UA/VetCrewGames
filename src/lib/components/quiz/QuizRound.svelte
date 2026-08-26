@@ -31,8 +31,19 @@
 		phase: QuizPhase;
 		/** Крок програми для цього раунду. `null` — раунду ще немає. */
 		step: QuizStep | null;
-		/** Скільки лишилося в раунді, мс. */
+		/**
+		 * Що показує СМУГА, мс. Застигає, щойно відповіли всі, — і це навмисно: інакше
+		 * вона стрибала б із половини на майже нуль (див. `leftMs` у `QuizMatch`).
+		 */
 		leftMs: number;
+		/**
+		 * Скільки лишилося до самої МЕЖІ ЧАСУ, мс. Не застигає.
+		 *
+		 * Два схожі числа, бо питання різні: смуга показує час, а автовідповідь питає
+		 * «скільки в мене лишилося, щоб підтвердити». Застигле число дало б їй
+		 * спрацювати не тоді, коли час вийшов, а тоді, коли хтось відповів.
+		 */
+		limitLeftMs: number;
 		/** Скільки триває раунд, мс. Нуль — раунду немає. */
 		limitMs: number;
 		/** Чи я вже відповів у цьому раунді. */
@@ -40,7 +51,7 @@
 		onanswer: (correct: number) => void;
 	}
 
-	let { text, phase, step, leftMs, limitMs, answered, onanswer }: Props = $props();
+	let { text, phase, step, leftMs, limitLeftMs, limitMs, answered, onanswer }: Props = $props();
 
 </script>
 
@@ -73,7 +84,7 @@
 			годинником: час у цій партії один, серверний, і другий годинник розвів би
 			двох гравців.
 		-->
-		<QuizBoard {text} {step} {onanswer} timeLeftMs={leftMs} />
+		<QuizBoard {text} {step} {onanswer} timeLeftMs={limitLeftMs} />
 	{/key}
 
 	{#if answered}

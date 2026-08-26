@@ -1,4 +1,4 @@
-import type { Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import {
 	PAUSE_COOLDOWN_MS,
@@ -15,6 +15,15 @@ import {
 
 /** Що зараз на екрані партії. */
 export type QuizPhase = 'round' | 'reveal' | 'over';
+
+/**
+ * Скільки разів боротися за номер у журналі, перш ніж здатися.
+ *
+ * Чотири — це «поки в кімнаті менше пʼятьох, збіг розводиться завжди». Верхня межа
+ * потрібна не через мережу, а через нескінченний цикл: якщо база відмовляє з
+ * причини, не пов'язаної з номером, спроби мусять закінчитися.
+ */
+const APPEND_TRIES = 4;
 
 /**
  * Спільна вікторина: РАУНД як одиниця, рахунок як чиста функція від журналу.
@@ -51,6 +60,21 @@ export type QuizPhase = 'round' | 'reveal' | 'over';
 export class QuizMatch {
 	/** Скільки ходів журналу вже врахували. */
 	applied = $state(0);
+	/**
+	 * НАЙБІЛЬШИЙ НОМЕР У ЖУРНАЛІ. Наступний вільний — на одиницю більший.
+	 *
+	 * Окреме число, а не `applied`, і різниця тут не косметична. `applied` — це
+	 * КІЛЬКІСТЬ ходів, і доти номер наступного виводився саме з неї. Поки журнал
+	 * щільний, це те саме; але щойно в ньому зʼявляється дірка, кількість указує на
+	 * зайнятий номер — і вказує на нього НАЗАВЖДИ. Кімната переставала приймати
+	 * ходи взагалі, і виглядало б це як «гра зламалася без причини».
+	 *
+	 * Дірки ж стали можливі рівно тому, що за номер тепер борються (`#append`).
+	 * Стану вони не чіпають: `replayQuizLog` перепрогонює журнал цілком, а
+	 * відповіді лежать за (раунд, гравець), тобто порядок між ними нічого не
+	 * означає.
+	 */
+	#topSeq = $state(0);
 	status = $state<'lobby' | 'playing' | 'over'>('lobby');
 	members = $state<Member[]>([]);
 	hostUid = $state('');
@@ -403,8 +427,7 @@ export class QuizMatch {
 	/** Поставити паузу. Дозволено будь-кому, хто в партії. */
 	async pause(): Promise<void> {
 		if (this.round < 0 || this.pausedBy !== null) return;
-		await this.#transport.append({
-			seq: this.applied + 1,
+		await this.#append({
 			by: this.#me,
 			type: 'pause',
 			payload: { round: this.round }
@@ -420,8 +443,7 @@ export class QuizMatch {
 	 */
 	async resume(): Promise<void> {
 		if (this.pausedBy !== this.#me) return;
-		await this.#transport.append({
-			seq: this.applied + 1,
+		await this.#append({
 			by: this.#me,
 			type: 'resume',
 			payload: { round: this.round }
@@ -453,8 +475,7 @@ export class QuizMatch {
 		 */
 		const paused = this.pausedBy;
 		if (paused !== null) {
-			await this.#transport.append({
-				seq: this.applied + 1,
+			await this.#append({
 				by: this.#me,
 				type: 'held',
 				payload: { round: this.round, ms, uid: paused, spent }
@@ -463,8 +484,7 @@ export class QuizMatch {
 		}
 
 		for (const member of this.away) {
-			await this.#transport.append({
-				seq: this.applied + 1,
+			await this.#append({
 				by: this.#me,
 				type: 'held',
 				payload: { round: this.round, ms, uid: member.uid, spent }
@@ -472,8 +492,7 @@ export class QuizMatch {
 			return;
 		}
 		// Ніхто не був відсутній — пауза все одно записується, пільга ні.
-		await this.#transport.append({
-			seq: this.applied + 1,
+		await this.#append({
 			by: this.#me,
 			type: 'held',
 			payload: { round: this.round, ms }
@@ -491,14 +510,47 @@ export class QuizMatch {
 	 * тобто стоїть на місці на екрані.
 	 */
 	deadlineAt(now = 0): number | null {
+		const byTime = this.#limitAt(now);
+		if (byTime === null) return null;
+
+		const last = this.#lastAnswerAt;
+		if (last === null) return byTime;
+
+		/*
+		 * ПІСЛЯ ОСТАННЬОЇ ВІДПОВІДІ — секунда, ЩОБ ЇЇ ПОБАЧИТИ. У обидві сторони.
+		 *
+		 * Тут стояло `Math.min(byTime, last + SETTLE_MS)`, тобто затримка вміла лише
+		 * СКОРОЧУВАТИ раунд: відповіли всі — не чекаємо решти. Але та сама умова
+		 * зʼїдала секунду, коли відповідь приходила в кінці, і саме це автор побачив:
+		 * «відповідь зʼявляється на мікросекунду, а потім вже табло результатів».
+		 * Найгостріше — з автовідповіддю, яка за побудовою спрацьовує за 300 мс до
+		 * межі: розбір показувався рівно ці 300 мс.
+		 *
+		 * Тепер правило одне на два випадки: раунд не кінчається раніше, ніж через
+		 * `SETTLE_MS` після останньої відповіді. Відповіли всі — рахуємо від неї
+		 * (раунд може скінчитися задовго до межі); відповіли не всі — межа, але не
+		 * раніше за ту саму секунду.
+		 *
+		 * Продовження ОБМЕЖЕНЕ однією секундою поверх межі. Без цієї стелі кожна
+		 * відповідь під кінець зсувала б дедлайн наступній, і в кімнаті на дванадцять
+		 * гравців раунд міг би тягнутися на дванадцять секунд довше.
+		 */
+		const settle = last + SETTLE_MS;
+		const end = this.everyoneAnswered ? settle : Math.max(byTime, settle);
+		return Math.min(end, byTime + SETTLE_MS);
+	}
+
+	/** Коли виходить сам ЧАС раунду — без затримок на розбір. `null` — раунду немає. */
+	#limitAt(now: number): number | null {
 		const start = this.startedAt[this.round];
 		if (start === undefined) return null;
+		return start + this.limitMs + this.heldMs(now);
+	}
 
-		const byTime = start + this.limitMs + this.heldMs(now);
-		if (!this.everyoneAnswered) return byTime;
-
-		const last = Math.max(...Object.values(this.answers[this.round] ?? {}).map((a) => a.at));
-		return Math.min(byTime, last + SETTLE_MS);
+	/** Коли відповіли ОСТАННІМ у цьому раунді. `null` — ще ніхто. */
+	get #lastAnswerAt(): number | null {
+		const times = Object.values(this.answers[this.round] ?? {}).map((answer) => answer.at);
+		return times.length === 0 ? null : Math.max(...times);
 	}
 
 	/**
@@ -526,9 +578,41 @@ export class QuizMatch {
 	 * фактично закінчився.
 	 */
 	leftMs(now: number): number {
-		const deadline = this.deadlineAt(now);
-		if (deadline === null) return 0;
-		return Math.max(0, deadline - now);
+		/*
+		 * СМУГА СТОЇТЬ, А НЕ СТРИБАЄ, коли відповіли всі.
+		 *
+		 * Скарга автора: «коли всі відповіли, візуально таймер перестрибує на останні
+		 * 1–2 секунди… нехай таймер зупиняється де був на момент відповіді останнього
+		 * гравця». Так і було, і саме через правильну логіку: дедлайн переїжджає на
+		 * секунду після останньої відповіді, а смуга рахувалася від дедлайну — тобто
+		 * стрибала з половини на майже нуль.
+		 *
+		 * Тому тут дві різні відповіді на схожі питання. «Скільки лишилося раундові»
+		 * — це `deadlineAt`, і на ньому тримається кінець раунду. «Що показує смуга» —
+		 * це залишок ЧАСУ, і коли відповіли всі, він застигає на тому значенні, яке
+		 * мав у мить останньої відповіді.
+		 *
+		 * Застигає саме показник, не правило: раунд однаково кінчається через
+		 * `SETTLE_MS`, просто ці секунду-дві смуга стоїть на місці, а не добігає.
+		 */
+		if (this.everyoneAnswered) {
+			const last = this.#lastAnswerAt;
+			const limit = last === null ? null : this.#limitAt(last);
+			return limit === null || last === null ? 0 : Math.max(0, limit - last);
+		}
+		return this.limitLeftMs(now);
+	}
+
+	/**
+	 * Скільки лишилося до самої МЕЖІ ЧАСУ — без затримок на розбір і без застигання.
+	 *
+	 * На це число дивиться автовідповідь: воно й є «скільки в мене лишилося, щоб
+	 * підтвердити». `leftMs` для цього не годиться — він застигає, щойно відповіли
+	 * всі, а `deadlineAt` уміє з'їхати вперед на секунду розбору.
+	 */
+	limitLeftMs(now: number): number {
+		const limit = this.#limitAt(now);
+		return limit === null ? 0 : Math.max(0, limit - now);
 	}
 
 	/** Чи час господареві оголошувати наступний раунд. */
@@ -549,10 +633,37 @@ export class QuizMatch {
 	 * приїхали не в тому порядку, інакше зарахувалися б як відповіді на різні
 	 * раунди. Повторна відповідь на той самий раунд відкидається при застосуванні.
 	 */
+	/**
+	 * ДОПИСАТИ ХІД, ПОБОРОВШИСЬ ЗА НОМЕР.
+	 *
+	 * Тут виправляється дефект, який автор побачив так: «двоє вибрали і не
+	 * натиснули кнопку „підтвердити“ — бали нарахувалися тільки одному».
+	 *
+	 * Причина не в автовідповіді, а в тому, що вона зробила рідке звичайним. Хід —
+	 * окрема дитина `moves/{seq}`, і створити її можна лише раз: другий запис того
+	 * самого номера відкидає БАЗА. Доти номер брався один раз і на відмову ніхто не
+	 * зважав — у «Знайди пару» це правильно (відмова означає «суперник устиг
+	 * першим», і журнал справді головніший за наш намір), а у вікторині гравці
+	 * відповідають ОДНОЧАСНО, і відмова означає просто втрачену відповідь.
+	 *
+	 * Двоє людей рідко тицяють у той самий проміжок; двоє таймерів, що рахують від
+	 * тієї самої серверної позначки, — завжди. Тобто збіг перестав бути рідкістю, і
+	 * саме тому потрібна боротьба, а не сподівання.
+	 *
+	 * Номер перечитується на КОЖНІЙ спробі (`+ attempt` лише щоб спроби не стояли
+	 * на місці, коли знімок ще не приїхав), і дірка, якщо лишиться, нічого не
+	 * ламає — див. докблок `#topSeq`.
+	 */
+	async #append(move: Omit<Move, 'seq'>): Promise<boolean> {
+		for (let attempt = 0; attempt < APPEND_TRIES; attempt += 1) {
+			if (await this.#transport.append({ ...move, seq: this.#topSeq + 1 + attempt })) return true;
+		}
+		return false;
+	}
+
 	async answer(correct: number): Promise<void> {
 		if (this.iAnswered || this.round < 0) return;
-		await this.#transport.append({
-			seq: this.applied + 1,
+		await this.#append({
 			by: this.#me,
 			type: 'answer',
 			payload: { round: this.round, correct }
@@ -572,8 +683,7 @@ export class QuizMatch {
 	 */
 	async voteGoOn(): Promise<void> {
 		if (this.round < 0 || this.goOn.includes(this.#me)) return;
-		await this.#transport.append({
-			seq: this.applied + 1,
+		await this.#append({
 			by: this.#me,
 			type: 'goon',
 			payload: { round: this.round }
@@ -588,8 +698,7 @@ export class QuizMatch {
 	/** Оголосити початок раунду. Пише лише господар. */
 	async startRound(round: number): Promise<void> {
 		if (this.startedAt[round] !== undefined) return;
-		await this.#transport.append({
-			seq: this.applied + 1,
+		await this.#append({
 			by: this.#me,
 			type: 'round',
 			payload: { round }
@@ -627,5 +736,7 @@ export class QuizMatch {
 			this.#pending = { ...this.#pending, [this.round]: 0 };
 		}
 		this.applied = snapshot.moves.length;
+		// Найбільший номер, а не кількість: причина — у докблоці `#topSeq`.
+		this.#topSeq = snapshot.moves.reduce((top, move) => Math.max(top, move.seq), 0);
 	}
 }
