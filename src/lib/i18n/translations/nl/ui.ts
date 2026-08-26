@@ -23,7 +23,6 @@ export const ui = {
 	'menu.playOnline': 'Online spelen',
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
-	'pairs.over': 'Het spel is voorbij',
 	'pairs.won': 'Gewonnen',
 	'pairs.draw': 'Gelijkspel',
 	'pairs.rematch': 'Nog eens spelen',
@@ -50,7 +49,6 @@ export const ui = {
 	'pairs.opponentGone': 'De tegenstander speelt al een tijd niet.',
 	'pairs.takeTurn': 'Zet overnemen',
 	'pairs.away': 'geen verbinding',
-	'pairs.awayYourTurn': 'Het is jouw zet — speel verder.',
 	'pairs.yieldIn': 'Zet overnemen kan over',
 	'pairs.endMatch': 'Spel beëindigen',
 	'pairs.endedEarly': 'Het spel is vroegtijdig beëindigd: de tegenstander kwam niet terug.',

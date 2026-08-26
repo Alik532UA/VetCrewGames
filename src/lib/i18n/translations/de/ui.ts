@@ -23,7 +23,6 @@ export const ui = {
 	'menu.playOnline': 'Online spielen',
 
 	// Gemeinsame Runde von Finde ein Paar: Lobby, Rolle, Zug.
-	'pairs.over': 'Die Runde ist zu Ende',
 	'pairs.won': 'Gewonnen',
 	'pairs.draw': 'Unentschieden',
 	'pairs.rematch': 'Nochmal spielen',
@@ -50,7 +49,6 @@ export const ui = {
 	'pairs.opponentGone': 'Die Gegenseite spielt schon lange nicht.',
 	'pairs.takeTurn': 'Zug übernehmen',
 	'pairs.away': 'keine Verbindung',
-	'pairs.awayYourTurn': 'Sie sind am Zug — spielen Sie weiter.',
 	'pairs.yieldIn': 'Zug übernehmen in',
 	'pairs.endMatch': 'Partie beenden',
 	'pairs.endedEarly': 'Die Partie wurde vorzeitig beendet: der Gegner kam nicht zurück.',

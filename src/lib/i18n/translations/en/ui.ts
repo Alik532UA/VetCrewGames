@@ -23,7 +23,6 @@ export const ui = {
 	'menu.playOnline': 'Play online',
 
 	// Shared game of Find a Pair: lobby, role, turn.
-	'pairs.over': 'The game is over',
 	'pairs.won': 'Winner',
 	'pairs.draw': 'A draw',
 	'pairs.rematch': 'Play again',
@@ -50,7 +49,6 @@ export const ui = {
 	'pairs.opponentGone': 'Your opponent has been idle for a while.',
 	'pairs.takeTurn': 'Take the turn',
 	'pairs.away': 'no connection',
-	'pairs.awayYourTurn': 'It is your turn — keep playing.',
 	'pairs.yieldIn': 'You can take the turn in',
 	'pairs.endMatch': 'End the game',
 	'pairs.endedEarly': 'The game was ended early: the opponent did not come back.',
