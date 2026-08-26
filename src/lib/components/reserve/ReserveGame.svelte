@@ -35,6 +35,7 @@
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { dev } from '$app/environment';
 	import ReserveBar, { type Panel } from './ReserveBar.svelte';
+	import ReserveSpeeds from './ReserveSpeeds.svelte';
 
 	/**
 	 * Одна ДІЛЯНКА фонду: земля під ногами й керування нею.
@@ -253,8 +254,6 @@
 		journal={game.state.journal}
 		todayNotes={game.state.today}
 		dayStart={game.state.dayStart}
-		speed={game.speed}
-		onSpeed={(value: Speed) => (game.speed = value)}
 	/>
 
 	{#if game.state.gameOver}
@@ -284,16 +283,36 @@
 		<!-- Розпірка тримає смугу кнопок унизу, поки карта лежить під усім. -->
 		<div class="reserve-fill"></div>
 
-		<ReserveBar
-			{panel}
-			placing={pending !== null}
-			onPanel={(id, x) => {
-				anchorX = x;
-				panel = panel === id ? null : id;
-			}}
-			onCampaign={() => command({ type: 'campaign' })}
-			onCancel={() => (pending = null)}
-		/>
+		<!--
+			НИЖНІЙ РЯДОК: кнопки панелей ліворуч, керування часом ПРАВОРУЧ.
+
+			Прохання автора: група швидкостей стояла зверху праворуч, а мусить стояти
+			знизу праворуч. Рядок звичайний, у потоці — не накладка: накладка над
+			смугою кнопок накривала б останню кнопку рівно тоді, коли смуга
+			прокручена (а вона прокручується на вузькому екрані).
+
+			ПЕРЕНОСУ НЕМА, і це заміряно, а не за смаком. З переносом на 380px час
+			опускався під смугу, нижній блок ставав 96px замість 44 — і мінікарта,
+			яка висить на `bottom: 4.5rem`, накривалася ним на 24px. Це рівно той
+			дефект, через який сама смуга кнопок колись стала `nowrap`: висота
+			нижнього блока мусить бути НЕЗМІННОЮ, бо від неї залежить усе, що
+			висить над ним. Тому час не переноситься, а смуга панелей звужується й
+			прокручується — вона це вміє.
+		-->
+		<div class="reserve-bottom">
+			<ReserveBar
+				{panel}
+				placing={pending !== null}
+				onPanel={(id, x) => {
+					anchorX = x;
+					panel = panel === id ? null : id;
+				}}
+				onCampaign={() => command({ type: 'campaign' })}
+				onCancel={() => (pending = null)}
+			/>
+
+			<ReserveSpeeds speed={game.speed} onSpeed={(value: Speed) => (game.speed = value)} />
+		</div>
 
 		<!-- Службове меню. У продакшні `dev` — false, і гілки в збірці не лишається. -->
 		{#if dev && devPanel.open}
@@ -438,6 +457,20 @@
 		 * припасованою до вікна.
 		 */
 		padding: var(--space-sm);
+	}
+
+	/*
+	 * Нижній рядок: смуга панелей і керування часом. `align-items: flex-end` —
+	 * щоб час стояв по нижньому краю навіть тоді, коли над смугою зʼявилася
+	 * підказка про розміщення й ліва половина стала вищою.
+	 */
+	.reserve-bottom {
+		display: flex;
+		/* Один рядок завжди: висота нижнього блока тримає мінікарту над собою. */
+		flex-wrap: nowrap;
+		gap: var(--space-sm);
+		align-items: flex-end;
+		width: 100%;
 	}
 
 	.reserve-fill {

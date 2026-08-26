@@ -9,6 +9,7 @@ export const reserve = {
 	'reserve.impact': 'Користь планеті',
 
 	// Підписи для читалки — дієслово-дія, а не назва стану (ACCESSIBILITY-v8 § 4.1).
+	'reserve.speed.group': 'Швидкість часу',
 	'reserve.speed.pause': 'Зупинити час',
 	'reserve.speed.x1': 'Звичайна швидкість',
 	'reserve.speed.x2': 'Подвійна швидкість',

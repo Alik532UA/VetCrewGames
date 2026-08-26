@@ -9,6 +9,7 @@
 	import BiomePicker from '$lib/components/reserve/BiomePicker.svelte';
 	import { loadReserveText } from '$lib/i18n/reserve';
 	import ReserveHud from '$lib/components/reserve/ReserveHud.svelte';
+	import ReserveSpeeds from '$lib/components/reserve/ReserveSpeeds.svelte';
 	import { reserve, type Speed } from '$lib/controllers/reserve.svelte';
 	import { populatedSites, released, residents } from '$lib/reserve/simulation';
 	import type { ReserveBiome } from '$lib/reserve/species';
@@ -98,8 +99,6 @@
 		journal={game.state.journal}
 		todayNotes={game.state.today}
 		dayStart={game.state.dayStart}
-		speed={game.speed}
-		onSpeed={(value: Speed) => (game.speed = value)}
 	/>
 
 	<BiomePicker onPick={open} />
@@ -114,9 +113,26 @@
 	>
 		{@html formatFont(t(confirming ? 'reserve.restartAllConfirm' : 'reserve.restartAll'))}
 	</button>
+
+	<!--
+		Керування часом і тут знизу праворуч — те саме місце, що на сторінці
+		ділянки. Час на вітрині ІДЕ (див. `startClock` вище), тож ховати керування
+		тут означало б спиняти партію переходом на вибір ділянки й не мати чим це
+		скасувати.
+	-->
+	<div class="menu-page__time">
+		<ReserveSpeeds speed={game.speed} onSpeed={(value: Speed) => (game.speed = value)} />
+	</div>
 </div>
 
 <style>
+	/* Праворуч у своєму рядку: сторінка — стовпчик на 480px, і «праворуч» тут його край. */
+	.menu-page__time {
+		display: flex;
+		justify-content: flex-end;
+		width: 100%;
+	}
+
 	.wipe {
 		align-self: center;
 		min-height: 44px;

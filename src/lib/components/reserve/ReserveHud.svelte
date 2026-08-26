@@ -3,7 +3,6 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { deltaOf } from '$lib/reserve/journal';
 	import type { JournalDay, JournalNote, MetricSet } from '$lib/reserve/types';
-	import { SPEEDS, type Speed } from '$lib/controllers/reserve.svelte';
 	import HudHistory from './HudHistory.svelte';
 	import { hudProbe } from './hudProbe.svelte';
 	import { hudStats } from './hudStats';
@@ -44,8 +43,6 @@
 		todayNotes: JournalNote[];
 		/** Зріз на початку доби: різниця з живими числами і є «сьогодні». */
 		dayStart: MetricSet;
-		speed: Speed;
-		onSpeed: (speed: Speed) => void;
 	}
 
 	let {
@@ -59,9 +56,7 @@
 		manySites,
 		journal,
 		todayNotes,
-		dayStart,
-		speed,
-		onSpeed
+		dayStart
 	}: Props = $props();
 
 	/**
@@ -75,10 +70,6 @@
 		deltaOf({ budget, feed, impact, reputation, inReserve, inWild }, dayStart)
 	);
 
-	/** Підпис для читалки: пауза називається дією, а не значком. */
-	const speedLabel = (value: Speed) =>
-		value === 0 ? t('reserve.speed.pause') : t(`reserve.speed.x${value}` as const);
-
 	const stats = $derived(
 		hudStats(
 			{ day, budget, feed, impact, reputation, inReserve, inWild, manySites },
@@ -88,11 +79,12 @@
 	/**
 	 * СПОВІЩЕННЯ НЕ МУСЯТЬ НАКРИВАТИ ЦІ САМІ ПОКАЗНИКИ.
 	 *
-	 * Тости стоять зверху ліворуч (прохання автора), і саме там же стоїть ця
-	 * панель. Заміряно: на 1100px вона займає 55px висоти, на 420px — 178,
-	 * бо переноситься в кілька рядів. Тобто фіксованим відступом це не
-	 * розвʼязується: на телефоні тост усе одно ліг би на числа, які щойно
-	 * змінилися через ту саму подію.
+	 * Тости стоять зверху ПРАВОРУЧ (прохання автора; доти було ліворуч), а ця
+	 * панель — зверху ліворуч. На широкому екрані вони вже не сусіди, але на
+	 * вузькому показники переносяться в кілька рядів і доходять до правого краю:
+	 * заміряно 55px висоти на 1100px і 178px на 420px. Тобто фіксованим
+	 * відступом це не розвʼязується — на телефоні тост ліг би на числа, які
+	 * щойно змінилися через ту саму подію.
 	 *
 	 * Тому висота МІРЯЄТЬСЯ і віддається тостам змінною. Через `:root`, а не
 	 * каскадом: `Toast` живе в кореневому layout, поза деревом цієї сторінки, і
@@ -166,22 +158,6 @@
 					</div>
 				{/if}
 			</div>
-		{/each}
-	</div>
-
-	<div class="hud__speeds" role="group" aria-label={t('reserve.speed.x1')}>
-		{#each SPEEDS as value (value)}
-			<button
-				type="button"
-				class="hud__speed"
-				class:hud__speed--on={speed === value}
-				aria-pressed={speed === value}
-				aria-label={speedLabel(value)}
-				onclick={() => onSpeed(value)}
-				data-testid="reserve-speed-{value}-btn"
-			>
-				{value === 0 ? '⏸' : `×${value}`}
-			</button>
 		{/each}
 	</div>
 </header>
@@ -260,29 +236,11 @@
 		color: var(--color-error);
 	}
 
-	/* Керування часом — теж окрема плашка: це інша річ, ніж показники. */
-	.hud__speeds {
-		display: flex;
-		gap: 4px;
-		padding: 4px;
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-panel);
-	}
-
-	.hud__speed {
-		/* 44px — найменша ціль, у яку впевнено влучає палець (ACCESSIBILITY-v8). */
-		min-width: 44px;
-		min-height: 44px;
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-		font-variant-numeric: tabular-nums;
-		cursor: pointer;
-	}
-
-	.hud__speed--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-	}
+	/*
+	 * Керування часом ЗВІДСИ ПІШЛО — у `ReserveSpeeds`, униз праворуч (прохання
+	 * автора). Тут лишилися показники, і `justify-content: space-between` вище
+	 * тепер розпирає лише їх — тобто нічого, бо вони один блок. Правило лишається
+	 * навмисно: воно тримає вирівнювання, якщо в шапці колись зʼявиться друга
+	 * група.
+	 */
 </style>

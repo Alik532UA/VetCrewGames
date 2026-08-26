@@ -227,6 +227,27 @@ export const reserveTab: BetaTab = {
 				en: 'Build three enclosures in a row — simple, good and excellent — and zoom the camera in. The fences must look DIFFERENT: the simple one low and grey, the good one fresh wood, the excellent one taller, light grey, with three rails and caps on the posts. Let the excellent one wear below 60% — its fence must become the same as the good one’s.'
 			},
 			coverage: 'manual'
+		},
+		{
+			id: 'reserve_22',
+			category: { uk: 'Керування часом', en: 'Time controls' },
+			text: {
+				uk: 'Керування часом мусить стояти ЗНИЗУ ПРАВОРУЧ, а сповіщення — ЗВЕРХУ ПРАВОРУЧ. Натисніть клавішу ліворуч від одиниці — час мусить спинитися; далі 1, 2, 3 — звичайна, подвійна й пʼятикратна. Ті самі цифри на допоміжному блоці мусять діяти так само. Під кожною кнопкою підписана її клавіша.',
+				en: 'Time controls must sit at the BOTTOM RIGHT and notifications at the TOP RIGHT. Press the key left of the digit one — time must stop; then 1, 2, 3 for normal, double and five times. The same digits on the numeric keypad must work too. Each button shows its key underneath.'
+			},
+			coverage: 'manual',
+			testid: 'reserve-speed-toolbar'
+		},
+		{
+			id: 'reserve_23',
+			category: { uk: 'Керування часом', en: 'Time controls' },
+			text: {
+				uk: 'Знімiть галочку гарячих клавіш у шапці — цифри 1, 2, 3 і клавіша паузи мусять перестати діяти, а підписи клавіш під кнопками зникнути. Самі кнопки мусять і далі працювати мишкою.',
+				en: 'Turn the shortcut switch off in the header — the digits 1, 2, 3 and the pause key must stop working and the key labels under the buttons must disappear. The buttons themselves must still work with the mouse.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'header-shortcuts-toggle'
 		}
 	]
 };

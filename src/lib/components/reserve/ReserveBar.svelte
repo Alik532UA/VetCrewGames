@@ -48,41 +48,62 @@
 	];
 </script>
 
-{#if placing}
-	<p class="hint" role="status" data-testid="reserve-placing-status">
-		{@html formatFont(t('reserve.placing'))}
-		<button type="button" class="hint__cancel" onclick={onCancel}>
-			{@html formatFont(t('reserve.cancel'))}
-		</button>
-	</p>
-{/if}
+<!--
+	ОДИН КОРІНЬ, а не два. Компонент став лівою половиною нижнього рядка
+	(`ReserveGame` ставить праворуч від нього керування часом), і два кореневі
+	вузли потрапили б у той рядок окремо — підказка про розміщення стала б сусідом
+	кнопок замість того, щоб стояти над ними.
+-->
+<div class="bar-wrap">
+	{#if placing}
+		<p class="hint" role="status" data-testid="reserve-placing-status">
+			{@html formatFont(t('reserve.placing'))}
+			<button type="button" class="hint__cancel" onclick={onCancel}>
+				{@html formatFont(t('reserve.cancel'))}
+			</button>
+		</p>
+	{/if}
 
-<nav class="bar" aria-label={t('reserve.title')}>
-	{#each BUTTONS as item (item.id)}
+	<nav class="bar" aria-label={t('reserve.title')}>
+		{#each BUTTONS as item (item.id)}
+			<button
+				type="button"
+				class="bar__btn"
+				class:bar__btn--on={panel === item.id}
+				aria-pressed={panel === item.id}
+				onclick={(event) => onPanel(item.id, centerOf(event.currentTarget))}
+				data-testid="reserve-panel-{item.id}-btn"
+			>
+				{@html formatFont(t(item.key))}
+			</button>
+		{/each}
+
 		<button
 			type="button"
 			class="bar__btn"
-			class:bar__btn--on={panel === item.id}
-			aria-pressed={panel === item.id}
-			onclick={(event) => onPanel(item.id, centerOf(event.currentTarget))}
-			data-testid="reserve-panel-{item.id}-btn"
+			title={t('reserve.campaignHint')}
+			onclick={onCampaign}
+			data-testid="reserve-campaign-btn"
 		>
-			{@html formatFont(t(item.key))}
+			{@html formatFont(t('reserve.campaign'))}
 		</button>
-	{/each}
-
-	<button
-		type="button"
-		class="bar__btn"
-		title={t('reserve.campaignHint')}
-		onclick={onCampaign}
-		data-testid="reserve-campaign-btn"
-	>
-		{@html formatFont(t('reserve.campaign'))}
-	</button>
-</nav>
+	</nav>
+</div>
 
 <style>
+	/*
+	 * Обгортка: підказка над кнопками. Сама вона в нижньому рядку МОЖЕ звужуватися
+	 * (`min-width: 0`) — без цього `overflow-x` у `.bar` не працює, бо вміст
+	 * розпирав би саму обгортку, а не прокручувався в ній.
+	 */
+	.bar-wrap {
+		display: flex;
+		flex: 1 1 auto;
+		min-width: 0;
+		flex-direction: column;
+		gap: var(--space-sm);
+	}
+
 	.bar {
 		display: flex;
 		gap: var(--space-sm);

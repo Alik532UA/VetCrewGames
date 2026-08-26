@@ -5,6 +5,7 @@ export const reserve = {
 	'reserve.budget': 'Budget',
 	'reserve.impact': 'Good for the planet',
 
+	'reserve.speed.group': 'Time speed',
 	'reserve.speed.pause': 'Stop time',
 	'reserve.speed.x1': 'Normal speed',
 	'reserve.speed.x2': 'Double speed',
