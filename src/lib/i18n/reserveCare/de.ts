@@ -12,6 +12,8 @@ export const reserveCare = {
 	'reserve.care.hire': 'Mitarbeiter einstellen',
 	'reserve.care.perDay': 'Tag',
 	'reserve.care.self': 'Selbst machen',
+	'reserve.care.trialScore': 'Punkte',
+	'reserve.care.trialNeed': 'nötig',
 	'reserve.care.selfHint':
 		'Fünf Runden eines Minispiels. Über 70% der Punkte sind nötig; ein Fehlschlag kostet den Tag auch.',
 	'reserve.care.ignore': 'Nichts tun',

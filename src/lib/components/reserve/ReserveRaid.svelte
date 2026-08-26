@@ -69,7 +69,7 @@
 	-->
 	<div class="raid-backdrop" aria-hidden="true"></div>
 	<div class="raid-trial" role="alertdialog" aria-modal="true">
-		<ReserveTrial ondone={(ok) => answer('self', ok)} oncancel={() => (trial = false)} />
+		<ReserveTrial {careText} ondone={(ok) => answer('self', ok)} oncancel={() => (trial = false)} />
 	</div>
 {:else if game.state.raid}
 	<RaidModal

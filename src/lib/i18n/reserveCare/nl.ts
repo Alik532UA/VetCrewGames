@@ -12,6 +12,8 @@ export const reserveCare = {
 	'reserve.care.hire': 'Medewerker inhuren',
 	'reserve.care.perDay': 'dag',
 	'reserve.care.self': 'Zelf doen',
+	'reserve.care.trialScore': 'Punten',
+	'reserve.care.trialNeed': 'nodig',
 	'reserve.care.selfHint':
 		'Vijf rondes van een minispel. Meer dan 70% van de punten is nodig; mislukken kost de dag ook.',
 	'reserve.care.ignore': 'Niets doen',

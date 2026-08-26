@@ -192,8 +192,8 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_18',
 			category: { uk: 'Вибір без працівника', en: 'Choice without a worker' },
 			text: {
-				uk: 'Натисніть «Зробити самому»: мусить запуститися міні-гра на пʼять раундів (лічильник «1 / 5»). Наберіть понад 70% балів — здоровʼя тварини мусить підрости так само, як від дня роботи лікаря. Наберіть менше — день витрачено, здоровʼя не змінилося.',
-				en: 'Press “Do it yourself”: a five-round mini-game must start (counter “1 / 5”). Score over 70% of points — the animal’s health must rise as much as from one day of a vet. Score less — the day is spent and health does not change.'
+				uk: 'Натисніть «Зробити самому»: мусить запуститися перевірка на пʼять раундів — над дошкою смуга з пʼяти позначок, під нею рядок «Балів». Кожен раунд — ІНША міні-гра, і після кожної відповіді мусить зʼявитися розбір із кнопкою «Далі», а не одразу наступне питання. Наберіть понад 70% балів — здоровʼя тварини мусить підрости так само, як від дня роботи лікаря. Наберіть менше — день витрачено, здоровʼя не змінилося.',
+				en: 'Press “Do it yourself”: a five-round trial must start — a five-segment bar above the board and a “Points” line below it. Every round is a DIFFERENT mini-game, and after each answer the review with a “Next” button must appear instead of the next question straight away. Score over 70% of points — the animal’s health must rise as much as from one day of a vet. Score less — the day is spent and health does not change.'
 			},
 			coverage: 'manual',
 			testid: 'reserve-trial-panel'
@@ -213,8 +213,8 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_20',
 			category: { uk: 'Браконьєри', en: 'Poachers' },
 			text: {
-				uk: 'Коли прийдуть браконьєри, виберіть «Вийти самому». Замість списку тактик мусить відкритися та сама міні-гра на пʼять раундів: понад 70% балів — тварина лишається, менше — її забирають. Кнопка мусить бути доступна без грошей і без рейнджера.',
-				en: 'When poachers come, choose “Go out yourself”. Instead of the tactic list the same five-round mini-game must open: over 70% of points keeps the animal, less loses it. The button must be available without money and without a ranger.'
+				uk: 'Коли прийдуть браконьєри, виберіть «Вийти самому». Замість списку тактик мусить відкритися та сама перевірка на пʼять раундів із пʼятьох різних міні-ігор: понад 70% балів — тварина лишається, менше — її забирають. Кнопка мусить бути доступна без грошей і без рейнджера.',
+				en: 'When poachers come, choose “Go out yourself”. Instead of the tactic list the same five-round trial of five different mini-games must open: over 70% of points keeps the animal, less loses it. The button must be available without money and without a ranger.'
 			},
 			coverage: 'manual',
 			testid: 'reserve-trial-panel'

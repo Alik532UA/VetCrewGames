@@ -10,6 +10,8 @@ export const reserveCare = {
 	'reserve.care.hire': 'Hire a worker',
 	'reserve.care.perDay': 'day',
 	'reserve.care.self': 'Do it yourself',
+	'reserve.care.trialScore': 'Points',
+	'reserve.care.trialNeed': 'need',
 	'reserve.care.selfHint':
 		'Five rounds of a mini-game. Over 70% of points is needed; failing also spends the day.',
 	'reserve.care.ignore': 'Do nothing',

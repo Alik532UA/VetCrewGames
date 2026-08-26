@@ -12,6 +12,7 @@ import {
 	configToGames,
 	gamesToConfig,
 	quizProgramme,
+	distinctProgramme,
 	roomFitsGames
 } from '$lib/config/quizOnline';
 
@@ -220,6 +221,65 @@ describe('програма партії', () => {
 			ONLINE_GAMES.map((game) => game.id)
 		).map((s) => s.seed);
 		expect(new Set(seeds).size).toBe(seeds.length);
+	});
+});
+
+/**
+ * ПЕРЕВІРКА В ЗАПОВІДНИКУ: пʼять кроків — пʼять РІЗНИХ ігор.
+ *
+ * Автор попросив прямо: «кожне з питань з різних міні ігор». Доти перевірка
+ * «зробити самому» брала одну гру на всі пʼять раундів, і причина, записана в
+ * компоненті, спиралася на різну ціну раунду — але поріг рахується від
+ * набраного максимуму, тож пропорція не зсувається.
+ */
+describe('програма перевірки: різні ігри', () => {
+	it('те саме зерно — та сама програма', () => {
+		expect(distinctProgramme(SEED, 5)).toEqual(distinctProgramme(SEED, 5));
+	});
+
+	it('інше зерно дає інший порядок', () => {
+		// Без цього пункту зелений результат попереднього нічого не вартий:
+		// функція, що завжди віддає один список, теж «детермінована».
+		expect(distinctProgramme(SEED, 5)).not.toEqual(distinctProgramme(SEED + 1, 5));
+	});
+
+	it('пʼять кроків — пʼять різних ігор', () => {
+		/*
+		 * Реверсний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): підмінено виклик на
+		 * `quizProgramme(seed, ONLINE_GAMES.map(g => g.id), 5)` — той вибирає з
+		 * повтореннями, і пункт червоніє вже на першому зерні з десяти.
+		 */
+		for (let seed = SEED; seed < SEED + 10; seed++) {
+			const games = distinctProgramme(seed, 5).map((step) => step.game);
+			expect(new Set(games).size, `зерно ${seed}: ${games.join(', ')}`).toBe(5);
+		}
+	});
+
+	it('усі ігри — зі списку доступних онлайн', () => {
+		const ids = new Set(ONLINE_GAMES.map((game) => game.id));
+		for (const step of distinctProgramme(SEED, 5)) expect(ids.has(step.game)).toBe(true);
+	});
+
+	it('кроки мають різні зерна', () => {
+		const seeds = distinctProgramme(SEED, 5).map((step) => step.seed);
+		expect(new Set(seeds).size).toBe(seeds.length);
+	});
+
+	/**
+	 * Кроків більше, ніж ігор — колода перемішується заново.
+	 *
+	 * Без цього `deck.pop()` віддав би `undefined`, і крок став би грою, якої
+	 * немає: `createQuizGame` повернув би `null`, а дошка показала б «гра з
+	 * новішої збірки» посеред перевірки.
+	 */
+	it('більше кроків, ніж ігор — усі кроки заповнені', () => {
+		const steps = distinctProgramme(SEED, ONLINE_GAMES.length + 3);
+		expect(steps).toHaveLength(ONLINE_GAMES.length + 3);
+		const ids = new Set(ONLINE_GAMES.map((game) => game.id));
+		for (const step of steps) expect(ids.has(step.game)).toBe(true);
+		// Перші шість — це повна колода без повторів.
+		const first = steps.slice(0, ONLINE_GAMES.length).map((step) => step.game);
+		expect(new Set(first).size).toBe(ONLINE_GAMES.length);
 	});
 });
 

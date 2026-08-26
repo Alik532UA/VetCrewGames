@@ -65,7 +65,7 @@
 
 <div class="care" data-testid="reserve-care-panel">
 	{#if trial}
-		<ReserveTrial ondone={onself} oncancel={() => (trial = false)} />
+		<ReserveTrial careText={text} ondone={onself} oncancel={() => (trial = false)} />
 	{:else}
 		<!--
 			ВИБІР ЛИШАЄТЬСЯ ВУЗЬКИМ, а перевірка бере всю ширину вікна.

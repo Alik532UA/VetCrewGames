@@ -21,6 +21,8 @@ export const reserveCare = {
 	'reserve.care.hire': 'Найняти працівника',
 	'reserve.care.perDay': 'день',
 	'reserve.care.self': 'Зробити самому',
+	'reserve.care.trialScore': 'Балів',
+	'reserve.care.trialNeed': 'потрібно',
 	'reserve.care.selfHint':
 		'Пʼять раундів міні-гри. Потрібно понад 70% балів; провал теж витрачає день.',
 	'reserve.care.ignore': 'Нічого не робити',

@@ -51,9 +51,32 @@
 		 * оголошував і правильність, і швидкість; тепер він оголошує лише першу.
 		 */
 		onanswer: (correct: number, scored?: { points: number; max: number }) => void;
+		/**
+		 * СОЛО-ТЕМП: показати результат раунду й дочекатися «Далі».
+		 *
+		 * Пропа немає — темп задає не гравець, і це кімната: там наступний раунд
+		 * оголошує господар, тож кнопка «Далі» на дошці була б другим способом
+		 * зробити те саме. Проп є — дошка поводиться як на соло-сторінці: після
+		 * відповіді показує розбір і власну кнопку, а цей виклик приходить тоді,
+		 * коли гравець її натиснув.
+		 *
+		 * Чому сигнал іде через `gameOver`, а не окремим пропом на кожній дошці:
+		 * усі пʼять кнопок «Далі» кличуть `game.nextRound()`, а крок — це рівно один
+		 * раунд (`ROUNDS_PER_STEP`), тож наступний раунд і є кінець цієї міні-партії.
+		 * Тобто сигнал уже існує; додавати пʼять однакових пропів означало б
+		 * дублювати те, що контролери й так кажуть.
+		 */
+		onnext?: () => void;
 	}
 
-	let { text, step, onanswer }: Props = $props();
+	let { text, step, onanswer, onnext }: Props = $props();
+
+	/**
+	 * Соло-темп чи ні. Похідне від наявності пропа, а не окремий прапорець:
+	 * два джерела однієї правди розійшлися б, і дошка показала б кнопку, яка
+	 * нікуди не веде.
+	 */
+	const solo = $derived(onnext !== undefined);
 
 	/*
 	 * КРОК ЧИТАЄТЬСЯ ОДИН РАЗ, і `untrack` про це і каже.
@@ -162,6 +185,21 @@
 		onanswer(correctShare(), game ? { points: game.sessionScore, max: game.maxScore } : undefined);
 	});
 
+	/**
+	 * «Далі» натиснуто — крок скінчився.
+	 *
+	 * Прапорець тут із тієї самої причини, що й `reported` вище: `$effect`
+	 * перезапускається на будь-якій зміні читаного стану, а батько на цей виклик
+	 * перемонтовує дошку — другий виклик прийшов би вже після знищення.
+	 */
+	let advanced = false;
+
+	$effect(() => {
+		if (!onnext || advanced || !game?.gameOver) return;
+		advanced = true;
+		onnext();
+	});
+
 	/** Мішені перетягування — та сама похідна, що на сторінці «Роздай страви». */
 	const targets = $derived<QuickTarget[]>(
 		created?.kind === 'feeding' && created.game.round
@@ -234,22 +272,23 @@
 			не грав би. Той самий приймо, що на сторінці гри.
 
 			`onnext` порожній, і це не пропуск: у кімнаті наступний раунд оголошує
-			господар, а не гравець. Саму кнопку «Далі» ховає `MythCard` за `hideNext`.
+			господар, а не гравець, — і саме тоді `hideNext` ховає кнопку. У соло-темпі
+			(`onnext`) вона потрібна: без неї розбір зникав би разом із питанням.
 		-->
 		{#each [created.game.current] as question (question.id)}
 			<MythCard
 				{question}
 				onanswer={(truth) => created.game.answer(truth)}
-				onnext={() => {}}
-				hideNext
+				onnext={() => created.game.nextRound()}
+				hideNext={!solo}
 			/>
 		{/each}
 	{:else if created.kind === 'family'}
-		<FamilyBoard game={created.game} hideNext />
+		<FamilyBoard game={created.game} hideNext={!solo} />
 	{:else if created.kind === 'population'}
-		<PopulationBoard game={created.game} hideNext />
+		<PopulationBoard game={created.game} hideNext={!solo} />
 	{:else if created.kind === 'habitat'}
-		<HabitatBoard game={created.game} mode={created.mode} hideNext />
+		<HabitatBoard game={created.game} mode={created.mode} hideNext={!solo} />
 	{:else if created.kind === 'feeding' && created.game.round}
 		<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
 		<FeedingBoard game={created.game} {targets} />
