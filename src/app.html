@@ -16,6 +16,21 @@
 		-->
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<!--
+			ДВА ТЕГИ «на весь екран», і жоден не зайвий.
+
+			`mobile-web-app-capable` — стандартний; `apple-mobile-web-app-capable` —
+			префіксований, і його читає лише Safari, який стандартного не знає. Тому
+			другий тут не спадок, а робочий тег: прибрати його означало б утратити
+			повноекранний режим на iPhone.
+
+			Стандартного ж не було зовсім, і Chrome із Edge писали про це в консоль
+			кожного відвідувача: «apple-mobile-web-app-capable is deprecated. Please
+			include mobile-web-app-capable». Ані на що це не впливало, доки сайт
+			відкривають у вкладці, — зате при встановленні як застосунку на Android
+			саме стандартний тег вирішує, чи буде вікно без адресного рядка.
+		-->
+		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="VetCrewGames" />
