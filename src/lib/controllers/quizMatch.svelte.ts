@@ -1,11 +1,17 @@
 import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
+import {
+	roundGains,
+	roundOutcomes,
+	totalScores,
+	type QuizLogView
+} from '$lib/utils/quizScore';
 import {
 	PAUSE_COOLDOWN_MS,
 	RESUME_BONUS_MS,
 	REVEAL_MS,
 	SETTLE_MS,
-	answerPoints,
 	configToGames,
 	gamesToConfig,
 	quizProgramme,
@@ -203,64 +209,47 @@ export class QuizMatch {
 	}
 
 	/**
-	 * Рахунок кожного — сума очок за всі раунди.
+	 * ВЕСЬ РАХУНОК — В ОДНОМУ МІСЦІ, і це місце не тут.
 	 *
-	 * Рахується ТУТ, а не приходить у журналі: очки — функція від двох серверних
-	 * позначок і оголошеної правильності, тож будь-хто може перерахувати їх сам і
-	 * отримати те саме число.
+	 * Арифметика переїхала в `utils/quizScore.ts`. Контролер і доти оголошував
+	 * «рахунок — чиста функція від журналу», але тримав саму функцію всередині
+	 * класу: перевіряти її можна було лише через транспорт і підписку. Тепер це
+	 * видно з підпису — на вхід журнал, на вихід числа.
+	 *
+	 * Тут лишається складання того самого журналу в один обʼєкт. Межу раунду
+	 * віддаємо ФУНКЦІЄЮ, бо її знає лише контролер: тривалість виводиться з гри
+	 * раунду, гра — з програми, програма — із зерна кімнати й набору ігор.
 	 */
-	get scores(): Record<string, number> {
-		const out: Record<string, number> = {};
-		for (const player of this.players) out[player.uid] = 0;
-
-		const programme = this.programme;
-		for (const [key, byPlayer] of Object.entries(this.answers)) {
-			const round = Number(key);
-			const start = this.startedAt[round];
-			if (start === undefined) continue;
-			const game = programme[round]?.game;
-			if (game === undefined) continue;
-			const limit = roundLimitMs(game, this.#factor);
-
-			for (const [uid, answer] of Object.entries(byPlayer)) {
-				out[uid] = (out[uid] ?? 0) + answerPoints(answer.at, start, limit, answer.correct);
+	get #log(): QuizLogView {
+		return {
+			answers: this.answers,
+			startedAt: this.startedAt,
+			players: this.players.map((player) => player.uid),
+			limitOf: (round) => {
+				const game = this.programme[round]?.game;
+				return game === undefined ? undefined : roundLimitMs(game, this.#factor);
 			}
-		}
-		return out;
+		};
 	}
 
-	/**
-	 * Скільки очок дав САМЕ ЦЕЙ раунд — кожному.
-	 *
-	 * Табло між раундами показує приріст, а не лише підсумок: «+90» відповідає на
-	 * питання «як я щойно зіграв», якого сума не бачить. Рахується тут, а не в
-	 * компоненті, з тієї самої причини, що й уся решта рахунку: це чиста функція
-	 * від журналу, і два місця з тією самою арифметикою розійшлися б непомітно.
-	 *
-	 * Гравець без відповіді в цьому раунді має нуль, а не відсутнє значення: нуль
-	 * — це відповідь («не встиг»), а порожнеча читалася б як «ще не порахували».
-	 */
+	get scores(): Record<string, number> {
+		return totalScores(this.#log);
+	}
+
+	/** Скільки очок дав САМЕ ЦЕЙ раунд — кожному. Табло між раундами показує приріст. */
 	get roundGains(): Record<string, number> {
-		const out: Record<string, number> = {};
-		for (const player of this.players) out[player.uid] = 0;
-
-		const round = this.round;
-		const start = this.startedAt[round];
-		if (start === undefined) return out;
-
-		const game = this.programme[round]?.game;
-		if (game === undefined) return out;
-		const limit = roundLimitMs(game, this.#factor);
-
-		for (const [uid, answer] of Object.entries(this.answers[round] ?? {})) {
-			out[uid] = answerPoints(answer.at, start, limit, answer.correct);
-		}
-		return out;
+		return roundGains(this.#log, this.round);
 	}
 
 	get myScore(): number {
 		return this.scores[this.#me] ?? 0;
 	}
+
+	/** Мої результати по зіграних раундах — для смужок прогресу в таблі. */
+	get myRounds(): RoundStatus[] {
+		return roundOutcomes(this.answers, this.round, this.#me);
+	}
+
 
 	/**
 	 * ЧАС, ВІДДАНИЙ ЗА ЧЕКАННЯ: пауза плюс надбавка після неї.

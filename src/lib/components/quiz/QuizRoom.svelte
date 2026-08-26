@@ -173,6 +173,8 @@
 			scores={match.scores}
 			gains={match.roundGains}
 			away={match.away.map((player) => player.uid)}
+			rounds={match.myRounds}
+			roundsTotal={match.programme.length}
 			{me}
 		/>
 	{:else}
