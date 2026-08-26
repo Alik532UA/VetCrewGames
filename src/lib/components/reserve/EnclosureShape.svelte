@@ -2,6 +2,8 @@
 	import { T } from '@threlte/core';
 	import { CELL, innerSpan } from './sceneLayout';
 	import { equipped } from '$lib/reserve/modules';
+	import { effectiveQuality } from '$lib/reserve/simulation';
+	import { fenceOf } from './fence';
 	import AnimalFigure from './AnimalFigure.svelte';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
 
@@ -39,13 +41,24 @@
 	/** Центр сліду: клітинка — це його ЛІВИЙ ВЕРХНІЙ кут, а не середина. */
 	const shift = $derived(((span - 1) * CELL) / 2);
 
-	const POST = '#8a6f4a';
-	const RAIL = '#a88a5e';
+	/**
+	 * ПАРКАН — ЗА ЯКІСТЮ, і саме за `effectiveQuality`.
+	 *
+	 * Доти тут стояли два числа на всі три якості, і автор це побачив: «паркан для
+	 * всіх трьох якостей вольєрів виглядає нормально але однаково». Набори живуть
+	 * у `fence.ts` — там же й причина, чому вони різняться чотирма параметрами, а
+	 * не одним.
+	 *
+	 * `effectiveQuality`, а не `enclosure.quality`: над порогами зносу в
+	 * `constants.ts` написано «щоб гравець БАЧИВ, що вольєр став гіршим», і доти
+	 * побачити було нічим. Тепер зношена «відмінна» стоїть як «добра».
+	 */
+	const fence = $derived(fenceOf(effectiveQuality(enclosure)));
 
 	/** Скільки стовпчиків на бік: великий вольєр не має бути голою рамкою. */
-	const posts = $derived(Math.max(2, span + 1));
+	const posts = $derived(Math.max(2, span + fence.extraPosts));
 
-	const colour = $derived(selected ? '#ffd54f' : POST);
+	const colour = $derived(selected ? '#ffd54f' : fence.post);
 </script>
 
 <!--
@@ -68,29 +81,47 @@
 	</T.Mesh>
 
 	{#each [-1, 1] as side (side)}
-		<!-- Дві жердини на кожен бік: одна читалася б як лінія на землі. -->
-		{#each [0.22, 0.42] as height (height)}
+		<!-- Жердин дві або три — залежно від якості; одна читалася б як лінія на землі. -->
+		{#each fence.rails as height (height)}
 			<T.Mesh position={[0, height, side * half]}>
-				<T.BoxGeometry args={[half * 2, 0.04, 0.04]} />
-				<T.MeshStandardMaterial color={RAIL} />
+				<T.BoxGeometry args={[half * 2, fence.railThickness, fence.railThickness]} />
+				<T.MeshStandardMaterial color={fence.rail} />
 			</T.Mesh>
 			<T.Mesh position={[side * half, height, 0]}>
-				<T.BoxGeometry args={[0.04, 0.04, half * 2]} />
-				<T.MeshStandardMaterial color={RAIL} />
+				<T.BoxGeometry args={[fence.railThickness, fence.railThickness, half * 2]} />
+				<T.MeshStandardMaterial color={fence.rail} />
 			</T.Mesh>
 		{/each}
 	{/each}
 
 	{#each Array.from({ length: posts }, (_, i) => -half + (i * half * 2) / (posts - 1)) as offset (offset)}
 		{#each [-1, 1] as side (side)}
-			<T.Mesh position={[offset, 0.28, side * half]}>
-				<T.BoxGeometry args={[0.08, 0.56, 0.08]} />
+			<T.Mesh position={[offset, fence.postHeight / 2, side * half]}>
+				<T.BoxGeometry args={[fence.postWidth, fence.postHeight, fence.postWidth]} />
 				<T.MeshStandardMaterial color={colour} />
 			</T.Mesh>
-			<T.Mesh position={[side * half, 0.28, offset]}>
-				<T.BoxGeometry args={[0.08, 0.56, 0.08]} />
+			<T.Mesh position={[side * half, fence.postHeight / 2, offset]}>
+				<T.BoxGeometry args={[fence.postWidth, fence.postHeight, fence.postWidth]} />
 				<T.MeshStandardMaterial color={colour} />
 			</T.Mesh>
+			{#if fence.cap}
+				<!--
+					Накривка — лише в найдорожчого паркана. Дрібниця, зате саме вона
+					читається як «доглянуто», коли камера підходить близько.
+				-->
+				<T.Mesh position={[offset, fence.postHeight + fence.postWidth * 0.25, side * half]}>
+					<T.BoxGeometry
+						args={[fence.postWidth * 1.5, fence.postWidth * 0.5, fence.postWidth * 1.5]}
+					/>
+					<T.MeshStandardMaterial color={fence.rail} />
+				</T.Mesh>
+				<T.Mesh position={[side * half, fence.postHeight + fence.postWidth * 0.25, offset]}>
+					<T.BoxGeometry
+						args={[fence.postWidth * 1.5, fence.postWidth * 0.5, fence.postWidth * 1.5]}
+					/>
+					<T.MeshStandardMaterial color={fence.rail} />
+				</T.Mesh>
+			{/if}
 		{/each}
 	{/each}
 

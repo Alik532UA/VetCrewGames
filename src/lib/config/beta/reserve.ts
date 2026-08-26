@@ -218,6 +218,15 @@ export const reserveTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'reserve-trial-panel'
+		},
+		{
+			id: 'reserve_21',
+			category: { uk: 'Вольєри', en: 'Enclosures' },
+			text: {
+				uk: 'Побудуйте три вольєри поспіль — простий, добрий і відмінний — і наблизьте камеру. Паркани мусять виглядати ПО-РІЗНОМУ: простий низький і сірий, добрий із свіжої деревини, відмінний вищий, світло-сірий, із трьома жердинами й накривками на стовпчиках. Дочекайтеся зносу відмінного нижче 60% — його паркан мусить стати таким, як у доброго.',
+				en: 'Build three enclosures in a row — simple, good and excellent — and zoom the camera in. The fences must look DIFFERENT: the simple one low and grey, the good one fresh wood, the excellent one taller, light grey, with three rails and caps on the posts. Let the excellent one wear below 60% — its fence must become the same as the good one’s.'
+			},
+			coverage: 'manual'
 		}
 	]
 };
