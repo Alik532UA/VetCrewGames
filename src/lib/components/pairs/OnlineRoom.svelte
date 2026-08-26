@@ -2,6 +2,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
+	import PlayerBadge from '$lib/components/ui/PlayerBadge.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import type { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
@@ -193,19 +194,41 @@
 		</div>
 	{/if}
 
-	<div class="board__score text-panel">
+	<!--
+		КОЖЕН ГРАВЕЦЬ — У СВОЄМУ КОНТЕЙНЕРІ, і рахунок ходів теж.
+
+		Прохання автора: «кожен гравець в окремому графічному контейнері (і Ходів
+		теж), щоб візуально виглядало окремо». Доти всі троє лежали в одній панелі
+		(`board__score.text-panel`), тобто рядок читався як одне речення: «Спритний
+		Яструб (ви): 7 Величезний Синій Кит: 7 Ходів: 26». Де закінчується один
+		гравець і починається другий, доводилося визначати по двокрапках.
+
+		Сам рядок фону більше не має — його мають плитки. Тло на тлі дало б шов на
+		межі й нічого більше.
+	-->
+	<div class="board__score">
 		{#each match.players as player (player.uid)}
 			<span
-				class="board__player"
+				class="board__player text-panel"
 				class:board__player--turn={player.uid === match.actor?.id}
 				class:board__player--away={!online.includes(player.uid)}
 				data-testid="pairs-player-{player.uid}-status"
 			>
 				<Flag code={match.members.find((m) => m.uid === player.uid)?.country} />
 				<Avatar avatar={match.members.find((m) => m.uid === player.uid)?.avatar} />
-				{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}: {scoreOf(
-					player.uid
-				)}<!--
+				<!--
+					ІМʼЯ, ПОЗНАЧКА Й РАХУНОК — ОДИН РЯДКОВИЙ ПОТІК, а не три елементи
+					флексу.
+
+					`.board__player` — це `inline-flex` із проміжком (прапор і аватар інакше
+					злітають на базову лінію). Але проміжок стосується КОЖНОЇ дитини, тож
+					двокрапка після позначки відʼїжджала від неї на ті самі пʼять пікселів:
+					на екрані виходило «Дикий Манул ВИ : 0». Дефект був і з дужками, просто
+					з пілюлею його стало видно.
+				-->
+				<span class="board__who">
+					{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}: {scoreOf(player.uid)}
+				</span><!--
 					СТАН СЛОВАМИ, а не лише стилем.
 
 					Доти «немає звʼязку» передавалося перекресленням і прозорістю — тобто
@@ -213,11 +236,11 @@
 					«недоступно», хоч людина могла просто зайти в тунель. Тепер причина
 					написана, а стиль лишається підказкою, а не єдиним джерелом.
 				-->{#if !online.includes(player.uid)}
-					<span class="board__away">({@html formatFont(t('pairs.away'))})</span>
+					&nbsp;<PlayerBadge tone="away">{@html formatFont(t('pairs.away'))}</PlayerBadge>
 				{/if}
 			</span>
 		{/each}
-		<span class="board__moves" data-testid="pairs-moves-value">
+		<span class="board__moves text-panel" data-testid="pairs-moves-value">
 			{@html formatFont(t('memory.moves'))}: {match.game.moves}
 		</span>
 	</div>
@@ -289,10 +312,15 @@
 		font-size: var(--font-size-md);
 	}
 
+	/*
+	 * Сам рядок — лише розкладка: фон мають плитки всередині. Проміжок менший за
+	 * доти (`--space-md` → `--space-sm`): межу тепер тримає не порожнє місце, а
+	 * край плитки, і від великого проміжку рядок просто розповзався.
+	 */
 	.board__score {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-md);
+		gap: var(--space-sm);
 		justify-content: center;
 		font-variant-numeric: tabular-nums;
 	}
@@ -303,6 +331,26 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
+	}
+
+	/*
+	 * Плитки вужчі за `.text-panel`: та розрахована на абзац, а тут рядок із
+	 * прапором і числом. Скоупований селектор специфічніший за глобальний, тож
+	 * перекриття тут навмисне — а не нічия, яку розвʼязує бандлер
+	 * (SVELTE-UI-v8 § 3.6).
+	 */
+	.board__player,
+	.board__moves {
+		padding: 4px var(--space-sm);
+	}
+
+	/*
+	 * Рядковий потік: усередині нього проміжок флексу не діє, тож двокрапка
+	 * лишається впритул до позначки, а перенос на вузькому екрані рве рядок по
+	 * пробілу, а не по елементах.
+	 */
+	.board__who {
+		display: inline;
 	}
 
 	.board__player--turn {
@@ -322,14 +370,15 @@
 		opacity: 0.75;
 	}
 
-	.board__away {
-		font-size: var(--font-size-sm);
-		opacity: 0.85;
-		white-space: nowrap;
-	}
-
+	/*
+	 * `opacity` тут БІЛЬШЕ НЕМА. Плитка вже відділяє рахунок ходів від гравців
+	 * формою, а приглушення на цій панелі одного разу вже впиралося в 4.5:1
+	 * (`src/contrast.test.ts`). Кегль лишається тим самим: це не другорядне
+	 * число, просто інша річ.
+	 */
 	.board__moves {
-		opacity: 0.75;
+		display: inline-flex;
+		align-items: center;
 	}
 
 	.board__deck {

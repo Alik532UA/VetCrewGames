@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
+	import PlayerBadge from './PlayerBadge.svelte';
 
 	/**
 	 * Позначка «це ви» біля власного імені.
@@ -31,16 +32,4 @@
 	 */
 </script>
 
-<span class="you">({@html formatFont(t('pairs.you'))})</span>
-
-<style>
-	/*
-	 * Дрібніше за імʼя, але БЕЗ прозорості: позначка стоїть на тих самих панелях,
-	 * де приглушений текст уже одного разу впирався в 4.5:1. Кегль відрізняє її
-	 * від імені й без ослаблення контрасту.
-	 */
-	.you {
-		font-size: var(--font-size-sm);
-		white-space: nowrap;
-	}
-</style>
+<PlayerBadge tone="me">{@html formatFont(t('pairs.you'))}</PlayerBadge>
