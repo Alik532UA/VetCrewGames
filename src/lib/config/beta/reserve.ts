@@ -248,6 +248,26 @@ export const reserveTab: BetaTab = {
 			negative: true,
 			coverage: 'manual',
 			testid: 'header-shortcuts-toggle'
+		},
+		{
+			id: 'reserve_24',
+			category: { uk: 'Життя у вольєрі', en: 'Life in the enclosure' },
+			text: {
+				uk: 'Наблизьте камеру до вольєра з твариною. Вона мусить ХОДИТИ по вольєру й спинятися, а не стояти в центрі; над нею — дві смужки (здоровʼя й стрес) на 30% прозорості, а при наведенні мишею або після тапу — на повну. Купіть водойму й укриття: тварина мусить іноді заходити у воду (сідає нижче) і в укриття (тіло зникає, смужки лишаються).',
+				en: 'Zoom the camera to an enclosure with an animal. It must WALK around and stop, not stand in the centre; above it two bars (health and stress) at 30% opacity, and on mouse hover or after a tap — at full. Buy a pond and a shelter: the animal must sometimes go into the water (it sits lower) and into the shelter (the body disappears, the bars stay).'
+			},
+			coverage: 'manual'
+		},
+		{
+			id: 'reserve_25',
+			category: { uk: 'Життя у вольєрі', en: 'Life in the enclosure' },
+			text: {
+				uk: 'Поставте час на паузу. Тварина мусить ЗАМЕРЗНУТИ на місці — не смикатися й не продовжувати йти. Увімкніть ×1 — рух мусить піти далі. Це не косметика: рух означає постійне малювання сцени, і на паузі воно мусить спинятися.',
+				en: 'Pause time. The animal must FREEZE in place — no twitching, no continuing to walk. Switch to ×1 — the motion must resume. This is not cosmetic: motion means the scene renders continuously, and on pause that must stop.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'reserve-speed-toolbar'
 		}
 	]
 };

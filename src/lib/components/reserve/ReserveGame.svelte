@@ -332,6 +332,7 @@
 			placingSize={pending?.size ?? null}
 			onGround={placeAt}
 			showMinimap={!panel}
+			running={game.speed !== 0}
 		/>
 
 		<!-- Розпірка тримає смугу кнопок унизу, поки карта лежить під усім. -->

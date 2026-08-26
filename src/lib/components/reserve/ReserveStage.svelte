@@ -24,6 +24,8 @@
 		selectedId: number | null;
 		/** `id` вибраного ВОЛЬЄРА: у нього тепер своє меню, і його теж видно. */
 		selectedEnclosureId: number | null;
+		/** Час іде — тварини у вольєрах ходять (`SceneBody`). */
+		running: boolean;
 		/**
 		 * Тап по карті. Вибір один на двох: узяти водночас і вольєр, і його мешканця
 		 * означало б два вікна на тому самому місці, і одне з них — під іншим.
@@ -45,6 +47,7 @@
 		animals,
 		selectedId,
 		selectedEnclosureId,
+		running,
 		onSelect,
 		placingSize,
 		onGround,
@@ -99,6 +102,7 @@
 			{animals}
 			{selectedId}
 			{selectedEnclosureId}
+			{running}
 			{onSelect}
 			{placingSize}
 			{onGround}

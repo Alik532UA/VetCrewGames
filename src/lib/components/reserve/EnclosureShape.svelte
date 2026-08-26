@@ -4,6 +4,7 @@
 	import { equipped } from '$lib/reserve/modules';
 	import { effectiveQuality } from '$lib/reserve/simulation';
 	import { fenceOf } from './fence';
+	import { poseAt } from './animalLife';
 	import AnimalFigure from './AnimalFigure.svelte';
 	import type { Animal, Enclosure } from '$lib/reserve/types';
 
@@ -33,9 +34,29 @@
 		selected: boolean;
 		/** Курсор саме на цій тварині: смужки стану над нею стають непрозорими. */
 		hovered?: boolean;
+		/** Зерно партії: з нього виводиться маршрут блукання. */
+		seed: number;
+		/**
+		 * Скільки секунд «живого» часу минуло. Стоїть — тварина стоїть.
+		 *
+		 * Приходить пропом, а не читається з контролера: рахує його сцена, і саме
+		 * вона знає, коли час іде. Другий власник цього числа означав би двох
+		 * тварин на різних фазах у тому самому вольєрі.
+		 */
+		phase?: number;
 	}
 
-	let { enclosure, animal, x, z, span, selected, hovered = false }: Props = $props();
+	let {
+		enclosure,
+		animal,
+		x,
+		z,
+		span,
+		selected,
+		hovered = false,
+		seed,
+		phase = 0
+	}: Props = $props();
 	const enclosureId = $derived(enclosure.id);
 
 	/** Півсторона паркана у світових одиницях, із невеликим відступом усередину. */
@@ -61,6 +82,27 @@
 	const posts = $derived(Math.max(2, span + fence.extraPosts));
 
 	const colour = $derived(selected ? '#ffd54f' : fence.post);
+
+	/**
+	 * ДЕ ЗАРАЗ ТВАРИНА Й ЩО ВОНА РОБИТЬ.
+	 *
+	 * Скарга автора: «тварини стоять по центру вольєра; очікуваний результат —
+	 * симуляція життя». Тепер поза — чиста функція від зерна, `id` і фази
+	 * (`animalLife.ts`), а не сталий центр.
+	 *
+	 * Набір поведінок залежить від того, що гравець КУПИВ: без водойми ніхто не
+	 * плаває, без укриття нікуди не заходить. Тобто модулі стало видно просто на
+	 * карті, а не лише в панелі вольєра.
+	 */
+	const pose = $derived(
+		animal
+			? poseAt(seed, animal.id, phase, {
+					half,
+					water: enclosure.modules.includes('water'),
+					shelter: equipped(enclosure, 'shelter')
+				})
+			: null
+	);
 </script>
 
 <!--
@@ -171,6 +213,13 @@
 			`selected` тут теж означає «увага»: на телефоні наведення не існує, і без
 			цього смужки стану лишалися б напівпрозорими назавжди. Тап — це вибір.
 		-->
-		<AnimalFigure {animal} attention={hovered || selected} />
+		<T.Group position={[pose?.x ?? 0, 0, pose?.z ?? 0]}>
+			<AnimalFigure
+				{animal}
+				attention={hovered || selected}
+				turn={pose?.turn}
+				doing={pose?.doing}
+			/>
+		</T.Group>
 	{/if}
 </T.Group>

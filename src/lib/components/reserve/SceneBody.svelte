@@ -54,6 +54,8 @@
 		selectedId: number | null;
 		/** `id` вибраного ВОЛЬЄРА: у нього тепер своє меню, і його теж видно. */
 		selectedEnclosureId: number | null;
+		/** Час іде — тварини ходять. Пауза спиняє і гру, і рендер сцени. */
+		running: boolean;
 		/**
 		 * Тап по карті. Вибір один на двох: узяти водночас і вольєр, і його мешканця
 		 * означало б два вікна на тому самому місці, і одне з них — під іншим.
@@ -70,6 +72,7 @@
 		animals,
 		selectedId,
 		selectedEnclosureId,
+		running,
 		onSelect,
 		placingSize,
 		onGround,
@@ -111,6 +114,47 @@
 	 */
 	const HOVER_EVERY_MS = 80;
 	let lastProbe = 0;
+
+	/**
+	 * ЖИВИЙ ЧАС СЦЕНИ: скільки секунд минуло, поки гра НЕ на паузі.
+	 *
+	 * Скарга автора: «тварини стоять по центру вольєра». Тепер вони ходять, і
+	 * годинник цього руху живе тут — не в симуляції. Причина в `animalLife.ts`:
+	 * координати блукання не мусять потрапити ні в сейв, ні в майбутній журнал
+	 * спільної партії.
+	 *
+	 * ЧОМУ ЦЕЙ ГОДИННИК СПИНЯЄТЬСЯ РАЗОМ ІЗ ГРОЮ. Не заради краси: сцена
+	 * малюється на вимогу (`invalidate`), і рух означає постійний рендер — а це
+	 * шістсот сімдесят фігур рельєфу плюс вольєри щокадру. Пауза мусить бути
+	 * паузою і для гри, і для полотна; заразом «поставив на пробіл — світ замер»
+	 * читається як задум, а не як економія.
+	 *
+	 * ДВАДЦЯТЬ КАДРІВ НА СЕКУНДУ, а не шістдесят: тварини йдуть повільно (одна
+	 * світова одиниця за кілька секунд), і на такій швидкості 20 Гц від 60 оком не
+	 * відрізнити, зате роботи втричі менше.
+	 */
+	const ANIM_EVERY_MS = 50;
+	let phase = $state(0);
+
+	$effect(() => {
+		if (!running) return;
+		let frame = 0;
+		let last = performance.now();
+		let carried = 0;
+
+		const step = (now: number) => {
+			carried += now - last;
+			last = now;
+			if (carried >= ANIM_EVERY_MS) {
+				phase += carried / 1000;
+				carried = 0;
+				invalidate();
+			}
+			frame = requestAnimationFrame(step);
+		};
+		frame = requestAnimationFrame(step);
+		return () => cancelAnimationFrame(frame);
+	});
 
 	const { invalidate, renderer, scene } = useThrelte();
 
@@ -290,5 +334,7 @@
 		selected={spot.enclosure.id === selectedEnclosureId ||
 			(spot.animal !== null && spot.animal.id === selectedId)}
 		hovered={spot.animal !== null && spot.animal.id === hovered}
+		{seed}
+		{phase}
 	/>
 {/each}
