@@ -39,12 +39,27 @@ export class AwaitedRoom {
 	#stopWatch: (() => void) | null = null;
 
 	/**
+	 * ПОКОЛІННЯ ВІДПОВІДІ: кожна нова скасовує всі попередні.
+	 *
+	 * Тут усе їде через `await` — два динамічні імпорти, читання індексу, запит
+	 * присутності, вхід у базу. Тобто між «почали відповідати» й «записали
+	 * відповідь» встигає статися що завгодно: людина натиснула «вийти з
+	 * кімнати», сторінка викликала `refresh()` вдруге, смугу закрили. Лічильник
+	 * дає кожній спробі власний номер, і той, кого випередили, мовчки виходить
+	 * замість писати застарілу відповідь поверх свіжої.
+	 */
+	#epoch = 0;
+
+	/**
 	 * Перечитати свої кімнати й вибрати ту, що чекає.
 	 *
 	 * НЕ КИДАЄ: це довідка. Її відсутність лишає екран таким, яким він був — а
 	 * виняток звідси зламав би сторінку, до якої сповіщення не має стосунку.
 	 */
 	async refresh(now = Date.now()): Promise<void> {
+		// Номер береться ДО першого `await`: усе, що зараз у дорозі, з цієї миті
+		// застаріле й писати вже не має права.
+		const epoch = ++this.#epoch;
 		try {
 			const [{ listOwnRooms }, { othersPresent }] = await Promise.all([
 				import('$lib/net/ownRooms'),
@@ -62,12 +77,14 @@ export class AwaitedRoom {
 			 */
 			for (const room of roomsAwaitingMe(await listOwnRooms(), now)) {
 				if ((await othersPresent(room.code)) > 0) {
+					if (epoch !== this.#epoch) return;
 					this.room = room;
 					this.#watch(room.code);
 					return;
 				}
 			}
 
+			if (epoch !== this.#epoch) return;
 			this.room = null;
 			this.#drop();
 		} catch (error) {
@@ -107,10 +124,6 @@ export class AwaitedRoom {
 	}
 
 	/**
-	 * Підписка на ОДИН вузол `info`: партія скінчилася або кімната опустіла —
-	 * сповіщення гасне саме.
-	 */
-	/**
 	 * ДВІ ПІДПИСКИ, і кожна відповідає на своє питання.
 	 *
 	 *  * `info` — чи партія ще йде. Скінчилася — смуга не має про що казати;
@@ -118,34 +131,79 @@ export class AwaitedRoom {
 	 *    мусить згаснути САМА, а не висіти до наступного переходу сторінкою.
 	 *
 	 * Обидві — по одному вузлу, і живуть лише поки смуга видна.
+	 *
+	 * ## Чому тут покоління, а не просто `#stopWatch`
+	 *
+	 * Між викликом і встановленням підписки лежать два динамічні імпорти й вхід у
+	 * базу. Доти замикачка присвоювалася в кінці цього шляху — тобто `#drop()`,
+	 * що стався ПОСЕРЕДИНІ, не знімав нічого: він бачив `null`, а підписка
+	 * приїжджала після нього й лишалася жити назавжди. Той самий клас уже
+	 * зловлено в `lobbyFeed.watch()` («ефект міг зникнути, поки йшов імпорт»), і
+	 * тут його просто не було зроблено.
+	 *
+	 * Гірший наслідок — не витік, а ЧУЖИЙ ЗАПИС. Дві підписки на різні кімнати
+	 * живуть одночасно, і callback старої кладе `room = null` поверх смуги, яку
+	 * щойно поставила нова відповідь. Смуга зникає без причини, і відтворити це
+	 * можна лише швидким переходом між сторінками.
 	 */
 	#watch(code: string): void {
 		this.#drop();
+		const epoch = this.#epoch;
+		const stale = () => epoch !== this.#epoch;
+
+		/** Усе, що вже підписано в цій спробі, — щоб зняти навіть при половині шляху. */
+		const stops: Array<() => void> = [];
+		const stopAll = () => {
+			for (const stop of stops) stop();
+			stops.length = 0;
+		};
+
 		void (async () => {
 			try {
 				const [{ watchRoomInfo }, { watchOthers }] = await Promise.all([
 					import('$lib/net/rtdbRoom'),
 					import('$lib/net/presence')
 				]);
+				if (stale()) return;
 
-				const stopInfo = await watchRoomInfo(code, (info) => {
-					if (!info || info.status !== 'playing') this.room = null;
-				});
-				const stopOthers = await watchOthers(code, (others) => {
-					if (others === 0) this.room = null;
-				});
+				stops.push(
+					await watchRoomInfo(code, (info) => {
+						if (stale()) return;
+						if (!info || info.status !== 'playing') this.room = null;
+					})
+				);
+				// Перевірка МІЖ підписками, а не лише в кінці: друга коштує ще одного
+				// входу в базу, і відкривати її, коли перша вже нікому не потрібна, —
+				// це платити за відповідь, яку нема кому читати.
+				if (stale()) return stopAll();
 
-				this.#stopWatch = () => {
-					stopInfo();
-					stopOthers();
-				};
+				stops.push(
+					await watchOthers(code, (others) => {
+						if (stale()) return;
+						if (others === 0) this.room = null;
+					})
+				);
+				if (stale()) return stopAll();
+
+				this.#stopWatch = stopAll;
 			} catch (error) {
+				// Знімаємо те, що встигло підписатися: якщо впала друга підписка,
+				// перша вже жива, і без цього рядка вона лишилася б назавжди.
+				stopAll();
 				logService.warn('network', 'awaited room not watched', { code, reason: String(error) });
 			}
 		})();
 	}
 
+	/**
+	 * Зняти підписку — і ЗАРАЗОМ скасувати все, що зараз у дорозі.
+	 *
+	 * Друге робить саме `++`: підписка, яка приїде після цього моменту, побачить
+	 * чуже покоління й зніметься сама, а відповідь `refresh()`, яку вже
+	 * випередили, не запише нічого.
+	 */
 	#drop(): void {
+		this.#epoch++;
 		this.#stopWatch?.();
 		this.#stopWatch = null;
 	}
