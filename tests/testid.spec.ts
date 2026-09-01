@@ -50,13 +50,35 @@ import { reduceMotion, settlePage } from './support/settle';
  * умову «на порті наш сайт» такою ж довгою, як самі гейти, які вона захищає.
  */
 
+/**
+ * АТРИБУТ `id` — ТУТ-ТАКИ, І З ТІЄЇ САМОЇ ПРИЧИНИ.
+ *
+ * Канон радить будувати звʼязок `label` ↔ `input` на `$props.id()`
+ * (SVELTE-CORE-v8 § 1.7, SVELTE-UI-v8 § 2.4): руна гарантує унікальність сама.
+ * Тут обрано інше — `id` приходить ПРОПОМ від того, хто малює поле, з тієї
+ * самої основи, що й `data-testid`, щоб локатор і підпис не могли розійтися.
+ *
+ * Рішення записане в `PROJECT-CONTEXT.md`, і разом із ним записана його ціна:
+ * проп унікальності не гарантує. Двічі намальований `PasswordInput` з тим самим
+ * `id` дасть два елементи з однаковим `id`, і `<label for>` покаже на перший —
+ * тобто клік по підпису другого поля сфокусує чуже. Ні `svelte-check`, ні
+ * eslint, ні збірка цього не бачать: у ДЖЕРЕЛАХ обидва рази законні.
+ *
+ * Axe теж не порятунок: `duplicate-id` з нього прибрано в axe-core 4.9, а
+ * `duplicate-id-active` і `duplicate-id-aria`, що лишилися, дублікат на парі
+ * `label`/`input` не ловлять.
+ *
+ * Тому замір іде разом із локаторами, у тому самому обході: сторінка вже
+ * відкрита й доспокоєна, і другий обхід чотирнадцяти адрес коштував би стільки
+ * ж, скільки перший.
+ */
 test.describe('локатори унікальні в рантаймі', () => {
 	test('перелік сторінок покриває всі маршрути', () => {
 		expectAllRoutesListed();
 	});
 
 	for (const url of APP_PAGES) {
-		test(`жодного дубліката на ${url}`, async ({ page }) => {
+		test(`жодного дубліката локатора чи id на ${url}`, async ({ page }) => {
 			await reduceMotion(page);
 			await page.goto(url);
 			/*
@@ -78,13 +100,37 @@ test.describe('локатори унікальні в рантаймі', () => {
 				`на ${url} немає жодного локатора — замір дивиться не туди`
 			).toBeGreaterThan(5);
 
-			const seen = new Map<string, number>();
-			for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1);
-			const dupes = [...seen.entries()]
-				.filter(([, count]) => count > 1)
-				.map(([id, count]) => `${id} — ${count} разів`);
+			const repeated = (values: string[]) => {
+				const seen = new Map<string, number>();
+				for (const value of values) seen.set(value, (seen.get(value) ?? 0) + 1);
+				return [...seen.entries()]
+					.filter(([, count]) => count > 1)
+					.map(([value, count]) => `${value} — ${count} разів`);
+			};
 
+			const dupes = repeated(ids);
 			expect(dupes, `дублікати локаторів на ${url}:\n${dupes.join('\n')}`).toEqual([]);
+
+			const attrIds = await page.$$eval('[id]', (nodes) =>
+				nodes.map((node) => node.getAttribute('id') ?? '')
+			);
+
+			/*
+			 * Друга канарка, окрема від першої: `[data-testid]` і `[id]` — різні
+			 * множини вузлів, і порожньою може стати будь-яка з них сама по собі.
+			 * Межа низька навмисно — сторінка без жодного поля вводу цілком може
+			 * мати кілька `id` на посадкових якорях, і вимагати від неї більшого
+			 * означало б червоніти на правильному коді.
+			 */
+			expect(attrIds.length, `на ${url} немає жодного id — замір дивиться не туди`).toBeGreaterThan(
+				0
+			);
+
+			const idDupes = repeated(attrIds);
+			expect(
+				idDupes,
+				`однакові id на ${url} — \`label for\` покаже на перший із них:\n${idDupes.join('\n')}`
+			).toEqual([]);
 		});
 	}
 });
