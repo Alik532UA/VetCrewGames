@@ -173,7 +173,9 @@ class Settings {
 	#applyTheme(): void {
 		document.documentElement.setAttribute('data-theme', this.theme);
 		const meta = document.querySelector('meta[name="color-scheme"]');
-		meta?.setAttribute('content', DARK_SCHEME_THEMES.includes(this.theme) ? 'dark' : 'light dark');
+		// Те саме, що в скрипті першого кадру: `only light` — відмова від Auto
+		// Dark Theme на Android (UI-UX-v9 `UIUX-ONLY-LIGHT`).
+		meta?.setAttribute('content', DARK_SCHEME_THEMES.includes(this.theme) ? 'dark' : 'only light');
 	}
 
 	#applyLocale(): void {

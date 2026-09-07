@@ -90,7 +90,11 @@
 				document.documentElement.setAttribute('data-theme', theme);
 				let meta = document.querySelector('meta[name="color-scheme"]');
 				const isDark = theme === 'dark' || theme === 'orange-purple';
-				if (meta) meta.setAttribute('content', isDark ? 'dark' : 'light dark');
+				// `only light`, а не `light dark`: мета-тег мусить збігатися зі
+				// звуженням у `styles/global.css`, інакше сторінка оголошує себе
+				// світлою-без-темної й Android Chrome перемальовує її своєю Auto
+				// Dark Theme (UI-UX-v9 `UIUX-ONLY-LIGHT`).
+				if (meta) meta.setAttribute('content', isDark ? 'dark' : 'only light');
 			} catch (e) {}
 			// SYNC: умови мусять збігатися з `controllers/scrollbar.svelte.ts` і
 			// значенням за замовчуванням у `services/settings.svelte.ts`. Скрипт

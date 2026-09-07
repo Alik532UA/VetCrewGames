@@ -95,15 +95,16 @@ describe('settings', () => {
 
 		expect(raw.getItem('vetcrewgames_theme')).toBe('orange-purple');
 		expect(document.documentElement.getAttribute('data-theme')).toBe('orange-purple');
-		// Мета-тег рухомий: для темних схем 'dark', інакше 'light dark' —
-		// статичне значення повертає Force Dark Mode на Android (UI-UX-v8 § 1.2).
+		// Мета-тег рухомий: для темних схем 'dark', інакше 'only light' —
+		// голе 'light' і навіть 'light dark' при звуженні в CSS дають Auto Dark
+		// Theme на Android (UI-UX-v9 `UIUX-ONLY-LIGHT`).
 		expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe(
 			'dark'
 		);
 
 		settings.setTheme('light-green');
 		expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe(
-			'light dark'
+			'only light'
 		);
 	});
 
