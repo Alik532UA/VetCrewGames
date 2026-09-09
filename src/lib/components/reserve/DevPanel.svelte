@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatFont } from '$lib/i18n';
+	import { formatFont, t } from '$lib/i18n';
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { dragWindow } from './dragWindow.svelte';
 	import { REPUTATION_MAX, REPUTATION_MIN, TICKS_PER_DAY } from '$lib/reserve/constants';
@@ -150,8 +150,18 @@
 	<!-- Заголовок — ручка вікна: за нього його й тягнуть. -->
 	<header class="dev__head">
 		<b>{@html formatFont('Службове меню')}</b>
-		<button type="button" onclick={() => devPanel.close()} data-testid="reserve-dev-close-btn"
-			>×</button
+		<!--
+			`aria-label` тут обов'язковий: `×` читалка озвучує як «знак множення»,
+			тобто кнопка закриття для неї безіменна (ACCESSIBILITY-v9 § 10.6).
+			Підпис службової панелі лишається українським літералом свідомо — це
+			інструмент розробника, — а от ім'я кнопки йде через словник: `t()`
+			коштує нічого, а покруч у читалці коштує кнопки.
+		-->
+		<button
+			type="button"
+			onclick={() => devPanel.close()}
+			aria-label={t('common.close')}
+			data-testid="reserve-dev-close-btn">×</button
 		>
 	</header>
 

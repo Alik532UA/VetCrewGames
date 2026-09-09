@@ -11,6 +11,9 @@
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 	import { onMount } from 'svelte';
 
+	/** Стабільний між сервером і клієнтом ідентифікатор для `aria-labelledby` (SVELTE-CORE-v9 § 1.7). */
+	const uid = $props.id();
+
 	/**
 	 * ДОШКА «Хто численніший?»: сортування карток за чисельністю виду.
 	 *
@@ -447,8 +450,19 @@
 <div class="dynamic-zone-wrapper">
 	{#if !game.checked}
 		<div class="source-panel-wrapper" transition:slide={{ duration: 400 }}>
-			<div class="source-panel" role="group" aria-label="source cards" tabindex="-1">
-				<p class="source-panel__title">{@html formatFont(t('population.yourAnimals'))}</p>
+			<!--
+				Ім'я групи — САМ ПІДПИС, що лежить усередині, а не окремий рядок.
+
+				Тут стояло `aria-label="source cards"`: англійський літерал у
+				застосунку на чотирьох мовах, тобто читалка озвучувала українцеві
+				«source cards». `aria-labelledby` на видимий заголовок дає ім'я
+				поточною мовою й без другого джерела правди
+				(ACCESSIBILITY-v9 § 10.6, I18N-v9 § 2).
+			-->
+			<div class="source-panel" role="group" aria-labelledby="{uid}-source" tabindex="-1">
+				<p class="source-panel__title" id="{uid}-source">
+					{@html formatFont(t('population.yourAnimals'))}
+				</p>
 				<div class="source-panel__cards">
 					{#each game.sourceAnimals as srcAnimal, i (i)}
 						<div
