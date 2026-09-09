@@ -637,6 +637,52 @@ if (!allFiles.includes(sitemapPath)) {
 		fail(`sitemap: адреси без кінцевого слеша — це редирект: ${noSlash.join(', ')}`);
 }
 
+// --- og:image існує і достатньо великий (SEO-v9 § 4.2) ----------------------
+
+/**
+ * Адреса з `og:image` мусить вести на файл, і файл мусить бути ≥ 1200×630.
+ *
+ * Дві різні відмови, і обидві невидимі з боку сайту:
+ *
+ *  1. **Адреса в нікуди.** `og:image` — абсолютний URL, тобто ні збірка, ні
+ *     `svelte-check` не звірять його з диском. Логотип уже лежав у двох місцях
+ *     (`svg/…svg` і `images/…png`), і сплутати їх було нічим не видно.
+ *  2. **Замалий розмір.** Сторінка оголошує `twitter:card = summary_large_image`,
+ *     а у великої картки власна нижня межа: 200×200 у неї не проходить, і
+ *     картка тихо вироджується у варіант без зображення.
+ *
+ * Розмір читається з IHDR самого PNG — перших 24 байтів, — а не з мета-тегів
+ * `og:image:width`. Мета-тег каже те, що написав автор; IHDR каже те, що
+ * справді лежить у `build/` (`PIT-NUMBER-UNDER-GATE`).
+ */
+const OG_MIN = { width: 1200, height: 630 };
+const ogRef = readFileSync(`${BUILD}/index.html`, 'utf8').match(
+	/<meta property="og:image" content="([^"]+)"/
+);
+if (!ogRef) {
+	fail('index.html: немає og:image — посилання на сайт піде в мережі без картинки');
+} else {
+	const ogPath = ogRef[1].replace(`${SITE_ORIGIN}${SITE_BASE}`, '');
+	const onDisk = `${BUILD}${ogPath}`;
+	if (!allFiles.includes(onDisk)) {
+		fail(`og:image веде на ${ogRef[1]}, а ${onDisk} у збірці немає`);
+	} else if (!onDisk.endsWith('.png')) {
+		// Розбір IHDR працює лише для PNG; інший формат означає, що цю перевірку
+		// треба розширювати, а не тихо пропускати.
+		fail(`og:image ${ogPath} не PNG — перевірка розміру не вміє читати цей формат`);
+	} else {
+		const bytes = readFileSync(onDisk);
+		const width = bytes.readUInt32BE(16);
+		const height = bytes.readUInt32BE(20);
+		console.log(`check-build: og:image ${ogPath} — ${width}×${height}`);
+		if (width < OG_MIN.width || height < OG_MIN.height)
+			fail(
+				`og:image ${ogPath} має ${width}×${height} — велика картка вимагає ` +
+					`не менше ${OG_MIN.width}×${OG_MIN.height} і відкине це зображення`
+			);
+	}
+}
+
 // --- Source maps не публікуються (OBSERVABILITY-v8 § 1.2) --------------------
 const maps = allFiles.filter((f) => f.endsWith('.map'));
 if (maps.length)

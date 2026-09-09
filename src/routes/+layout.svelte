@@ -92,7 +92,23 @@
 	 * без sitemap.
 	 */
 	let hidden = $derived(isHiddenRoute(routeRest));
-	let ogImage = $derived(`${SITE_ORIGIN}${SITE_BASE}/images/VetCrewGames_logo_v1.png`);
+	/**
+	 * КАРТКА, А НЕ ЛОГОТИП, і це не про красу.
+	 *
+	 * Тут стояв `images/VetCrewGames_logo_v1.png` — 200×200, 3,2 КБ. Сторінка при
+	 * цьому оголошує `twitter:card = summary_large_image`, а у великої картки є
+	 * власна нижня межа розміру: 200×200 у неї НЕ проходить, і картка тихо
+	 * вироджується у варіант без картинки взагалі. SEO-v9 § 4.2 вимагає
+	 * ≥ 1200×630 саме тому.
+	 *
+	 * Найгірше в цьому дефекті — де його видно: у чужому месенджері, куди хтось
+	 * кинув посилання. Тобто самому не побачити ніколи, а гейта доти не було.
+	 *
+	 * `og-cover.png` збирає `scripts/make-og-image.mjs` із того самого вектора,
+	 * що й логотип, і КОМІТИТЬСЯ: інакше картка залежала б від наявності браузера
+	 * Playwright на раннері. Розмір готового файлу звіряє `check-build.mjs`.
+	 */
+	let ogImage = $derived(`${SITE_ORIGIN}${SITE_BASE}/images/og-cover.png`);
 
 	let jsonLd = $derived(
 		JSON.stringify({
@@ -297,6 +313,14 @@
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={seoDescription} />
 	<meta property="og:image" content={ogImage} />
+	<!--
+		Розміри поруч із адресою (SEO-v9 § 4.2): без них краулер мусить спершу
+		завантажити картинку, щоб дізнатися, чи вона годиться для великої картки, —
+		і перший перегляд посилання часто показує картку без зображення.
+	-->
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content={pageTitle} />
 	<!-- Локаль — із таблиці мов (SEO-v8 § 4); умова на дві мови робила de/nl англійськими. -->
 	<meta property="og:locale" content={ogLocale(routeLanguage)} />
 	{#each INDEXED_LANGUAGES.filter((lang) => lang !== routeLanguage) as lang (lang)}
