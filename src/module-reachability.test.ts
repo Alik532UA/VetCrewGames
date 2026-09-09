@@ -87,11 +87,15 @@ const ALIASES: Record<string, string> = {
 const posix = (p: string) => p.split('\\').join('/');
 const rel = (p: string) => posix(relative(ROOT, p));
 
-function walk(dir: string, out: string[] = []): string[] {
+/**
+ * `keep` — які файли брати. Типово це модулі; для `static/` перевірка нижче
+ * передає `/./`, тобто «усе», разом із двійковими.
+ */
+function walk(dir: string, out: string[] = [], keep = /\.(ts|js|svelte)$/): string[] {
 	for (const entry of readdirSync(dir)) {
 		const full = join(dir, entry);
-		if (statSync(full).isDirectory()) walk(full, out);
-		else if (/\.(ts|js|svelte)$/.test(entry)) out.push(posix(full));
+		if (statSync(full).isDirectory()) walk(full, out, keep);
+		else if (keep.test(entry)) out.push(posix(full));
 	}
 	return out;
 }
@@ -239,5 +243,141 @@ describe('досяжність модулів (PROJECT-STRUCTURE-v9 § 4.3.1)', 
 		// розібрати, названі явно, а не пропущені мовчки»).
 		const list = [...new Set(unresolved)].sort();
 		expect(list, `імпорти, яких резолвер не розібрав:\n${list.join('\n')}`).toEqual([]);
+	});
+});
+
+/**
+ * Те саме правило для `static/` (PROJECT-STRUCTURE-v9 § 2.1, `PS-STATIC-ORPHANS`,
+ * MEDIUM).
+ *
+ * `adapter-static` копіює теку на хостинг ЦІЛКОМ і мовчки. Файл, якого не
+ * просить ніхто, не ламає нічого й не з'являється в жодному звіті: збірка про
+ * нього не скаже, `check:build` дивиться на HTML, бюджет JS рахує скрипти. Його
+ * просто роздають назавжди. Граф модулів вище цього не бачить у принципі — у
+ * `static/` немає імпортів, там є адреси.
+ *
+ * ЧОМУ ЦЕ НЕ ДРІБНИЦЯ ПРИ 395 ФАЙЛАХ. Заміряно в `as5.odesa.ua` 2026-08-28:
+ * 57 файлів із 86 не згадані ніде — разом 1504 КБ, тобто більша частина ваги
+ * сайту нікому не потрібна.
+ *
+ * НА ЦЬОМУ ДЕРЕВІ БОРГ НУЛЬ, і це заміряно, а не припущено. Єдина сирота, яку
+ * знайшов перший прогін, — `svg/VetCrewGames_logo_v1.svg`, вектор логотипа, на
+ * який не посилався ніхто; вона перестала бути сиротою в коміті про `og:image`,
+ * бо саме з неї тепер збирається картка для соцмереж. Тобто перевірка
+ * ратчетна: вона стереже не наявний борг, а наступний.
+ */
+const STATIC_DIR = 'static';
+
+/**
+ * Де можуть згадуватися адреси ресурсів. Двійкові файли не читаються.
+ *
+ * `.css` тут ОБОВ'ЯЗКОВИЙ, і це не «на всяк випадок»: типова маска `walk()`
+ * бере лише модулі, і з нею перевірка дала шість хибних знахідок — три шрифти
+ * (`@font-face`) і три тла тем (`background-image: url(…)`). Обидві родини
+ * згадані лише в `global.css`, тобто саме там, куди вона не дивилася.
+ */
+const REFERENCE_KEEP = /\.(ts|js|mjs|svelte|css|html|json|txt)$/;
+const REFERENCE_SOURCES = [
+	...walk(join(ROOT, 'src'), [], REFERENCE_KEEP),
+	...walk(join(ROOT, 'scripts'), [], REFERENCE_KEEP),
+	...walk(join(ROOT, 'tests'), [], REFERENCE_KEEP),
+	posix(join(ROOT, 'svelte.config.js')),
+	posix(join(ROOT, STATIC_DIR, 'llms.txt')),
+	posix(join(ROOT, STATIC_DIR, 'robots.txt'))
+].filter((f) => existsSync(f));
+
+/**
+ * Що дозволено в КОРЕНІ `static/`: лише службові файли, які інструмент або
+ * стандарт вимагає саме там. `llms.txt`, як і `robots.txt`, визначений
+ * стандартом рівно за адресою `/llms.txt` — підпапка зробила б його
+ * недосяжним. Медіафайлу в корені місце в `images/`, `svg/` або `fonts/`.
+ */
+const ROOT_ALLOWED = [
+	/^favicon\.[a-z0-9]+$/i,
+	/^robots\.txt$/,
+	/^llms\.txt$/,
+	/^app-version\.json$/
+];
+
+/** Борг сиріт: число, яке може лише СПАДАТИ. Заміряно цією ж перевіркою. */
+const STATIC_ORPHAN_DEBT = 0;
+
+describe('сироти в static/ (PROJECT-STRUCTURE-v9 § 2.1)', () => {
+	const assets = walk(join(ROOT, STATIC_DIR), [], /./).map((f) =>
+		rel(f).replace(`${STATIC_DIR}/`, '')
+	);
+	const haystack = REFERENCE_SOURCES.map((f) => readFileSync(f, 'utf8')).join('\n');
+
+	/**
+	 * Посилання буває трьох видів, і другий — причина, чому наївний пошук тут
+	 * дає 297 хибних знахідок із 395 файлів.
+	 *
+	 *  1. Повний шлях від кореня сайту: `/images/og-cover.png`.
+	 *  2. Адреса, СКЛАДЕНА в рантаймі: ``asset(`/flags/${known}.svg`)``. Повного
+	 *     шляху в джерелах немає взагалі — є тека, одразу за якою стоїть
+	 *     інтерполяція. Тека з інтерполяцією — це посилання на ВЕСЬ її вміст, і
+	 *     саме так тут живуть 262 прапорці, 15 наїдків, 9 зон і 7 континентів.
+	 *  3. Просто ім'я файлу: так на нього посилаються скрипти й `llms.txt`.
+	 *
+	 * Форм інтерполяції дві, бо джерела дві: `${` у шаблонному рядку JavaScript
+	 * і `{` у розмітці Svelte. Перевіряти лише одну означало б проґавити половину.
+	 */
+	const referenced = (asset: string) => {
+		const name = asset.slice(asset.lastIndexOf('/') + 1);
+		const dir = asset.includes('/') ? asset.slice(0, asset.lastIndexOf('/') + 1) : '';
+		return (
+			haystack.includes(`/${asset}`) ||
+			haystack.includes(name) ||
+			(dir !== '' && (haystack.includes(`${dir}\${`) || haystack.includes(`${dir}{`)))
+		);
+	};
+
+	it('перевірка жива: ресурси й джерела посилань прочитано', () => {
+		expect(assets.length, 'тека static/ порожня — перевіряти нема що').toBeGreaterThan(50);
+		expect(REFERENCE_SOURCES.length, 'джерел посилань не знайдено').toBeGreaterThan(50);
+		// Канарки на САМ спосіб пошуку: без них «жодної сироти» означало б лише
+		// зламаний пошук. По одній на кожну з трьох форм посилання.
+		expect(referenced('images/og-cover.png'), 'повний шлях не розпізнається').toBe(true);
+		expect(referenced('flags/ua.svg'), 'інтерпольована адреса не розпізнається').toBe(true);
+		expect(referenced('robots.txt'), 'ім\u02bcя файлу не розпізнається').toBe(true);
+		/*
+		 * НЕГАТИВНА КАНАРКА, і в ній дві пастки, обидві спіймані прогоном.
+		 *
+		 * Перша: ім'я СКЛАДАЄТЬСЯ, а не пишеться літералом. Цей файл лежить у
+		 * `src/`, тобто сам входить у перелік джерел посилань, і літерал
+		 * `'fonts/такого-немає.woff2'` знайшовся б у власному тексті перевірки —
+		 * канарка доводила б протилежне тому, для чого існує.
+		 *
+		 * Друга: тека взята `fonts/`, а не `images/`. У `images/` канарка не
+		 * працює в принципі, і це МЕЖА МЕТОДУ, названа тут, а не схована:
+		 * `config/habitat-game.ts` складає адресу як
+		 * ``asset(`/images/${mode === 'continents' ? … }/${option}.webp`)``, тобто
+		 * інтерполює САМУ ПІДТЕКУ — і правило «тека з інтерполяцією = посилання на
+		 * весь вміст» накриває `images/` цілком. Сирота, покладена туди, лишиться
+		 * невидимою; для `flags/`, `fonts/`, `svg/` і кореня перевірка працює.
+		 */
+		const absent = ['fon' + 'ts', 'no' + '-such-face.woff2'].join('/');
+		expect(referenced(absent), 'пошук вважає своїм будь-що').toBe(false);
+	});
+
+	it('у корені static/ лежить лише службове', () => {
+		const stray = readdirSync(join(ROOT, STATIC_DIR))
+			.filter((entry) => statSync(join(ROOT, STATIC_DIR, entry)).isFile())
+			.filter((entry) => !ROOT_ALLOWED.some((re) => re.test(entry)));
+		expect(
+			stray,
+			`медіафайл у корені static/ — місце йому в підпапці:\n${stray.join('\n')}`
+		).toEqual([]);
+	});
+
+	it('борг сиріт лише скорочується', () => {
+		const orphans = assets.filter((a) => !referenced(a));
+		// Обидва боки: число, що лишилося БІЛЬШИМ за реальність, так само
+		// неправдиве, як і перевищене — просто мовчазне (AI-AGENT-PITFALLS-v9 § 5.5).
+		expect(
+			orphans.length,
+			`на ці файли не посилається ніхто, а adapter-static копіює static/ у build/ ` +
+				`цілком — тобто вони їдуть на хостинг:\n${orphans.join('\n')}`
+		).toBe(STATIC_ORPHAN_DEBT);
 	});
 });
