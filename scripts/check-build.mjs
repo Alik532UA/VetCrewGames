@@ -223,7 +223,29 @@ const ENTRY_JS_BUDGET_KB = 150;
  * переданий перекладач, як зроблено у вікторині. Це окрема робота на ~15 КБ,
  * і робити її в коміті про логування означало б змішати дві різні зміни.
  */
-const LAYOUT_JS_BUDGET_KB = 110;
+/*
+ * 110 → 111, І ЦЕ ВИДИМИЙ БОРГ, А НЕ ПОСЛАБЛЕННЯ.
+ *
+ * Стеля 110 ставилася під заміряні 109,521. На день цієї правки той самий
+ * замір дає 110,481 — тобто за час між правками layout виріс на 0,96 КБ, і
+ * гейт цього не сказав: `weigh` округлював, `Math.round(110,481)` = 110, і
+ * порівнювалося 110 > 110, тобто ні. Приріст, заради видимості якого стелю й
+ * опускали «рівно під заміряне», став невидимим саме тим механізмом.
+ *
+ * Порівняння тепер точне (див. `weigh` нижче), і перше, що воно показало, —
+ * оце перевищення. Число піднято до 111 рівно тому, що 110,481 — це факт, а
+ * стеля мусить означати поточний стан, а не бажаний; той самий принцип, за
+ * яким її двічі підіймали й раз опускали нижче.
+ *
+ * Чого НЕ зроблено і чому: борг у 0,5 КБ не гаситься правкою в цьому ж коміті.
+ * Коміт про точність міри не повинен ще й міняти те, що міряють, — інакше
+ * наступний читач не зможе сказати, від чого саме змінилося число.
+ *
+ * Запас — пів кілобайта, і він менший, ніж виглядає: 0,5 КБ це приблизно один
+ * невеликий компонент у шапці. Наступна дрібниця, що не влізе, — сигнал
+ * подумати, а не привід правити число.
+ */
+const LAYOUT_JS_BUDGET_KB = 111;
 const ROUTE_JS_BUDGET_KB = 300;
 
 /**
@@ -698,8 +720,26 @@ function closure(startFiles, followDynamic = false) {
 	return seen;
 }
 
+/**
+ * Вага в КБ gzip — ДРОБОМ, а не цілим.
+ *
+ * Тут стояв `Math.round(...)`, і порівнювалося саме округлене число. Тобто гейт
+ * пропускав до половини кілобайта понад стелю МОВЧКИ, і рівно це вже сталося:
+ * стеля 110 ставилася під заміряні 109,521, а на день цієї правки кореневий
+ * layout важив 110,481 — на 0,96 КБ більше, і `Math.round` показував «110 КБ,
+ * бюджет 110». Приріст, заради видимості якого стелю й опускали «рівно під
+ * заміряне», став невидимим.
+ *
+ * Це окремий випадок `PIT-NUMBER-UNDER-GATE`: під гейтом стояло не те число,
+ * яке гейт друкував і обіцяв. Тепер порівнюється точна величина, а в звіт іде
+ * один знак після коми — щоб наступний приріст було видно ще до того, як він
+ * упреться в межу.
+ */
 const weigh = (files) =>
-	Math.round([...files].reduce((sum, f) => sum + gzipSync(readFileSync(f)).length, 0) / 1024);
+	[...files].reduce((sum, f) => sum + gzipSync(readFileSync(f)).length, 0) / 1024;
+
+/** Для звіту: один знак після коми, з комою як десятковим розділювачем. */
+const kb = (value) => value.toFixed(1).replace('.', ',');
 
 const immutable = `${BUILD}/_app/immutable`;
 const entryFiles = allFiles.filter((f) => f.startsWith(`${immutable}/entry/`) && f.endsWith('.js'));
@@ -710,9 +750,9 @@ if (!entryFiles.length || !nodeFiles.length) {
 } else {
 	const entryClosure = closure(entryFiles);
 	const entryKb = weigh(entryClosure);
-	console.log(`check-build: entry JS ${entryKb} КБ gzip (бюджет ${ENTRY_JS_BUDGET_KB})`);
+	console.log(`check-build: entry JS ${kb(entryKb)} КБ gzip (бюджет ${ENTRY_JS_BUDGET_KB})`);
 	if (entryKb > ENTRY_JS_BUDGET_KB) {
-		fail(`бюджет entry перевищено: ${entryKb} КБ > ${ENTRY_JS_BUDGET_KB}`);
+		fail(`бюджет entry перевищено: ${kb(entryKb)} КБ > ${ENTRY_JS_BUDGET_KB}`);
 	}
 
 	/*
@@ -728,11 +768,11 @@ if (!entryFiles.length || !nodeFiles.length) {
 	const shared = new Set([...entryClosure, ...closure([layoutFile])]);
 	const layoutKb = weigh([...shared].filter((f) => !entryClosure.has(f)));
 	console.log(
-		`check-build: кореневий layout ${layoutKb} КБ gzip понад entry ` +
-			`(бюджет ${LAYOUT_JS_BUDGET_KB}); разом на кожного відвідувача ${entryKb + layoutKb} КБ`
+		`check-build: кореневий layout ${kb(layoutKb)} КБ gzip понад entry ` +
+			`(бюджет ${LAYOUT_JS_BUDGET_KB}); разом на кожного відвідувача ${kb(entryKb + layoutKb)} КБ`
 	);
 	if (layoutKb > LAYOUT_JS_BUDGET_KB) {
-		fail(`бюджет кореневого layout перевищено: ${layoutKb} КБ > ${LAYOUT_JS_BUDGET_KB}`);
+		fail(`бюджет кореневого layout перевищено: ${kb(layoutKb)} КБ > ${LAYOUT_JS_BUDGET_KB}`);
 	}
 
 	// Найважчий маршрут — понад те, що вже дали entry й layout.
@@ -745,11 +785,13 @@ if (!entryFiles.length || !nodeFiles.length) {
 	}
 
 	console.log(
-		`check-build: найважчий маршрут ${worst.file} — ${worst.kb} КБ gzip понад спільне ` +
+		`check-build: найважчий маршрут ${worst.file} — ${kb(worst.kb)} КБ gzip понад спільне ` +
 			`(бюджет ${ROUTE_JS_BUDGET_KB})`
 	);
 	if (worst.kb > ROUTE_JS_BUDGET_KB) {
-		fail(`бюджет маршруту перевищено: ${worst.file} важить ${worst.kb} КБ > ${ROUTE_JS_BUDGET_KB}`);
+		fail(
+			`бюджет маршруту перевищено: ${worst.file} важить ${kb(worst.kb)} КБ > ${ROUTE_JS_BUDGET_KB}`
+		);
 	}
 }
 
