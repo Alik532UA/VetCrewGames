@@ -336,3 +336,189 @@ describe('install у CI не глушить перевірку peer-залежн
 		expect(files.length, 'у .github/workflows немає жодного yml').toBeGreaterThan(0);
 	});
 });
+
+/**
+ * Вивантажується ТА збірка, яку перевіряли (CI-CD-AND-TOOLS-v9 § 1.10,
+ * `CI-DEPLOY-ORDER`, HIGH).
+ *
+ * Дефект живе не в кроці, а в ПОРЯДКУ кроків, і саме тому його не бачить жоден
+ * інший гейт: кожен міряє теку `build/`, яка на момент його погляду правильна.
+ *
+ * Заміряно 2026-08-26 в `adoptananimal`: `playwright.config.ts` піднімав власний
+ * сервер командою `npm run build && npm run preview` — у ту саму теку, але без
+ * змінних, які має лише крок збірки для деплою. Крок E2E стояв НИЖЧЕ збірки,
+ * тож порядок був: правильна збірка → зелений `check:build` над нею → E2E
+ * перезаписує `build/` → `upload-pages-artifact` вивантажує саме її. Сайт
+ * відкривався, бо пререндер робить шляхи відносними; але `canonical` кожної з
+ * 229 сторінок і кожен `<loc>` у sitemap вказували на СУСІДНІЙ сайт спільного
+ * домену.
+ *
+ * Тут порядок сьогодні правильний — E2E стоїть вище збірки, — і перевірка
+ * ратчетна: вона стереже, щоб його не переставили. Ціна переставляння тиха:
+ * `npm run test:e2e` тут теж робить власну збірку (`webServer` у
+ * `playwright.config.ts`), тобто крок, перенесений нижче, перезапише саме те,
+ * що вже перевірив `check:build`.
+ */
+describe('порядок кроків деплою (CI-CD-AND-TOOLS-v9 § 1.10)', () => {
+	/** Команди, які САМІ пишуть у `build/`. */
+	const WRITES_BUILD = /npm run build\b|npm run test:e2e\b|playwright test\b/;
+	/**
+	 * Із них — саме збірка для деплою.
+	 *
+	 * `npm run test:e2e` теж робить збірку: `webServer` у `playwright.config.ts`
+	 * кличе `npm run build` у ту саму теку. Тобто у workflow це два різні кроки
+	 * з однаковим побічним ефектом, і відрізняти їх треба командою, а не назвою.
+	 */
+	const DEPLOY_BUILD = /run:\s*npm run build\s*$/m;
+
+	const jobs = files.flatMap((file) => {
+		const steps = stepsOf(readFileSync(`${DIR}/${file}`, 'utf8'));
+		const names = [...new Set(steps.map((s) => s.job))];
+		return names.map((job) => ({ file, job, steps: steps.filter((s) => s.job === job) }));
+	});
+
+	/** Job, який вивантажує теку збірки на хостинг. */
+	const deploying = jobs.filter((j) => j.steps.some((s) => /upload-pages-artifact/.test(s.body)));
+
+	it('розбір живий: job із вивантаженням артефакту знайдено', () => {
+		expect(
+			deploying.length,
+			'жоден job не кличе upload-pages-artifact — або розбір зламався, ' +
+				'або сайт більше не викладається так, і перевірку треба переписати'
+		).toBe(1);
+	});
+
+	/*
+	 * ПИТАННЯ СТАВИТЬСЯ ПРО ОСТАННЬОГО ПИСЬМЕННИКА, а не «чи є щось після
+	 * збірки», і цю різницю показав зворотний експеримент.
+	 *
+	 * Перша редакція брала за збірку для деплою ОСТАННІЙ крок, що пише в
+	 * `build/`, і питала, чи є письменники після нього. Відповідь «немає» була
+	 * там завжди — за побудовою. Вставлений між `Build` і `Upload` крок
+	 * `npm run test:e2e` перевірку не завалив: він САМ ставав «збіркою для
+	 * деплою». Інваріант виглядав правильним і не міряв нічого.
+	 */
+	it('останнє, що пише в build/ перед вивантаженням, — саме збірка для деплою', () => {
+		const offenders: string[] = [];
+		for (const { file, job, steps } of deploying) {
+			const upload = steps.findIndex((s) => /upload-pages-artifact/.test(s.body));
+			const writers = steps
+				.slice(0, upload)
+				.flatMap((s, i) => (WRITES_BUILD.test(s.body) ? [i] : []));
+			if (!writers.length) {
+				offenders.push(`${file}::${job}: перед вивантаженням немає жодної збірки`);
+				continue;
+			}
+
+			const last = writers[writers.length - 1];
+			if (!DEPLOY_BUILD.test(steps[last].body))
+				offenders.push(
+					`${file}::${job}: останнє, що пише в build/ перед вивантаженням, — ` +
+						`«${steps[last].name}», а не збірка для деплою: поїде не та збірка, яку перевірили`
+				);
+
+			/*
+			 * Друга половина того самого питання, і саме вона ловить дефект
+			 * `adoptananimal` із боку, з якого його побачили: там E2E стояв НИЖЧЕ
+			 * `check:build`, тобто перевірка дивилася на теку, яку потім
+			 * перезаписали. Порядок мусить бути «збірка → перевірка → вивантаження».
+			 */
+			const inspect = steps.findIndex((s) => /npm run check:build/.test(s.body));
+			if (inspect === -1)
+				offenders.push(`${file}::${job}: збірку ніхто не перевіряє перед викладенням`);
+			else if (inspect < last)
+				offenders.push(
+					`${file}::${job}: «${steps[inspect].name}» дивиться на build/ ДО того, як ` +
+						`«${steps[last].name}» його перезапише — зелений звіт про іншу збірку`
+				);
+		}
+		expect(offenders, offenders.join('\n')).toEqual([]);
+	});
+});
+
+/**
+ * Мажор дії не каже, на якому Node вона працює (CI-CD-AND-TOOLS-v9 § 1.9,
+ * `CI-ACTION-RUNTIME`, MEDIUM).
+ *
+ * Номер релізу про рантайм не каже НІЧОГО: заміряно 2026-08-23 у восьми
+ * репозиторіях — `upload-artifact@v5` і `configure-pages@v5` стоять на `node20`,
+ * тобто очевидне «підняти на v5» попередження про застарілий рантайм не зняло б
+ * узагалі. Дізнатися правду можна лише в самої дії:
+ *
+ *     gh api repos/actions/upload-artifact/contents/action.yml --jq '.content' \
+ *       | base64 -d | grep "using:"
+ *
+ * Перевірка НЕ ходить у мережу — вона тримає перелік мажорів, які вже читали
+ * очима, і падає на кожному, якого в переліку немає. Тобто вона не доводить, що
+ * рантайм свіжий; вона робить інше й потрібніше: не дає підняти мажор БЕЗ
+ * звірки. У проєкті щотижневі Dependabot-PR, зокрема на дії, — саме такий PR і
+ * пройшов би тихо.
+ *
+ * Переліку не місце в PROJECT-CONTEXT.md: він читається кодом, а не людиною.
+ */
+describe('рантайм кожної дії звірений, а не припущений (CI-CD-AND-TOOLS-v9 § 1.9)', () => {
+	/**
+	 * `дія@мажор` → рантайм із `runs.using` в `action.yml` цього мажора.
+	 *
+	 * Звірено 2026-09-10 разом із аудитом за каноном v9 — і звірено НА ТЕГУ
+	 * МАЖОРА, а не на типовій гілці: `?ref=v6` замість запиту без `ref`.
+	 * Різниця не формальна — типова гілка показує стан НАЙНОВІШОГО мажора, тож
+	 * запит без `ref` відповідав би на питання, якого ніхто не ставив, і
+	 * `cache@v6` виглядав би так само, як `cache@v7`.
+	 *
+	 * Рядок додається ЛИШЕ після того, як рантайм прочитано в дії; інакше
+	 * перелік перетворюється на дозвільний список, який нічого не звіряє.
+	 */
+	const VERIFIED: Record<string, string> = {
+		'actions/checkout@v7': 'node24',
+		'actions/setup-node@v7': 'node24',
+		'actions/cache@v6': 'node24',
+		'actions/upload-artifact@v7': 'node24',
+		'actions/setup-java@v5': 'node24',
+		'actions/deploy-pages@v5': 'node24',
+		/*
+		 * `composite` — і це не «немає рантайму», а «рантайм чужий».
+		 *
+		 * Composite-дія Node не запускає сама; попередження про застарілий
+		 * рантайм дає дія ВСЕРЕДИНІ неї, тобто вказує на те, чого у workflow
+		 * немає. Прочитано разом із рештою: `upload-pages-artifact@v5` тягне
+		 * `actions/upload-artifact@…` з коментарем `# v7.0.0`, а той на `node24`.
+		 * Тобто ланцюжок чистий — але звірявся він у ДВА кроки, а не в один.
+		 */
+		'actions/upload-pages-artifact@v5': 'composite → upload-artifact v7 (node24)'
+	};
+
+	const used = [
+		...new Set(
+			[...directives.matchAll(/^\s*(?:- )?uses:\s*([^\s@]+)@(v\d+)/gm)].map(
+				(m) => `${m[1]}@${m[2]}`
+			)
+		)
+	].sort();
+
+	it('розбір живий: дії у workflow знайдено', () => {
+		expect(used.length, 'жодної `uses:` — або розбір зламався, або дій немає').toBeGreaterThan(3);
+	});
+
+	it('кожна дія у workflow має звірений рантайм', () => {
+		const unknown = used.filter((action) => !(action in VERIFIED));
+		expect(
+			unknown,
+			'мажор не звірений. Прочитати рантайм У САМОЇ ДІЇ й додати рядок у VERIFIED:\n' +
+				unknown
+					.map(
+						(a) =>
+							`  ${a} → gh api repos/${a.split('@')[0]}/contents/action.yml ` +
+							`--jq '.content' | base64 -d | grep "using:"`
+					)
+					.join('\n')
+		).toEqual([]);
+	});
+
+	it('у переліку немає дій, яких у workflow вже немає', () => {
+		// Дзеркало: прострочений рядок так само неправдивий, як відсутній —
+		// просто мовчазний (AI-AGENT-PITFALLS-v9 § 5.5).
+		const stale = Object.keys(VERIFIED).filter((a) => !used.includes(a));
+		expect(stale, `дію прибрано з workflow — прибрати й рядок:\n${stale.join('\n')}`).toEqual([]);
+	});
+});
