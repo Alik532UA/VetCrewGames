@@ -46,7 +46,7 @@ class BetaProgress {
 		} else {
 			this.marks = { ...this.marks, [id]: { vote, version: this.version } };
 		}
-		storage.setJSON(KEY, this.marks);
+		storage.setJSON(KEY, $state.snapshot(this.marks));
 	}
 
 	voteOf(id: string): Vote {

@@ -78,14 +78,17 @@ class PlayerData {
 	/**
 	 * Що саме поїде в базу.
 	 *
-	 * Копія ДВОХ рівнів, а не одного: `{ ...this.records }` копіює лише мапу, а
-	 * самі рекорди лишалися б тими самими об'єктами — і правка знімка правила б
-	 * стан. Зловив це власний тест, не читання коду.
+	 * `$state.snapshot`, а не ручна копія (SVELTE-CORE-v9 § 1.6). Тут стояв обхід
+	 * `Object.entries` із розкладанням кожного рекорда — «копія ДВОХ рівнів, а не
+	 * одного», бо `{ ...this.records }` копіює лише мапу, і правка знімка правила
+	 * б стан. Зловив це власний тест, не читання коду.
+	 *
+	 * Руна робить те саме й глибше: копія на ВСІ рівні, а не на два. Ручний обхід
+	 * тримався доти, доки в `GameRecord` лежали самі числа; перше вкладене поле
+	 * повернуло б той самий дефект, і наступний тест ловив би його вдруге.
 	 */
 	snapshot(): PlayData {
-		const games: Record<string, GameRecord> = {};
-		for (const [id, record] of Object.entries(this.records)) games[id] = { ...record };
-		return { score: this.score, games };
+		return { score: this.score, games: $state.snapshot(this.records) };
 	}
 
 	/**
@@ -153,7 +156,7 @@ class PlayerData {
 			...this.records,
 			[id]: { best: Math.max(previous.best, score), plays: previous.plays + 1 }
 		};
-		storage.setJSON('records', this.records);
+		storage.setJSON('records', $state.snapshot(this.records));
 		this.onChange?.();
 	}
 
@@ -166,7 +169,7 @@ class PlayerData {
 	apply(data: PlayData): void {
 		settings.setScore(data.score);
 		this.records = { ...data.games };
-		storage.setJSON('records', this.records);
+		storage.setJSON('records', $state.snapshot(this.records));
 	}
 
 	/** Акаунт з'явився: далі рахунок належить йому. */
