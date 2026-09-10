@@ -717,6 +717,155 @@ if (!allFiles.includes(sitemapPath)) {
 		fail(`sitemap: адреси без кінцевого слеша — це редирект: ${noSlash.join(', ')}`);
 }
 
+// --- Сторінка справді вантажить CSS і JS (OBSERVABILITY-v9 § 2.2.1) ---------
+//
+// «LIGHTHOUSE ДАВ 100 БАЛІВ СТОРІНЦІ БЕЗ CSS І JS» — і тут це вже сталося.
+//
+// Коментар у `lighthouserc.cjs` описує саме цей випадок: LHCI сам вибирав HTML
+// у `build/`, вибір падав на `404.html`, Chrome не малював жодного кадру й
+// Lighthouse падав із `NO_FCP`. Причина не в самому фолбеку — у формі його
+// шляхів. Заміряно на цьому білді:
+//
+//   пререндерені сторінки — ВІДНОСНІ шляхи (`./_app/…`, `../../../_app/…`);
+//   `404.html`            — АБСОЛЮТНІ з базовим шляхом (`/VetCrewGames/_app/…`).
+//
+// LHCI піднімає `build/` коренем сервера, тобто без префікса `/VetCrewGames`.
+// Для відносних шляхів це байдуже, для абсолютних — кожен актив стає 404. І
+// щойно замір не падає з `NO_FCP`, а просто малює порожню сторінку, різниці не
+// видно НІДЕ: бали навіть вищі, бо вантажити нічого.
+//
+// Тому перевіряються дві різні речі, і обидві статично, без сервера:
+//
+//   1) кожна сторінка посилається хоч на один стиль і хоч на один модуль
+//      входу, і всі її локальні активи існують на диску — так, як їх побачить
+//      хостинг (з префіксом base);
+//   2) сторінка, яку МІРЯЄ Lighthouse, лишається розв'язною ще й від кореня
+//      `build/` — так, як її бачить сервер LHCI.
+//
+// Перелік адрес читається з `lighthouserc.cjs`, а не дублюється тут: два
+// переліки розійшлися б, і розійшлися б мовчки.
+
+/**
+ * Локальні активи сторінки: стилі, модулі попереднього завантаження і те, що
+ * інлайн-скрипт довантажує сам (`import("./_app/immutable/entry/start.js")`).
+ *
+ * Останнє окремо, бо саме там лежить вхід у застосунок: у SvelteKit 2
+ * `<script type="module">` у HTML немає взагалі — бутстрап інлайновий, а чанки
+ * оголошені як `modulepreload`. Шукати тег із канону дослівно означало б
+ * шукати те, чого тут не буває.
+ */
+function pageAssets(html) {
+	const stylesheets = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)]
+		.map((m) => /href="([^"]+)"/.exec(m[0])?.[1])
+		.filter((href) => typeof href === 'string');
+	const preloads = [...html.matchAll(/<link\b[^>]*rel="modulepreload"[^>]*>/g)]
+		.map((m) => /href="([^"]+)"/.exec(m[0])?.[1])
+		.filter((href) => typeof href === 'string');
+	const imports = [...html.matchAll(/import\("([^"]+)"\)/g)].map((m) => m[1]);
+	return { stylesheets, preloads, imports };
+}
+
+/**
+ * Шлях активу → файл у `build/`, розв'язаний так, як його розв'яже КОНКРЕТНИЙ
+ * сервер. `serverBase` — префікс, який цей сервер віддає: `SITE_BASE` для
+ * GitHub Pages і порожній рядок для сервера LHCI, що піднімає `build/` коренем.
+ *
+ * `null` означає «зовнішній ресурс» — його існування тут не перевіряється.
+ */
+function assetFile(ref, pageDir, serverBase) {
+	if (/^(https?:)?\/\//.test(ref) || ref.startsWith('data:') || ref.startsWith('#')) return null;
+	if (ref.startsWith('/')) {
+		if (serverBase && !ref.startsWith(`${serverBase}/`)) return `${BUILD}${ref}`;
+		return `${BUILD}${ref.slice(serverBase.length)}`;
+	}
+	const parts = `${pageDir}/${ref}`.split('/');
+	const out = [];
+	for (const part of parts) {
+		if (part === '.' || part === '') continue;
+		if (part === '..') out.pop();
+		else out.push(part);
+	}
+	return out.join('/');
+}
+
+const ENTRY_MODULE_RE = /_app\/immutable\/entry\//;
+
+for (const file of htmlFiles) {
+	const html = readFileSync(file, 'utf8');
+	const where = file.replace(`${BUILD}/`, '');
+	const pageDir = file.slice(0, file.lastIndexOf('/'));
+	const { stylesheets, preloads, imports } = pageAssets(html);
+
+	if (!stylesheets.length) fail(`${where}: жодного <link rel="stylesheet"> — сторінка без стилів`);
+	if (!imports.some((ref) => ENTRY_MODULE_RE.test(ref))) {
+		fail(`${where}: інлайн-бутстрап не вантажить модуль із entry/ — сторінка без застосунку`);
+	}
+
+	const broken = [...stylesheets, ...preloads, ...imports]
+		.map((ref) => ({ ref, path: assetFile(ref, pageDir, SITE_BASE) }))
+		.filter(({ path }) => path !== null && !allFiles.includes(path));
+	if (broken.length) {
+		fail(
+			`${where}: активи, яких немає у build/ — ${broken
+				.slice(0, 3)
+				.map(({ ref, path }) => `${ref} → ${path}`)
+				.join('; ')}${broken.length > 3 ? ` (і ще ${broken.length - 3})` : ''}`
+		);
+	}
+}
+
+const LHCI_CONFIG = 'lighthouserc.cjs';
+const lhci = readFileSync(LHCI_CONFIG, 'utf8');
+const lhciDist = /staticDistDir:\s*'([^']+)'/.exec(lhci)?.[1];
+const lhciUrls = [...(/url:\s*\[([^\]]*)\]/.exec(lhci)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
+	(m) => m[1]
+);
+
+if (lhciDist !== `./${BUILD}`) {
+	fail(
+		`${LHCI_CONFIG}: staticDistDir — ${lhciDist ?? '(не знайдено)'}, а не ./${BUILD}. ` +
+			'Канарка «сторінка справді вантажить CSS і JS» дивилася б не на ту теку'
+	);
+} else if (!lhciUrls.length) {
+	fail(
+		`${LHCI_CONFIG}: перелік url не знайдено — Lighthouse сам вибирає сторінку, ` +
+			'і вибір падає на 404.html із базовим шляхом у кожному активі (NO_FCP)'
+	);
+} else {
+	let measured = 0;
+	for (const url of lhciUrls) {
+		// Хост у конфізі фіктивний: LHCI бере з рядка лише шлях (див. `lighthouserc.cjs`).
+		const path = url.replace(/^https?:\/\/[^/]+/, '');
+		const page = `${BUILD}${path}`;
+		if (!allFiles.includes(page)) {
+			fail(`${LHCI_CONFIG}: ${url} — у build/ немає ${page.replace(`${BUILD}/`, '')}`);
+			continue;
+		}
+
+		const html = readFileSync(page, 'utf8');
+		const pageDir = page.slice(0, page.lastIndexOf('/'));
+		const { stylesheets, preloads, imports } = pageAssets(html);
+		// Сервер LHCI віддає `build/` коренем, тобто БЕЗ префікса base.
+		const unreachable = [...stylesheets, ...preloads, ...imports]
+			.map((ref) => ({ ref, path: assetFile(ref, pageDir, '') }))
+			.filter(({ path }) => path !== null && !allFiles.includes(path));
+		if (unreachable.length) {
+			fail(
+				`${LHCI_CONFIG}: ${url} міряється БЕЗ ${unreachable.length} активів — ` +
+					`сервер LHCI віддає build/ коренем, а шлях ${unreachable[0].ref} розв'язується ` +
+					`у ${unreachable[0].path}. Бали такого заміру означають «нічого не завантажилося»`
+			);
+			continue;
+		}
+		measured++;
+	}
+	// Рядок звіту друкується лише за фактом: інакше «активи розв'язуються»
+	// стояло б поруч із власним же провалом і читалося як успіх.
+	if (measured === lhciUrls.length) {
+		console.log(`check-build: Lighthouse міряє ${measured} адрес(у), активи розв'язуються`);
+	}
+}
+
 // --- og:image існує і достатньо великий (SEO-v9 § 4.2) ----------------------
 
 /**
