@@ -35,6 +35,14 @@
 	let { children } = $props();
 
 	/**
+	 * Ідентифікатор `<main>` — ОДНОЮ константою на три місця: посилання «до
+	 * вмісту», сам елемент і переїзд фокуса після переходу. Написаний рядком
+	 * тричі, він розійшовся б мовчки: посилання вело б у нікуди, а фокус нікуди
+	 * не переїжджав — і обидві поломки видно лише клавіатурою.
+	 */
+	const MAIN_ID = 'main-content';
+
+	/**
 	 * Смуга «вас чекають у грі» — уся за одним динамічним імпортом.
 	 *
 	 * Тут лишається рівно виклик: кореневий layout вантажить кожен відвідувач, і
@@ -162,11 +170,32 @@
 	// Fires on the initial load too, so this covers the first view and each
 	// client-side move between the games. trackPageView initialises analytics
 	// itself, so there is no ordering to get wrong against onMount.
-	afterNavigate(({ from }) => {
+	afterNavigate(({ from, type }) => {
 		trackPageView();
 		// Кімната, у якій на мене чекають, з'являється саме тоді, коли я пішов зі
 		// сторінки онлайну — решта переходів індексу не чіпає.
 		if (from?.url.pathname.includes('/online')) checkAwaited();
+
+		/*
+		 * ФОКУС ПЕРЕЇЖДЖАЄ В НОВУ СТОРІНКУ (ACCESSIBILITY-v9 § 3).
+		 *
+		 * Перехід між сторінками тут клієнтський, тобто DOM підмінюється під
+		 * фокусом. Посилання, на якому фокус стояв, зникає — і фокус падає на
+		 * `body`. Наслідок бачить лише той, хто ходить клавіатурою або читалкою:
+		 * читалка не оголошує нічого (сторінка «не змінилася»), а наступний Tab
+		 * починається з початку документа, тобто знову з шапки. axe цього не
+		 * бачить у принципі: він міряє знімок сторінки, а не поведінку фокуса
+		 * після переходу.
+		 *
+		 * `type === 'enter'` пропускається: це перший показ сторінки, а не
+		 * перехід, і забирати фокус у людини на завантаженні не можна — вона
+		 * могла вже почати натискати.
+		 *
+		 * `preventScroll`: позицію прокрутки вже виставив маршрутизатор, і без
+		 * цього прапорця фокус смикнув би її вдруге.
+		 */
+		if (type === 'enter') return;
+		document.getElementById(MAIN_ID)?.focus({ preventScroll: true });
 	});
 
 	// Handle transition direction
@@ -347,10 +376,21 @@
 </svelte:head>
 
 <div class="app-container">
-	<a href="#main-content" class="skip-link">{@html formatFont(t('common.skipLink'))}</a>
+	<a href="#{MAIN_ID}" class="skip-link">{@html formatFont(t('common.skipLink'))}</a>
 	<GameHeader />
 
-	<main class="app-shell" id="main-content">
+	<!--
+		`tabindex="-1"` — не декорація, а те, без чого посилання «до вмісту» не
+		працює. Заміряно у прев'ю зібраного сайту: `main.focus()` лишав
+		`document.activeElement` на `body`, а клік по самому посиланню — так
+		само. Тобто сторінка прокручувалася, а фокус лишався в шапці, і
+		наступний Tab вів назад у шапку: обхід не обходив нічого (WCAG 2.4.1).
+
+		`-1`, а не `0`: елемент має приймати фокус ПРОГРАМНО й не з'являтися в
+		послідовності Tab — інакше в кожної сторінки була б зайва зупинка перед
+		вмістом.
+	-->
+	<main class="app-shell" id={MAIN_ID} tabindex="-1">
 		{#key page.url.pathname}
 			<div
 				class="page-transition-wrapper"
