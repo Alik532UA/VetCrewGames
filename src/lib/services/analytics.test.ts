@@ -114,6 +114,62 @@ describe('аналітика: гарди (ANALYTICS-v8 § 5)', () => {
 		expect(events.length, 'подія не потрапила в чергу dataLayer').toBeGreaterThan(0);
 	});
 
+	/**
+	 * ВІДМОВА ВІД ВІДСТЕЖУВАННЯ (ANLYTICS-v9 § 4.2).
+	 *
+	 * Проєкт свідомо йде без банера згоди (позиція B), і саме тому сигнал
+	 * браузера — єдине, чим людина може сказати «ні». Перевіряються обидва, бо
+	 * надсилають їх різні браузери, і перевіряється дзеркальна половина: без неї
+	 * тест був би зеленим і на лічильнику, вимкненому назавжди.
+	 */
+	describe('сигнал «не відстежувати»', () => {
+		/** Обидва прапорці живуть на `navigator`, якого в типах немає — звідси каст. */
+		const setSignals = (signals: { dnt?: string | null; gpc?: boolean }) => {
+			for (const [key, value] of Object.entries({
+				doNotTrack: signals.dnt ?? null,
+				globalPrivacyControl: signals.gpc
+			})) {
+				Object.defineProperty(navigator, key, { value, configurable: true, writable: true });
+			}
+		};
+
+		afterEach(() => setSignals({ dnt: null, gpc: undefined }));
+
+		it.each([
+			['doNotTrack = 1', { dnt: '1' }],
+			['doNotTrack = yes', { dnt: 'yes' }],
+			['globalPrivacyControl', { gpc: true }]
+		])('%s — жодної події й жодного скрипта', async (_name, signals) => {
+			setSignals(signals);
+			stubEnvironment({ browser: true, dev: false });
+			const appended = spyOnDom();
+			const { track, trackPageView } = await import('./analytics');
+
+			track('language_change', { language: 'en' });
+			trackPageView();
+
+			expect(
+				(window as { dataLayer?: unknown[] }).dataLayer ?? [],
+				'подія пішла попри відмову від відстежування'
+			).toEqual([]);
+			expect(appended, 'скрипт лічильника вантажиться попри відмову').toEqual([]);
+		});
+
+		it('без сигналу лічильник працює — перевірка не завжди-зелена', async () => {
+			setSignals({ dnt: '0' });
+			stubEnvironment({ browser: true, dev: false });
+			spyOnDom();
+			const { track } = await import('./analytics');
+
+			track('language_change', { language: 'en' });
+
+			expect(
+				(window as { dataLayer?: unknown[] }).dataLayer ?? [],
+				'`doNotTrack = 0` означає «не заперечую», і подія мусить піти'
+			).not.toEqual([]);
+		});
+	});
+
 	it('перевірка плейсхолдера жива, а не завжди-хибна (CODE-QUALITY-v8 § 1.3)', () => {
 		// Читається джерело, бо йдеться саме про ТИП константи: без `: string`
 		// TypeScript звужує обидві до літералів, порівняння стає завжди-хибним, і

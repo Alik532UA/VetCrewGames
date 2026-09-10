@@ -23,8 +23,39 @@ const GA_ID: string = 'G-0E633M761B';
 // X's: real measurement IDs can contain them.
 const isConfigured = /^G-[A-Z0-9]{6,}$/.test(GA_ID) && GA_ID !== GA_ID_PLACEHOLDER;
 
+/**
+ * ВІДМОВА ВІД ВІДСТЕЖУВАННЯ ПОВАЖАЄТЬСЯ — незалежно від того, чи є банер згоди.
+ *
+ * ANALYTICS-v9 § 4.2 називає це мінімумом, який не залежить від обраної позиції:
+ * проєкт свідомо йде без банера (позиція B, записана в `PROJECT-CONTEXT.md`), і
+ * саме тому єдиний сигнал, яким людина може сказати «ні», мусить діяти. Інакше
+ * «без банера» означає «без способу відмовитися».
+ *
+ * Два сигнали, а не один, бо вони з різних епох і надсилають їх різні браузери:
+ * `doNotTrack` (старий, Firefox і Safari донедавна) і `globalPrivacyControl`
+ * (новий, юридично значущий у частині штатів США). Жоден із них не стандартний
+ * у DOM-типах, тож читаються вони через звуження, а не через `any`.
+ *
+ * Перевіряється при КОЖНОМУ виклику, а не один раз при завантаженні: обидва
+ * значення людина може змінити в налаштуваннях браузера, не перезавантажуючи
+ * сторінку.
+ */
+const optedOut = () => {
+	if (!browser) return false;
+	const nav = navigator as Navigator & {
+		doNotTrack?: string | null;
+		globalPrivacyControl?: boolean;
+		msDoNotTrack?: string | null;
+	};
+	const win = window as Window & { doNotTrack?: string | null };
+	// `'1'` і `'yes'` — обидва траплялися в живих браузерах; `'0'` і `'unspecified'`
+	// означають «не заперечую», тож перевіряється саме згода на відмову.
+	const dnt = nav.doNotTrack ?? win.doNotTrack ?? nav.msDoNotTrack ?? null;
+	return nav.globalPrivacyControl === true || dnt === '1' || dnt === 'yes';
+};
+
 // `dev` keeps local work from landing in the same property as real traffic.
-const enabled = () => browser && !dev && isConfigured;
+const enabled = () => browser && !dev && isConfigured && !optedOut();
 
 export type AnalyticsEvent =
 	| 'language_change'
