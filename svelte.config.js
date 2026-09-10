@@ -134,8 +134,14 @@ const config = {
 				// літер, яких немає в основному шрифті. Атрибути стилю хешами не
 				// покриваються в принципі — для них існує лише `unsafe-hashes`,
 				// який послабив би політику сильніше за сам `unsafe-inline`.
-				'style-src': ['self', 'unsafe-inline', 'https://fonts.googleapis.com'],
-				'font-src': ['self', 'https://fonts.gstatic.com'],
+				'style-src': ['self', 'unsafe-inline'],
+				// `fonts.googleapis.com` і `fonts.gstatic.com` пішли звідси разом із
+				// самим запитом до Google Fonts: шість літер, яких немає в `inglobal`,
+				// тепер лежать сабсетами в `static/fonts/`. Домен, який сторінка не
+				// відкриває, у політиці бути не повинен (SECURITY-v9 § 6.2) —
+				// рахунок того, що це коштувало, стоїть біля `@font-face` у
+				// `global.css`.
+				'font-src': ['self'],
 				// ...and without these the beacons themselves are blocked, so the
 				// script would load and then fail to report anything.
 				'connect-src': [

@@ -34,12 +34,15 @@
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="VetCrewGames" />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link
-			href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap"
-			rel="stylesheet"
-		/>
+		<!--
+			Тут стояли два `preconnect` і блокуюча таблиця стилів зі стороннього
+			CDN шрифтів — заради шести літер, яких немає в `inglobal`. Обидва
+			накреслення тепер лежать сабсетами в `static/fonts/`; рахунок, чому
+			так, — біля `@font-face` у `global.css`.
+
+			Коментарі цього файлу їдуть у кожну з 85 сторінок, тому пояснення
+			живе там, а тут лишається вказівник.
+		-->
 		<meta name="color-scheme" content="light dark" />
 		<!--
 			Правило приховування стоїть ТУТ, а не в загальному файлі стилів.
@@ -85,7 +88,9 @@
 				let theme = localStorage.getItem('vetcrewgames_theme');
 				if (theme === 'light') theme = 'light-green';
 				if (!theme) {
-					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light-green';
+					theme = window.matchMedia('(prefers-color-scheme: dark)').matches
+						? 'dark'
+						: 'light-green';
 				}
 				document.documentElement.setAttribute('data-theme', theme);
 				let meta = document.querySelector('meta[name="color-scheme"]');

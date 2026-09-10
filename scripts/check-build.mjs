@@ -351,9 +351,14 @@ const REQUIRED_CSP = [
 	['script-src', 'https://*.firebasedatabase.app'],
 	['connect-src', 'https://*.firebasedatabase.app'],
 	['connect-src', 'wss://*.firebasedatabase.app'],
-	['connect-src', 'https://*.google-analytics.com'],
-	['style-src', 'https://fonts.googleapis.com'],
-	['font-src', 'https://fonts.gstatic.com']
+	['connect-src', 'https://*.google-analytics.com']
+	/*
+	 * `style-src fonts.googleapis.com` і `font-src fonts.gstatic.com` пішли
+	 * звідси разом із самим запитом до Google Fonts (див. `@font-face` у
+	 * `global.css`): вимагати домен, який сторінка більше не відкриває, означало
+	 * б стерегти зайвий дозвіл у політиці — рівно навпаки до того, для чого цей
+	 * перелік існує.
+	 */
 ];
 
 /**
