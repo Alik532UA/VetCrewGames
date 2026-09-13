@@ -153,10 +153,10 @@ export const ui = {
 	// Die Namen der Designs stehen als Text auf dem Bildschirm, nicht als
 	// Vorlesetext: Sie sind die Einträge einer Liste. Benannt nach dem, was man
 	// sieht — „orange-purple“ sagt niemandem etwas, „Herbst“ sagt alles.
-	'theme.dark': 'Dunkel',
-	'theme.light-green': 'Hellgrün',
-	'theme.winter': 'Winter',
-	'theme.orange-purple': 'Herbst',
+	'theme.dark': 'Dunkler Wald',
+	'theme.light-green': 'Sonniger Garten',
+	'theme.winter': 'Winterwunder',
+	'theme.orange-purple': 'Magischer Sonnenuntergang',
 
 	// Schaltfläche für den Protokollbericht, im Betrieb per Debug-Modus aktiv.
 	'debug.copyLogs': 'Protokollbericht kopieren',

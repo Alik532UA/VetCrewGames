@@ -150,9 +150,9 @@ export const ui = {
 	// items of a list. Named by what you see rather than by the stored value —
 	// "orange-purple" tells nobody anything, "Autumn" tells them everything.
 	'theme.dark': 'Dark',
-	'theme.light-green': 'Light green',
+	'theme.light-green': 'Green',
 	'theme.winter': 'Winter',
-	'theme.orange-purple': 'Autumn',
+	'theme.orange-purple': 'Vibrant',
 
 	// Log report button, enabled in production by debug mode.
 	'debug.copyLogs': 'Copy log report',

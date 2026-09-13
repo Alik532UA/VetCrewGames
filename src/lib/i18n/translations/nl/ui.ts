@@ -150,10 +150,10 @@ export const ui = {
 	// De namen van de thema's staan als tekst op het scherm, niet als
 	// voorleestekst: het zijn de items van een lijst. Genoemd naar wat je ziet
 	// — „orange-purple” zegt niemand iets, „Herfst” zegt alles.
-	'theme.dark': 'Donker',
-	'theme.light-green': 'Lichtgroen',
-	'theme.winter': 'Winter',
-	'theme.orange-purple': 'Herfst',
+	'theme.dark': 'Donker Bos',
+	'theme.light-green': 'Zonnige Tuin',
+	'theme.winter': 'Winterwonderland',
+	'theme.orange-purple': 'Magische Zonsondergang',
 
 	// Knop voor het lograpport, in productie aan via de debugmodus.
 	'debug.copyLogs': 'Lograpport kopiëren',
