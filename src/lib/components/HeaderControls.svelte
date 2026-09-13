@@ -347,78 +347,77 @@
 	/*
 	 * ПУНКТ ТЕМИ ПОКАЗУЄ СВОЮ ТЕМУ, а не поточну (THEME-SWITCHER § 4).
 	 *
-	 * Доти всі чотири рядки меню були одного кольору — кольору тієї теми, що вже
-	 * ввімкнена, — і не казали нічого про те, що за ними. Тепер кожен
-	 * пофарбований парою зі СВОЄЇ теми.
+	 * ## Перша редакція була неправильна, і ось чим
 	 *
-	 * ## Чому тут, а не в `HeaderMenu.svelte`
+	 * Вона брала `--color-bg` — ТЛО СТОРІНКИ. Але тла сторінки не видно майже
+	 * ніде: воно під фотографічним фоном, а очима людина читає ПОВЕРХНІ —
+	 * картки, шапку, саме це меню. Через це «Темна» виходила чорнішою за все, що
+	 * є в темній темі (#1a1a1a проти справжніх #242424), а «Світло-зелена» —
+	 * просто білою: її тло #f2f5ec зеленого не має взагалі. Автор назвав це
+	 * точно: «кольори агресивні і лише нагадують теми».
 	 *
-	 * Те меню спільне з мовою, і знання про теми в нього не належить. Прив'язка
-	 * — до `data-testid` самого списку: `data-menu-key` стоїть на пунктах ОБОХ
-	 * меню, тож правило без цієї прив'язки зачепило б і мову (обведення
-	 * обраного зокрема).
+	 * Тепер береться `--color-bg-surface` — рівно те, з чого зроблене саме це
+	 * меню в кожній темі, — плюс `--color-text` тієї ж теми. Рядок виходить
+	 * мініатюрою свого меню, а не умовним «темним» чи «світлим».
+	 *
+	 * ## Звідки колір-ідентичність
+	 *
+	 * Самої поверхні мало: у світло-зеленої та зимової вони обидві бліді й
+	 * схожі. Тому ліворуч стоїть смуга в `--color-primary` теми — зелена,
+	 * блакитна, жовтогаряча. Вона декоративна (підпис поруч каже те саме
+	 * словами), тож порогу контрасту не має, зате з неї тема впізнається
+	 * миттєво.
+	 *
+	 * ## Чому наведення не міняє тло
+	 *
+	 * Заливка кольором-ідентичністю провалює контраст: `#598f3a` світло-зеленої
+	 * дає 3,87:1 з білим і 3,96:1 з чорним — під порогом обидва, тобто
+	 * читабельної пари з ним не існує. Тому наведення лише додає рамку тим самим
+	 * кольором: пара «текст на поверхні» лишається недоторканою.
 	 *
 	 * Значення взяті з `styles/themes/*.css`; світло-зелена — перший аргумент
 	 * `light-dark()` у `dark.css`, куди її звели. ЛІТЕРАЛАМИ навмисно: пункт
-	 * теми `dark` мусить лишатися темним і у світлій темі, тобто саме тут токени
-	 * не діють — інакше чотири рядки знову були б однакові.
+	 * теми `dark` мусить лишатися темним і у світлій темі.
 	 *
-	 * Вага 0,3,0 б'є `.menu__item:hover` і `.menu__item--active` (по 0,2,0)
-	 * незалежно від порядку правил (§ 4.2).
-	 *
-	 * Контраст лишається тим самим, що й у самих темах: 12,6:1 (dark), 14,0:1
-	 * (light-green), 13,1:1 (winter), 14,8:1 (orange-purple); наведення — та
-	 * сама пара навпаки.
+	 * Контраст «текст на поверхні» (WCAG AA): 13,1:1 (dark), 12,9:1
+	 * (light-green), 12,6:1 (winter), 12,2:1 (orange-purple).
 	 */
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']) {
-		background: #1a1a1a;
-		color: #e5e5e5;
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key]) {
+		border-left: 4px solid var(--sw-id);
 	}
 
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']:hover),
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']:focus-visible) {
-		background: #e5e5e5;
-		color: #1a1a1a;
-	}
-
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']) {
-		background: #f2f5ec;
-		color: #262626;
-	}
-
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']:hover),
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']:focus-visible) {
-		background: #262626;
-		color: #f2f5ec;
-	}
-
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']) {
-		background: #f0f7ff;
-		color: #1a2b4d;
-	}
-
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']:hover),
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']:focus-visible) {
-		background: #1a2b4d;
-		color: #f0f7ff;
-	}
-
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']) {
-		background: #1a0f2e;
-		color: #f0e6ff;
-	}
-
-	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']:hover),
-	:global(
-			[data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']:focus-visible
-		) {
-		background: #f0e6ff;
-		color: #1a0f2e;
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key]:hover),
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key]:focus-visible) {
+		box-shadow: inset 0 0 0 2px var(--sw-id);
 	}
 
 	/* Обраний лишається СВОЇХ кольорів — інакше обрана тема єдина перестала б
-	   показувати себе. Вибір позначає обведення, а не заливка. */
+	   показувати себе. Вибір позначає суцільна рамка, а не заливка. */
 	:global([data-testid='header-theme-menu'] .menu__item--active) {
-		box-shadow: inset 0 0 0 2px currentColor;
+		box-shadow: inset 0 0 0 3px var(--sw-id);
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']) {
+		--sw-id: #93bf4c;
+		background: #242424;
+		color: #e5e5e5;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']) {
+		--sw-id: #598f3a;
+		background: #e4ebd8;
+		color: #262626;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']) {
+		--sw-id: #4d94ff;
+		background: #e6f2ff;
+		color: #1a2b4d;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']) {
+		--sw-id: #ff8c00;
+		background: #261742;
+		color: #f0e6ff;
 	}
 </style>
