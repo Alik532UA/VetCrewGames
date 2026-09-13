@@ -208,6 +208,7 @@
 		settings.setTheme(id as Theme);
 		openMenu = null;
 	}}
+	onPreview={(id) => settings.previewTheme(id as Theme | null)}
 >
 	{#snippet trigger()}
 		<CurrentThemeIcon size={20} />
@@ -341,5 +342,83 @@
 		object-fit: cover;
 		border-radius: 2px;
 		box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+	}
+
+	/*
+	 * ПУНКТ ТЕМИ ПОКАЗУЄ СВОЮ ТЕМУ, а не поточну (THEME-SWITCHER § 4).
+	 *
+	 * Доти всі чотири рядки меню були одного кольору — кольору тієї теми, що вже
+	 * ввімкнена, — і не казали нічого про те, що за ними. Тепер кожен
+	 * пофарбований парою зі СВОЄЇ теми.
+	 *
+	 * ## Чому тут, а не в `HeaderMenu.svelte`
+	 *
+	 * Те меню спільне з мовою, і знання про теми в нього не належить. Прив'язка
+	 * — до `data-testid` самого списку: `data-menu-key` стоїть на пунктах ОБОХ
+	 * меню, тож правило без цієї прив'язки зачепило б і мову (обведення
+	 * обраного зокрема).
+	 *
+	 * Значення взяті з `styles/themes/*.css`; світло-зелена — перший аргумент
+	 * `light-dark()` у `dark.css`, куди її звели. ЛІТЕРАЛАМИ навмисно: пункт
+	 * теми `dark` мусить лишатися темним і у світлій темі, тобто саме тут токени
+	 * не діють — інакше чотири рядки знову були б однакові.
+	 *
+	 * Вага 0,3,0 б'є `.menu__item:hover` і `.menu__item--active` (по 0,2,0)
+	 * незалежно від порядку правил (§ 4.2).
+	 *
+	 * Контраст лишається тим самим, що й у самих темах: 12,6:1 (dark), 14,0:1
+	 * (light-green), 13,1:1 (winter), 14,8:1 (orange-purple); наведення — та
+	 * сама пара навпаки.
+	 */
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']) {
+		background: #1a1a1a;
+		color: #e5e5e5;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']:hover),
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']:focus-visible) {
+		background: #e5e5e5;
+		color: #1a1a1a;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']) {
+		background: #f2f5ec;
+		color: #262626;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']:hover),
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='light-green']:focus-visible) {
+		background: #262626;
+		color: #f2f5ec;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']) {
+		background: #f0f7ff;
+		color: #1a2b4d;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']:hover),
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='winter']:focus-visible) {
+		background: #1a2b4d;
+		color: #f0f7ff;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']) {
+		background: #1a0f2e;
+		color: #f0e6ff;
+	}
+
+	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']:hover),
+	:global(
+			[data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']:focus-visible
+		) {
+		background: #f0e6ff;
+		color: #1a0f2e;
+	}
+
+	/* Обраний лишається СВОЇХ кольорів — інакше обрана тема єдина перестала б
+	   показувати себе. Вибір позначає обведення, а не заливка. */
+	:global([data-testid='header-theme-menu'] .menu__item--active) {
+		box-shadow: inset 0 0 0 2px currentColor;
 	}
 </style>

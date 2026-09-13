@@ -212,11 +212,38 @@ class Settings {
 	}
 
 	setTheme(theme: Theme): void {
+		this.previewedTheme = null;
 		this.theme = theme;
 		this.#themeFollowsSystem = false;
 		this.#applyTheme();
 		storage.set('theme', theme);
 	}
+
+	/**
+	 * Тема, яку показуємо «на пробу» під курсором, або `null`
+	 * (THEME-SWITCHER § 2.1).
+	 *
+	 * ОКРЕМО від `theme`: та означає «що обрано», лежить у сховищі й нею
+	 * світиться активний пункт меню. Прев'ю в те саме поле змусило б позначку
+	 * їхати за курсором, а після відведення сторінка лишалася б у тій темі, на
+	 * якій мишу востаннє тримали — тобто випадковий рух через меню мовчки міняв
+	 * би настройку. Тут іще один наслідок: `setTheme` знімає `#themeFollowsSystem`,
+	 * тож прев'ю через нього відрізало б стеження за системною темою.
+	 */
+	previewedTheme = $state<Theme | null>(null);
+
+	/**
+	 * Показує тему «на пробу», поки курсор на її пункті; `null` — вертає обрану.
+	 *
+	 * Нічого не зберігає, не чіпає `theme` і не рушає `#themeFollowsSystem`:
+	 * малює документ напряму.
+	 */
+	previewTheme(theme: Theme | null): void {
+		if (!browser) return;
+		this.previewedTheme = theme;
+		document.documentElement.setAttribute('data-theme', theme ?? this.theme);
+	}
+
 
 	/**
 	 * Мова, яку диктує АДРЕСА. У сховище не пишеться: сегмент шляху — це запит

@@ -41,12 +41,51 @@
 		open: boolean;
 		onToggle: (open: boolean) => void;
 		onselect: (id: string) => void;
+		/**
+		 * Показ пункта «на пробу», поки на ньому курсор; `null` — відведення
+		 * (THEME-SWITCHER § 3). НЕОБОВ'ЯЗКОВИЙ навмисно: меню тут одне на тему й
+		 * мову, а мова прев'ю не потребує — меню мови, яке раптом почало міняти
+		 * тему, це дефект, а не фіча (§ 7).
+		 *
+		 * Перевірка «це миша» живе ТУТ, а не в кожного, хто передає обробник:
+		 * `pointerenter` приходить і від тапу, а `pointerleave` на дотику — ні,
+		 * тож пункт застряг би показаним. Одне місце — одна гарантія.
+		 */
+		onPreview?: (id: string | null) => void;
 		trigger: Snippet;
 		itemVisual?: Snippet<[HeaderMenuItem]>;
 	}
 
-	let { label, keyshortcuts, testId, items, open, onToggle, onselect, trigger, itemVisual }: Props =
-		$props();
+	let {
+		label,
+		keyshortcuts,
+		testId,
+		items,
+		open,
+		onToggle,
+		onselect,
+		onPreview,
+		trigger,
+		itemVisual
+	}: Props = $props();
+
+	function previewOn(id: string, e: PointerEvent) {
+		if (e.pointerType === 'mouse') onPreview?.(id);
+	}
+
+	function previewOff(e: PointerEvent) {
+		if (e.pointerType === 'mouse') onPreview?.(null);
+	}
+
+	/*
+	 * Меню закривають клавішею й кліком поза ним — `pointerleave` на пункті тоді
+	 * не приходить, і показане «на пробу» лишилося б назавжди.
+	 */
+	$effect(() => {
+		if (!open) onPreview?.(null);
+	});
+
+	$effect(() => () => onPreview?.(null));
 
 	/**
 	 * Escape закриває й вертає фокус на кнопку, стрілки ходять по списку, Home і
@@ -146,6 +185,9 @@
 						role="menuitem"
 						aria-current={item.active ? 'true' : undefined}
 						onclick={() => onselect(item.id)}
+						onpointerenter={(e) => previewOn(item.id, e)}
+						onpointerleave={previewOff}
+						data-menu-key={item.id}
 						data-testid="{testId}-{item.id}-btn"
 					>
 						{@render itemVisual?.(item)}
@@ -245,6 +287,7 @@
 		color: var(--color-text-on-accent);
 		font-weight: var(--font-weight-bold);
 	}
+
 
 	/*
 	 * Наведення на ВИБРАНИЙ пункт не мусить його гасити: без цього рядка
