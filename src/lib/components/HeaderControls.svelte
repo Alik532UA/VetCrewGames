@@ -65,7 +65,6 @@
 		'orange-purple': Leaf
 	};
 
-	const CurrentThemeIcon = $derived(ICONS[settings.theme]);
 
 	const current = $derived(languageFromParam(page.params.lang));
 	const rest = $derived(routeRestFromId(page.route.id));
@@ -211,7 +210,29 @@
 	onPreview={(id) => settings.previewTheme(id as Theme | null)}
 >
 	{#snippet trigger()}
-		<CurrentThemeIcon size={20} />
+		<!--
+			ВСІ ЧОТИРИ ЗНАЧКИ В РОЗМІТЦІ, видимий — один. Це виправлення дефекту
+			гідрації, а не надлишок.
+
+			Доти тут стояв `<CurrentThemeIcon size={20} />` — компонент, ТИП якого
+			залежить від обраної теми. Сайт пререндериться, і в готовий HTML
+			потрапляє значок ТИПОВОЇ теми (`dark`, місяць). Клієнт читає зі сховища
+			`light-green` і хоче сонце — тобто тип компонента в цьому місці інший,
+			ніж у розмітці, з якої йде гідрація. Svelte лишав пререндерений вузол і
+			додавав новий поруч: два значки один на одному. Відтворення точне —
+			обрати «Світло-зелену» й ПЕРЕЗАВАНТАЖИТИ; без перезавантаження дефекту
+			немає, бо гідрації немає.
+
+			Тепер форма розмітки однакова в обох світах: чотири значки завжди, а
+			різниця лише в атрибуті `hidden`, який гідрація спокійно виправляє.
+			Ціна — три зайві `svg` у шапці; вони `aria-hidden` і `display: none`.
+		-->
+		{#each THEME_OPTIONS as option (option.id)}
+			{@const OptionIcon = ICONS[option.id as Theme]}
+			<span class="theme-icon" hidden={settings.theme !== option.id}>
+				<OptionIcon size={20} />
+			</span>
+		{/each}
 	{/snippet}
 	{#snippet itemVisual(item)}
 		{@const ItemIcon = ICONS[item.id as Theme]}
@@ -345,6 +366,23 @@
 	}
 
 	/*
+	 * Обгортка значка теми в тригері. `display: flex` — щоб значок лишався
+	 * центрованим, як був без обгортки.
+	 *
+	 * `[hidden]` з `!important`: типове правило браузера (`display: none`) має
+	 * нижчу вагу за це `display: flex`, і без нього сховані значки лишилися б
+	 * видимими — усі чотири поруч. Саме той випадок, який `[hidden]` програє
+	 * найчастіше.
+	 */
+	.theme-icon {
+		display: flex;
+	}
+
+	.theme-icon[hidden] {
+		display: none !important;
+	}
+
+	/*
 	 * ПУНКТ ТЕМИ ПОКАЗУЄ СВОЮ ТЕМУ, а не поточну (THEME-SWITCHER § 4).
 	 *
 	 * ## Перша редакція була неправильна, і ось чим
@@ -399,7 +437,7 @@
 
 	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='dark']) {
 		--sw-id: #93bf4c;
-		background: #242424;
+		background: #2a3d1d;
 		color: #e5e5e5;
 	}
 
@@ -417,7 +455,7 @@
 
 	:global([data-testid='header-theme-menu'] .menu__item[data-menu-key='orange-purple']) {
 		--sw-id: #ff8c00;
-		background: #261742;
+		background: #4a2e7a;
 		color: #f0e6ff;
 	}
 </style>
