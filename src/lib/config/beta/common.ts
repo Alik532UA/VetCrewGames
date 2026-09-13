@@ -342,6 +342,31 @@ export const commonTab: BetaTab = {
 			 */
 			coverage: 'manual',
 			testid: 'header-theme-menu'
+		},
+		{
+			id: 'common_27',
+			category: { uk: 'Теми', en: 'Themes' },
+			text: {
+				uk: 'На комп’ютері відкрийте список тем і наведіть курсор на тему, якою ЗАРАЗ не користуєтесь, не натискаючи. Сторінка мусить показати цю тему цілком, а щойно курсор піде — повернутися до попередньої. Самі пункти списку мусять бути пофарбовані кожен під СВОЮ тему, а не всі під поточну.',
+				en: 'On a desktop, open the theme list and hover a theme you are NOT using, without clicking. The page must show that theme in full and return to the previous one as soon as the pointer leaves. The list items themselves must each be coloured in THEIR OWN theme, not all in the current one.'
+			},
+			coverage: 'manual',
+			testid: 'header-theme-menu'
+		},
+		{
+			id: 'common_28',
+			category: { uk: 'Приватність', en: 'Privacy' },
+			/*
+			 * ВІДМОВА ВІД ВІДСТЕЖЕННЯ — за людиною, бо міряється в мережі, а не
+			 * в розмітці: жоден із наявних гейтів не дивиться на те, які запити
+			 * сторінка справді відправила.
+			 */
+			text: {
+				uk: 'Увімкніть у браузері «Не відстежувати» (Chrome: Налаштування → Конфіденційність; Firefox: «Надсилати сайтам сигнал Do Not Track»), відкрийте сайт і подивіться вкладку Network за словом «google». Запитів до аналітики бути НЕ мусить. Вимкніть цей режим, перезавантажте — запити мусять з’явитися.',
+				en: 'Turn on “Do Not Track” in the browser (Chrome: Settings → Privacy; Firefox: “Send websites a Do Not Track signal”), open the site and check the Network tab for the word “google”. There must be NO analytics requests. Turn the setting off, reload — the requests must appear.'
+			},
+			coverage: 'manual',
+			negative: true
 		}
 	]
 };
