@@ -98,6 +98,90 @@ describe('позначки бета-тестування', () => {
 		expect(betaProgress.freshCount).toBe(0);
 		expect(raw.getItem(KEY)).toBeNull();
 	});
+
+	/**
+	 * § 6.3 `BETA-CLEAR-TWO-STEP`. «Стерти» — єдина незворотна дія на сторінці, і
+	 * стоїть вона в тому самому рядку, що й «скопіювати звіт», до якого тягнуться
+	 * щоразу. При 169 пунктах ціна помилкового кліка — вечір роботи.
+	 */
+	it('стирання вимагає двох натискань', async () => {
+		const { betaProgress, raw } = await load();
+		betaProgress.vote('reserve_1', 'weird');
+
+		expect(betaProgress.requestClear(), 'перше натискання вже стерло').toBe(false);
+		expect(betaProgress.clearArmed).toBe(true);
+		expect(betaProgress.freshCount, 'одне натискання знесло роботу тестувальника').toBe(1);
+		expect(raw.getItem(KEY), 'сховище вже очищене на першому кроці').not.toBeNull();
+
+		expect(betaProgress.requestClear()).toBe(true);
+		expect(betaProgress.freshCount).toBe(0);
+		expect(betaProgress.clearArmed, 'кнопка лишилася зведеною').toBe(false);
+	});
+
+	it('зведення знімається, нічого не стираючи', async () => {
+		const { betaProgress } = await load();
+		betaProgress.vote('reserve_1', 'ok');
+		betaProgress.requestClear();
+		betaProgress.disarmClear();
+
+		expect(betaProgress.clearArmed).toBe(false);
+		expect(betaProgress.freshCount).toBe(1);
+	});
+
+	/**
+	 * § 8.6 `BETA-MARKS-UNTRUSTED`. Ключ переживає зміну самого чеклиста: пункт
+	 * прибрали, а позначка лишилася — і поступ починає показувати «172 / 169»,
+	 * число, яке не означає нічого й не має де виправитися.
+	 */
+	it('позначка пункта, якого вже немає в чеклисті, не рахується', async () => {
+		const seed: Record<string, Mark> = {
+			reserve_1: { vote: 'ok', version: 'v-test' },
+			reserve_999: { vote: 'ok', version: 'v-test' }
+		};
+		const { betaProgress } = await load({ [KEY]: JSON.stringify(seed) });
+
+		expect(betaProgress.voteOf('reserve_1'), 'перевірка мертва: справжня позначка теж зникла').toBe(
+			'ok'
+		);
+		expect(Object.keys(betaProgress.marks), 'позначка видаленого пункта вижила').toEqual([
+			'reserve_1'
+		]);
+	});
+
+	it('позначка зіпсованої форми дорівнює відсутній', async () => {
+		const seed = {
+			reserve_1: { vote: 'maybe', version: 'v' },
+			reserve_2: { vote: 'ok' },
+			reserve_3: 'ok'
+		};
+		const { betaProgress } = await load({ [KEY]: JSON.stringify(seed) });
+
+		expect(Object.keys(betaProgress.marks), 'у стан потрапило те, що позначкою не є').toEqual([]);
+	});
+
+	it('чужий вміст під ключем не кладе сторінку', async () => {
+		const { betaProgress } = await load({ [KEY]: '"не обʼєкт"' });
+		expect(Object.keys(betaProgress.marks)).toEqual([]);
+	});
+
+	/**
+	 * § 8.1 `BETA-TAB-PROGRESS`. Вкладок одинадцять, у найбільшій 33 пункти:
+	 * загальне «17 / 169» не каже, чи закінчена ця вкладка.
+	 */
+	it('поступ вкладки рахує лише її пункти й лише цю версію', async () => {
+		const { betaProgress } = await load();
+		const { BETA_TABS } = await import('$lib/config/betaChecks');
+		const tab = BETA_TABS.find((t) => t.id === 'reserve')!;
+
+		expect(betaProgress.progressOf(tab).total).toBe(tab.checks.length);
+		expect(betaProgress.progressOf(tab).done).toBe(0);
+
+		betaProgress.vote(tab.checks[0].id, 'ok');
+		expect(betaProgress.progressOf(tab).done).toBe(1);
+
+		const other = BETA_TABS.find((t) => t.id !== 'reserve')!;
+		expect(betaProgress.progressOf(other).done, 'позначка потрапила в чужу вкладку').toBe(0);
+	});
 });
 
 describe('звіт бета-тестування', () => {

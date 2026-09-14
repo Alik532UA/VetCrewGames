@@ -148,8 +148,17 @@
 		{@html formatFont(t('beta.progress'))}: {betaProgress.freshCount} / {betaProgress.totalCount}
 	</p>
 
+	<!--
+		ПОСТУП НА КОЖНІЙ ВКЛАДЦІ (§ 8.1), а не лише загальний.
+
+		Вкладок одинадцять, у найбільшій — 33 пункти. Загальне «17 / 169» не
+		відповідає на єдине питання, яке тестувальник собі ставить: чи закінчена
+		ЦЯ вкладка. Без лічильника позицію доводиться тримати в голові або
+		перераховувати очима.
+	-->
 	<nav class="tabs" data-testid="beta-tabs">
 		{#each BETA_TABS as candidate (candidate.id)}
+			{@const tabProgress = betaProgress.progressOf(candidate)}
 			<button
 				type="button"
 				class="tab"
@@ -159,12 +168,26 @@
 				data-testid="beta-tab-{candidate.id}-btn"
 			>
 				{@html formatFont(uk ? candidate.title.uk : candidate.title.en)}
+				<span
+					class="tab-count"
+					aria-label={t('beta.tabProgress')}
+					data-testid="beta-tab-{candidate.id}-progress-text"
+				>
+					{tabProgress.done}/{tabProgress.total}
+				</span>
 			</button>
 		{/each}
 	</nav>
 
 	{#each LEVELS as level (level.coverage)}
 		{@const items = ordered.filter((check) => check.coverage === level.coverage)}
+		<!--
+			Зсув нумерації: номери йдуть наскрізно 1..n по ВКЛАДЦІ, а не з одиниці
+			в кожному рівні (§ 2.2). Рівнів на екрані три, і три пункти «№ 1» на
+			одній сторінці роблять номер марним саме тоді, коли він потрібен:
+			людина каже «зламалося на третьому», а не «зламалося на `reserve_12`».
+		-->
+		{@const offset = ordered.findIndex((check) => check.coverage === level.coverage)}
 		{#if items.length}
 			<section class="level" data-testid="beta-level-{level.coverage}-section">
 				<h2 class="level-title text-panel">{@html formatFont(t(level.title))}</h2>
@@ -177,7 +200,7 @@
 				-->
 				<ul class="checks" data-testid="beta-{level.coverage}-checks-list">
 					{#each items as check, position (check.id)}
-						<BetaCheckRow {check} index={position + 1} {uk} />
+						<BetaCheckRow {check} index={offset + position + 1} {uk} />
 					{/each}
 				</ul>
 			</section>
@@ -234,14 +257,20 @@
 			{/if}
 		</button>
 
+		<!--
+			Стирання у ДВА кроки (§ 6.3): це єдина незворотна дія на сторінці, і вона
+			стоїть у тому самому рядку, що й «скопіювати звіт», до якого тягнуться
+			щоразу. При 169 пунктах ціна помилки — вечір роботи проти зайвого кліка.
+		-->
 		<button
 			type="button"
 			class="action action--danger"
-			onclick={() => betaProgress.clear()}
+			class:action--armed={betaProgress.clearArmed}
+			onclick={() => betaProgress.requestClear()}
 			data-testid="beta-clear-btn"
 		>
 			<Trash2 class="action-icon" />
-			{@html formatFont(t('beta.clear'))}
+			{@html formatFont(t(betaProgress.clearArmed ? 'beta.clearConfirm' : 'beta.clear'))}
 		</button>
 	</div>
 
@@ -299,6 +328,14 @@
 	.tab--active {
 		border-color: var(--color-accent);
 		font-weight: 700;
+	}
+
+	/* Рівна ширина цифр: лічильники в ряду вкладок не мусять стрибати. */
+	.tab-count {
+		margin-inline-start: 6px;
+		font-size: 0.8rem;
+		opacity: 0.75;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.level {
@@ -386,6 +423,18 @@
 
 	.action:hover {
 		border-color: var(--color-accent);
+	}
+
+	/*
+	 * Зведена кнопка стирання (§ 6.3). Стан НЕ лише кольором: рамка червона,
+	 * напис напівжирний, і сам текст кнопки міняється на питання — три
+	 * незалежні ознаки, тож зміну видно й тому, хто кольори не розрізняє
+	 * (ACCESSIBILITY-v9).
+	 */
+	.action--armed {
+		border-color: #ef4444;
+		color: #ef4444;
+		font-weight: 700;
 	}
 
 	.action--danger:hover {

@@ -185,6 +185,8 @@ export const ui = {
 	'beta.copy': 'Rapport kopiëren',
 	'beta.copied': 'Rapport gekopieerd',
 	'beta.clear': 'Markeringen wissen',
+	'beta.clearConfirm': 'Echt wissen? Druk nogmaals',
+	'beta.tabProgress': 'gemarkeerd op dit tabblad',
 	'beta.copyFailed':
 		'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.',
 	'beta.rulesTitle': 'Toegangsregels van de database',

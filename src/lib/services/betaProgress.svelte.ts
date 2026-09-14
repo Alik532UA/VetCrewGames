@@ -23,6 +23,36 @@ export interface Mark {
 	version: string;
 }
 
+const VOTES: readonly Vote[] = ['fail', 'weird', 'ok'];
+
+function isMark(value: unknown): value is Mark {
+	if (typeof value !== 'object' || value === null) return false;
+	const m = value as Record<string, unknown>;
+	return VOTES.includes(m.vote as Vote) && typeof m.version === 'string';
+}
+
+/**
+ * Прочитане зі сховища — НЕДОВІРЕНИЙ ВВІД (BETA-CHECKLIST-v9 § 8.6).
+ *
+ * Ключ переживає і зміну чеклиста, і зміну формату позначки. Найчастіший
+ * випадок безневинний і найгірший: пункт ПРИБРАЛИ зі списку, а позначка
+ * лишилася — вона далі рахувалася б у `freshCount`, і поступ показував би
+ * «172 / 169», число, яке не означає нічого й не має де виправитися. При 169
+ * пунктах і одинадцятьох вкладках такий дрейф непомітний доти, доки не стане
+ * абсурдним.
+ */
+function readMarks(): Record<string, Mark> {
+	const raw = storage.getJSON<unknown>(KEY);
+	if (typeof raw !== 'object' || raw === null) return {};
+
+	const known = new Set(allBetaChecks().map((check) => check.id));
+	const out: Record<string, Mark> = {};
+	for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+		if (known.has(id) && isMark(value)) out[id] = value;
+	}
+	return out;
+}
+
 class BetaProgress {
 	/** `id` пункта → позначка. Пункти без позначки в сховищі просто відсутні. */
 	marks = $state<Record<string, Mark>>({});
@@ -30,9 +60,20 @@ class BetaProgress {
 	/** Версія, на якій зараз працює сторінка. Порівнюється з версією позначки. */
 	readonly version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
 
+	/**
+	 * Чи зведена кнопка стирання (§ 6.3).
+	 *
+	 * «Стерти позначки» — єдина незворотна дія на сторінці, і вона стоїть у тому
+	 * самому рядку, що й «скопіювати звіт», до якого тягнуться щоразу. При 169
+	 * пунктах ціна помилки тут — вечір роботи проти одного зайвого кліка.
+	 *
+	 * Не `confirm()`: нативний діалог блокує потік, не перекладається,
+	 * виглядає чужим у будь-якій темі й у headless вимагає окремого обробника.
+	 */
+	clearArmed = $state(false);
+
 	constructor() {
-		const saved = storage.getJSON<Record<string, Mark>>(KEY);
-		if (saved) this.marks = saved;
+		this.marks = readMarks();
 	}
 
 	vote(id: string, vote: Vote): void {
@@ -62,8 +103,27 @@ class BetaProgress {
 		return Boolean(mark) && mark.version !== this.version;
 	}
 
+	/**
+	 * Стирання у два кроки (§ 6.3): перший виклик лише зводить кнопку, другий
+	 * стирає. Повертає `true`, коли позначки справді зникли.
+	 */
+	requestClear(): boolean {
+		if (!this.clearArmed) {
+			this.clearArmed = true;
+			return false;
+		}
+		this.clear();
+		return true;
+	}
+
+	/** Знімає зведення, нічого не стираючи: кнопка не лишається зарядженою. */
+	disarmClear(): void {
+		this.clearArmed = false;
+	}
+
 	clear(): void {
 		this.marks = {};
+		this.clearArmed = false;
 		storage.remove(KEY);
 	}
 
@@ -71,6 +131,20 @@ class BetaProgress {
 	freshCount = $derived(
 		Object.values(this.marks).filter((mark) => mark.version === this.version).length
 	);
+
+	/**
+	 * Поступ ОКРЕМОЇ вкладки (§ 8.1, `BETA-TAB-PROGRESS`).
+	 *
+	 * Загальне «17 / 169» не відповідає на єдине питання, яке тестувальник собі
+	 * ставить: чи закінчена ця вкладка. Вкладок тут одинадцять, а в найбільшій —
+	 * 33 пункти, тобто без лічильника позицію доводиться тримати в голові.
+	 */
+	progressOf(tab: { checks: readonly { id: string }[] }): { done: number; total: number } {
+		const done = tab.checks.filter(
+			(check) => this.marks[check.id]?.version === this.version
+		).length;
+		return { done, total: tab.checks.length };
+	}
 
 	/** Скільки пунктів у чеклисті взагалі. Стала: список — це дані збірки. */
 	readonly totalCount = allBetaChecks().length;

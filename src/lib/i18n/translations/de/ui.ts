@@ -188,6 +188,8 @@ export const ui = {
 	'beta.copy': 'Bericht kopieren',
 	'beta.copied': 'Bericht kopiert',
 	'beta.clear': 'Markierungen löschen',
+	'beta.clearConfirm': 'Wirklich löschen? Nochmal drücken',
+	'beta.tabProgress': 'in diesem Tab markiert',
 	'beta.copyFailed':
 		'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.',
 	'beta.rulesTitle': 'Zugriffsregeln der Datenbank',
