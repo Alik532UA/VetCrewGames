@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { APP_PAGES } from './support/pages';
 import { reduceMotion, settlePage } from './support/settle';
 

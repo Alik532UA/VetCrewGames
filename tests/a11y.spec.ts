@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { A11Y_BASELINE, A11Y_KNOWN } from './a11y-baseline';
 import { APP_PAGES, expectAllRoutesListed } from './support/pages';
 import { reduceMotion, settlePage } from './support/settle';

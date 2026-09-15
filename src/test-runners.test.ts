@@ -100,6 +100,45 @@ const specFiles = SEARCH_DIRS.flatMap((dir) => walk(join(ROOT, dir))).map((f) =>
 	f.slice(ROOT.length + 1)
 );
 
+const importsRunner = (source: string, runner: { imports: string }) =>
+	new RegExp(`from\\s*['"]${runner.imports.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]`).test(
+		source
+	);
+
+/**
+ * Раннер файлу — за його імпортами, ЗА ПОСИЛАННЯМИ на локальні модулі.
+ *
+ * Пряме порівняння рядка тут більше не годиться, і це не послаблення, а
+ * виправлення. Специфікації Playwright беруть `test` не з `@playwright/test`,
+ * а з власного модуля фікстур (ANALYTICS-v9 § 5.2, `AN-E2E-BLOCK`): глушилка
+ * аналітики мусить діяти на КОЖНУ сторінку, а не лише там, де її згадали.
+ * Після того переходу пряме порівняння оголосило б сиротами всі специфікації
+ * одразу — тобто гейт червонів би на цілком правильному коді, а справжню
+ * сироту в тій купі вже ніхто б не побачив.
+ *
+ * Гарантія лишається та сама: файл мусить ДОСЯГАТИ раннера. Обхід іде лише по
+ * відносних шляхах і пам'ятає відвідане, тож цикл імпортів його не зациклює.
+ */
+function runnerOf(file: string, seen = new Set<string>()): (typeof RUNNERS)[number] | undefined {
+	const abs = join(ROOT, file);
+	if (seen.has(abs) || !existsSync(abs) || statSync(abs).isDirectory()) return undefined;
+	seen.add(abs);
+
+	const source = withoutComments(readFileSync(abs, 'utf8'));
+	const direct = RUNNERS.find((r) => importsRunner(source, r));
+	if (direct) return direct;
+
+	for (const [, spec] of source.matchAll(/from\s*['"](\.[^'"]*)['"]/g)) {
+		const base = join(file, '..', spec).replace(/\\/g, '/');
+		// `./fixtures`, `./fixtures.ts` і `../lib/config/site.js` (TS-імпорт із розширенням JS).
+		for (const candidate of [base, `${base}.ts`, `${base}.js`, base.replace(/\.js$/, '.ts')]) {
+			const found = runnerOf(candidate, seen);
+			if (found) return found;
+		}
+	}
+	return undefined;
+}
+
 describe('файли перевірок', () => {
 	it('перевірка жива: файли перевірок узагалі знайдено', () => {
 		expect(specFiles.length, 'жодного файлу перевірки — сканер шукає не там').toBeGreaterThan(2);
@@ -112,15 +151,10 @@ describe('файли перевірок', () => {
 
 		const orphans: string[] = [];
 		for (const file of specFiles) {
-			const source = withoutComments(readFileSync(join(ROOT, file), 'utf8'));
-			const runner = RUNNERS.find((r) =>
-				new RegExp(`from\\s*['"]${r.imports.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}['"]`).test(
-					source
-				)
-			);
+			const runner = runnerOf(file);
 
 			if (!runner) {
-				orphans.push(`${file}: не імпортує жодного відомого раннера`);
+				orphans.push(`${file}: не досягає жодного раннера — ні прямо, ні через локальні імпорти`);
 				continue;
 			}
 			if (!deps[runner.dep]) {

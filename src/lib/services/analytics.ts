@@ -7,7 +7,7 @@ import { browser, dev } from '$app/environment';
  * і це неправда: жодного Plausible у `app.html` немає й не було. Документ, що
  * суперечить коду, вводить в оману активніше за його відсутність
  * (DOCUMENTATION-v8 § 8): наступний читач шукав би другий лічильник, а перед
- * тим ще й вирішував би, який із двох правильний (ANALYTICS-v8 § 1).
+ * тим ще й вирішував би, який із двох правильний (ANALYTICS-v9 § 1).
  *
  * The measurement ID sits here rather than in an environment variable: it is
  * public by design — it ships in the page source of every site that uses GA —
@@ -54,8 +54,20 @@ const optedOut = () => {
 	return nav.globalPrivacyControl === true || dnt === '1' || dnt === 'yes';
 };
 
-// `dev` keeps local work from landing in the same property as real traffic.
-const enabled = () => browser && !dev && isConfigured && !optedOut();
+/**
+ * Локальне середовище або автоматизований тест (Playwright, Puppeteer тощо).
+ * Запобігає засміченню аналітики під час розробки, локального прев'ю та E2E-тестів.
+ */
+const isTestOrLocal = () => {
+	if (!browser || typeof window === 'undefined') return false;
+	const hostname = window.location?.hostname ?? '';
+	const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+	const isWebDriver = typeof navigator !== 'undefined' && Boolean(navigator.webdriver);
+	return isLocal || isWebDriver;
+};
+
+// `dev`, `localhost` та автотести відключають аналітику, щоб тестовий трафік не потрапляв у продакшн.
+const enabled = () => browser && !dev && !isTestOrLocal() && isConfigured && !optedOut();
 
 export type AnalyticsEvent =
 	| 'language_change'

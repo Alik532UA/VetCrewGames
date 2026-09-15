@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * ANALYTICS-v8 § 5 — гарди лічильника.
+ * ANALYTICS-v9 § 5.1 — гарди лічильника.
  *
  * Гейт «vitest — гарди аналітики» перелічений у `canon.json`, а перевірки не
  * було. Це не формальність: усе, що стоїть між локальною роботою й бойовою
@@ -46,11 +46,21 @@ function spyOnDom() {
 	return appended;
 }
 
-describe('аналітика: гарди (ANALYTICS-v8 § 5)', () => {
+describe('аналітика: гарди (ANALYTICS-v9 § 5)', () => {
 	beforeEach(() => {
 		vi.resetModules();
 		delete (window as { gtag?: unknown }).gtag;
 		delete (window as { dataLayer?: unknown }).dataLayer;
+		Object.defineProperty(window, 'location', {
+			value: { hostname: 'vetcrewgames.com', origin: 'https://vetcrewgames.com', pathname: '/' },
+			writable: true,
+			configurable: true
+		});
+		Object.defineProperty(navigator, 'webdriver', {
+			value: false,
+			writable: true,
+			configurable: true
+		});
 	});
 
 	afterEach(() => {
@@ -69,6 +79,43 @@ describe('аналітика: гарди (ANALYTICS-v8 § 5)', () => {
 
 		expect(window.gtag, 'у dev `gtag` не має навіть з’являтися').toBeUndefined();
 		expect(appended, 'скрипт лічильника вантажиться в dev').toEqual([]);
+	});
+
+	it('мовчить на localhost навіть при dev: false (preview/локальні тести)', async () => {
+		stubEnvironment({ browser: true, dev: false });
+		Object.defineProperty(window, 'location', {
+			value: { hostname: 'localhost', origin: 'http://localhost:5399', pathname: '/' },
+			writable: true,
+			configurable: true
+		});
+		const appended = spyOnDom();
+		const { track, trackPageView, initAnalytics } = await import('./analytics');
+		initAnalytics();
+		track('language_change', { language: 'uk' });
+		trackPageView();
+		expect(window.gtag).toBeUndefined();
+		expect(appended).toEqual([]);
+	});
+
+	it('мовчить при navigator.webdriver: true навіть на робочому домені', async () => {
+		stubEnvironment({ browser: true, dev: false });
+		Object.defineProperty(window, 'location', {
+			value: { hostname: 'vetcrewgames.com', origin: 'https://vetcrewgames.com', pathname: '/' },
+			writable: true,
+			configurable: true
+		});
+		Object.defineProperty(navigator, 'webdriver', {
+			value: true,
+			writable: true,
+			configurable: true
+		});
+		const appended = spyOnDom();
+		const { track, trackPageView, initAnalytics } = await import('./analytics');
+		initAnalytics();
+		track('language_change', { language: 'uk' });
+		trackPageView();
+		expect(window.gtag).toBeUndefined();
+		expect(appended).toEqual([]);
 	});
 
 	/**
