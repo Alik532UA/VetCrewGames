@@ -3,11 +3,11 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: 'main'
+  # Ті самі гейти ДО мержу, без деплою (CI-CD-AND-TOOLS-v9 § 1.12,
+  # `CI-PRE-MERGE-GATE`). Job публікації нижче відсікається умовою на гілку.
+  pull_request:
+    branches: [main]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 # `cancel-in-progress: false` — не смак, а умова того, що гейти взагалі
 # виконуються (CI-CD-AND-TOOLS-v8 § 1.3, AI-AGENT-PITFALLS-v8 § 1.4). При
@@ -22,6 +22,9 @@ concurrency:
 jobs:
   build_site:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -86,11 +89,12 @@ jobs:
         run: npm run test:e2e -- --project=chromium
 
       - name: Upload Playwright report
-        if: failure()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
+          if-no-files-found: ignore
           retention-days: 7
 
       # Поріг high, а не moderate: після оновлення лишилися лише 4 low, але
@@ -111,9 +115,10 @@ jobs:
       # рішення власника.
       - name: Audit dependencies
         if: ${{ !cancelled() }}
-        run: npm audit --audit-level=high
+        run: npm run audit:ci
 
       - name: Build
+        id: build
         run: npm run build
 
       # Частина дефектів не існує в джерелах — вона виникає під час збірки, і
@@ -122,15 +127,18 @@ jobs:
       # origin, `unsafe-inline` у script-src, інлайн-скрипт, не покритий
       # хешем, .map поруч із бандлом, бюджет initial JS.
       - name: Check build output
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: npm run check:build
 
       # Ловить артефакт, що бруднить дерево: згенерований app-version.json,
       # оновлений lockfile (CI-CD-AND-TOOLS-v8 § 1.5). Це єдина машинна
       # перевірка правила «артефакт збірки не комітиться».
       - name: Build does not modify tracked files
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: git diff --exit-code
 
       - name: Lighthouse Audit
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: npx @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs
 
       - name: Upload Artifacts
@@ -150,6 +158,9 @@ jobs:
   # пуші.
   rules:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -188,6 +199,7 @@ jobs:
         run: npm run rules:stamp:check
 
       - name: Check database rules
+        if: ${{ !cancelled() }}
         run: npm run check:rules
 
   # ВИКЛАДАННЯ ПРАВИЛ, і воно тут окремим джобом із трьох причин.
@@ -215,6 +227,7 @@ jobs:
     needs: rules
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Токен GITHUB_TOKEN цій роботі не потрібен ні для чого: вона нічого не пише
     # в репозиторій. Порожній перелік прав — найдешевше звуження, яке взагалі є.
     permissions: {}
@@ -293,8 +306,15 @@ jobs:
   # `workflow` спрацьовує лише на `main` (див. `on:` вище), тож `rules_deploy` тут
   # не буває пропущеним — а пропущена залежність пропустила б і цю роботу.
   deploy:
+    # Публікація лише з гілки деплою: PR отримує всі гейти вище й жодного
+    # деплою (CI-CD-AND-TOOLS-v9 § 1.12).
+    if: github.ref == 'refs/heads/main'
     needs: [build_site, rules_deploy]
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

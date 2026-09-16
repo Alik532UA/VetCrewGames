@@ -168,14 +168,26 @@ describe('CI', () => {
  * разу. Червоне при цьому стало звичним фоном — тобто гірше за зелену галочку
  * без прогону, бо виглядає як чесне падіння.
  *
- * ## Межа правила
+ * ## Три класи кроків (ревізія 9.5 канону)
  *
- * Під нього підпадають лише НЕЗАЛЕЖНІ СТАТИЧНІ гейти — ті, яким потрібні самі
- * `node_modules`: типи, lint, юніт-тести, аудит, валідація вмісту, паритет мов.
- * Кроки з побічним ефектом (`build`, `deploy`, `upload-pages-artifact`) і кроки,
- * що залежать від `build/` або від браузерів (`check:build`, `check:bundle`,
- * Playwright, Lighthouse), `!cancelled()` НЕ отримують: запускати їх після
- * впалої збірки означає не звіт, а шум.
+ * Раніше тут було два класи, і другий формулювався як бланкетне виключення:
+ * усе, що залежить від `build/` або від браузерів, умови не отримувало зовсім.
+ * Причина була слушна — запускати такий крок після впалої збірки означає не
+ * звіт, а шум, — але наслідок неправильний: під цим виключенням ті самі гейти
+ * мовчали й тоді, коли збірка ціла, а впав, скажімо, лінтер. Прохід по
+ * дев'ятьох проєктах 2026-09-16 показав, що так зробили сім із них.
+ *
+ *   НЕЗАЛЕЖНИЙ ГЕЙТ ....... `!cancelled()`
+ *     типи, lint, юніт-тести, аудит, валідація вмісту, паритет мов — і E2E:
+ *     Playwright піднімає ВЛАСНИЙ preview, а не читає теку для деплою.
+ *
+ *   ПІСЛЯЗБІРКОВИЙ ГЕЙТ ... `!cancelled() && steps.<build>.outcome == 'success'`
+ *     `check:build`, `check:bundle`, `git diff --exit-code`, Lighthouse.
+ *     Дає звіт щоразу, коли є що міряти, і мовчить лише тоді, коли нема.
+ *
+ *   ПОБІЧНИЙ ЕФЕКТ ........ умови немає
+ *     `build`, `deploy`, `upload-pages-artifact`. Деплой після впалого гейта —
+ *     це і є те, від чого гейт захищає.
  *
  * Гейт визначається за КОМАНДОЮ, а не за назвою кроку: назви в проєктах різні
  * («Lint» / «Linting», «Unit Tests» / «Run unit tests»), команди однакові.
@@ -183,9 +195,22 @@ describe('CI', () => {
  * Перший гейт у job `if` не потребує: до нього ще ніщо не падало.
  */
 const INDEPENDENT_GATE =
-	/npm run check(?![:\w])|npm run check:(worker|i18n)\b|npm run lint(?![:\w])|npm (run )?test(?!:(e2e|watch))(:\w+)?(?!\S)|npm audit\b|npm run validate-content\b/;
+	/npm run check(?![:\w])|npm run check:(worker|i18n)\b|npm run lint(?![:\w])|npm (run )?test(?!:(e2e|watch))(:\w+)?(?!\S)|npm run audit:ci\b|npm run test:e2e\b|npx playwright test|npm run validate-content\b/;
 /** Виглядає гейтом, але залежить від збірки чи браузерів. */
-const BUILD_DEPENDENT = /check:build|check:bundle|check:rules|playwright|lhci|npm run build/;
+/**
+ * Гейти, яким потрібна ЗІБРАНА тека, — третій клас із ревізії 9.5 канону.
+ *
+ * Раніше цей перелік був ширший (сюди входили Playwright і `check:rules`), і
+ * кроки з нього виводилися з-під правила зовсім. Прохід по дев'ятьох проєктах
+ * 2026-09-16 показав, чим це коштувало: під бланкетним виключенням вони мовчать
+ * і тоді, коли збірка ціла, а впав, скажімо, лінтер. Тепер вони не виключені, а
+ * мають ВЛАСНУ умову — `steps.<build>.outcome == 'success'` (§ 1.8).
+ *
+ * Playwright звідси прибрано свідомо: він піднімає власний `preview`, а не
+ * читає теку для деплою, тобто це незалежний гейт. Під старим прочитанням його
+ * забирав будь-який попередній червоний крок — включно з `npm audit`.
+ */
+const BUILD_DEPENDENT = /check:build|check:bundle|git diff --exit-code|lhci/;
 
 /**
  * Кроки одного workflow у порядку появи, з розбиттям на job.
@@ -259,6 +284,37 @@ describe('гейти не ховають один одного (CI-CD-AND-TOOLS-
 		).toEqual([]);
 	});
 
+	/**
+	 * Післязбіркові гейти: `!cancelled() && steps.<build>.outcome == 'success'`
+	 * (CI-CD-AND-TOOLS-v9 § 1.8, третій клас).
+	 *
+	 * Голе `!cancelled()` тут було б гірше за відсутність умови: крок побіг би й
+	 * після впалої збірки й дав вторинне падіння «теки немає», яке ховає справжню
+	 * причину. А без умови взагалі — мовчить і тоді, коли міряти є що.
+	 */
+	it('післязбірковий гейт несе умову на результат збірки', () => {
+		const afterBuild = files.flatMap((file) =>
+			stepsOf(readFileSync(`${DIR}/${file}`, 'utf8'))
+				.filter((s) => BUILD_DEPENDENT.test(s.body))
+				.map((s) => ({ ...s, file }))
+		);
+		const seenBuild = new Set<string>();
+		const offenders: string[] = [];
+		for (const gate of afterBuild) {
+			const key = `${gate.file}::${gate.job}`;
+			const isFirst = !seenBuild.has(key);
+			seenBuild.add(key);
+			if (isFirst) continue;
+			if (!/!cancelled\(\)\s*&&\s*steps\.\w+\.outcome\s*==\s*'success'/.test(gate.body)) {
+				offenders.push(`${gate.file} → ${gate.job} → «${gate.name}»`);
+			}
+		}
+		expect(
+			offenders,
+			`післязбірковий гейт без умови на збірку:\n${offenders.join('\n')}`
+		).toEqual([]);
+	});
+
 	it('аудит залежностей лишається строгішим за канон — свідомо', () => {
 		/*
 		 * ЦЕЙ ПУНКТ СТЕРЕЖЕ РІШЕННЯ ВЛАСНИКА ВІД ЧЕРГОВОГО «ВИПРАВЛЕННЯ ЗА КАНОНОМ».
@@ -281,13 +337,20 @@ describe('гейти не ховають один одного (CI-CD-AND-TOOLS-
 		 * Реверсний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): додано `--omit=dev`
 		 * назад у крок — пункт червоніє.
 		 */
-		const audit = gates.filter((g) => /npm audit/.test(g.body));
+		// З ревізії 9.5 канону крок кличе ОБГОРТКУ, а не `npm audit` напряму
+		// (CI-CD-AND-TOOLS-v9 § 1.15, `CI-THIRD-PARTY-OUTAGE`): голий крок падає
+		// й тоді, коли ліг реєстр npm. Тому поріг і область перевіряються там, де
+		// вони тепер живуть — у самому скрипті.
+		const audit = gates.filter((g) => /audit:ci/.test(g.body));
 		expect(audit.length, 'крок аудиту мусить існувати').toBe(1);
-		expect(audit[0].body, 'поріг high, а не moderate').toMatch(/--audit-level=high/);
+
+		const wrapper = readFileSync('scripts/check-audit.mjs', 'utf8');
+		expect(wrapper, 'поріг high, а не moderate').toMatch(/'high', 'critical'/);
 		expect(
-			audit[0].body,
+			wrapper,
 			'`--omit=dev` тут не помилка канону, а записане відхилення — див. PROJECT-CONTEXT.md'
-		).not.toMatch(/--omit=dev/);
+		).not.toMatch(/npm audit --omit=dev --json/);
+		expect(wrapper, 'обгортка більше не падає від знахідки').toMatch(/process\.exit\(1\)/);
 	});
 
 	it('`continue-on-error` не стоїть на гейтах', () => {
