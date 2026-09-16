@@ -292,6 +292,45 @@ describe('гейти не ховають один одного (CI-CD-AND-TOOLS-
 	 * після впалої збірки й дав вторинне падіння «теки немає», яке ховає справжню
 	 * причину. А без умови взагалі — мовчить і тоді, коли міряти є що.
 	 */
+	/**
+	 * Підготовка гейта успадковує умову гейта (CI-CD-AND-TOOLS-v9 § 1.8, 9.6).
+	 *
+	 * Заміряно в `Slovko`, прогін 35075608772 — перший після переходу на три
+	 * класи. `Unit tests` упав, E2E під новим `!cancelled()` чесно побіг далі, а
+	 * `Install Playwright chromium` умови не мав і його пропустили. Замість
+	 * одного справжнього дефекту у звіті стало сорок рядків
+	 * `browserType.launch: Executable doesn't exist` — тобто стан ГІРШИЙ за той,
+	 * що був до послаблення: доти E2E чесно пропускали.
+	 */
+	it('підготовка E2E несе ту саму умову, що й сам E2E', () => {
+		const PREP = /playwright install|ms-playwright/;
+		const E2E_STEP = /playwright test|npm run test:e2e/;
+		const offenders: string[] = [];
+
+		for (const file of files) {
+			const steps = stepsOf(readFileSync(`${DIR}/${file}`, 'utf8'));
+			const byJob = new Map<string, typeof steps>();
+			for (const step of steps) {
+				if (!byJob.has(step.job)) byJob.set(step.job, []);
+				byJob.get(step.job)!.push(step);
+			}
+			for (const [job, jobSteps] of byJob) {
+				const gate = jobSteps.find((s) => E2E_STEP.test(s.body) && !PREP.test(s.body));
+				if (!gate || !/!cancelled\(\)/.test(gate.body)) continue;
+				for (const step of jobSteps) {
+					if (!PREP.test(step.body)) continue;
+					if (/!cancelled\(\)/.test(step.body)) continue;
+					offenders.push(`${file} → ${job} → «${step.name}»`);
+				}
+			}
+		}
+
+		expect(
+			offenders,
+			`E2E побіжить без браузерів і впаде не на дефекті:\n${offenders.join('\n')}`
+		).toEqual([]);
+	});
+
 	it('післязбірковий гейт несе умову на результат збірки', () => {
 		const afterBuild = files.flatMap((file) =>
 			stepsOf(readFileSync(`${DIR}/${file}`, 'utf8'))
