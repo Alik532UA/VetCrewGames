@@ -26,7 +26,21 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-const PROJECT = 'vet-crew-games';
+/*
+ * ІДЕНТИФІКАТОР ПРОЄКТУ — З ТОГО САМОГО ФАЙЛУ, ЩО Й У ЗАСТОСУНКУ.
+ *
+ * Доти тут стояв власний літерал `'vet-crew-games'`, тобто один факт жив у
+ * двох місцях. Розходження було б тихим у найгірший спосіб: правила поїхали б
+ * в одну базу, застосунок писав би в іншу, і ОБИДВІ дії відзвітували б
+ * успіхом. Сусідній `check-rules-live.mjs` уже читає конфіг звідси — тепер і
+ * цей (SECURITY-v9 § 4.2.1, `SEC-CONFIG-IN-SOURCE`).
+ */
+const CONFIG_SOURCE = 'src/lib/net/firebase.ts';
+const PROJECT = /projectId: '([^']+)'/.exec(readFileSync(CONFIG_SOURCE, 'utf8'))?.[1];
+if (!PROJECT) {
+	console.error(`ПОМИЛКА: не знайшов projectId у ${CONFIG_SOURCE} — невідомо, куди викладати.`);
+	process.exit(2);
+}
 
 /**
  * Чим можна ввійти — у порядку, у якому це робить сам `firebase-tools`.
