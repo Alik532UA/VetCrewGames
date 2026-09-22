@@ -187,6 +187,7 @@ export const ui = {
 	'beta.clear': 'Markeringen wissen',
 	'beta.clearConfirm': 'Echt wissen? Druk nogmaals',
 	'beta.tabProgress': 'gemarkeerd op dit tabblad',
+	'beta.home': 'Naar de startpagina',
 	'beta.copyFailed':
 		'De browser weigerde te kopiëren. Selecteer de tekst hieronder en kopieer die zelf.',
 	'beta.rulesTitle': 'Toegangsregels van de database',

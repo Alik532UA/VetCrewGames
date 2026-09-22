@@ -81,13 +81,46 @@ describe('позначки бета-тестування', () => {
 	it('повторне натискання того самого стану знімає позначку', async () => {
 		const { betaProgress, raw } = await load();
 		betaProgress.vote('reserve_1', 'ok');
-		betaProgress.vote('reserve_1', 'none');
+		betaProgress.vote('reserve_1', 'ok');
 
 		expect(betaProgress.voteOf('reserve_1')).toBe('none');
 		expect(
 			Object.keys(JSON.parse(raw.getItem(KEY) ?? '{}')),
 			'знята позначка лишилася записом у сховищі'
 		).toEqual([]);
+	});
+
+	it('явне «none» теж знімає позначку', async () => {
+		const { betaProgress } = await load();
+		betaProgress.vote('reserve_1', 'ok');
+		betaProgress.vote('reserve_1', 'none');
+
+		expect(betaProgress.voteOf('reserve_1')).toBe('none');
+	});
+
+	/**
+	 * ЦЕ БУВ СПРАВЖНІЙ ДЕФЕКТ (§ 3.3, `BETA-VOTE-UNDO`).
+	 *
+	 * Рішення про зняття рахував рядок чеклиста: `mine === vote ? 'none' : vote`,
+	 * а `mine` приходив із `voteOf()`, який версії не дивиться. Тож на позначці
+	 * З ІНШОЇ ЗБІРКИ повторне натискання того самого стану її СТИРАЛО — людина,
+	 * яка прийшла на новій версії підтвердити торішнє «працює», натомість його
+	 * втрачала. Зверху цього стояв тест «повторне натискання знімає позначку»,
+	 * але він кликав `vote('none')` напряму, тобто перевіряв інший шлях.
+	 *
+	 * Зворотний експеримент: повернути умову без `version` — цей сценарій
+	 * червоніє, а сусідній лишається зеленим.
+	 */
+	it('повторне натискання на СТАРІЙ позначці перепоставляє її на цій версії', async () => {
+		const stale = JSON.stringify({ reserve_1: { vote: 'ok', version: '0.0.1' } });
+		const { betaProgress } = await load({ [KEY]: stale });
+		expect(betaProgress.isStale('reserve_1'), 'позначка мала прочитатися застарілою').toBe(true);
+
+		betaProgress.vote('reserve_1', 'ok');
+
+		expect(betaProgress.voteOf('reserve_1'), 'підтвердження стерло позначку').toBe('ok');
+		expect(betaProgress.isStale('reserve_1'), 'позначка лишилася на старій версії').toBe(false);
+		expect(betaProgress.freshCount, 'підтверджене не порахувалося як зроблене').toBe(1);
 	});
 
 	it('«стерти позначки» прибирає ключ, а не лишає порожній обʼєкт', async () => {

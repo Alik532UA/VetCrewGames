@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LANGUAGE_ROUTES, type RouteRest } from '$lib/i18n/routing';
+import { LANGUAGE_ROUTES, LANGUAGES, type RouteRest } from '$lib/i18n/routing';
 import {
 	BETA_TABS,
 	BETA_UNCOVERED_ROUTES,
@@ -45,6 +45,15 @@ const svelteFiles = (dir: string, out: string[] = []): string[] => {
 const markup = svelteFiles('src')
 	.map((file) => readFileSync(file, 'utf8'))
 	.join('\n');
+
+/**
+ * Джерело САМОЇ сторінки чеклиста — окремо від решти розмітки.
+ *
+ * Правила § 8 говорять про те, що є на цій сторінці, а не десь у проєкті:
+ * `beta-lang-btn`, знайдений у чужому компоненті, нічого не довів би.
+ */
+const PAGE = 'src/routes/[[lang=lang]]/beta-test-checklists/+page.svelte';
+const pageSource = readFileSync(PAGE, 'utf8');
 
 /**
  * Усі локатори, які проєкт СПРАВДІ малює.
@@ -510,5 +519,57 @@ describe('чеклист бета-тестування', () => {
 				expect(shown, `${tab.id}/${coverage}: порядок змінився`).toEqual(declared);
 			}
 		}
+	});
+
+	/**
+	 * § 8.3 `BETA-OWN-LANG-BTN`.
+	 *
+	 * Правило стоїть у каноні з 9.0 і не виконувалося тут саме тому, що не мало
+	 * входу: пункти живуть двома мовами, інтерфейс сайту має чотири, і людина,
+	 * чий сайт відкрився нідерландською, бачила чеклист англійською без жодного
+	 * способу перемкнути його на українську. Умова читається з того самого
+	 * переліку мов, що й решта i18n, — інакше це другий список (§ 5.1).
+	 */
+	it('мов інтерфейсу більше двох — на сторінці є власна кнопка мови (§ 8.3)', () => {
+		if (LANGUAGES.length <= 2) return;
+		expect(pageSource, 'чеклист знає дві мови, сайт — чотири; перемкнути нічим').toContain(
+			'data-testid="beta-lang-btn"'
+		);
+	});
+
+	/**
+	 * § 8.5.1 `BETA-VERSION-VISIBLE`.
+	 *
+	 * Позначка несе версію, і підказка «позначено на іншій версії» на пункті
+	 * стояла — а якої версії ЦЯ сторінка, не було написано ніде. Підказка через
+	 * це була докором без інструкції.
+	 */
+	it('версія збірки видима на сторінці (§ 8.5.1)', () => {
+		expect(pageSource, 'підказці про чужу версію нема з чим порівнятися').toContain(
+			'data-testid="beta-version-text"'
+		);
+	});
+
+	/**
+	 * § 8.4 `BETA-SCREEN-LINKS`. Перелік маршрутів вкладки лежав у даних
+	 * невикористаним: його читав лише інваріант § 5.1 вище. При одинадцяти
+	 * вкладках це найдовший крок у роботі тестувальника.
+	 */
+	it('маршрути вкладки показані посиланнями, і зі сторінки є вихід (§ 8.4)', () => {
+		expect(pageSource, 'перелік екранів лишився лише для перевірок').toContain(
+			'data-testid="beta-screen-'
+		);
+		expect(pageSource, 'тестувальник приходить за прямим посиланням і лишається в пастці').toContain(
+			'data-testid="beta-home-link"'
+		);
+	});
+
+	/**
+	 * § 6.2.1 `BETA-REPORT-HINT-SPLIT`. Спільна підказка робила сценарій
+	 * «підказка видима» зеленим саме тоді, коли копіювання НЕ спрацювало.
+	 */
+	it('успіх копіювання й відмова буфера мають різні локатори (§ 6.2.1)', () => {
+		expect(pageSource).toContain('data-testid="beta-report-hint"');
+		expect(pageSource).toContain('data-testid="beta-report-failed-hint"');
 	});
 });

@@ -95,7 +95,7 @@
 | `clipboard-tools` | `є`                                                                                                                                         | вживання `<InputTools>` у `src/`                      |
 | `rtdb-indexes`    | `at, score`                                                                                                                                 | `orderByChild(…)` у `src/lib/net/`                    |
 | `light-dark`      | `застосовується`                                                                                                                            | `light-dark(` у `src/lib/styles/themes/`              |
-| `e2e-specs`       | `a11y, a11y-overlays, auth-form, card-label, console, contrast-runtime, country-menu, focus-move, reflow, shortcuts, testid, touch-targets` | `*.spec.ts` у `tests/`                                |
+| `e2e-specs`       | `a11y, a11y-overlays, auth-form, beta-checklist, card-label, console, contrast-runtime, country-menu, focus-move, reflow, shortcuts, testid, touch-targets` | `*.spec.ts` у `tests/`                                |
 | `oversized-files` | `src/lib/components/PopulationBoard.svelte`                                                                                                 | ключі `OVERSIZED_ALLOWLIST` у `src/structure.test.ts` |
 
 <!-- FACTS:END -->

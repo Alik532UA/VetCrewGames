@@ -34,8 +34,16 @@
 	let text = $derived(uk ? check.text.uk : check.text.en);
 	let category = $derived(uk ? check.category.uk : check.category.en);
 
-	/** Повторне натискання того самого стану знімає позначку. */
-	const press = (vote: Vote) => betaProgress.vote(check.id, mine === vote ? 'none' : vote);
+	/**
+	 * Повторне натискання того самого стану знімає позначку — але рахує це
+	 * сервіс, а не рядок (§ 3.3, `BETA-VOTE-UNDO`).
+	 *
+	 * Доти тут стояло `mine === vote ? 'none' : vote`, і `mine` приходив із
+	 * `voteOf()`, який версії не дивиться. На позначці З ІНШОЇ ЗБІРКИ це
+	 * означало стирання замість перепостановки: підтвердження торішнього
+	 * «працює» втрачало його.
+	 */
+	const press = (vote: Vote) => betaProgress.vote(check.id, vote);
 
 	/**
 	 * ДИСКРИМІНАТОР ЛОКАТОРА — з `check.id`, а не з номера в списку.

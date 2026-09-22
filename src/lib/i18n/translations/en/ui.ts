@@ -185,6 +185,7 @@ export const ui = {
 	'beta.clear': 'Clear the marks',
 	'beta.clearConfirm': 'Really clear? Press again',
 	'beta.tabProgress': 'marked on this tab',
+	'beta.home': 'Home',
 	'beta.copyFailed': 'The browser refused to copy it. Select the text below and copy it by hand.',
 	'beta.rulesTitle': 'Database access rules',
 	'beta.rulesCheck': 'Check',

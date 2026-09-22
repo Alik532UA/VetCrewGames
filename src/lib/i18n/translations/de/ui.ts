@@ -190,6 +190,7 @@ export const ui = {
 	'beta.clear': 'Markierungen löschen',
 	'beta.clearConfirm': 'Wirklich löschen? Nochmal drücken',
 	'beta.tabProgress': 'in diesem Tab markiert',
+	'beta.home': 'Zur Startseite',
 	'beta.copyFailed':
 		'Der Browser hat das Kopieren verweigert. Markiere den Text unten und kopiere ihn selbst.',
 	'beta.rulesTitle': 'Zugriffsregeln der Datenbank',

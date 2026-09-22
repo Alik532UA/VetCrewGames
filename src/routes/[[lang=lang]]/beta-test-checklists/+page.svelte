@@ -35,7 +35,21 @@
 	 * ніхто не читає.
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
-	const uk = $derived(lang === 'uk');
+
+	/**
+	 * МОВА ЧЕКЛИСТА ПЕРЕМИКАЄТЬСЯ ТУТ (§ 8.3, `BETA-OWN-LANG-BTN`).
+	 *
+	 * Пункти живуть двома мовами (§ 2.4), а інтерфейс сайту має чотири. Доти
+	 * чеклист просто йшов за локаллю сторінки, і з цього виходив тупик, якого не
+	 * видно з даних: людина, чий сайт відкрився нідерландською, бачила чеклист
+	 * англійською й НЕ МАЛА ЧИМ перемкнути його на українську — мовний
+	 * перемикач сайту дає їй чотири мови інтерфейсу, а чеклист розуміє дві.
+	 *
+	 * Кнопка перемикає РІВНО чеклист і нічого більше: адреса, мова сайту й
+	 * решта сторінок лишаються як були.
+	 */
+	let checklistLang = $state<'uk' | 'en' | null>(null);
+	const uk = $derived(checklistLang !== null ? checklistLang === 'uk' : lang === 'uk');
 
 	let tabId = $state(BETA_TABS[0].id);
 	let tab = $derived(BETA_TABS.find((candidate) => candidate.id === tabId) ?? BETA_TABS[0]);
@@ -67,6 +81,14 @@
 	];
 
 	let ordered = $derived(sortedChecks(tab));
+
+	/**
+	 * Адреса вкладки → дискримінатор локатора: `quiz/play` → `quiz-play`,
+	 * порожня (корінь) → `root`. Косих рисок і підкреслень у локаторах немає
+	 * (TESTID-AND-NAMING § 1.2), а значення однозначно виходить із самої адреси,
+	 * тож другим іменем, яке треба тримати узгодженим, це не стає.
+	 */
+	const screenTid = (route: string) => route.replace(/\//g, '-') || 'root';
 
 	let copied = $state(false);
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -146,6 +168,55 @@
 
 	<p class="progress text-panel" data-testid="beta-progress-value">
 		{@html formatFont(t('beta.progress'))}: {betaProgress.freshCount} / {betaProgress.totalCount}
+	</p>
+
+	<!--
+		ВЕРСІЯ ЗБІРКИ ВИДИМА (§ 8.5.1, `BETA-VERSION-VISIBLE`).
+
+		Позначка несе версію з 9.0, і підказка «позначено на іншій версії» на
+		пункті стояла — а якої версії ЦЯ сторінка, не було написано ніде. Через
+		це підказка була докором без інструкції: людина не могла вирішити,
+		перепоставити позначку чи вона вже на поточній збірці.
+
+		Поруч — вихід зі сторінки (§ 8.4) і перемикач мови чеклиста (§ 8.3).
+		Шапка сайту теж веде на головну (`claimHeader` нижче), але то домовленість
+		між сторінкою й оболонкою, якої не видно ні з розмітки, ні з перевірки.
+	-->
+	<p class="meta text-panel">
+		<span class="meta__version" data-testid="beta-version-text">{betaProgress.version}</span>
+
+		<a class="meta__link" href={langPath(lang, '')} data-testid="beta-home-link">
+			{@html formatFont(t('beta.home'))}
+		</a>
+
+		<button
+			type="button"
+			class="meta__link meta__link--btn"
+			onclick={() => (checklistLang = uk ? 'en' : 'uk')}
+			data-testid="beta-lang-btn"
+		>
+			{uk ? 'English' : 'Українська'}
+		</button>
+	</p>
+
+	<!--
+		КУДИ ЙТИ ПО ЦЮ ВКЛАДКУ (§ 8.4, `BETA-SCREEN-LINKS`).
+
+		Перелік маршрутів вкладки лежав у даних невикористаним: його читав лише
+		інваріант § 5.1. При одинадцяти вкладках це найдовший крок у роботі
+		тестувальника — прочитав пункт, шукає, де це на сайті. Показаний той
+		САМИЙ перелік, тож розійтися з дійсністю непоміченим він не може.
+	-->
+	<p class="screens text-panel">
+		{#each tab.routes as route (route)}
+			<a
+				class="screens__link"
+				href={langPath(lang, route)}
+				data-testid="beta-screen-{screenTid(route)}-link"
+			>
+				{route === '' ? '/' : route}
+			</a>
+		{/each}
 	</p>
 
 	<!--
@@ -274,8 +345,22 @@
 		</button>
 	</div>
 
-	{#if fallback}
+	<!--
+		ДВІ ПІДКАЗКИ, А НЕ ОДНА (§ 6.2.1, `BETA-REPORT-HINT-SPLIT`).
+
+		Доти `beta-report-hint` стояв на ВІДМОВІ буфера, тож сценарій «підказка
+		видима» зеленів саме тоді, коли копіювання не спрацювало. Тепер успіх має
+		свою назву, відмова — свою, і перевірка запасного шляху (§ 5.7) дивиться
+		на другу.
+	-->
+	{#if copied}
 		<p class="fallback-hint text-panel text-panel--tight" data-testid="beta-report-hint">
+			{@html formatFont(t('beta.copied'))}
+		</p>
+	{/if}
+
+	{#if fallback}
+		<p class="fallback-hint text-panel text-panel--tight" data-testid="beta-report-failed-hint">
 			{@html formatFont(t('beta.copyFailed'))}
 		</p>
 		<textarea
@@ -306,6 +391,43 @@
 
 	.progress {
 		font-weight: 700;
+	}
+
+	.meta,
+	.screens {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		margin: 0;
+	}
+
+	.meta__version {
+		font-variant-numeric: tabular-nums;
+		opacity: 0.8;
+	}
+
+	/*
+	 * Посилання й кнопка в одному рядку мусять бути однією річчю на дотик:
+	 * 44 px — межа з ACCESSIBILITY-v9, і для тексту в рядку її дає саме
+	 * `min-height` разом із `inline-flex`, а не `padding`.
+	 */
+	.meta__link,
+	.screens__link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		color: var(--color-accent);
+	}
+
+	.meta__link--btn {
+		border: 0;
+		padding: 0;
+		background: none;
+		font: inherit;
+		color: var(--color-accent);
+		text-decoration: underline;
+		cursor: pointer;
 	}
 
 	.tabs {
