@@ -1,3 +1,15 @@
+# СТОРІНКИ З `noindex` ТУТ НЕМАЄ, і це рішення (BETA-CHECKLIST § 4.0,
+# `BETA-NOINDEX-OVER-DISALLOW`).
+#
+# `/beta-test-checklists/` разом із трьома мовними адресами донедавна стояла тут
+# під `Disallow` — і водночас віддавала `noindex` у власному HTML. Разом це
+# гірше за кожне окремо: `Disallow` забороняє ЗАВАНТАЖЕННЯ, тож краулер
+# сторінку не читає й `noindex` у ній не бачить ніколи, а адреса, на яку хтось
+# послався ззовні, лягає в індекс голим URL — прибрати його нічим, бо прибирає
+# рівно той тег, до якого краулер не дійшов.
+#
+# Відсутність рядків стереже інваріант у `src/lib/config/betaChecks.test.ts`.
+#
 # Групи в robots.txt НЕ успадковуються: краулер обирає одну — найточніший
 # збіг за User-agent — і виконує тільки її, ігноруючи `*` цілком. Тому кожен
 # блок нижче повторює той самий перелік Disallow. Це не дублювання: рядок,
@@ -5,44 +17,24 @@
 # (SEO-v8 § 7.2). Розбіжність ловить `npm run check:build`.
 
 User-agent: *
-Disallow: /VetCrewGames/beta-test-checklists/
-Disallow: /VetCrewGames/en/beta-test-checklists/
-Disallow: /VetCrewGames/de/beta-test-checklists/
-Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 # --- Пошукові AI-агенти: від них залежить видимість у відповідях ---
 
 # індексатор ChatGPT Search — від нього залежить поява сайту у відповідях ChatGPT
 User-agent: OAI-SearchBot
 Allow: /
-Disallow: /VetCrewGames/beta-test-checklists/
-Disallow: /VetCrewGames/en/beta-test-checklists/
-Disallow: /VetCrewGames/de/beta-test-checklists/
-Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 # перехід за посиланням на запит користувача
 User-agent: ChatGPT-User
 Allow: /
-Disallow: /VetCrewGames/beta-test-checklists/
-Disallow: /VetCrewGames/en/beta-test-checklists/
-Disallow: /VetCrewGames/de/beta-test-checklists/
-Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 # індексатор Perplexity
 User-agent: PerplexityBot
 Allow: /
-Disallow: /VetCrewGames/beta-test-checklists/
-Disallow: /VetCrewGames/en/beta-test-checklists/
-Disallow: /VetCrewGames/de/beta-test-checklists/
-Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 # краулер Anthropic
 User-agent: ClaudeBot
 Allow: /
-Disallow: /VetCrewGames/beta-test-checklists/
-Disallow: /VetCrewGames/en/beta-test-checklists/
-Disallow: /VetCrewGames/de/beta-test-checklists/
-Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 # --- Тренувальні краулери: на видимість у пошуку не впливають ---
 # Дозволені свідомо; рішення записане в PROJECT-CONTEXT.md.
@@ -51,9 +43,5 @@ Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 User-agent: GPTBot
 Allow: /
-Disallow: /VetCrewGames/beta-test-checklists/
-Disallow: /VetCrewGames/en/beta-test-checklists/
-Disallow: /VetCrewGames/de/beta-test-checklists/
-Disallow: /VetCrewGames/nl/beta-test-checklists/
 
 Sitemap: https://alik532ua.github.io/VetCrewGames/sitemap.xml

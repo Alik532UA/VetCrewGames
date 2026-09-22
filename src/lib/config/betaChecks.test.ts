@@ -572,4 +572,25 @@ describe('чеклист бета-тестування', () => {
 		expect(pageSource).toContain('data-testid="beta-report-hint"');
 		expect(pageSource).toContain('data-testid="beta-report-failed-hint"');
 	});
+
+	/**
+	 * § 4.0 `BETA-NOINDEX-OVER-DISALLOW` — перевірка ПРОТИЛЕЖНОГО.
+	 *
+	 * Сторінка стояла під `Disallow` у `robots.txt` (чотири мовні адреси) і
+	 * водночас віддавала `noindex`. Заборона обходу означає, що краулер
+	 * сторінку не ЗАВАНТАЖУЄ — отже й `noindex` у ній не читає ніколи, а адреса,
+	 * на яку хтось послався ззовні, лягає в індекс голим URL. Прибрати його
+	 * потім нічим: прибирає рівно той тег, до якого краулер не дійшов.
+	 *
+	 * Сторож лишається, бо повернути рядок «для надійності» легко й непомітно.
+	 */
+	it('сторінка чеклиста НЕ закрита Disallow у robots.txt (§ 4.0)', () => {
+		const robots = readFileSync('static/robots.txt', 'utf8');
+		const disallowed = [...robots.matchAll(/^Disallow:\s*(\S+)/gm)].map((m) => m[1]);
+
+		expect(
+			disallowed.filter((rule) => rule.includes('beta-test-checklists')),
+			'Disallow забирає в краулера саме той запит, у відповіді на який лежить noindex'
+		).toEqual([]);
+	});
 });
