@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'dfc23e803290'" }
+      "$v": { ".read": "auth != null && $v === '96c97e98246c'" }
     },
 
     "rooms": {
@@ -410,8 +410,15 @@
            * не збігаються («о» кирилична проти латинської) — тобто людину
            * неможливо знайти, хоч вона й є.
            */
+          /*
+           * ПСЕВДОНІМ — ЛИШЕ СВІЙ, тобто той, що в реєстрі `handles` записаний на
+           * автора. Доти правило перевіряло тільки форму, і в профіль можна було
+           * вписати чужий `@нік` — назватися іншою людиною (аудит 2026-09-23).
+           * `saveProfile` реєструє псевдонім ПЕРЕД профілем, тож `root` уже його
+           * бачить.
+           */
           "handle": {
-            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 20 && newData.val().matches(/^[a-z0-9_]+$/)"
+            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 20 && newData.val().matches(/^[a-z0-9_]+$/) && root.child('handles').child(newData.val()).val() === auth.uid"
           },
           "country": { ".validate": "newData.isString() && newData.val().length === 2" },
           // Аватар — той самий рядок і та сама межа, що в складі кімнати: це той
@@ -663,11 +670,24 @@
         ".write": "auth != null && $uid === auth.uid && (!newData.exists() || (newData.child('score').val() >= 50 && root.child('users').child(auth.uid).child('privacy').child('board').val() != false))",
         ".validate": "newData.hasChildren(['name', 'handle', 'score', 'at'])",
         "name": { ".validate": "newData.isString() && newData.val().length <= 48" },
+        /*
+         * У ТАБЛИЦІ — ЛИШЕ СВІЙ ПСЕВДОНІМ І НЕ БІЛЬШЕ СВОГО РАХУНКУ.
+         *
+         * Таблиця публічна, а доти рядок міг назвати будь-який `@нік` і будь-яке
+         * число до ста мільйонів: підробка чужої особи й рахунку разом (аудит
+         * 2026-09-23). Тепер псевдонім мусить бути записаний на автора в `handles`,
+         * а рахунок — не більший за його власний `users/{uid}/play/score`.
+         *
+         * ЧЕСНО ПРО МЕЖУ: сам `play/score` теж пише клієнт — сервера, який рахував би
+         * очки, у проєкті немає (Cloud Functions вимагають тарифу Blaze). Тобто це не
+         * доказ рахунку, а узгодженість: таблиця не показує числа, якого немає в
+         * даних гравця.
+         */
         "handle": {
-          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 20 && newData.val().matches(/^[a-z0-9_]+$/)"
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 20 && newData.val().matches(/^[a-z0-9_]+$/) && root.child('handles').child(newData.val()).val() === auth.uid"
         },
         "score": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000 && newData.val() <= root.child('users').child(auth.uid).child('play').child('score').val()"
         },
         "country": { ".validate": "newData.isString() && newData.val().length === 2" },
         "avatar": {

@@ -120,7 +120,7 @@ const board = {
 	topLeaders: vi.fn<() => Promise<Leader[]>>(async () => []),
 	leadersOf: vi.fn<(uids: string[]) => Promise<Leader[]>>(async () => []),
 	withdrawLeader: vi.fn<() => Promise<void>>(async () => {}),
-	publishLeader: vi.fn<() => Promise<void>>(async () => {})
+	publishLeader: vi.fn<() => Promise<boolean>>(async () => true)
 };
 
 /**

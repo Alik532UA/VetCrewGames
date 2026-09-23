@@ -459,6 +459,18 @@ const CASES = [
 	 * немає нічого, чого не мусить бути видно.
 	 */
 	{
+		// Псевдонім у рядку таблиці мусить бути записаний на автора (аудит 2026-09-23).
+		name: 'гість реєструє свій псевдонім для таблиці',
+		allowed: true,
+		run: () => write('handles/guest_one', guest.uid, guest.token)
+	},
+	{
+		// Рядок таблиці не більший за власний рахунок гри.
+		name: 'гість має рахунок гри',
+		allowed: true,
+		run: () => write(`users/${guest.uid}/play`, { score: 500, at: SERVER_TIME }, guest.token)
+	},
+	{
 		name: 'рядок таблиці при вимкненому показі',
 		allowed: false,
 		run: () =>
@@ -481,6 +493,26 @@ const CASES = [
 			write(
 				`leaders/${guest.uid}`,
 				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'ua', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з ЧУЖИМ псевдонімом',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Лідер', handle: 'leader', score: 120, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з рахунком понад свій рахунок гри',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 5000, at: SERVER_TIME },
 				guest.token
 			)
 	},
@@ -584,6 +616,21 @@ const CASES = [
 			write(
 				`users/${guest.uid}/profile`,
 				{ name: 'Гість', handle: 'ab', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'гість реєструє псевдонім для профілю',
+		allowed: true,
+		run: () => write('handles/guest', guest.uid, guest.token)
+	},
+	{
+		name: 'профіль із ЧУЖИМ псевдонімом',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/profile`,
+				{ name: 'Лідер', handle: 'leader', at: SERVER_TIME },
 				guest.token
 			)
 	},

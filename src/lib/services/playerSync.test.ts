@@ -48,6 +48,16 @@ vi.mock('$lib/net/leaders', () => ({ publishLeader: board.publishLeader }));
 
 const profileOf = (name: string): Profile => ({ uid: `uid-${name}`, name, handle: name });
 
+/** Обіцянка, яку тест розвʼязує сам: «запис у дорозі». */
+function deferred<T>() {
+	let resolve: (value: T) => void = () => {};
+	const promise = new Promise<T>((done) => (resolve = done));
+	return { promise, resolve };
+}
+
+/** Дати ланцюжкам обіцянок дійти до кінця. */
+const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
 /** Системна тема має бути детермінованою: `Settings` читає її в конструкторі. */
 function stubMatchMedia() {
 	vi.stubGlobal(
@@ -223,3 +233,163 @@ describe('синхронізація рахунку', () => {
 	});
 });
 
+/**
+ * РЯДОК ТАБЛИЦІ ЛІДЕРІВ — лише з рахунком, що вже лежить у базі.
+ *
+ * Правило `leaders` не пускає в рядок число, більше за `users/{uid}/play/score`
+ * (аудит 2026-09-23). Звідси й усе, що тут закріплено: порядок «рахунок, потім
+ * таблиця», жодного кола відкинутих записів і жодного чужого профілю після зміни
+ * акаунта.
+ *
+ * Зворотні експерименти: публікувати рядок поруч із записом, а не після нього, —
+ * червоніє «лише ПІСЛЯ підтвердженого»; прибрати `sending`/`refused` з `absorb` —
+ * «відкинутий запис не ходить по колу»; прибрати перевірку `shown` — «той самий
+ * рядок удруге не пишеться»; прибрати перевірку номера акаунта в `pushPlay` або
+ * `forgetAccount()` із `signedOut` — «запис, що приїхав після виходу»; прибрати
+ * `forgetAccount()` з обох місць — «вихід забуває профіль».
+ */
+describe('рядок таблиці лідерів', () => {
+	it('публікується лише ПІСЛЯ підтвердженого рахунку, і саме з ним', async () => {
+		vi.useFakeTimers();
+		const sink = captureListener();
+		const { sync, playerData } = await load();
+		await sync.mergeOnSignIn();
+		sink.push?.({ score: 0, games: {} });
+		await vi.runAllTimersAsync();
+		board.publishLeader.mockClear();
+
+		const write = deferred<boolean>();
+		net.writePlay.mockReturnValueOnce(write.promise);
+		playerData.addScore(80);
+		await vi.runAllTimersAsync();
+
+		expect(net.writePlay).toHaveBeenLastCalledWith({ score: 80, games: {} });
+		expect(board.publishLeader, 'рядок поїхав раніше за рахунок').not.toHaveBeenCalled();
+
+		write.resolve(true);
+		await vi.runAllTimersAsync();
+
+		expect(board.publishLeader).toHaveBeenCalledWith(profileOf('alice'), 80);
+		vi.useRealTimers();
+	});
+
+	it('не публікує рахунку, якого база не прийняла', async () => {
+		vi.useFakeTimers();
+		const sink = captureListener();
+		const { sync, playerData } = await load();
+		await sync.mergeOnSignIn();
+		sink.push?.({ score: 0, games: {} });
+		await vi.runAllTimersAsync();
+		board.publishLeader.mockClear();
+
+		net.writePlay.mockResolvedValueOnce(false);
+		playerData.addScore(80);
+		await vi.runAllTimersAsync();
+
+		expect(board.publishLeader).not.toHaveBeenCalled();
+		vi.useRealTimers();
+	});
+
+	it('відкинутий запис не ходить по колу', async () => {
+		const sink = captureListener();
+		const { sync } = await load({ vetcrewgames_score: '200' });
+		await sync.mergeOnSignIn();
+		net.writePlay.mockClear();
+
+		/*
+		 * Так поводиться SDK, коли правило відкидає запис: спершу подія з власним
+		 * записом, потім подія зі старим значенням — і лише ПІСЛЯ неї сам запис
+		 * повертає відмову.
+		 */
+		const write = deferred<boolean>();
+		net.writePlay.mockReturnValueOnce(write.promise);
+		sink.push?.({ score: 50, games: {} });
+		expect(net.writePlay, 'хмарне відстало — своє мусить піти').toHaveBeenCalledTimes(1);
+
+		sink.push?.({ score: 200, games: {} });
+		sink.push?.({ score: 50, games: {} });
+		write.resolve(false);
+		await flush();
+		sink.push?.({ score: 50, games: {} });
+		await flush();
+
+		expect(net.writePlay, 'той самий вміст пішов удруге — коло').toHaveBeenCalledTimes(1);
+	});
+
+	it('нова зміна рахунку після відмови — відсилається', async () => {
+		vi.useFakeTimers();
+		const sink = captureListener();
+		const { sync, playerData } = await load({ vetcrewgames_score: '200' });
+		await sync.mergeOnSignIn();
+		net.writePlay.mockClear().mockResolvedValueOnce(false);
+		sink.push?.({ score: 50, games: {} });
+		await vi.runAllTimersAsync();
+
+		playerData.addScore(5);
+		await vi.runAllTimersAsync();
+
+		expect(net.writePlay).toHaveBeenLastCalledWith({ score: 205, games: {} });
+		vi.useRealTimers();
+	});
+
+	it('той самий рядок удруге не пишеться, а новий профіль — пишеться', async () => {
+		const sink = captureListener();
+		const { sync } = await load();
+		await sync.mergeOnSignIn();
+		board.publishLeader.mockClear();
+
+		sink.push?.({ score: 120, games: {} });
+		await flush();
+		sink.push?.({ score: 120, games: {} });
+		await flush();
+		expect(board.publishLeader, 'власне відлуння дало другий рядок').toHaveBeenCalledTimes(1);
+
+		board.readMyProfile.mockResolvedValue(profileOf('alice_renamed'));
+		await sync.refreshProfile();
+		expect(board.publishLeader).toHaveBeenLastCalledWith(profileOf('alice_renamed'), 120);
+	});
+
+	it('вихід забуває профіль: новий акаунт не публікується чужим іменем', async () => {
+		const sink = captureListener();
+		const { sync } = await load();
+		await sync.mergeOnSignIn();
+		sink.push?.({ score: 100, games: {} });
+		await flush();
+		expect(board.publishLeader).toHaveBeenLastCalledWith(profileOf('alice'), 100);
+
+		sync.signedOut();
+		board.readMyProfile.mockResolvedValue(profileOf('bob'));
+		await sync.mergeOnSignIn();
+		sink.push?.({ score: 100, games: {} });
+		await flush();
+
+		expect(
+			board.publishLeader,
+			'рядок нового акаунта з іменем попереднього'
+		).toHaveBeenLastCalledWith(profileOf('bob'), 100);
+	});
+
+	it('запис, що приїхав після виходу, нічого не публікує', async () => {
+		vi.useFakeTimers();
+		const sink = captureListener();
+		const { sync, playerData } = await load();
+		await sync.mergeOnSignIn();
+		sink.push?.({ score: 0, games: {} });
+		await vi.runAllTimersAsync();
+		board.publishLeader.mockClear();
+
+		const write = deferred<boolean>();
+		net.writePlay.mockReturnValueOnce(write.promise);
+		playerData.addScore(80);
+		await vi.runAllTimersAsync();
+		sync.signedOut();
+		write.resolve(true);
+		await vi.runAllTimersAsync();
+
+		expect(
+			board.publishLeader,
+			'рахунок попереднього акаунта поїхав у таблицю'
+		).not.toHaveBeenCalled();
+		vi.useRealTimers();
+	});
+});

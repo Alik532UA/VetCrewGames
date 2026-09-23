@@ -2,7 +2,6 @@ import { mergePlay, readPlay, watchPlay, writePlay, type PlayData } from '$lib/n
 import { readMyProfile, type Profile } from '$lib/net/account';
 import { publishLeader } from '$lib/net/leaders';
 import { playerData } from './playerData.svelte';
-import { logService } from './logService.svelte';
 import { forgetName } from './nameSync';
 
 /**
@@ -43,6 +42,46 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let profile: Profile | null = null;
 
 /**
+ * Рахунок, що вже ЛЕЖИТЬ у базі, — і тільки його показує таблиця.
+ *
+ * Правило `leaders` не пускає в рядок число, більше за `users/{uid}/play/score`
+ * (аудит 2026-09-23). Місцевий рахунок випереджає хмарний на відкладену
+ * відправку — до трьох секунд гри, — і рядок із ним дістав би відмову саме тоді,
+ * коли людина набирає очки. `null` — хмарного ще не бачили, і показувати нічого.
+ */
+let stored: number | null = null;
+
+/**
+ * Що вже показано: той самий профіль із тим самим рахунком удруге не пишеться.
+ *
+ * Власний запис рахунку вертається підпискою ще до підтвердження, тож без цієї
+ * памʼяті кожна відправка давала б два однакові рядки таблиці, а кожен рядок у
+ * топі розсилається всім, хто зараз дивиться таблицю.
+ */
+let shown: { profile: Profile; score: number } | null = null;
+
+/**
+ * Відправка, що зараз у дорозі, і та, яку база щойно відкинула.
+ *
+ * Без них відмова правила ставала б нескінченним колом. SDK повертає відкинутий
+ * запис подією підписки РАНІШЕ, ніж сам запис скаже «не вдалося»; злиття бачить
+ * місцеве більшим за хмарне — і відсилає те саме знову, щоразу мережевим
+ * запитом. Тепер той самий вміст удруге не відсилається, а нова зміна рахунку —
+ * відсилається (`pushSoon`).
+ */
+let sending: PlayData | null = null;
+let refused: PlayData | null = null;
+
+/**
+ * Номер акаунта в цьому браузері: росте з кожним входом і виходом.
+ *
+ * Запис і читання профілю в дорозі переживають вихід. Без номера відповідь, що
+ * приїхала вже після зміни акаунта, записала б старий рахунок у `stored` нового
+ * або закешувала б чужий профіль — і таблиця показала б чуже.
+ */
+let account = 0;
+
+/**
  * Дані приїхали з бази — злити з місцевими.
  *
  * Якщо після злиття місцеве БІЛЬШЕ за хмарне, різницю треба відіслати: інакше
@@ -54,12 +93,35 @@ let profile: Profile | null = null;
 function absorb(cloud: PlayData | null): void {
 	const merged = mergePlay(playerData.snapshot(), cloud);
 	playerData.apply(merged);
-	if (!same(merged, cloud)) void writePlay(merged);
-	void showInBoard(merged.score);
+	if (cloud) stored = cloud.score;
+	if (same(merged, cloud)) void showInBoard();
+	else if (!same(merged, sending) && !same(merged, refused)) void pushPlay(merged);
 }
 
 /**
- * Оновити свій рядок у таблиці лідерів.
+ * Відіслати рахунок — і ЛИШЕ ПІСЛЯ підтвердження оновити таблицю.
+ *
+ * Не поруч: два записи наввипередки давали б відмову правила щоразу, коли рядок
+ * таблиці доїжджав до бази раніше за рахунок, якого він стосується. Чому запис
+ * не вдався, `writePlay` пише в журнал сам.
+ */
+async function pushPlay(data: PlayData): Promise<void> {
+	const epoch = account;
+	sending = data;
+	const ok = await writePlay(data);
+	if (epoch !== account) return;
+	if (sending === data) sending = null;
+	if (!ok) {
+		refused = data;
+		return;
+	}
+	refused = null;
+	stored = data.score;
+	await showInBoard();
+}
+
+/**
+ * Оновити свій рядок у таблиці лідерів — рахунком, що вже є в базі.
  *
  * Без профілю рядка не буває: у ньому імʼя, псевдонім і аватар, а не самий
  * рахунок. Профіль може бути ще не створеним — тоді таблиця просто чекає, поки
@@ -67,10 +129,19 @@ function absorb(cloud: PlayData | null): void {
  *
  * НЕ КИДАЄ й нічого не перевіряє: поріг у 50 очок і згоду на показ тримає правило
  * бази, і відмова тут — нормальний стан, а не помилка (`net/leaders.ts`).
+ * Невдалий рядок забувається, щоб наступна нагода спробувала знову.
  */
-async function showInBoard(score: number): Promise<void> {
-	profile ??= await readMyProfile();
-	if (profile) await publishLeader(profile, score);
+async function showInBoard(): Promise<void> {
+	if (stored === null) return;
+	const epoch = account;
+	const score = stored;
+	const own = profile ?? (await readMyProfile());
+	if (epoch !== account || !own) return;
+	profile = own;
+	if (shown?.profile === own && shown.score === score) return;
+	const row = { profile: own, score };
+	shown = row;
+	if (!(await publishLeader(own, score)) && shown === row) shown = null;
 }
 
 /**
@@ -82,7 +153,25 @@ async function showInBoard(score: number): Promise<void> {
  */
 export async function refreshProfile(): Promise<void> {
 	profile = null;
-	await showInBoard(playerData.snapshot().score);
+	await showInBoard();
+}
+
+/**
+ * Усе, що належить АКАУНТУ, а не браузеру.
+ *
+ * Профіль тут кешований, і доти його не забував ні вихід, ні вхід в інший
+ * акаунт: перший же рядок таблиці нового акаунта публікувався б з іменем і
+ * псевдонімом попереднього. Тепер це ловить і правило (псевдонім мусить бути
+ * свій), але правильний рядок від цього не зʼявлявся — його треба писати зі
+ * свого профілю.
+ */
+function forgetAccount(): void {
+	account += 1;
+	profile = null;
+	stored = null;
+	shown = null;
+	sending = null;
+	refused = null;
 }
 
 /** Відкладений запис: десятки змін за партію — це один запит, а не десятки. */
@@ -91,11 +180,7 @@ function pushSoon(): void {
 	if (timer !== null) clearTimeout(timer);
 	timer = setTimeout(() => {
 		timer = null;
-		const snapshot = playerData.snapshot();
-		void writePlay(snapshot).then((ok) => {
-			if (!ok) logService.warn('network', 'score not synced', { score: playerData.score });
-		});
-		void showInBoard(snapshot.score);
+		void pushPlay(playerData.snapshot());
 	}, PUSH_DELAY_MS);
 }
 
@@ -138,6 +223,7 @@ export async function mergeOnSignIn(): Promise<void> {
 	 * не було б саме там, де вона найпотрібніша.
 	 */
 	stopPlaySync();
+	forgetAccount();
 	playerData.markLinked();
 	const merged = mergePlay(playerData.snapshot(), await readPlay());
 	playerData.apply(merged);
@@ -149,10 +235,12 @@ export async function mergeOnSignIn(): Promise<void> {
  * Вихід: підписка знімається, місцеве стирається (див. `clearLocal`).
  *
  * Заразом забувається кеш імені профілю: далі підпис належить браузеру, а не
- * акаунту, і порівнювати нове імʼя з чужим профілем нема сенсу.
+ * акаунту, і порівнювати нове імʼя з чужим профілем нема сенсу. З тієї самої
+ * причини — і профіль для таблиці лідерів (`forgetAccount`).
  */
 export function signedOut(): void {
 	stopPlaySync();
+	forgetAccount();
 	playerData.clearLocal();
 	forgetName();
 }

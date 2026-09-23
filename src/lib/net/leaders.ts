@@ -47,8 +47,12 @@ export interface Leader {
  *
  * Кличеться після кожного злиття рахунку: рядок мусить наздоганяти рахунок, а не
  * лишатися знімком того дня, коли людина відкрила сторінку акаунта.
+ *
+ * `false` — рядок не записався (поріг, вимкнений показ, мережа). Не кидає:
+ * відмова тут звичайна, але той, хто памʼятає показане, мусить знати, що показу
+ * не було, — інакше не спробував би вдруге.
  */
-export async function publishLeader(profile: Profile, score: number): Promise<void> {
+export async function publishLeader(profile: Profile, score: number): Promise<boolean> {
 	try {
 		const { uid, db } = await connect();
 		const { ref, serverTimestamp, set } = await import('firebase/database');
@@ -60,8 +64,10 @@ export async function publishLeader(profile: Profile, score: number): Promise<vo
 			...(profile.avatar ? { avatar: profile.avatar } : {}),
 			at: serverTimestamp()
 		});
+		return true;
 	} catch (error) {
 		logService.warn('network', 'leader row not published', { reason: String(error) });
+		return false;
 	}
 }
 
