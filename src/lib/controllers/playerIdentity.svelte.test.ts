@@ -395,16 +395,17 @@ describe('PlayerIdentity', () => {
  * Зроблено.
  */
 describe('імʼя для кімнати не буває ключем', () => {
-	const PAGES = [
-		'src/routes/[[lang=lang]]/pairs/online/+page.svelte',
-		'src/routes/[[lang=lang]]/quiz/online/+page.svelte'
-	];
+	/*
+	 * Вхід у кімнату переїхав зі сторінок у спільну сесію (`controllers/roomSession`):
+	 * саме там тепер і чекають словник, і питають імʼя — для обох ігор одним кодом.
+	 */
+	const PAGES = ['src/lib/controllers/roomSession.svelte.ts'];
 
 	it('перевірка жива: сторінки просять імʼя саме так', async () => {
 		const { readFileSync } = await import('node:fs');
 		for (const page of PAGES) {
 			expect(readFileSync(page, 'utf8'), `${page}: виклику імені немає`).toContain(
-				'player.forEntry('
+				'this.player.forEntry('
 			);
 		}
 	});
@@ -413,8 +414,8 @@ describe('імʼя для кімнати не буває ключем', () => {
 		const { readFileSync } = await import('node:fs');
 		for (const page of PAGES) {
 			const source = readFileSync(page, 'utf8');
-			const waited = source.indexOf('await player.load(');
-			const asked = source.indexOf('player.forEntry(');
+			const waited = source.indexOf('await this.player.load(');
+			const asked = source.indexOf('this.player.forEntry(');
 			expect(waited, `${page}: словник не дочекано зовсім`).toBeGreaterThan(-1);
 			expect(waited, `${page}: імʼя питають раніше, ніж приїхав словник`).toBeLessThan(asked);
 		}

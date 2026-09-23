@@ -35,6 +35,8 @@ export class LocalRoom {
 	#members: Member[];
 	#moves: Move[] = [];
 	#listeners = new Set<(snapshot: RoomSnapshot) => void>();
+	/** Хто чекає на звістку «кімнати більше немає». */
+	#goneListeners = new Set<() => void>();
 	/**
 	 * Хто «на звʼязку» — для правила передачі ведення. `null` — присутність не
 	 * задано: тоді господар вважається НА МІСЦІ, і ведення не передається, як і в
@@ -76,9 +78,12 @@ export class LocalRoom {
 		const own = new Set<(snapshot: RoomSnapshot) => void>();
 
 		return {
-			watch: (onSnapshot) => {
+			now: () => this.#now,
+
+			watch: (onSnapshot, onGone) => {
 				this.#listeners.add(onSnapshot);
 				own.add(onSnapshot);
+				if (onGone) this.#goneListeners.add(onGone);
 				// Перший знімок — одразу: підписка мусить давати ПОТОЧНИЙ стан, а не
 				// лише майбутні зміни. Інакше учасник, який зайшов посеред партії,
 				// сидів би з порожньою дошкою до чийогось наступного ходу.
@@ -86,6 +91,7 @@ export class LocalRoom {
 				return () => {
 					this.#listeners.delete(onSnapshot);
 					own.delete(onSnapshot);
+					if (onGone) this.#goneListeners.delete(onGone);
 				};
 			},
 
@@ -248,6 +254,11 @@ export class LocalRoom {
 	/** Ключ ходу — рівно шість цифр, тобто номер від 1 до 999999. */
 	#validSeq(seq: number): boolean {
 		return Number.isInteger(seq) && seq >= 1 && seq <= 999_999;
+	}
+
+	/** Знести кімнату — так, як це робить господар або збирач. */
+	close(): void {
+		for (const gone of this.#goneListeners) gone();
 	}
 
 	/** Змінити склад — так, наче хтось зайшов або вийшов. */

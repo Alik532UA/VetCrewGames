@@ -1,6 +1,7 @@
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
 import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
+import { takeLead } from './takeLead';
 
 /**
  * Скільки невдала пара лишається на екрані, перш ніж перегорнутися.
@@ -145,6 +146,9 @@ export class PairsMatch {
 	 */
 	endedBy = $state<string | null>(null);
 
+	/** Кімнати більше немає: господар її закрив або прибрав збирач. */
+	gone = $state(false);
+
 	readonly #me: string;
 	readonly #transport: RoomTransport;
 	/** Опис партії, з якого роздано поточну дошку. Зміна = роздати заново. */
@@ -200,7 +204,10 @@ export class PairsMatch {
 
 	/** Підписка на кімнату. Повертає відписку — просто в `onMount`. */
 	listen(): () => void {
-		const off = this.#transport.watch((snapshot) => this.#apply(snapshot));
+		const off = this.#transport.watch(
+			(snapshot) => this.#apply(snapshot),
+			() => (this.gone = true)
+		);
 		return () => {
 			// Відкладене перегортання знімається разом із підпискою: інакше воно
 			// спрацювало б уже на сторінці, з якої пішли.
@@ -387,6 +394,17 @@ export class PairsMatch {
 	async endMatch(now: number): Promise<void> {
 		if (!this.canYieldAt(now)) return;
 		await this.#send('end');
+	}
+
+	/**
+	 * ПІДХОПИТИ ВЕДЕННЯ, коли господаря немає (`controllers/takeLead.ts`): у «Знайди
+	 * пару» це реванш, закриття й решта дій господаря. Саму партію господар не веде
+	 * — черга йде журналом, — тож перепрогону тут змінювати нічого.
+	 */
+	async takeLead(): Promise<boolean> {
+		if (this.hostUid === this.#me) return true;
+		const seqs = (this.#last?.moves ?? []).map((move) => move.seq);
+		return takeLead(this.#transport, this.#me, this.hostUid, seqs);
 	}
 
 	async #send(type: string, payload?: Record<string, number | string>): Promise<void> {

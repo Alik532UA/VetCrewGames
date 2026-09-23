@@ -254,7 +254,8 @@ export async function joinRoom(
 	name: string,
 	role?: Member['role'],
 	country?: string,
-	avatar?: string
+	avatar?: string,
+	newcomer: Member['role'] = 'player'
 ): Promise<void> {
 	const { uid, db } = await connect();
 	const { get, ref, set } = await import('firebase/database');
@@ -266,7 +267,13 @@ export async function joinRoom(
 
 	await set(ref(db, `rooms/${code}/members/${uid}`), {
 		name,
-		role: role ?? existing[uid]?.role ?? 'player',
+		/*
+		 * НОВАЧОК — у тій ролі, яку йому дає ГРА. У розпочату партію «Знайди пару»
+		 * він заходить глядачем: доти він ставав гравцем, склад змінювався, і дошку
+		 * перероздавали всім посеред партії — зібрані пари зникали (аудит
+		 * 2026-09-23). Той, хто вже в складі, лишається в своїй ролі.
+		 */
+		role: role ?? existing[uid]?.role ?? newcomer,
 		order,
 		/*
 		 * Своя країна ПЕРЕЗАПИСУЄТЬСЯ, а не лишається як була.
@@ -364,15 +371,33 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 		await import('firebase/database');
 	const room = ref(db, `rooms/${code}`);
 
+	/*
+	 * ЗСУВ СЕРВЕРНОГО ЧАСУ — з `.info/serverTimeOffset`, тобто від самої бази.
+	 * Слухається, поки кімнату слухають (`watch`), і гасне разом із нею.
+	 */
+	let offset = 0;
+	const offsetNode = ref(db, '.info/serverTimeOffset');
+
 	return {
-		watch(onSnapshot) {
+		now: () => Date.now() + offset,
+
+		watch(onSnapshot, onGone) {
+			const offsetHandler = onValue(offsetNode, (snapshot) => {
+				const value = Number(snapshot.val());
+				offset = Number.isFinite(value) ? value : 0;
+			});
 			const handler = onValue(room, (snapshot) => {
 				const value = snapshot.val() as {
 					info?: RoomInfo;
 					members?: Record<string, Omit<Member, 'uid'>>;
 					moves?: Record<string, Move>;
 				} | null;
-				if (!value?.info) return;
+				// Кімнати більше немає — сказати про це, а не лишити гостей перед
+				// дошкою, яка вже ні до чого.
+				if (!value?.info) {
+					onGone?.();
+					return;
+				}
 
 				onSnapshot({
 					info: value.info,
@@ -395,7 +420,10 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 						.sort((a, b) => a.seq - b.seq)
 				} satisfies RoomSnapshot);
 			});
-			return () => off(room, 'value', handler);
+			return () => {
+				off(room, 'value', handler);
+				off(offsetNode, 'value', offsetHandler);
+			};
 		},
 
 		async takeLead(move: Move) {

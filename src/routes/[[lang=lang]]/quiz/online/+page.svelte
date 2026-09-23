@@ -7,22 +7,21 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { startRoomBeat } from '$lib/net/roomBeat';
-	import { COUNTDOWN_MS } from '$lib/config/roomLife';
 	import { playerData } from '$lib/services/playerData.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
 	import { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
+	import { RoomSession, type RoomGame, type RoomPlace } from '$lib/controllers/roomSession.svelte';
 	import {
 		DEV_TIME_FACTOR,
 		ONLINE_GAMES,
 		gamesToConfig,
 		roomFitsGames
 	} from '$lib/config/quizOnline';
-	import type { Role, RoomTransport } from '$lib/net/roomTypes';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
+	import NetLost from '$lib/components/pairs/NetLost.svelte';
 	import QuizRooms from '$lib/components/quiz/QuizRooms.svelte';
 	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
@@ -36,37 +35,13 @@
 	 * СПІЛЬНА ВІКТОРИНА: усі відповідають одночасно, кожен на своєму екрані.
 	 *
 	 * Модель партії й ціна, яку вона коштує (рахунок неперевірний), розписані в
-	 * `config/quizOnline.ts`. Тут — тільки мережа й показ.
-	 *
-	 * ## БОРГ, НАЗВАНИЙ ЧИСЛОМ
-	 *
-	 * Мережева обв'язка тут та сама, що на `pairs/online`: вхід у кімнату,
-	 * присутність, перелік кімнат, свої партії, «назад» через адресу, дії лідера.
-	 * Приблизно 120 рядків повторюються майже дослівно.
-	 *
-	 * Це борг, а не задум. Правильний розв'язок — витягти загальний
-	 * `RoomSession<M>` із фабрикою матчу, і він вимагає переписати робочу сторінку
-	 * «Знайди пару», яку автор саме зараз перевіряє руками. Тому борг записаний у
-	 * `PROJECT-CONTEXT.md` числом (120 рядків, два файли), і зменшити його треба
-	 * ОДНИМ рефакторингом обох сторінок, а не третьою копією.
-	 *
-	 * Що з `pairs` перевикористано як є: `OnlineGate`, `RoomList`, `OnlineLobby`.
-	 * Вони не знають ні про гру, ні про мережу — саме тому й підійшли.
+	 * `config/quizOnline.ts`. Обвʼязка кімнати — спільна з «Знайди пару»
+	 * (`controllers/roomSession.svelte.ts`): доти вона стояла тут копією на ~120
+	 * рядків і вже розійшлася з оригіналом. Тут — те, що належить САМЕ вікторині:
+	 * набір ігор, швидкість, раунди, чекання відсутніх.
 	 */
 	const lang = $derived(languageFromParam(page.params.lang));
 
-	/**
-	 * Рядки вікторини ДОВАНТАЖУЮТЬСЯ окремим чанком (`i18n/quiz`).
-	 *
-	 * Причина заміряна: головний словник імпортує всі чотири мови статично, тобто
-	 * вони лежать у першому payload КОЖНОГО відвідувача, а ці одинадцять рядків
-	 * потрібні лише в кімнаті — і саме вони перевищили бюджет кореневого layout
-	 * (120,5 КБ проти 120).
-	 *
-	 * У стані лежить СЛОВНИК, а перекладач похідний: функція в `$state` не
-	 * оновлювала екран — рядки лишалися ключами, хоч словник і приїхав. Той самий
-	 * взірець, що на сторінці акаунта, і та сама причина.
-	 */
 	/*
 	 * Словник приходить пропом із `load` (`+page.ts`), а не з `onMount`: інакше
 	 * сирі ключі лишаються в пререндері назавжди. `?? key` — запобіжник на
@@ -77,365 +52,103 @@
 	/**
 	 * Версія ПРАВИЛ спільної вікторини. Різні версії в кімнату не пускають.
 	 *
-	 * Своя, не спільна з «Знайди пару»: правила там інші, і кімнати не змішуються
-	 * (`gameId` різний).
+	 * ДВІЙКА З ПОЯВОЮ ШВИДКОСТІ КІМНАТИ: клієнт першої редакції полів швидкості не
+	 * читає й порахує собі СВІЙ дедлайн за старими числами — а очки залежать від
+	 * того, скільки тривав раунд.
 	 *
-	 * ДВІЙКА З ПОЯВОЮ ШВИДКОСТІ КІМНАТИ, і підняти її було обовʼязково. Час на раунд
-	 * і час на розбір тепер лежать у `info.config`; клієнт першої редакції цих полів
-	 * не читає й порахує собі СВІЙ дедлайн за старими числами. Тобто двоє гравців
-	 * розійшлися б у тому, коли раунд закінчився, — а очки залежать від того,
-	 * скільки він тривав.
-	 *
-	 * Ціна названа: доки чужа вкладка не перезавантажилася, вона в нові кімнати не
-	 * заходить і своїх у список не додає. Це саме те, для чого поле й існує:
-	 * невідповідність версій — відмова зайти, а не тихе розходження.
-	 *
-	 * ТРІЙКА З ПОЯВОЮ «НЕ ОБМЕЖЕНОГО» РАУНДУ (`pace_round` = 3 в `info.config`), і
-	 * причина та сама. Клієнт другої редакції такого числа не знає й читає його як
-	 * «стандартна»: у нього раунд скінчився б за межею, і на його екрані стояло б
-	 * табло, поки решта ще думає. Гірше — відповісти він уже не зміг би, тож «поки
-	 * кожен не відповість» не настало б ніколи: партія стала б на гравцеві, який на
-	 * звʼязку, але відповіді не має звідки дати.
+	 * ТРІЙКА З ПОЯВОЮ «НЕ ОБМЕЖЕНОГО» РАУНДУ (`pace_round` = 3). Клієнт другої
+	 * редакції читає його як «стандартна»: у нього раунд скінчився б за межею, і
+	 * «поки кожен не відповість» не настало б ніколи.
 	 */
 	const RULES_VERSION = 3;
 	const CLOCK_MS = 1000;
 
+	/**
+	 * ГОДИННИК ПАРТІЇ ЙДЕ ЧАСТІШЕ ЗА СЕКУНДУ: на ньому смуга таймера раунду, а
+	 * раунд і триває сім секунд — секундні стрибки були б майже всією смугою.
+	 */
+	const ROUND_CLOCK_MS = 100;
+
 	/** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
 	const MIN_PLAYERS = 2;
 
-	let match = $state<QuizMatch | null>(null);
-	let code = $state('');
-	let joinCode = $state('');
-	let isPrivate = $state(false);
-	/** Перелік кімнат і свої партії — спільний контролер, див. `lobbyFeed`. */
-	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
-	const lobby = new LobbyFeed('quiz');
-	let me = $state('');
-	let online = $state<string[]>([]);
-	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
-	let awaySince = $state<Record<string, number>>({});
-	let busy = $state(false);
-	let stops: Array<() => void> = [];
-	let clock = $state(Date.now());
-	const player = new PlayerIdentity(Math.random);
-
 	/**
-	 * Які ігри вибрано для НОВОЇ кімнати.
-	 *
-	 * Типово всі: людина, яка створює кімнату не думаючи про набір, мусить
-	 * отримати повну вікторину, а не порожню.
+	 * Які ігри вибрано для НОВОЇ кімнати. Типово всі: людина, яка створює кімнату
+	 * не думаючи про набір, мусить отримати повну вікторину, а не порожню.
 	 */
 	let picked = $state<string[]>(ONLINE_GAMES.map((game) => game.id));
+	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
+	let awaySince = $state<Record<string, number>>({});
 
+	/**
+	 * Вікторина для сесії. Новачок у вже розпочату партію заходить ГРАВЦЕМ:
+	 * відповідати він може з поточного раунду, а роздачі, яку він міг би
+	 * перероздати, тут немає.
+	 */
+	const QUIZ: RoomGame<QuizMatch> = {
+		gameId: 'quiz',
+		rulesVersion: RULES_VERSION,
+		minPlayers: MIN_PLAYERS,
+		quickSeats: MIN_PLAYERS,
+		lateRole: 'player',
+		autoStartReady: (players) => players >= MIN_PLAYERS,
+		// НАБІР ІГОР ЇДЕ В `config` — конверт уже дозволяє `Record<string, number>`.
+		newRoom: () => ({ seed: Math.floor(Math.random() * 2 ** 31), config: gamesToConfig(picked) }),
+		createMatch: (me, transport) => new QuizMatch(me, transport, dev ? DEV_TIME_FACTOR : 1),
+		// Набір і в записі переліку: `rooms` перелічувати заборонено, тож фільтр списку
+		// бачить про чужу кімнату рівно те, що в самому записі.
+		listingExtras: () => ({ games: gamesToConfig(picked) }),
+		// «Швидка гра» без фільтра кидала б у кімнату з іграми, які людина щойно зняла.
+		fitsQuick: (room) => roomFitsGames(room.games, picked),
+		onPresence: (match, uids, now) => {
+			// ПРИСУТНІСТЬ ЇДЕ В МАТЧ, і саме це розморожує партію: раунд закінчується,
+			// коли відповіли ПРИСУТНІ, а не всі, хто колись зайшов.
+			match.present = uids;
+			awaySince = awayStamps(match.players, uids, awaySince, now);
+		},
+		award: (match, me) => playerData.awardQuizMatch(match.scores[me] ?? 0),
+		clockEvery: (match) => {
+			if (match.countdownAt !== null && match.status !== 'playing') return CLOCK_MS;
+			if (match.status === 'playing' && !match.over) return ROUND_CLOCK_MS;
+			return match.away.length > 0 ? ROUND_CLOCK_MS : null;
+		}
+	};
+
+	/** Адреса — джерело правди про кімнату; той самий взірець, що на `pairs/online`. */
+	const place: RoomPlace = {
+		urlRoom: () => (browser ? (page.url.searchParams.get('room') ?? '') : ''),
+		remember: async (code) => {
+			if (browser) await goto(withRoom(page.url, code), { noScroll: true, keepFocus: true });
+		},
+		exit: () => goto(withoutRoom(page.url), { noScroll: true, keepFocus: true }),
+		announce: (code) => announceFrom(page.url, code)
+	};
+
+	const player = new PlayerIdentity(Math.random);
+	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
+	const lobby = new LobbyFeed(QUIZ.gameId);
+	const session = new RoomSession(QUIZ, place, player, lobby);
+	session.attach();
+
+	const match = $derived(session.match);
 	const takenNames = $derived(lobby.takenNames);
-	const amHost = $derived(Boolean(me) && match?.hostUid === me);
+	const joinUrl = $derived(browser && session.code !== '' ? page.url.href : '');
+
 	/**
-	 * Хто ОГОЛОШУЄ РАУНДИ — ведучий із журналу, а не господар кімнати.
-	 *
-	 * Поки ніхто не підхоплював партію, це та сама людина. Різниця з'являється тоді,
-	 * коли господар зник і роль перейшла ходом `lead` (`utils/quizReplay.ts`): раунди
-	 * від старого господаря перепрогін уже не рахує, тож оголошувати їх мусить новий.
+	 * Хто ОГОЛОШУЄ РАУНДИ — ведучий із журналу, а не господар кімнати. Поки ніхто
+	 * не підхоплював партію, це та сама людина; різниця зʼявляється, коли господар
+	 * зник і роль перейшла ходом `lead` (`utils/quizReplay.ts`).
 	 */
-	const amLeader = $derived(Boolean(me) && match?.leader === me);
-
-	const joinUrl = $derived(browser && code !== '' ? page.url.href : '');
-
-	const roomFromUrl = () => (browser ? (page.url.searchParams.get('room') ?? '') : '');
+	const amLeader = $derived(session.me !== '' && match?.leader === session.me);
 
 	/**
-	 * Записати код у адресу — КРОКОМ в історії, і саме через `goto`.
-	 *
-	 * Тут був `pushState`, і він ламав режим ЦІЛКОМ. Причина в його контракті:
-	 * поверхнева маршрутизація змінює `history` і `page.state`, але `page.url`
-	 * НЕ ПРИСВОЮЄ ніколи — навпаки, зберігає стару адресу в записі історії, щоб
-	 * `page.url` лишався узгоджений із завантаженим маршрутом і його даними.
-	 *
-	 * А ефект нижче читає рівно `page.url`. Тобто щойно кімната з'являлася, ефект
-	 * бачив «в адресі кімнати немає» й одразу викидав із неї. Заміряно в браузері:
-	 * `код 99`, `location.search` = `?room=99`, а `page.url` порожній — і виходило
-	 * так, що зайти в кімнату було неможливо ні у вікторині, ні в «Знайди пару».
-	 *
-	 * `goto` — справжня навігація: вона і додає крок в історію (тобто «назад»
-	 * веде на форму входу, як і задумано), і оновлює `page.url`. Тому джерело
-	 * правди стало правдою, а не збігом.
-	 *
-	 * `await` обов'язковий: без нього все, що читає адресу далі, побачило б її в
-	 * попередньому стані — той самий клас помилки, тільки на такт коротший.
-	 */
-	async function rememberInUrl(value: string) {
-		if (!browser) return;
-		await goto(withRoom(page.url, value), { noScroll: true, keepFocus: true });
-	}
-
-	/** Вийти з кімнати на форму входу. Кімнату не закриває. */
-	function leaveRoom() {
-		// Кімнати немає — локальний рахунок знову живе своїм життям.
-		playerData.endOnline();
-		for (const stop of stops) stop();
-		stops = [];
-		match = null;
-		code = '';
-		online = [];
-	}
-
-	// Адреса — джерело правди про кімнату: «назад» знімає `?room`, і дошка мусить
-	// зникнути разом із ним. Те саме рішення, що на `pairs/online`.
-	$effect(() => {
-		if (match && roomFromUrl() !== code) leaveRoom();
-	});
-
-	$effect(() => {
-		void player.load(settings.locale, takenNames);
-	});
-
-	async function enter(action: 'create' | 'join', quick = false) {
-		if (busy) return;
-		busy = true;
-		try {
-			const net = await import('$lib/net/rtdbRoom');
-			/*
-			 * СЛОВНИК ІМЕН ДОЧЕКАТИСЯ, і лише потім питати імʼя.
-			 *
-			 * Дефект, який автор побачив: «гравець, що зайшов за посиланням —
-			 * `pairs.crew.squirrel`, ключ замість назви». Причина рівно тут.
-			 *
-			 * Імена команди лежать у ЛІНИВОМУ чанку (`i18n/crew`), і сторінка тягне
-			 * його ефектом — тобто не дочекавшись. При вході за посиланням
-			 * `enter('join')` кличеться з `onMount` ОДРАЗУ, тож у першого гостя поле
-			 * імені ще порожнє, а `randomCrewName` перекладає ключі порожнім
-			 * словником — і `crewTranslate` чесно віддає сам ключ. Це імʼя й їхало в
-			 * кімнату, де його бачили всі.
-			 *
-			 * `loadCrewNames` кешує, тож на другому виклику це не мережа, а вже
-			 * готовий обʼєкт. Ціна — нуль там, де словник уже приїхав, і одна
-			 * коротка пауза там, де інакше в кімнату поїхав би ключ.
-			 */
-			await player.load(settings.locale, takenNames);
-			const who = player.forEntry(takenNames);
-
-			if (action === 'create') {
-				code = await net.createRoom({
-					gameId: 'quiz',
-					rulesVersion: RULES_VERSION,
-					seed: Math.floor(Math.random() * 2 ** 31),
-					/*
-					 * НАБІР ІГОР ЇДЕ В `config`, і саме тому спільна вікторина не
-					 * потребує нової редакції правил: конверт уже дозволяє
-					 * `Record<string, number>`, а прапорці 1/0 — числа.
-					 */
-					config: gamesToConfig(picked),
-					name: who,
-					country: player.country,
-					avatar: player.forRoom(),
-					autoStart: quick,
-					isPrivate: quick ? false : isPrivate
-				});
-				/*
-				 * ПЕРЕЇЗД: сказати СТАРІЙ кімнаті, куда переїхала гра.
-				 *
-				 * `?from` в адресі ставить кнопка «зіграти в іншу гру» на екрані підсумку
-				 * тієї кімнати. Тобто новий код доходить до решти гравців через саму стару
-				 * кімнату, і група лишається разом — інакше кожен опинявся б у переліку
-				 * кімнат і шукав одне одного заново.
-				 *
-				 * Прав це не додає: писати в чужу кімнату дозволено лише її господареві, а
-				 * ним тут і є той, хто натиснув. Не кидає — переїзд це зручність, і партія,
-				 * яка щойно почалася, не мусить ламатися через невдалу довідку.
-				 */
-				await announceFrom(page.url, code);
-			} else {
-				const wanted = joinCode.replace(/\D/g, '');
-				const room = await net.peekRoom(wanted);
-				if (!room) {
-					toast.error('pairs.noRoom');
-					return;
-				}
-				// Кімнати різних ігор не змішуються: у вікторині інші правила, і дошки
-				// «Знайди пару» тут просто немає чим малювати.
-				if (room.gameId !== 'quiz') {
-					toast.error('quiz.otherGame');
-					return;
-				}
-				if (room.rulesVersion !== RULES_VERSION) {
-					toast.error('pairs.oldVersion');
-					return;
-				}
-				code = wanted;
-				await net.joinRoom(code, who, undefined, player.country, player.forRoom());
-			}
-			await rememberInUrl(code);
-
-			const transport = await net.roomTransport(code);
-			const connection = await import('$lib/net/firebase').then((m) => m.connect());
-			me = connection.uid;
-
-			const started = new QuizMatch(me, transport, dev ? DEV_TIME_FACTOR : 1);
-			stops.push(started.listen());
-			/*
-			 * ЛОКАЛЬНИЙ РАХУНОК НА ПАУЗІ, поки триває спільна партія.
-			 *
-			 * Раунди грають ТІ САМІ контролери, що соло, і кожен додає свої 3–4 очки
-			 * за правильну відповідь та пише «зіграно партію» — на КОЖЕН раунд, тобто
-			 * дванадцять разів за вікторину. Замість цього в кінці партії
-			 * зараховується один раз, за курсом двох шкал (`awardQuizMatch`).
-			 */
-			playerData.beginOnline();
-
-			const live = await import('$lib/net/presence');
-			stops.push(await live.trackPresence(code));
-			stops.push(
-				await live.watchPresence(code, (uids) => {
-					online = uids;
-					/*
-					 * ПРИСУТНІСТЬ ЇДЕ В МАТЧ, і саме це розморожує партію: раунд
-					 * закінчується, коли відповіли ПРИСУТНІ, а не всі, хто колись
-					 * зайшов (`members` не прибираються ніколи).
-					 */
-					started.present = uids;
-					// Мить зникнення запамʼятовується ТУТ, бо тільки тут видно перехід.
-					awaySince = awayStamps(started.players, uids, awaySince, Date.now());
-				})
-			);
-
-			if (action === 'create') {
-				/*
-				 * ХВАТА БІЛЬШЕ НЕМА, і це виправлення, а не спрощення.
-				 *
-				 * Доти тут стояв `holdRoom(code)`: домовленість `onDisconnect().remove()`
-				 * на ВСЮ кімнату, щоб покинуте лобі не лишалося в базі. Але
-				 * перезавантаження сторінки — це теж розрив зʼєднання, тож кімната
-				 * зникала під господарем: «Такої кімнати немає», і повернутися в неї не
-				 * виходило нічим. Скарга автора саме про це.
-				 *
-				 * Покинуте прибирається й без хвата, двома засобами, які вже є: рядок
-				 * зникає з переліку через дві хвилини тишини (`config/roomLife` за
-				 * `info.aliveAt`), а сам запис зносить збирач своїх кімнат через 12 годин
-				 * (`net/ownRooms`). Ціна — запис живе довше, ніж потрібно; виграш —
-				 * перезавантаження перестало бути втратою кімнати.
-				 */
-
-				if (!isPrivate || quick) {
-					await lobby.publish({
-						code,
-						hostUid: me,
-						hostName: who,
-						hostCountry: player.country,
-						hostAvatar: player.forRoom(),
-						rulesVersion: RULES_VERSION,
-						players: 1,
-						/*
-						 * НАБІР ІГОР ЇДЕ В ЗАПИС ПЕРЕЛІКУ — без нього фільтр списку
-						 * неможливий: `rooms` перелічувати заборонено, тож про чужу
-						 * кімнату видно рівно те, що в самому записі.
-						 */
-						games: gamesToConfig(picked)
-					});
-					stops.push(() => lobby.unpublish());
-				}
-			}
-
-			match = started;
-		} catch (error) {
-			const reason = error instanceof Error ? error.message : String(error);
-			const denied = /permission[_ ]denied/i.test(reason);
-			const missing = reason === 'rules-missing';
-			toast.error(missing ? 'pairs.rulesMissing' : denied ? 'pairs.rulesStale' : 'pairs.netFailed');
-			logService.error('network', 'quiz room entry failed', { action, reason });
-		} finally {
-			busy = false;
-		}
-	}
-
-	/** Зайти у вільну кімнату вікторини, а якщо таких немає — створити нову. */
-	async function quickGame() {
-		/*
-		 * ФІЛЬТР ДІЄ І ТУТ, і це не педантизм: «швидка гра» без нього кидала б у
-		 * кімнату з іграми, які людина щойно зняла. Не знайшлося такої — створимо
-		 * свою з вибраним набором, тобто вибір спрацює в обох гілках.
-		 */
-		const free = lobby.rooms.find(
-			(room) =>
-				room.gameId === 'quiz' && room.players < MIN_PLAYERS && roomFitsGames(room.games, picked)
-		);
-		if (free) {
-			joinCode = free.code;
-			await enter('join', true);
-			return;
-		}
-		await enter('create', true);
-	}
-
-	/** Дія лідера над кімнатою: один каркас на всі, як на `pairs/online`. */
-	async function hostAction(run: (transport: RoomTransport) => Promise<void>) {
-		if (!match || !amHost) return;
-		try {
-			const net = await import('$lib/net/rtdbRoom');
-			await run(await net.roomTransport(code));
-		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', 'host action denied', { reason: String(error) });
-		}
-	}
-
-	const switchAutoStart = (on: boolean) => hostAction((transport) => transport.setAutoStart(on));
-
-	/**
-	 * ЗМІНИТИ НАБІР ІГОР У КІМНАТІ — і, якщо кімната в переліку, там ТЕЖ.
-	 *
-	 * Два записи, бо це два різні місця з різним призначенням: `info.config`
-	 * визначає ПАРТІЮ, а запис у `lobby` — те, за чим кімнату вибирають зі списку.
-	 * Не оновити другий означало б, що фільтр бреше саме тому, хто ним
-	 * скористався: у списку кімната обіцяє одні ігри, а зіграє в інші.
-	 *
-	 * Порядок саме такий: спершу кімната, потім довідка. Навпаки був би момент, у
-	 * який список обіцяє те, чого в кімнаті ще немає.
-	 *
-	 * Чи кімната взагалі в переліку, знає сам перелік: закрита («лише друзі») туда
-	 * не писалася, і `lobby.setGames` тоді нічого не робить.
+	 * ЗМІНИТИ НАБІР ІГОР У КІМНАТІ — і, якщо кімната в переліку, там ТЕЖ: інакше
+	 * фільтр бреше саме тому, хто ним скористався. Спершу кімната, потім довідка.
 	 */
 	async function changeGames(games: string[]) {
 		if (!match) return;
 		await match.setGames(games);
-		await lobby.setGames(code, gamesToConfig(games));
-	}
-
-	/**
-	 * Прибрати того, хто зник. Дія лідера, і правило бази дозволяє саме її:
-	 * ВИДАЛЕННЯ чужого рядка складу, а не зміну.
-	 */
-	const kick = (uid: string) => hostAction((transport) => transport.removeMember(uid));
-	const rematch = () =>
-		hostAction((transport) => transport.restart(Math.floor(Math.random() * 2 ** 31)));
-
-	async function start() {
-		if (!match) return;
-		const players = match.players.length;
-		if (players < MIN_PLAYERS) {
-			toast.info('pairs.needPlayers');
-			return;
-		}
-		const net = await import('$lib/net/rtdbRoom');
-		await (await net.roomTransport(code)).setStatus('playing');
-		lobby.unpublish();
-	}
-
-	async function close() {
-		if (!match || !amHost) return;
-		try {
-			lobby.unpublish();
-			const net = await import('$lib/net/rtdbRoom');
-			await net.closeRoom(code);
-			await goto(langPath(lang, 'quiz'));
-		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', 'host action denied', { reason: String(error) });
-		}
-	}
-
-	async function setRole(role: Role) {
-		if (!match || match.status !== 'lobby') return;
-		const net = await import('$lib/net/rtdbRoom');
-		await net.joinRoom(code, player.forEntry(takenNames), role, player.country, player.forRoom());
+		await lobby.setGames(session.code, gamesToConfig(games));
 	}
 
 	/** Я відповів — частка правильного в журнал. Очки порахує кожен сам. */
@@ -449,203 +162,76 @@
 		}
 	}
 
-	/**
-	 * ГОДИННИК ПАРТІЇ ЙДЕ ЧАСТІШЕ ЗА СЕКУНДУ, і це не марнотратство.
-	 *
-	 * На ньому смуга таймера раунду. Оновлення раз на секунду давало б смугу, що
-	 * стрибає сімома кроками, — а раунд і триває сім секунд, тобто стрибок був би
-	 * майже всією смугою.
-	 */
-	const ROUND_CLOCK_MS = 100;
-
 	/*
-	 * НАСТУПНИЙ РАУНД ОГОЛОШУЄ ВЕДУЧИЙ, і рівно один раз.
-	 *
-	 * Прапорець потрібен, бо `$effect` перезапускається на кожен такт годинника, а
-	 * умова «час таблу вийшов» лишається правдою, доки раунд не змінився. Без
-	 * нього господар писав би той самий раунд десять разів на секунду; журнал
-	 * відкидав би повтори (перше оголошення виграє), але писати їх однаково не
-	 * треба.
+	 * НАСТУПНИЙ РАУНД ОГОЛОШУЄ ВЕДУЧИЙ, і рівно один раз: `$effect` перезапускається
+	 * на кожен такт годинника, а «час таблу вийшов» лишається правдою, доки раунд не
+	 * змінився. Журнал відкинув би повтори, але писати їх однаково не треба.
 	 */
 	let announcing = false;
 
 	$effect(() => {
 		if (!browser || !match || !amLeader) return;
-		if (match.status !== 'playing' || match.over) return;
+		if (match.status !== 'playing' || match.over || announcing) return;
 		// Партія щойно почалася — перший раунд оголошується без чекання.
-		if (match.round < 0) {
-			if (announcing) return;
-			announcing = true;
-			void match.startRound(0).finally(() => (announcing = false));
-			return;
-		}
-		if (!match.nextDue(clock) || announcing) return;
+		const next = match.round < 0 ? 0 : match.nextDue(session.clock) ? match.round + 1 : null;
+		if (next === null) return;
 		announcing = true;
-		void match.startRound(match.round + 1).finally(() => (announcing = false));
-	});
-
-	// Відлік до автоматичного старту — той самий механізм, що в «Знайди пару»:
-	// позначку ставить лідер, а бачать обидва.
-	$effect(() => {
-		if (!browser || !amHost || !match || match.status !== 'lobby') return;
-		const ready = match.autoStart && match.players.length >= MIN_PLAYERS;
-		if (!ready || match.countdownAt !== null) return;
-		void hostAction((transport) => transport.setCountdown(true));
-	});
-
-	$effect(() => {
-		if (!browser || !amHost || !match || match.status !== 'lobby') return;
-		const startedAt = match.countdownAt;
-		if (startedAt === null) return;
-		const left = Math.max(0, startedAt + COUNTDOWN_MS - Date.now());
-		const timer = setTimeout(() => void start(), left);
-		return () => clearTimeout(timer);
+		void match.startRound(next).finally(() => (announcing = false));
 	});
 
 	/**
-	 * Усе про чекання одним викликом — правила живуть у `utils/awayWait`.
-	 *
-	 * Пауза й зникнення дають один відлік і одне вікно: на екрані це один стан
-	 * («партія стоїть, і ось чому»), і два різні числа читалися б як випадковість.
+	 * Усе про чекання одним викликом — правила живуть у `utils/awayWait`: пауза й
+	 * зникнення дають один відлік і одне вікно.
 	 */
-	const wait = $derived(waitView(match, awaySince, clock, me));
+	const wait = $derived(waitView(match, awaySince, session.clock, session.me));
 
 	/*
 	 * Пауза раунду — наслідок стану вище. Саме `$effect`, а не похідна: зсув
-	 * дедлайну це ЗМІНА стану партії, і робити її в похідній означало б писати з
-	 * читання.
+	 * дедлайну — це ЗМІНА стану партії.
 	 */
-	$effect(() => void match?.setHold(wait.hold, clock));
-
-	/*
-	 * Годинник іде, поки на нього чекають: відлік у лобі АБО раунд партії.
-	 *
-	 * Під час раунду частіше — на ньому смуга таймера. Поза цими двома станами
-	 * таймера немає зовсім: інтервал, який тікає на порожньому екрані, — це
-	 * розряджений акумулятор і нічого більше.
-	 */
-	const clockNeeded = $derived(
-		(match?.countdownAt ?? null) !== null ||
-			(match !== null && match.status === 'playing' && !match.over) ||
-			(match !== null && match.away.length > 0)
-	);
-
-	$effect(() => {
-		if (!browser || !clockNeeded) return;
-		const counting = (match?.countdownAt ?? null) !== null;
-		const every = counting && match?.status !== 'playing' ? CLOCK_MS : ROUND_CLOCK_MS;
-		clock = Date.now();
-		const timer = setInterval(() => (clock = Date.now()), every);
-		return () => clearInterval(timer);
-	});
-
-	/*
-	 * Перелік і свої партії живуть ЛИШЕ поки видно форму входу.
-	 *
-	 * Тримати підписку під час партії означало б слухати чужі кімнати замість
-	 * своєї — і платити за це трафіком на кожну чужу зміну.
-	 */
-	$effect(() => {
-		if (!browser || match) return;
-		// Імʼя перекидається тут, бо підставляється воно ДО приїзду переліку.
-		return lobby.watch((names) => player.settle(names));
-	});
-
-	$effect(() => {
-		if (!browser || match) return;
-		return lobby.load();
-	});
-
-	/**
-	 * БАЛИ ЗА ПАРТІЮ нараховуються один раз, у мить, коли вона скінчилася.
-	 *
-	 * Ключ ідемпотентності — зерно партії: «зіграти ще» ставить нове зерно й стирає
-	 * журнал, тобто наступна партія отримає своє нарахування, а поточна не отримає
-	 * другого. Без цього ефект, що перезапускається на кожен приїзд ходу, доливав
-	 * би бали доти, доки хтось дивиться на екран підсумку.
-	 */
-	let awardedSeed = -1;
-
-	$effect(() => {
-		if (!browser || !match || !match.over) return;
-		if (match.seed === awardedSeed) return;
-		awardedSeed = match.seed;
-		playerData.awardQuizMatch(match.scores[me] ?? 0);
-	});
-
-	/*
-	 * Серцебиття кімнати, поки вона відкрита: від нього список «продовжити партію»
-	 * відрізняє покинуту кімнату від тієї, з якої щойно вийшли. Сам такт — у
-	 * `net/roomBeat.ts`, бо сторінок дві.
-	 */
-	$effect(() => {
-		if (!browser || !match || !code) return;
-		return startRoomBeat(code);
-	});
+	$effect(() => void match?.setHold(wait.hold, session.clock));
 
 	onMount(() => {
 		/*
-		 * «НАЗАД» РОБИТЬ ОДИН КРОК, і крок залежить від того, де я стою.
-		 *
-		 * Доти тут стояв один жорсткий напрямок на два різні екрани: із кімнати
-		 * «назад» вело в розділ «Вікторина», перескочивши форму входу. Скарга автора
-		 * саме про це: з `?room=##` мусить вести на `/quiz/online/`.
-		 *
-		 * У кімнаті крок — це ЗНЯТИ `?room`: адреса тут джерело правди, і ефект
-		 * нижче сам розбирає кімнату, коли параметр зникає. Тобто «назад» не
-		 * дублює вихід, а користується тим самим шляхом.
+		 * «НАЗАД» РОБИТЬ ОДИН КРОК: у кімнаті — зняти `?room` (адреса тут джерело
+		 * правди, і сесія сама розбере кімнату), на формі входу — у розділ.
 		 */
 		const release = settings.claimHeader(
 			'menu.quiz',
 			() =>
-				void goto(code === '' ? langPath(lang, 'quiz') : withoutRoom(page.url), {
+				void goto(session.code === '' ? langPath(lang, 'quiz') : withoutRoom(page.url), {
 					noScroll: true,
 					keepFocus: true
 				})
 		);
 		void player.loadCountry();
-
-		const saved = roomFromUrl();
-		if (saved) {
-			joinCode = saved;
-			void enter('join');
-		}
+		session.resume();
 
 		return () => {
-			for (const stop of stops) stop();
-			stops = [];
+			session.dispose();
 			release();
 		};
 	});
 </script>
 
 <div class="quiz-online" class:quiz-online--playing={match !== null && match.status !== 'lobby'}>
+	<NetLost lost={match !== null && !session.connected} />
 	{#if !match}
 		<OnlineGate
 			bind:name={player.value}
-			bind:joinCode
-			bind:isPrivate
+			bind:joinCode={session.joinCode}
+			bind:isPrivate={session.isPrivate}
 			bind:country={player.country}
-			{busy}
+			busy={session.busy}
 			onRandomName={() => player.reroll(takenNames)}
-			onCreate={() => enter('create')}
-			onJoin={() => enter('join')}
-			onQuickGame={quickGame}
+			onCreate={() => session.enter('create')}
+			onJoin={() => session.enter('join')}
+			onQuickGame={() => session.quickGame()}
 		>
 			{#snippet roomList()}
 				<!--
-					НАБІР ІГОР ТУТ — ФІЛЬТР, а не панель налаштувань.
-
-					Доти він стояв окремою панеллю над списком і робив одне: задавав
-					`config` кімнаті, яку ти створиш. Автор попросив прибрати його
-					звідси у фільтр, а правити набір — у самій кімнаті. Обидві
-					половини цього тепер справджені: тут фільтр (`QuizRooms`), а в
-					лобі кімнати той самий набір править господар.
-
-					Вибір лишається ОДИН, і це навмисно: «у що я хочу грати» сіє чужі
-					кімнати й задає свою. Два різні набори на ті самі шість кнопок
-					означали б, що людина мусить тримати в голові, який із них зараз
-					діє.
+					НАБІР ІГОР ТУТ — ФІЛЬТР, а не панель налаштувань: «у що я хочу грати»
+					сіє чужі кімнати й задає свою. Правити набір — у лобі кімнати.
 				-->
 				<QuizRooms
 					{text}
@@ -654,7 +240,7 @@
 					friends={lobby.friends}
 					hasMore={lobby.hasMore}
 					unavailable={lobby.unavailable}
-					{busy}
+					busy={session.busy}
 					{picked}
 					onPick={(games) => (picked = games)}
 					onClose={(dead) =>
@@ -662,66 +248,55 @@
 							if (!done) toast.error('pairs.actionFailed');
 						})}
 					onEnter={(chosen) => {
-						joinCode = chosen;
-						void enter('join');
+						session.joinCode = chosen;
+						void session.enter('join');
 					}}
 				/>
 			{/snippet}
 		</OnlineGate>
 	{:else if match.status === 'lobby'}
 		<!--
-			Лобі вікторини — спільне лобі ПЛЮС набір ігор кімнати, і зʼєднані вони в
-			`QuizLobby`, а не тут: `OnlineLobby` спільне з «Знайди пару» й про ігри не
-			знає, а ця сторінка стоїть на межі розміру. Той самий взірець, що
-			`QuizRooms` для списку кімнат.
-
-			ШВИДКІСТЬ У ПЕРЕЛІК КІМНАТ НЕ ПИШЕТЬСЯ, і це не пропуск: за нею не
-			вибирають — фільтр списку питає «у що граємо», а не «як довго думаємо».
-			Запис туда дав би поле, яким ніхто не фільтрує, і другий шлях, який треба
-			тримати в збігу з першим. Тому набір ігор іде через `changeGames` (два
-			записи), а швидкість — прямо в матч.
+			Лобі вікторини — спільне лобі ПЛЮС набір ігор і швидкість кімнати.
+			ШВИДКІСТЬ У ПЕРЕЛІК КІМНАТ НЕ ПИШЕТЬСЯ: за нею не вибирають, тож набір іде
+			через `changeGames` (два записи), а швидкість — прямо в матч.
 		-->
 		<QuizLobby
 			{text}
 			{match}
-			{code}
+			code={session.code}
 			{joinUrl}
-			{online}
-			{me}
-			{amHost}
-			{clock}
-			onRole={setRole}
-			onStart={start}
-			onAutoStart={switchAutoStart}
+			online={session.online}
+			me={session.me}
+			amHost={session.amHost}
+			clock={session.clock}
+			onRole={(role) => session.setRole(role)}
+			onStart={() => session.start()}
+			onAutoStart={session.switchAutoStart}
 			onGames={changeGames}
 			onPace={(pace) => void match?.setPace(pace)}
 		/>
 	{:else}
 		<!--
-			ПАРТІЯ Й ПІДСУМОК — в окремому компоненті.
-
-			Сторінка тримає вхід у кімнату: код, присутність, перелік, дії лідера.
-			`QuizRoom` не знає про мережу зовсім — він читає матч і час, і саме тому
-			підсумок у ньому однаковий в усіх, а не збирається з двох різних гілок
-			сторінки.
+			ПАРТІЯ Й ПІДСУМОК — в окремому компоненті, який не знає про мережу: він
+			читає матч і час, тож підсумок однаковий в усіх.
 		-->
 		<QuizRoom
 			{text}
 			{match}
-			{me}
+			me={session.me}
 			{lang}
-			cross={crossGameLinks(lang, 'quiz', code, match?.nextCode ?? null)}
-			{amHost}
-			{clock}
+			cross={crossGameLinks(lang, 'quiz', session.code, match?.nextCode ?? null)}
+			amHost={session.amHost}
+			clock={session.clock}
 			{wait}
 			onPause={() => void match?.pause()}
 			onResume={() => void match?.resume()}
 			goOn={match.goOn}
 			onGoOn={() => void match?.voteGoOn()}
 			onanswer={answer}
-			onRematch={rematch}
-			onClose={close}
-			onkick={kick}
+			onRematch={session.rematch}
+			onClose={() => session.close()}
+			onkick={session.kick}
 		/>
 	{/if}
 </div>

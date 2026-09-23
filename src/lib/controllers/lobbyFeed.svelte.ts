@@ -164,6 +164,19 @@ export class LobbyFeed {
 		await list.updateGames(this.#gameId, code, games);
 	}
 
+	/**
+	 * Скільки гравців у кімнаті — наздогнати запис у переліку.
+	 *
+	 * Доти лічильник вела лише сторінка «Знайди пару», а у вікторині запис назавжди
+	 * казав «Гравців: 1» — швидка гра водила людей у кімнату, де вже грали
+	 * (аудит 2026-09-23). Тепер це веде сесія кімнати, однаково для обох ігор.
+	 */
+	async setPlayers(code: string, players: number): Promise<void> {
+		if (!this.#unlist) return;
+		const list = await import('$lib/net/lobby');
+		await list.updatePlayers(this.#gameId, code, players);
+	}
+
 	/** Зняти свою кімнату з переліку. Двічі — те саме, що раз. */
 	unpublish(): void {
 		this.#unlist?.();

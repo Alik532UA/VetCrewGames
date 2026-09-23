@@ -1058,7 +1058,8 @@ describe('відлуння, яке база відкинула', () => {
 			setConfig: async () => {},
 			removeMember: async () => {},
 			touch: async () => {},
-			takeLead: async () => false
+			takeLead: async () => false,
+			now: () => 0
 		};
 		return { transport, push: (snapshot: RoomSnapshot) => deliver?.(snapshot) };
 	}

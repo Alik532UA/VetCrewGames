@@ -2,6 +2,7 @@ import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTyp
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
+import { heldPayloads } from '$lib/utils/awayWait';
 import { takeLead } from './takeLead';
 import {
 	barLeftMs,
@@ -167,8 +168,14 @@ export class QuizMatch {
 		this.#factor = factor;
 	}
 
+	/** Кімнати більше немає: господар її закрив або прибрав збирач. */
+	gone = $state(false);
+
 	listen(): () => void {
-		return this.#transport.watch((snapshot) => this.#apply(snapshot));
+		return this.#transport.watch(
+			(snapshot) => this.#apply(snapshot),
+			() => (this.gone = true)
+		);
 	}
 
 	get players(): Member[] {
@@ -518,47 +525,11 @@ export class QuizMatch {
 	 */
 	async #writeHeld(ms: number): Promise<void> {
 		const spent = Math.max(0, ms - RESUME_BONUS_MS);
-
-		/*
-		 * ПАУЗА СПИСУЄ ТОЙ САМИЙ ЗАПАС, що зникнення, і саме тому зловживати нею
-		 * нічим: у того, хто ставить її раз за разом, просто закінчується час — так
-		 * само, як у того, хто зникав. Одна межа на два стани, а не дві схожі.
-		 */
-		const paused = this.pausedBy;
-		if (paused !== null) {
-			await this.#append({
-				by: this.#me,
-				type: 'held',
-				payload: { round: this.round, ms, uid: paused, spent }
-			});
-			return;
+		const away = this.away.map((member) => member.uid);
+		// Хто скільки пільги витратив — правила в `utils/awayWait.ts` (`heldPayloads`).
+		for (const payload of heldPayloads(this.round, ms, spent, this.pausedBy, away)) {
+			await this.#append({ by: this.#me, type: 'held', payload });
 		}
-
-		/*
-		 * КОЖЕН ВІДСУТНІЙ ПЛАТИТЬ СВОЮ ПІЛЬГУ, а пауза рахується ОДИН раз.
-		 *
-		 * Тут стояв цикл, що повертався на першому ж проході: при двох зниклих
-		 * пільгу списував лише перший, а другий зникав знову й знову задарма (аудит
-		 * 2026-09-23). Тривалість паузи несе лише перший запис — решта йде з `ms: 0`,
-		 * і перепрогін додає до паузи рівно одне число.
-		 */
-		const away = this.away;
-		if (away.length > 0) {
-			for (const [index, member] of away.entries()) {
-				await this.#append({
-					by: this.#me,
-					type: 'held',
-					payload: { round: this.round, ms: index === 0 ? ms : 0, uid: member.uid, spent }
-				});
-			}
-			return;
-		}
-		// Ніхто не був відсутній — пауза все одно записується, пільга ні.
-		await this.#append({
-			by: this.#me,
-			type: 'held',
-			payload: { round: this.round, ms }
-		});
 	}
 
 	/**
