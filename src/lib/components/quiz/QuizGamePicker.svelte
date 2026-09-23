@@ -83,9 +83,10 @@
 	Тип `-fieldset` (§ 1.3) — за HTML-семантикою, а не за враженням: це справді
 	`<fieldset>` із `<legend>`, і саме він групує прапорці для скрінрідера.
 
-	Двом сусіднім коробкам локатор навмисно НЕ дається (§ 1.5): `.games__list` —
-	внутрішня розкладка, а `.quiz-online__games` на сторінці існує лише заради
-	підкладки `.text-panel`. Назвати тест, який їх шукатиме, неможливо.
+	Сусіднім коробкам локатор навмисно НЕ дається (§ 1.5): `.games__list` —
+	внутрішня розкладка, `.quiz-lobby__settings` у `QuizLobby` — розкладка двох
+	наборів налаштувань, а `.lobby__panel--settings` в `OnlineLobby` існує лише
+	заради тла панелі. Назвати тест, який їх шукатиме, неможливо.
 -->
 <fieldset class="games" data-testid="quiz-games-fieldset">
 	<legend class="games__legend">{@html formatFont(text(legendKey))}</legend>

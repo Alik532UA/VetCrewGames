@@ -108,33 +108,42 @@
 	{onRole}
 	{onStart}
 	{onAutoStart}
-/>
+>
+	{#snippet settings()}
+		<!--
+			НАБІР ІГОР І ШВИДКІСТЬ — В ОДНІЙ ПАНЕЛІ: це два налаштування тієї самої
+			кімнати.
 
-<!--
-	НАБІР ІГОР І ШВИДКІСТЬ — В ОДНІЙ ПАНЕЛІ: це два налаштування тієї самої кімнати.
+			Друга панель поруч читалася б як інша річ, а вони обидві відповідають на «у
+			що й як швидко граємо». Заразом це не додає рядка на вузькому екрані: групи
+			переносяться самі.
 
-	Друга панель поруч читалася б як інша річ, а вони обидві відповідають на «у що й
-	як швидко граємо». Заразом це не додає рядка на вузькому екрані: групи
-	переносяться самі.
--->
-<div class="quiz-lobby__games text-panel">
-	<QuizGamePicker {text} selected={match.games} editable={amHost} onchange={onGames} />
-	<QuizPacePicker
-		{text}
-		round={match.roundPace}
-		reveal={match.revealPace}
-		editable={amHost}
-		onpick={onPace}
-	/>
-</div>
+			ПАНЕЛЬ ТЕПЕР МАЛЮЄ ЛОБІ, а не ця обгортка. Доти тут стояв окремий
+			`.text-panel` ПІД усім лобі, і на широкому екрані він опинявся нижче межі
+			вікна — налаштувати кімнату можна було, лише прогорнувши повз «Почати
+			партію». Тепер це третій стовпець лобі (сніпет `settings`), і стоїть він
+			поруч зі складом, а не під ним.
+		-->
+		<div class="quiz-lobby__settings">
+			<QuizGamePicker {text} selected={match.games} editable={amHost} onchange={onGames} />
+			<QuizPacePicker
+				{text}
+				round={match.roundPace}
+				reveal={match.revealPace}
+				editable={amHost}
+				onpick={onPace}
+			/>
+		</div>
+	{/snippet}
+</OnlineLobby>
 
 <style>
 	/*
-	 * Своя панель, бо в лобі набір лежить просто на фотографії тла: тут немає
-	 * контейнера-панелі, як у формі входу (`src/backdrop.test.ts` такого не пустить).
+	 * Групи переносяться самі: у вузькому третьому стовпці кожна стає своїм рядком,
+	 * а на всю ширину (два стовпці над панеллю) дві шкали швидкості лягають поруч
+	 * під набором ігор. Тла тут немає — його дає панель лобі.
 	 */
-	.quiz-lobby__games {
-		width: 100%;
+	.quiz-lobby__settings {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-start;

@@ -86,21 +86,35 @@
 	 * кімнати, і різний вигляд читався б як різна природа. Спільного класу немає, бо
 	 * спільним був би цілий компонент — а групи тут інші (одна з трьох, а не будь-які
 	 * з шести), і зводити їх в один означало б проп «скільки можна вибрати».
+	 *
+	 * ЗВІРЕНО ЗНОВУ, бо вигляд розійшовся. Набір ігор відтоді перейшов на суцільний
+	 * акцент для вибраного й прозоре тло для решти (скарга автора про «другий
+	 * акцентний колір»), а тут лишилися старі правила: вибране — акцент на 18%,
+	 * рамка — `--color-border`. Поруч в одній панелі це читалося як дві різні
+	 * природи вибору — рівно те, від чого застерігає перший абзац.
+	 *
+	 * Друга причина — не смак. У лобі шкала тепер лежить на `--color-bg-panel`, а в
+	 * темі orange-purple `--color-border` дорівнює цьому тлу (обидва #4a2e7a):
+	 * невибрані кнопки втратили б межі зовсім. Рамка від кольору тексту панелі —
+	 * те саме джерело й та сама причина, що в `QuizGamePicker`.
 	 */
 	.pace {
 		margin: 0;
 		padding: 0;
 		border: none;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 4px;
+		min-width: 0;
 	}
 
+	/*
+	 * Підпис — як у набору ігор: ліворуч і кольором тексту панелі. Тут стояло
+	 * `opacity: 0.75`, а приглушення прозорістю опускає пару нижче 4.5:1 — у
+	 * проєкті його прибрано всюди саме з цієї причини (`OnlineGate`, `RoomList`).
+	 */
 	.pace__legend {
 		padding: 0;
+		margin-bottom: var(--space-xs);
 		font-size: var(--font-size-sm);
-		opacity: 0.75;
+		color: var(--color-text-on-panel);
 	}
 
 	.pace__list {
@@ -111,20 +125,35 @@
 	}
 
 	.pace__item {
+		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
 		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border: 1px solid var(--color-border);
+		padding: 0 var(--space-md);
+		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
 		border-radius: var(--radius-sm);
-		background: none;
-		color: inherit;
+		background: transparent;
+		color: var(--color-text-on-panel);
+		font: inherit;
 		font-size: var(--font-size-sm);
 		cursor: pointer;
+		transition:
+			background-color var(--transition-fast),
+			color var(--transition-fast);
 	}
 
-	/* Вибране — акцентом на рамці й тлі, а не лише кольором тексту (WCAG 1.4.1). */
+	@media (hover: hover) {
+		.pace__item:hover:not(.pace__item--on) {
+			background: color-mix(in srgb, var(--color-text-on-panel), transparent 88%);
+		}
+	}
+
+	/*
+	 * Вибране — суцільний акцент і `--color-text-on-accent`, як у набору ігор.
+	 * Відрізняється тлом і жирністю, а не лише кольором тексту (WCAG 1.4.1).
+	 */
 	.pace__item--on {
 		border-color: var(--color-accent);
-		background: color-mix(in srgb, var(--color-accent), transparent 82%);
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
 		font-weight: var(--font-weight-bold);
 	}
 
