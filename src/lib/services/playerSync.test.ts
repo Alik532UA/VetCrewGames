@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * СИНХРОНІЗАЦІЯ РАХУНКУ: злиття при вході, живий обмін і межа «без акаунта».
@@ -29,6 +29,24 @@ vi.mock('$lib/net/play', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('$lib/net/play')>();
 	return { ...actual, ...net };
 });
+
+/**
+ * ПРОФІЛЬ І ТАБЛИЦЯ — теж на межі модуля.
+ *
+ * Доти їх не мокав ніхто, і кожне злиття в цих тестах кликало справжній
+ * `readMyProfile()` — тобто `connect()` і анонімну реєстрацію в ЖИВОМУ Firebase.
+ * Тест проходив, бо `readMyProfile` не кидає. Знайшов це запобіжник мережі
+ * (`src/no-network.setup.ts`).
+ */
+type Profile = import('$lib/net/account').Profile;
+const board = {
+	readMyProfile: vi.fn<() => Promise<Profile | null>>(),
+	publishLeader: vi.fn<(profile: Profile, score: number) => Promise<boolean>>()
+};
+vi.mock('$lib/net/account', () => ({ readMyProfile: board.readMyProfile }));
+vi.mock('$lib/net/leaders', () => ({ publishLeader: board.publishLeader }));
+
+const profileOf = (name: string): Profile => ({ uid: `uid-${name}`, name, handle: name });
 
 /** Системна тема має бути детермінованою: `Settings` читає її в конструкторі. */
 function stubMatchMedia() {
@@ -75,6 +93,13 @@ beforeEach(() => {
 	net.readPlay.mockReset().mockResolvedValue(null);
 	net.writePlay.mockReset().mockResolvedValue(true);
 	net.watchPlay.mockReset().mockResolvedValue(() => {});
+	board.readMyProfile.mockReset().mockResolvedValue(profileOf('alice'));
+	board.publishLeader.mockReset().mockResolvedValue(true);
+});
+
+// Тест, що впав посеред підмінених таймерів, не лишає їх наступному.
+afterEach(() => {
+	vi.useRealTimers();
 });
 
 describe('синхронізація рахунку', () => {
@@ -181,9 +206,7 @@ describe('синхронізація рахунку', () => {
 		await sync.startPlaySync();
 		await sync.startPlaySync();
 
-		expect(net.watchPlay, 'дві підписки дали б два злиття на кожну зміну').toHaveBeenCalledTimes(
-			1
-		);
+		expect(net.watchPlay, 'дві підписки дали б два злиття на кожну зміну').toHaveBeenCalledTimes(1);
 	});
 
 	it('вихід стирає місцеве й знімає підписку', async () => {
@@ -199,3 +222,4 @@ describe('синхронізація рахунку', () => {
 		expect(playerData.linked).toBe(false);
 	});
 });
+

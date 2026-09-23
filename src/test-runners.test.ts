@@ -70,6 +70,22 @@ function namedByTestMatch(file: string): boolean {
 	return declarations.some((entry) => new RegExp(base).test(entry));
 }
 
+/**
+ * Чи названо файл у `setupFiles` конфігу Vitest.
+ *
+ * Той самий клас, що й `testMatch` у Playwright: `*.setup.ts` під Vitest не
+ * виконується, поки його не перелічено в `setupFiles`, і мовчить про це. Для
+ * `src/no-network.setup.ts` це означало б тихе повернення до тестів, що
+ * реєструють акаунти в живому Firebase.
+ */
+function namedBySetupFiles(file: string): boolean {
+	const config = readdirSync(ROOT).find((f) => /^vitest\.config\./.test(f));
+	if (!config) return false;
+	const source = withoutComments(readFileSync(join(ROOT, config), 'utf8'));
+	const list = source.match(/setupFiles\s*:\s*\[([^\]]*)\]/)?.[1] ?? '';
+	return [...list.matchAll(/['"`]\.?\/?([^'"`]+)['"`]/g)].some((m) => m[1] === file);
+}
+
 function playwrightTestDir(): string | null {
 	const config = readdirSync(ROOT).find((f) => /^playwright\.config\./.test(f));
 	if (!config) return null;
@@ -184,6 +200,11 @@ describe('файли перевірок', () => {
 							'*.spec / *.test, і жоден проєкт у конфігу цього файлу не називає'
 					);
 				}
+			}
+			if (runner.dep === 'vitest' && /\.setup\.(ts|js)$/.test(file) && !namedBySetupFiles(file)) {
+				orphans.push(
+					`${file}: під Vitest, але в setupFiles конфігу не названий — не виконується жодного разу`
+				);
 			}
 		}
 

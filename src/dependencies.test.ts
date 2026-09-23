@@ -39,7 +39,8 @@ const runtime = Object.keys(pkg.dependencies ?? {});
 const tooling = Object.keys(pkg.devDependencies ?? {});
 
 const sources = walk('src').filter((f) => /\.(ts|svelte)$/.test(f));
-const isTest = (f: string) => /\.(test|spec)\.ts$/.test(f);
+// `.setup.` — теж файл перевірки: його виконує Vitest (`setupFiles`), а не браузер.
+const isTest = (f: string) => /\.(test|spec|setup)\.ts$/.test(f);
 
 /**
  * Пакети, які імпортує РАНТАЙМ-код і які при цьому законно лежать у
