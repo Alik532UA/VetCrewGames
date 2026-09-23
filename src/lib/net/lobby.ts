@@ -1,4 +1,5 @@
 import { connect } from './firebase';
+import { onReconnect } from './presence';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
@@ -116,9 +117,55 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
 	const { onDisconnect, ref, remove, serverTimestamp, set } = await import('firebase/database');
 	// Гра — рівень шляху, і правило звіряє її з полем `gameId` у самому записі.
 	const node = ref(db, `lobby/${entry.gameId}/${entry.code}`);
+	const key = listingKey(entry.gameId, entry.code);
+	listed.set(key, { ...entry });
 
-	await onDisconnect(node).remove();
-	await set(node, {
+	const write = async () => {
+		// Найсвіжіший варіант запису: число гравців і набір ігор оновлюються окремо.
+		const current = listed.get(key);
+		if (!current) return;
+		await onDisconnect(node).remove();
+		await set(node, recordOf(current, serverTimestamp()));
+	};
+	await write();
+
+	/*
+	 * ПІСЛЯ ОБРИВУ ЗАПИС ПУБЛІКУЄТЬСЯ ЗНОВУ. `onDisconnect` господаря прибирав його
+	 * на ПЕРШОМУ ж обриві — і назад його не повертало ніщо: кімната мовчки зникала
+	 * зі списку й зі «швидкої гри», хоч господар сидів у лобі (аудит 2026-09-23).
+	 * Публікується ОСТАННІЙ варіант, а не перший: інакше число гравців скидалося б
+	 * до одиниці.
+	 */
+	const stop = await onReconnect(() =>
+		write().catch((error: unknown) =>
+			logService.warn('network', 'lobby entry not restored', {
+				code: entry.code,
+				reason: reasonOf(error)
+			})
+		)
+	);
+
+	return () => {
+		stop();
+		listed.delete(key);
+		void remove(node);
+	};
+}
+
+/**
+ * ОСТАННІЙ ВАРІАНТ СВОЇХ ЗАПИСІВ — за `gameId/code`.
+ *
+ * Потрібен рівно для одного: після обриву звʼязку запис публікується знову, і
+ * публікувати треба те, що в ньому лежало ДО обриву (`updatePlayers`,
+ * `updateGames`), а не те, з чим кімнату відкрили.
+ */
+const listed = new Map<string, Omit<LobbyRoom, 'at'>>();
+
+const listingKey = (gameId: string, code: string) => `${gameId}/${code}`;
+
+/** Запис переліку рівно з тими полями, які дозволяє правило. */
+function recordOf(entry: Omit<LobbyRoom, 'at'>, at: object): Record<string, unknown> {
+	return {
 		hostUid: entry.hostUid,
 		hostName: entry.hostName,
 		/*
@@ -139,10 +186,8 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
 		// Та сама умовна вставка й із тієї самої причини: `undefined` усередині
 		// `set()` Firebase КИДАЄ, а гра без наборів (`pairs`) його не передає.
 		...(entry.games ? { games: entry.games } : {}),
-		at: serverTimestamp()
-	});
-
-	return () => void remove(node);
+		at
+	};
 }
 
 /**
@@ -157,6 +202,8 @@ export async function updatePlayers(gameId: string, code: string, players: numbe
 	try {
 		const { db } = await connect();
 		const { ref, set } = await import('firebase/database');
+		const current = listed.get(listingKey(gameId, code));
+		if (current) listed.set(listingKey(gameId, code), { ...current, players });
 		await set(ref(db, `lobby/${gameId}/${code}/players`), players);
 	} catch (error) {
 		logService.warn('network', 'lobby player count not updated', { code, reason: reasonOf(error) });
@@ -182,6 +229,8 @@ export async function updateGames(
 	try {
 		const { db } = await connect();
 		const { ref, set } = await import('firebase/database');
+		const current = listed.get(listingKey(gameId, code));
+		if (current) listed.set(listingKey(gameId, code), { ...current, games });
 		await set(ref(db, `lobby/${gameId}/${code}/games`), games);
 	} catch (error) {
 		logService.warn('network', 'lobby games not updated', { code, reason: reasonOf(error) });
@@ -193,6 +242,7 @@ export async function unpublishRoom(gameId: string, code: string): Promise<void>
 	try {
 		const { db } = await connect();
 		const { ref, remove } = await import('firebase/database');
+		listed.delete(listingKey(gameId, code));
 		await remove(ref(db, `lobby/${gameId}/${code}`));
 	} catch (error) {
 		logService.warn('network', 'lobby entry not removed', { code, reason: reasonOf(error) });

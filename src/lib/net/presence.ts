@@ -1,4 +1,5 @@
 import { connect } from './firebase';
+import { logService } from '$lib/services/logService.svelte';
 
 /**
  * Усе, що тримається на `onDisconnect` — тобто на обіцянці, яку виконує СЕРВЕР,
@@ -33,10 +34,68 @@ export async function trackPresence(code: string): Promise<() => void> {
 	const { onDisconnect, ref, remove, serverTimestamp, set } = await import('firebase/database');
 	const mine = ref(db, `presence/${code}/${uid}`);
 
-	await onDisconnect(mine).remove();
-	await set(mine, { at: serverTimestamp() });
+	const register = async () => {
+		await onDisconnect(mine).remove();
+		await set(mine, { at: serverTimestamp() });
+	};
+	await register();
 
-	return () => void remove(mine);
+	/*
+	 * ПІСЛЯ КОЖНОГО ОБРИВУ — ЗНОВУ, і саме це робить присутність правдою.
+	 *
+	 * `onDisconnect` виконується один раз: обірвався сокет — сервер прибрав запис, і
+	 * домовленості більше немає. Доти вона ставилася РАЗ на вхід у кімнату, тож
+	 * після будь-якого обриву (Wi-Fi → LTE, згорнутий застосунок) людина лишалася
+	 * «відсутньою» для всіх, включно з собою, аж до перезавантаження: у вікторині
+	 * вікно очікування закривало питання всім, хоч вона грала (аудит 2026-09-23).
+	 * Канонічний шаблон Firebase: на кожне `.info/connected === true` —
+	 * домовитися й записатися знову.
+	 */
+	const stop = await onReconnect(() =>
+		register().catch((error: unknown) =>
+			logService.warn('network', 'presence not restored', { code, reason: String(error) })
+		)
+	);
+
+	return () => {
+		stop();
+		void remove(mine);
+	};
+}
+
+/**
+ * Викликати `run` ЩОРАЗУ, коли звʼязок із базою ВІДНОВИВСЯ, — але не на першому
+ * «я на звʼязку»: на момент виклику запис уже зроблено тим, хто просив.
+ *
+ * Повертає відписку. Спільна для присутності й запису в переліку кімнат: обидва
+ * тримаються на `onDisconnect`, і обидва гаснуть після першого ж обриву.
+ */
+export async function onReconnect(run: () => void): Promise<() => void> {
+	const { db } = await connect();
+	const { off, onValue, ref } = await import('firebase/database');
+	const status = ref(db, '.info/connected');
+	let online: boolean | null = null;
+	const handler = onValue(status, (snapshot) => {
+		const now = snapshot.val() === true;
+		if (now && online === false) run();
+		online = now;
+	});
+	return () => off(status, 'value', handler);
+}
+
+/**
+ * Чи є звʼязок із базою ЗАРАЗ — для смуги «немає звʼязку».
+ *
+ * Перший виклик приходить одразу з поточним станом. Firebase віддає `false` і
+ * тоді, коли звʼязок ще не встановився, тож показувати смугу варто не з першої
+ * миті, а коли стан ТРИМАЄТЬСЯ (це вирішує екран).
+ */
+export async function watchConnected(onChange: (connected: boolean) => void): Promise<() => void> {
+	const { db } = await connect();
+	const { off, onValue, ref } = await import('firebase/database');
+	const status = ref(db, '.info/connected');
+	const handler = onValue(status, (snapshot) => onChange(snapshot.val() === true));
+	return () => off(status, 'value', handler);
 }
 
 /**
