@@ -129,6 +129,14 @@
 
 	const takenNames = $derived(lobby.takenNames);
 	const amHost = $derived(Boolean(me) && match?.hostUid === me);
+	/**
+	 * Хто ОГОЛОШУЄ РАУНДИ — ведучий із журналу, а не господар кімнати.
+	 *
+	 * Поки ніхто не підхоплював партію, це та сама людина. Різниця з'являється тоді,
+	 * коли господар зник і роль перейшла ходом `lead` (`utils/quizReplay.ts`): раунди
+	 * від старого господаря перепрогін уже не рахує, тож оголошувати їх мусить новий.
+	 */
+	const amLeader = $derived(Boolean(me) && match?.leader === me);
 
 	const joinUrl = $derived(browser && code !== '' ? page.url.href : '');
 
@@ -451,7 +459,7 @@
 	const ROUND_CLOCK_MS = 100;
 
 	/*
-	 * НАСТУПНИЙ РАУНД ОГОЛОШУЄ ГОСПОДАР, і рівно один раз.
+	 * НАСТУПНИЙ РАУНД ОГОЛОШУЄ ВЕДУЧИЙ, і рівно один раз.
 	 *
 	 * Прапорець потрібен, бо `$effect` перезапускається на кожен такт годинника, а
 	 * умова «час таблу вийшов» лишається правдою, доки раунд не змінився. Без
@@ -462,7 +470,7 @@
 	let announcing = false;
 
 	$effect(() => {
-		if (!browser || !match || !amHost) return;
+		if (!browser || !match || !amLeader) return;
 		if (match.status !== 'playing' || match.over) return;
 		// Партія щойно почалася — перший раунд оголошується без чекання.
 		if (match.round < 0) {

@@ -1332,3 +1332,83 @@ describe('пауза', () => {
 		stop();
 	});
 });
+
+/**
+ * НОМЕР ХОДУ, ОДНОЧАСНІ ВІДПОВІДІ Й ПІЛЬГА — знахідки аудиту 2026-09-23.
+ *
+ * Зворотні експерименти: повернути `seq: this.#topSeq + 1 + attempt` — червоніє
+ * «далекий номер»; `APPEND_TRIES = 4` — червоніє «дванадцять одночасних»; прибрати
+ * `throw` у `answer` — червоніє «невдалий запис не мовчить»; повернути `return` у
+ * цикл `#writeHeld` — червоніє «кожен відсутній».
+ */
+describe('журнал вікторини витримує чуже й одночасне', () => {
+	it('хід із далеким номером не блокує кімнату', async () => {
+		const { room, host, stop } = table();
+		// Правило бази доти перевіряло лише, що `seq` — число. На `1e20` сусідні числа
+		// з рухомою комою стоять через 16384, тож `1e20 + k` для будь-якої спроби — те
+		// саме зайняте число: «найбільший плюс один» не бере нічого.
+		await room.transport().append({ seq: 1e20, by: GUEST, type: 'goon', payload: { round: 0 } });
+
+		await host.startRound(0);
+		await host.answer(1);
+
+		expect(host.startedAt[0], 'раунд почався').toBeDefined();
+		expect(host.iAnswered, 'відповідь лягла в журнал').toBe(true);
+		stop();
+	});
+
+	it('дванадцять одночасних відповідей лягають усі', async () => {
+		const crowd: Member[] = Array.from({ length: 12 }, (_, index) => ({
+			uid: `uid-${index}`,
+			name: `Гравець ${index}`,
+			role: 'player' as const,
+			order: index + 1
+		}));
+		const room = new LocalRoom(info({ hostUid: 'uid-0' }), crowd);
+		// Відлуння: кожен бачить свій запис раніше, ніж база відповіла, — тобто всі
+		// дванадцять беруть той самий номер, як і в житті.
+		const matches = crowd.map(
+			(member) => new QuizMatch(member.uid, room.transport({ echo: true }))
+		);
+		const stops = matches.map((match) => match.listen());
+
+		await matches[0].startRound(0);
+		await Promise.all(matches.map((match) => match.answer(1)));
+
+		expect(Object.keys(matches[0].answers[0] ?? {})).toHaveLength(12);
+		stops.forEach((off) => off());
+	});
+
+	it('невдалий запис відповіді не мовчить', async () => {
+		const { room, host, stop } = table();
+		await host.startRound(0);
+		const refusing = new QuizMatch(GUEST, {
+			...room.transport(),
+			append: async () => false
+		});
+		const off = refusing.listen();
+
+		await expect(refusing.answer(1)).rejects.toThrow('answer-not-saved');
+		off();
+		stop();
+	});
+
+	it('кожен відсутній платить свою пільгу, а пауза рахується один раз', async () => {
+		const third: Member = { uid: 'uid-third', name: 'Третій', role: 'player', order: 3 };
+		const room = new LocalRoom(info(), [...members(), third]);
+		const host = new QuizMatch(HOST, room.transport());
+		const off = host.listen();
+		await host.startRound(0);
+		const before = host.deadlineAt(0) as number;
+
+		host.present = [HOST];
+		host.setHold(true, 1_000);
+		host.setHold(false, 5_000);
+		for (let tick = 0; tick < 6; tick += 1) await Promise.resolve();
+
+		expect(host.graceSpent(GUEST)).toBe(4_000);
+		expect(host.graceSpent(third.uid), 'другий відсутній теж платить').toBe(4_000);
+		expect(host.deadlineAt(9_000), 'пауза — одна: 4 с + 3 с надбавки').toBe(before + 7_000);
+		off();
+	});
+});

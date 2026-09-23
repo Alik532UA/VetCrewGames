@@ -1,6 +1,7 @@
 import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
+import { freeSeq } from '$lib/utils/journalSeq';
 import {
 	barLeftMs,
 	deadlineAt,
@@ -9,12 +10,7 @@ import {
 	phaseAt,
 	revealLeftMs
 } from '$lib/utils/quizClock';
-import {
-	roundGains,
-	roundOutcomes,
-	totalScores,
-	type QuizLogView
-} from '$lib/utils/quizScore';
+import { roundGains, roundOutcomes, totalScores, type QuizLogView } from '$lib/utils/quizScore';
 import {
 	DEFAULT_ROOM_PACE,
 	PAUSE_COOLDOWN_MS,
@@ -37,11 +33,18 @@ export type QuizPhase = 'round' | 'reveal' | 'over';
 /**
  * Скільки разів боротися за номер у журналі, перш ніж здатися.
  *
- * Чотири — це «поки в кімнаті менше пʼятьох, збіг розводиться завжди». Верхня межа
- * потрібна не через мережу, а через нескінченний цикл: якщо база відмовляє з
- * причини, не пов'язаної з номером, спроби мусять закінчитися.
+ * ШІСТНАДЦЯТЬ, а не чотири, і число тепер виведене. Кожна спроба розводить
+ * щонайменше одного суперника за той самий номер, тож N одночасних записів
+ * гарантовано розходяться за N спроб. Стеля складу — 12 гравців (правило
+ * `order`), автопідтвердження стріляє в усіх в ту саму серверну мить, отже
+ * чотирьох вистачало лише на кімнату до пʼяти (аудит 2026-09-23: пʼятий
+ * одночасний запис губився мовчки). Решта — запас на ходи, що не є відповіддю.
+ *
+ * Верхня межа потрібна не через мережу, а через нескінченний цикл: якщо база
+ * відмовляє з причини, не пов'язаної з номером, спроби мусять закінчитися — і
+ * закінчуються вони помилкою, а не тишею (див. `answer`).
  */
-const APPEND_TRIES = 4;
+const APPEND_TRIES = 16;
 
 /**
  * Спільна вікторина: РАУНД як одиниця, рахунок як чиста функція від журналу.
@@ -79,20 +82,20 @@ export class QuizMatch {
 	/** Скільки ходів журналу вже врахували. */
 	applied = $state(0);
 	/**
-	 * НАЙБІЛЬШИЙ НОМЕР У ЖУРНАЛІ. Наступний вільний — на одиницю більший.
+	 * ЗАЙНЯТІ НОМЕРИ ЖУРНАЛУ, за зростанням. Наступний хід бере ПЕРШУ ДІРКУ.
 	 *
-	 * Окреме число, а не `applied`, і різниця тут не косметична. `applied` — це
-	 * КІЛЬКІСТЬ ходів, і доти номер наступного виводився саме з неї. Поки журнал
-	 * щільний, це те саме; але щойно в ньому зʼявляється дірка, кількість указує на
-	 * зайнятий номер — і вказує на нього НАЗАВЖДИ. Кімната переставала приймати
-	 * ходи взагалі, і виглядало б це як «гра зламалася без причини».
+	 * Спершу номер виводився з кількості ходів (`applied`), і дірка в журналі
+	 * вказувала на зайнятий номер назавжди. Потім — з найбільшого номера плюс
+	 * одиниця, і це відкрило іншу дірку: один хід із `seq: 1e17` (правило бази
+	 * перевіряло лише, що це число) робив «наступний» номер недосяжним — `1e17 + 1`
+	 * у числах із рухомою комою дорівнює `1e17`, і кожна спроба впиралася в той
+	 * самий зайнятий номер. Кімната вікторини переставала приймати ходи (аудит
+	 * 2026-09-23). Перша дірка від чужого далекого номера не залежить зовсім.
 	 *
-	 * Дірки ж стали можливі рівно тому, що за номер тепер борються (`#append`).
-	 * Стану вони не чіпають: `replayQuizLog` перепрогонює журнал цілком, а
-	 * відповіді лежать за (раунд, гравець), тобто порядок між ними нічого не
-	 * означає.
+	 * Порядок ходів стану не міняє: `replayQuizLog` перепрогонює журнал цілком, а
+	 * відповіді лежать за (раунд, гравець).
 	 */
-	#topSeq = $state(0);
+	#seqs: number[] = [];
 	status = $state<'lobby' | 'playing' | 'over'>('lobby');
 	members = $state<Member[]>([]);
 	hostUid = $state('');
@@ -347,6 +350,11 @@ export class QuizMatch {
 	 * прибирання додало б місце, де можна помилитися ключем.
 	 */
 	#pending = $state<Record<number, number>>({});
+	/**
+	 * Хто веде партію — з журналу (`replayQuizLog`). Спершу господар; хід `lead`
+	 * передає роль тому, хто підхопив партію, коли господаря не стало.
+	 */
+	leader = $state('');
 	/** Скільки пільги вже витратив кожен — із журналу. */
 	#graceSpent = $state<Record<string, number>>({});
 	/** Хто поставив паузу в кожному раунді. Знята пауза — знову `undefined`. */
@@ -377,10 +385,10 @@ export class QuizMatch {
 		this.#pending = { ...this.#pending, [this.round]: paused };
 
 		/*
-		 * ПИШЕ ГОСПОДАР, бо число мусить бути одне. Гість нічого не пише: його
+		 * ПИШЕ ВЕДУЧИЙ, бо число мусить бути одне. Решта нічого не пише: їхня
 		 * власна пауза вже врахована `#pending`, а спільну правду принесе хід.
 		 */
-		if (this.hostUid === this.#me) void this.#writeHeld(paused);
+		if (this.leader === this.#me) void this.#writeHeld(paused);
 	}
 
 	/** Скільки часу вже віддано за чекання, разом із поточною паузою. */
@@ -525,12 +533,23 @@ export class QuizMatch {
 			return;
 		}
 
-		for (const member of this.away) {
-			await this.#append({
-				by: this.#me,
-				type: 'held',
-				payload: { round: this.round, ms, uid: member.uid, spent }
-			});
+		/*
+		 * КОЖЕН ВІДСУТНІЙ ПЛАТИТЬ СВОЮ ПІЛЬГУ, а пауза рахується ОДИН раз.
+		 *
+		 * Тут стояв цикл, що повертався на першому ж проході: при двох зниклих
+		 * пільгу списував лише перший, а другий зникав знову й знову задарма (аудит
+		 * 2026-09-23). Тривалість паузи несе лише перший запис — решта йде з `ms: 0`,
+		 * і перепрогін додає до паузи рівно одне число.
+		 */
+		const away = this.away;
+		if (away.length > 0) {
+			for (const [index, member] of away.entries()) {
+				await this.#append({
+					by: this.#me,
+					type: 'held',
+					payload: { round: this.round, ms: index === 0 ? ms : 0, uid: member.uid, spent }
+				});
+			}
 			return;
 		}
 		// Ніхто не був відсутній — пауза все одно записується, пільга ні.
@@ -660,18 +679,28 @@ export class QuizMatch {
 	 */
 	async #append(move: Omit<Move, 'seq'>): Promise<boolean> {
 		for (let attempt = 0; attempt < APPEND_TRIES; attempt += 1) {
-			if (await this.#transport.append({ ...move, seq: this.#topSeq + 1 + attempt })) return true;
+			// `attempt` вільних номерів пропускається: якщо знімок із номером
+			// суперника ще не приїхав, наступна спроба не мусить битися в той самий.
+			if (await this.#transport.append({ ...move, seq: freeSeq(this.#seqs, attempt) })) return true;
 		}
 		return false;
 	}
 
+	/**
+	 * Оголосити свою відповідь.
+	 *
+	 * КИДАЄ, якщо номер так і не вдалося взяти: відповідь, що не лягла в журнал,
+	 * не рахується ніде, і людина мусить про це почути (сторінка показує
+	 * «не вдалося»), а не дивитися на табло без своїх очок.
+	 */
 	async answer(correct: number): Promise<void> {
 		if (this.iAnswered || this.round < 0) return;
-		await this.#append({
+		const saved = await this.#append({
 			by: this.#me,
 			type: 'answer',
 			payload: { round: this.round, correct }
 		});
+		if (!saved) throw new Error('answer-not-saved');
 	}
 
 	/**
@@ -720,7 +749,7 @@ export class QuizMatch {
 		this.games = configToGames(snapshot.info.config);
 		this.pace = paceOf(snapshot.info.config);
 
-		const log = replayQuizLog(snapshot);
+		const log = replayQuizLog(snapshot, { limitOf: this.#log.limitOf });
 
 		this.startedAt = log.startedAt;
 		this.answers = log.answers;
@@ -730,6 +759,7 @@ export class QuizMatch {
 		this.#pausedBy = log.pausedBy;
 		this.#pausedAt = log.pausedAt;
 		this.#pauseUsedAt = log.pauseUsedAt;
+		this.leader = log.leader;
 		/*
 		 * Хід приїхав — оптимістичне число більше не потрібне.
 		 *
@@ -742,7 +772,7 @@ export class QuizMatch {
 			this.#pending = { ...this.#pending, [this.round]: 0 };
 		}
 		this.applied = snapshot.moves.length;
-		// Найбільший номер, а не кількість: причина — у докблоці `#topSeq`.
-		this.#topSeq = snapshot.moves.reduce((top, move) => Math.max(top, move.seq), 0);
+		// Зайняті номери, а не кількість чи найбільший: причина — у докблоці `#seqs`.
+		this.#seqs = snapshot.moves.map((move) => move.seq).sort((a, b) => a - b);
 	}
 }
