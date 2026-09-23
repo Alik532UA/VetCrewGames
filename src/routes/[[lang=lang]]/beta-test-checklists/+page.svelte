@@ -410,14 +410,26 @@
 	/*
 	 * Посилання й кнопка в одному рядку мусять бути однією річчю на дотик:
 	 * 44 px — межа з ACCESSIBILITY-v9, і для тексту в рядку її дає саме
-	 * `min-height` разом із `inline-flex`, а не `padding`.
+	 * `min-height` разом із `inline-flex`, а не `padding`. По ширині — так само
+	 * `min-width`: посилання на корінь підписане однією літерою «/», і без нього
+	 * ціль була 8×44 px, тобто нижче навіть за підлогу WCAG 24×24 (SC 2.5.8).
+	 *
+	 * КОЛІР — ТЕКСТУ НА ПЛАШЦІ, а посилання видно з підкреслення. Тут стояв
+	 * `--color-accent`, і в обох світлих темах посилань майже не було видно:
+	 * #ffb327 на плашці — 1.50:1 у light-green і 1.60:1 у winter при потрібних
+	 * 4.5 (впав деплой). Акцент — колір заливки, а не тексту на світлому тлі;
+	 * пару `--color-text-on-panel` на `.text-panel` заміряно в усіх чотирьох
+	 * темах (`src/contrast.test.ts`).
 	 */
 	.meta__link,
 	.screens__link {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
+		min-width: 44px;
 		min-height: 44px;
-		color: var(--color-accent);
+		color: var(--color-text-on-panel);
+		text-decoration: underline;
 	}
 
 	.meta__link--btn {
@@ -425,8 +437,6 @@
 		padding: 0;
 		background: none;
 		font: inherit;
-		color: var(--color-accent);
-		text-decoration: underline;
 		cursor: pointer;
 	}
 
