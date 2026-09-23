@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatFont } from '$lib/i18n';
+	import { formatFont, formatUserText } from '$lib/i18n';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import { BOARD_MIN_SCORE, type Leader } from '$lib/net/leaders';
@@ -87,7 +87,7 @@
 				>
 					<Avatar avatar={row.avatar} size={28} />
 					<span class="board__who">
-						<span class="board__name">{@html formatFont(row.name)}</span>
+						<span class="board__name">{@html formatUserText(row.name)}</span>
 						<span class="board__handle">@{row.handle}</span>
 					</span>
 					{#if row.country}

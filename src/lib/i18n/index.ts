@@ -82,6 +82,31 @@ export const td = (key: string): string => {
  *   const rules = new Intl.PluralRules(settings.locale);
  *   rules.select(n);   // 'one' | 'few' | 'many' | 'other'
  */
+/** П'ять знаків, які в розмітці щось означають, — і їхні сутності. */
+const HTML_ESCAPES: Record<string, string> = {
+	'&': '&amp;',
+	'<': '&lt;',
+	'>': '&gt;',
+	'"': '&quot;',
+	"'": '&#39;'
+};
+
+/**
+ * ТЕКСТ ВІД ЛЮДИНИ — СПЕРШУ ЕКРАНОВАНИЙ, а тоді відформатований, як і словник.
+ *
+ * `formatFont` нічого не екранує: він бере рядок і вертає той самий рядок із
+ * `span` навколо окремих літер. Для словника це правильно, а імʼя, яке людина
+ * вписала сама, їхало через нього в `{@html}` як розмітка: `name` у таблиці
+ * лідерів правило бази обмежує лише довжиною, тож туди лягало посилання чи
+ * стиль на весь екран (аудит 2026-09-23). Скрипт не виконався б — CSP не пускає
+ * інлайнових обробників, — але розмітка й підробка вигляду проходили.
+ *
+ * Порядок безпечний: заміни `formatFont` торкаються лише літер `і ї є ґ`, а в
+ * сутностях (`&amp;`, `&lt;`) їх немає.
+ */
+export const formatUserText = (text: string): string =>
+	formatFont(text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] ?? char));
+
 export const formatFont = (text: string): string => {
 	if (settings.font !== 'inglobal') return text;
 	// Шрифт inglobal не містить українських літер 'і', 'ї', 'є', 'ґ'.

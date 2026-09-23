@@ -47,6 +47,12 @@ const read = (f: string) => readFileSync(f, 'utf8');
 const SAFE_HTML_SOURCES = ['formatFont(', 'formatPlain(', 'formatPopulation('];
 
 /**
+ * Форматер ТЕКСТУ ВІД ЛЮДИНИ: екранує, перш ніж форматувати, тож усередині нього
+ * дозволене будь-яке джерело — саме для цього він і існує.
+ */
+const ESCAPING_SOURCES = ['formatUserText('];
+
+/**
  * Джерела, яких у виразі під `{@html}` не буває — навіть усередині форматера.
  *
  * **Навіщо друга умова, якщо є список форматерів.** Бо перша умова дивилася
@@ -67,7 +73,7 @@ const SAFE_HTML_SOURCES = ['formatFont(', 'formatPlain(', 'formatPopulation('];
  * напевно, доводить таблиця нижче: половина її випадків мусить проходити,
  * половина — падати.
  */
-const OUTSIDE_DATA = [
+const OUTSIDE_DATA: Array<string | RegExp> = [
 	'page.error',
 	'page.url',
 	'page.params',
@@ -78,7 +84,15 @@ const OUTSIDE_DATA = [
 	'localStorage',
 	'sessionStorage',
 	'.textContent',
-	'.innerHTML'
+	'.innerHTML',
+	/*
+	 * ДАНІ З БАЗИ, які пише сама людина: імена, псевдоніми, профілі. Правило бази
+	 * обмежує їх лише довжиною, тож крізь `formatFont` вони йшли б розміткою.
+	 * Доти цього класу тут не було — і `formatFont(row.name)` у таблиці лідерів
+	 * проходив гейт повністю (аудит 2026-09-23).
+	 */
+	/\b(?:row|member|player|winner|leader|friend|profile)\.(?:name|handle)\b/,
+	/\.hostName\b/
 ];
 
 /** Чи можна віддати цей вираз у `{@html}`. Обидві умови разом. */
@@ -89,8 +103,11 @@ function isSafeHtmlExpression(expression: string): boolean {
 	) {
 		return true;
 	}
+	if (ESCAPING_SOURCES.some((safe) => expression.startsWith(safe))) return true;
 	if (!SAFE_HTML_SOURCES.some((safe) => expression.startsWith(safe))) return false;
-	return !OUTSIDE_DATA.some((source) => expression.includes(source));
+	return !OUTSIDE_DATA.some((source) =>
+		source instanceof RegExp ? source.test(expression) : expression.includes(source)
+	);
 }
 
 /**
@@ -134,8 +151,60 @@ const HTML_EXPRESSION_CASES: Array<{ expression: string; safe: boolean; why: str
 		expression: 'match.actor?.name',
 		safe: false,
 		why: "ім'я гравця з бази — і взагалі повз форматер"
+	},
+	{
+		expression: 'formatFont(row.name)',
+		safe: false,
+		why: 'імʼя з таблиці лідерів пише сам гравець — форматер його не екранує'
+	},
+	{
+		expression: 'formatUserText(row.name)',
+		safe: true,
+		why: 'текст від людини, екранований до форматування'
+	},
+	{
+		expression: 'formatFont(t(player.nameKey))',
+		safe: true,
+		why: 'ключ словника в полі гравця — не імʼя, яке пише людина'
+	},
+	{
+		expression: "formatFont(text('account.handle'))",
+		safe: true,
+		why: 'ключ словника, що лише звучить як поле профілю'
 	}
 ];
+
+/**
+ * ВИРАЗИ `{@html …}` — ЦІЛКОМ І ТІЛЬКИ ВОНИ, збалансованим пошуком.
+ *
+ * Доти вираз вирізала регулярка до першої `}`, за якою йде `<` чи `{`, — і в
+ * `{@html formatFont(t('pairs.won'))}: {winner.name}` захоплювала й чужий
+ * `: {winner.name`. Поки імена з бази не були джерелом, це ні на що не впливало;
+ * щойно стали — гейт почав бачити імʼя там, де воно стоїть ТЕКСТОМ, поза `{@html}`.
+ */
+function htmlExpressions(markup: string): string[] {
+	const out: string[] = [];
+	const OPEN = '{@html';
+	for (let at = markup.indexOf(OPEN); at !== -1; at = markup.indexOf(OPEN, at + 1)) {
+		let depth = 1;
+		let quote = '';
+		let end = at + OPEN.length;
+		for (; end < markup.length && depth > 0; end += 1) {
+			const char = markup[end];
+			if (quote) {
+				if (char === quote && markup[end - 1] !== '\\') quote = '';
+			} else if (char === "'" || char === '"' || char === '`') {
+				quote = char;
+			} else if (char === '{') {
+				depth += 1;
+			} else if (char === '}') {
+				depth -= 1;
+			}
+		}
+		out.push(markup.slice(at + OPEN.length, end - 1).trim());
+	}
+	return out;
+}
 
 describe('безпека', () => {
 	it('перевірка жива: джерела знайдено', () => {
@@ -173,8 +242,7 @@ describe('безпека', () => {
 			let seen = 0;
 			for (const file of sources.filter((f) => f.endsWith('.svelte'))) {
 				const markup = read(file).replace(/<!--[\s\S]*?-->/g, '');
-				for (const match of markup.matchAll(/\{@html\s+([\s\S]*?)\}\s*(?:<|\{|$)/g)) {
-					const expression = match[1].trim();
+				for (const expression of htmlExpressions(markup)) {
 					seen++;
 					if (!isSafeHtmlExpression(expression)) {
 						bad.push(`${file}: {@html ${expression.slice(0, 70)}}`);
