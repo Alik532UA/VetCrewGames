@@ -75,9 +75,11 @@
 
 <fieldset class="seg" {disabled}>
 	<legend class="seg__legend">{@html formatFont(legend)}</legend>
-	<div class="seg__track">
+	<!-- Вигляд смуги й сегментів — глобальний (`.seg-track` у `global.css`): ним тепер
+	     малюється кожен вибір у застосунку, а не лише цей компонент. -->
+	<div class="seg-track">
 		{#each options as option (option.id)}
-			<label class="seg__item" class:seg__item--on={value === option.id}>
+			<label class="seg-item" class:seg-item--on={value === option.id}>
 				<input
 					class="seg__radio"
 					type="radio"
@@ -92,7 +94,9 @@
 					}}
 					data-testid="{scope}-{option.id}-radio"
 				/>
-				<span class="seg__label">{@html formatFont(option.label)}</span>
+				<!-- Кегель і `nowrap` напису — з `.seg-item` (`global.css`): напис їх успадковує,
+				     тож власного класу в нього немає. -->
+				<span>{@html formatFont(option.label)}</span>
 			</label>
 		{/each}
 	</div>
@@ -118,93 +122,34 @@
 	}
 
 	/*
-	 * Спільна панель, у якій живуть сегменти — і в неї СВОЄ тло.
-	 *
-	 * Було `color-mix(… transparent 94%)`, тобто шестивідсотковий натяк. На сторінці
-	 * панель лежить просто на фотографії тла, і напис невибраного сегмента
-	 * опинявся на фотографії — автор сказав про це прямо: «стильно, але немає
-	 * фону, текст погано читається».
-	 *
-	 * Тло взято те саме, що в глобального `.text-panel`, а не вигадане: воно вже
-	 * перевірене гейтом контрасту в усіх чотирьох темах разом із
-	 * `--color-text-on-panel`, яким тут пофарбовані сегменти. Своє значення
-	 * означало б нову пару, якої гейт не бачив.
-	 *
-	 * `backdrop-filter` тут теж не для краси: без розмиття будь-яка фотографія
-	 * просвічує крізь напівпрозоре тло дрібними деталями, і саме вони роблять
-	 * текст нечитабельним.
+	 * СМУГА Й СЕГМЕНТИ — У `global.css` (`.seg-track`, `.seg-item`), і там же історія
+	 * їхнього тла й кольорів. Тут лишилося те, що належить саме радіогрупі.
 	 */
-	/*
-	 * `flex-wrap` — запобіжник, а не розкладка: поки сегменти влазять, смуга одна й
-	 * нічого не міняється. Не влазять — сегмент переходить на другий рядок усередині
-	 * тієї самої смуги, а не вилазить за край панелі. Потрібен він зʼявився разом зі
-	 * шкалою раунду на чотири варіанти: на телефоні 320px їй бракувало 7px.
-	 */
-	.seg__track {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 2px;
-		padding: 4px;
-		border-radius: var(--radius-md);
-		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
-		background: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
-		backdrop-filter: var(--blur-glass);
-	}
 
 	/*
-	 * Фокус видно на ПАНЕЛІ, а не на сегменті: сама радіокнопка прихована, і без
+	 * Фокус видно на СМУЗІ, а не на сегменті: сама радіокнопка прихована, і без
 	 * цього рядка обхід клавіатурою був би невидимим.
 	 */
-	.seg__track:focus-within {
+	.seg-track:focus-within {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 2px;
-	}
-
-	.seg__item {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-xs);
-		border-radius: var(--radius-sm);
-		color: var(--color-text-on-panel);
-		cursor: pointer;
-		/*
-		 * Перехід лише на тому, що справді міняється. `all` тут ловив би ще й
-		 * `outline` фокусу, і рамка приїжджала б із запізненням.
-		 */
-		transition:
-			background-color var(--transition-fast),
-			color var(--transition-fast);
-	}
-
-	@media (hover: hover) {
-		.seg:not(:disabled) .seg__item:hover:not(.seg__item--on) {
-			background: color-mix(in srgb, var(--color-text-on-panel), transparent 88%);
-		}
 	}
 
 	/*
 	 * Вимкнений вибір виглядає ТАК САМО, лише не кличе рукою: гість мусить прочитати
 	 * значення, а приглушення прозорістю опустило б саме його нижче 4.5:1.
+	 *
+	 * Наведення гаситься тут, а не в глобальному правилі: там видно лише `:disabled`
+	 * самої кнопки, а вимкнено тут `fieldset` навколо, і сегмент — це `label`.
 	 */
-	.seg:disabled .seg__item {
+	.seg:disabled .seg-item {
 		cursor: default;
 	}
 
-	/*
-	 * Вибране — суцільний акцент, а не той самий колір під іншою прозорістю.
-	 *
-	 * Той самий висновок, що в меню тем: два стани одного кольору під різною
-	 * прозорістю майже не відрізняються, а `--color-text-on-accent` існує саме для
-	 * пари з акцентом і в кожній темі підібраний під нього окремо.
-	 */
-	.seg__item--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font-weight: var(--font-weight-bold);
+	@media (hover: hover) {
+		.seg:disabled .seg-item:hover:not(.seg-item--on) {
+			background: transparent;
+		}
 	}
 
 	/*
@@ -223,17 +168,5 @@
 		overflow: hidden;
 		clip: rect(0, 0, 0, 0);
 		border: 0;
-	}
-
-	/*
-	 * Напис не переноситься й не обрізається — зменшується.
-	 *
-	 * Те саме рішення, що в `Slovko`, і з тієї самої причини: «Лише друзі» й «Для
-	 * всіх» при фіксованому кеглі розпирали панель на вузькому екрані.
-	 */
-	.seg__label {
-		white-space: nowrap;
-		font-size: clamp(0.7rem, 3vw, var(--font-size-sm));
-		text-align: center;
 	}
 </style>

@@ -60,12 +60,13 @@
 
 	<h3 class="build__title">{@html formatFont(t('reserve.quality'))}</h3>
 
-	<div class="build__row" role="group" aria-label={t('reserve.quality')}>
+	<!-- Якість — СМУГОЮ, як кожен вибір у застосунку (`.seg-track` у `global.css`). -->
+	<div class="seg-track" role="group" aria-label={t('reserve.quality')}>
 		{#each QUALITIES as value (value)}
 			<button
 				type="button"
-				class="chip"
-				class:chip--on={quality === value}
+				class="seg-item"
+				class:seg-item--on={quality === value}
 				aria-pressed={quality === value}
 				onclick={() => (quality = value)}
 				data-testid="reserve-quality-{value}-btn"
@@ -162,7 +163,6 @@
 		opacity: 0.7;
 	}
 
-	.build__row,
 	.card__actions {
 		display: flex;
 		flex-wrap: wrap;
@@ -181,11 +181,6 @@
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
-	}
-
-	.chip--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 
 	.list {

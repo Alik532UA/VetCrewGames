@@ -85,9 +85,9 @@
 
 	<fieldset class="pick__group">
 		<legend class="pick__legend">{@html formatFont(text('account.avatarColors'))}</legend>
-		<div class="pick__row">
+		<div class="seg-track">
 			{#each AVATAR_COLORS as color (color)}
-				<label class="pick__cell" class:pick__cell--on={look.color === color}>
+				<label class="seg-item pick__cell" class:pick__cell--on={look.color === color}>
 					<input
 						class="pick__radio"
 						type="radio"
@@ -112,9 +112,9 @@
 
 	<fieldset class="pick__group">
 		<legend class="pick__legend">{@html formatFont(text('account.avatarIcons'))}</legend>
-		<div class="pick__row">
+		<div class="seg-track">
 			{#each AVATAR_ICONS as icon (icon)}
-				<label class="pick__cell" class:pick__cell--on={look.icon === icon}>
+				<label class="seg-item pick__cell" class:pick__cell--on={look.icon === icon}>
 					<input
 						class="pick__radio"
 						type="radio"
@@ -164,11 +164,10 @@
 		color: var(--color-text-on-panel);
 	}
 
-	.pick__row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-xs);
-	}
+	/*
+	 * Ряди плиток — СМУГОЮ, як кожен вибір у застосунку (`.seg-track`, `.seg-item` у
+	 * `global.css`): одне поле замість чотирнадцяти окремих клітинок на панелі.
+	 */
 
 	/*
 	 * Клітинка — 44px, хоч плитка всередині 30px.
@@ -179,15 +178,10 @@
 	 * великі плитки в два рядки не влізли б у панель.
 	 */
 	.pick__cell {
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		flex: 0 0 44px;
 		width: 44px;
 		height: 44px;
-		border-radius: var(--radius-sm);
-		border: 1px solid transparent;
-		cursor: pointer;
-		transition: background-color var(--transition-fast);
+		padding: 0;
 	}
 
 	/*
@@ -200,14 +194,24 @@
 	}
 
 	/*
-	 * Вибране позначене РАМКОЮ АКЦЕНТУ, а не заливкою.
+	 * Вибране позначене КІЛЬЦЕМ, а не заливкою — і тому тут не `.seg-item--on`, як у
+	 * решти смуг.
 	 *
 	 * Заливка тут неможлива: усередині клітинки лежить плитка свого власного
 	 * кольору, і будь-яке тло за нею сперечалося б із ним — вісім разів у рядку
-	 * кольорів. Рамка ж лишається видимою на кожному з восьми.
+	 * кольорів. Кільце ж лишається видимим на кожному з восьми. `box-shadow`
+	 * усередину, а не рамка: у сегмента смуги рамки немає.
+	 *
+	 * КІЛЬЦЕ — КОЛЬОРОМ ТЕКСТУ, а не акценту. Тут стояла рамка акценту, і заміряно:
+	 * на світлій смузі в light-green і winter вона дає 1.28 і 1.38:1 при потрібних
+	 * 3:1 (WCAG 1.4.11). А в плитки кільце — ЄДИНА ознака вибору: ні напису, ні
+	 * напівжирності в неї немає. Колір тексту панелі перевертається разом із темою
+	 * й тримає контраст у всіх чотирьох — 6.65–10.49:1, заміряно проти смуги й проти
+	 * власної підкладки клітинки; акцентна підкладка лишилася як тепла підказка, а
+	 * не носій стану.
 	 */
 	.pick__cell--on {
-		border-color: var(--color-accent);
+		box-shadow: inset 0 0 0 2px var(--color-text-on-panel);
 		background: color-mix(in srgb, var(--color-accent), transparent 80%);
 	}
 

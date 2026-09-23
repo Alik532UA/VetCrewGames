@@ -65,18 +65,26 @@
 	{/if}
 
 	<nav class="bar" aria-label={t('reserve.title')}>
-		{#each BUTTONS as item (item.id)}
-			<button
-				type="button"
-				class="bar__btn"
-				class:bar__btn--on={panel === item.id}
-				aria-pressed={panel === item.id}
-				onclick={(event) => onPanel(item.id, centerOf(event.currentTarget))}
-				data-testid="reserve-panel-{item.id}-btn"
-			>
-				{@html formatFont(t(item.key))}
-			</button>
-		{/each}
+		<!--
+			ПАНЕЛІ — СМУГОЮ, як кожен вибір у застосунку (`.seg-track` у `global.css`):
+			відкрита одна або жодна, і повторний натиск закриває свою. Кампанія — ПОЗА
+			смугою: це дія, а не панель, і в смузі вона читалася б ще одним варіантом
+			того самого вибору.
+		-->
+		<div class="seg-track bar__panels">
+			{#each BUTTONS as item (item.id)}
+				<button
+					type="button"
+					class="seg-item bar__seg"
+					class:seg-item--on={panel === item.id}
+					aria-pressed={panel === item.id}
+					onclick={(event) => onPanel(item.id, centerOf(event.currentTarget))}
+					data-testid="reserve-panel-{item.id}-btn"
+				>
+					{@html formatFont(t(item.key))}
+				</button>
+			{/each}
+		</div>
 
 		<button
 			type="button"
@@ -142,9 +150,21 @@
 		cursor: pointer;
 	}
 
-	.bar__btn--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
+	/*
+	 * Смуга панелей — з `global.css`, але БЕЗ переносу: рядок один і гортається вбік
+	 * (див. `.bar`), тож і сама смуга мусить лишатися одним рядком. Сегменти — за
+	 * шириною тексту з тієї самої причини, що й кнопка (див. `.bar__btn`), і того
+	 * самого кеглю, що кнопка кампанії поруч: у рядку один кегль, а не два.
+	 */
+	.bar__panels {
+		flex: 0 0 auto;
+		flex-wrap: nowrap;
+	}
+
+	.bar__seg {
+		flex: 0 0 auto;
+		padding: 0 var(--space-md);
+		font-size: inherit;
 	}
 
 	.hint {

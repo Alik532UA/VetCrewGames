@@ -227,13 +227,13 @@
 		ЦЯ вкладка. Без лічильника позицію доводиться тримати в голові або
 		перераховувати очима.
 	-->
-	<nav class="tabs" data-testid="beta-tabs">
+	<nav class="seg-track" data-testid="beta-tabs">
 		{#each BETA_TABS as candidate (candidate.id)}
 			{@const tabProgress = betaProgress.progressOf(candidate)}
 			<button
 				type="button"
-				class="tab"
-				class:tab--active={candidate.id === tabId}
+				class="seg-item"
+				class:seg-item--on={candidate.id === tabId}
 				aria-pressed={candidate.id === tabId}
 				onclick={() => (tabId = candidate.id)}
 				data-testid="beta-tab-{candidate.id}-btn"
@@ -430,33 +430,24 @@
 		cursor: pointer;
 	}
 
-	.tabs {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
+	/*
+	 * ВКЛАДКИ — СМУГОЮ, як кожен вибір у застосунку (`.seg-track`, `.seg-item` у
+	 * `global.css`). Доти це були окремі кнопки з рамкою, де вибрану відрізняла лише
+	 * рамка акценту й напівжирність; тепер вибрана залита, як у кожного вибору.
+	 * Одинадцять сегментів не влазять в один рядок — смуга переносить їх сама.
+	 */
 
-	.tab {
-		min-height: 44px;
-		padding: 0 12px;
-		border: 2px solid var(--color-border);
-		border-radius: 6px;
-		background-color: var(--color-bg-surface);
-		color: var(--color-text);
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.tab--active {
-		border-color: var(--color-accent);
-		font-weight: 700;
-	}
-
-	/* Рівна ширина цифр: лічильники в ряду вкладок не мусять стрибати. */
+	/*
+	 * Рівна ширина цифр: лічильники в ряду вкладок не мусять стрибати.
+	 *
+	 * Приглушено КЕГЛЕМ, а не прозорістю. Тут стояло `opacity: 0.75`, і поки вибрану
+	 * вкладку позначала лише рамка, це минало; на ЗАЛИТОМУ акцентом сегменті те саме
+	 * `0.75` дає лічильнику 4.39:1 при потрібних 4.5. Правило проєкту те саме, що в
+	 * `OnlineGate` і `RoomList`.
+	 */
 	.tab-count {
 		margin-inline-start: 6px;
 		font-size: 0.8rem;
-		opacity: 0.75;
 		font-variant-numeric: tabular-nums;
 	}
 

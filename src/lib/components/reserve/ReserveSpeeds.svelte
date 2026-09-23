@@ -110,7 +110,7 @@
 <svelte:window onkeydown={handleShortcut} />
 
 <div
-	class="speeds"
+	class="speeds seg-track"
 	role="group"
 	aria-label={t('reserve.speed.group')}
 	data-testid="reserve-speed-toolbar"
@@ -118,8 +118,8 @@
 	{#each SPEEDS as value (value)}
 		<button
 			type="button"
-			class="speed"
-			class:speed--on={speed === value}
+			class="seg-item speed"
+			class:seg-item--on={speed === value}
 			aria-pressed={speed === value}
 			aria-label={speedLabel(value)}
 			aria-keyshortcuts={settings.shortcutsEnabled ? KEYS[value].aria : undefined}
@@ -142,38 +142,27 @@
 </div>
 
 <style>
-	/* Керування часом — окрема плашка: це інша річ, ніж показники. */
+	/*
+	 * Керування часом — окрема плашка: це інша річ, ніж показники.
+	 *
+	 * Плашка й сегменти — спільні для кожного вибору (`.seg-track`, `.seg-item` у
+	 * `global.css`). Доти тут стояла власна панель `--color-bg-panel` з окремими
+	 * «картками» `--color-bg-card` усередині: той самий вибір одного з кількох, лише
+	 * намальований набором окремих кнопок. Своє тут — розташування в рядку й будова
+	 * сегмента: позначка швидкості над клавішею.
+	 */
 	.speeds {
-		display: flex;
 		flex: 0 0 auto;
 		/* Праворуч у своєму рядку: смуга панелей ліворуч забирає решту місця. */
 		margin-inline-start: auto;
-		gap: 4px;
-		padding: 4px;
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-panel);
 	}
 
 	.speed {
 		/* 44px — найменша ціль, у яку впевнено влучає палець (ACCESSIBILITY-v8). */
 		min-width: 44px;
-		min-height: 44px;
-		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
 		gap: 1px;
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
 		font-variant-numeric: tabular-nums;
-		cursor: pointer;
-	}
-
-	.speed--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 
 	.speed__mark {

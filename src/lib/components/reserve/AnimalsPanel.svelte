@@ -60,13 +60,18 @@
 		];
 </script>
 
-<div class="tabs" role="tablist">
+<!--
+	Вкладки лишаються ВКЛАДКАМИ (`role="tab"`, `aria-selected`) — вони перемикають,
+	що показано нижче, — а вигляд у них той самий, що в кожного вибору: одна смуга
+	(`.seg-track` у `global.css`), а не три окремі кнопки.
+-->
+<div class="tabs seg-track" role="tablist">
 	{#each TABS as item (item.id)}
 		<button
 			type="button"
 			role="tab"
-			class="chip"
-			class:chip--on={tab === item.id}
+			class="seg-item"
+			class:seg-item--on={tab === item.id}
 			aria-selected={tab === item.id}
 			onclick={() => (tab = item.id)}
 			data-testid="reserve-tab-{item.id}-btn"
@@ -136,26 +141,9 @@
 {/if}
 
 <style>
+	/* Смуга й сегменти — з `global.css`; тут лише відступ до вмісту вкладки. */
 	.tabs {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-sm);
 		margin-bottom: var(--space-md);
-	}
-
-	.chip {
-		min-height: 44px;
-		padding: 0 var(--space-md);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.chip--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 
 	.list {

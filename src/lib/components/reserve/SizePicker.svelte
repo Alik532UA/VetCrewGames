@@ -64,12 +64,17 @@
 </script>
 
 <div class="picker">
-	<div class="picker__row" role="group" aria-label={t('reserve.size')}>
+	<!--
+		Заготовки — СМУГОЮ, як кожен вибір у застосунку (`.seg-track`). Коли число
+		вписане руками й із жодною заготовкою не збігається, не залито нічого — і це
+		правда: вибрано не заготовку.
+	-->
+	<div class="seg-track" role="group" aria-label={t('reserve.size')}>
 		{#each presets as value (value)}
 			<button
 				type="button"
-				class="chip"
-				class:chip--on={size === value}
+				class="seg-item picker__preset"
+				class:seg-item--on={size === value}
 				aria-pressed={size === value}
 				onclick={() => onSize(value)}
 				data-testid="reserve-size-{value}-btn"
@@ -127,27 +132,14 @@
 		gap: var(--space-sm);
 	}
 
-	.picker__row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-sm);
-	}
-
-	.chip {
+	/*
+	 * Сегмент і його стани — з `global.css` (`.seg-item`). Тут лише своє: число рівної
+	 * ширини, щоб «9» і «42» не тягли сегменти різної ширини, і 44px у ширину —
+	 * сегмент з однієї цифри інакше був би вужчим за сенсорну ціль.
+	 */
+	.picker__preset {
 		min-width: 44px;
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
 		font-variant-numeric: tabular-nums;
-		cursor: pointer;
-	}
-
-	.chip--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 
 	.spin {

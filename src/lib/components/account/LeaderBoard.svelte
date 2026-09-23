@@ -44,11 +44,12 @@
 <section class="board text-panel" data-testid="account-board-panel">
 	<h2 class="board__title">{@html formatFont(text('account.boardTitle'))}</h2>
 
-	<div class="board__tabs">
+	<!-- «Усі / Друзі» — СМУГОЮ, як кожен вибір у застосунку (`.seg-track` у `global.css`). -->
+	<div class="seg-track">
 		<button
 			type="button"
-			class="board__tab"
-			class:board__tab--on={tab === 'all'}
+			class="seg-item"
+			class:seg-item--on={tab === 'all'}
 			aria-pressed={tab === 'all'}
 			data-testid="account-board-all-btn"
 			onclick={() => (tab = 'all')}
@@ -57,8 +58,8 @@
 		</button>
 		<button
 			type="button"
-			class="board__tab"
-			class:board__tab--on={tab === 'friends'}
+			class="seg-item"
+			class:seg-item--on={tab === 'friends'}
 			aria-pressed={tab === 'friends'}
 			data-testid="account-board-friends-btn"
 			onclick={() => (tab = 'friends')}
@@ -114,29 +115,11 @@
 		font-size: var(--font-size-md);
 	}
 
-	.board__tabs {
-		display: flex;
-		gap: var(--space-xs);
-	}
-
-	.board__tab {
-		flex: 1;
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: var(--account-control);
-		border: 1px solid var(--account-line, var(--color-border));
-		border-radius: var(--account-field-radius);
-		background: var(--color-bg-card);
-		color: var(--color-text);
-		font: inherit;
-		font-size: var(--font-size-sm);
-		cursor: pointer;
-	}
-
-	.board__tab--on {
-		border-color: var(--color-accent);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-	}
+	/*
+	 * Вкладки «Усі / Друзі» — сегменти спільної смуги (`.seg-track`, `.seg-item` у
+	 * `global.css`). Доти тут стояли дві окремі кнопки з тлом картки й рамкою, тобто
+	 * рівно те, про що автор сказав «окремі кнопки» замість одного вибору.
+	 */
 
 	/* Підказка — кеглем, а не прозорістю: див. `PrivacyPanel`. */
 	.board__hint {

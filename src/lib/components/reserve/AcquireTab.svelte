@@ -55,12 +55,13 @@
 
 <div class="take">
 	<h3 class="take__title">{@html formatFont(t('reserve.pickSpecies'))}</h3>
-	<div class="take__row" role="group" aria-label={t('reserve.pickSpecies')}>
+	<!-- Вид — СМУГОЮ, як кожен вибір у застосунку (`.seg-track` у `global.css`). -->
+	<div class="seg-track" role="group" aria-label={t('reserve.pickSpecies')}>
 		{#each options as species (species.id)}
 			<button
 				type="button"
-				class="chip"
-				class:chip--on={picked?.id === species.id}
+				class="seg-item"
+				class:seg-item--on={picked?.id === species.id}
 				aria-pressed={picked?.id === species.id}
 				onclick={() => (speciesId = species.id)}
 				data-testid="reserve-species-{species.id}-btn"
@@ -105,18 +106,18 @@
 			кожен вольєр несе своє число комфорту, і побачити його треба ДО вибору, а
 			не після. Список показував лише той рядок, на який уже натиснули.
 		-->
-		<div class="take__row" role="group" aria-label={t('reserve.pickEnclosure')}>
+		<div class="seg-track" role="group" aria-label={t('reserve.pickEnclosure')}>
 			{#each fitting as enclosure (enclosure.id)}
 				<button
 					type="button"
-					class="chip chip--home"
-					class:chip--on={home?.id === enclosure.id}
+					class="seg-item take__home"
+					class:seg-item--on={home?.id === enclosure.id}
 					aria-pressed={home?.id === enclosure.id}
 					onclick={() => (enclosureId = enclosure.id)}
 					data-testid="reserve-enclosure-{enclosure.id}-btn"
 				>
 					<b>#{enclosure.id}</b>
-					<span class="chip__meta">
+					<span class="take__meta">
 						{@html formatFont(t('reserve.size'))}
 						{enclosure.size} · ×{picked ? comfortOf(picked, enclosure.size).toFixed(1) : '1'}
 					</span>
@@ -170,26 +171,11 @@
 		opacity: 0.7;
 	}
 
-	.take__row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-sm);
-	}
-
-	.chip {
-		min-height: 44px;
-		padding: 0 var(--space-md);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.chip--on {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-	}
+	/*
+	 * Вид і вольєр — сегменти спільної смуги (`.seg-track`, `.seg-item` у
+	 * `global.css`). Доти це були окремі кнопки з тлом картки, тобто той самий вибір
+	 * одного з кількох, намальований набором окремих речей.
+	 */
 
 	.take__note {
 		margin: 0;
@@ -198,17 +184,14 @@
 		opacity: 0.75;
 	}
 
-	/* Кнопка вольєра ширша за кнопку виду: у неї два рядки — номер і комфорт. */
-	.chip--home {
-		display: flex;
+	/* Сегмент вольєра вищий за сегмент виду: у нього два рядки — номер і комфорт. */
+	.take__home {
 		flex-direction: column;
 		gap: 2px;
-		align-items: flex-start;
 		padding: 4px var(--space-sm);
-		text-align: left;
 	}
 
-	.chip__meta {
+	.take__meta {
 		font-size: var(--font-size-sm);
 		font-variant-numeric: tabular-nums;
 		opacity: 0.8;

@@ -5,11 +5,18 @@
 	/**
 	 * Які ігри попадатимуться в цій кімнаті.
 	 *
-	 * ## Прапорці, а не сегментований вибір
+	 * ## Смуга, але перемикачі, а не радіогрупа
 	 *
 	 * Тут можна вибрати КІЛЬКА, і саме це відрізняє цей елемент від «автостарту»
-	 * чи «хто може зайти»: ті — один варіант із двох, а тут набір. Сегментована
-	 * панель на такому місці брехала б формою: вона показує вибір, а не набір.
+	 * чи «хто може зайти»: ті — один варіант із двох, а тут набір. Тому БУДОВА тут
+	 * своя — кнопки з `aria-pressed`, кожна вмикається окремо, — а не
+	 * `SegmentedChoice` із радіокнопками.
+	 *
+	 * ВИГЛЯД при цьому той самий, що в усіх виборів (`.seg-track`), і це прохання
+	 * автора: «усюди, де є вибір, щоб було не окремі кнопки». Доти тут стояло, що
+	 * смуга «брехала б формою», бо показує вибір, а не набір. Не бреше: смуга каже
+	 * «це одне поле», а скільки в ньому залитих сегментів — один чи кілька — видно
+	 * одразу, як у панелі Ж / К / П текстового редактора.
 	 *
 	 * ## Останню гру вимкнути НЕ МОЖНА
 	 *
@@ -83,20 +90,20 @@
 	Тип `-fieldset` (§ 1.3) — за HTML-семантикою, а не за враженням: це справді
 	`<fieldset>` із `<legend>`, і саме він групує прапорці для скрінрідера.
 
-	Сусіднім коробкам локатор навмисно НЕ дається (§ 1.5): `.games__list` —
-	внутрішня розкладка, `.quiz-lobby__settings` у `QuizLobby` — розкладка двох
+	Сусіднім коробкам локатор навмисно НЕ дається (§ 1.5): `.seg-track` —
+	смуга-розкладка, `.quiz-lobby__settings` у `QuizLobby` — розкладка двох
 	наборів налаштувань, а `.lobby__panel--settings` в `OnlineLobby` існує лише
 	заради тла панелі. Назвати тест, який їх шукатиме, неможливо.
 -->
 <fieldset class="games" data-testid="quiz-games-fieldset">
 	<legend class="games__legend">{@html formatFont(text(legendKey))}</legend>
-	<div class="games__list">
+	<div class="seg-track">
 		{#each ONLINE_GAMES as game (game.id)}
 			{@const on = selected.includes(game.id)}
 			<button
 				type="button"
-				class="games__item"
-				class:games__item--on={on}
+				class="seg-item"
+				class:seg-item--on={on}
 				aria-pressed={on}
 				aria-disabled={!editable || (on && isLast)}
 				title={on && isLast ? text('quiz.gamesLast') : ''}
@@ -124,68 +131,16 @@
 		color: var(--color-text-on-panel);
 	}
 
-	.games__list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-xs);
-		justify-content: center;
-	}
-
 	/*
-	 * Вибране — суцільний акцент, НЕВИБРАНЕ — НІЯКЕ.
+	 * СЕГМЕНТИ — з `global.css` (`.seg-track`, `.seg-item`), як у кожного вибору.
 	 *
-	 * Скарга автора: невибрані ігри читалися як «другий акцентний колір». Так і
-	 * було: тут стояло `--color-bg-card`, а це в темі orange-purple насичений
-	 * фіолетовий (#6b44a3) поруч із оранжевим акцентом (#ff8c00) — два насичені
-	 * кольори поспіль, з яких жоден не означає «не вибрано». Різниця читалася як
-	 * «два різні види вибраного».
+	 * Вибране — суцільний акцент, невибране — прозоре, і це рішення старше за спільний
+	 * клас. Скарга автора: невибрані ігри читалися як «другий акцентний колір» — тут
+	 * стояло `--color-bg-card`, а це в темі orange-purple насичений фіолетовий
+	 * (#6b44a3) поруч із оранжевим акцентом (#ff8c00), тобто «два різні види
+	 * вибраного». Спільний клас тримає те саме рішення для всіх виборів одразу.
 	 *
-	 * Узято рішення `SegmentedChoice` (`.seg__item`), на яке автор і показав:
-	 * невибране — прозоре, тобто тло панелі; вибране — суцільний акцент.
-	 *
-	 * Рамка — ВІД КОЛЬОРУ ТЕКСТУ, а не `--color-border`: у цій темі
-	 * `--color-border` дорівнює `--color-bg-panel` (обидва #4a2e7a), тож на панелі
-	 * такої рамки не видно взагалі, і прозора кнопка втратила б межі. Те саме
-	 * джерело кольору й із тієї самої причини — у `.seg__track`.
+	 * Курсор `aria-disabled` — теж там: клік доходить (інакше не показався б `title`
+	 * про останню гру), але нічого не робить.
 	 */
-	.games__item {
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-md);
-		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
-		border-radius: var(--radius-sm);
-		background: transparent;
-		color: var(--color-text-on-panel);
-		font: inherit;
-		font-size: var(--font-size-sm);
-		cursor: pointer;
-		/*
-		 * Перехід лише на тому, що справді міняється: `all` ловив би ще й `outline`
-		 * фокусу, і рамка приїжджала б із запізненням (те саме в `SegmentedChoice`).
-		 */
-		transition:
-			background-color var(--transition-fast),
-			color var(--transition-fast);
-	}
-
-	@media (hover: hover) {
-		.games__item:hover:not(.games__item--on) {
-			background: color-mix(in srgb, var(--color-text-on-panel), transparent 88%);
-		}
-	}
-
-	.games__item--on {
-		border-color: var(--color-accent);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font-weight: var(--font-weight-bold);
-	}
-
-	/*
-	 * `aria-disabled`, а не `disabled`, тож курсор мусить сказати те саме: клік
-	 * доходить (інакше `title` не показався б), але нічого не робить.
-	 */
-	.games__item[aria-disabled='true'] {
-		cursor: default;
-	}
 </style>
