@@ -43,6 +43,21 @@ const config: LogConfig = {
 const REDACT_KEY = /^(password|token|authorization|cookie|email|phone|secret|apikey|api_key)$/i;
 const REDACTED = '«приховано»';
 
+/*
+ * ЗА ЗНАЧЕННЯМ ТЕЖ, а не лише за назвою ключа.
+ *
+ * Ключ `email` редагувався, але пошта приходить і всередині тексту помилки:
+ * `{ reason: String(error) }` від Firebase Auth несе адресу в повідомленні, і
+ * назва ключа там `reason` (аудит 2026-09-23). Токен сесії (JWT) — з тієї самої
+ * причини: він трапляється в тексті відмови, а не в полі `token`.
+ */
+const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu;
+const JWT = /\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}/g;
+
+function scrubText(text: string): string {
+	return text.replace(EMAIL, '«пошта»').replace(JWT, '«токен»');
+}
+
 function scrub(value: unknown, depth = 0): unknown {
 	// Обмеження глибини — не оптимізація: об'єкт із циклічним посиланням інакше
 	// зациклює логер, а логер не має права зламати те, що логується (§ 1.5).
@@ -56,7 +71,7 @@ function scrub(value: unknown, depth = 0): unknown {
 			])
 		);
 	}
-	return value;
+	return typeof value === 'string' ? scrubText(value) : value;
 }
 
 class LogService {
@@ -100,7 +115,7 @@ class LogService {
 			timestamp: new Date().toISOString(),
 			level,
 			category,
-			message,
+			message: scrubText(message),
 			data: data === undefined ? undefined : scrub(data)
 		};
 
@@ -117,15 +132,21 @@ class LogService {
 
 		if (!config[category]) return;
 
-		const formattedMessage = `[${entry.timestamp}] [${level.toUpperCase()}] [${category.toUpperCase()}] ${message}`;
+		const formattedMessage = `[${entry.timestamp}] [${level.toUpperCase()}] [${category.toUpperCase()}] ${entry.message}`;
 
+		/*
+		 * У КОНСОЛЬ — ТЕ САМЕ ОЧИЩЕНЕ, що й у буфер. Доти туди йшли сирі `data`, тож
+		 * редакція діяла лише на звіт, а консоль (і все, що її читає: розширення
+		 * браузера, трекер помилок) бачила пароль і пошту як є.
+		 */
+		const shown = entry.data ?? '';
 		if (level === 'error') {
-			console.error(formattedMessage, data || '');
+			console.error(formattedMessage, shown);
 		} else if (dev) {
 			if (level === 'warn') {
-				console.warn(formattedMessage, data || '');
+				console.warn(formattedMessage, shown);
 			} else {
-				console.log(formattedMessage, data || '');
+				console.log(formattedMessage, shown);
 			}
 		}
 	}

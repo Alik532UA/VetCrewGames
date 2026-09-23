@@ -104,6 +104,39 @@ describe('logService', () => {
 		});
 	});
 
+	/**
+	 * Пошта й токен приходять і всередині ТЕКСТУ — `{ reason: String(error) }` від
+	 * Firebase Auth, — і там ключ називається `reason`, а не `email`.
+	 *
+	 * Зворотний експеримент: у `scrub` повернути `return value` для рядків —
+	 * червоніє цей випадок.
+	 */
+	it('редагує пошту й токен за значенням, зокрема всередині тексту', () => {
+		logService.error('network', 'sign-in failed for alice@example.com', {
+			reason: 'auth/email-already-in-use: alice@example.com',
+			header: 'Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ1aWQtMTIzIn0.c2lnbmF0dXJlLXZhbHVl'
+		});
+
+		const [entry] = logService.getLogs();
+		expect(entry.message).toBe('sign-in failed for «пошта»');
+		expect(entry.data).toEqual({
+			reason: 'auth/email-already-in-use: «пошта»',
+			header: 'Bearer «токен»'
+		});
+	});
+
+	/**
+	 * Консоль бачить ТЕ САМЕ, що й звіт. Доти туди йшли сирі дані: редакція діяла
+	 * лише на буфер, а консоль отримувала пароль як є.
+	 */
+	it('у консоль іде очищене, а не сире', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		logService.error('app', 'boom', { password: 'hunter2', reason: 'x@y.org' });
+		const [, shown] = spy.mock.calls[0] ?? [];
+		expect(shown).toEqual({ password: '«приховано»', reason: '«пошта»' });
+		spy.mockRestore();
+	});
+
 	it('циклічне посилання не зациклює логер', () => {
 		const cyclic: Record<string, unknown> = { name: 'loop' };
 		cyclic.self = cyclic;
