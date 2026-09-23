@@ -26,6 +26,8 @@ interface Write {
 }
 
 const writes: Write[] = [];
+/** Підписки за шляхом — щоб подати знімок так, як його подає SDK. */
+const watchers = new Map<string, (snapshot: { val: () => unknown }) => void>();
 
 const ref = vi.fn((_db: unknown, path = '') => ({ path }));
 const set = vi.fn(async (node: { path: string }, value: unknown) => {
@@ -51,7 +53,10 @@ vi.mock('firebase/database', () => ({
 	remove,
 	get: vi.fn(),
 	off: vi.fn(),
-	onValue: vi.fn(() => () => {}),
+	onValue: vi.fn((node: { path: string }, handler: (snapshot: { val: () => unknown }) => void) => {
+		watchers.set(node.path, handler);
+		return handler;
+	}),
 	serverTimestamp: () => SERVER_TIME
 }));
 
@@ -109,5 +114,86 @@ describe('rtdbRoom: записи транспорту', () => {
 				value: { seq: 3, by: 'uid-host', type: 'peek', at: SERVER_TIME }
 			}
 		]);
+	});
+});
+
+describe('rtdbRoom: передача ведення й номер ходу', () => {
+	beforeEach(() => {
+		writes.length = 0;
+		watchers.clear();
+	});
+
+	/**
+	 * Правило `lead` читає `info/hostUid` ПІСЛЯ запису, тож господар і хід мусять
+	 * лягти ОДНИМ записом. Двома — хід без господаря база відкинула б, а господар
+	 * без ходу лишив би перепрогін без миті передачі.
+	 */
+	it('ведення підхоплюється одним записом: господар і хід lead разом', async () => {
+		const transport = await roomTransport('42');
+		await transport.takeLead({
+			seq: 7,
+			by: 'uid-guest',
+			type: 'lead',
+			payload: { from: 'uid-host' }
+		});
+
+		expect(writes).toEqual([
+			{
+				op: 'update',
+				path: 'rooms/42',
+				value: {
+					'info/hostUid': 'uid-guest',
+					'moves/000007': {
+						seq: 7,
+						by: 'uid-guest',
+						type: 'lead',
+						payload: { from: 'uid-host' },
+						at: SERVER_TIME
+					}
+				}
+			}
+		]);
+	});
+
+	it('відмова правила — це false, а не помилка', async () => {
+		update.mockRejectedValueOnce(new Error('PERMISSION_DENIED: Permission denied'));
+		const transport = await roomTransport('42');
+		expect(
+			await transport.takeLead({
+				seq: 7,
+				by: 'uid-guest',
+				type: 'lead',
+				payload: { from: 'uid-host' }
+			})
+		).toBe(false);
+	});
+
+	/**
+	 * Номер — З КЛЮЧА, а не з поля: поле в чужих руках може казати що завгодно, і
+	 * порядок на різних пристроях розійшовся б разом із ним.
+	 */
+	it('номер ходу береться з ключа, а не з поля seq', async () => {
+		const transport = await roomTransport('42');
+		const seen: number[][] = [];
+		transport.watch((snapshot) => seen.push(snapshot.moves.map((move) => move.seq)));
+
+		watchers.get('rooms/42')?.({
+			val: () => ({
+				info: {
+					gameId: 'quiz',
+					rulesVersion: 3,
+					seed: 1,
+					status: 'playing',
+					hostUid: 'h',
+					config: {}
+				},
+				moves: {
+					'000002': { seq: 1e20, by: 'x', type: 'goon', at: 1 },
+					'000001': { seq: 5, by: 'y', type: 'goon', at: 1 }
+				}
+			})
+		});
+
+		expect(seen).toEqual([[1, 2]]);
 	});
 });

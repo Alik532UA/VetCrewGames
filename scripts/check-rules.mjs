@@ -119,6 +119,8 @@ if (!RULES_STAMP) throw new Error('у database.rules.json немає блока 
 
 const host = await signIn('господар');
 const guest = await signIn('гість');
+/** Увійшов, знає код, але в кімнату НЕ заходив. */
+const stranger = await signIn('сторонній');
 
 /** Кімната з правильною формою `info`. Одна на весь прогін. */
 const CODE = 'AAAAA';
@@ -1290,6 +1292,169 @@ const CASES = [
 					'info/startedAt': SERVER_TIME,
 					'info/countdownAt': null,
 					moves: null
+				},
+				host.token
+			)
+	},
+	/*
+	 * ХІД — ЛИШЕ ВІД УЧАСНИКА, КЛЮЧ — РІВНО ШІСТЬ ЦИФР, І ПЕРЕДАЧА ВЕДЕННЯ.
+	 *
+	 * Аудит 2026-09-23: хід міг дописати будь-хто з входом, хто знає код; ключ і
+	 * `seq` не мали межі (`seq: 1e20` блокував вікторину); а коли господар закривав
+	 * вкладку, вікторина стояла назавжди. Тепер ведення можна ПІДХОПИТИ — але лише
+	 * коли господаря немає в присутності й лише разом із ходом `lead`.
+	 *
+	 * Журнал після реваншу порожній, тож номери тут починаються з одиниці.
+	 */
+	{
+		// Той самий рядок складу, що пише `createRoom`: без нього господар — не учасник,
+		// і ні хід, ні повернення ведення йому законно не світять.
+		name: 'господар у складі кімнати',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/members/${host.uid}`, { ...member, order: 1 }, host.token)
+	},
+	{
+		name: 'гість на звʼязку',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${guest.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'господар на звʼязку',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${host.uid}`, { at: SERVER_TIME }, host.token)
+	},
+	{
+		name: 'сторонній (не учасник) дописує хід',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves/000001`, move(stranger.uid, 1), stranger.token)
+	},
+	{
+		name: 'хід під ключем не з шести цифр',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves/12`, move(guest.uid, 12), guest.token)
+	},
+	{
+		name: 'хід із номером понад шість цифр',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves/000002`, move(guest.uid, 1e20), guest.token)
+	},
+	{
+		name: 'хід lead без передачі ведення',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000003`,
+				{ seq: 3, by: guest.uid, type: 'lead', at: SERVER_TIME, payload: { from: host.uid } },
+				guest.token
+			)
+	},
+	{
+		name: 'гість забирає ведення, поки господар на звʼязку',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': guest.uid,
+					'moves/000004': {
+						seq: 4,
+						by: guest.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'господар іде зі звʼязку',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${host.uid}`, null, host.token)
+	},
+	{
+		name: 'гість підхоплює ведення, коли господаря немає',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': guest.uid,
+					'moves/000005': {
+						seq: 5,
+						by: guest.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'колишній господар, якого немає на звʼязку, забирає ведення назад',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': host.uid,
+					'moves/000006': {
+						seq: 6,
+						by: host.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: guest.uid }
+					}
+				},
+				host.token
+			)
+	},
+	{
+		name: 'гість іде зі звʼязку',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${guest.uid}`, null, guest.token)
+	},
+	{
+		name: 'господар повертається на звʼязок',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${host.uid}`, { at: SERVER_TIME }, host.token)
+	},
+	{
+		name: 'lead із неправдивим from',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': host.uid,
+					'moves/000007': {
+						seq: 7,
+						by: host.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: stranger.uid }
+					}
+				},
+				host.token
+			)
+	},
+	{
+		// Повертає господаря на місце: випадки нижче зносять кімнату від його імені.
+		name: 'господар підхоплює ведення назад, коли гостя немає',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': host.uid,
+					'moves/000008': {
+						seq: 8,
+						by: host.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: guest.uid }
+					}
 				},
 				host.token
 			)

@@ -380,12 +380,38 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 						uid,
 						...member
 					})),
-					// Порядок ЗАДАЄМО самі: покладатися на порядок ключів обʼєкта означало
-					// б грати партію в різній послідовності на різних пристроях.
-					moves: Object.values(value.moves ?? {}).sort((a, b) => a.seq - b.seq)
+					/*
+					 * Номер — З КЛЮЧА, а не з поля `seq`. Правило бази тримає ключ рівно в
+					 * шести цифрах, а поле — лише в межах тих самих шести, тож єдина правда
+					 * про місце ходу в журналі — ключ: розійтися з ним поле може лише в
+					 * чужих руках, і тоді порядок на різних пристроях розійшовся б теж.
+					 *
+					 * Порядок ЗАДАЄМО самі: покладатися на порядок ключів обʼєкта означало
+					 * б грати партію в різній послідовності на різних пристроях.
+					 */
+					moves: Object.entries(value.moves ?? {})
+						.map(([key, move]) => ({ ...move, seq: Number(key) }))
+						.filter((move) => Number.isInteger(move.seq))
+						.sort((a, b) => a.seq - b.seq)
 				} satisfies RoomSnapshot);
 			});
 			return () => off(room, 'value', handler);
+		},
+
+		async takeLead(move: Move) {
+			try {
+				// Один запис на два шляхи: правило `lead` читає `info/hostUid` ПІСЛЯ
+				// запису, тож окремо хід не пройшов би, а окремо господар — теж.
+				await update(ref(db, `rooms/${code}`), {
+					'info/hostUid': move.by,
+					[`moves/${String(move.seq).padStart(6, '0')}`]: { ...move, at: serverTimestamp() }
+				});
+				return true;
+			} catch (error) {
+				const denied = error instanceof Error && /permission_denied/i.test(error.message ?? '');
+				if (!denied) throw error;
+				return false;
+			}
 		},
 
 		async append(move: Move) {

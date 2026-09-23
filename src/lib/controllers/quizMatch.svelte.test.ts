@@ -1412,3 +1412,65 @@ describe('журнал вікторини витримує чуже й одно�
 		off();
 	});
 });
+
+/**
+ * ПЕРЕДАЧА ВЕДЕННЯ — коли господар зник, партія не стоїть.
+ *
+ * Аудит 2026-09-23: раунди оголошує лише ведучий, і з господарем, що закрив
+ * вкладку, вікторина стояла в усіх назавжди. Тепер присутній гравець підхоплює
+ * ведення — але лише тоді, коли господаря справді немає (правило бази; тут його
+ * тримає `LocalRoom` тими самими умовами).
+ */
+describe('господар зник — ведення підхоплюють', () => {
+	it('гість підхоплює ведення, коли господаря немає, і його раунди рахуються', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		room.setPresent([GUEST]);
+
+		expect(await guest.takeLead(), 'господаря немає — ведення можна взяти').toBe(true);
+		expect(guest.leader).toBe(GUEST);
+		expect(guest.hostUid, 'господар кімнати — теж гість').toBe(GUEST);
+
+		room.tick(60_000);
+		await guest.startRound(1);
+		expect(guest.startedAt[1], 'раунд нового ведучого рахується').toBeDefined();
+		expect(guest.startedAt[0], 'раунд до передачі лишився').toBeDefined();
+		expect(host.startedAt[1], 'і в старого господаря той самий стан').toBe(guest.startedAt[1]);
+		stop();
+	});
+
+	it('поки господар на звʼязку, ведення не віддається', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		room.setPresent([HOST, GUEST]);
+
+		expect(await guest.takeLead()).toBe(false);
+		expect(guest.leader).toBe(HOST);
+		stop();
+	});
+
+	it('раунд колишнього господаря після передачі не рахується', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		room.setPresent([GUEST]);
+		await guest.takeLead();
+
+		room.tick(60_000);
+		// Старий господар повернувся й за звичкою оголошує раунд.
+		await room.transport().append({ seq: 999, by: HOST, type: 'round', payload: { round: 1 } });
+
+		expect(guest.startedAt[1], 'раунд від того, хто вже не веде').toBeUndefined();
+		stop();
+	});
+
+	it('глядач ведення не підхоплює — він у партії не грає', async () => {
+		const watcher: Member = { uid: 'uid-watcher', name: 'Глядач', role: 'spectator', order: 3 };
+		const room = new LocalRoom(info(), [...members(), watcher]);
+		const viewer = new QuizMatch(watcher.uid, room.transport());
+		const off = viewer.listen();
+		room.setPresent([GUEST, watcher.uid]);
+
+		expect(await viewer.takeLead()).toBe(false);
+		off();
+	});
+});

@@ -2,6 +2,7 @@ import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTyp
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
+import { takeLead } from './takeLead';
 import {
 	barLeftMs,
 	deadlineAt,
@@ -726,6 +727,15 @@ export class QuizMatch {
 	/** Хто вже проголосував «граємо далі» в ЦЬОМУ раунді. */
 	get goOn(): string[] {
 		return this.#goOnVotes[this.round] ?? [];
+	}
+
+	/**
+	 * ПІДХОПИТИ ПАРТІЮ, коли господаря немає (`controllers/takeLead.ts`). Умову
+	 * «його немає» перевіряє правило бази, тож тут лише спроба.
+	 */
+	async takeLead(): Promise<boolean> {
+		if (this.leader === this.#me) return true;
+		return takeLead(this.#transport, this.#me, this.hostUid, this.#seqs);
 	}
 
 	/** Оголосити початок раунду. Пише лише господар. */

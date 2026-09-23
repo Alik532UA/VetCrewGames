@@ -36,6 +36,12 @@ export class LocalRoom {
 	#moves: Move[] = [];
 	#listeners = new Set<(snapshot: RoomSnapshot) => void>();
 	/**
+	 * Хто «на звʼязку» — для правила передачі ведення. `null` — присутність не
+	 * задано: тоді господар вважається НА МІСЦІ, і ведення не передається, як і в
+	 * справжній базі, поки його присутність існує.
+	 */
+	#present: Set<string> | null = null;
+	/**
 	 * «Серверний» час кімнати. Не `Date.now()`: правило межі очікування залежить
 	 * від часу, а перевірка, яка залежить від справжнього годинника, або чекає
 	 * реальні секунди, або зеленіє випадково. Тест рухає час `tick()`.
@@ -110,13 +116,16 @@ export class LocalRoom {
 					for (const listener of own) listener(echoed);
 					await Promise.resolve();
 				}
-				if (options.echo && this.#moves.some((existing) => existing.seq === move.seq)) {
-					// Відмова бази: відлуння зникає, і на номері лишається те, що там було.
+				const refused =
+					!this.#allowed(move) || this.#moves.some((existing) => existing.seq === move.seq);
+				if (options.echo && refused) {
+					// Відмова бази (номер зайнятий або хід недозволений): відлуння зникає, і на
+					// номері лишається те, що там було.
 					const truth = this.#snapshot();
 					for (const listener of own) listener(truth);
 					return false;
 				}
-				if (this.#moves.some((existing) => existing.seq === move.seq)) return false;
+				if (refused) return false;
 				// Час ставить «сервер», а не той, хто надіслав хід, — рівно як
 				// правило бази, що вимагає позначку у вікні навколо серверного часу.
 				// Тому підроблений `at` тут так само нічого не означає.
@@ -156,6 +165,30 @@ export class LocalRoom {
 				this.#emit();
 			},
 
+			takeLead: async (move) => {
+				/*
+				 * Ті самі умови, що в правилі бази: автор — гравець і на звʼязку, господаря
+				 * на звʼязку немає, у `from` — саме він, номер вільний. І все одним
+				 * записом: господар і хід разом або ніяк.
+				 */
+				const author = this.#members.find((member) => member.uid === move.by);
+				const hostAway = this.#present !== null && !this.#present.has(this.#info.hostUid);
+				const authorHere = this.#present !== null && this.#present.has(move.by);
+				if (author?.role !== 'player' || !hostAway || !authorHere) return false;
+				if (move.type !== 'lead' || move.payload?.from !== this.#info.hostUid) return false;
+				if (
+					!this.#validSeq(move.seq) ||
+					this.#moves.some((existing) => existing.seq === move.seq)
+				) {
+					return false;
+				}
+				this.#info = { ...this.#info, hostUid: move.by };
+				this.#moves.push({ ...move, at: this.#now });
+				this.#moves.sort((a, b) => a.seq - b.seq);
+				this.#emit();
+				return true;
+			},
+
 			touch: async () => {
 				// Той самий контракт, що в справжній базі: позначка серверного часу.
 				this.#info = { ...this.#info, aliveAt: this.#now };
@@ -185,6 +218,36 @@ export class LocalRoom {
 				this.#emit();
 			}
 		};
+	}
+
+	/**
+	 * Хто на звʼязку — так, наче змінилася присутність. Потрібне лише правилу
+	 * передачі ведення: стану партії присутність не змінює.
+	 */
+	setPresent(uids: readonly string[]): void {
+		this.#present = new Set(uids);
+	}
+
+	/**
+	 * ТЕ САМЕ, ЩО ПЕРЕВІРЯЄ ПРАВИЛО БАЗИ `moves/$seq` — окрім підпису (транспорт тут
+	 * не знає, хто за ним сидить).
+	 *
+	 * Доти підставка приймала будь-що: хід від не-учасника, номер `1e20`, `lead` без
+	 * передачі ведення. Тобто тест проходив там, де жива база відмовить, — підставка,
+	 * лагідніша за оригінал (аудит 2026-09-23).
+	 */
+	#allowed(move: Move): boolean {
+		if (!this.#members.some((member) => member.uid === move.by)) return false;
+		if (!this.#validSeq(move.seq)) return false;
+		if (move.type === 'lead') {
+			return move.by === this.#info.hostUid && move.payload?.from === this.#info.hostUid;
+		}
+		return true;
+	}
+
+	/** Ключ ходу — рівно шість цифр, тобто номер від 1 до 999999. */
+	#validSeq(seq: number): boolean {
+		return Number.isInteger(seq) && seq >= 1 && seq <= 999_999;
 	}
 
 	/** Змінити склад — так, наче хтось зайшов або вийшов. */

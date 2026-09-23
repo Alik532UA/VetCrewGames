@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '76801b4ed737'" }
+      "$v": { ".read": "auth != null && $v === 'dfc23e803290'" }
     },
 
     "rooms": {
@@ -76,7 +76,25 @@
             ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'over')"
           },
           "gameId": { ".validate": "newData.isString() && newData.val().length <= 32" },
-          "hostUid": { ".validate": "newData.isString() && newData.val().length <= 128" },
+          /*
+           * ПЕРЕДАЧА ВЕДЕННЯ — єдиний спосіб, яким `hostUid` міняє НЕ господар.
+           *
+           * Задача (аудит 2026-09-23): у вікторині раунди оголошує лише господар,
+           * тож коли він закрив вкладку, партія стояла в усіх назавжди — на табло з
+           * нулем секунд. Автоматичне просування за часом тут не годиться: вікно
+           * очікування свідомо не має стелі (рішення автора в `utils/awayWait.ts`).
+           *
+           * Тому роль ПЕРЕДАЄТЬСЯ, і вирішує це сервер, а не клієнт: гравець кімнати,
+           * який сам на звʼязку, може назвати господарем СЕБЕ — і лише тоді, коли
+           * нинішнього господаря НЕМАЄ в присутності. Присутність пише кожен лише про
+           * себе, а прибирає сервер (`onDisconnect`), тож підробити «господаря немає»
+           * нічим. Тим самим записом лягає хід `lead` (див. `moves/$seq`): з нього
+           * перепрогін знає, з якої миті рахувати раунди нового ведучого.
+           */
+          "hostUid": {
+            ".write": "auth != null && newData.val() === auth.uid && root.child('rooms').child($code).child('members').child(auth.uid).child('role').val() === 'player' && root.child('presence').child($code).child(auth.uid).exists() && !root.child('presence').child($code).child(data.val()).exists()",
+            ".validate": "newData.isString() && newData.val().length <= 128"
+          },
           "seed": { ".validate": "newData.isNumber()" },
           "rulesVersion": { ".validate": "newData.isNumber()" },
           // Коли кімнату створили — СЕРВЕРНИМ часом. Від цієї позначки рахує
@@ -258,9 +276,27 @@
           "$seq": {
             // ЛИШЕ створити, і лише від себе. Дві властивості за один рядок:
             // журнал не переписати, і хід не підписати чужим uid.
-            ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid",
-            ".validate": "newData.hasChildren(['seq', 'by', 'type', 'at'])",
-            "seq": { ".validate": "newData.isNumber()" },
+            /*
+             * І ЛИШЕ УЧАСНИК КІМНАТИ. Доти писати хід міг будь-хто з входом, хто
+             * знає код (публічні коди лежать у переліку): сміттєвий хід займав номер
+             * справжнього, а пауза чужою рукою спиняла вікторину (аудит 2026-09-23).
+             * Глядач лишається учасником — законність його ходів вирішують правила
+             * гри, і однаково в усіх.
+             */
+            ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid && root.child('rooms').child($code).child('members').child(auth.uid).exists()",
+            /*
+             * КЛЮЧ — РІВНО ШІСТЬ ЦИФР, і номер ходу в межах цих шести. Доти ключ і
+             * `seq` не мали жодної межі: хід із `seq: 1e20` робив «найбільший плюс
+             * один» недосяжним, і кімната вікторини переставала приймати ходи.
+             * Клієнт тепер бере номер ІЗ КЛЮЧА, а не з поля (`net/rtdbRoom.ts`).
+             *
+             * ХІД `lead` законний лише як частина ПЕРЕДАЧІ ВЕДЕННЯ: тим самим записом
+             * `info/hostUid` стає автором ходу (`newData` — стан ПІСЛЯ запису), а в
+             * `from` названо того, хто був господарем ДО нього (`root` — стан до).
+             * Інакше `lead` міг би дописати хто завгодно й забрати собі раунди.
+             */
+            ".validate": "newData.hasChildren(['seq', 'by', 'type', 'at']) && $seq.matches(/^[0-9]{6}$/) && (newData.child('type').val() !== 'lead' || (newData.parent().parent().child('info').child('hostUid').val() === auth.uid && newData.child('payload').child('from').val() === root.child('rooms').child($code).child('info').child('hostUid').val()))",
+            "seq": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999999" },
             "by": { ".validate": "newData.isString() && newData.val().length <= 128" },
             "type": { ".validate": "newData.isString() && newData.val().length <= 16" },
             /*
