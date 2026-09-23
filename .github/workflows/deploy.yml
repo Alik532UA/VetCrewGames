@@ -8,7 +8,6 @@ on:
   pull_request:
     branches: [main]
 
-
 # `cancel-in-progress: false` — не смак, а умова того, що гейти взагалі
 # виконуються (CI-CD-AND-TOOLS-v8 § 1.3, AI-AGENT-PITFALLS-v8 § 1.4). При
 # `true` пуш пачкою комітів скасовує всі проміжні прогони, і прогін, який
@@ -67,36 +66,6 @@ jobs:
         if: ${{ !cancelled() }}
         run: npm run check:i18n
 
-      # Кеш браузерів між прогонами: `npm ci` їх не приносить, а
-      # `playwright install` без кешу качає ~130 МБ щоразу.
-      - name: Cache Playwright browsers
-        if: ${{ !cancelled() }}
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright chromium
-        if: ${{ !cancelled() }}
-        run: npx playwright install --with-deps chromium
-
-      # axe над ЗІБРАНИМ сайтом (ACCESSIBILITY-v8 § 10, GATE-A11Y-AXE). До
-      # 2026-08-23 цього гейта в проєкті не було зовсім — не «зелений», а
-      # відсутній. Конфіг Playwright сам робить `npm run build` і піднімає
-      # прев'ю, тож окремого кроку збірки тут не потрібно.
-      - name: E2E — axe над зібраним сайтом
-        if: ${{ !cancelled() }}
-        run: npm run test:e2e -- --project=chromium
-
-      - name: Upload Playwright report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report
-          path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 7
-
       # Поріг high, а не moderate: після оновлення лишилися лише 4 low, але
       # moderate-поріг довелося б вимкнути на першому ж транзитивному
       # попередженні, а вимкнений гейт гірший за відсутній.
@@ -145,6 +114,69 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: 'build/'
+
+  # E2E — ОКРЕМИМ ДЖОБОМ ПОРУЧ ЗІ ЗБІРКОЮ, а не кроком у ній. Деплой чекає на
+  # обидва, тож неперевіреним не їде нічого (прохання автора 2026-09-23, варіант A).
+  #
+  # Доти E2E стояв кроком посеред `build_site`, і це коштувало двох речей.
+  #
+  # ПЕРША — час до публікації був СУМОЮ, а не максимумом: за замірами прогону
+  # 35566604525 статичні гейти зі збіркою й Lighthouse — ~2,3 хв, E2E із
+  # браузером — ~4 хв, а джоб ішов ~6. Тепер вони йдуть одночасно.
+  #
+  # ДРУГА — червоний E2E ховав решту звіту. `Build` не має умови (це побічний
+  # ефект, а не гейт), тож після впалого E2E не запускалися ні збірка, ні
+  # `check:build`, ні Lighthouse: у прогоні 35895893408 про них не було відомо
+  # нічого, і наступний дефект, якби він був, вилазив би лише наступним пушем.
+  #
+  # Власна збірка Playwright (`webServer` у `playwright.config.ts`) тут більше не
+  # може перезаписати теку для деплою: вона в іншому джобі, на іншому раннері
+  # (CI-CD-AND-TOOLS-v9 § 1.10, `CI-DEPLOY-ORDER`).
+  e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Кеш браузерів між прогонами: `npm ci` їх не приносить, а
+      # `playwright install` без кешу качає ~130 МБ щоразу.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      # axe над ЗІБРАНИМ сайтом (ACCESSIBILITY-v8 § 10, GATE-A11Y-AXE). До
+      # 2026-08-23 цього гейта в проєкті не було зовсім — не «зелений», а
+      # відсутній. Конфіг Playwright сам робить `npm run build` і піднімає
+      # прев'ю, тож окремого кроку збірки тут не потрібно. Умови `!cancelled()`
+      # немає: це перший гейт джоба, до нього ще ніщо не падало.
+      - name: E2E — axe над зібраним сайтом
+        run: npm run test:e2e -- --project=chromium
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # Правила доступу до бази — ЄДИНА межа безпеки спільної гри, і єдина частина
   # проєкту, стан якої не видно ні в `src/`, ні у `build/`: вони виконуються на
@@ -305,11 +337,15 @@ jobs:
   #
   # `workflow` спрацьовує лише на `main` (див. `on:` вище), тож `rules_deploy` тут
   # не буває пропущеним — а пропущена залежність пропустила б і цю роботу.
+  #
+  # `e2e` — у залежностях так само, як `build_site`: винесений в окремий джоб,
+  # він лишився гейтом, а не порадою. Без нього в `needs` сайт виїжджав би, щойно
+  # зібрався, і E2E міряв би вже опубліковане.
   deploy:
     # Публікація лише з гілки деплою: PR отримує всі гейти вище й жодного
     # деплою (CI-CD-AND-TOOLS-v9 § 1.12).
     if: github.ref == 'refs/heads/main'
-    needs: [build_site, rules_deploy]
+    needs: [build_site, e2e, rules_deploy]
     runs-on: ubuntu-latest
     permissions:
       pages: write

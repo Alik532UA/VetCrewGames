@@ -237,10 +237,19 @@ function stepsOf(text: string): { job: string; name: string; body: string }[] {
 		// Коментар на рівні кроку належить НАСТУПНОМУ кроку: інакше рядок
 		// «# playwright install без кешу…» приліплюється до `Audit dependencies`
 		// і виключає його як залежний від браузерів.
+		//
+		// І крок закінчується там, де відступ МЕНШИЙ за його власний: наступний
+		// джоб чи коментар до нього кроку вже не належать. Доти тіло тягнулося до
+		// наступного `- ` на тому самому відступі — тобто крізь межу джоба, — і
+		// коментар над джобом `e2e`, що згадує `check:build`, робив крок
+		// `Upload Artifacts` сусіднього джоба «післязбірковим гейтом без умови».
+		const dedented = (line: string) =>
+			line.trim() !== '' && line.length - line.trimStart().length < indent.length;
 		while (
 			j < lines.length &&
 			!new RegExp(`^${indent}- `).test(lines[j]) &&
-			!new RegExp(`^${indent}#`).test(lines[j])
+			!new RegExp(`^${indent}#`).test(lines[j]) &&
+			!dedented(lines[j])
 		) {
 			j++;
 		}
@@ -337,21 +346,23 @@ describe('гейти не ховають один одного (CI-CD-AND-TOOLS-
 				.filter((s) => BUILD_DEPENDENT.test(s.body))
 				.map((s) => ({ ...s, file }))
 		);
-		const seenBuild = new Set<string>();
+		/*
+		 * ПЕРШИЙ ТЕЖ, на відміну від незалежних гейтів вище. Звільнення «до першого
+		 * ще ніщо не падало» правдиве лише для першого гейта джоба, а перед першим
+		 * післязбірковим завжди стоять незалежні. Доти він був звільнений — і
+		 * зворотний експеримент 2026-09-23 це показав: зняли умову з
+		 * `Check build output`, прогін лишився зеленим, хоча після впалого лінтера
+		 * цей крок тоді тихо пропускається.
+		 */
 		const offenders: string[] = [];
 		for (const gate of afterBuild) {
-			const key = `${gate.file}::${gate.job}`;
-			const isFirst = !seenBuild.has(key);
-			seenBuild.add(key);
-			if (isFirst) continue;
 			if (!/!cancelled\(\)\s*&&\s*steps\.\w+\.outcome\s*==\s*'success'/.test(gate.body)) {
 				offenders.push(`${gate.file} → ${gate.job} → «${gate.name}»`);
 			}
 		}
-		expect(
-			offenders,
-			`післязбірковий гейт без умови на збірку:\n${offenders.join('\n')}`
-		).toEqual([]);
+		expect(offenders, `післязбірковий гейт без умови на збірку:\n${offenders.join('\n')}`).toEqual(
+			[]
+		);
 	});
 
 	it('аудит залежностей лишається строгішим за канон — свідомо', () => {
@@ -535,6 +546,88 @@ describe('порядок кроків деплою (CI-CD-AND-TOOLS-v9 § 1.10)'
 				);
 		}
 		expect(offenders, offenders.join('\n')).toEqual([]);
+	});
+});
+
+/**
+ * ДЕПЛОЙ ЧЕКАЄ НА КОЖЕН ДЖОБ, У ЯКОМУ Є ГЕЙТ — прямо чи через ланцюжок `needs`.
+ *
+ * З 2026-09-23 E2E живе окремим джобом поруч зі збіркою (прохання автора,
+ * варіант A): так час до публікації — максимум двох джобів, а не їх сума, і
+ * червоний E2E більше не ховає збірку й `check:build`. Ціна поділу — новий спосіб
+ * тихо зламатися: джоб, якого немає в `needs` деплою, стає ПОРАДОЮ. Сайт виїжджає,
+ * щойно зібрався, а червоний E2E лишається рядком у списку, на який ніхто не
+ * дивиться (CI-CD-AND-TOOLS-v9 § 1.18.3). Жоден інший гейт цього не бачить:
+ * workflow синтаксично правильний, прогін зелений.
+ *
+ * Розбір — тими самими рівнями відступу, що `stepsOf`: `needs` стоїть на рівні
+ * властивостей джоба.
+ */
+describe('деплой чекає на кожен гейт (CI-CD-AND-TOOLS-v9 § 1.18)', () => {
+	/** Джоб → його `needs` (порожньо, коли залежностей немає). */
+	function needsOf(text: string): Map<string, string[]> {
+		const graph = new Map<string, string[]>();
+		let job: string | null = null;
+		for (const line of text.split('\n')) {
+			const jobLine = /^ {2}([A-Za-z0-9_.-]+):\s*$/.exec(line);
+			if (jobLine) {
+				job = jobLine[1];
+				graph.set(job, []);
+				continue;
+			}
+			const needsLine = /^ {4}needs:\s*(.+)$/.exec(line);
+			if (job && needsLine) {
+				graph.set(
+					job,
+					needsLine[1]
+						.replace(/[[\]]/g, '')
+						.split(',')
+						.map((name) => name.trim())
+						.filter(Boolean)
+				);
+			}
+		}
+		return graph;
+	}
+
+	const GATE = new RegExp(`${INDEPENDENT_GATE.source}|${BUILD_DEPENDENT.source}|check:rules`);
+
+	const deployFiles = files.filter((file) =>
+		/actions\/deploy-pages/.test(readFileSync(`${DIR}/${file}`, 'utf8'))
+	);
+
+	it('розбір живий: workflow із публікацією знайдено', () => {
+		expect(deployFiles.length, 'жодного workflow з `actions/deploy-pages`').toBeGreaterThan(0);
+	});
+
+	it('кожен джоб із гейтом стоїть у ланцюжку `needs` публікації', () => {
+		const offenders: string[] = [];
+		for (const file of deployFiles) {
+			const text = readFileSync(`${DIR}/${file}`, 'utf8');
+			const graph = needsOf(text);
+			const steps = stepsOf(text);
+			const publisher = steps.find((s) => /actions\/deploy-pages/.test(s.body))?.job;
+			expect(publisher, `${file}: крок публікації не знайдено розбором`).toBeTruthy();
+
+			const awaited = new Set<string>();
+			const queue = [...(graph.get(publisher!) ?? [])];
+			while (queue.length > 0) {
+				const next = queue.pop()!;
+				if (awaited.has(next)) continue;
+				awaited.add(next);
+				queue.push(...(graph.get(next) ?? []));
+			}
+
+			const gated = new Set(steps.filter((s) => GATE.test(s.body)).map((s) => s.job));
+			expect(gated.size, `${file}: жодного джоба з гейтом — розбір зламався`).toBeGreaterThan(0);
+			for (const job of gated) {
+				if (job !== publisher && !awaited.has(job)) offenders.push(`${file} → ${job}`);
+			}
+		}
+		expect(
+			offenders,
+			`публікація не чекає на ці джоби — їхні гейти стали порадою:\n${offenders.join('\n')}`
+		).toEqual([]);
 	});
 });
 
