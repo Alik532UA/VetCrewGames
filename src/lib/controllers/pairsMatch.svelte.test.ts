@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LocalRoom } from '$lib/net/localRoom';
-import type { Member, RoomInfo } from '$lib/net/roomTypes';
+import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 
 /*
  * Налаштування підмінені, як і в решті тестів контролерів: справжній синглтон у
@@ -1024,5 +1024,117 @@ describe('суперник відпав', () => {
 			expect(guest.autoStart).toBe(false);
 			stop();
 		});
+	});
+});
+
+/**
+ * ВІДЛУННЯ, ЯКЕ БАЗА ВІДКИНУЛА.
+ *
+ * Firebase показує власний запис ОДРАЗУ, ще до відповіді бази, і прибирає його,
+ * якщо база відмовила. Сценарій, знайдений аудитом 2026-09-23: той, чия черга,
+ * пропав на хвилину й повернувся з тапом; суперник тим часом забрав чергу, і
+ * `yield` зайняв той самий номер. Доти контролер застосовував власне відлуння,
+ * вважав номер застосованим і пропускав чужий `yield` назавжди — два пристрої з
+ * однаковим журналом показували різні дошки до перезавантаження.
+ *
+ * Зворотний експеримент: повернути в `#apply` умову
+ * `snapshot.moves.length < this.applied` замість `#rewritten(snapshot)` — перший
+ * випадок червоніє.
+ */
+describe('відлуння, яке база відкинула', () => {
+	/** Транспорт, у який знімки подає сам тест — рівно в тому порядку, що й SDK. */
+	function scripted() {
+		let deliver: ((snapshot: RoomSnapshot) => void) | null = null;
+		const transport: RoomTransport = {
+			watch: (onSnapshot) => {
+				deliver = onSnapshot;
+				return () => (deliver = null);
+			},
+			append: async () => false,
+			setStatus: async () => {},
+			restart: async () => {},
+			setCountdown: async () => {},
+			setAutoStart: async () => {},
+			setConfig: async () => {},
+			removeMember: async () => {},
+			touch: async () => {}
+		};
+		return { transport, push: (snapshot: RoomSnapshot) => deliver?.(snapshot) };
+	}
+
+	const START = 1_000_000;
+	const snapshotWith = (moves: Move[]): RoomSnapshot => ({
+		info: info({ startedAt: START }),
+		members: members(),
+		moves
+	});
+
+	it('чужий хід на номері мого відкинутого застосовується, і дошки збігаються', () => {
+		const late = START + TURN_LIMIT_MS + 1_000;
+		const mine = scripted();
+		const reference = scripted();
+		const host = new PairsMatch(HOST, mine.transport);
+		const truth = new PairsMatch(HOST, reference.transport);
+		host.listen();
+		truth.listen();
+
+		mine.push(snapshotWith([]));
+		reference.push(snapshotWith([]));
+		expect(host.actor?.id, 'на цьому зерні починає господар').toBe(HOST);
+		const [first] = findPair(host);
+
+		// Відлуння: мій тап на номері 1 — ще до відповіді бази.
+		mine.push(
+			snapshotWith([{ seq: 1, by: HOST, type: 'flip', at: late, payload: { index: first } }])
+		);
+		expect(host.applied, 'відлуння застосоване — саме це й робить SDK').toBe(1);
+		const echoed = board(host);
+
+		// База відмовила: номер 1 устиг зайняти `yield` гостя.
+		const yielded: Move = { seq: 1, by: GUEST, type: 'yield', at: late - 500 };
+		mine.push(snapshotWith([yielded]));
+		reference.push(snapshotWith([yielded]));
+
+		expect(host.actor?.id, 'черга мусить бути в гостя — він її забрав').toBe(GUEST);
+		expect(board(host), 'відлуння мусить зникнути з дошки').not.toBe(echoed);
+		expect(board(host), 'дошка — як у того, хто відлуння не бачив').toBe(board(truth));
+	});
+
+	it('власний хід, що пройшов, дошки не перероздає і не розводить', async () => {
+		const room = new LocalRoom(info(), members());
+		const host = new PairsMatch(HOST, room.transport({ echo: true }));
+		const guest = new PairsMatch(GUEST, room.transport());
+		const stop = [host.listen(), guest.listen()];
+
+		const [a, b] = findPair(host);
+		await host.flip(a);
+		await host.flip(b);
+
+		expect(host.applied).toBe(2);
+		expect(board(host)).toBe(board(guest));
+		stop.forEach((off) => off());
+	});
+
+	it('відкинутий запис через LocalRoom із відлунням теж зводиться до спільної дошки', async () => {
+		const room = new LocalRoom(info(), members());
+		const hostTransport = room.transport();
+		const guestTransport = room.transport({ echo: true });
+		const host = new PairsMatch(HOST, hostTransport);
+		const guest = new PairsMatch(GUEST, guestTransport);
+		const stop = [host.listen(), guest.listen()];
+
+		const [a] = findPair(host);
+		await host.flip(a);
+		// Гість пише на вже зайнятий номер — база відмовить, а відлуння встигне.
+		const accepted = await guestTransport.append({
+			seq: 1,
+			by: GUEST,
+			type: 'flip',
+			payload: { index: a === 0 ? 1 : 0 }
+		});
+
+		expect(accepted, 'номер був зайнятий').toBe(false);
+		expect(board(guest), 'після відкату в гостя та сама дошка').toBe(board(host));
+		stop.forEach((off) => off());
 	});
 });

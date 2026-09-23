@@ -25,6 +25,15 @@ export interface PeekClock {
 	after(ms: number, run: () => void): () => void;
 }
 
+/**
+ * Усе, що робить хід ходом: хто, що, коли й чим. Номер — це позиція в журналі.
+ *
+ * Час входить сюди навмисно: від `at` рахується межа очікування, і хід із
+ * наближеним часом відлуння — не той самий хід, що з серверним.
+ */
+const signature = (move: Move): string =>
+	`${move.by}|${move.type}|${move.at ?? ''}|${JSON.stringify(move.payload ?? null)}`;
+
 const REAL_CLOCK: PeekClock = {
 	now: () => Date.now(),
 	after: (ms, run) => {
@@ -45,6 +54,11 @@ const REAL_CLOCK: PeekClock = {
  * зміна вимагала б потім примиряти два стани — і саме на цьому в MindStep
  * виросли захисні періоди, прапорці «перемогу вже оголошено» й комментарі «FIX:
  * race condition». База відбиває власний запис одразу, тож на око різниці немає.
+ *
+ * **Відлуння власного запису теж нікого не розводить.** Firebase показує мій хід
+ * одразу, до відповіді бази; якщо база його відкинула, на тому самому номері
+ * з'являється чужий. Такий знімок переписує вже застосоване, і дошка роздається
+ * й прокручується заново — див. `#rewritten`.
  *
  * **Незаконний хід нікого не розводить.** Правила застосування однакові в усіх:
  * хід не від того, чия черга, відкидається — отже, відкидається В УСІХ. Тому
@@ -173,6 +187,8 @@ export class PairsMatch {
 	 */
 	#shownAt: number | null = null;
 	#retry: (() => void) | null = null;
+	/** Підписи застосованих ходів: `[seq - 1]` — хід номер `seq`. Див. `#rewritten`. */
+	#appliedSigs: string[] = [];
 	#last: RoomSnapshot | null = null;
 	readonly #clock: PeekClock;
 
@@ -414,7 +430,7 @@ export class PairsMatch {
 			players: this.players.map((player) => player.uid)
 		});
 
-		if (deal !== this.#dealt || snapshot.moves.length < this.applied) {
+		if (deal !== this.#dealt || this.#rewritten(snapshot)) {
 			this.#deal(snapshot);
 		}
 
@@ -432,6 +448,7 @@ export class PairsMatch {
 			if (move.type === 'peek' && this.#holdPeek(move.seq === head)) break;
 			const changed = this.#play(move);
 			this.applied = move.seq;
+			this.#appliedSigs[move.seq - 1] = signature(move);
 			/*
 			 * Відлік черги зсуває лише хід, який СПРАВДІ щось змінив.
 			 *
@@ -449,6 +466,32 @@ export class PairsMatch {
 			 */
 			if (changed) this.#shownAt = this.game.awaitingPeek ? this.#clock.now() : null;
 		}
+	}
+
+	/**
+	 * ЧИ ПЕРЕПИСАНО ВЖЕ ЗАСТОСОВАНЕ — тобто чи дошку треба роздати заново.
+	 *
+	 * Firebase показує СВІЙ запис одразу, ще до відповіді бази. Якщо база його
+	 * відкинула — номер устиг зайняти інший (скажімо, суперник забрав чергу, поки я
+	 * був без звʼязку), — наступний знімок несе на тому самому номері ЧУЖИЙ хід.
+	 * Лічильник `applied` цього не бачив: номер уже «застосований», і чужий хід на
+	 * ньому пропускався назавжди. Два пристрої з однаковим журналом показували різні
+	 * дошки до перезавантаження (аудит 2026-09-23).
+	 *
+	 * Тому застосоване звіряється ПІДПИСОМ. Будь-яка розбіжність — хід змінився,
+	 * зник або сервер поставив інший час — означає «роздати й прокрутити заново»: тим
+	 * самим шляхом, яким входить пізній учасник, тобто вже перевіреним.
+	 */
+	#rewritten(snapshot: RoomSnapshot): boolean {
+		if (this.applied === 0) return false;
+		// Масив за номером, а не `Map`: це тимчасова таблиця на один знімок, а не стан.
+		const bySeq: Array<Move | undefined> = [];
+		for (const move of snapshot.moves) if (move.seq <= this.applied) bySeq[move.seq] = move;
+		for (let seq = 1; seq <= this.applied; seq += 1) {
+			const move = bySeq[seq];
+			if (move === undefined || signature(move) !== this.#appliedSigs[seq - 1]) return true;
+		}
+		return false;
 	}
 
 	/**
@@ -489,6 +532,7 @@ export class PairsMatch {
 			players: players.length > 0 ? players : undefined
 		});
 		this.applied = 0;
+		this.#appliedSigs = [];
 		// Нова роздача — нової пари на екрані ще не було.
 		this.#shownAt = null;
 		this.#retry?.();

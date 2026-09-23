@@ -1,5 +1,23 @@
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } from './roomTypes';
 
+/** Як поводиться транспорт ОДНОГО учасника. */
+export interface LocalTransportOptions {
+	/**
+	 * ЛОКАЛЬНЕ ВІДЛУННЯ ЗАПИСУ — так, як це робить Firebase.
+	 *
+	 * SDK показує власний запис ОДРАЗУ, ще до відповіді бази, а якщо база його
+	 * відкинула — прибирає наступним знімком, і на тому самому номері з'являється
+	 * чужий хід. Без цього режиму підставка була лагіднішою за оригінал: відкинутий
+	 * хід тут просто не з'являвся ніколи, тож контролер, що не вміє розібратися з
+	 * відкатом, проходив би кожен тест (аудит 2026-09-23, «Знайди пару»: пристрій,
+	 * чий хід відкинуто, лишався з чужою дошкою до перезавантаження).
+	 *
+	 * Відлуння бачить лише ЦЕЙ учасник — як і в житті: чужий незакомічений запис
+	 * до інших клієнтів не доходить.
+	 */
+	echo?: boolean;
+}
+
 /**
  * Кімната в памʼяті: той самий транспорт, тільки без мережі.
  *
@@ -47,15 +65,22 @@ export class LocalRoom {
 	 * Кожен отримує свій обʼєкт, але кімната одна — як і в житті. Саме через це
 	 * тест може дати двом адаптерам «різні пристрої» й порівняти, що вони бачать.
 	 */
-	transport(): RoomTransport {
+	transport(options: LocalTransportOptions = {}): RoomTransport {
+		/** Підписки САМЕ ЦЬОГО учасника: відлуння бачить лише він. */
+		const own = new Set<(snapshot: RoomSnapshot) => void>();
+
 		return {
 			watch: (onSnapshot) => {
 				this.#listeners.add(onSnapshot);
+				own.add(onSnapshot);
 				// Перший знімок — одразу: підписка мусить давати ПОТОЧНИЙ стан, а не
 				// лише майбутні зміни. Інакше учасник, який зайшов посеред партії,
 				// сидів би з порожньою дошкою до чийогось наступного ходу.
 				onSnapshot(this.#snapshot());
-				return () => this.#listeners.delete(onSnapshot);
+				return () => {
+					this.#listeners.delete(onSnapshot);
+					own.delete(onSnapshot);
+				};
 			},
 
 			append: async (move) => {
@@ -70,6 +95,26 @@ export class LocalRoom {
 				 */
 				for (const [key, value] of Object.entries(move)) {
 					if (value === undefined) throw new Error(`move.${key} is undefined`);
+				}
+				if (options.echo) {
+					/*
+					 * Свій хід — на місці свого номера, навіть якщо номер уже зайнятий:
+					 * так Firebase накладає незакомічений запис поверх того, що знає.
+					 * Мікрозадача між відлунням і відповіддю — це «мить до бази».
+					 */
+					const echoed = this.#snapshot();
+					echoed.moves = [
+						...echoed.moves.filter((existing) => existing.seq !== move.seq),
+						{ ...move, at: this.#now }
+					].sort((a, b) => a.seq - b.seq);
+					for (const listener of own) listener(echoed);
+					await Promise.resolve();
+				}
+				if (options.echo && this.#moves.some((existing) => existing.seq === move.seq)) {
+					// Відмова бази: відлуння зникає, і на номері лишається те, що там було.
+					const truth = this.#snapshot();
+					for (const listener of own) listener(truth);
+					return false;
 				}
 				if (this.#moves.some((existing) => existing.seq === move.seq)) return false;
 				// Час ставить «сервер», а не той, хто надіслав хід, — рівно як
