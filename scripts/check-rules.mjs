@@ -62,6 +62,28 @@ async function write(path, value, token) {
 }
 
 /**
+ * Запис КІЛЬКОМА ШЛЯХАМИ одним запитом — те саме, що `update()` у SDK.
+ *
+ * Потрібен там, де код пише саме так: реванш міняє зерно, статус, позначку
+ * початку й стирає журнал ОДНИМ записом (`rtdbRoom.restart`). Правила
+ * перевіряються для кожного шляху окремо, а запис лягає цілком або ніяк —
+ * тобто випадок, зібраний з окремих PUT, перевіряв би не той запис.
+ *
+ * @param {string} path
+ * @param {Record<string, unknown>} value ключі — відносні шляхи
+ * @param {string | null} token
+ */
+async function patch(path, value, token) {
+	const auth = token ? `&auth=${token}` : '';
+	const res = await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}${auth}`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(value)
+	});
+	return res.status;
+}
+
+/**
  * Читання ЗАПИТОМ: `orderBy` і `limitToLast` у REST — те саме, що
  * `orderByChild()`/`limitToLast()` у SDK. Потрібне там, де правило вимагає
  * обмеженого читання, а не читання гілки.
@@ -1233,6 +1255,44 @@ const CASES = [
 		name: 'читання кореня бази',
 		allowed: false,
 		run: () => read('', guest.token)
+	},
+	/*
+	 * РЕВАНШ — рівно тим записом, яким його робить `rtdbRoom.restart`: нове зерно,
+	 * `playing`, НОВИЙ `startedAt` серверним часом, без відліку й без журналу.
+	 * `startedAt` тут з 2026-09-23: без нього перший хід реваншу був простроченим
+	 * уже на старті, бо межа очікування рахувалася від першої партії.
+	 */
+	{
+		name: 'гість сам починає реванш',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/seed': 777,
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					moves: null
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'господар починає реванш одним записом',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/seed': 777,
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					moves: null
+				},
+				host.token
+			)
 	},
 	{
 		name: 'не-господар зносить кімнату',

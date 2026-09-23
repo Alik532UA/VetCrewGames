@@ -133,9 +133,10 @@ export class LocalRoom {
 			},
 
 			restart: async (seed) => {
-				// Обидві половини одночасно, як і в справжній базі.
+				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік.
 				this.#moves = [];
-				this.#info = { ...this.#info, seed, status: 'playing', startedAt: this.#now };
+				const { countdownAt: _stale, ...rest } = this.#info;
+				this.#info = { ...rest, seed, status: 'playing', startedAt: this.#now };
 				this.#emit();
 			}
 		};
