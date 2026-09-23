@@ -127,18 +127,43 @@ const FADE_SETTLE_MS = 140;
  * не чекати, поки той стане іншим.
  */
 export async function waitForFadesToSettle(page: Page) {
+	/*
+	 * У ЗНІМКУ — ЩЕ Й АНІМАЦІЇ, ЩО БІЖАТЬ, і спокій вимагає їх нуль.
+	 *
+	 * Svelte 5 проганяє перехід із затримкою ДВОМА анімаціями Web Animations
+	 * підряд: спершу саму затримку (`animate(…, { duration: delay })` у
+	 * `svelte/…/transitions.js`), і лише коли вона скінчилася — сам `fade`.
+	 * `waitForAnimations` дочікується першої й повертається; друга стартує вже після
+	 * нього, а інлайнового `opacity` вона не пише — тобто цей замір її не бачив
+	 * зовсім. Наслідок заміряно двічі: деплой 35895893408 (третя спроба) і
+	 * локальний прогін дали `/account/ h1.game-title` 3.71:1 у light-green. Це рівно
+	 * `#13371b` при прозорості ~0.83 на тлі шапки: заголовок, перекладений
+	 * `claimHeader()` після `onMount`, ще доїжджав свій `in:fade`.
+	 */
 	const snapshot = () =>
-		page.evaluate(() =>
-			Array.from(document.querySelectorAll<HTMLElement>('[style]'))
+		page.evaluate(() => ({
+			running: document
+				.getAnimations()
+				.filter(
+					(animation) =>
+						animation.effect?.getTiming().iterations !== Infinity &&
+						(animation.pending || animation.playState === 'running')
+				).length,
+			opacities: Array.from(document.querySelectorAll<HTMLElement>('[style]'))
 				.map((el, index) => `${index}:${el.style.opacity}`)
 				.join('|')
-		);
+		}));
 
 	let previous = await snapshot();
 	let stable = 0;
 	for (let attempt = 0; attempt < 20; attempt += 1) {
 		await page.waitForTimeout(FADE_SETTLE_MS);
 		const current = await snapshot();
+		if (current.running > 0) {
+			stable = 0;
+			previous = current;
+			continue;
+		}
 		/*
 		 * ДВА однакові виміри підряд, а не один.
 		 *
@@ -150,7 +175,7 @@ export async function waitForFadesToSettle(page: Page) {
 		 * останній кадр згасання, і ловився він лише там, де сторінка домальовується
 		 * довше за інші (з'єднання з базою).
 		 */
-		if (current === previous) {
+		if (current.opacities === previous.opacities) {
 			stable += 1;
 			if (stable >= 2) return;
 			continue;
@@ -165,8 +190,8 @@ export async function waitForFadesToSettle(page: Page) {
 	 * читався б як стан, а був би кадром.
 	 */
 	throw new Error(
-		'прозорості не осіли за 20 вимірів — на сторінці щось згасає безперервно, ' +
-			'і замір кольорів дав би кадр анімації замість стану'
+		'прозорості й анімації не осіли за 20 вимірів — на сторінці щось рухається ' +
+			'безперервно, і замір кольорів дав би кадр анімації замість стану'
 	);
 }
 
