@@ -5,7 +5,7 @@
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import QuizGamePicker from './QuizGamePicker.svelte';
 	import QuizPacePicker from './QuizPacePicker.svelte';
-	import type { QuizPace } from '$lib/config/quizOnline';
+	import type { RoomPace } from '$lib/config/quizOnline';
 
 	/**
 	 * ЛОБІ ВІКТОРИНИ = спільне лобі плюс НАБІР ІГОР цієї кімнати.
@@ -47,8 +47,11 @@
 		onAutoStart: (on: boolean) => void;
 		/** Змінити набір ігор. Мережу знає сторінка — сюда приходить лише виклик. */
 		onGames: (games: string[]) => void;
-		/** Змінити швидкість кімнати: час на раунд і час на перегляд відповіді. */
-		onPace: (round: QuizPace, reveal: QuizPace) => void;
+		/**
+		 * Змінити швидкість кімнати: час на раунд, час на перегляд відповіді й «не
+		 * обмежений» — цілком, бо кімната пише налаштування повністю.
+		 */
+		onPace: (pace: RoomPace) => void;
 	}
 
 	let {
@@ -126,13 +129,7 @@
 		-->
 		<div class="quiz-lobby__settings">
 			<QuizGamePicker {text} selected={match.games} editable={amHost} onchange={onGames} />
-			<QuizPacePicker
-				{text}
-				round={match.roundPace}
-				reveal={match.revealPace}
-				editable={amHost}
-				onpick={onPace}
-			/>
+			<QuizPacePicker {text} pace={match.pace} editable={amHost} onpick={onPace} />
 		</div>
 	{/snippet}
 </OnlineLobby>

@@ -240,6 +240,23 @@ export const quizOnlineTab: BetaTab = {
 			negative: true,
 			coverage: 'manual',
 			testid: 'quiz-games-fieldset'
+		},
+		{
+			/*
+			 * РАУНД БЕЗ МЕЖІ — лише руками й лише на двох пристроях. Автотест доводить,
+			 * що контролер не закінчує такий раунд за часом і що повільна правильна
+			 * відповідь коштує як швидка; не доводить він того, що ДРУГИЙ гравець справді
+			 * бачить питання, доки думає перший, і що табло приходить само, щойно
+			 * відповіли обидва.
+			 */
+			id: 'quizonline_19',
+			category: { uk: 'Раунд', en: 'The round' },
+			text: {
+				uk: 'У лобі виберіть у «Час на раунд» варіант «Не обмежений» і почніть партію. Смуги часу й кнопки «Пауза» мусить НЕ бути — на їхньому місці рядок «Час не обмежений». Раунд мусить чекати, доки відповідять ОБИДВА, скільки б це не тривало, і лише тоді показати табло. За правильну повільну відповідь мусить прийти стільки ж очок, скільки за швидку.',
+				en: 'In the lobby pick “No limit” under “Round time” and start the game. There must be NO time bar and no “Pause” button — a “No time limit” line stands in their place. The round must wait until BOTH have answered, however long it takes, and only then show the scoreboard. A correct slow answer must bring as many points as a fast one.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-round-unlimited-text'
 		}
 	]
 };

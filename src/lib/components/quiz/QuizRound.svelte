@@ -44,7 +44,7 @@
 		 * спрацювати не тоді, коли час вийшов, а тоді, коли хтось відповів.
 		 */
 		limitLeftMs: number;
-		/** Скільки триває раунд, мс. Нуль — раунду немає. */
+		/** Скільки триває раунд, мс. Нуль — раунду немає; `NO_LIMIT` — межі немає. */
 		limitMs: number;
 		/** Чи я вже відповів у цьому раунді. */
 		answered: boolean;
@@ -59,8 +59,19 @@
 	<!--
 		Смуга таймера. Ширина рахується від СЕРВЕРНОГО старту раунду, тож у двох
 		гравців вона в одному місці, а не в кожного своя.
+
+		БЕЗ МЕЖІ СМУГИ НЕМАЄ, а на її місці — рядок. Частка від нескінченності — це
+		`NaN`, тобто смуга стала б або повною, або порожньою, і обидва стани брешуть:
+		повна обіцяє, що час іде, порожня — що він вийшов. Рядок стоїть на тому самому
+		місці, щоб гість, який не бачив налаштувань лобі, знав, чому таймера нема.
 	-->
-	<TimerBar {leftMs} {limitMs} label={text('quiz.roundTimer')} testId="quiz-round-progress" />
+	{#if Number.isFinite(limitMs)}
+		<TimerBar {leftMs} {limitMs} label={text('quiz.roundTimer')} testId="quiz-round-progress" />
+	{:else}
+		<p class="round__free text-panel" data-testid="quiz-round-unlimited-text">
+			{@html formatFont(text('quiz.roundUnlimited'))}
+		</p>
+	{/if}
 
 	<!--
 		ДОШКА ЛИШАЄТЬСЯ ПІСЛЯ ВІДПОВІДІ, і це виправлення, а не смак.
@@ -103,7 +114,8 @@
 
 <style>
 	/* Вигляд смуги переїхав у `ui/TimerBar.svelte`: та сама смуга тепер і в парах. */
-	.round__wait {
+	.round__wait,
+	.round__free {
 		margin: 0;
 		text-align: center;
 		font-size: var(--font-size-sm);

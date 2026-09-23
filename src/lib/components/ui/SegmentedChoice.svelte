@@ -57,12 +57,23 @@
 		 * одна — і вибір в одній знімав би вибір у другій.
 		 */
 		scope: string;
+		/**
+		 * Показати вибір, але не дати його змінити: гість у кімнаті бачить швидкість,
+		 * яку виставив господар, і міняти її не може.
+		 *
+		 * `disabled` на самому `<fieldset>`, а не `aria-disabled` на кожному варіанті,
+		 * і причина в радіокнопках: стрілки перемикають їх НАТИВНО, тобто
+		 * `aria-disabled` лише оголосив би заборону, а вибір однаково змінювався б.
+		 * Вимкнений `fieldset` вимикає все всередині одним атрибутом, а скрінрідер
+		 * читає групу й поточне значення з позначкою «недоступно».
+		 */
+		disabled?: boolean;
 	}
 
-	let { legend, options, value, onchange, scope }: Props = $props();
+	let { legend, options, value, onchange, scope, disabled = false }: Props = $props();
 </script>
 
-<fieldset class="seg">
+<fieldset class="seg" {disabled}>
 	<legend class="seg__legend">{@html formatFont(legend)}</legend>
 	<div class="seg__track">
 		{#each options as option (option.id)}
@@ -73,7 +84,12 @@
 					name={scope}
 					value={option.id}
 					checked={value === option.id}
-					onchange={() => onchange(option.id)}
+					onchange={() => {
+						// Браузер вимкнене поле не активує й так; перевірка — щоб обіцянка
+						// `disabled` трималася компонентом, а не лише браузером: jsdom
+						// у тестах клік пропускає, і вибір гостя там проходив.
+						if (!disabled) onchange(option.id);
+					}}
 					data-testid="{scope}-{option.id}-radio"
 				/>
 				<span class="seg__label">{@html formatFont(option.label)}</span>
@@ -118,8 +134,15 @@
 	 * просвічує крізь напівпрозоре тло дрібними деталями, і саме вони роблять
 	 * текст нечитабельним.
 	 */
+	/*
+	 * `flex-wrap` — запобіжник, а не розкладка: поки сегменти влазять, смуга одна й
+	 * нічого не міняється. Не влазять — сегмент переходить на другий рядок усередині
+	 * тієї самої смуги, а не вилазить за край панелі. Потрібен він зʼявився разом зі
+	 * шкалою раунду на чотири варіанти: на телефоні 320px їй бракувало 7px.
+	 */
 	.seg__track {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 2px;
 		padding: 4px;
 		border-radius: var(--radius-md);
@@ -158,9 +181,17 @@
 	}
 
 	@media (hover: hover) {
-		.seg__item:hover:not(.seg__item--on) {
+		.seg:not(:disabled) .seg__item:hover:not(.seg__item--on) {
 			background: color-mix(in srgb, var(--color-text-on-panel), transparent 88%);
 		}
+	}
+
+	/*
+	 * Вимкнений вибір виглядає ТАК САМО, лише не кличе рукою: гість мусить прочитати
+	 * значення, а приглушення прозорістю опустило б саме його нижче 4.5:1.
+	 */
+	.seg:disabled .seg__item {
+		cursor: default;
 	}
 
 	/*

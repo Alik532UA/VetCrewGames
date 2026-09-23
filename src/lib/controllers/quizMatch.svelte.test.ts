@@ -13,9 +13,16 @@ import {
 	distinctProgramme,
 	roomFitsGames,
 	DEFAULT_PACE,
+	DEFAULT_ROOM_PACE,
+	FAST_POINTS,
+	NO_LIMIT,
+	PACE_ROUND_KEY,
 	REVEAL_PACE,
 	ROUND_PACE,
-	quizConfig
+	paceOf,
+	quizConfig,
+	roundLimitFor,
+	type RoomPace
 } from '$lib/config/quizOnline';
 
 /*
@@ -204,11 +211,17 @@ describe('зміна набору ігор', () => {
  * `REVEAL_PACE` прибрано з `settleMs`; у `setPace` набір ігор замінено на порожній.
  * Усі чотири зроблені.
  */
+/** Швидкість кімнати з двох шкал. */
+const pace = (round: RoomPace['round'], reveal: RoomPace['reveal']): RoomPace => ({
+	round,
+	reveal
+});
+
 describe('швидкість кімнати', () => {
 	it('типова швидкість — стандартна, і саме її має кімната без налаштування', () => {
 		const { host, stop } = table(info({ config: {} }));
-		expect(host.roundPace).toBe('normal');
-		expect(host.revealPace).toBe('normal');
+		expect(host.pace).toEqual({ round: 'normal', reveal: 'normal' });
+		expect(host.pace).toEqual(DEFAULT_ROOM_PACE);
 		expect(DEFAULT_PACE, 'типова швидкість перестала бути стандартною').toBe('normal');
 		stop();
 	});
@@ -223,10 +236,10 @@ describe('швидкість кімнати', () => {
 	it('швидкості вибираються НЕЗАЛЕЖНО одна від одної', async () => {
 		const { host, stop } = table(info({ status: 'lobby' }));
 
-		await host.setPace('slow', 'fast');
+		await host.setPace(pace('slow', 'fast'));
 
-		expect(host.roundPace).toBe('slow');
-		expect(host.revealPace, 'один рівень на дві потреби').toBe('fast');
+		expect(host.pace.round).toBe('slow');
+		expect(host.pace.reveal, 'один рівень на дві потреби').toBe('fast');
 		stop();
 	});
 
@@ -234,14 +247,16 @@ describe('швидкість кімнати', () => {
 		const { room, host, stop } = table(info({ status: 'lobby' }));
 		const fast = { round: 0, settle: 0, reveal: 0 };
 
-		await host.setPace('fast', 'fast');
+		await host.setPace(pace('fast', 'fast'));
 		await room.transport().setStatus('playing');
 		await host.startRound(0);
 		fast.round = host.limitMs;
 		fast.settle = host.settleMs;
 		fast.reveal = host.revealMs;
 
-		const slow = table(info({ status: 'lobby', config: quizConfig(host.games, 'slow', 'slow') }));
+		const slow = table(
+			info({ status: 'lobby', config: quizConfig(host.games, pace('slow', 'slow')) })
+		);
 		await slow.room.transport().setStatus('playing');
 		await slow.host.startRound(0);
 
@@ -257,12 +272,13 @@ describe('швидкість кімнати', () => {
 		const two = [ONLINE_GAMES[0].id, ONLINE_GAMES[1].id];
 
 		await host.setGames(two);
-		await host.setPace('slow', 'slow');
+		await host.setPace(pace('unlimited', 'slow'));
 		expect(host.games, 'швидкість стерла вибір ігор').toEqual(two);
 
 		await host.setGames(two);
-		expect(host.roundPace, 'набір ігор стер швидкість').toBe('slow');
-		expect(host.revealPace).toBe('slow');
+		// «Не обмежений» — теж швидкість, і стерти її набір ігор так само не мусить:
+		// раунд без межі тихо ставав би раундом із межею від самого перемикання ігор.
+		expect(host.pace, 'набір ігор стер швидкість').toEqual(pace('unlimited', 'slow'));
 		stop();
 	});
 
@@ -273,14 +289,129 @@ describe('швидкість кімнати', () => {
 		 * партії перерахувала б уже зіграні раунди — минуле змінилося б заднім числом.
 		 */
 		const lobby = table(info({ status: 'lobby' }));
-		await lobby.guest.setPace('slow', 'slow');
-		expect(lobby.host.roundPace).toBe('normal');
+		await lobby.guest.setPace(pace('unlimited', 'slow'));
+		expect(lobby.host.pace).toEqual(DEFAULT_ROOM_PACE);
 		lobby.stop();
 
 		const playing = table(info({ status: 'playing' }));
-		await playing.host.setPace('slow', 'slow');
-		expect(playing.host.roundPace, 'минуле змінилося заднім числом').toBe('normal');
+		await playing.host.setPace(pace('unlimited', 'slow'));
+		expect(playing.host.pace, 'минуле змінилося заднім числом').toEqual(DEFAULT_ROOM_PACE);
 		playing.stop();
+	});
+});
+
+/**
+ * РАУНД БЕЗ МЕЖІ ЧАСУ: «поки кожен не відповість».
+ *
+ * Прохання автора — «не обмежений (поки кожен не зробить хід)» четвертою опцією
+ * шкали «Час на раунд», а власні секунди ігор при цьому лишаються для трьох
+ * рівнів.
+ *
+ * Межу представляє нескінченність (`NO_LIMIT`), і вона йде крізь ту саму
+ * арифметику часу, що й звичайна межа. Тому перевіряється не «гілка для
+ * безмежного», а ТІ САМІ відповіді контролера — фаза, наступний раунд, очки —
+ * тільки на кімнаті з цією шкалою.
+ *
+ * Зворотні експерименти (AI-AGENT-PITFALLS-v8 § 1.1), кожен червонить свій пункт:
+ * `paceOf` читає раунд за `QUIZ_PACES` замість `ROUND_PACES`; `roundLimitFor` не
+ * знає «без межі»; `setGames` пише типову швидкість (червоніє тест вище — «набір
+ * ігор стер швидкість»).
+ */
+describe('раунд без межі часу', () => {
+	const ALL = ONLINE_GAMES.map((game) => game.id);
+	/** Кімната без межі на раунд і зі стандартним розбором, у партії. */
+	const free = () => table(info({ config: quizConfig(ALL, pace('unlimited', 'normal')) }));
+
+	/** Година — більше за будь-яку межу будь-якої гри за будь-якої швидкості. */
+	const HOUR = 60 * 60 * 1000;
+
+	it('«не обмежений» їде в налаштування числом і читається назад', () => {
+		const config = quizConfig(ALL, pace('unlimited', 'fast'));
+		expect(config[PACE_ROUND_KEY], 'конверт бази приймає лише числа').toBe(3);
+		expect(paceOf(config)).toEqual(pace('unlimited', 'fast'));
+	});
+
+	it('рівні пишуться тими самими числами, що й до появи «без межі»', () => {
+		// Тому `unlimited` стоїть ОСТАННІМ: зсув індексів переписав би значення
+		// кожної кімнати, створеної раніше.
+		expect(quizConfig(ALL, pace('fast', 'fast'))[PACE_ROUND_KEY]).toBe(0);
+		expect(quizConfig(ALL, pace('normal', 'fast'))[PACE_ROUND_KEY]).toBe(1);
+		expect(quizConfig(ALL, pace('slow', 'fast'))[PACE_ROUND_KEY]).toBe(2);
+	});
+
+	it('невідоме число — стандартна, тобто з межею', () => {
+		// Число з новішої збірки чи чужих рук не мусить тихо знімати межу.
+		expect(paceOf({}).round).toBe('normal');
+		expect(paceOf({ [PACE_ROUND_KEY]: 7 }).round).toBe('normal');
+	});
+
+	it('межі немає за будь-якого множника розробки; у рівнів вона своя', () => {
+		for (const game of ONLINE_GAMES) {
+			expect(roundLimitFor(game.id, pace('unlimited', 'fast'), 5)).toBe(NO_LIMIT);
+			expect(roundLimitFor(game.id, pace('slow', 'normal'), 5)).toBe(
+				roundLimitMs(game.id, 5 * ROUND_PACE.slow)
+			);
+		}
+	});
+
+	it('поки відповіли не всі — раунд триває, скільки б часу не минуло', async () => {
+		const { host, stop } = free();
+		await host.startRound(0);
+		const start = host.startedAt[0];
+
+		expect(host.limitMs).toBe(NO_LIMIT);
+		expect(host.phase(start + HOUR), 'раунд скінчився за часом, якого немає').toBe('round');
+		expect(host.nextDue(start + HOUR), 'господар оголосив би наступний раунд').toBe(false);
+		// Автопідтвердження спрацьовує за 300 мс до межі — тут воно не мусить НІКОЛИ.
+		expect(host.limitLeftMs(start + HOUR)).toBeGreaterThan(HOUR);
+		stop();
+	});
+
+	it('відповіли всі — табло приходить само, як і в раунді з межею', async () => {
+		const { room, host, guest, stop } = free();
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(HOUR);
+		await guest.answer(1);
+
+		const last = host.answers[0][GUEST].at;
+		expect(host.phase(last + host.settleMs - 1)).toBe('round');
+		expect(host.phase(last + host.settleMs)).toBe('reveal');
+		expect(host.nextDue(last + host.settleMs + host.revealMs)).toBe(true);
+		stop();
+	});
+
+	it('очки — лише за правильність: повільна правильна коштує як швидка', async () => {
+		const { room, host, guest, stop } = free();
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(HOUR);
+		await guest.answer(1);
+
+		expect(host.scores[HOST]).toBe(FAST_POINTS);
+		expect(host.scores[GUEST], 'смуги немає, а очки тануть').toBe(FAST_POINTS);
+		expect(host.roundGains[GUEST]).toBe(FAST_POINTS);
+		stop();
+	});
+
+	it('частка й хибна відповідь рахуються як завжди', () => {
+		expect(answerPoints(HOUR, 0, NO_LIMIT, 2 / 3)).toBe(67);
+		expect(answerPoints(HOUR, 0, NO_LIMIT, 0)).toBe(0);
+		expect(answerPoints(0, 0, NO_LIMIT, 1)).toBe(FAST_POINTS);
+	});
+
+	it('того, кого немає онлайн, раунд без межі не чекає', async () => {
+		// Інакше «поки кожен не відповість» означало б «поки не повернеться той, хто
+		// закрив вкладку», тобто, можливо, ніколи.
+		const { host, stop } = free();
+		host.present = [HOST];
+		await host.startRound(0);
+		await host.answer(1);
+
+		const last = host.answers[0][HOST].at;
+		expect(host.everyoneAnswered).toBe(true);
+		expect(host.phase(last + host.settleMs)).toBe('reveal');
+		stop();
 	});
 });
 

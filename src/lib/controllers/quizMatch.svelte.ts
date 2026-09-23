@@ -16,20 +16,18 @@ import {
 	type QuizLogView
 } from '$lib/utils/quizScore';
 import {
+	DEFAULT_ROOM_PACE,
 	PAUSE_COOLDOWN_MS,
 	RESUME_BONUS_MS,
 	REVEAL_MS,
 	SETTLE_MS,
 	REVEAL_PACE,
-	ROUND_PACE,
-	PACE_REVEAL_KEY,
-	PACE_ROUND_KEY,
 	configToGames,
-	paceFromConfig,
+	paceOf,
 	quizConfig,
-	type QuizPace,
 	quizProgramme,
-	roundLimitMs,
+	roundLimitFor,
+	type RoomPace,
 	type QuizStep
 } from '$lib/config/quizOnline';
 
@@ -117,18 +115,22 @@ export class QuizMatch {
 	/** Які ігри вибрані в кімнаті. Порожньо — ще не приїхав знімок. */
 	games = $state<string[]>([]);
 	/**
-	 * ШВИДКОСТІ КІМНАТИ: часу на раунд і часу на перегляд відповіді.
+	 * ШВИДКІСТЬ КІМНАТИ: час на раунд (зокрема «не обмежений») і час на перегляд
+	 * відповіді.
 	 *
-	 * Дві незалежні, бо це різні потреби: часу на раунд бракує тому, хто читає
+	 * Шкали дві незалежні, бо це різні потреби: часу на раунд бракує тому, хто читає
 	 * повільно, а часу на розбір — тому, хто хоче зрозуміти, чому відповідь така.
 	 * Один рівень на партію змушував би платити другим за перший.
 	 *
-	 * Читаються з `info.config` як числа: конверт кімнати нічого, крім чисел, у
+	 * Одним обʼєктом, а не полями поруч: `setConfig` пише налаштування цілком, і
+	 * кожне окреме поле — ще одне, яке кожен виклик мусить не забути (див.
+	 * `RoomPace`). `raw`, бо обʼєкт не правлять — його замінює кожен знімок.
+	 *
+	 * Читається з `info.config` як числа: конверт кімнати нічого, крім чисел, у
 	 * налаштуваннях не приймає, і саме тому нова редакція ПРАВИЛ бази для цього не
 	 * потрібна — а редакція правил ГРИ потрібна, див. `RULES_VERSION` на сторінці.
 	 */
-	roundPace = $state<QuizPace>('normal');
-	revealPace = $state<QuizPace>('normal');
+	pace = $state.raw<RoomPace>(DEFAULT_ROOM_PACE);
 
 	/**
 	 * ХТО ЗАРАЗ ОНЛАЙН — приходить іззовні, з `presence`.
@@ -194,10 +196,10 @@ export class QuizMatch {
 		return this.programme[this.round] ?? null;
 	}
 
-	/** Скільки триває поточний раунд. Нуль — раунду немає. */
+	/** Скільки триває поточний раунд. Нуль — раунду немає; `NO_LIMIT` — межі немає. */
 	get limitMs(): number {
 		const step = this.step;
-		return step === null ? 0 : roundLimitMs(step.game, this.#factor * ROUND_PACE[this.roundPace]);
+		return step === null ? 0 : roundLimitFor(step.game, this.pace, this.#factor);
 	}
 
 	/** Хто вже відповів у поточному раунді. Саме ФАКТ, без правильності. */
@@ -266,9 +268,7 @@ export class QuizMatch {
 			players: this.players.map((player) => player.uid),
 			limitOf: (round) => {
 				const game = this.programme[round]?.game;
-				return game === undefined
-					? undefined
-					: roundLimitMs(game, this.#factor * ROUND_PACE[this.roundPace]);
+				return game === undefined ? undefined : roundLimitFor(game, this.pace, this.#factor);
 			}
 		};
 	}
@@ -286,7 +286,6 @@ export class QuizMatch {
 	get myRounds(): RoundStatus[] {
 		return roundOutcomes(this.answers, this.round, this.#me);
 	}
-
 
 	/**
 	 * ЧАС, ВІДДАНИЙ ЗА ЧЕКАННЯ: пауза плюс надбавка після неї.
@@ -447,7 +446,7 @@ export class QuizMatch {
 	 */
 	async setGames(games: readonly string[]): Promise<void> {
 		if (this.hostUid !== this.#me || this.status !== 'lobby') return;
-		await this.#transport.setConfig(quizConfig(games, this.roundPace, this.revealPace));
+		await this.#transport.setConfig(quizConfig(games, this.pace));
 	}
 
 	/**
@@ -459,11 +458,12 @@ export class QuizMatch {
 	 * зіграні раунди за новою межею — тобто минуле змінилося б заднім числом.
 	 *
 	 * Набір ігор передається разом, бо `setConfig` пише обʼєкт повністю: інакше
-	 * зміна швидкості стерла б вибір ігор.
+	 * зміна швидкості стерла б вибір ігор. Швидкість приходить ЦІЛКОМ, обома
+	 * шкалами, — з тієї самої причини.
 	 */
-	async setPace(round: QuizPace, reveal: QuizPace): Promise<void> {
+	async setPace(pace: RoomPace): Promise<void> {
 		if (this.hostUid !== this.#me || this.status !== 'lobby') return;
-		await this.#transport.setConfig(quizConfig(this.games, round, reveal));
+		await this.#transport.setConfig(quizConfig(this.games, pace));
 	}
 
 	/** Поставити паузу. Дозволено будь-кому, хто в партії. */
@@ -574,12 +574,12 @@ export class QuizMatch {
 	 * Множник той самий, що в табла, — інакше налаштування міняло б половину.
 	 */
 	get settleMs(): number {
-		return SETTLE_MS * REVEAL_PACE[this.revealPace];
+		return SETTLE_MS * REVEAL_PACE[this.pace.reveal];
 	}
 
 	/** Скільки видно табло між раундами. Той самий множник. */
 	get revealMs(): number {
-		return REVEAL_MS * REVEAL_PACE[this.revealPace];
+		return REVEAL_MS * REVEAL_PACE[this.pace.reveal];
 	}
 
 	/** Коли поточний раунд мусить закінчитися, за серверним часом. */
@@ -718,8 +718,7 @@ export class QuizMatch {
 		this.nextCode = snapshot.info.nextCode ?? null;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.games = configToGames(snapshot.info.config);
-		this.roundPace = paceFromConfig(snapshot.info.config, PACE_ROUND_KEY);
-		this.revealPace = paceFromConfig(snapshot.info.config, PACE_REVEAL_KEY);
+		this.pace = paceOf(snapshot.info.config);
 
 		const log = replayQuizLog(snapshot);
 
