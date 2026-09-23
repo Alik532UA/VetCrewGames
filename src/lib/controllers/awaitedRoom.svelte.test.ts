@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OwnRoom } from '$lib/net/ownRooms';
 import type { RoomInfo } from '$lib/net/roomTypes';
 
@@ -65,6 +65,14 @@ vi.mock('$lib/net/ownRooms', () => ({ listOwnRooms, forgetOwnRoom }));
 vi.mock('$lib/net/presence', () => ({ othersPresent, watchOthers }));
 vi.mock('$lib/net/rtdbRoom', () => ({ leaveRoom, watchRoomInfo }));
 
+/**
+ * Чи браузер уже мав сесію бази. Типово — так: решта випадків про кімнати, а не про
+ * цей гейт, і кожен із них починається з того, що під'єднання колись було.
+ */
+let session = true;
+const rememberSession = vi.fn();
+vi.mock('$lib/services/accountFlag', () => ({ hasSession: () => session, rememberSession }));
+
 const { AwaitedRoom } = await import('./awaitedRoom.svelte');
 
 /** Чекання «поки підписки встановляться»: усередині лише мікрозадачі. */
@@ -75,6 +83,8 @@ const stopped = (calls: { mock: { calls: string[][] } }) => calls.mock.calls.fla
 
 describe('AwaitedRoom', () => {
 	beforeEach(() => {
+		session = true;
+		rememberSession.mockReset();
 		listOwnRooms.mockReset().mockResolvedValue([]);
 		forgetOwnRoom.mockReset().mockResolvedValue(undefined);
 		othersPresent.mockReset().mockResolvedValue(1);
@@ -85,6 +95,72 @@ describe('AwaitedRoom', () => {
 		watchOthers.mockClear();
 		onInfoOf.clear();
 		onOthersOf.clear();
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	/**
+	 * БРАУЗЕР, ЯКИЙ НІКОЛИ НЕ ПІД'ЄДНУВАВСЯ, БАЗИ НЕ ПИТАЄ ЗОВСІМ.
+	 *
+	 * Доти питав: смуга на вході в застосунок кликала `listOwnRooms()`, а та —
+	 * анонімну реєстрацію. Кожен відвідувач соло-гри ставав анонімним користувачем
+	 * Firebase, і повний e2e вичерпав ліміт реєстрацій з однієї IP
+	 * (`TOO_MANY_ATTEMPTS_TRY_LATER`).
+	 *
+	 * Зворотний експеримент: прибрати гейт `mayHaveRooms()` у `refresh()` — перший
+	 * випадок червоніє, бо `listOwnRooms` викликано.
+	 */
+	describe('браузер без сесії бази', () => {
+		it('не питає базу зовсім', async () => {
+			session = false;
+			vi.stubGlobal('indexedDB', undefined);
+			listOwnRooms.mockResolvedValue([own()]);
+			const awaited = new AwaitedRoom();
+			await awaited.refresh(NOW);
+
+			expect(listOwnRooms, 'питання про кімнати — це анонімна реєстрація').not.toHaveBeenCalled();
+			expect(awaited.room).toBeNull();
+		});
+
+		it('сесію, відкриту до появи позначки, знаходить за базою Firebase в IndexedDB', async () => {
+			session = false;
+			vi.stubGlobal('indexedDB', {
+				databases: async () => [{ name: 'firebaseLocalStorageDb', version: 1 }]
+			});
+			listOwnRooms.mockResolvedValue([own()]);
+			const awaited = new AwaitedRoom();
+			await awaited.refresh(NOW);
+
+			expect(listOwnRooms).toHaveBeenCalledTimes(1);
+			expect(rememberSession, 'далі відповідь має бути без IndexedDB').toHaveBeenCalledTimes(1);
+			expect(awaited.room?.code).toBe('AAAAA');
+		});
+
+		it('чужа база в IndexedDB сесією не вважається', async () => {
+			session = false;
+			vi.stubGlobal('indexedDB', {
+				databases: async () => [{ name: 'something-else', version: 1 }]
+			});
+			const awaited = new AwaitedRoom();
+			await awaited.refresh(NOW);
+
+			expect(listOwnRooms).not.toHaveBeenCalled();
+			expect(rememberSession).not.toHaveBeenCalled();
+		});
+
+		it('відмова переліку баз — це «ні», а не зламана сторінка', async () => {
+			session = false;
+			vi.stubGlobal('indexedDB', {
+				databases: async () => {
+					throw new Error('SecurityError');
+				}
+			});
+			const awaited = new AwaitedRoom();
+			await expect(awaited.refresh(NOW)).resolves.toBeUndefined();
+			expect(listOwnRooms).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('кого показувати', () => {

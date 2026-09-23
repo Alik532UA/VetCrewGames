@@ -1,6 +1,7 @@
 import type { Auth } from 'firebase/auth';
 import type { Database } from 'firebase/database';
 import { logService } from '$lib/services/logService.svelte';
+import { rememberSession } from '$lib/services/accountFlag';
 
 /**
  * Під'єднання до Firebase — ліниве, анонімне й одне на застосунок.
@@ -101,6 +102,9 @@ async function open(): Promise<Connection> {
 	await auth.authStateReady();
 
 	const user = auth.currentUser ?? (await authModule.signInAnonymously(auth)).user;
+	// Відтепер у браузера можуть бути свої кімнати — і лише відтепер про них
+	// варто питати на вході в застосунок (`services/accountFlag.ts`).
+	rememberSession();
 	logService.info(
 		'network',
 		user.isAnonymous ? 'anonymous session ready' : 'account session ready'

@@ -53,6 +53,9 @@ vi.mock('firebase/app', () => ({ initializeApp: vi.fn(() => ({ name: 'test' })) 
 vi.mock('firebase/auth', () => ({ getAuth: vi.fn(() => auth), signInAnonymously }));
 vi.mock('firebase/database', () => ({ getDatabase: vi.fn(() => ({ ref: vi.fn() })) }));
 
+const rememberSession = vi.fn();
+vi.mock('$lib/services/accountFlag', () => ({ rememberSession }));
+
 const { connect, forget } = await import('./firebase');
 
 describe('під’єднання до Firebase', () => {
@@ -62,6 +65,7 @@ describe('під’єднання до Firebase', () => {
 		restored = null;
 		signInAnonymously.mockClear();
 		authStateReady.mockClear();
+		rememberSession.mockClear();
 	});
 
 	it('перевірка жива: без сесії входимо анонімно', async () => {
@@ -105,6 +109,22 @@ describe('під’єднання до Firebase', () => {
 		await connect();
 
 		expect(order).toEqual(['ready', 'anon']);
+	});
+
+	/**
+	 * Під'єднання ставить позначку сесії: лише після неї кореневий layout питає про
+	 * свої кімнати (`controllers/awaitedRoom`). Без позначки браузер, що грав онлайн,
+	 * більше ніколи не побачив би смуги «вас чекають у грі».
+	 */
+	it('після входу браузер позначено як такий, що мав сесію', async () => {
+		await connect();
+		expect(rememberSession).toHaveBeenCalledTimes(1);
+	});
+
+	it('відновлений акаунт теж позначає сесію', async () => {
+		restored = account;
+		await connect();
+		expect(rememberSession).toHaveBeenCalledTimes(1);
 	});
 
 	/** Два виклики — одне під’єднання: інакше в кімнаті було б два `uid`. */

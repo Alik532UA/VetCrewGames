@@ -1,6 +1,36 @@
 import { logService } from '$lib/services/logService.svelte';
+import { hasSession, rememberSession } from '$lib/services/accountFlag';
 import type { OwnRoom } from '$lib/net/ownRooms';
 import { roomsAwaitingMe } from '$lib/utils/awaitedRoom';
+
+/** Так Firebase Auth називає свою базу в IndexedDB — там лежить відновлювана сесія. */
+const FIREBASE_AUTH_STORE = 'firebaseLocalStorageDb';
+
+/**
+ * ЧИ МОЖУТЬ У ЦЬОГО БРАУЗЕРА ВЗАГАЛІ БУТИ КІМНАТИ — без жодного запиту в мережу.
+ *
+ * Браузер, що ніколи не під'єднувався до бази, кімнат не має, і питати про них
+ * означало б зареєструвати його анонімом (`services/accountFlag.ts`, чому це
+ * дорого). Позначку ставить `connect()`; ЗАПАСНА ознака — база сесії Firebase в
+ * IndexedDB: вона є в кожного, хто грав онлайн ДО появи позначки, і без неї такий
+ * гравець один раз не побачив би смуги над кімнатою, де на нього чекають.
+ *
+ * `indexedDB.databases()` є не всюди — де нема, відповідь «ні»: це довідка, і
+ * наступне ж під'єднання поставить позначку.
+ */
+async function mayHaveRooms(): Promise<boolean> {
+	if (hasSession()) return true;
+	if (typeof globalThis.indexedDB?.databases !== 'function') return false;
+	try {
+		const stores = await globalThis.indexedDB.databases();
+		if (!stores.some((store) => store.name === FIREBASE_AUTH_STORE)) return false;
+		rememberSession();
+		return true;
+	} catch (error) {
+		logService.warn('network', 'session store not listed', { reason: String(error) });
+		return false;
+	}
+}
 
 /**
  * «ВАС ЧЕКАЮТЬ У ГРІ» — стан сповіщення, яке живе поза сторінкою партії.
@@ -61,6 +91,13 @@ export class AwaitedRoom {
 		// застаріле й писати вже не має права.
 		const epoch = ++this.#epoch;
 		try {
+			if (!(await mayHaveRooms())) {
+				if (epoch !== this.#epoch) return;
+				this.room = null;
+				this.#drop();
+				return;
+			}
+
 			const [{ listOwnRooms }, { othersPresent }] = await Promise.all([
 				import('$lib/net/ownRooms'),
 				import('$lib/net/presence')
