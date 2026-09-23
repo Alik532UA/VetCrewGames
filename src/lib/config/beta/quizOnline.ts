@@ -142,8 +142,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_10',
 			category: { uk: 'Раунд', en: 'The round' },
 			text: {
-				uk: 'Дайте таймеру дійти до кінця, не відповідаючи. Посередині мусить зʼявитися табло з усіма гравцями, рахунок мусить НАБИРАТИСЯ (а не стрибнути), простояти чотири секунди й піти САМ — натискати нічого не треба. Смуга гравців зверху на цей час зникає.',
-				en: 'Let the timer run out without answering. A scoreboard with every player must appear in the middle, the score must COUNT UP (not jump), stand for four seconds and move on BY ITSELF — nothing needs pressing. The player strip on top disappears for that time.'
+				uk: 'Дайте таймеру дійти до кінця, не відповідаючи. Посередині мусить зʼявитися табло з усіма гравцями — не вужче за 70% ширини вікна на будь-якому екрані, зокрема у вікні на пів екрана. Якщо потягнути край вікна, табло росте чи меншає плавно, без стрибка з «картки» у «велике». Рахунок мусить НАБИРАТИСЯ (а не стрибнути), а табло — простояти стільки, скільки задано в «Час на перегляд відповіді», і піти САМЕ — натискати нічого не треба. Смуга гравців зверху на цей час зникає.',
+				en: 'Let the timer run out without answering. A scoreboard with every player must appear in the middle — at least 70% of the window width on any screen, a half-screen window included. Dragging the window edge makes it grow or shrink smoothly, with no jump from a “card” to a “big board”. The score must COUNT UP (not jump), and the scoreboard must stay as long as “Answer review time” says and move on BY ITSELF — nothing needs pressing. The player strip on top disappears for that time.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-reveal-panel'

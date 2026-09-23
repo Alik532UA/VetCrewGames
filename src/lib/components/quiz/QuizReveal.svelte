@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
+	import { innerWidth } from 'svelte/reactivity/window';
 	import { flip } from 'svelte/animate';
 	import { cubicOut } from 'svelte/easing';
 	import { rankedByPhase } from '$lib/utils/revealOrder';
@@ -119,6 +120,32 @@
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 
 	/**
+	 * ТАБЛО РОСТЕ З ВІКНОМ — ПЛАВНО, без жодного порогу.
+	 *
+	 * Скарга автора: табло «займає 10% вікна», а мусить «70%». Так і було: картка на
+	 * 26rem посеред екрана, тобто щойно дошка на весь стовпець — і раптом маленька
+	 * плашка з двома рядками.
+	 *
+	 * Перша редакція виправлення мала ПОРІГ (великий варіант від 1024×576), і автор
+	 * одразу побачив, що з ним не так: «різкий перехід… тільки на весь екран стало
+	 * більше, а пів екрану досі маленьке табло, зроби розумно — для будь-якого екрана
+	 * не менше 70% ширини». Поріг ділить вікна на два класи й карає тих, хто біля
+	 * межі: вікно на пів екрана лишалося карткою.
+	 *
+	 * Тому МІРА ОДНА — кегель рядка, пропорційний ширині вікна (1.95%, від 16 до
+	 * 36px), — і з неї виводиться все: заголовок, висота рядків, відступи, аватар,
+	 * прапор, смуга часу, смужки раундів. Табло на пів екрана — це те саме табло на
+	 * весь екран, лише зменшене, а не інший екран. Ширину табло задають стилі
+	 * (не менше 70% вікна), а цю міру — скрипт: аватар і прапор приймають розмір
+	 * ЧИСЛОМ у пропсі (lucide малює значок у пікселях), і CSS інлайнового розміру
+	 * аватара не перекриє. Одне число на стилі й значки — інакше вони розійшлися б.
+	 *
+	 * Від ширини вікна, а не від місця компонента, бо прохання — саме про вікно, а
+	 * табло й так займає більшу частину вікна: міряти себе самого воно не може.
+	 */
+	const unit = $derived(Math.min(36, Math.max(16, (innerWidth.current ?? 0) * 0.0195)));
+
+	/**
 	 * Частка набору: 0 — рахунок до раунду, 1 — після нього.
 	 *
 	 * Одне число на всіх, а не окреме на гравця: рядки мусять доїхати разом,
@@ -186,7 +213,7 @@
 	const ranked = $derived(rankedByPhase(players, scores, gains, moved));
 </script>
 
-<section class="reveal text-panel" data-testid="quiz-reveal-panel">
+<section class="reveal text-panel" style:--reveal-unit="{unit}px" data-testid="quiz-reveal-panel">
 	<!--
 		СКІЛЬКИ ЧЕКАТИ НАСТУПНИЙ РАУНД — тією самою смугою, що в раунді.
 
@@ -219,8 +246,8 @@
 				-->
 				<b class="reveal__place">{place + 1}</b>
 				<span class="reveal__who">
-					<Flag code={player.country} />
-					<Avatar avatar={player.avatar} />
+					<Flag code={player.country} height={Math.max(14, Math.round(unit * 0.75))} />
+					<Avatar avatar={player.avatar} size={Math.max(22, Math.round(unit * 1.2))} />
 					{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}
 				</span>
 				<!--
@@ -264,43 +291,79 @@
 	 * Табло стоїть у потоці на місці дошки — тобто посередині того, на що людина
 	 * щойно дивилася. Накладка поверх (`position: fixed`) тут була б гіршою: під
 	 * нею лишалася б видима дошка з питанням, на яке вже відповіли.
+	 *
+	 * УСІ РОЗМІРИ — ВІД ОДНІЄЇ МІРИ `--u` (кегель рядка, див. `unit` у скрипті), і
+	 * жодного медіазапиту чи порогу: на кожній ширині вікна табло те саме, лише
+	 * іншого масштабу. Порога тут уже раз не стало — автор назвав стрибок між
+	 * «карткою» й «великим табло» різким.
+	 *
+	 * ШИРИНА — НЕ МЕНШЕ 70% ВІКНА, на будь-якому екрані (прохання автора дослівне).
+	 * `max(70vw, …)`: на телефоні 70% — це 262px, і тоді табло бере стовпець, але не
+	 * більше 26rem, як і доти. Нижча стеля вкрала б імена: при 22rem на 375px імʼя
+	 * «Рожевий Фламінго» з позначкою «ви» втрачало б 14px. Ширше за стовпець партії
+	 * воно стати МОЖЕ: стеля стовпця 1100px, а 70% вікна на 1920 — це 1344. Сторінка
+	 * центрує табло (`align-items: center`), тож і вихід за стовпець симетричний, —
+	 * тому по горизонталі тут немає `margin: auto`: авто-поля в поперечній осі при
+	 * нестачі місця обнуляються з лівого боку, і табло поїхало б праворуч.
+	 *
+	 * ВИСОТА — `min(70svh, 45vw)`: на широкому вікні це 70% висоти, на вузькому —
+	 * пропорційно ширині, тобто табло лишається тієї самої форми, а не стає
+	 * вузьким стовпом на пів телефона.
 	 */
 	.reveal {
+		--u: var(--reveal-unit, 16px);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--space-sm);
-		width: 100%;
-		max-width: 26rem;
-		margin: auto;
-		padding: var(--space-md);
+		gap: calc(var(--u) * 0.6);
+		width: max(70vw, min(100%, 26rem));
+		min-height: min(70svh, 45vw);
+		margin-block: auto;
+		padding: calc(var(--u) * 0.9) var(--u);
 		box-sizing: border-box;
 	}
 
 	.reveal__title {
 		margin: 0;
-		font-size: var(--font-size-md);
+		font-size: calc(var(--u) * 1.15);
 		text-align: center;
 		color: var(--color-text-muted);
 	}
 
 	.reveal__list {
 		display: flex;
+		flex: 1;
 		flex-direction: column;
-		gap: var(--space-xs);
+		justify-content: center;
+		gap: calc(var(--u) * 0.35);
 		width: 100%;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
+	/*
+	 * Рядки ДІЛЯТЬ висоту табла між собою (`flex: 1 1 0`), але в межах: не нижчі за
+	 * 2.4 кегля й не вищі за 3.3. Двоє гравців отримують великі рядки, дванадцятеро
+	 * — вужчі; рядок не стає вищим за те, що око ще читає як один рядок таблиці, а
+	 * якщо гравців більше, ніж влазить, табло росте, а не тисне рядки.
+	 *
+	 * ПОЛЯ Й ПРОМІЖКИ на найменшому кеглі (16px) — ті самі, що були до масштабу:
+	 * 8px між частинами рядка, 16px поля табла. Щедріші (0.75 і 1.25 кегля) забрали б
+	 * на 320px в імені 42px із 172, і «Сміливий Бобер» втрачав би останню літеру. На
+	 * телефоні місце — це імʼя, а не повітря довкола нього.
+	 */
 	.reveal__row {
 		display: flex;
+		flex: 1 1 0;
 		align-items: center;
-		gap: var(--space-sm);
-		padding: var(--space-xs);
-		border-radius: var(--radius-sm);
+		gap: calc(var(--u) * 0.5);
+		min-height: calc(var(--u) * 2.4);
+		max-height: calc(var(--u) * 3.3);
+		padding: 0 calc(var(--u) * 0.5);
+		border-radius: var(--radius-md);
 		background: color-mix(in srgb, var(--color-text), transparent 94%);
+		font-size: var(--u);
 	}
 
 	.reveal__place {
@@ -314,7 +377,7 @@
 	.reveal__who {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(var(--u) * 0.35);
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
@@ -322,12 +385,23 @@
 		white-space: nowrap;
 	}
 
-	/* Приріст — акцентом, бо це єдине нове число на екрані. */
+	/*
+	 * Приріст — акцентом, бо це єдине нове число на екрані.
+	 *
+	 * АКЦЕНТ — ТЛОМ ПІЛЮЛІ, а не кольором тексту. Тут стояло `color: var(--color-accent)`,
+	 * і в обох світлих темах «+100» був майже невидимий: #ffb327 на тлі плашки
+	 * (`--color-bg-surface`) — 1.46:1 у light-green і 1.58:1 у winter при потрібних
+	 * 4.5. Пара акцент + `--color-text-on-accent` — та сама, що в кнопки «Почати
+	 * партію» й у відліку лобі, тобто вже підібрана в кожній темі (7.38–7.82:1).
+	 */
 	.reveal__gain {
 		flex-shrink: 0;
+		padding: 0 0.3em;
+		border-radius: var(--radius-sm);
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
 		font-variant-numeric: tabular-nums;
 		font-weight: var(--font-weight-bold);
-		color: var(--color-accent);
 	}
 
 	/*
@@ -339,5 +413,31 @@
 		min-width: 4ch;
 		font-variant-numeric: tabular-nums;
 		text-align: right;
+	}
+
+	/*
+	 * Смуга часу, смужки раундів і позначка «ви» — інші компоненти, тож
+	 * дотягуємося `:global` лише всередині цього табло, і тією самою мірою. Сталі
+	 * 6px смуги, 300px смужок і 10px позначки на табло завширшки з тисячу пікселів
+	 * губилися б, а питання «скільки ще чекати», «скільки ще раундів» і «де я»
+	 * лишалися б без видимої відповіді. Нижні межі — ті самі сталі числа: на
+	 * телефоні табло таке саме, як було.
+	 */
+	.reveal :global(.timer) {
+		height: max(6px, calc(var(--u) / 3));
+	}
+
+	.reveal :global(.segments-wrapper) {
+		max-width: max(300px, calc(var(--u) * 22));
+		gap: max(4px, calc(var(--u) / 5));
+	}
+
+	.reveal :global(.segment) {
+		height: max(6px, calc(var(--u) / 3));
+		border-radius: max(3px, calc(var(--u) / 6));
+	}
+
+	.reveal :global(.badge) {
+		font-size: max(10px, calc(var(--u) / 2));
 	}
 </style>
