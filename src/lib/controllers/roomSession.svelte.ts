@@ -292,27 +292,50 @@ export class RoomSession<M extends RoomMatch> {
 		this.lobby.unpublish();
 	}
 
-	/** Дія господаря — один каркас: перевірка, транспорт, помилка вголос. */
-	async hostAction(run: (transport: RoomTransport) => Promise<void>): Promise<void> {
-		if (!this.match || !this.amHost || !this.#transport) return;
+	/**
+	 * АВТОМАТИКА ГОСПОДАРЯ ЗУПИНЕНА: відлік і автостарт більше не пишуть самі.
+	 *
+	 * Вмикається першою ж відмовою бази на автоматичному записі. Доти відмова
+	 * ставала вічним колом: SDK показує свій запис одразу й відкочує його, коли база
+	 * відмовила, — і політика «відлік вийшов → почати» бачила відкат як новий стан і
+	 * стартувала знову, із частотою мережі, ~12 разів на секунду (звіт автора
+	 * 2026-09-24: новий клієнт проти правил, що ще не знали `info/roster`). Людина
+	 * й далі може натиснути «Почати» — і почує відмову, але сама база більше не
+	 * засипається однаковими записами.
+	 */
+	autoHalted = $state(false);
+
+	/** Дія господаря — один каркас: перевірка, транспорт, помилка вголос. `false` — не вийшло. */
+	async hostAction(run: (transport: RoomTransport) => Promise<void>): Promise<boolean> {
+		if (!this.match || !this.amHost || !this.#transport) return false;
 		try {
 			await run(this.#transport);
+			return true;
 		} catch (error) {
 			toast.error('pairs.actionFailed');
-			logService.error('network', 'host action denied', { reason: String(error) });
+			logService.error('network', 'host action denied', { code: this.code, reason: String(error) });
+			return false;
 		}
 	}
 
-	async start(): Promise<void> {
+	/** Почати партію. `auto` — це відлік, а не людина: невдача зупиняє автоматику. */
+	async start(auto = false): Promise<void> {
 		const match = this.match;
-		if (!match) return;
+		if (!match || (auto && this.autoHalted)) return;
 		if (match.players.length < this.game.minPlayers) {
 			toast.info('pairs.needPlayers');
 			return;
 		}
 		// Склад заморожується тим самим записом, що й старт (`RoomInfo.roster`).
-		await this.hostAction((transport) => transport.setStatus('playing', rosterOf(match.members)));
-		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача.
+		const started = await this.hostAction((transport) =>
+			transport.setStatus('playing', rosterOf(match.members))
+		);
+		if (!started) {
+			if (auto) this.autoHalted = true;
+			return;
+		}
+		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача. Лише
+		// ПІСЛЯ старту: доти невдалий старт ще й прибирав кімнату з переліку.
 		this.lobby.unpublish();
 	}
 

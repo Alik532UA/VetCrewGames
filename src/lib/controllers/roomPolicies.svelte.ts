@@ -58,12 +58,15 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	});
 
 	// Відлік автостарту вмикає ГОСПОДАР — і ВИМИКАЄ, коли гравців стало замало.
+	// Після відмови бази — не сам: інакше відкат запису вмикав би відлік знову й знову.
 	$effect(() => {
 		const match = session.match;
-		if (!match || !session.amHost || match.status !== 'lobby') return;
+		if (!match || !session.amHost || match.status !== 'lobby' || session.autoHalted) return;
 		const ready = match.autoStart && session.game.autoStartReady(match.players.length);
 		if (ready !== (match.countdownAt !== null)) {
-			void session.hostAction((transport) => transport.setCountdown(ready));
+			void session
+				.hostAction((transport) => transport.setCountdown(ready))
+				.then((done) => (session.autoHalted ||= !done));
 		}
 	});
 
@@ -71,8 +74,9 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	$effect(() => {
 		const match = session.match;
 		if (!match || !session.amHost || match.status !== 'lobby' || match.countdownAt === null) return;
+		if (session.autoHalted) return;
 		const left = Math.max(0, match.countdownAt + COUNTDOWN_MS - session.now());
-		const timer = setTimeout(() => void session.start(), left);
+		const timer = setTimeout(() => void session.start(true), left);
 		return () => clearTimeout(timer);
 	});
 

@@ -374,3 +374,58 @@ describe('склад партії', () => {
 		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', undefined, '', undefined, 'player');
 	});
 });
+
+/**
+ * ВІДМОВА БАЗИ НА АВТОМАТИЧНОМУ ЗАПИСІ НЕ СТАЄ КОЛОМ.
+ *
+ * Звіт автора 2026-09-24: новий клієнт проти опублікованих правил, що ще не знали
+ * `info/roster`, — і «відлік вийшов → почати» стартував ~12 разів на секунду. SDK
+ * показує свій запис одразу, а відмову приносить відкатом, і політика бачила
+ * відкат як новий стан. `LocalRoom.refuseWrites` із `echo` відтворює саме це.
+ *
+ * Зворотний експеримент: прибрати перевірку `autoHalted` зі `start` і з політики
+ * старту — червоніє «не повторюється по колу».
+ */
+describe('відмова бази на автоматичному записі', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('старт, який база відкинула, не повторюється по колу', async () => {
+		vi.useFakeTimers();
+		const { COUNTDOWN_MS } = await import('$lib/config/roomLife');
+		const room = new LocalRoom(roomInfo({ autoStart: true }), members());
+		room.refuseWrites(['setStatus']);
+		const transport = room.transport({ echo: true });
+		const setStatus = vi.spyOn(transport, 'setStatus');
+		const { session, net, lobby } = sessionFor(room, null, HOST);
+		net.roomTransport.mockResolvedValue(transport);
+
+		await session.enter('create');
+		await vi.advanceTimersByTimeAsync(0);
+		expect(session.match?.countdownAt, 'відлік пішов').not.toBeNull();
+
+		room.tick(COUNTDOWN_MS + 1000);
+		await vi.advanceTimersByTimeAsync(COUNTDOWN_MS + 1000);
+		await vi.advanceTimersByTimeAsync(3000);
+
+		expect(setStatus, 'старт повторювався після відмови').toHaveBeenCalledTimes(1);
+		expect(session.autoHalted).toBe(true);
+		expect(toast.error).toHaveBeenCalledTimes(1);
+		expect(lobby.unpublish, 'невдалий старт прибрав кімнату з переліку').not.toHaveBeenCalled();
+	});
+
+	it('людина може почати й після зупинки — і почує відмову', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		room.refuseWrites(['setStatus']);
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		session.autoHalted = true;
+		await session.start();
+
+		expect(toast.error).toHaveBeenCalledWith('pairs.actionFailed');
+		expect(room.status).toBe('lobby');
+	});
+});

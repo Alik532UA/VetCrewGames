@@ -66,6 +66,8 @@ export class LocalRoom {
 	 * справжній базі, поки його присутність існує.
 	 */
 	#present: Set<string> | null = null;
+	/** Записи, які база «відкидає» — правила, що відстали від коду. Див. `refuseWrites`. */
+	#refused = new Set<string>();
 	/**
 	 * «Серверний» час кімнати. Не `Date.now()`: правило межі очікування залежить
 	 * від часу, а перевірка, яка залежить від справжнього годинника, або чекає
@@ -165,6 +167,10 @@ export class LocalRoom {
 			},
 
 			setStatus: async (status, roster) => {
+				if (this.#refused.has('setStatus')) {
+					const { countdownAt: _gone, ...rest } = this.#info;
+					this.#refuse(own, options, { ...rest, status, startedAt: this.#now });
+				}
 				// Склад — ті самі умови, що в правилі бази: лише гравці з їхніми іменами і
 				// лише на старті, а не посеред партії. Відмова, як і там, скасовує ВЕСЬ запис.
 				const midGame = this.#info.status === 'playing' && this.#moves.length > 0;
@@ -243,6 +249,9 @@ export class LocalRoom {
 				// Підставний транспорт тримає той самий контракт: увімкнено — число,
 				// скасовано — поля немає. Саме на це й дивиться сторінка.
 				const { countdownAt: _drop, ...rest } = this.#info;
+				if (this.#refused.has('setCountdown')) {
+					this.#refuse(own, options, active ? { ...rest, countdownAt: this.#now } : rest);
+				}
 				this.#info = active ? { ...rest, countdownAt: this.#now } : rest;
 				this.#emit();
 			},
@@ -262,6 +271,36 @@ export class LocalRoom {
 				this.#emit();
 			}
 		};
+	}
+
+	/**
+	 * ПРАВИЛА, ЩО ВІДСТАЛИ ВІД КОДУ: ці записи база відкидає.
+	 *
+	 * Потрібне перевіркам «що буде, коли запис господаря не пройшов». Саме так
+	 * 2026-09-24 застряг старт: новий клієнт писав `info/roster`, опубліковані
+	 * правила його не знали, а відлік вмикав старт знову й знову — із частотою
+	 * мережі, бо SDK показує свій запис одразу, а відмову приносить відкатом.
+	 */
+	refuseWrites(methods: readonly string[]): void {
+		this.#refused = new Set(methods);
+	}
+
+	/**
+	 * Відмова так, як її бачить учасник у Firebase: зі `echo` спершу приходить свій
+	 * запис (`optimistic`), одразу за ним — стан бази, і лише тоді запис кидає.
+	 */
+	#refuse(
+		own: ReadonlySet<(snapshot: RoomSnapshot) => void>,
+		options: LocalTransportOptions,
+		optimistic: RoomInfo
+	): never {
+		if (options.echo) {
+			const shown = { ...this.#snapshot(), info: optimistic };
+			for (const listener of own) listener(shown);
+			const truth = this.#snapshot();
+			for (const listener of own) listener(truth);
+		}
+		throw new Error('PERMISSION_DENIED: Permission denied');
 	}
 
 	/**
