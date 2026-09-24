@@ -6,6 +6,7 @@ import {
 	awaySecondsLeft,
 	awayStamps,
 	goOnDecided,
+	heldPayloads,
 	pauseSecondsLeft,
 	shouldHoldRound,
 	votesNeeded,
@@ -385,5 +386,23 @@ describe('пауза', () => {
 	 */
 	it('нуль на відліку не знімає паузу сам', () => {
 		expect(shouldHoldRound([], [], [], 2, 'a')).toBe(true);
+	});
+});
+
+/**
+ * ХОДИ ПАУЗИ: по одному на кожного, чию пільгу списано, — і ВСІ з тією самою
+ * тривалістю. Перепрогін бере найбільше, тож повтор числа нічого не додає; доти
+ * тривалість ніс лише перший хід, бо перепрогін додавав (аудит 2026-09-24).
+ */
+describe('ходи паузи', () => {
+	it('нікого не списано — один хід із тривалістю', () => {
+		expect(heldPayloads(2, 7000, {})).toEqual([{ round: 2, ms: 7000 }]);
+	});
+
+	it('кожному — свій хід, і в усіх та сама тривалість', () => {
+		expect(heldPayloads(2, 7000, { a: 4000, b: 1500 })).toEqual([
+			{ round: 2, ms: 7000, uid: 'a', spent: 4000 },
+			{ round: 2, ms: 7000, uid: 'b', spent: 1500 }
+		]);
 	});
 });

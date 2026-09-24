@@ -36,6 +36,11 @@ vi.mock('$lib/services/settings.svelte', () => ({
 
 const { QuizMatch } = await import('./quizMatch.svelte');
 
+/** Кілька мікрозадач: записи в журнал ідуть одна за одною, кожна чекає свою. */
+const settle = async () => {
+	for (let tick = 0; tick < 12; tick += 1) await Promise.resolve();
+};
+
 /**
  * Спільна вікторина — на двох учасниках в одному процесі.
  *
@@ -74,10 +79,17 @@ const members = (): Member[] => [
 	{ uid: GUEST, name: 'Гість', role: 'player', order: 2 }
 ];
 
-function table(roomInfo: RoomInfo = info()) {
+/**
+ * `deafGuest` — записи гостя в журнал не доходять (немає звʼязку): так лишається
+ * його власна, незакомічена пауза, яка й могла переїхати туди, де їй не місце.
+ */
+function table(roomInfo: RoomInfo = info(), { deafGuest = false } = {}) {
 	const room = new LocalRoom(roomInfo, members());
 	const host = new QuizMatch(HOST, room.transport());
-	const guest = new QuizMatch(GUEST, room.transport());
+	const guest = new QuizMatch(
+		GUEST,
+		deafGuest ? { ...room.transport(), append: async () => false } : room.transport()
+	);
 	const stop = [host.listen(), guest.listen()];
 	return { room, host, guest, stop: () => stop.forEach((off) => off()) };
 }
@@ -1124,7 +1136,7 @@ describe('пауза очікування', () => {
 	 * Зворотний експеримент: прибрати скидання `#pending` при новому зерні — червоніє.
 	 */
 	it('реванш не переносить власну паузу минулої партії', async () => {
-		const { room, host, guest, stop } = table();
+		const { room, host, guest, stop } = table(info(), { deafGuest: true });
 		await host.startRound(0);
 		host.setHold(true, 1_000);
 		guest.setHold(true, 1_000);
@@ -1142,13 +1154,14 @@ describe('пауза очікування', () => {
 	});
 
 	it('пауза першого раунду не з’їдає таймер наступного', async () => {
-		const { host, guest, stop } = table();
+		const { host, guest, stop } = table(info(), { deafGuest: true });
 		await host.startRound(0);
 
 		/*
 		 * ЧЕКАННЯ В ГОСТЯ ДОВШЕ, ніж у господаря, — і це не штучний випадок, а
 		 * звичайний: присутність доїжджає до двох клієнтів у різні миті, тож умова
-		 * паузи в них вимикається не одночасно. Пише журнал ЛИШЕ господар.
+		 * паузи в них вимикається не одночасно. Запис гостя не дійшов (глухий гість):
+		 * його пауза лишилася місцевою.
 		 */
 		host.setHold(true, 1_000);
 		guest.setHold(true, 1_000);
@@ -1167,7 +1180,7 @@ describe('пауза очікування', () => {
 	});
 
 	it('смуга таймера не буває понад сто відсотків', async () => {
-		const { host, guest, stop } = table();
+		const { host, guest, stop } = table(info(), { deafGuest: true });
 		await host.startRound(0);
 		host.setHold(true, 1_000);
 		guest.setHold(true, 1_000);
@@ -1191,7 +1204,7 @@ describe('пауза очікування', () => {
 		 * відповіді». Дедлайн, зсунутий чужою старою паузою, відсуває й `nextDue` —
 		 * тобто раунд не міняється сам, і партія рухається лише відповідями.
 		 */
-		const { host, guest, stop } = table();
+		const { host, guest, stop } = table(info(), { deafGuest: true });
 		await host.startRound(0);
 		host.setHold(true, 1_000);
 		guest.setHold(true, 1_000);
@@ -1267,19 +1280,86 @@ describe('пауза однакова в усіх', () => {
 		stop();
 	});
 
-	it('гість паузу не пише: число мусить бути одне', async () => {
+	/**
+	 * ВЕДУЧОГО НЕ БУЛО — ПАУЗУ ПИШЕ ГІСТЬ (аудит 2026-09-24). Доти журнал писав
+	 * лише ведучий, тож коли зникав саме він (перезавантажив сторінку, перемкнув
+	 * застосунок), гості стояли, кожен відсував собі дедлайн, а журнал не отримував
+	 * нічого: відповіді в «зайвий» час перепрогін відкидав мовчки.
+	 *
+	 * Зворотний експеримент: повернути умову «пише лише ведучий» — червоніє.
+	 */
+	it('ведучого не було — паузу записує гість, і вона однакова в усіх', async () => {
 		const { host, guest, stop } = table();
 		await host.startRound(0);
 		const before = host.deadlineAt(0) as number;
 
+		guest.present = [GUEST];
 		guest.setHold(true, 1_000);
 		guest.setHold(false, 5_000);
-		await Promise.resolve();
-		await Promise.resolve();
+		await settle();
 
-		// У самого гостя пауза лишається місцевою (щоб смуга не стрибнула назад),
-		// а в господаря її немає: журнал чистий.
-		expect(host.deadlineAt(9_000)).toBe(before);
+		// 4 секунди чекання + 3 надбавки — і в гостя, і в ведучого, що повернувся.
+		expect(guest.deadlineAt(9_000)).toBe(before + 7_000);
+		expect(host.deadlineAt(9_000)).toBe(before + 7_000);
+		stop();
+	});
+
+	it('одне чекання від обох — одне число, найбільше, а не сума', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+		const before = host.deadlineAt(0) as number;
+
+		host.setHold(true, 1_000);
+		guest.setHold(true, 1_000);
+		host.setHold(false, 5_000);
+		guest.setHold(false, 6_000);
+		await settle();
+
+		// Гість чекав на секунду довше: 5 + 3, а не (4 + 3) + (5 + 3).
+		expect(host.deadlineAt(20_000)).toBe(before + 8_000);
+		expect(guest.deadlineAt(20_000)).toBe(before + 8_000);
+		stop();
+	});
+
+	/**
+	 * ПОВЕРНЕННЯ ЗНИКЛОГО СПИСУЄ ЙОГО ПІЛЬГУ (аудит 2026-09-24). Доти списували тих,
+	 * кого немає В МИТЬ ВІДПУСКАННЯ, — а відпускається чекання найчастіше саме тому,
+	 * що зниклий повернувся. Тобто не списувалося нічого, і повні пʼятнадцять
+	 * секунд вертались щоразу.
+	 *
+	 * Зворотний експеримент: брати зниклих у мить відпускання — червоніє.
+	 */
+	it('повернення зниклого списує його пільгу', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+
+		host.present = [HOST];
+		host.setHold(true, 1_000);
+		host.present = [HOST, GUEST];
+		host.setHold(false, 5_000);
+		await settle();
+
+		expect(host.graceSpent(GUEST)).toBe(4_000);
+		expect(guest.graceSpent(GUEST)).toBe(4_000);
+		stop();
+	});
+
+	it('друге зникнення в тому самому раунді додається до першого', async () => {
+		const { host, stop } = table();
+		await host.startRound(0);
+
+		for (const [from, to] of [
+			[1_000, 5_000],
+			[10_000, 12_000]
+		]) {
+			host.present = [HOST];
+			host.setHold(true, from);
+			host.present = [HOST, GUEST];
+			host.setHold(false, to);
+			await settle();
+		}
+
+		expect(host.graceSpent(GUEST), 'чотири секунди й ще дві').toBe(6_000);
 		stop();
 	});
 });
@@ -1518,5 +1598,29 @@ describe('господар зник — ведення підхоплюють', 
 
 		expect(await viewer.takeLead()).toBe(false);
 		off();
+	});
+});
+
+/**
+ * ПАУЗА, ЗНЯТА ЇЇ АВТОРОМ, СПИСУЄ ЙОГО ПІЛЬГУ (аудит 2026-09-24). Доти списували
+ * того, хто на паузі В МИТЬ ВІДПУСКАННЯ, — а після «Продовжити» паузи вже немає,
+ * тож пауза, знята самим автором, не коштувала нічого.
+ *
+ * Зворотний експеримент: не запамʼятовувати автора паузи за чекання — червоніє.
+ */
+describe('пільга за паузу', () => {
+	it('пауза, знята її автором, списує пільгу автора', async () => {
+		const { host, guest, stop } = table();
+		await host.startRound(0);
+
+		await guest.pause();
+		host.setHold(true, 1_000);
+		await guest.resume();
+		host.setHold(false, 6_000);
+		await settle();
+
+		expect(host.graceSpent(GUEST)).toBe(5_000);
+		expect(guest.graceSpent(GUEST)).toBe(5_000);
+		stop();
 	});
 });

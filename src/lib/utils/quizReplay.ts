@@ -1,5 +1,5 @@
-import type { RoomSnapshot } from '$lib/net/roomTypes';
-import { PAUSE_COOLDOWN_MS } from '$lib/config/quizOnline';
+import type { Move, RoomSnapshot } from '$lib/net/roomTypes';
+import { PAUSE_COOLDOWN_MS, RESUME_BONUS_MS } from '$lib/config/quizOnline';
 
 /** Відповідь одного гравця на один раунд. */
 export interface QuizAnswer {
@@ -16,9 +16,14 @@ export interface QuizLog {
 	answers: Record<number, Record<string, QuizAnswer>>;
 	/** Голоси «грати далі» за раундами. */
 	goOn: Record<number, string[]>;
-	/** Пауза, записана ведучим, за раундами. */
+	/** Скільки стояв кожен раунд — найбільше з того, що записали гравці. */
 	held: Record<number, number>;
-	/** Скільки пільги витратив кожен за партію. */
+	/**
+	 * Скільки пільги кожен витратив У КОЖНОМУ раунді — найбільше записане. На цьому
+	 * числі наступний запис нарощує своє (`QuizMatch.setHold`).
+	 */
+	spentByRound: Record<number, Record<string, number>>;
+	/** Скільки пільги витратив кожен за партію: сума за раундами. */
 	graceSpent: Record<string, number>;
 	/** Хто поставив паузу в кожному раунді. */
 	pausedBy: Record<number, string>;
@@ -27,7 +32,7 @@ export interface QuizLog {
 	/** Коли гравець останній раз ЗНІМАВ паузу — для витримки. */
 	pauseUsedAt: Record<string, number>;
 	/**
-	 * ХТО ВЕДЕ ПАРТІЮ ЗАРАЗ — чиї `round` і `held` рахуються.
+	 * ХТО ВЕДЕ ПАРТІЮ ЗАРАЗ — чиї `round` рахуються.
 	 *
 	 * Спершу це господар кімнати. Хід `lead` передає роль авторові ходу — а
 	 * законним цей хід робить ПРАВИЛО БАЗИ: воно пускає його лише разом зі зміною
@@ -57,6 +62,16 @@ export interface ReplayOptions {
  * розібрали на таблі.
  */
 export const LATE_ANSWER_GRACE_MS = 3000;
+
+/**
+ * СКІЛЬКИ РІЗНИХ ПАУЗ ОДИН АВТОР МОЖЕ ЗАПИСАТИ В ОДНОМУ РАУНДІ.
+ *
+ * Паузу тепер пише кожен гравець (див. другий прохід у `replayQuizLog`), і без
+ * межі це було б право будь-кого розтягувати раунд без кінця: кожен запис
+ * відсуває дедлайн, а межа «не довше, ніж раунд уже триває» росте разом із
+ * часом. Чотири чекання в одному раунді — це вже не обрив, а зламаний звʼязок.
+ */
+export const HELD_PER_ROUND = 4;
 
 /**
  * ПЕРЕПРОГІН ЖУРНАЛУ ВІКТОРИНИ: стан партії як чиста функція від ходів.
@@ -99,12 +114,11 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 
 	const startedAt: Record<number, number> = {};
 	const goOn: Record<number, string[]> = {};
-	const held: Record<number, number> = {};
-	const graceSpent: Record<string, number> = {};
 	const pausedBy: Record<number, string> = {};
 	const pausedAt: Record<number, number> = {};
 	const pauseUsedAt: Record<string, number> = {};
 	const answered: Array<{ round: number; by: string } & QuizAnswer> = [];
+	const holds: Array<{ round: number; by: string; at: number; payload: Move['payload'] }> = [];
 
 	for (const move of snapshot.moves) {
 		// Час ходу ставить СЕРВЕР. Хід без нього не рахується: без часу очки
@@ -160,16 +174,9 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		}
 
 		if (move.type === 'held') {
-			// Лише ведучий: інакше кожен дописував би собі час.
-			if (move.by !== leader) continue;
-			const ms = Number(move.payload?.ms);
-			if (Number.isFinite(ms) && ms > 0) held[round] = (held[round] ?? 0) + ms;
-
-			const uid = move.payload?.uid;
-			const spent = Number(move.payload?.spent);
-			if (typeof uid === 'string' && Number.isFinite(spent) && spent > 0) {
-				graceSpent[uid] = (graceSpent[uid] ?? 0) + spent;
-			}
+			// Пише кожен ГРАВЕЦЬ, зараховує другий прохід (нижче). Глядач — ні: він
+			// партію не грає, і раунд для нього не стоїть.
+			if (players.has(move.by)) holds.push({ round, by: move.by, at, payload: move.payload });
 			continue;
 		}
 
@@ -187,6 +194,8 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		if (!Number.isFinite(correct)) continue;
 		answered.push({ round, by: move.by, at, correct });
 	}
+
+	const { held, spentByRound, graceSpent } = countHolds(holds, startedAt);
 
 	/*
 	 * ВІДПОВІДІ — ДРУГИМ ПРОХОДОМ, бо межа раунду залежить від ПОЧАТКУ наступного,
@@ -227,10 +236,71 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		answers,
 		goOn,
 		held,
+		spentByRound,
 		graceSpent,
 		pausedBy,
 		pausedAt,
 		pauseUsedAt,
 		leader
 	};
+}
+
+/**
+ * ПАУЗА — ДРУГИМ ПРОХОДОМ і НАЙБІЛЬШИМ ЧИСЛОМ, а не сумою.
+ *
+ * Доти паузу писав лише ведучий, і саме тому вона губилася, коли зникав ВІН:
+ * гості стояли, кожен відсував собі дедлайн на паузу й три секунди, а журнал не
+ * отримував нічого — відповіді в той «зайвий» час перепрогін відкидав мовчки, а
+ * табло раунду гості пропускали (аудит 2026-09-24). Тепер пише КОЖЕН гравець, у
+ * кого чекання скінчилося, і пише СУКУПНЕ число за раунд — поверх того, що вже
+ * в журналі. Одне чекання, записане трьома, — це три близькі числа, і правда —
+ * найбільше з них: сума дала б потрійну паузу.
+ *
+ * Другим проходом — бо межа залежить від ПОЧАТКУ раунду, а хід, що заповнив
+ * дірку в нумерації, може лежати в журналі раніше за оголошення раунду. І за
+ * серверним часом, а не за номером: «перші записи автора» — це час.
+ *
+ * Межі — бо тепер це може кожен. Пауза не довша, ніж раунд існував у мить
+ * запису (плюс надбавки на всі чекання, що могли в ньому бути), і не більше
+ * `HELD_PER_ROUND` різних чисел від одного автора в раунді: інакше записи раз на
+ * секунду тягнули б дедлайн за собою без кінця. Витрачена пільга — не більша за
+ * зараховану паузу. Хід одного чекання з кількома зниклими несе ТЕ САМЕ число,
+ * тож межу на кількість не зʼїдає.
+ */
+function countHolds(
+	holds: ReadonlyArray<{ round: number; by: string; at: number; payload: Move['payload'] }>,
+	startedAt: Readonly<Record<number, number>>
+): Pick<QuizLog, 'held' | 'spentByRound' | 'graceSpent'> {
+	const held: Record<number, number> = {};
+	const spentByRound: Record<number, Record<string, number>> = {};
+	const totalsBy: Record<string, number[]> = {};
+
+	for (const entry of [...holds].sort((a, b) => a.at - b.at)) {
+		const start = startedAt[entry.round];
+		const raw = Number(entry.payload?.ms);
+		if (start === undefined || entry.at < start || !Number.isFinite(raw) || raw <= 0) continue;
+
+		const mine = (totalsBy[`${entry.round}:${entry.by}`] ??= []);
+		if (!mine.includes(raw)) {
+			if (mine.length >= HELD_PER_ROUND) continue;
+			mine.push(raw);
+		}
+		const ms = Math.min(raw, entry.at - start + RESUME_BONUS_MS * HELD_PER_ROUND);
+		held[entry.round] = Math.max(held[entry.round] ?? 0, ms);
+
+		const uid = entry.payload?.uid;
+		const spent = Number(entry.payload?.spent);
+		if (typeof uid === 'string' && Number.isFinite(spent) && spent > 0) {
+			const forRound = (spentByRound[entry.round] ??= {});
+			forRound[uid] = Math.max(forRound[uid] ?? 0, Math.min(spent, ms));
+		}
+	}
+
+	const graceSpent: Record<string, number> = {};
+	for (const forRound of Object.values(spentByRound)) {
+		for (const [uid, spent] of Object.entries(forRound)) {
+			graceSpent[uid] = (graceSpent[uid] ?? 0) + spent;
+		}
+	}
+	return { held, spentByRound, graceSpent };
 }

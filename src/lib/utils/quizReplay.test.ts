@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LATE_ANSWER_GRACE_MS, replayQuizLog } from './quizReplay';
-import { PAUSE_COOLDOWN_MS } from '$lib/config/quizOnline';
+import { HELD_PER_ROUND, LATE_ANSWER_GRACE_MS, replayQuizLog } from './quizReplay';
+import { PAUSE_COOLDOWN_MS, RESUME_BONUS_MS } from '$lib/config/quizOnline';
 import type { Member, Move, RoomSnapshot } from '$lib/net/roomTypes';
 
 /**
@@ -83,14 +83,19 @@ describe('хто веде партію', () => {
 		expect(log.leader).toBe(GUEST);
 	});
 
-	it('пауза, записана не ведучим, часу не додає', () => {
+	/**
+	 * ПАУЗУ ПИШЕ КОЖЕН ГРАВЕЦЬ (аудит 2026-09-24). Доти — лише ведучий, і пауза
+	 * губилася саме тоді, коли зникав він. Глядач — ні: він партію не грає.
+	 */
+	it('паузу записує будь-який гравець, а глядач — ні', () => {
 		const log = replayQuizLog(
 			snapshot([
 				move(HOST, 'round', 1000, { round: 0 }),
-				move(GUEST, 'held', 2000, { round: 0, ms: 5000 })
+				move(GUEST, 'held', 7000, { round: 0, ms: 5000 }),
+				move(WATCHER, 'held', 8000, { round: 0, ms: 6000 })
 			])
 		);
-		expect(log.held[0]).toBeUndefined();
+		expect(log.held[0]).toBe(5000);
 	});
 });
 
@@ -245,5 +250,98 @@ describe('відповідь зараховується лише в межах �
 			snapshot([...rounds, move(GUEST, 'answer', 25_000, { round: 0, correct: 1 })])
 		);
 		expect(log.answers[0]?.[GUEST]).toBeDefined();
+	});
+});
+
+/**
+ * ПАУЗА В ЖУРНАЛІ — НАЙБІЛЬШЕ, А НЕ СУМА, І В МЕЖАХ (аудит 2026-09-24).
+ *
+ * Паузу тепер пише кожен гравець, у кого чекання скінчилося, — сукупним числом за
+ * раунд. Одне чекання, записане трьома, дає три близькі числа; сума дала б
+ * потрійну паузу. А що писати тепер може кожен, то й межі: пауза не довша, ніж
+ * раунд існував, і не більше чотирьох різних чисел від одного автора.
+ *
+ * Зворотні експерименти: повернути суму — червоніє перший; прибрати межу часу —
+ * другий; межу кількості — третій; рахувати межу за кожен хід, а не за число, —
+ * четвертий; брати `spent` без стелі — шостий.
+ */
+describe('пауза в журналі', () => {
+	const round0 = move(HOST, 'round', 1000, { round: 0 });
+
+	it('одне чекання від трьох авторів — найбільше число, а не сума', () => {
+		const log = replayQuizLog(
+			snapshot([
+				round0,
+				move(HOST, 'held', 9000, { round: 0, ms: 7000 }),
+				move(GUEST, 'held', 9100, { round: 0, ms: 7400 }),
+				move(THIRD, 'held', 9200, { round: 0, ms: 7100 })
+			])
+		);
+		expect(log.held[0]).toBe(7400);
+	});
+
+	it('пауза не довша, ніж раунд існував у мить запису', () => {
+		const log = replayQuizLog(
+			snapshot([round0, move(GUEST, 'held', 2000, { round: 0, ms: 86_400_000 })])
+		);
+		expect(log.held[0]).toBe(2000 - 1000 + RESUME_BONUS_MS * HELD_PER_ROUND);
+	});
+
+	it('від одного автора в раунді — не більше чотирьох різних пауз', () => {
+		const writes = Array.from({ length: HELD_PER_ROUND + 1 }, (_, index) =>
+			move(GUEST, 'held', 60_000 + index * 1000, { round: 0, ms: 1000 * (index + 1) })
+		);
+		const log = replayQuizLog(snapshot([round0, ...writes]));
+		expect(log.held[0], "п'ятий запис дедлайну не рухає").toBe(1000 * HELD_PER_ROUND);
+	});
+
+	it('одне чекання з багатьма зниклими не зʼїдає межі кількості', () => {
+		// Хід на кожного зниклого, і всі несуть ту саму тривалість — це ОДНЕ число.
+		const one = (at: number, ms: number) =>
+			['a', 'b', 'c', 'd', 'e'].map((uid, index) =>
+				move(HOST, 'held', at + index, { round: 0, ms, uid, spent: ms - RESUME_BONUS_MS })
+			);
+		const log = replayQuizLog(snapshot([round0, ...one(20_000, 8000), ...one(40_000, 16_000)]));
+		expect(log.held[0]).toBe(16_000);
+	});
+
+	it('пільга: найбільше за раунд, сума за партію', () => {
+		const log = replayQuizLog(
+			snapshot([
+				round0,
+				move(HOST, 'held', 9000, { round: 0, ms: 7000, uid: THIRD, spent: 4000 }),
+				move(GUEST, 'held', 9100, { round: 0, ms: 7500, uid: THIRD, spent: 4500 }),
+				move(HOST, 'round', 20_000, { round: 1 }),
+				move(HOST, 'held', 30_000, { round: 1, ms: 5000, uid: THIRD, spent: 2000 })
+			])
+		);
+		expect(log.spentByRound[0][THIRD]).toBe(4500);
+		expect(log.graceSpent[THIRD]).toBe(6500);
+	});
+
+	it('витрачене не більше за зараховану паузу', () => {
+		const log = replayQuizLog(
+			snapshot([
+				round0,
+				move(GUEST, 'held', 9000, { round: 0, ms: 7000, uid: THIRD, spent: 86_400_000 })
+			])
+		);
+		expect(log.graceSpent[THIRD]).toBe(7000);
+	});
+
+	/**
+	 * Хід, що заповнив дірку в нумерації, лежить у журналі РАНІШЕ за оголошення
+	 * раунду, хоч записаний пізніше. Перший прохід ще не знає початку раунду — тому
+	 * пауза рахується другим.
+	 */
+	it('пауза з меншим номером, ніж оголошення раунду, однаково рахується', () => {
+		const early = { ...move(GUEST, 'held', 9000, { round: 0, ms: 7000 }), seq: 0 };
+		const log = replayQuizLog(snapshot([early, round0]));
+		expect(log.held[0]).toBe(7000);
+	});
+
+	it('пауза до початку раунду не рахується', () => {
+		const log = replayQuizLog(snapshot([round0, move(GUEST, 'held', 500, { round: 0, ms: 400 })]));
+		expect(log.held[0]).toBeUndefined();
 	});
 });

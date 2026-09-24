@@ -4,6 +4,7 @@ import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
 import { playersOf } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
+import { QuizHold, type ReleasedHold } from '$lib/utils/quizHold';
 import { takeLead } from './takeLead';
 import {
 	barLeftMs,
@@ -17,7 +18,6 @@ import { roundGains, roundOutcomes, totalScores, type QuizLogView } from '$lib/u
 import {
 	DEFAULT_ROOM_PACE,
 	PAUSE_COOLDOWN_MS,
-	RESUME_BONUS_MS,
 	REVEAL_MS,
 	SETTLE_MS,
 	REVEAL_PACE,
@@ -343,11 +343,15 @@ export class QuizMatch {
 	 * з'являлося — і дедлайн у нього ставав інший. «Розбіжність на дрижання
 	 * присутності», яку я записав як межу, насправді означала різні дедлайни.
 	 *
-	 * Пише господар, і лише коли пауза ЗАКІНЧИЛАСЯ: тоді її тривалість уже відома
-	 * числом, а число в журналі однакове в усіх — включно з тим, хто повернувся.
+	 * Пишеться, коли пауза ЗАКІНЧИЛАСЯ: тоді її тривалість уже відома числом, а
+	 * число в журналі однакове в усіх — включно з тим, хто повернувся. Пише КОЖЕН
+	 * гравець, у кого чекання скінчилося, а перепрогін бере найбільше
+	 * (`utils/quizReplay.ts`, `countHolds`). Доти писав лише господар — і пауза
+	 * губилася саме тоді, коли зникав ВІН (аудит 2026-09-24).
 	 */
 	#heldByRound = $state<Record<number, number>>({});
-	#holdSince: number | null = null;
+	/** Поточне чекання — облік у `utils/quizHold.ts` (основа, проміжки, автор паузи). */
+	#hold = new QuizHold();
 	/**
 	 * Пауза, яку я вже відпустив, але хід про неї ще не приїхав — ЗА РАУНДАМИ.
 	 *
@@ -361,7 +365,7 @@ export class QuizMatch {
 	 * відповіді».
 	 *
 	 * `heldMs` порівнювала це число з журнальним `#heldByRound[round]` — тобто
-	 * ОДНЕ на партію проти ОДНОГО НА РАУНД. Журнал пише лише господар і лише свою
+	 * ОДНЕ на партію проти ОДНОГО НА РАУНД. Журнал тоді писав лише господар і лише свою
 	 * виміряну паузу; у гостя вона майже завжди довша, бо присутність доїжджає до
 	 * двох клієнтів у різні миті. Отже `log.held[round] >= pending` у гостя не
 	 * ставало правдою ніколи, число не скидалося — і додавалося до дедлайну
@@ -390,6 +394,8 @@ export class QuizMatch {
 	#pausedAt = $state<Record<number, number>>({});
 	/** Коли гравець останній раз ЗНІМАВ паузу — для хвилинної витримки. */
 	#pauseUsedAt = $state<Record<string, number>>({});
+	/** Витрачена пільга за раундами — із журналу; на ній нарощує свій запис чекання. */
+	#spentByRound = $state<Record<number, Record<string, number>>>({});
 
 	/**
 	 * Увімкнути або зняти паузу очікування.
@@ -400,29 +406,44 @@ export class QuizMatch {
 	 */
 	setHold(active: boolean, now: number): void {
 		if (active) {
-			this.#holdSince ??= now;
+			const round = this.round;
+			const away = this.away.map((member) => member.uid);
+			const spentBase = this.#spentByRound[round] ?? {};
+			this.#hold.hold(now, round, this.#settledMs(round), spentBase, away, this.pausedBy);
 			return;
 		}
-		if (this.#holdSince === null) return;
-
-		const paused = Math.max(0, now - this.#holdSince) + RESUME_BONUS_MS;
-		this.#holdSince = null;
+		/*
+		 * СУКУПНО ЗА РАУНД — поверх ОСНОВИ, узятої на початку чекання
+		 * (`utils/quizHold.ts`): записи різних гравців про те саме чекання дають
+		 * близькі числа, і перепрогін бере найбільше, а не суму.
+		 */
+		const released = this.#hold.release(now);
+		if (!released) return;
 		// Під номером ТОГО раунду, у якому чекання й було: у наступному воно нічого
 		// не означає, і саме через це число колись переїжджало далі.
-		this.#pending = { ...this.#pending, [this.round]: paused };
+		this.#pending = { ...this.#pending, [released.round]: released.total };
 
-		/*
-		 * ПИШЕ ВЕДУЧИЙ, бо число мусить бути одне. Решта нічого не пише: їхня
-		 * власна пауза вже врахована `#pending`, а спільну правду принесе хід.
-		 */
-		if (this.leader === this.#me) void this.#writeHeld(paused);
+		// Пише КОЖЕН ГРАВЕЦЬ (див. `#heldByRound`); запис глядача перепрогін не рахує.
+		if (this.players.some((player) => player.uid === this.#me)) {
+			void this.#writeHeld(released);
+		}
+	}
+
+	/** Скільки раунд уже простояв, поки чекання немає: журнал або своє, більше. */
+	#settledMs(round: number): number {
+		return Math.max(this.#heldByRound[round] ?? 0, this.#pending[round] ?? 0);
 	}
 
 	/** Скільки часу вже віддано за чекання, разом із поточною паузою. */
 	heldMs(now: number): number {
-		const running = this.#holdSince === null ? 0 : Math.max(0, now - this.#holdSince);
-		const recorded = this.#heldByRound[this.round] ?? 0;
-		return Math.max(recorded, this.#pending[this.round] ?? 0) + running;
+		const settled = this.#settledMs(this.round);
+		/*
+		 * Поки чекаю — від СВОЄЇ основи. Чужий запис про те саме чекання, що приїхав
+		 * раніше за моє відпускання, не додається до мого, а лише не дає смузі
+		 * показати менше, ніж уже в журналі.
+		 */
+		const holding = this.#hold.heldNow(now, this.round);
+		return holding === null ? settled : Math.max(holding, settled);
 	}
 
 	/**
@@ -533,20 +554,19 @@ export class QuizMatch {
 	}
 
 	/**
-	 * Записати паузу й витрачену пільгу ОДНИМ ходом.
+	 * Записати паузу й витрачену пільгу — СУКУПНО за раунд.
 	 *
 	 * Пільга рахується тим самим числом: гравець, якого не було три секунди,
 	 * витратив три секунди — і наступного разу відлік почнеться з решти. Саме це й
 	 * ламало гру доти: відлік починався з повних п'ятнадцяти щоразу, тож зникати на
-	 * чотирнадцять секунд можна було безкінечно.
+	 * чотирнадцять секунд можна було безкінечно. Витрачене теж — поверх журнального
+	 * числа за цей раунд, узятого на початку чекання, з тієї самої причини, що й пауза.
 	 *
 	 * `uid` у payload вміщається: рядок там до 32 знаків, а uid Firebase — 28.
 	 */
-	async #writeHeld(ms: number): Promise<void> {
-		const spent = Math.max(0, ms - RESUME_BONUS_MS);
-		const away = this.away.map((member) => member.uid);
-		// Хто скільки пільги витратив — правила в `utils/awayWait.ts` (`heldPayloads`).
-		for (const payload of heldPayloads(this.round, ms, spent, this.pausedBy, away)) {
+	async #writeHeld({ round, total, spent }: ReleasedHold): Promise<void> {
+		// Як складаються ходи — `utils/awayWait.ts` (`heldPayloads`).
+		for (const payload of heldPayloads(round, total, spent)) {
 			await this.#append({ by: this.#me, type: 'held', payload });
 		}
 	}
@@ -746,7 +766,7 @@ export class QuizMatch {
 			// Нова партія (реванш): власна незакомічена пауза минулої їй не належить —
 			// інакше той самий номер раунду отримував би чужу надбавку часу.
 			this.#pending = {};
-			this.#holdSince = null;
+			this.#hold.reset();
 		}
 		this.seed = snapshot.info.seed;
 		this.autoStart = snapshot.info.autoStart === true;
@@ -763,6 +783,7 @@ export class QuizMatch {
 		this.#goOnVotes = log.goOn;
 		this.#heldByRound = log.held;
 		this.#graceSpent = log.graceSpent;
+		this.#spentByRound = log.spentByRound;
 		this.#pausedBy = log.pausedBy;
 		this.#pausedAt = log.pausedAt;
 		this.#pauseUsedAt = log.pauseUsedAt;

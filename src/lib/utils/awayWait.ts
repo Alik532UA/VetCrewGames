@@ -222,10 +222,14 @@ export function waitView(
  * того, хто ставить її раз за разом, просто закінчується час. Поставлена пауза
  * списує запас ТОГО, хто ставив.
  *
- * ЗНИКНЕННЯ СПИСУЄ ЗАПАС КОЖНОГО, кого не було. Доти цикл повертався на першому ж
- * проході: при двох зниклих пільгу списував лише перший, а другий зникав знову й
- * знову задарма (аудит 2026-09-23). Тривалість паузи несе лише перший запис —
- * решта йде з `ms: 0`, і перепрогін додає до паузи рівно одне число.
+ * ЗНИКНЕННЯ СПИСУЄ ЗАПАС КОЖНОГО, кого не було, — його власний проміжок, а не
+ * все чекання (`QuizMatch.setHold`). Доти цикл повертався на першому ж проході:
+ * при двох зниклих пільгу списував лише перший, а другий зникав знову й знову
+ * задарма (аудит 2026-09-23).
+ *
+ * ОДИН ХІД НА ЛЮДИНУ, і ВСІ несуть ту саму тривалість паузи: перепрогін бере
+ * найбільше, а не суму, тож повтор числа нічого не додає. (Доти тривалість ніс
+ * лише перший, решта — нуль: тоді перепрогін додавав.)
  *
  * Ніхто не був відсутній — пауза все одно записується, пільга ні.
  *
@@ -234,11 +238,9 @@ export function waitView(
 export function heldPayloads(
 	round: number,
 	ms: number,
-	spent: number,
-	pausedBy: string | null,
-	away: readonly string[]
+	spent: Readonly<Record<string, number>>
 ): Array<Record<string, number | string>> {
-	if (pausedBy !== null) return [{ round, ms, uid: pausedBy, spent }];
-	if (away.length === 0) return [{ round, ms }];
-	return away.map((uid, index) => ({ round, ms: index === 0 ? ms : 0, uid, spent }));
+	const charged = Object.entries(spent);
+	if (charged.length === 0) return [{ round, ms }];
+	return charged.map(([uid, value]) => ({ round, ms, uid, spent: value }));
 }

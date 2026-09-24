@@ -284,6 +284,21 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-away-*-btn'
+		},
+		{
+			/*
+			 * ПАУЗУ ПИШЕ КОЖЕН ГРАВЕЦЬ (аудит 2026-09-24). Контролер і перепрогін це
+			 * доводять на підставній кімнаті; руками — те, чого вона не має: справжнє
+			 * перезавантаження сторінки ведучого посеред раунду.
+			 */
+			id: 'quizonline_22',
+			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
+			text: {
+				uk: 'Посеред раунду перезавантажте сторінку господаря. У гостя смуга часу мусить стати, поки господаря немає, і піти далі, коли він повернеться. Відповідайте гостем уже ПІСЛЯ того, як минула б звичайна межа часу: відповідь мусить зарахуватися з очками, а табло цього раунду — показатися обом.',
+				en: 'In the middle of a round reload the host page. On the guest side the time bar must stop while the host is gone and move on when the host is back. Answer as the guest AFTER the usual time limit would have passed: the answer must count with points, and this round scoreboard must show for both.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-round-progress'
 		}
 	]
 };
