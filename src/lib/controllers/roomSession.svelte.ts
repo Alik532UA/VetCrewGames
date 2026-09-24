@@ -21,6 +21,7 @@ export interface RoomMatch {
 	readonly hostUid: string;
 	readonly countdownAt: number | null;
 	readonly autoStart: boolean;
+	readonly listed: boolean;
 	readonly seed: number;
 	readonly over: boolean;
 	readonly gone: boolean;
@@ -195,7 +196,7 @@ export class RoomSession<M extends RoomMatch> {
 				return;
 			}
 			await this.place.remember(this.code);
-			await this.#open(action === 'create' && (quick || !this.isPrivate), who);
+			await this.#open();
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error);
 			toast.error(entryErrorKey(reason));
@@ -236,7 +237,7 @@ export class RoomSession<M extends RoomMatch> {
 	}
 
 	/** Підписки кімнати: матч, присутність, звʼязок, підписки гри, перелік. */
-	async #open(listed: boolean, who: string): Promise<void> {
+	async #open(): Promise<void> {
 		const transport = await this.net.roomTransport(this.code);
 		this.#transport = transport;
 		this.me = await this.net.me();
@@ -253,12 +254,25 @@ export class RoomSession<M extends RoomMatch> {
 		);
 		this.#stops.push(await this.net.watchConnected((online) => (this.connected = online)));
 		for (const stop of (await this.game.listen?.(this.code)) ?? []) this.#stops.push(stop);
-		if (listed) await this.#publish(who);
 		this.match = match;
 	}
 
-	/** Відкрита кімната — у перелік. Невдача не скасовує входу: кімната працює й так. */
-	async #publish(who: string): Promise<void> {
+	/** Код, який ЦЯ сесія вже оголосила в переліку; `null` — нічого. */
+	#listed: string | null = null;
+
+	/**
+	 * Відкрита кімната — у перелік. Невдача не скасовує входу: кімната працює й так.
+	 *
+	 * Кличе політика (`roomPolicies`), а не вхід: так кімната повертається в перелік
+	 * і після перезавантаження господаря, і в нового господаря після перехоплення.
+	 * Невдача не повторюється сама — лише коли знову зміниться кімната.
+	 */
+	async publishListing(): Promise<void> {
+		if (this.#listed === this.code) return;
+		this.#listed = this.code;
+		const who =
+			this.match?.members.find((member) => member.uid === this.me)?.name ??
+			this.player.forEntry(this.lobby.takenNames);
 		try {
 			await this.lobby.publish({
 				code: this.code,
@@ -267,11 +281,15 @@ export class RoomSession<M extends RoomMatch> {
 				hostCountry: this.player.country,
 				hostAvatar: this.player.forRoom(),
 				rulesVersion: this.game.rulesVersion,
-				players: 1,
+				// Не одиниця: господар, що повернувся, чи новий після перехоплення
+				// оголошує кімнату, де вже сидять люди, а лічильник наздоганяє лише
+				// ЗМІНУ присутності (`roomPolicies`).
+				players: Math.max(1, this.presentPlayers.length),
 				...this.game.listingExtras?.()
 			});
 		} catch (error) {
 			logService.warn('network', 'room not published', { code: this.code, reason: String(error) });
+			if (this.#listed === this.code) this.#listed = null;
 		}
 	}
 
@@ -310,6 +328,7 @@ export class RoomSession<M extends RoomMatch> {
 		for (const stop of this.#stops) stop();
 		this.#stops = [];
 		this.lobby.unpublish();
+		this.#listed = null;
 	}
 
 	/**
@@ -357,6 +376,7 @@ export class RoomSession<M extends RoomMatch> {
 		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача. Лише
 		// ПІСЛЯ старту: доти невдалий старт ще й прибирав кімнату з переліку.
 		this.lobby.unpublish();
+		this.#listed = null;
 	}
 
 	/** Закрити кімнату — ЯВНОЮ дією: «пішов назовсім» від «перезавантажив» не відрізнити. */

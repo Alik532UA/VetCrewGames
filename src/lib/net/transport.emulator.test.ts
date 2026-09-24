@@ -352,3 +352,38 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		stop();
 	});
 });
+
+/**
+ * ПУБЛІЧНІСТЬ — У КІМНАТІ (аудит 2026-09-24).
+ *
+ * Лише тут, а не в контракті вище: `LocalRoom` бере `info` готовим, тож без
+ * емулятора нічим не видно, що справжнє створення поле пише, а правило бази його
+ * пропускає. Зворотний експеримент: прибрати `listed` із `createRoom` — червоніють
+ * обидві (приватна теж несе явне `false`); прибрати правило `info/listed` — теж
+ * обидві, бо тоді `$other` відмовляє всьому створенню.
+ */
+describe('rtdbRoom + емулятор: створення кімнати', () => {
+	it.each([
+		{ isPrivate: false, listed: true },
+		{ isPrivate: true, listed: false }
+	])('приватна — $isPrivate, у кімнаті listed — $listed', async ({ isPrivate, listed }) => {
+		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
+		const { host } = people;
+		const net = await import('./rtdbRoom');
+		const code = await as(host, () =>
+			net.createRoom({
+				gameId: 'pairs',
+				rulesVersion: 3,
+				seed: 1,
+				config: CONFIG,
+				name: 'Господар',
+				isPrivate
+			})
+		);
+
+		const info = await as(host, () => net.peekRoom(code));
+
+		expect(info?.listed).toBe(listed);
+		await as(host, () => net.closeRoom(code));
+	});
+});

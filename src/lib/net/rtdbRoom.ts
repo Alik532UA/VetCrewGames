@@ -179,6 +179,9 @@ export async function createRoom(options: NewRoom): Promise<string> {
 				// `?? false` явно: відсутнє поле правило прийме, але тоді режим кімнати
 				// читався б із відсутності, а не з рішення.
 				autoStart: options.autoStart ?? false,
+				// Публічність — у кімнаті, а не на сторінці: її мусить знати й той, хто
+				// стане господарем після перехоплення (`RoomInfo.listed`).
+				listed: !options.isPrivate,
 				createdAt: serverTimestamp()
 			};
 

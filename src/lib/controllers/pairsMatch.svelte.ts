@@ -121,6 +121,8 @@ export class PairsMatch {
 	 * гірша за партію, яку треба почати кнопкою.
 	 */
 	autoStart = $state(false);
+	/** Кімната публічна (`RoomInfo.listed`). */
+	listed = $state(false);
 	/**
 	 * КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА. `null` — нікуди.
 	 *
@@ -431,6 +433,7 @@ export class PairsMatch {
 		this.hostUid = snapshot.info.hostUid;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.autoStart = snapshot.info.autoStart === true;
+		this.listed = snapshot.info.listed === true;
 		this.nextCode = snapshot.info.nextCode ?? null;
 
 		/*

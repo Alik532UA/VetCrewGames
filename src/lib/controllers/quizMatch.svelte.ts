@@ -105,6 +105,8 @@ export class QuizMatch {
 	/** Зерно кімнати. Із нього виводиться програма — однакова в усіх. */
 	seed = $state(0);
 	autoStart = $state(false);
+	/** Кімната публічна (`RoomInfo.listed`). */
+	listed = $state(false);
 	/**
 	 * КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА. `null` — нікуди.
 	 *
@@ -730,6 +732,7 @@ export class QuizMatch {
 		}
 		this.seed = snapshot.info.seed;
 		this.autoStart = snapshot.info.autoStart === true;
+		this.listed = snapshot.info.listed === true;
 		this.nextCode = snapshot.info.nextCode ?? null;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.games = configToGames(snapshot.info.config);

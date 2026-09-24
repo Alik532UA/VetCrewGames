@@ -50,6 +50,17 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 		return () => clearInterval(timer);
 	});
 
+	/*
+	 * ПУБЛІЧНА КІМНАТА — У ПЕРЕЛІКУ, поки вона в лобі й поки я господар. Одна
+	 * політика на три дороги: створення, повернення після перезавантаження (запис
+	 * переліку гасне з вкладкою) і перехоплення ведення.
+	 */
+	$effect(() => {
+		const match = session.match;
+		if (!match || !session.amHost || match.status !== 'lobby' || !match.listed) return;
+		void session.publishListing();
+	});
+
 	// Господар веде лічильник гравців у своєму записі переліку — у ОБОХ іграх.
 	$effect(() => {
 		const match = session.match;

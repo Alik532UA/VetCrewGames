@@ -194,6 +194,13 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/autoStart`, true, host.token)
 	},
 	{
+		// Публічність живе в кімнаті: її читає й той, хто стане господарем після
+		// перехоплення, і господар, що повернувся після перезавантаження.
+		name: 'господар позначає кімнату публічною',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/info/listed`, true, host.token)
+	},
+	{
 		name: 'господар вмикає відлік до автоматичного старту',
 		allowed: true,
 		run: () => write(`rooms/${CODE}/info/countdownAt`, SERVER_TIME, host.token)
@@ -1156,6 +1163,18 @@ const CASES = [
 		name: 'режим початку партії НЕ булевий',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/info/autoStart`, 'yes', host.token)
+	},
+	{
+		// Інакше гість виставляв би чужу приватну кімнату в перелік — і її
+		// господар оголошував би її сам, не знаючи чому.
+		name: 'гість позначає кімнату публічною',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/listed`, true, guest.token)
+	},
+	{
+		name: 'публічність кімнати НЕ булева',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/listed`, 'yes', host.token)
 	},
 	{
 		// Інакше гість запускав би партію, до якої господар не готовий, — і робив би

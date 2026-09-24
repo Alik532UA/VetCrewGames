@@ -164,7 +164,9 @@ afterEach(() => {
 
 describe('вхід у кімнату', () => {
 	it('перевірка жива: створена кімната — у адресі, у переліку й під присутністю', async () => {
-		const room = new LocalRoom(roomInfo(), members());
+		// Публічна: `createRoom` пише `listed` сам, а підставка кімнату лише описує.
+		// Щойно створена — з одним господарем.
+		const room = new LocalRoom(roomInfo({ listed: true }), members().slice(0, 1));
 		const { session, net, place, lobby } = sessionFor(room, null, HOST);
 
 		await session.enter('create');
@@ -532,5 +534,56 @@ describe('скінчена партія', () => {
 		await settle();
 
 		expect(room.status).toBe('playing');
+	});
+});
+
+/**
+ * ПУБЛІЧНІСТЬ ЖИВЕ В КІМНАТІ (`info.listed`), а не на сторінці (аудит 2026-09-24).
+ *
+ * Доти запис у переліку робив лише вхід «створити»: після перезавантаження
+ * господаря (запис гасне з вкладкою) чи перехоплення ведення публічна кімната тихо
+ * ставала приватною, і швидка гра її вже не знаходила.
+ *
+ * Зворотний експеримент: прибрати політику «публічна кімната — у переліку» —
+ * червоніють перші два випадки.
+ */
+describe('публічна кімната в переліку', () => {
+	it('господар, що повернувся після перезавантаження, оголошує її знову', async () => {
+		const room = new LocalRoom(roomInfo({ listed: true }), members());
+		const { session, lobby } = sessionFor(room, roomInfo({ listed: true }), HOST);
+		session.joinCode = '42';
+
+		await session.enter('join');
+		await settle();
+
+		expect(lobby.publish).toHaveBeenCalledWith(
+			// Двоє, а не «1»: кімната, куди господар повертається, уже не порожня.
+			expect.objectContaining({ code: '42', hostUid: HOST, hostName: 'Господар', players: 2 })
+		);
+	});
+
+	it('новий господар після перехоплення оголошує її сам', async () => {
+		const room = new LocalRoom(roomInfo({ listed: true }), members());
+		const { session, lobby } = sessionFor(room, roomInfo({ listed: true }), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		expect(lobby.publish, 'гість не господар — не оголошує').not.toHaveBeenCalled();
+
+		room.setPresent([GUEST]);
+		await room.transport().takeLead({ seq: 1, by: GUEST, type: 'lead', payload: { from: HOST } });
+		await settle();
+
+		expect(lobby.publish).toHaveBeenCalledWith(expect.objectContaining({ hostUid: GUEST }));
+	});
+
+	it('приватну — не оголошує', async () => {
+		const room = new LocalRoom(roomInfo({ listed: false }), members());
+		const { session, lobby } = sessionFor(room, null, HOST);
+
+		await session.enter('create');
+		await settle();
+
+		expect(lobby.publish).not.toHaveBeenCalled();
 	});
 });
