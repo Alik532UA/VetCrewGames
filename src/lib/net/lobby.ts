@@ -1,5 +1,5 @@
 import { connect } from './firebase';
-import { onReconnect } from './presence';
+import { keepNode } from './presence';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
@@ -113,43 +113,44 @@ export interface LobbyRoom {
  * почалася, господар закрив кімнату, сторінка вивантажилась.
  */
 export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => void> {
-	const { db } = await connect();
-	const { onDisconnect, ref, remove, serverTimestamp, set } = await import('firebase/database');
-	// Гра — рівень шляху, і правило звіряє її з полем `gameId` у самому записі.
-	const node = ref(db, `lobby/${entry.gameId}/${entry.code}`);
+	const { serverTimestamp } = await import('firebase/database');
 	const key = listingKey(entry.gameId, entry.code);
 	listed.set(key, { ...entry });
 
-	const write = async () => {
-		// Найсвіжіший варіант запису: число гравців і набір ігор оновлюються окремо.
-		const current = listed.get(key);
-		if (!current) return;
-		await onDisconnect(node).remove();
-		await set(node, recordOf(current, serverTimestamp()));
-	};
-	await write();
-
 	/*
-	 * ПІСЛЯ ОБРИВУ ЗАПИС ПУБЛІКУЄТЬСЯ ЗНОВУ. `onDisconnect` господаря прибирав його
-	 * на ПЕРШОМУ ж обриві — і назад його не повертало ніщо: кімната мовчки зникала
-	 * зі списку й зі «швидкої гри», хоч господар сидів у лобі (аудит 2026-09-23).
-	 * Публікується ОСТАННІЙ варіант, а не перший: інакше число гравців скидалося б
-	 * до одиниці.
+	 * ПІСЛЯ ОБРИВУ ЗАПИС ПУБЛІКУЄТЬСЯ ЗНОВУ (`keepNode`). `onDisconnect` господаря
+	 * прибирав його на ПЕРШОМУ ж обриві — і назад його не повертало ніщо: кімната
+	 * мовчки зникала зі списку й зі «швидкої гри», хоч господар сидів у лобі (аудит
+	 * 2026-09-23). Публікується ОСТАННІЙ варіант, а не перший: інакше число гравців
+	 * скидалося б до одиниці.
 	 */
-	const stop = await onReconnect(() =>
-		write().catch((error: unknown) =>
+	const kept = await keepNode(
+		// Гра — рівень шляху, і правило звіряє її з полем `gameId` у самому записі.
+		`lobby/${entry.gameId}/${entry.code}`,
+		() => {
+			const current = listed.get(key);
+			return current ? recordOf(current, serverTimestamp()) : null;
+		},
+		(error) =>
 			logService.warn('network', 'lobby entry not restored', {
 				code: entry.code,
 				reason: reasonOf(error)
-			})
-		)
+			}),
+		// Окремий запис переліку правило читати не дає — лише обмеженим запитом гілки.
+		{ watch: false }
 	);
-
-	return () => {
-		stop();
+	const unlist = () => {
+		kept.stop();
 		listed.delete(key);
-		void remove(node);
 	};
+	try {
+		await kept.ready;
+	} catch (error) {
+		// Перший запис відхилено — кімната НЕ в переліку, і тримати її там нічого.
+		unlist();
+		throw error;
+	}
+	return unlist;
 }
 
 /**

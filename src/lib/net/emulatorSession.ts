@@ -55,6 +55,44 @@ export async function signedIn(name: string): Promise<Connection> {
 	return { uid: user.uid, db, auth, app };
 }
 
+/**
+ * ТА САМА ЛЮДИНА В ДРУГІЙ ВКЛАДЦІ: окремий застосунок, окреме зʼєднання, той самий
+ * `uid`. Анонімний вхід на другий застосунок не переноситься, тож тут — пошта й
+ * пароль в емуляторі: перший застосунок людину створює, другий входить нею.
+ */
+export async function sameUserTwice(name: string): Promise<[Connection, Connection]> {
+	const { initializeApp } = await import('firebase/app');
+	const {
+		connectAuthEmulator,
+		createUserWithEmailAndPassword,
+		getAuth,
+		signInWithEmailAndPassword
+	} = await import('firebase/auth');
+	const { connectDatabaseEmulator, getDatabase } = await import('firebase/database');
+	const email = `${name}-${Date.now()}@example.test`;
+	const password = 'emulator-only';
+	const tab = async (suffix: string, enter: (auth: Auth) => Promise<{ user: { uid: string } }>) => {
+		const app = initializeApp(
+			{
+				apiKey: 'demo-key',
+				projectId: PROJECT,
+				databaseURL: `http://${DB_HOST}?ns=${PROJECT}-default-rtdb`
+			},
+			`${name}-${suffix}`
+		);
+		const auth = getAuth(app);
+		connectAuthEmulator(auth, `http://${AUTH_HOST}`, { disableWarnings: true });
+		const db = getDatabase(app);
+		const [host, port] = DB_HOST.split(':');
+		connectDatabaseEmulator(db, host, Number(port));
+		const { user } = await enter(auth);
+		return { uid: user.uid, db, auth, app };
+	};
+	const first = await tab('a', (auth) => createUserWithEmailAndPassword(auth, email, password));
+	const second = await tab('b', (auth) => signInWithEmailAndPassword(auth, email, password));
+	return [first, second];
+}
+
 /** Зробити щось від імені учасника. Транспорт кімнати бере підʼєднання раз, при створенні. */
 export async function as<T>(who: Connection, run: () => Promise<T>): Promise<T> {
 	current = who;

@@ -22,65 +22,145 @@ import { logService } from '$lib/services/logService.svelte';
 
 /**
  * Тримати присутність: поки вкладка жива — запис є, зникла — Firebase прибере
- * його сам.
+ * його сам. Уся механіка — у `keepNode` нижче; тут лише шлях і вміст.
  *
- * Порядок тут не косметика: спершу домовляємось, ЩО прибрати, і лише тоді
- * зʼявляємось. У зворотному порядку існує вікно, у якому запис уже є, а
- * домовленості про його прибирання ще немає, — і зникнення клієнта в цю мить
- * лишає привида назавжди.
+ * Вхід у кімнату присутності НЕ ЧЕКАЄ: вона встане з першим «на звʼязку», а
+ * без звʼязку чекати її означало б не пускати в кімнату, де вже все відкрито.
  */
 export async function trackPresence(code: string): Promise<() => void> {
-	const { uid, db } = await connect();
-	const { onDisconnect, ref, remove, serverTimestamp, set } = await import('firebase/database');
-	const mine = ref(db, `presence/${code}/${uid}`);
-
-	const register = async () => {
-		await onDisconnect(mine).remove();
-		await set(mine, { at: serverTimestamp() });
-	};
-	await register();
-
-	/*
-	 * ПІСЛЯ КОЖНОГО ОБРИВУ — ЗНОВУ, і саме це робить присутність правдою.
-	 *
-	 * `onDisconnect` виконується один раз: обірвався сокет — сервер прибрав запис, і
-	 * домовленості більше немає. Доти вона ставилася РАЗ на вхід у кімнату, тож
-	 * після будь-якого обриву (Wi-Fi → LTE, згорнутий застосунок) людина лишалася
-	 * «відсутньою» для всіх, включно з собою, аж до перезавантаження: у вікторині
-	 * вікно очікування закривало питання всім, хоч вона грала (аудит 2026-09-23).
-	 * Канонічний шаблон Firebase: на кожне `.info/connected === true` —
-	 * домовитися й записатися знову.
-	 */
-	const stop = await onReconnect(() =>
-		register().catch((error: unknown) =>
-			logService.warn('network', 'presence not restored', { code, reason: String(error) })
-		)
+	const { uid } = await connect();
+	const { serverTimestamp } = await import('firebase/database');
+	const kept = await keepNode(
+		`presence/${code}/${uid}`,
+		() => ({ at: serverTimestamp() }),
+		(error) => logService.warn('network', 'presence not restored', { code, reason: String(error) })
 	);
+	// Першої спроби вхід не чекає — тож і її відмову називаємо тут, а не мовчимо.
+	kept.ready.catch((error: unknown) =>
+		logService.warn('network', 'presence not registered', { code, reason: String(error) })
+	);
+	return kept.stop;
+}
 
-	return () => {
-		stop();
-		void remove(mine);
-	};
+/** Вузол, який `keepNode` тримає живим. */
+export interface KeptNode {
+	/** Перший запис: кидає, якщо база відмовила. Хто не чекає — нічого не втрачає. */
+	ready: Promise<void>;
+	/** Перестати тримати й прибрати вузол. */
+	stop: () => void;
 }
 
 /**
- * Викликати `run` ЩОРАЗУ, коли звʼязок із базою ВІДНОВИВСЯ, — але не на першому
- * «я на звʼязку»: на момент виклику запис уже зроблено тим, хто просив.
+ * ТРИМАТИ ВУЗОЛ, ПОКИ Я НА ЗВʼЯЗКУ, — і прибраним, коли ні. Спільне для
+ * присутності й запису кімнати в переліку: обидва тримаються на `onDisconnect`.
  *
- * Повертає відписку. Спільна для присутності й запису в переліку кімнат: обидва
- * тримаються на `onDisconnect`, і обидва гаснуть після першого ж обриву.
+ * Порядок не косметика: спершу домовляємось, ЩО прибрати, і лише тоді
+ * зʼявляємось. У зворотному порядку існує вікно, у якому запис уже є, а
+ * домовленості про його прибирання ще немає, — і зникнення клієнта в цю мить
+ * лишає привида назавжди.
+ *
+ * ## На КОЖНЕ «на звʼязку», включно з першим (аудит 2026-09-24)
+ *
+ * `onDisconnect` виконується один раз: обірвався сокет — сервер прибрав запис, і
+ * домовленості більше немає. Доти вузол ставився раз, а слухач обриву вмикався
+ * лише ПІСЛЯ першого запису й перше «на звʼязку» пропускав. Обрив посеред того
+ * першого запису лишав вузол без домовленості — привида: господар-привид ніколи
+ * не виглядав відсутнім (тож ведення ніхто не підхоплював), раунди вікторини його
+ * чекали, а «швидка гра» вела в кімнату-привид. Тепер кожне зʼєднання має свій
+ * номер, і запис, що обірвався посередині, повторюється в новому зʼєднанні.
+ *
+ * ## Вузол зник, а я на звʼязку — поставити знову (`watch`)
+ *
+ * Вузол один на людину, а вкладок буває дві: закрилась одна — її `onDisconnect`
+ * прибрав спільний вузол, і друга, досі відкрита, лишалася «відсутньою» для всіх.
+ * Для цього вузол треба ЧИТАТИ, а це можна не всюди: запис переліку кімнат
+ * читається лише обмеженим запитом усієї гілки, тож там `watch: false` — і
+ * друга вкладка господаря запису не відновить (рідкість, і шкода лише в тому,
+ * що кімната до наступного обриву не видна в списку).
+ *
+ * ## Відмова — до наступного зʼєднання
+ *
+ * SDK показує свій запис одразу й відкочує, коли база відмовила; відкат — це
+ * «вузол зник», і без зупинки це було б коло з частотою мережі (той самий
+ * різновид, що вже був у старті партії). Тому після відмови — тиша до
+ * наступного «на звʼязку».
  */
-export async function onReconnect(run: () => void): Promise<() => void> {
+export async function keepNode(
+	path: string,
+	value: () => object | null,
+	onRefused: (error: unknown) => void,
+	{ watch = true }: { watch?: boolean } = {}
+): Promise<KeptNode> {
 	const { db } = await connect();
-	const { off, onValue, ref } = await import('firebase/database');
+	const { off, onDisconnect, onValue, ref, remove, set } = await import('firebase/database');
+	const node = ref(db, path);
 	const status = ref(db, '.info/connected');
-	let online: boolean | null = null;
-	const handler = onValue(status, (snapshot) => {
-		const now = snapshot.val() === true;
-		if (now && online === false) run();
-		online = now;
+
+	let online = false;
+	let stopped = false;
+	let refused = false;
+	let pending = false;
+	/** Номер зʼєднання: росте на кожне «на звʼязку». */
+	let epoch = 0;
+	/** Зʼєднання, у якому домовленість і запис уже зроблено; `-1` — ні в якому. */
+	let registered = -1;
+	let first: { resolve: () => void; reject: (error: unknown) => void } | null = null;
+	const ready = new Promise<void>((resolve, reject) => (first = { resolve, reject }));
+	// Позначено як оброблене: хто не чекає першого запису, не мусить ловити його відмову.
+	ready.catch(() => {});
+
+	const register = async (): Promise<void> => {
+		// `null` — тримати нічого (запис зняли): інакше кожне «на звʼязку» ходило б по колу.
+		if (stopped || pending || refused || !online || registered === epoch || value() === null)
+			return;
+		pending = true;
+		const at = epoch;
+		try {
+			await onDisconnect(node).remove();
+			const current = value();
+			if (stopped || current === null) return;
+			await set(node, current);
+			registered = at;
+			first?.resolve();
+			first = null;
+		} catch (error) {
+			refused = true;
+			if (first) first.reject(error);
+			else onRefused(error);
+			first = null;
+		} finally {
+			pending = false;
+		}
+		// Поки писали, звʼязок обірвався й повернувся: домовленість лишилась у старому.
+		if (registered !== epoch) void register();
+	};
+
+	const onStatus = onValue(status, (snapshot) => {
+		online = snapshot.val() === true;
+		if (!online) return;
+		epoch += 1;
+		refused = false;
+		void register();
 	});
-	return () => off(status, 'value', handler);
+	const onNode = watch
+		? onValue(node, (snapshot) => {
+				if (snapshot.exists() || !online) return;
+				registered = -1;
+				void register();
+			})
+		: null;
+
+	return {
+		ready,
+		stop: () => {
+			stopped = true;
+			off(status, 'value', onStatus);
+			if (onNode) off(node, 'value', onNode);
+			remove(node).catch((error: unknown) =>
+				logService.warn('network', 'node not removed', { path, reason: String(error) })
+			);
+		}
+	};
 }
 
 /**
