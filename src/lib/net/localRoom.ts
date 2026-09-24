@@ -214,10 +214,15 @@ export class LocalRoom {
 				 * на звʼязку немає, у `from` — саме він, номер вільний. І все одним
 				 * записом: господар і хід разом або ніяк.
 				 */
+				// Посеред партії — лише той, хто в заморожений склад потрапив; у лобі — гравець.
 				const author = this.#members.find((member) => member.uid === move.by);
+				const inParty =
+					this.#info.status === 'lobby'
+						? author?.role === 'player'
+						: (this.#info.roster ?? []).some((entry) => entry.uid === move.by);
 				const hostAway = this.#present !== null && !this.#present.has(this.#info.hostUid);
 				const authorHere = this.#present !== null && this.#present.has(move.by);
-				if (author?.role !== 'player' || !hostAway || !authorHere) return false;
+				if (!inParty || !hostAway || !authorHere) return false;
 				if (move.type !== 'lead' || move.payload?.from !== this.#info.hostUid) return false;
 				if (
 					!this.#validSeq(move.seq) ||

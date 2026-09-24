@@ -84,7 +84,8 @@ describe('rtdbRoom: записи транспорту', () => {
 					'info/status': 'playing',
 					'info/startedAt': SERVER_TIME,
 					'info/countdownAt': null,
-					'info/roster': [{ uid: 'uid-host', name: 'Господар' }],
+					// Склад у базі — мапа за uid: правило питає «чи він у складі».
+					'info/roster': { 'uid-host': { name: 'Господар', seat: 0 } },
 					moves: null
 				}
 			}
@@ -123,7 +124,15 @@ describe('rtdbRoom: записи транспорту', () => {
 			{
 				op: 'update',
 				path: 'rooms/42/info',
-				value: { status: 'playing', startedAt: SERVER_TIME, countdownAt: null, roster }
+				value: {
+					status: 'playing',
+					startedAt: SERVER_TIME,
+					countdownAt: null,
+					roster: {
+						'uid-host': { name: 'Господар', seat: 0 },
+						'uid-guest': { name: 'Гість', seat: 1 }
+					}
+				}
 			}
 		]);
 	});
@@ -168,6 +177,8 @@ describe('rtdbRoom: передача ведення й номер ходу', () 
 				path: 'rooms/42',
 				value: {
 					'info/hostUid': 'uid-guest',
+					// Вказівник для правила: господар міняється лише разом із САМЕ цим ходом.
+					'info/leadSeq': '000007',
 					'moves/000007': {
 						seq: 7,
 						by: 'uid-guest',

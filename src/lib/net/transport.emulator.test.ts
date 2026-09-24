@@ -70,26 +70,35 @@ interface Table {
 	stranger: Seat;
 	/** Знімок очима господаря — перший, що задовольняє умову. */
 	until(check: (snapshot: RoomSnapshot) => boolean): Promise<RoomSnapshot>;
-	close(): Promise<void>;
+	/** Хто на звʼязку: решта — ні. */
+	present(uids: readonly string[]): Promise<void>;
+	/** Знести кімнату від імені того, хто в ній господар. */
+	close(by?: 'host' | 'guest'): Promise<void>;
 }
 
 interface World {
 	name: string;
-	/** Нова кімната в лобі: господар і гість — гравці; `spectator` — ще й глядач. */
-	table(options?: { spectator?: boolean }): Promise<Table>;
+	/**
+	 * Нова кімната в лобі: господар і гість — гравці; `spectator` — сторонній
+	 * заходить глядачем, `strangerPlays` — гравцем (але в склад старту не йде).
+	 */
+	table(options?: { spectator?: boolean; strangerPlays?: boolean }): Promise<Table>;
 }
 
 const CONFIG = { pairs: 4, cols: 4 };
 
 const local: World = {
 	name: 'LocalRoom',
-	async table({ spectator = false } = {}) {
+	async table({ spectator = false, strangerPlays = false } = {}) {
 		const [HOST, GUEST, STRANGER] = ['uid-host', 'uid-guest', 'uid-stranger'];
 		const members: Member[] = [
 			{ uid: HOST, name: 'Господар', role: 'player', order: 1 },
 			{ uid: GUEST, name: 'Гість', role: 'player', order: 2 },
 			...(spectator
 				? [{ uid: STRANGER, name: 'Глядач', role: 'spectator' as const, order: 3 }]
+				: []),
+			...(strangerPlays
+				? [{ uid: STRANGER, name: 'Сторонній', role: 'player' as const, order: 3 }]
 				: [])
 		];
 		const info: RoomInfo = {
@@ -108,6 +117,7 @@ const local: World = {
 			guest: seat(GUEST),
 			stranger: seat(STRANGER),
 			until: (check) => until(host.transport, check),
+			present: async (uids) => room.setPresent(uids),
 			close: async () => room.close()
 		};
 	}
@@ -117,7 +127,7 @@ let people: { host: Connection; guest: Connection; stranger: Connection } | null
 
 const emulator: World = {
 	name: 'rtdbRoom + емулятор',
-	async table({ spectator = false } = {}) {
+	async table({ spectator = false, strangerPlays = false } = {}) {
 		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
 		const { host, guest, stranger } = people;
 		const net = await import('./rtdbRoom');
@@ -133,6 +143,7 @@ const emulator: World = {
 		);
 		await as(guest, () => net.joinRoom(code, 'Гість'));
 		if (spectator) await as(stranger, () => net.joinRoom(code, 'Глядач', 'spectator'));
+		if (strangerPlays) await as(stranger, () => net.joinRoom(code, 'Сторонній', 'player'));
 		const seat = async (who: Connection): Promise<Seat> => ({
 			uid: who.uid,
 			transport: await as(who, () => net.roomTransport(code))
@@ -143,7 +154,15 @@ const emulator: World = {
 			guest: await seat(guest),
 			stranger: await seat(stranger),
 			until: (check) => until(hostSeat.transport, check),
-			close: () => as(host, () => net.closeRoom(code))
+			present: async (uids) => {
+				const { ref, remove, serverTimestamp, set } = await import('firebase/database');
+				for (const who of [host, guest, stranger]) {
+					const node = ref(who.db, `presence/${code}/${who.uid}`);
+					if (uids.includes(who.uid)) await set(node, { at: serverTimestamp() });
+					else await remove(node);
+				}
+			},
+			close: (by = 'host') => as(by === 'host' ? host : guest, () => net.closeRoom(code))
 		};
 	}
 };
@@ -274,6 +293,39 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		expect(snapshot.moves).toEqual([]);
 		expect(snapshot.info.status).toBe('playing');
 		expect(snapshot.info.roster).toEqual(rosterOf(table));
+		await table.close();
+	});
+
+	it('ведення підхоплює гравець складу, коли господаря немає, — одним записом із ходом lead', async () => {
+		const table = await world.table();
+		await table.host.transport.setStatus('playing', rosterOf(table));
+		await table.present([table.guest.uid]);
+
+		const lead: Move = {
+			seq: 1,
+			by: table.guest.uid,
+			type: 'lead',
+			payload: { from: table.host.uid }
+		};
+		expect(await table.guest.transport.takeLead(lead)).toBe(true);
+
+		const snapshot = await table.until((s) => s.info.hostUid === table.guest.uid);
+		expect(snapshot.moves.map((move) => move.type)).toEqual(['lead']);
+		await table.close('guest');
+	});
+
+	it('посеред партії ведення не бере той, кого немає в складі', async () => {
+		const table = await world.table({ strangerPlays: true });
+		await table.host.transport.setStatus('playing', rosterOf(table));
+		await table.present([table.stranger.uid]);
+
+		const lead: Move = {
+			seq: 1,
+			by: table.stranger.uid,
+			type: 'lead',
+			payload: { from: table.host.uid }
+		};
+		expect(await table.stranger.transport.takeLead(lead)).toBe(false);
 		await table.close();
 	});
 

@@ -23,7 +23,12 @@ const info: RoomInfo = {
 	seed: 1,
 	status: 'playing',
 	hostUid: HOST,
-	config: {}
+	config: {},
+	// Партія йде, тож склад заморожено: перехоплення ведення спирається саме на нього.
+	roster: [
+		{ uid: 'uid-host', name: 'Господар' },
+		{ uid: 'uid-guest', name: 'Гість' }
+	]
 };
 
 const members: Member[] = [
@@ -105,6 +110,23 @@ describe('передача ведення — як правило info/hostUid',
 		const room = new LocalRoom(info, members);
 		room.setPresent([GUEST]);
 		expect(await room.transport().takeLead(lead(GUEST, WATCHER))).toBe(false);
+	});
+
+	/**
+	 * Роль `player` кожен пише собі сам, тож посеред партії саме склад відрізняє
+	 * того, хто грає, від того, хто щойно назвав себе гравцем (аудит 2026-09-24).
+	 */
+	it('посеред партії — лише той, хто в складі', async () => {
+		const late = { uid: 'uid-late', name: 'Пізній', role: 'player' as const, order: 4 };
+		const room = new LocalRoom(info, [...members, late]);
+		room.setPresent([late.uid]);
+		expect(await room.transport().takeLead(lead(late.uid))).toBe(false);
+	});
+
+	it('у лобі — будь-який гравець кімнати', async () => {
+		const room = new LocalRoom({ ...info, status: 'lobby', roster: undefined }, members);
+		room.setPresent([GUEST]);
+		expect(await room.transport().takeLead(lead(GUEST))).toBe(true);
 	});
 });
 

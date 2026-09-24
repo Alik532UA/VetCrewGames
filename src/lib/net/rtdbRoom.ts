@@ -1,7 +1,8 @@
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
-import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport } from './roomTypes';
+import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
+import { infoFromDb, rosterToRecord, snapshotFromDb } from './roomShape';
 
 /**
  * Кімната в Realtime Database — та сама, що `LocalRoom`, тільки справжня.
@@ -333,7 +334,7 @@ export async function watchRoomInfo(
 	const { db } = await connect();
 	const { onValue, ref } = await import('firebase/database');
 	return onValue(ref(db, `rooms/${code}/info`), (snapshot) => {
-		onInfo(snapshot.exists() ? (snapshot.val() as RoomInfo) : null);
+		onInfo(snapshot.exists() ? infoFromDb(snapshot.val()) : null);
 	});
 }
 
@@ -361,7 +362,7 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 	const { db } = await connect();
 	const { get, ref } = await import('firebase/database');
 	const snapshot = await get(ref(db, `rooms/${code}/info`));
-	return snapshot.exists() ? (snapshot.val() as RoomInfo) : null;
+	return snapshot.exists() ? infoFromDb(snapshot.val()) : null;
 }
 
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */
@@ -387,38 +388,11 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				offset = Number.isFinite(value) ? value : 0;
 			});
 			const handler = onValue(room, (snapshot) => {
-				const value = snapshot.val() as {
-					info?: RoomInfo;
-					members?: Record<string, Omit<Member, 'uid'>>;
-					moves?: Record<string, Move>;
-				} | null;
 				// Кімнати більше немає — сказати про це, а не лишити гостей перед
-				// дошкою, яка вже ні до чого.
-				if (!value?.info) {
-					onGone?.();
-					return;
-				}
-
-				onSnapshot({
-					info: value.info,
-					members: Object.entries(value.members ?? {}).map(([uid, member]) => ({
-						uid,
-						...member
-					})),
-					/*
-					 * Номер — З КЛЮЧА, а не з поля `seq`. Правило бази тримає ключ рівно в
-					 * шести цифрах, а поле — лише в межах тих самих шести, тож єдина правда
-					 * про місце ходу в журналі — ключ: розійтися з ним поле може лише в
-					 * чужих руках, і тоді порядок на різних пристроях розійшовся б теж.
-					 *
-					 * Порядок ЗАДАЄМО самі: покладатися на порядок ключів обʼєкта означало
-					 * б грати партію в різній послідовності на різних пристроях.
-					 */
-					moves: Object.entries(value.moves ?? {})
-						.map(([key, move]) => ({ ...move, seq: Number(key) }))
-						.filter((move) => Number.isInteger(move.seq))
-						.sort((a, b) => a.seq - b.seq)
-				} satisfies RoomSnapshot);
+				// дошкою, яка вже ні до чого. Форма з бази — у `roomShape.ts`.
+				const next = snapshotFromDb(snapshot.val());
+				if (next) onSnapshot(next);
+				else onGone?.();
 			});
 			return () => {
 				off(room, 'value', handler);
@@ -430,9 +404,13 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			try {
 				// Один запис на два шляхи: правило `lead` читає `info/hostUid` ПІСЛЯ
 				// запису, тож окремо хід не пройшов би, а окремо господар — теж.
+				// `leadSeq` — вказівник для правила: `hostUid` міняється лише разом із
+				// ходом `lead`, і саме тим, на який він указує (аудит 2026-09-24).
+				const key = String(move.seq).padStart(6, '0');
 				await update(ref(db, `rooms/${code}`), {
 					'info/hostUid': move.by,
-					[`moves/${String(move.seq).padStart(6, '0')}`]: { ...move, at: serverTimestamp() }
+					'info/leadSeq': key,
+					[`moves/${key}`]: { ...move, at: serverTimestamp() }
 				});
 				return true;
 			} catch (error) {
@@ -492,7 +470,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 					status,
 					startedAt: serverTimestamp(),
 					countdownAt: null,
-					...(roster ? { roster: [...roster] } : {})
+					...(roster ? { roster: rosterToRecord(roster) } : {})
 				});
 				return;
 			}
@@ -578,7 +556,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				'info/status': 'playing',
 				'info/startedAt': serverTimestamp(),
 				'info/countdownAt': null,
-				'info/roster': [...roster],
+				'info/roster': rosterToRecord(roster),
 				moves: null
 			});
 		}

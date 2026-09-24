@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LocalRoom } from '$lib/net/localRoom';
+import { rosterOf } from '$lib/utils/roster';
 import type { Member, RoomInfo } from '$lib/net/roomTypes';
 import {
 	GAME_FLAG_PREFIX,
@@ -61,6 +62,8 @@ const info = (over: Partial<RoomInfo> = {}): RoomInfo => ({
 	rulesVersion: 1,
 	seed: SEED,
 	status: 'playing',
+	// Партія йде — склад заморожено (на нього спирається перехоплення ведення).
+	roster: rosterOf(members()),
 	hostUid: HOST,
 	config: gamesToConfig(ONLINE_GAMES.map((game) => game.id)),
 	...over

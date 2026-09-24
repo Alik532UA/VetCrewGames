@@ -1543,12 +1543,14 @@ const CASES = [
 	{
 		name: 'склад із ЧУЖИМ іменем',
 		allowed: false,
-		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: guest.uid, name: 'Лідер' }], host.token)
+		run: () =>
+			write(`rooms/${CODE}/info/roster`, { [guest.uid]: { name: 'Лідер', seat: 0 } }, host.token)
 	},
 	{
 		name: 'у складі — не учасник кімнати',
 		allowed: false,
-		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: stranger.uid, name: 'Тест' }], host.token)
+		run: () =>
+			write(`rooms/${CODE}/info/roster`, { [stranger.uid]: { name: 'Тест', seat: 0 } }, host.token)
 	},
 	{
 		// Сторонній заходить глядачем — і рівно на один випадок нижче.
@@ -1564,7 +1566,8 @@ const CASES = [
 	{
 		name: 'у складі — глядач',
 		allowed: false,
-		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: stranger.uid, name: 'Тест' }], host.token)
+		run: () =>
+			write(`rooms/${CODE}/info/roster`, { [stranger.uid]: { name: 'Тест', seat: 0 } }, host.token)
 	},
 	{
 		// Випадки нижче чекають на стороннього, який НЕ учасник.
@@ -1576,7 +1579,11 @@ const CASES = [
 		name: 'склад із зайвим полем',
 		allowed: false,
 		run: () =>
-			write(`rooms/${CODE}/info/roster`, [{ uid: guest.uid, name: 'Тест', score: 1 }], host.token)
+			write(
+				`rooms/${CODE}/info/roster`,
+				{ [guest.uid]: { name: 'Тест', seat: 0, score: 1 } },
+				host.token
+			)
 	},
 	/*
 	 * СТАРТ ІЗ ХОДОМ У ЖУРНАЛІ ЛОБІ. Там бувають ходи `lead` (ведення підхопили за
@@ -1597,7 +1604,8 @@ const CASES = [
 	{
 		name: 'склад без переходу в playing',
 		allowed: false,
-		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: guest.uid, name: 'Тест' }], host.token)
+		run: () =>
+			write(`rooms/${CODE}/info/roster`, { [guest.uid]: { name: 'Тест', seat: 0 } }, host.token)
 	},
 	{
 		// Рівно тим записом, яким його робить `rtdbRoom.setStatus('playing', склад)`.
@@ -1610,10 +1618,10 @@ const CASES = [
 					status: 'playing',
 					startedAt: SERVER_TIME,
 					countdownAt: null,
-					roster: [
-						{ uid: host.uid, name: 'Тест' },
-						{ uid: guest.uid, name: 'Тест' }
-					]
+					roster: {
+						[host.uid]: { name: 'Тест', seat: 0 },
+						[guest.uid]: { name: 'Тест', seat: 1 }
+					}
 				},
 				host.token
 			)
@@ -1661,6 +1669,7 @@ const CASES = [
 				`rooms/${CODE}`,
 				{
 					'info/hostUid': guest.uid,
+					'info/leadSeq': '000004',
 					'moves/000004': {
 						seq: 4,
 						by: guest.uid,
@@ -1677,6 +1686,89 @@ const CASES = [
 		allowed: true,
 		run: () => write(`presence/${CODE}/${host.uid}`, null, host.token)
 	},
+	/*
+	 * ВЕДЕННЯ — ЛИШЕ З ХОДОМ `lead` І ЛИШЕ ГРАВЦЕМ СКЛАДУ (аудит 2026-09-24).
+	 * Господаря зараз немає на звʼязку, тож відмова нижче — рівно через свою умову.
+	 */
+	{
+		name: 'ведення без ходу lead',
+		allowed: false,
+		run: () => patch(`rooms/${CODE}`, { 'info/hostUid': guest.uid }, guest.token)
+	},
+	{
+		// Вказівник на хід, що вже лежить, — не передача, а підробка її сліду.
+		name: 'ведення з вказівником на наявний хід',
+		allowed: false,
+		run: () =>
+			patch(`rooms/${CODE}`, { 'info/hostUid': guest.uid, 'info/leadSeq': '000900' }, guest.token)
+	},
+	{
+		// Новий хід, але не `lead`: без перевірки типу ведення забирав би будь-який хід.
+		name: 'ведення з новим ходом, що не lead',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': guest.uid,
+					'info/leadSeq': '000010',
+					'moves/000010': {
+						seq: 10,
+						by: guest.uid,
+						type: 'flip',
+						at: SERVER_TIME,
+						payload: { index: 1 }
+					}
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'сторонній заходить гравцем посеред партії',
+		allowed: true,
+		run: async () => {
+			const joined = await write(
+				`rooms/${CODE}/members/${stranger.uid}`,
+				{ ...member, order: 5 },
+				stranger.token
+			);
+			return joined === 200
+				? write(`presence/${CODE}/${stranger.uid}`, { at: SERVER_TIME }, stranger.token)
+				: joined;
+		}
+	},
+	{
+		// Роль `player` він написав собі сам — але в заморожений склад не потрапив.
+		name: 'посеред партії ведення бере той, кого немає в складі',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/hostUid': stranger.uid,
+					'info/leadSeq': '000009',
+					'moves/000009': {
+						seq: 9,
+						by: stranger.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				stranger.token
+			)
+	},
+	{
+		// Випадки нижче чекають на стороннього, який НЕ учасник.
+		name: 'сторонній іде з кімнати',
+		allowed: true,
+		run: async () => {
+			const gone = await write(`presence/${CODE}/${stranger.uid}`, null, stranger.token);
+			return gone === 200
+				? write(`rooms/${CODE}/members/${stranger.uid}`, null, stranger.token)
+				: gone;
+		}
+	},
 	{
 		name: 'гість підхоплює ведення, коли господаря немає',
 		allowed: true,
@@ -1685,6 +1777,7 @@ const CASES = [
 				`rooms/${CODE}`,
 				{
 					'info/hostUid': guest.uid,
+					'info/leadSeq': '000005',
 					'moves/000005': {
 						seq: 5,
 						by: guest.uid,
@@ -1704,6 +1797,7 @@ const CASES = [
 				`rooms/${CODE}`,
 				{
 					'info/hostUid': host.uid,
+					'info/leadSeq': '000006',
 					'moves/000006': {
 						seq: 6,
 						by: host.uid,
@@ -1733,6 +1827,7 @@ const CASES = [
 				`rooms/${CODE}`,
 				{
 					'info/hostUid': host.uid,
+					'info/leadSeq': '000007',
 					'moves/000007': {
 						seq: 7,
 						by: host.uid,
@@ -1745,6 +1840,14 @@ const CASES = [
 			)
 	},
 	{
+		// Хід `lead` під 000005 лежить давно: указати на нього — не передача, а підробка
+		// її сліду. Відмова тут саме через те, що хід не новий.
+		name: 'ведення з вказівником на ЧУЖИЙ старий хід lead',
+		allowed: false,
+		run: () =>
+			patch(`rooms/${CODE}`, { 'info/hostUid': host.uid, 'info/leadSeq': '000005' }, host.token)
+	},
+	{
 		// Повертає господаря на місце: випадки нижче зносять кімнату від його імені.
 		name: 'господар підхоплює ведення назад, коли гостя немає',
 		allowed: true,
@@ -1753,6 +1856,7 @@ const CASES = [
 				`rooms/${CODE}`,
 				{
 					'info/hostUid': host.uid,
+					'info/leadSeq': '000008',
 					'moves/000008': {
 						seq: 8,
 						by: host.uid,
@@ -1771,7 +1875,8 @@ const CASES = [
 	{
 		name: 'склад посеред партії не міняється',
 		allowed: false,
-		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: host.uid, name: 'Тест' }], host.token)
+		run: () =>
+			write(`rooms/${CODE}/info/roster`, { [host.uid]: { name: 'Тест', seat: 0 } }, host.token)
 	},
 	{
 		name: 'склад посеред партії не прибирається',
@@ -1789,7 +1894,7 @@ const CASES = [
 					'info/status': 'playing',
 					'info/startedAt': SERVER_TIME,
 					'info/countdownAt': null,
-					'info/roster': [{ uid: guest.uid, name: 'Тест' }],
+					'info/roster': { [guest.uid]: { name: 'Тест', seat: 0 } },
 					moves: null
 				},
 				host.token
