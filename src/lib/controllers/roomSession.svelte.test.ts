@@ -429,3 +429,64 @@ describe('відмова бази на автоматичному записі',
 		expect(room.status).toBe('lobby');
 	});
 });
+
+/**
+ * СКЛАД І РЕВАНШ — З ТИХ, ХТО НА ЗВʼЯЗКУ (аудит 2026-09-24).
+ *
+ * Рядок складу не гасне сам, тож гість, що закрив вкладку під час відліку, доти
+ * потрапляв у заморожений склад — і кожна його черга коштувала решті 90 с. А
+ * реванш не перевіряв мінімуму зовсім: господар сам на сам «вигравав» і отримував
+ * бали на кожному реванші.
+ *
+ * Зворотні експерименти: у `presentPlayers` не фільтрувати за присутністю —
+ * червоніють «лише ті, хто на звʼязку» і «відлік гасне»; прибрати перевірку
+ * `canStart` з `rematch` — червоніє «реванш без суперника».
+ */
+describe('склад і реванш — з тих, хто на звʼязку', () => {
+	const ghost: Member = { uid: 'uid-ghost', name: 'Привид', role: 'player', order: 3 };
+
+	it('склад старту — лише ті, хто на звʼязку', async () => {
+		const room = new LocalRoom(roomInfo(), [...members(), ghost]);
+		const { session, setOnline } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+		setOnline([HOST, GUEST]);
+
+		await session.start();
+		await settle();
+
+		expect(session.match?.roster?.map((entry) => entry.uid)).toEqual([HOST, GUEST]);
+	});
+
+	it('реванш без суперника не починається — і бали за соло не нараховуються', async () => {
+		const room = new LocalRoom(
+			roomInfo({ status: 'playing', roster: rosterOf(members()) }),
+			members()
+		);
+		const { session, setOnline } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+		setOnline([HOST]);
+		const seedBefore = session.match?.seed;
+
+		await session.rematch();
+		await settle();
+
+		expect(toast.info).toHaveBeenCalledWith('pairs.needPlayers');
+		expect(session.match?.seed, 'реванш почався сам на сам').toBe(seedBefore);
+	});
+
+	it('гість закрив вкладку під час відліку — відлік гасне', async () => {
+		const room = new LocalRoom(roomInfo({ autoStart: true }), members());
+		const { session, setOnline } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		setOnline([HOST, GUEST]);
+		await settle();
+		expect(session.match?.countdownAt, 'двоє на звʼязку — відлік іде').not.toBeNull();
+
+		setOnline([HOST]);
+		await settle();
+
+		expect(session.match?.countdownAt, 'рядок гостя лишився, але його немає').toBeNull();
+	});
+});

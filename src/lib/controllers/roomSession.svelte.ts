@@ -9,7 +9,7 @@ import type { LobbyRoom } from '$lib/net/lobby';
 import type { Member, Role, RoomStatus, RoomTransport } from '$lib/net/roomTypes';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { entryErrorKey, entryRefusal, quickPick } from '$lib/utils/roomEntry';
-import { rosterOf } from '$lib/utils/roster';
+import { playersOf, rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 
 /** Що сесії треба знати про матч — спільне для «Знайди пару» й вікторини. */
@@ -107,6 +107,26 @@ export class RoomSession<M extends RoomMatch> {
 		readonly lobby: LobbyFeed,
 		readonly net: RoomNet = liveNet
 	) {}
+
+	/**
+	 * Гравці, що зараз на звʼязку, — з них складається склад старту й реваншу.
+	 *
+	 * Доти склад брався з УСІХ рядків `members`, а рядок не гасне сам: гість, що
+	 * закрив вкладку під час відліку, потрапляв у заморожений склад, і кожна його
+	 * черга коштувала решті 90 с (аудит 2026-09-24). Поки присутність не приїхала
+	 * (мене самого в ній ще немає) — усі гравці кімнати: краще почати з тим, кого
+	 * ще не видно, ніж не почати зовсім.
+	 */
+	get presentPlayers(): Member[] {
+		const players = playersOf(this.match?.members ?? []);
+		if (!this.online.includes(this.me)) return players;
+		return players.filter((player) => this.online.includes(player.uid));
+	}
+
+	/** Чи вистачає тих, хто на звʼязку, на нову партію. */
+	get canStart(): boolean {
+		return this.presentPlayers.length >= this.game.minPlayers;
+	}
 
 	get amHost(): boolean {
 		return this.me !== '' && this.match?.hostUid === this.me;
@@ -322,13 +342,13 @@ export class RoomSession<M extends RoomMatch> {
 	async start(auto = false): Promise<void> {
 		const match = this.match;
 		if (!match || (auto && this.autoHalted)) return;
-		if (match.players.length < this.game.minPlayers) {
+		if (!this.canStart) {
 			toast.info('pairs.needPlayers');
 			return;
 		}
 		// Склад заморожується тим самим записом, що й старт (`RoomInfo.roster`).
 		const started = await this.hostAction((transport) =>
-			transport.setStatus('playing', rosterOf(match.members))
+			transport.setStatus('playing', rosterOf(this.presentPlayers))
 		);
 		if (!started) {
 			if (auto) this.autoHalted = true;
@@ -355,11 +375,23 @@ export class RoomSession<M extends RoomMatch> {
 
 	// Зерно реваншу — з тієї самої дороги, що й зерно нової кімнати: випадковість
 	// живе на сторінці, а не в контролері (`quizSeed.test.ts`).
-	// Склад реваншу — ті, хто в кімнаті ЗАРАЗ, а не склад попередньої партії.
-	rematch = () =>
-		this.hostAction((transport) =>
-			transport.restart(this.game.newRoom().seed, rosterOf(this.match?.members ?? []))
+	/**
+	 * Реванш — з тими, хто в кімнаті й на звʼязку ЗАРАЗ, і лише коли їх досить.
+	 *
+	 * Доти мінімуму тут не перевіряв ніхто: господар, від якого пішов суперник,
+	 * перезапускав партію сам із собою — «вигравав» її й отримував бали за
+	 * перемогу на кожному реванші, бо разовість нагороди тримається на зерні, а
+	 * зерно в реванша нове (аудит 2026-09-24).
+	 */
+	rematch = async () => {
+		if (!this.canStart) {
+			toast.info('pairs.needPlayers');
+			return;
+		}
+		await this.hostAction((transport) =>
+			transport.restart(this.game.newRoom().seed, rosterOf(this.presentPlayers))
 		);
+	};
 	switchAutoStart = (on: boolean) => this.hostAction((transport) => transport.setAutoStart(on));
 	kick = (uid: string) => this.hostAction((transport) => transport.removeMember(uid));
 

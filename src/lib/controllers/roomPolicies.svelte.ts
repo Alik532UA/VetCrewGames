@@ -54,7 +54,7 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	$effect(() => {
 		const match = session.match;
 		if (!match || !session.amHost || match.status !== 'lobby') return;
-		void session.lobby.setPlayers(session.code, match.players.length);
+		void session.lobby.setPlayers(session.code, session.presentPlayers.length);
 	});
 
 	// Відлік автостарту вмикає ГОСПОДАР — і ВИМИКАЄ, коли гравців стало замало.
@@ -62,7 +62,9 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	$effect(() => {
 		const match = session.match;
 		if (!match || !session.amHost || match.status !== 'lobby' || session.autoHalted) return;
-		const ready = match.autoStart && session.game.autoStartReady(match.players.length);
+		// Рахуються ТІ, ХТО НА ЗВʼЯЗКУ: гість, що закрив вкладку під час відліку, гасить
+		// його, а не потрапляє в заморожений склад привидом.
+		const ready = match.autoStart && session.game.autoStartReady(session.presentPlayers.length);
 		if (ready !== (match.countdownAt !== null)) {
 			void session
 				.hostAction((transport) => transport.setCountdown(ready))

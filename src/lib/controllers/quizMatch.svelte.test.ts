@@ -1098,6 +1098,31 @@ describe('пауза очікування', () => {
 	 * одним числом замість переліку за раундами — обидві перевірки нижче
 	 * червоніють. Зроблено.
 	 */
+	/**
+	 * Власна незакомічена пауза минулої партії не переїжджає в реванш: той самий
+	 * номер раунду отримував би чужу надбавку часу, смуга перевалювала б за 100%, а
+	 * відповідь у «зайвий» час правило відкидало б мовчки (аудит 2026-09-24).
+	 *
+	 * Зворотний експеримент: прибрати скидання `#pending` при новому зерні — червоніє.
+	 */
+	it('реванш не переносить власну паузу минулої партії', async () => {
+		const { room, host, guest, stop } = table();
+		await host.startRound(0);
+		host.setHold(true, 1_000);
+		guest.setHold(true, 1_000);
+		host.setHold(false, 6_000);
+		guest.setHold(false, 21_000);
+		expect(guest.heldMs(22_000), 'перевірка жива: власна пауза гостя довша').toBeGreaterThan(
+			host.heldMs(22_000)
+		);
+
+		await room.transport().restart(SEED + 1, rosterOf(members()));
+		await host.startRound(0);
+
+		expect(guest.heldMs(30_000), 'пауза минулої партії переїхала в реванш').toBe(0);
+		stop();
+	});
+
 	it('пауза першого раунду не з’їдає таймер наступного', async () => {
 		const { host, guest, stop } = table();
 		await host.startRound(0);

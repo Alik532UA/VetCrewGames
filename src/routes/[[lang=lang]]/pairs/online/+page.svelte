@@ -266,7 +266,7 @@
 			online={session.online}
 			amHost={session.amHost}
 			cross={crossGameLinks(lang, 'pairs', session.code, match?.nextCode ?? null)}
-			onRematch={session.amHost ? session.rematch : undefined}
+			onRematch={session.amHost && session.canStart ? session.rematch : undefined}
 			onClose={session.amHost ? () => session.close() : undefined}
 			onYield={canTakeTurn ? () => stallAction('yield') : undefined}
 			onEnd={canTakeTurn ? () => stallAction('end') : undefined}

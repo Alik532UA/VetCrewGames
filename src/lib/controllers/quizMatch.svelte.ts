@@ -722,6 +722,12 @@ export class QuizMatch {
 		this.members = snapshot.members;
 		this.status = snapshot.info.status;
 		this.hostUid = snapshot.info.hostUid;
+		if (snapshot.info.seed !== this.seed) {
+			// Нова партія (реванш): власна незакомічена пауза минулої їй не належить —
+			// інакше той самий номер раунду отримував би чужу надбавку часу.
+			this.#pending = {};
+			this.#holdSince = null;
+		}
 		this.seed = snapshot.info.seed;
 		this.autoStart = snapshot.info.autoStart === true;
 		this.nextCode = snapshot.info.nextCode ?? null;

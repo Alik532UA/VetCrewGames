@@ -17,8 +17,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_1',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {
-				uk: 'Створіть кімнату на одному пристрої й зайдіть у неї з другого за пʼятилітерним кодом. Обидва мусять побачити ОДНАКОВУ розкладку карток.',
-				en: 'Create a room on one device and join it from another with the five-letter code. Both must see the SAME card layout.'
+				uk: 'Створіть кімнату на одному пристрої й зайдіть у неї з другого за кодом кімнати (цифри). Обидва мусять побачити ОДНАКОВУ розкладку карток.',
+				en: 'Create a room on one device and join it from another with the room code (digits). Both must see the SAME card layout.'
 			},
 			coverage: 'manual',
 			testid: 'pairs-create-btn'
@@ -175,6 +175,17 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/roomSession.svelte.test.ts'
+		},
+		{
+			id: 'online_17',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Швидка гра: під час відліку до старту другий гравець закриває вкладку. Відлік мусить зупинитися, а партія — не початися з тим, кого вже немає. Після реваншу, від якого суперник пішов, господар мусить почути «потрібен ще гравець», а не почати гру сам із собою.',
+				en: 'Quick game: during the countdown the second player closes the tab. The countdown must stop, and the game must not start with someone who is gone. On a rematch after the opponent left, the host must hear “one more player needed” instead of starting a game alone.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/controllers/roomSession.svelte.test.ts',
+			negative: true
 		}
 	]
 };
