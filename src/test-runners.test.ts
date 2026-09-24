@@ -77,13 +77,18 @@ function namedByTestMatch(file: string): boolean {
  * виконується, поки його не перелічено в `setupFiles`, і мовчить про це. Для
  * `src/no-network.setup.ts` це означало б тихе повернення до тестів, що
  * реєструють акаунти в живому Firebase.
+ *
+ * Конфігів Vitest тут два — звичайний і контракт над емулятором
+ * (`vitest.emulator.config.ts`), — тож дивитися треба в кожен.
  */
 function namedBySetupFiles(file: string): boolean {
-	const config = readdirSync(ROOT).find((f) => /^vitest\.config\./.test(f));
-	if (!config) return false;
-	const source = withoutComments(readFileSync(join(ROOT, config), 'utf8'));
-	const list = source.match(/setupFiles\s*:\s*\[([^\]]*)\]/)?.[1] ?? '';
-	return [...list.matchAll(/['"`]\.?\/?([^'"`]+)['"`]/g)].some((m) => m[1] === file);
+	return readdirSync(ROOT)
+		.filter((f) => /^vitest(\.[\w-]+)?\.config\./.test(f))
+		.some((config) => {
+			const source = withoutComments(readFileSync(join(ROOT, config), 'utf8'));
+			const list = source.match(/setupFiles\s*:\s*\[([^\]]*)\]/)?.[1] ?? '';
+			return [...list.matchAll(/['"`]\.?\/?([^'"`]+)['"`]/g)].some((m) => m[1] === file);
+		});
 }
 
 function playwrightTestDir(): string | null {

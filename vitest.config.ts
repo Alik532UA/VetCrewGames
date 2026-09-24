@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { fileURLToPath } from 'node:url';
 
@@ -20,6 +20,9 @@ export default defineConfig({
 	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}'],
+		// Контракт транспорту йде над емулятором, у `check:rules`
+		// (`vitest.emulator.config.ts`): тут мережі немає, і йому нікуди йти.
+		exclude: [...configDefaults.exclude, 'src/**/*.emulator.test.ts'],
 		environment: 'jsdom',
 		globals: true,
 		// Мережа в юніт-тестах заблокована, а тест, що до неї дійшов, падає з

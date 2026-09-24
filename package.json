@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.497",
+	"version": "0.6.498",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -21,7 +21,7 @@
 		"check:rules:live": "node scripts/check-rules-live.mjs",
 		"rules:deploy": "node scripts/rules-deploy.mjs",
 		"rooms:sweep": "node scripts/sweep-rooms.mjs",
-		"check:rules": "node scripts/firebase-cli.mjs emulators:exec --project demo-vet-crew-games --only database,auth \"node scripts/check-rules.mjs\"",
+		"check:rules": "node scripts/firebase-cli.mjs emulators:exec --project demo-vet-crew-games --only database,auth \"node scripts/check-rules.mjs && npx vitest run --config vitest.emulator.config.ts\"",
 		"emulators": "node scripts/firebase-cli.mjs emulators:start --project demo-vet-crew-games --only database,auth",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "eslint .",
