@@ -186,6 +186,21 @@ export const onlineTab: BetaTab = {
 			coverage: 'covered',
 			test: 'src/lib/controllers/roomSession.svelte.test.ts',
 			negative: true
+		},
+		{
+			/*
+			 * ПІШОВ НАЗОВСІМ — ХІД `leave` (аудит 2026-09-24). Правила черги перевіряє
+			 * `pairsMatch.svelte.test.ts`, запис — емулятор; руками лишається дорога
+			 * людини: смуга «Вас чекають» на іншій сторінці й її кнопка.
+			 */
+			id: 'online_18',
+			category: { uk: 'Коли щось не так', en: 'When something breaks' },
+			text: {
+				uk: 'Партія на трьох: один гравець іде зі сторінки гри на головну й у смузі «Вас чекають у грі» натискає «Вийти назовсім». У решти його черга мусить більше НЕ приходити: хід одразу переходить до наступного, без півтори хвилини чекання й без «Забрати хід».',
+				en: 'A game of three: one player goes from the game page to the main page and presses “Leave for good” in the “You are awaited” bar. The others must NOT get that player turn any more: the move passes to the next one at once, with no ninety-second wait and no “Take the turn”.'
+			},
+			coverage: 'manual',
+			testid: 'awaited-room-leave-btn'
 		}
 	]
 };

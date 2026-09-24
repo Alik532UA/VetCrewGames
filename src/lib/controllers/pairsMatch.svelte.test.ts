@@ -1238,6 +1238,7 @@ describe('заморожений склад', () => {
 		table.stop();
 	});
 
+	// Рядок зник БЕЗ ходу `leave` (стара збірка, чи прибрав господар): тоді — межа очікування.
 	it('хід вибулого забирають через межу очікування, як у будь-кого, хто стоїть', async () => {
 		const table = party();
 		for (let turn = 0; turn < 3 && table.host.actor?.id !== THIRD; turn++) await miss(table);
@@ -1251,6 +1252,73 @@ describe('заморожений склад', () => {
 
 		expect(table.host.actor?.id, 'черга пішла далі').not.toBe(THIRD);
 		expect(board(guest)).toBe(board(table.host));
+		table.stop();
+	});
+
+	/**
+	 * ПІШОВ НАЗОВСІМ — ХІД `leave` ТИМ САМИМ ЗАПИСОМ (аудит 2026-09-24). Доти смуга
+	 * «Вас чекають» → «Вийти» прибирала лише рядок складу, а склад заморожено: кожна
+	 * черга вибулого коштувала решті півтори хвилини й ручне «забрати хід».
+	 *
+	 * Зворотні експерименти: не застосовувати `leave` — червоніють перші два; не
+	 * пропускати вибулих після кожного ходу — другий; не скидати їх при новій
+	 * роздачі — останній.
+	 */
+	async function leaveForGood(table: ReturnType<typeof party>, uid = THIRD) {
+		await table.room.transport().append({ seq: table.host.applied + 1, by: uid, type: 'leave' });
+		table.leave();
+	}
+
+	it('черга того, хто пішов назовсім, іде далі одразу', async () => {
+		const table = party();
+		for (let turn = 0; turn < 3 && table.host.actor?.id !== THIRD; turn++) await miss(table);
+		expect(table.host.actor?.id, 'перевірка жива: черга в третього').toBe(THIRD);
+
+		await leaveForGood(table);
+
+		expect(table.host.left).toEqual([THIRD]);
+		expect(table.host.actor?.id, 'черга досі в того, хто пішов').not.toBe(THIRD);
+		expect(board(table.seat(GUEST))).toBe(board(table.host));
+		table.stop();
+	});
+
+	it('і далі черга того, хто пішов, пропускається', async () => {
+		const table = party();
+		if (table.host.actor?.id === THIRD) await miss(table);
+		await leaveForGood(table);
+
+		for (let turn = 0; turn < 6; turn++) {
+			await miss(table);
+			expect(table.host.actor?.id, `промах ${turn + 1}: черга в того, хто пішов`).not.toBe(THIRD);
+		}
+		table.stop();
+	});
+
+	it('`leave` від того, кого в партії немає, нічого не означає', async () => {
+		const table = party();
+		table.room.setMembers([
+			...trio(),
+			{ uid: WATCHER, name: 'Глядач', role: 'spectator', order: 4 }
+		]);
+		const before = board(table.host);
+
+		await table.room
+			.transport()
+			.append({ seq: table.host.applied + 1, by: WATCHER, type: 'leave' });
+
+		expect(table.host.left).toEqual([]);
+		expect(board(table.host)).toBe(before);
+		table.stop();
+	});
+
+	it('реванш повертає в чергу всіх зі складу', async () => {
+		const table = party();
+		await leaveForGood(table);
+		table.room.setMembers(trio());
+
+		await table.room.transport().restart(777, rosterOf(trio()));
+
+		expect(table.host.left).toEqual([]);
 		table.stop();
 	});
 });

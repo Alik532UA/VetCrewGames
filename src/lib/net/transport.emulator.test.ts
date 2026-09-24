@@ -387,3 +387,65 @@ describe('rtdbRoom + емулятор: створення кімнати', () =>
 		await as(host, () => net.closeRoom(code));
 	});
 });
+
+/**
+ * ПІТИ НАЗОВСІМ (аудит 2026-09-24): посеред партії — рядок складу й хід `leave`
+ * ОДНИМ записом, у лобі — лише рядок. Лише тут, бо `leaveRoom` (`net/leave.ts`) — справжня мережа:
+ * правило ходу читає склад ДО запису, і саме це дозволяє прибрати себе й
+ * дописати хід разом.
+ *
+ * Зворотний експеримент: прибрати хід із `leaveRoom` — червоніє перший.
+ */
+describe('rtdbRoom + емулятор: піти назовсім', () => {
+	async function roomWithGuest() {
+		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
+		const { host, guest } = people;
+		const net = await import('./rtdbRoom');
+		const code = await as(host, () =>
+			net.createRoom({
+				gameId: 'pairs',
+				rulesVersion: 3,
+				seed: 1,
+				config: CONFIG,
+				name: 'Господар',
+				isPrivate: true
+			})
+		);
+		await as(guest, () => net.joinRoom(code, 'Гість'));
+		const transport = await as(host, () => net.roomTransport(code));
+		return { net, code, host, guest, transport };
+	}
+
+	it('посеред партії — рядок складу й хід leave одним записом', async () => {
+		const { net, code, host, guest, transport } = await roomWithGuest();
+		await transport.setStatus('playing', [
+			{ uid: host.uid, name: 'Господар' },
+			{ uid: guest.uid, name: 'Гість' }
+		]);
+		expect(await transport.append(flip(host.uid, 1))).toBe(true);
+
+		const { leaveRoom } = await import('./leave');
+		await as(guest, () => leaveRoom(code));
+
+		const snapshot = await until(
+			transport,
+			(s) => !s.members.some((member) => member.uid === guest.uid)
+		);
+		expect(snapshot.moves.at(-1)).toMatchObject({ seq: 2, by: guest.uid, type: 'leave' });
+		await as(host, () => net.closeRoom(code));
+	});
+
+	it('у лобі — лише рядок складу, без ходу', async () => {
+		const { net, code, guest, transport } = await roomWithGuest();
+
+		const { leaveRoom } = await import('./leave');
+		await as(guest, () => leaveRoom(code));
+
+		const snapshot = await until(
+			transport,
+			(s) => !s.members.some((member) => member.uid === guest.uid)
+		);
+		expect(snapshot.moves).toEqual([]);
+		await as(people!.host, () => net.closeRoom(code));
+	});
+});

@@ -132,7 +132,9 @@ export class AwaitedRoom {
 	/**
 	 * ПІТИ З КІМНАТИ НАЗОВСІМ. Решта дізнається про це без жодного голосування:
 	 * `away` виводиться як «склад мінус присутні», тож рядка немає — і чекати нема
-	 * на кого.
+	 * на кого. У «Знайди пару» склад заморожено, тому посеред партії тим самим
+	 * записом лягає хід `leave`, і черга того, хто пішов, пропускається
+	 * (`net/leave.ts`).
 	 */
 	async leave(): Promise<void> {
 		const room = this.room;
@@ -140,7 +142,7 @@ export class AwaitedRoom {
 		this.busy = true;
 		try {
 			const [{ leaveRoom }, { forgetOwnRoom }] = await Promise.all([
-				import('$lib/net/rtdbRoom'),
+				import('$lib/net/leave'),
 				import('$lib/net/ownRooms')
 			]);
 			await leaveRoom(room.code);

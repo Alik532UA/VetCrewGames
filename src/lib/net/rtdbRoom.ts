@@ -341,26 +341,6 @@ export async function watchRoomInfo(
 	});
 }
 
-/**
- * ПІТИ З КІМНАТИ НАЗОВСІМ — прибрати свій рядок складу.
- *
- * Правило бази це дозволяє й без нового права: «кожен пише лише про себе — і про
- * себе ж може піти». Тобто це не адміністрування, а власна дія.
- *
- * Наслідок для решти настає САМ: `away` виводиться як «склад мінус присутні», тож
- * щойно рядка немає, чекати стає нема на кого — вікно очікування зникає в усіх, і
- * голосувати не доводиться. Саме цього й просив автор: «кімната дізнається, що
- * гравець остаточно вийшов, і його не варто чекати».
- *
- * Індекс своїх кімнат чиститься теж: інакше сповіщення «вас чекають» показувало б
- * кімнату, з якої я щойно свідомо пішов.
- */
-export async function leaveRoom(code: string): Promise<void> {
-	const { uid, db } = await connect();
-	const { ref, remove } = await import('firebase/database');
-	await remove(ref(db, `rooms/${code}/members/${uid}`));
-}
-
 export async function peekRoom(code: string): Promise<RoomInfo | null> {
 	const { db } = await connect();
 	const { get, ref } = await import('firebase/database');

@@ -85,6 +85,14 @@ export class PairsMatch {
 	/** Заморожений склад партії (`RoomInfo.roster`); `null` — кімната старша за поле. */
 	roster = $state<RosterEntry[] | null>(null);
 	/**
+	 * Хто пішов НАЗОВСІМ — із журналу (хід `leave`). Їхні черги пропускаються.
+	 *
+	 * Склад заморожено, тож той, хто пішов, лишається в партії з рахунком і
+	 * місцем у черзі; доти кожна його черга коштувала решті півтори хвилини й
+	 * ручне «забрати хід» (аудит 2026-09-24).
+	 */
+	left = $state<string[]>([]);
+	/**
 	 * Хто господар — з КІМНАТИ, а не з порядку у списку.
 	 *
 	 * Саме для цього поле й існує в `info`. Спершу сторінка рахувала господаря як
@@ -470,6 +478,7 @@ export class PairsMatch {
 			// зʼявилася б раніше, ніж я побачив попередню пару.
 			if (move.type === 'peek' && this.#holdPeek(move.seq === head)) break;
 			const changed = this.#play(move);
+			if (changed) this.#skipLeft();
 			this.applied = move.seq;
 			this.#appliedSigs[move.seq - 1] = signature(move);
 			/*
@@ -536,6 +545,21 @@ export class PairsMatch {
 		return true;
 	}
 
+	/**
+	 * ЧЕРГА НЕ ЗУПИНЯЄТЬСЯ НА ТОМУ, ХТО ПІШОВ НАЗОВСІМ. Після кожного ходу, що
+	 * щось змінив: промах, «забрати хід» і сам `leave` передають чергу, і вона
+	 * могла б упасти саме на вибулого. Пішли всі, крім одного, — він доходить
+	 * дошку сам; пішли всі — черзі нікуди, і вона лишається де була.
+	 */
+	#skipLeft(): void {
+		if (this.left.length >= this.players.length) return;
+		for (let step = 0; step < this.players.length; step += 1) {
+			const actor = this.game.current?.id;
+			if (actor === undefined || !this.left.includes(actor)) return;
+			this.game.passTurn();
+		}
+	}
+
 	#deal(snapshot: RoomSnapshot): void {
 		const players: MemoryPlayer[] = this.players.map((member) => ({
 			id: member.uid,
@@ -566,6 +590,8 @@ export class PairsMatch {
 		 * «партію завершено» лишилася б від попередньої.
 		 */
 		this.endedBy = null;
+		// Нова роздача — нова партія: хто пішов із минулої, у цій знову в черзі.
+		this.left = [];
 		/*
 		 * Відлік першої черги — від позначки початку партії, поставленої сервером.
 		 * Без неї суперник, який зайшов у кімнату й одразу зник, тримав би першу
@@ -618,6 +644,19 @@ export class PairsMatch {
 		if (move.type === 'end') {
 			if (!isStallActionLegal(move, this.#turnState)) return false;
 			this.endedBy = move.by;
+			return true;
+		}
+
+		/*
+		 * `leave` — гравець партії пішов НАЗОВСІМ (`net/leave.ts`):
+		 * тим самим записом, що прибирає його рядок складу. Не від гравця партії чи
+		 * вдруге — нічого не означає. Його черга йде далі одразу, наступні
+		 * пропускаються (`#skipLeft`).
+		 */
+		if (move.type === 'leave') {
+			const inParty = this.players.some((player) => player.uid === move.by);
+			if (!inParty || this.left.includes(move.by)) return false;
+			this.left = [...this.left, move.by];
 			return true;
 		}
 

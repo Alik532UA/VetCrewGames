@@ -63,7 +63,8 @@ const watchOthers = vi.fn(async (code: string, onCount: (others: number) => void
 
 vi.mock('$lib/net/ownRooms', () => ({ listOwnRooms, forgetOwnRoom }));
 vi.mock('$lib/net/presence', () => ({ othersPresent, watchOthers }));
-vi.mock('$lib/net/rtdbRoom', () => ({ leaveRoom, watchRoomInfo }));
+vi.mock('$lib/net/rtdbRoom', () => ({ watchRoomInfo }));
+vi.mock('$lib/net/leave', () => ({ leaveRoom }));
 
 /**
  * Чи браузер уже мав сесію бази. Типово — так: решта випадків про кімнати, а не про
