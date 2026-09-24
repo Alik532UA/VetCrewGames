@@ -155,6 +155,13 @@ export async function pruneOwnRooms(): Promise<void> {
 			const info = snapshot.val() as Pick<RoomInfo, 'status' | 'hostUid' | 'aliveAt'> & {
 				createdAt?: number;
 			};
+
+			// Кімната є, а мене в ній немає: прибрали, або під старим дворозрядним
+			// кодом уже чужа кімната. Запис індексу тут кликав би не туди (`listOwnRooms`).
+			if (info.hostUid !== uid && !(await isMember(code, uid))) {
+				await remove(ref(db, `myRooms/${uid}/${code}`));
+				continue;
+			}
 			/*
 			 * Скінчена партія — одразу; решта — за віком.
 			 *
@@ -233,6 +240,13 @@ export async function listOwnRooms(): Promise<OwnRoom[]> {
 			if (!snapshot.exists()) continue;
 			const info = snapshot.val() as RoomInfo;
 			if (info.status !== 'playing') continue;
+			/*
+			 * ЛИШЕ ТАМ, ДЕ Я ДОСІ УЧАСНИК. Індекс веду я сам, і він не знає, що мене
+			 * прибрали або що дворозрядний код публічної кімнати вже віддано чужій
+			 * партії. Доти «продовжити партію» й «вас чекають» вели саме туди, а у
+			 * вікторині вхід робив мене в чужій кімнаті гравцем (аудит 2026-09-24).
+			 */
+			if (!(await isMember(code, uid))) continue;
 			rooms.push({
 				code,
 				gameId: info.gameId,
@@ -248,6 +262,13 @@ export async function listOwnRooms(): Promise<OwnRoom[]> {
 		logService.warn('network', 'own rooms not listed', { reason: reasonOf(error) });
 		return [];
 	}
+}
+
+/** Чи є мій рядок у складі кімнати. Читання дозволене тому, хто знає код. */
+async function isMember(code: string, uid: string): Promise<boolean> {
+	const { db } = await connect();
+	const { get, ref } = await import('firebase/database');
+	return (await get(ref(db, `rooms/${code}/members/${uid}`))).exists();
 }
 
 const reasonOf = (error: unknown): string =>

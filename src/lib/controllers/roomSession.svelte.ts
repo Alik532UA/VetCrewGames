@@ -413,7 +413,15 @@ export class RoomSession<M extends RoomMatch> {
 		);
 	};
 	switchAutoStart = (on: boolean) => this.hostAction((transport) => transport.setAutoStart(on));
-	kick = (uid: string) => this.hostAction((transport) => transport.removeMember(uid));
+	/**
+	 * Прибрати учасника. СЕБЕ — ніколи: господар, що прибрав власний рядок, лишається
+	 * присутнім, але не учасником — ходів йому база вже не приймає, а перехопити
+	 * ведення не може ніхто, бо господар «на звʼязку» (аудит 2026-09-24).
+	 */
+	kick = async (uid: string): Promise<boolean> => {
+		if (uid === this.me) return false;
+		return this.hostAction((transport) => transport.removeMember(uid));
+	};
 
 	async setRole(role: Role): Promise<void> {
 		if (!this.match || this.match.status !== 'lobby') return;

@@ -49,8 +49,10 @@ export const ui = {
 	'pairs.noRoom': 'Diesen Raum gibt es nicht.',
 	'pairs.oldVersion': 'Das Spiel wurde aktualisiert. Ladet die Seite neu — beide.',
 	'pairs.roomClosed': 'Der Raum wurde geschlossen – die Partie ist vorbei.',
+	'pairs.removed': 'Der Gastgeber hat dich aus dem Raum entfernt.',
 	'pairs.offline': 'Keine Verbindung zum Server – wir warten, bis sie zurück ist.',
-	'pairs.roomOlder': 'Diese Partie wurde in einer älteren Version gestartet. Erstelle einen neuen Raum.',
+	'pairs.roomOlder':
+		'Diese Partie wurde in einer älteren Version gestartet. Erstelle einen neuen Raum.',
 	'pairs.rulesMissing': 'Gemeinsames Spielen ist auf dem Server noch nicht aktiviert.',
 	'pairs.netFailed': 'Beitritt zum Raum fehlgeschlagen. Bitte erneut versuchen.',
 	'pairs.opponentGone': 'Die Gegenseite spielt schon lange nicht.',

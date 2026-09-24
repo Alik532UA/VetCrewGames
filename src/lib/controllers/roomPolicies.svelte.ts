@@ -127,6 +127,31 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 		toast.info('pairs.roomClosed');
 		void session.place.exit();
 	});
+
+	/*
+	 * МЕНЕ ПРИБРАЛИ З КІМНАТИ — сказати про це й повернути на форму входу.
+	 *
+	 * Доти прибраний не дізнавався нічого: екран жив далі, а кожна відповідь падала
+	 * загальним «сервер не дозволив» (хід вимагає членства), аж поки
+	 * перезавантаження мовчки не вертало його в кімнату (аудит 2026-09-24).
+	 *
+	 * «Був і зник», а не просто «немає»: вхід пише рядок ДО підписки, тож знімка
+	 * без мене на початку не буває, а зникнути, поки кімната в мене на екрані,
+	 * рядок може лише з чужої руки. Закрита кімната — інша подія й інше слово.
+	 */
+	let seenIn: M | null = null;
+	$effect(() => {
+		const match = session.match;
+		if (!match || match.gone || session.me === '') return;
+		if (match.members.some((member) => member.uid === session.me)) {
+			seenIn = match;
+			return;
+		}
+		if (seenIn !== match) return;
+		seenIn = null;
+		toast.info('pairs.removed');
+		void session.place.exit();
+	});
 }
 
 /**

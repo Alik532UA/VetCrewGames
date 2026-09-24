@@ -257,6 +257,33 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-round-unlimited-text'
+		},
+		{
+			/*
+			 * СЕБЕ ЗНИКЛИМ НЕ ПОКАЗУЄ (аудит 2026-09-24). Правило перевіряє контролер
+			 * (`QuizMatch.awayOthers`), а екран — джерело (`awaySelf.test.ts`), але саму
+			 * причину — те, що SDK без мережі прибирає мене з присутності в мене ж, — у
+			 * тестах не відтворити: підставна кімната мережі не має. Тому руками.
+			 */
+			id: 'quizonline_20',
+			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
+			text: {
+				uk: 'Посеред раунду вимкніть мережу на пристрої господаря й зачекайте пʼятнадцять секунд. У нього мусить бути смуга «немає звʼязку» — і НЕ мусить бути ні вікна «Чекаємо: <його імʼя>», ні кнопки «прибрати» навпроти себе. Другий гравець тим часом бачить, що чекають господаря.',
+				en: 'In the middle of a round turn off the network on the host device and wait fifteen seconds. The host must get the “no connection” bar — and must NOT get a “Waiting: <their own name>” window or a “remove” button next to themselves. Meanwhile the other player sees that the host is being waited for.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'quiz-away-backdrop'
+		},
+		{
+			id: 'quizonline_21',
+			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
+			text: {
+				uk: 'Посеред раунду вимкніть мережу в гостя. Коли в господаря скінчиться відлік, натисніть «Прибрати» навпроти гостя, а тоді поверніть гостеві мережу. Гість мусить побачити «Господар прибрав вас із кімнати» й опинитися на формі входу, а не на дошці, де кожна відповідь падає з «Сервер не дозволив цю дію».',
+				en: 'In the middle of a round turn off the guest network. When the host countdown runs out, press “Remove” next to the guest, then give the guest the network back. The guest must see “The host removed you from the room” and land on the entry form, not on a board where every answer fails with “The server did not allow this action”.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-away-*-btn'
 		}
 	]
 };

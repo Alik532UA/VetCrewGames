@@ -49,6 +49,7 @@ export const ui = {
 	'pairs.noRoom': 'No such room.',
 	'pairs.oldVersion': 'The game has been updated. Reload the page — both of you.',
 	'pairs.roomClosed': 'The room was closed — the game is over.',
+	'pairs.removed': 'The host removed you from the room.',
 	'pairs.offline': 'No connection to the server — waiting for it to come back.',
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',
 	'pairs.rulesMissing': 'Shared play is not enabled on the server yet.',

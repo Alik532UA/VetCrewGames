@@ -49,6 +49,7 @@ export const ui = {
 	'pairs.noRoom': 'Die ruimte bestaat niet.',
 	'pairs.oldVersion': 'Het spel is bijgewerkt. Herlaad de pagina — jullie beiden.',
 	'pairs.roomClosed': 'De kamer is gesloten — het spel is voorbij.',
+	'pairs.removed': 'De gastheer heeft je uit de kamer verwijderd.',
 	'pairs.offline': 'Geen verbinding met de server — we wachten tot die terug is.',
 	'pairs.roomOlder': 'Dit spel is in een oudere versie gestart. Maak een nieuwe kamer aan.',
 	'pairs.rulesMissing': 'Samen spelen is nog niet ingeschakeld op de server.',

@@ -109,7 +109,7 @@
 			scores={match.scores}
 			withScores
 			layout="table"
-			away={match.away.map((player) => player.uid)}
+			away={match.awayOthers.map((player) => player.uid)}
 			{me}
 		/>
 
@@ -170,7 +170,7 @@
 	-->
 	<QuizAway
 		{text}
-		away={match.away}
+		away={match.awayOthers}
 		secondsLeft={wait.left}
 		waiting={wait.hold}
 		voted={goOn.length}
@@ -197,7 +197,7 @@
 			players={match.players}
 			scores={match.scores}
 			gains={match.roundGains}
-			away={match.away.map((player) => player.uid)}
+			away={match.awayOthers.map((player) => player.uid)}
 			rounds={match.myRounds}
 			roundsTotal={match.programme.length}
 			leftMs={match.revealLeftMs(clock)}
@@ -232,7 +232,7 @@
 				answered={match.answered}
 				scores={match.scores}
 				withScores={false}
-				away={match.away.map((player) => player.uid)}
+				away={match.awayOthers.map((player) => player.uid)}
 				{me}
 			/>
 

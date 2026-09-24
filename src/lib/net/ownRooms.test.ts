@@ -30,7 +30,7 @@ vi.mock('firebase/database', () => ({
 	}
 }));
 
-const { pruneOwnRooms } = await import('./ownRooms');
+const { listOwnRooms, pruneOwnRooms } = await import('./ownRooms');
 
 const room = (over: Record<string, unknown>) => ({
 	status: 'over',
@@ -69,5 +69,37 @@ describe('прибирання власних кімнат', () => {
 		await pruneOwnRooms();
 
 		expect(removed).toEqual([]);
+	});
+});
+
+/**
+ * ІНДЕКС НЕ ЗНАЄ, ЩО МЕНЕ ВЖЕ НЕМАЄ В КІМНАТІ (аудит 2026-09-24).
+ *
+ * Мене прибрали, або дворозрядний код публічної кімнати віддано чужій партії, — а
+ * запис `myRooms` лишився. Доти «продовжити партію» й «вас чекають» вели саме
+ * туди, а у вікторині вхід робив мене гравцем чужої кімнати.
+ *
+ * Зворотний експеримент: прибрати перевірку `isMember` — червоніють обидва перші.
+ */
+describe('кімната, де мене вже немає', () => {
+	it('у переліку «продовжити» її немає', async () => {
+		tree['rooms/1234/info'] = room({ status: 'playing', hostUid: 'uid-other', gameId: 'quiz' });
+
+		expect(await listOwnRooms()).toEqual([]);
+	});
+
+	it('збирач прибирає лише мій запис індексу, а не чужу кімнату', async () => {
+		tree['rooms/1234/info'] = room({ status: 'playing', hostUid: 'uid-other' });
+
+		await pruneOwnRooms();
+
+		expect(removed).toEqual(['myRooms/uid-host/1234']);
+	});
+
+	it('де я досі учасник — лишається в переліку', async () => {
+		tree['rooms/1234/info'] = room({ status: 'playing', hostUid: 'uid-other', gameId: 'quiz' });
+		tree['rooms/1234/members/uid-host'] = { name: 'Я', role: 'player', order: 2 };
+
+		expect((await listOwnRooms()).map((own) => own.code)).toEqual(['1234']);
 	});
 });

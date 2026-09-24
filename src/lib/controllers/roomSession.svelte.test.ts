@@ -587,3 +587,56 @@ describe('публічна кімната в переліку', () => {
 		expect(lobby.publish).not.toHaveBeenCalled();
 	});
 });
+
+/**
+ * ПРИБРАНИЙ ДІЗНАЄТЬСЯ, ЩО ЙОГО ПРИБРАЛИ (аудит 2026-09-24).
+ *
+ * Доти екран жив далі, а кожна відповідь падала загальним «сервер не дозволив»:
+ * хід вимагає членства. А господар без звʼязку бачив кнопку «прибрати» навпроти
+ * СЕБЕ — і, натиснувши, лишався присутнім, але не учасником.
+ *
+ * Зворотні експерименти: прибрати політику «мене прибрали» — червоніє перший;
+ * прибрати перевірку `uid === this.me` у `kick` — червоніє останній.
+ */
+describe('прибрати учасника', () => {
+	it('гість, якого прибрав господар, чує про це й опиняється на формі входу', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, place } = sessionFor(room, roomInfo(), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		await room.transport().removeMember(GUEST);
+		await settle();
+
+		expect(toast.info).toHaveBeenCalledWith('pairs.removed');
+		expect(place.exit).toHaveBeenCalled();
+	});
+
+	it('закрита кімната — «закрито», а не «прибрали»', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, roomInfo(), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		room.close();
+		await settle();
+
+		expect(toast.info).toHaveBeenCalledWith('pairs.roomClosed');
+		expect(toast.info).not.toHaveBeenCalledWith('pairs.removed');
+	});
+
+	it('господар прибирає іншого, але не себе', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		expect(await session.kick(GUEST)).toBe(true);
+		expect(await session.kick(HOST)).toBe(false);
+		await settle();
+
+		expect(session.match?.members.map((member) => member.uid)).toEqual([HOST]);
+	});
+});
