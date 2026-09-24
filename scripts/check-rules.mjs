@@ -123,7 +123,7 @@ const guest = await signIn('гість');
 const stranger = await signIn('сторонній');
 
 /** Кімната з правильною формою `info`. Одна на весь прогін. */
-const CODE = 'AAAAA';
+const CODE = '90417';
 const info = (hostUid) => ({
 	gameId: 'pairs',
 	rulesVersion: 2,
@@ -211,12 +211,30 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/moves/000001`, move(guest.uid, 1), guest.token)
 	},
 	{
-		name: 'хід із рядковим payload (нові типи ходів)',
-		allowed: true,
+		// Поля ходу — лише ті, що пишуть ігри (аудит 2026-09-24): доти `$field` не
+		// обмежував їх кількості, і хід міг важити мегабайти, які перечитує кожен.
+		name: 'хід із полем, якого ігри не пишуть',
+		allowed: false,
 		run: () =>
 			write(
 				`rooms/${CODE}/moves/000002`,
 				{ seq: 2, by: guest.uid, type: 'say', at: SERVER_TIME, payload: { word: 'кіт' } },
+				guest.token
+			)
+	},
+	{
+		name: 'частка правильності понад одиницю',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{
+					seq: 2,
+					by: guest.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: 0, correct: 2 }
+				},
 				guest.token
 			)
 	},
@@ -998,24 +1016,83 @@ const CASES = [
 		run: () =>
 			write(
 				`lobby/pairs/${CODE}`,
-				{ ...lobbyEntry(host.uid), games: { 'g-myths': 1, 'g-feeding': 0 } },
+				{ ...lobbyEntry(host.uid), games: { game_myths: 1, game_feeding: 0 } },
 				host.token
 			)
 	},
 	{
-		// Межа тут на ЗНАЧЕННЯ, а не на імена ключів (перелік ігор — справа
-		// застосунку). Тож саме значення й перевіряємо: прапорець — число.
 		name: 'прапорець гри рядком',
 		allowed: false,
 		run: () =>
 			write(
 				`lobby/pairs/${CODE}`,
-				{ ...lobbyEntry(host.uid), games: { 'g-myths': 'yes' } },
+				{ ...lobbyEntry(host.uid), games: { game_myths: 'yes' } },
 				host.token
 			)
 	},
+	{
+		// Ключ — лише з переліку ігор (аудит 2026-09-24): доти будь-які імена, тобто
+		// запис переліку, який завантажує кожен відвідувач, міг важити мегабайти.
+		name: 'ключ гри, якої немає',
+		allowed: false,
+		run: () =>
+			write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), games: { game_hack: 1 } }, host.token)
+	},
 
 	// --- сторонній не мусить цього могти ---
+	/*
+	 * КІМНАТА-ТІНЬ І КОД НЕ ЗА ФОРМОЮ (аудит 2026-09-24). Доти склад і присутність
+	 * лягали під будь-який код, навіть де кімнати немає, — і підкинутий «гравець»
+	 * уже сидів у кожній новій кімнаті з цим кодом, потрапляв у заморожений склад і
+	 * запускав автостарт.
+	 */
+	{
+		name: 'рядок складу під кодом, де кімнати немає',
+		allowed: false,
+		run: () => write(`rooms/90418/members/${guest.uid}`, member, guest.token)
+	},
+	{
+		name: 'присутність у кімнаті, де тебе немає в складі',
+		allowed: false,
+		run: () => write(`presence/${CODE}/${stranger.uid}`, { at: SERVER_TIME }, stranger.token)
+	},
+	{
+		// Склад без `info`: господар зніс лише `info`, а рядок складу лишився.
+		name: 'господар створює кімнату для випадку «склад без кімнати»',
+		allowed: true,
+		run: async () => {
+			const created = await write('rooms/90419/info', info(host.uid), host.token);
+			return created === 200
+				? write(`rooms/90419/members/${host.uid}`, { ...member, order: 1 }, host.token)
+				: created;
+		}
+	},
+	{
+		name: 'господар зносить лише info, склад лишається',
+		allowed: true,
+		run: () => write('rooms/90419/info', null, host.token)
+	},
+	{
+		// Інакше новий господар успадкував би чужий склад.
+		name: 'нова кімната поверх чужого складу',
+		allowed: false,
+		run: () => write('rooms/90419/info', info(stranger.uid), stranger.token)
+	},
+	{
+		name: 'господар прибирає свій рядок із покинутого коду',
+		allowed: true,
+		run: () => write(`rooms/90419/members/${host.uid}`, null, host.token)
+	},
+	{
+		name: 'кімната з кодом не за форматом',
+		allowed: false,
+		run: () => write('rooms/ABCDE/info', info(stranger.uid), stranger.token)
+	},
+	{
+		name: 'ключ налаштувань, якого ігри не знають',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/config/evil`, 1, host.token)
+	},
 	{
 		name: 'неавторизований читає кімнату',
 		allowed: false,
@@ -1208,7 +1285,7 @@ const CASES = [
 		// Запис, що не відповідає жодній кімнаті, — це привид у списку.
 		name: 'публікація кімнати, якої НЕМАЄ',
 		allowed: false,
-		run: () => write('lobby/pairs/ZZZZZ', lobbyEntry(guest.uid), guest.token)
+		run: () => write('lobby/pairs/90418', lobbyEntry(guest.uid), guest.token)
 	},
 	{
 		name: 'чужий запис у переліку прибирають',

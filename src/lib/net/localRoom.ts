@@ -26,6 +26,21 @@ export interface LocalTransportOptions {
 	echo?: boolean;
 }
 
+const count = (max: number) => (value: unknown) =>
+	typeof value === 'number' && value >= 0 && value <= max;
+const short = (value: unknown) => typeof value === 'string' && value.length <= 32;
+
+/** Поля ходу та їхні межі — ті самі, що в правилі `moves/$seq/payload`. */
+const PAYLOAD: Record<string, (value: unknown) => boolean> = {
+	index: count(999),
+	from: short,
+	round: count(9999),
+	correct: count(1),
+	ms: count(86_400_000),
+	uid: short,
+	spent: count(86_400_000)
+};
+
 /**
  * Кімната в памʼяті: той самий транспорт, тільки без мережі.
  *
@@ -268,13 +283,25 @@ export class LocalRoom {
 	#allowed(move: Move): boolean {
 		if (!this.#members.some((member) => member.uid === move.by)) return false;
 		if (!this.#validSeq(move.seq)) return false;
+		if (!this.#validPayload(move.payload)) return false;
 		if (move.type === 'lead') {
 			return move.by === this.#info.hostUid && move.payload?.from === this.#info.hostUid;
 		}
 		return true;
 	}
 
-	/** Ключ ходу — рівно шість цифр, тобто номер від 1 до 999999. */
+	/**
+	 * Поля ходу — рівно ті, що пускає правило `moves/$seq/payload`: відомі імена з
+	 * їхніми межами, решта відкидається (аудит 2026-09-24).
+	 */
+	#validPayload(payload: Move['payload']): boolean {
+		if (payload === undefined) return true;
+		return Object.entries(payload).every(([key, value]) => {
+			const rule = PAYLOAD[key];
+			return rule !== undefined && rule(value);
+		});
+	}
+
 	/** Ті самі умови, що правило `info/roster`: кожен — гравець складу, імʼя — його. */
 	#rosterAllowed(roster: readonly RosterEntry[]): boolean {
 		return roster.every((entry) =>
@@ -285,6 +312,7 @@ export class LocalRoom {
 		);
 	}
 
+	/** Ключ ходу — рівно шість цифр, тобто номер від 1 до 999999. */
 	#validSeq(seq: number): boolean {
 		return Number.isInteger(seq) && seq >= 1 && seq <= 999_999;
 	}

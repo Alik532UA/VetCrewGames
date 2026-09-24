@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '5b8d6e795eb6'" }
+      "$v": { ".read": "auth != null && $v === '8df09bd9899a'" }
     },
 
     "rooms": {
@@ -70,7 +70,10 @@
         "info": {
           // Створити може будь-хто авторизований, але тільки назвавши господарем
           // СЕБЕ. Далі міняти — лише господареві: він починає партію.
-          ".write": "auth != null && (data.exists() ? data.child('hostUid').val() === auth.uid : newData.child('hostUid').val() === auth.uid)",
+          // Створити — лише на коді правильної форми й лише там, де від попередньої
+          // кімнати не лишилося складу: інакше новий господар успадкував би чужих
+          // «гравців», підкинутих під порожній код (аудит 2026-09-24).
+          ".write": "auth != null && (data.exists() ? data.child('hostUid').val() === auth.uid : (newData.child('hostUid').val() === auth.uid && $code.matches(/^[0-9]{2,5}$/) && !data.parent().child('members').exists()))",
           // Склад партії можна прибрати лише разом із журналом — див. `roster` нижче.
           ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid']) && (!data.child('roster').exists() || newData.child('roster').exists() || !newData.parent().child('moves').exists())",
           "status": {
@@ -143,7 +146,9 @@
           // ЗНАЧЕННЯ, а не на імена, і `$other` тут не ставиться — його роль
           // виконує сам `$key` (CLOUD-DATABASE-v8 § 4.6, останній пункт).
           "config": {
-            "$key": { ".validate": "newData.isNumber()" }
+            // Лише відомі ключі: доти їх кількість нічим не обмежувалася, і один
+            // запис міг покласти в кімнату мегабайти, які завантажує кожен учасник.
+            "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/)" }
           },
           // КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА — для «зіграти в іншу гру».
           //
@@ -209,7 +214,10 @@
              * Переписати чужий рядок господар не може — інакше він міняв би чуже
              * імʼя, прапор і роль, тобто говорив би за іншого.
              */
-            ".write": "auth != null && ($uid === auth.uid || (!newData.exists() && root.child('rooms').child($code).child('info/hostUid').val() === auth.uid))",
+            // Писати себе — лише в НАЯВНУ кімнату: доти рядок складу лягав і під код, де
+            // кімнати ще немає, і потім «гравець» уже сидів у кожній новій кімнаті з цим
+            // кодом (аудит 2026-09-24). Піти можна завжди.
+            ".write": "auth != null && (($uid === auth.uid && (!newData.exists() || (root.child('rooms').child($code).child('info').exists() && $code.matches(/^[0-9]{2,5}$/)))) || (!newData.exists() && root.child('rooms').child($code).child('info/hostUid').val() === auth.uid))",
             ".validate": "newData.hasChildren(['name', 'role', 'order'])",
             "role": {
               ".validate": "newData.val() === 'player' || newData.val() === 'spectator'"
@@ -363,9 +371,21 @@
               // не обмежена — у RTDB немає примітива «скільки дітей»; це
               // записаний борг із названою причиною, а не забуття
               // (CLOUD-DATABASE-v8 § 4.6).
-              "$field": {
-                ".validate": "newData.isNumber() || (newData.isString() && newData.val().length <= 32)"
-              }
+              /*
+               * ЛИШЕ ВІДОМІ ПОЛЯ. Доти тут стояв `$field`, тобто кількість полів не
+               * обмежувало ніщо, і один хід міг важити мегабайти, які перечитує кожен
+               * учасник (аудит 2026-09-24). Поля — рівно ті, що пишуть ігри:
+               * `index` (картка пар), `from` (передача ведення), `round`,
+               * `correct`, `ms`, `uid`, `spent` (вікторина).
+               */
+              "index": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 1000" },
+              "from": { ".validate": "newData.isString() && newData.val().length <= 32" },
+              "round": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000" },
+              "correct": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+              "ms": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400000" },
+              "uid": { ".validate": "newData.isString() && newData.val().length <= 32" },
+              "spent": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400000" },
+              "$other": { ".validate": false }
             },
             "$other": { ".validate": false }
           }
@@ -956,7 +976,7 @@
          * Набір ігор роздачі не визначає — він лише каже, у що тут зіграють.
          */
         "games": {
-          "$key": { ".validate": "newData.isNumber()" }
+          "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/)" }
         },
         // Серверний час: за ним список упорядковується й за ним видно застояле.
         // Клієнтське число означало б «моя кімната завжди найновіша».
@@ -973,7 +993,10 @@
           // Присутність гасне сама: `onDisconnect` виконує сервер, коли клієнт
           // зник. Саме через цей механізм тут RTDB, а не Firestore
           // (CLOUD-DATABASE-v8 § 5.1).
-          ".write": "auth != null && $uid === auth.uid",
+          // Лише УЧАСНИК: доти присутність лягала під будь-який код, і вічний
+          // «присутній» без `onDisconnect` тримав кімнату, у якій його немає (аудит
+          // 2026-09-24). Прибрати себе можна завжди.
+          ".write": "auth != null && $uid === auth.uid && (!newData.exists() || (root.child('rooms').child($code).child('members').child(auth.uid).exists() && $code.matches(/^[0-9]{2,5}$/)))",
           // Форма перевіряється так само, як усюди. Доти тут не було нічого:
           // свій вузол присутності можна було набити чим завгодно й будь-якого
           // розміру — власник лишався власником, а межі не було.

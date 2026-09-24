@@ -203,6 +203,31 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		await table.close();
 	});
 
+	it('хід лише з відомими полями: чуже поле чи частка понад одиницю не лягають', async () => {
+		const table = await world.table();
+		const by = table.guest.uid;
+		expect(
+			await table.guest.transport.append({ seq: 1, by, type: 'say', payload: { word: 'кіт' } })
+		).toBe(false);
+		expect(
+			await table.guest.transport.append({
+				seq: 1,
+				by,
+				type: 'answer',
+				payload: { round: 0, correct: 2 }
+			})
+		).toBe(false);
+		expect(
+			await table.guest.transport.append({
+				seq: 1,
+				by,
+				type: 'answer',
+				payload: { round: 0, correct: 1 }
+			})
+		).toBe(true);
+		await table.close();
+	});
+
 	it('старт ставить статус, серверний startedAt і склад одним записом', async () => {
 		const table = await world.table();
 
