@@ -71,9 +71,9 @@ describe('rtdbRoom: записи транспорту', () => {
 	 * Зворотний експеримент: повернути `update(…, { 'info/seed': seed, moves: null })`
 	 * — випадок червоніє, бо в записі немає `info/startedAt`.
 	 */
-	it('реванш — ОДИН запис: зерно, порожній журнал і новий startedAt серверним часом', async () => {
+	it('реванш — ОДИН запис: зерно, порожній журнал, новий startedAt і новий склад', async () => {
 		const transport = await roomTransport('42');
-		await transport.restart(7);
+		await transport.restart(7, [{ uid: 'uid-host', name: 'Господар' }]);
 
 		expect(writes).toEqual([
 			{
@@ -84,6 +84,7 @@ describe('rtdbRoom: записи транспорту', () => {
 					'info/status': 'playing',
 					'info/startedAt': SERVER_TIME,
 					'info/countdownAt': null,
+					'info/roster': [{ uid: 'uid-host', name: 'Господар' }],
 					moves: null
 				}
 			}
@@ -99,6 +100,30 @@ describe('rtdbRoom: записи транспорту', () => {
 				op: 'update',
 				path: 'rooms/42/info',
 				value: { status: 'playing', startedAt: SERVER_TIME, countdownAt: null }
+			}
+		]);
+	});
+
+	/**
+	 * Склад заморожується ТИМ САМИМ записом, що й старт: двома записами існувала б
+	 * мить, у яку партія йде, а складу ще немає, — і роздача бралася б із поточних
+	 * `members`.
+	 *
+	 * Зворотний експеримент: прибрати `roster` з `update` у `setStatus` — червоніє.
+	 */
+	it('склад партії їде тим самим записом, що й старт', async () => {
+		const transport = await roomTransport('42');
+		const roster = [
+			{ uid: 'uid-host', name: 'Господар' },
+			{ uid: 'uid-guest', name: 'Гість' }
+		];
+		await transport.setStatus('playing', roster);
+
+		expect(writes).toEqual([
+			{
+				op: 'update',
+				path: 'rooms/42/info',
+				value: { status: 'playing', startedAt: SERVER_TIME, countdownAt: null, roster }
 			}
 		]);
 	});

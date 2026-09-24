@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '96c97e98246c'" }
+      "$v": { ".read": "auth != null && $v === '7fc30addbeae'" }
     },
 
     "rooms": {
@@ -71,7 +71,8 @@
           // Створити може будь-хто авторизований, але тільки назвавши господарем
           // СЕБЕ. Далі міняти — лише господареві: він починає партію.
           ".write": "auth != null && (data.exists() ? data.child('hostUid').val() === auth.uid : newData.child('hostUid').val() === auth.uid)",
-          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid'])",
+          // Склад партії можна прибрати лише разом із журналом — див. `roster` нижче.
+          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid']) && (!data.child('roster').exists() || newData.child('roster').exists() || !newData.parent().child('moves').exists())",
           "status": {
             ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'over')"
           },
@@ -158,6 +159,37 @@
           // Межа вісім: коди тут дві-пʼять літер, тобто запас є, а поле не стає
           // місцем для довільного тексту.
           "nextCode": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 8" },
+          /*
+           * СКЛАД ПАРТІЇ, ЗАМОРОЖЕНИЙ НА СТАРТІ (`RoomInfo.roster`).
+           *
+           * Доти склад виводився з поточних `members`, і вихід гравця посеред
+           * партії перероздавав дошку всім: зібрані пари зникали, ходи вибулого
+           * відкидалися, а за ними й чужі (аудит 2026-09-23). Умови:
+           *
+           *  - лише тим записом, що ПОЧИНАЄ партію: перехід у `playing` з іншого
+           *    стану (старт) або разом зі стертим журналом (реванш, `moves: null`).
+           *    «Порожній журнал» замість переходу не годиться: у лобі в журналі
+           *    вже бувають ходи `lead` (ведення підхопили за відсутнього господаря),
+           *    і старт такої кімнати відкидався б. Посеред партії склад не міняє
+           *    ніхто, і прибрати його теж не можна (`.validate` на `info` вище);
+           *  - кожен у складі — ГРАВЕЦЬ кімнати;
+           *  - імʼя — те, що стоїть у його рядку складу: господар не перейменує
+           *    іншого. Імʼя тут узагалі тому, що рядок того, хто вийшов, зникає з
+           *    `members`, а табло мусить і далі його називати.
+           */
+          "roster": {
+            ".validate": "newData.parent().child('status').val() === 'playing' && (data.parent().child('status').val() !== 'playing' || !newData.parent().parent().child('moves').exists())",
+            "$i": {
+              ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.hasChildren(['uid', 'name'])",
+              "uid": {
+                ".validate": "newData.isString() && root.child('rooms').child($code).child('members').child(newData.val()).child('role').val() === 'player'"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val() === root.child('rooms').child($code).child('members').child(newData.parent().child('uid').val()).child('name').val()"
+              },
+              "$other": { ".validate": false }
+            }
+          },
           "$other": { ".validate": false }
         },
 

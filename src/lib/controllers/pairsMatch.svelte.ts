@@ -1,5 +1,6 @@
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
-import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import type { Member, Move, RosterEntry, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import { partyOf } from '$lib/utils/roster';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
 import { takeLead } from './takeLead';
 
@@ -81,6 +82,8 @@ export class PairsMatch {
 	 */
 	seed = $state(0);
 	members = $state<Member[]>([]);
+	/** Заморожений склад партії (`RoomInfo.roster`); `null` — кімната старша за поле. */
+	roster = $state<RosterEntry[] | null>(null);
 	/**
 	 * Хто господар — з КІМНАТИ, а не з порядку у списку.
 	 *
@@ -218,15 +221,12 @@ export class PairsMatch {
 	}
 
 	/**
-	 * Гравці партії — у порядку входу; глядачі в черзі не стоять.
-	 * **Тайбрейк за `uid` обовʼязковий:** однакові `order` правило бази виключити
-	 * не вміє, а без тайбрейка порядок різниться між пристроями — чому це страшніше
-	 * за вкрадену чергу, розписано в `src/cloud-database.test.ts`.
+	 * Гравці партії — із ЗАМОРОЖЕНОГО складу, у порядку черги; глядачі в черзі не
+	 * стоять. Вихід чи повернення учасника посеред партії цього списку не міняє,
+	 * тож і дошки не перероздає (`utils/roster.ts`).
 	 */
 	get players(): Member[] {
-		return this.members
-			.filter((member) => member.role === 'player')
-			.sort((a, b) => a.order - b.order || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+		return partyOf(this.members, this.roster ?? undefined);
 	}
 
 	get iAmSpectator(): boolean {
@@ -426,6 +426,7 @@ export class PairsMatch {
 
 	#apply(snapshot: RoomSnapshot): void {
 		this.members = snapshot.members;
+		this.roster = snapshot.info.roster ?? null;
 		this.status = snapshot.info.status;
 		this.hostUid = snapshot.info.hostUid;
 		this.countdownAt = snapshot.info.countdownAt ?? null;
@@ -438,7 +439,8 @@ export class PairsMatch {
 		 * Зерно, розмір колоди й СКЛАД ГРАВЦІВ разом задають роздачу. Змінилося
 		 * будь-що з них — дошку треба роздати заново й прокрутити журнал спочатку.
 		 * Саме це й робить пізнього учасника рівним усім: він не отримує стану, він
-		 * відтворює його.
+		 * відтворює його. Склад тут — заморожений на старті: вихід гравця посеред
+		 * партії його вже не змінює.
 		 */
 		this.seed = snapshot.info.seed;
 

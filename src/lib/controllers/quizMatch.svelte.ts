@@ -2,6 +2,7 @@ import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTyp
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
+import { playersOf } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
 import { takeLead } from './takeLead';
 import {
@@ -179,9 +180,7 @@ export class QuizMatch {
 	}
 
 	get players(): Member[] {
-		return this.members
-			.filter((member) => member.role === 'player')
-			.sort((a, b) => a.order - b.order || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+		return playersOf(this.members);
 	}
 
 	/** Програма партії — список раундів. Порожня, доки не приїхало зерно. */

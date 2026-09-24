@@ -1,7 +1,7 @@
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
-import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } from './roomTypes';
+import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport } from './roomTypes';
 
 /**
  * Кімната в Realtime Database — та сама, що `LocalRoom`, тільки справжня.
@@ -471,7 +471,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			}
 		},
 
-		async setStatus(status: RoomStatus) {
+		async setStatus(status, roster) {
 			/*
 			 * Початок партії — це ДВА поля й ОДИН запис.
 			 *
@@ -486,10 +486,13 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				 * ні про що. Стале число читалося б як «відлік іде» щоразу, коли хтось
 				 * повернеться в кімнату після партії.
 				 */
+				// Склад — тим самим записом: партія без нього роздавала б дошку за тими,
+				// хто встиг зайти чи вийти в проміжку (`RoomInfo.roster`).
 				await update(ref(db, `rooms/${code}/info`), {
 					status,
 					startedAt: serverTimestamp(),
-					countdownAt: null
+					countdownAt: null,
+					...(roster ? { roster: [...roster] } : {})
 				});
 				return;
 			}
@@ -548,7 +551,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			await set(ref(db, `rooms/${code}/info/countdownAt`), active ? serverTimestamp() : null);
 		},
 
-		async restart(seed: number) {
+		async restart(seed, roster) {
 			/*
 			 * `update` кількома шляхами — саме щоб проміжку не було.
 			 *
@@ -565,12 +568,17 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			 * транспорт позначку оновлював, тобто був правильнішим за справжній.
 			 * `status` і `countdownAt` — з тієї самої причини: контракт один на обидві
 			 * реалізації (`LocalRoom.restart`).
+			 *
+			 * І НОВИЙ СКЛАД: реванш грають ті, хто в кімнаті зараз. Правило пускає склад
+			 * лише разом із порожнім журналом — тобто саме тут, в одному записі з
+			 * `moves: null`.
 			 */
 			await update(ref(db, `rooms/${code}`), {
 				'info/seed': seed,
 				'info/status': 'playing',
 				'info/startedAt': serverTimestamp(),
 				'info/countdownAt': null,
+				'info/roster': [...roster],
 				moves: null
 			});
 		}

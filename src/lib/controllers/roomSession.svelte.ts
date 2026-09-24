@@ -9,6 +9,7 @@ import type { LobbyRoom } from '$lib/net/lobby';
 import type { Member, Role, RoomStatus, RoomTransport } from '$lib/net/roomTypes';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { entryErrorKey, entryRefusal, quickPick } from '$lib/utils/roomEntry';
+import { rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 
 /** Що сесії треба знати про матч — спільне для «Знайди пару» й вікторини. */
@@ -194,9 +195,15 @@ export class RoomSession<M extends RoomMatch> {
 			return false;
 		}
 		this.code = wanted;
-		// Роль не передаємо: повернувшись, кожен лишається в своїй. Новачок у вже
-		// розпочату партію — у тій ролі, яку йому дає гра.
-		const newcomer = room?.status === 'lobby' ? 'player' : this.game.lateRole;
+		/*
+		 * Роль не передаємо: повернувшись, кожен лишається в своїй. Новачок у вже
+		 * розпочату партію — у тій ролі, яку йому дає гра. Але той, хто В СКЛАДІ
+		 * партії (вийшов і вернувся), — гравець: місце в черзі в нього є, і реванш
+		 * мусить його бачити (`rosterOf` бере гравців із рядків складу).
+		 */
+		const me = await this.net.me();
+		const inRoster = room?.roster?.some((entry) => entry.uid === me) ?? false;
+		const newcomer = room?.status === 'lobby' || inRoster ? 'player' : this.game.lateRole;
 		await this.net.joinRoom(
 			this.code,
 			who,
@@ -303,7 +310,8 @@ export class RoomSession<M extends RoomMatch> {
 			toast.info('pairs.needPlayers');
 			return;
 		}
-		await this.hostAction((transport) => transport.setStatus('playing'));
+		// Склад заморожується тим самим записом, що й старт (`RoomInfo.roster`).
+		await this.hostAction((transport) => transport.setStatus('playing', rosterOf(match.members)));
 		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача.
 		this.lobby.unpublish();
 	}
@@ -324,7 +332,11 @@ export class RoomSession<M extends RoomMatch> {
 
 	// Зерно реваншу — з тієї самої дороги, що й зерно нової кімнати: випадковість
 	// живе на сторінці, а не в контролері (`quizSeed.test.ts`).
-	rematch = () => this.hostAction((transport) => transport.restart(this.game.newRoom().seed));
+	// Склад реваншу — ті, хто в кімнаті ЗАРАЗ, а не склад попередньої партії.
+	rematch = () =>
+		this.hostAction((transport) =>
+			transport.restart(this.game.newRoom().seed, rosterOf(this.match?.members ?? []))
+		);
 	switchAutoStart = (on: boolean) => this.hostAction((transport) => transport.setAutoStart(on));
 	kick = (uid: string) => this.hostAction((transport) => transport.removeMember(uid));
 

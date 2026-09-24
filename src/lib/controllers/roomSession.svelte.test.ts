@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
 import { LocalRoom } from '$lib/net/localRoom';
+import { rosterOf } from '$lib/utils/roster';
 import type { RoomNet } from '$lib/net/roomNet';
 import type { Member, RoomInfo, RoomTransport } from '$lib/net/roomTypes';
 
@@ -322,5 +323,54 @@ describe('політики кімнати', () => {
 		session.dispose();
 
 		expect(playerData.endOnline).toHaveBeenCalled();
+	});
+});
+
+/**
+ * СКЛАД ПАРТІЇ заморожують старт і реванш, а вибулий вертається гравцем.
+ *
+ * Зворотні експерименти: прибрати склад зі `start()` — червоніє перший; брати
+ * склад реваншу з `match.players` (тобто старий), а не з `members` — другий;
+ * прибрати `inRoster` із `#join` — третій.
+ */
+describe('склад партії', () => {
+	it('старт заморожує склад тим самим записом', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		await session.start();
+		await settle();
+
+		expect(session.match?.roster).toEqual([
+			{ uid: HOST, name: 'Господар' },
+			{ uid: GUEST, name: 'Гість' }
+		]);
+	});
+
+	it('реванш грають ті, хто в кімнаті зараз', async () => {
+		const roster = [...rosterOf(members()), { uid: 'uid-gone', name: 'Вибулий' }];
+		const room = new LocalRoom(roomInfo({ status: 'playing', roster }), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		await session.rematch();
+		await settle();
+
+		expect(session.match?.roster?.map((entry) => entry.uid)).toEqual([HOST, GUEST]);
+	});
+
+	it('вибулий, що вертається посеред партії, заходить гравцем', async () => {
+		const roster = [...rosterOf(members()), { uid: 'uid-back', name: 'Повернувся' }];
+		const playing = roomInfo({ status: 'playing', roster });
+		const room = new LocalRoom(playing, members());
+		const { session, net } = sessionFor(room, playing, 'uid-back');
+		session.joinCode = '42';
+
+		await session.enter('join');
+
+		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', undefined, '', undefined, 'player');
 	});
 });

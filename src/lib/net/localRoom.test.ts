@@ -107,3 +107,63 @@ describe('передача ведення — як правило info/hostUid',
 		expect(await room.transport().takeLead(lead(GUEST, WATCHER))).toBe(false);
 	});
 });
+
+/**
+ * СКЛАД ПАРТІЇ — ті самі умови, що правило `info/roster`: лише гравці кімнати з
+ * їхніми іменами і лише при порожньому журналі. Підставка, добріша за базу,
+ * доводила б тести партії на складі, якого в продакшні не записати.
+ */
+describe('склад партії — як правило info/roster', () => {
+	const lobby: RoomInfo = { ...info, status: 'lobby' };
+	const roster = [
+		{ uid: HOST, name: 'Господар' },
+		{ uid: GUEST, name: 'Гість' }
+	];
+
+	it('перевірка жива: старт заморожує склад', async () => {
+		const room = new LocalRoom(lobby, members);
+		await room.transport().setStatus('playing', roster);
+		let seen: unknown;
+		room.transport().watch((snapshot) => (seen = snapshot.info.roster))();
+		expect(seen).toEqual(roster);
+	});
+
+	it('глядач у складі — відмова', async () => {
+		const room = new LocalRoom(lobby, members);
+		await expect(
+			room.transport().setStatus('playing', [{ uid: WATCHER, name: 'Глядач' }])
+		).rejects.toThrow();
+		expect(room.status).toBe('lobby');
+	});
+
+	it('чуже імʼя у складі — відмова', async () => {
+		const room = new LocalRoom(lobby, members);
+		await expect(
+			room.transport().setStatus('playing', [{ uid: GUEST, name: 'Лідер' }])
+		).rejects.toThrow();
+	});
+
+	it('посеред партії склад не міняється, а реванш ставить новий', async () => {
+		const room = new LocalRoom(info, members);
+		const transport = room.transport();
+		await transport.append({ seq: 1, by: GUEST, type: 'goon' });
+
+		await expect(transport.setStatus('playing', roster)).rejects.toThrow();
+		await transport.restart(2, roster);
+		expect(room.moves).toHaveLength(0);
+	});
+
+	/**
+	 * У лобі в журналі вже бувають ходи `lead` (ведення підхопили за відсутнього
+	 * господаря). Умова — ПЕРЕХІД у `playing`, а не порожній журнал: інакше старт
+	 * такої кімнати відкидався б.
+	 */
+	it('старт із ходом у журналі лобі — склад лягає', async () => {
+		const room = new LocalRoom(lobby, members);
+		const transport = room.transport();
+		await transport.append({ seq: 1, by: HOST, type: 'lead', payload: { from: HOST } });
+
+		await transport.setStatus('playing', roster);
+		expect(room.status).toBe('playing');
+	});
+});

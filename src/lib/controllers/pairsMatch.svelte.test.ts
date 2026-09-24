@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LocalRoom } from '$lib/net/localRoom';
+import { rosterOf } from '$lib/utils/roster';
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 
 /*
@@ -656,7 +657,7 @@ describe('нова партія в тій самій кімнаті', () => {
 		await host.flip(b);
 		const before = board(host);
 
-		await room.transport().restart(777);
+		await room.transport().restart(777, rosterOf(members()));
 
 		expect(room.moves, 'журнал порожній').toHaveLength(0);
 		expect(host.applied).toBe(0);
@@ -929,7 +930,7 @@ describe('суперник відпав', () => {
 		await guest.endMatch(room.tick(PAST_LIMIT));
 		expect(host.over).toBe(true);
 
-		await room.transport().restart(777);
+		await room.transport().restart(777, rosterOf(members()));
 
 		expect(host.endedBy, 'позначку знято').toBeNull();
 		expect(guest.endedBy).toBeNull();
@@ -1138,5 +1139,118 @@ describe('відлуння, яке база відкинула', () => {
 		expect(accepted, 'номер був зайнятий').toBe(false);
 		expect(board(guest), 'після відкату в гостя та сама дошка').toBe(board(host));
 		stop.forEach((off) => off());
+	});
+});
+
+/**
+ * ЗАМОРОЖЕНИЙ СКЛАД: вихід гравця посеред партії не перероздає дошку.
+ *
+ * Доти склад виводився з поточних `members`, і рядок, що зник посеред партії
+ * (смуга «Вас чекають» → «Вийти»), змінював роздачу всім: кожен роздавав заново й
+ * прокручував журнал з іншою чергою — зібрані пари зникали, ходи вибулого
+ * відкидалися, а за ними й чужі (аудит 2026-09-23). Тепер склад — у `info.roster`,
+ * і пишуть його лише старт і реванш.
+ *
+ * Зворотний експеримент: у `PairsMatch.players` брати `playersOf(this.members)`
+ * замість складу — червоніють усі три випадки (третій — тим, що черга вибулого
+ * після виходу перескакувала сама, без ходу в журналі).
+ */
+describe('заморожений склад', () => {
+	const THIRD = 'uid-third';
+	const PAST_LIMIT = TURN_LIMIT_MS + 1000;
+	const trio = (): Member[] => [
+		...members(),
+		{ uid: THIRD, name: 'Третій', role: 'player', order: 3 }
+	];
+
+	function party() {
+		const room = new LocalRoom(info({ roster: rosterOf(trio()) }), trio());
+		const paced = fakeClock();
+		const seats = new Map(
+			[HOST, GUEST, THIRD].map((uid) => [uid, new PairsMatch(uid, room.transport(), paced.clock)])
+		);
+		const stops = [...seats.values()].map((match) => match.listen());
+		const seat = (uid: string | undefined) => {
+			const match = uid ? seats.get(uid) : undefined;
+			if (!match) throw new Error(`немає місця для ${uid}`);
+			return match;
+		};
+		return {
+			room,
+			host: seat(HOST),
+			seat,
+			seen: () => paced.tick(PEEK_MS),
+			/** Третій іде назовсім: його рядок складу зникає разом із підпискою. */
+			leave: () => {
+				stops[2]();
+				room.setMembers(members());
+			},
+			stop: () => stops.forEach((off) => off())
+		};
+	}
+
+	/** Промах того, чия черга: хід переходить до наступного. */
+	async function miss(table: ReturnType<typeof party>) {
+		const actor = table.seat(table.host.actor?.id);
+		const [a, b] = findMismatch(actor);
+		await actor.flip(a);
+		await actor.flip(b);
+		await actor.resolve();
+		table.seen();
+	}
+
+	it('вихід гравця посеред партії не перероздає дошку', async () => {
+		const table = party();
+		const actor = table.seat(table.host.actor?.id);
+		const [a, b] = findPair(actor);
+		await actor.flip(a);
+		await actor.flip(b);
+		const before = board(table.host);
+		const applied = table.host.applied;
+
+		table.leave();
+
+		expect(
+			table.host.players.map((player) => player.uid),
+			'склад партії змінився разом зі складом кімнати'
+		).toEqual([HOST, GUEST, THIRD]);
+		expect(table.host.players[2].name, 'вибулого й далі названо').toBe('Третій');
+		expect(board(table.host), 'дошку перероздано').toBe(before);
+		expect(table.host.applied).toBe(applied);
+		table.stop();
+	});
+
+	it('пізній глядач роздає ту саму дошку й бачить імʼя вибулого', async () => {
+		const table = party();
+		await miss(table);
+		table.leave();
+
+		const lateClock = fakeClock();
+		const late = new PairsMatch(WATCHER, table.room.transport(), lateClock.clock);
+		const off = late.listen();
+		// Останній хід журналу — `peek`, тож новий глядач іще показує пару свій час.
+		lateClock.tick(PEEK_MS);
+
+		expect(board(late)).toBe(board(table.host));
+		expect(late.players.map((player) => player.name)).toEqual(['Господар', 'Гість', 'Третій']);
+		expect(late.iAmSpectator).toBe(true);
+		off();
+		table.stop();
+	});
+
+	it('хід вибулого забирають через межу очікування, як у будь-кого, хто стоїть', async () => {
+		const table = party();
+		for (let turn = 0; turn < 3 && table.host.actor?.id !== THIRD; turn++) await miss(table);
+		expect(table.host.actor?.id, 'черга не дійшла до третього').toBe(THIRD);
+		table.leave();
+		const guest = table.seat(GUEST);
+		expect(table.host.actor?.id, 'вихід сам по собі перекинув чергу').toBe(THIRD);
+		expect(guest.canYieldAt(table.room.tick(0)), 'до межі — не можна').toBe(false);
+
+		await guest.yieldTurn(table.room.tick(PAST_LIMIT));
+
+		expect(table.host.actor?.id, 'черга пішла далі').not.toBe(THIRD);
+		expect(board(guest)).toBe(board(table.host));
+		table.stop();
 	});
 });

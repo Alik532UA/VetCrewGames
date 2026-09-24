@@ -1,4 +1,12 @@
-import type { Member, Move, RoomInfo, RoomSnapshot, RoomStatus, RoomTransport } from './roomTypes';
+import type {
+	Member,
+	Move,
+	RoomInfo,
+	RoomSnapshot,
+	RoomStatus,
+	RoomTransport,
+	RosterEntry
+} from './roomTypes';
 
 /** Як поводиться транспорт ОДНОГО учасника. */
 export interface LocalTransportOptions {
@@ -141,7 +149,13 @@ export class LocalRoom {
 				return true;
 			},
 
-			setStatus: async (status) => {
+			setStatus: async (status, roster) => {
+				// Склад — ті самі умови, що в правилі бази: лише гравці з їхніми іменами і
+				// лише на старті, а не посеред партії. Відмова, як і там, скасовує ВЕСЬ запис.
+				const midGame = this.#info.status === 'playing' && this.#moves.length > 0;
+				if (roster && (status !== 'playing' || midGame || !this.#rosterAllowed(roster))) {
+					throw new Error('PERMISSION_DENIED: roster');
+				}
 				/*
 				 * `countdownAt` гасне разом із початком партії — так само, як у справжній
 				 * базі (там це один `update` із `null`).
@@ -155,7 +169,9 @@ export class LocalRoom {
 				 */
 				const { countdownAt: _stale, ...rest } = this.#info;
 				this.#info =
-					status === 'playing' ? { ...rest, status, startedAt: this.#now } : { ...rest, status };
+					status === 'playing'
+						? { ...rest, status, startedAt: this.#now, ...(roster ? { roster: [...roster] } : {}) }
+						: { ...rest, status };
 				this.#emit();
 			},
 
@@ -216,11 +232,18 @@ export class LocalRoom {
 				this.#emit();
 			},
 
-			restart: async (seed) => {
-				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік.
+			restart: async (seed, roster) => {
+				if (!this.#rosterAllowed(roster)) throw new Error('PERMISSION_DENIED: roster');
+				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік, склад.
 				this.#moves = [];
 				const { countdownAt: _stale, ...rest } = this.#info;
-				this.#info = { ...rest, seed, status: 'playing', startedAt: this.#now };
+				this.#info = {
+					...rest,
+					seed,
+					status: 'playing',
+					startedAt: this.#now,
+					roster: [...roster]
+				};
 				this.#emit();
 			}
 		};
@@ -252,6 +275,16 @@ export class LocalRoom {
 	}
 
 	/** Ключ ходу — рівно шість цифр, тобто номер від 1 до 999999. */
+	/** Ті самі умови, що правило `info/roster`: кожен — гравець складу, імʼя — його. */
+	#rosterAllowed(roster: readonly RosterEntry[]): boolean {
+		return roster.every((entry) =>
+			this.#members.some(
+				(member) =>
+					member.uid === entry.uid && member.role === 'player' && member.name === entry.name
+			)
+		);
+	}
+
 	#validSeq(seq: number): boolean {
 		return Number.isInteger(seq) && seq >= 1 && seq <= 999_999;
 	}
@@ -283,7 +316,11 @@ export class LocalRoom {
 		 * в житті зламається.
 		 */
 		return {
-			info: { ...this.#info, config: { ...this.#info.config } },
+			info: {
+				...this.#info,
+				config: { ...this.#info.config },
+				...(this.#info.roster ? { roster: this.#info.roster.map((entry) => ({ ...entry })) } : {})
+			},
 			members: this.#members.map((member) => ({ ...member })),
 			moves: this.#moves.map((move) => ({ ...move }))
 		};

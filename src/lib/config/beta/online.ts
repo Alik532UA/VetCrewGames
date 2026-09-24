@@ -154,6 +154,27 @@ export const onlineTab: BetaTab = {
 				en: 'At the end the summary must name the winner with the name the person typed, and without a verb that guesses their gender.'
 			},
 			coverage: 'manual'
+		},
+		{
+			id: 'online_15',
+			category: { uk: 'Коли щось не так', en: 'When something breaks' },
+			text: {
+				uk: 'Утрьох: посеред партії третій виходить назовсім (смуга «Вас чекають» → «Вийти»). У двох інших дошка не мусить перероздатися, зібрані пари мусять лишитися на місці, а вибулий — у табло зі своїм імʼям. Коли дійде його черга, через півтори хвилини її можна забрати.',
+				en: 'With three players: in the middle of a game the third one leaves for good (the “You are awaited” bar → “Leave”). The other two must not get a re-dealt board, the collected pairs must stay, and the one who left must stay on the scoreboard under their name. When their turn comes, it can be taken after a minute and a half.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/controllers/pairsMatch.svelte.test.ts',
+			negative: true
+		},
+		{
+			id: 'online_16',
+			category: { uk: 'Коли щось не так', en: 'When something breaks' },
+			text: {
+				uk: 'Той, хто вийшов посеред партії, заходить у ту саму кімнату за кодом ще раз. Він мусить повернутися ГРАВЦЕМ на своє місце в черзі, а не глядачем.',
+				en: 'The one who left in the middle of a game joins the same room with the code again. They must come back as a PLAYER in their own place in the turn order, not as a spectator.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/controllers/roomSession.svelte.test.ts'
 		}
 	]
 };

@@ -1360,6 +1360,89 @@ const CASES = [
 		allowed: true,
 		run: () => write(`rooms/${CODE}/members/${host.uid}`, { ...member, order: 1 }, host.token)
 	},
+	/*
+	 * СКЛАД ПАРТІЇ — заморожений на старті (`RoomInfo.roster`, аудит 2026-09-23):
+	 * лише гравці кімнати, лише з їхніми іменами й лише при порожньому журналі.
+	 * Журнал тут порожній — реванш вище його стер.
+	 */
+	{
+		name: 'склад із ЧУЖИМ іменем',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: guest.uid, name: 'Лідер' }], host.token)
+	},
+	{
+		name: 'у складі — не учасник кімнати',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: stranger.uid, name: 'Тест' }], host.token)
+	},
+	{
+		// Сторонній заходить глядачем — і рівно на один випадок нижче.
+		name: 'сторонній заходить глядачем',
+		allowed: true,
+		run: () =>
+			write(
+				`rooms/${CODE}/members/${stranger.uid}`,
+				{ ...member, role: 'spectator', order: 3 },
+				stranger.token
+			)
+	},
+	{
+		name: 'у складі — глядач',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: stranger.uid, name: 'Тест' }], host.token)
+	},
+	{
+		// Випадки нижче чекають на стороннього, який НЕ учасник.
+		name: 'глядач іде з кімнати сам',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/members/${stranger.uid}`, null, stranger.token)
+	},
+	{
+		name: 'склад із зайвим полем',
+		allowed: false,
+		run: () =>
+			write(`rooms/${CODE}/info/roster`, [{ uid: guest.uid, name: 'Тест', score: 1 }], host.token)
+	},
+	/*
+	 * СТАРТ ІЗ ХОДОМ У ЖУРНАЛІ ЛОБІ. Там бувають ходи `lead` (ведення підхопили за
+	 * відсутнього господаря), тож умова правила — ПЕРЕХІД у `playing`, а не порожній
+	 * журнал: інакше старт такої кімнати відкидався б. Номер 900 — щоб не зайняти
+	 * тих, на яких випадки нижче перевіряють інше.
+	 */
+	{
+		name: 'господар повертає кімнату в лобі',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/info/status`, 'lobby', host.token)
+	},
+	{
+		name: 'у журналі лобі вже є хід',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/moves/000900`, move(guest.uid, 900), guest.token)
+	},
+	{
+		name: 'склад без переходу в playing',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: guest.uid, name: 'Тест' }], host.token)
+	},
+	{
+		// Рівно тим записом, яким його робить `rtdbRoom.setStatus('playing', склад)`.
+		name: 'господар починає партію й заморожує склад одним записом',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${CODE}/info`,
+				{
+					status: 'playing',
+					startedAt: SERVER_TIME,
+					countdownAt: null,
+					roster: [
+						{ uid: host.uid, name: 'Тест' },
+						{ uid: guest.uid, name: 'Тест' }
+					]
+				},
+				host.token
+			)
+	},
 	{
 		name: 'гість на звʼязку',
 		allowed: true,
@@ -1502,6 +1585,37 @@ const CASES = [
 						at: SERVER_TIME,
 						payload: { from: guest.uid }
 					}
+				},
+				host.token
+			)
+	},
+	/*
+	 * Журнал тут уже НЕ порожній (ходи `lead` вище), тобто партія йде: склад не
+	 * міняється й не прибирається — а реванш, що стирає журнал, ставить новий.
+	 */
+	{
+		name: 'склад посеред партії не міняється',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/roster`, [{ uid: host.uid, name: 'Тест' }], host.token)
+	},
+	{
+		name: 'склад посеред партії не прибирається',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/roster`, null, host.token)
+	},
+	{
+		name: 'реванш ставить новий склад тим самим записом, що й порожній журнал',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{
+					'info/seed': 778,
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/roster': [{ uid: guest.uid, name: 'Тест' }],
+					moves: null
 				},
 				host.token
 			)

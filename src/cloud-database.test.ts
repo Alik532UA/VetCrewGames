@@ -179,11 +179,23 @@ describe('хмарна база', () => {
 		 * можливі — і без тайбрейка `sort` лишає порядок, у якому елементи
 		 * приїхали з обʼєкта, тобто РІЗНИЙ на різних пристроях. Кожен вважає, що
 		 * зараз хід іншого, і партія завмирає без жодної помилки.
+		 *
+		 * Сортування одне на обидві гри — `utils/roster.ts`: з нього ж береться склад,
+		 * який заморожує старт. Тому друга половина перевірки стереже, щоб контролер
+		 * не завів собі копію: копія без тайбрейка й дала б рівно цей дефект.
 		 */
-		const text = readFileSync('src/lib/controllers/pairsMatch.svelte.ts', 'utf8');
+		const text = readFileSync('src/lib/utils/roster.ts', 'utf8');
 		const sort = text.match(/\.sort\(\([^)]*\)\s*=>\s*([^;]+?)\);/);
 		expect(sort, 'сортування гравців не знайдено').not.toBeNull();
 		expect(sort?.[1], 'сортування за order без тайбрейка за uid').toMatch(/uid/);
+		for (const file of [
+			'src/lib/controllers/pairsMatch.svelte.ts',
+			'src/lib/controllers/quizMatch.svelte.ts'
+		]) {
+			expect(readFileSync(file, 'utf8'), `${file} сортує гравців сам`).not.toMatch(
+				/\.order\s*-\s*\w+\.order/
+			);
+		}
 	});
 
 	it('присутність перевіряється на форму й серверний час (§ 4.6)', () => {
