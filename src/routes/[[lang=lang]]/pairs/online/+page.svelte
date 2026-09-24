@@ -181,7 +181,10 @@
 			else await match.endMatch(session.now());
 		} catch (error) {
 			toast.error('pairs.actionFailed');
-			logService.error('network', `${action} failed`, { reason: String(error) });
+			logService.error('network', `${action} failed`, {
+				code: session.code,
+				reason: String(error)
+			});
 		}
 	}
 

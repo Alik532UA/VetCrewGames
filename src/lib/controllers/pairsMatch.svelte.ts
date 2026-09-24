@@ -10,6 +10,7 @@ import type {
 import { partyOf } from '$lib/utils/roster';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
 import { takeLead } from './takeLead';
+import { logService } from '$lib/services/logService.svelte';
 
 /**
  * Скільки невдала пара лишається на екрані, перш ніж перегорнутися.
@@ -440,8 +441,11 @@ export class PairsMatch {
 			? { seq: this.applied + 1, by: this.#me, type, payload }
 			: { seq: this.applied + 1, by: this.#me, type };
 		// `false` означає, що цей номер уже зайняли. Хід зникає, і це правильно:
-		// журнал — правда, а не наш намір.
-		await this.#transport.append(move);
+		// журнал — правда, а не наш намір. Але не мовчки: «натиснув — і нічого» в
+		// звіті мусить мати відповідь (аудит 2026-09-24).
+		if (!(await this.#transport.append(move))) {
+			logService.info('network', 'pairs move refused', { seq: move.seq, type });
+		}
 	}
 
 	#apply(snapshot: RoomSnapshot): void {
@@ -471,7 +475,12 @@ export class PairsMatch {
 			players: this.players.map((player) => player.uid)
 		});
 
-		if (deal !== this.#dealt || this.#rewritten(snapshot)) {
+		if (deal !== this.#dealt) {
+			this.#deal(snapshot);
+		} else if (this.#rewritten(snapshot)) {
+			// Застосоване переписано (відлуння, яке база відкинула) — роздаємо заново.
+			// У журнал: так видно, що «дошка сіпнулась» — це відкат, а не збій.
+			logService.info('network', 'pairs board re-dealt', { applied: this.applied });
 			this.#deal(snapshot);
 		}
 

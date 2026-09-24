@@ -24,6 +24,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 }));
 
 const { RoomSession } = await import('./roomSession.svelte');
+const { logService } = await import('$lib/services/logService.svelte');
 const { LEAD_AFTER_MS } = await import('./roomPolicies.svelte');
 const { PairsMatch } = await import('./pairsMatch.svelte');
 
@@ -65,6 +66,7 @@ const pairsGame = {
 /** Мережа кімнати в памʼяті: той самий `LocalRoom`, що в тестах правил партії. */
 function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 	const presence: Array<(uids: string[]) => void> = [];
+	const links: Array<(connected: boolean) => void> = [];
 	const net = {
 		createRoom: vi.fn(async () => '42'),
 		joinRoom: vi.fn(async () => {}),
@@ -78,12 +80,17 @@ function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 			return () => {};
 		}),
 		watchConnected: vi.fn(async (onChange: (connected: boolean) => void) => {
+			links.push(onChange);
 			onChange(true);
 			return () => {};
 		}),
 		beat: vi.fn(() => () => {})
 	} satisfies RoomNet;
-	return { net, setOnline: (uids: string[]) => presence.forEach((notify) => notify(uids)) };
+	return {
+		net,
+		setOnline: (uids: string[]) => presence.forEach((notify) => notify(uids)),
+		setConnected: (connected: boolean) => links.forEach((notify) => notify(connected))
+	};
 }
 
 function stubs() {
@@ -121,14 +128,14 @@ let cleanup: (() => void) | null = null;
 
 /** Сесія з поставленими політиками — як на сторінці, лише без компонента. */
 function sessionFor(room: LocalRoom, peek: RoomInfo | null, me: string) {
-	const { net, setOnline } = fakeNet(room, peek, me);
+	const { net, setOnline, setConnected } = fakeNet(room, peek, me);
 	const { place, player, lobby } = stubs();
 	let session!: Session;
 	cleanup = $effect.root(() => {
 		session = new RoomSession(pairsGame, place, player as never, lobby as never, net) as Session;
 		session.attach();
 	});
-	return { session, net, place, lobby, setOnline };
+	return { session, net, place, lobby, setOnline, setConnected };
 }
 
 const settle = async () => {
@@ -661,5 +668,47 @@ describe('кімната недоступна', () => {
 		expect(toast.info).toHaveBeenCalledWith('pairs.roomLost');
 		expect(toast.info).not.toHaveBeenCalledWith('pairs.roomClosed');
 		expect(place.exit).toHaveBeenCalled();
+	});
+});
+
+/**
+ * ЩО СТАЛОСЯ З КІМНАТОЮ — У ЖУРНАЛ, із кодом (аудит 2026-09-24): обрив і
+ * повернення звʼязку, перехід ведення. Доти звіт зі значка сервісу цього не знав
+ * зовсім, і «гра зависла» не мала з чим звіритися.
+ *
+ * Зворотний експеримент: прибрати `journal(session)` з політик — червоніють обидва.
+ */
+describe('журнал кімнати', () => {
+	it('обрив і повернення звʼязку — з кодом кімнати', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, setConnected } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		setConnected(false);
+		await settle();
+		setConnected(true);
+		await settle();
+
+		expect(logService.info).toHaveBeenCalledWith('network', 'connection lost', { code: '42' });
+		expect(logService.info).toHaveBeenCalledWith('network', 'connection restored', { code: '42' });
+	});
+
+	it('ведення перейшло — хто від кого', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, roomInfo(), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		room.setPresent([GUEST]);
+		await room.transport().takeLead({ seq: 1, by: GUEST, type: 'lead', payload: { from: HOST } });
+		await settle();
+
+		expect(logService.info).toHaveBeenCalledWith('network', 'host changed', {
+			code: '42',
+			from: HOST,
+			to: GUEST
+		});
 	});
 });

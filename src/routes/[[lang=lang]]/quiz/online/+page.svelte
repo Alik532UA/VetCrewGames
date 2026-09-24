@@ -163,7 +163,10 @@
 			await match.answer(correct);
 		} catch (error) {
 			toast.error('pairs.actionFailed');
-			logService.error('network', 'quiz answer not saved', { reason: String(error) });
+			logService.error('network', 'quiz answer not saved', {
+				code: session.code,
+				reason: String(error)
+			});
 		}
 	}
 

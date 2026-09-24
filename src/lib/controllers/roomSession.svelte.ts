@@ -5,67 +5,14 @@ import { COUNTDOWN_MS } from '$lib/config/roomLife';
 import { toast } from './toast.svelte';
 import type { LobbyFeed } from './lobbyFeed.svelte';
 import type { PlayerIdentity } from './playerIdentity.svelte';
-import type { LobbyRoom } from '$lib/net/lobby';
-import type { GoneReason, Member, Role, RoomStatus, RoomTransport } from '$lib/net/roomTypes';
+import type { Member, Role, RoomTransport } from '$lib/net/roomTypes';
+import type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { entryErrorKey, entryRefusal, quickPick } from '$lib/utils/roomEntry';
 import { playersOf, rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 
-/** Що сесії треба знати про матч — спільне для «Знайди пару» й вікторини. */
-export interface RoomMatch {
-	listen(): () => void;
-	readonly members: Member[];
-	readonly players: Member[];
-	readonly status: RoomStatus;
-	readonly hostUid: string;
-	readonly countdownAt: number | null;
-	readonly autoStart: boolean;
-	readonly listed: boolean;
-	readonly seed: number;
-	readonly over: boolean;
-	readonly gone: GoneReason | null;
-	takeLead(): Promise<boolean>;
-}
-
-/** Чим гра відрізняється від іншої гри — рівно те, чого сесія знати не може. */
-export interface RoomGame<M extends RoomMatch> {
-	readonly gameId: 'pairs' | 'quiz';
-	readonly rulesVersion: number;
-	/** Скільки гравців потрібно, щоб почати. */
-	readonly minPlayers: number;
-	/** Кімната «вільна» для швидкої гри, поки гравців менше. */
-	readonly quickSeats: number;
-	/** Роль новачка в УЖЕ розпочатій партії. */
-	readonly lateRole: Role;
-	/** Чи вмикати відлік автостарту за такої кількості гравців. */
-	autoStartReady(players: number): boolean;
-	newRoom(): { seed: number; config: Record<string, number> };
-	createMatch(me: string, transport: RoomTransport): M;
-	/** Що кладе в запис переліку понад спільне (набір ігор вікторини). */
-	listingExtras?(): { games?: Record<string, number> };
-	fitsQuick?(room: LobbyRoom): boolean;
-	/** Присутність приїхала — що з нею робить гра. */
-	onPresence?(match: M, online: string[], now: number): void;
-	/** Додаткові підписки на час кімнати (підсвітка наведення в парах). */
-	listen?(code: string): Promise<Array<() => void>>;
-	/** Бали за партію. Що їх дадуть РІВНО раз, стежить сесія. */
-	award(match: M, me: string): void;
-	/** Як часто цокати годиннику, мс; `null` — не цокати. */
-	clockEvery(match: M): number | null;
-}
-
-/** Адреса сторінки: сесія про маршрутизацію не знає нічого. */
-export interface RoomPlace {
-	/** Код кімнати з адреси; порожньо — адреса без кімнати. */
-	urlRoom(): string;
-	/** Записати код у адресу КРОКОМ в історії. */
-	remember(code: string): Promise<void>;
-	/** Зі знесеної чи закритої кімнати — геть. */
-	exit(): Promise<void>;
-	/** Сказати СТАРІЙ кімнаті, куди переїхала гра (`?from` в адресі). */
-	announce(code: string): Promise<void>;
-}
+export type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 
 /**
  * СЕСІЯ СПІЛЬНОЇ КІМНАТИ — усе між сторінкою й матчем, одним класом на обидві гри.
@@ -145,13 +92,8 @@ export class RoomSession<M extends RoomMatch> {
 
 	/** Господаря немає на звʼязку (порожня присутність — ще не приїхала). */
 	get hostAway(): boolean {
-		const match = this.match;
-		return (
-			match !== null &&
-			!this.amHost &&
-			this.online.length > 0 &&
-			!this.online.includes(match.hostUid)
-		);
+		const host = this.match?.hostUid;
+		return !!host && !this.amHost && this.online.length > 0 && !this.online.includes(host);
 	}
 
 	/** Серверний час зараз. */
@@ -200,7 +142,13 @@ export class RoomSession<M extends RoomMatch> {
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error);
 			toast.error(entryErrorKey(reason));
-			logService.error('network', 'room entry failed', { game: this.game.gameId, action, reason });
+			// З кодом: доти звіт казав «не вдалося зайти», а в яку кімнату — ні.
+			logService.error('network', 'room entry failed', {
+				game: this.game.gameId,
+				action,
+				code: this.code || this.joinCode,
+				reason
+			});
 		} finally {
 			this.busy = false;
 		}
@@ -351,8 +299,7 @@ export class RoomSession<M extends RoomMatch> {
 			await run(this.#transport);
 			return true;
 		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', 'host action denied', { code: this.code, reason: String(error) });
+			this.#failed('host action denied', error);
 			return false;
 		}
 	}
@@ -388,8 +335,7 @@ export class RoomSession<M extends RoomMatch> {
 			await this.net.closeRoom(this.code);
 			await this.place.exit();
 		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', 'room not closed', { reason: String(error) });
+			this.#failed('room not closed', error);
 		}
 	}
 
@@ -435,8 +381,13 @@ export class RoomSession<M extends RoomMatch> {
 				role
 			);
 		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', 'role not changed', { reason: String(error) });
+			this.#failed('role not changed', error);
 		}
+	}
+
+	/** Дія не вдалася: сказати людині й записати З КОДОМ кімнати — інакше звіт не скаже, де. */
+	#failed(what: string, error: unknown): void {
+		toast.error('pairs.actionFailed');
+		logService.error('network', what, { code: this.code, reason: String(error) });
 	}
 }

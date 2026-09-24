@@ -1,4 +1,4 @@
-import type { GoneReason, Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import type { GoneReason, Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
@@ -6,6 +6,7 @@ import { playersOf } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
 import { QuizHold, type ReleasedHold } from '$lib/utils/quizHold';
 import { takeLead } from './takeLead';
+import { logService } from '$lib/services/logService.svelte';
 import {
 	barLeftMs,
 	deadlineAt,
@@ -48,6 +49,16 @@ export type QuizPhase = 'round' | 'reveal' | 'over';
  * закінчуються вони помилкою, а не тишею (див. `answer`).
  */
 const APPEND_TRIES = 16;
+
+/**
+ * Через скільки ведучий пробує знову, коли база ОГОЛОШЕННЯ раунду не прийняла.
+ *
+ * Доти спроба повторювалася на кожному такті годинника (100 мс): відмова правил
+ * не минає сама, тож це було коло з частотою годинника, а в журналі — нічого
+ * (аудит 2026-09-24). П'ять секунд — досить, щоб не смикати базу, і мало, щоб
+ * партія ожила сама, щойно причина зникла (скажімо, викладено правила).
+ */
+export const ANNOUNCE_RETRY_MS = 5000;
 
 /**
  * Спільна вікторина: РАУНД як одиниця, рахунок як чиста функція від журналу.
@@ -528,11 +539,7 @@ export class QuizMatch {
 	/** Поставити паузу. Дозволено будь-кому, хто в партії. */
 	async pause(): Promise<void> {
 		if (this.round < 0 || this.pausedBy !== null) return;
-		await this.#append({
-			by: this.#me,
-			type: 'pause',
-			payload: { round: this.round }
-		});
+		await this.#append('pause', { round: this.round });
 	}
 
 	/**
@@ -544,11 +551,7 @@ export class QuizMatch {
 	 */
 	async resume(): Promise<void> {
 		if (this.pausedBy !== this.#me) return;
-		await this.#append({
-			by: this.#me,
-			type: 'resume',
-			payload: { round: this.round }
-		});
+		await this.#append('resume', { round: this.round });
 	}
 
 	/** Скільки пільгового часу цей гравець уже витратив за партію. */
@@ -570,7 +573,7 @@ export class QuizMatch {
 	async #writeHeld({ round, total, spent }: ReleasedHold): Promise<void> {
 		// Як складаються ходи — `utils/awayWait.ts` (`heldPayloads`).
 		for (const payload of heldPayloads(round, total, spent)) {
-			await this.#append({ by: this.#me, type: 'held', payload });
+			await this.#append('held', payload);
 		}
 	}
 
@@ -691,12 +694,16 @@ export class QuizMatch {
 	 * на місці, коли знімок ще не приїхав), і дірка, якщо лишиться, нічого не
 	 * ламає — див. докблок `#topSeq`.
 	 */
-	async #append(move: Omit<Move, 'seq'>): Promise<boolean> {
+	async #append(type: string, payload: Record<string, number | string>): Promise<boolean> {
+		const move = { by: this.#me, type, payload };
 		for (let attempt = 0; attempt < APPEND_TRIES; attempt += 1) {
 			// `attempt` вільних номерів пропускається: якщо знімок із номером
 			// суперника ще не приїхав, наступна спроба не мусить битися в той самий.
 			if (await this.#transport.append({ ...move, seq: freeSeq(this.#seqs, attempt) })) return true;
 		}
+		// Доти такі ходи ковталися мовчки: пауза, голос, оголошення раунду просто
+		// не лягали, і ніде не було видно чому (аудит 2026-09-24).
+		logService.warn('network', 'quiz move not written', { type, round: payload.round });
 		return false;
 	}
 
@@ -709,11 +716,7 @@ export class QuizMatch {
 	 */
 	async answer(correct: number): Promise<void> {
 		if (this.iAnswered || this.round < 0) return;
-		const saved = await this.#append({
-			by: this.#me,
-			type: 'answer',
-			payload: { round: this.round, correct }
-		});
+		const saved = await this.#append('answer', { round: this.round, correct });
 		if (!saved) throw new Error('answer-not-saved');
 	}
 
@@ -730,11 +733,7 @@ export class QuizMatch {
 	 */
 	async voteGoOn(): Promise<void> {
 		if (this.round < 0 || this.goOn.includes(this.#me)) return;
-		await this.#append({
-			by: this.#me,
-			type: 'goon',
-			payload: { round: this.round }
-		});
+		await this.#append('goon', { round: this.round });
 	}
 
 	/** Хто вже проголосував «граємо далі» в ЦЬОМУ раунді. */
@@ -751,14 +750,20 @@ export class QuizMatch {
 		return takeLead(this.#transport, this.#me, this.hostUid, this.#seqs);
 	}
 
-	/** Оголосити початок раунду. Пише лише господар. */
-	async startRound(round: number): Promise<void> {
-		if (this.startedAt[round] !== undefined) return;
-		await this.#append({
-			by: this.#me,
-			type: 'round',
-			payload: { round }
-		});
+	/** Коли ведучому знову можна пробувати оголосити раунд — серверним часом. */
+	#announceAt = 0;
+
+	/**
+	 * Оголосити початок раунду. Пише лише ведучий. `false` — не лягло: база
+	 * відмовила, і наступна спроба — не раніше `ANNOUNCE_RETRY_MS`.
+	 */
+	async startRound(round: number): Promise<boolean> {
+		if (this.startedAt[round] !== undefined) return true;
+		const now = this.#transport.now();
+		if (now < this.#announceAt) return false;
+		const saved = await this.#append('round', { round });
+		if (!saved) this.#announceAt = now + ANNOUNCE_RETRY_MS;
+		return saved;
 	}
 
 	#apply(snapshot: RoomSnapshot): void {

@@ -34,7 +34,7 @@ vi.mock('$lib/services/settings.svelte', () => ({
 	settings: { addScore: vi.fn(), locale: 'uk' }
 }));
 
-const { QuizMatch } = await import('./quizMatch.svelte');
+const { QuizMatch, ANNOUNCE_RETRY_MS } = await import('./quizMatch.svelte');
 
 /** Кілька мікрозадач: записи в журнал ідуть одна за одною, кожна чекає свою. */
 const settle = async () => {
@@ -1621,6 +1621,34 @@ describe('пільга за паузу', () => {
 
 		expect(host.graceSpent(GUEST)).toBe(5_000);
 		expect(guest.graceSpent(GUEST)).toBe(5_000);
+		stop();
+	});
+});
+
+/**
+ * ОГОЛОШЕННЯ, ЯКЕ БАЗА НЕ ПРИЙНЯЛА, НЕ СТАЄ КОЛОМ (аудит 2026-09-24). Доти
+ * ведучий пробував знову на КОЖНОМУ такті годинника (100 мс): відмова правил не
+ * минає сама, тож це було коло, а в журналі — нічого.
+ *
+ * Зворотний експеримент: прибрати перевірку `#announceAt` — червоніє.
+ */
+describe('оголошення раунду, якого база не прийняла', () => {
+	it('наступна спроба — не раніше паузи, а тоді знову', async () => {
+		const room = new LocalRoom(info(), members());
+		const append = vi.fn(async () => false);
+		const host = new QuizMatch(HOST, { ...room.transport(), append });
+		const stop = host.listen();
+
+		expect(await host.startRound(0), 'перевірка жива: база відмовила').toBe(false);
+		const tries = append.mock.calls.length;
+		expect(tries).toBeGreaterThan(0);
+
+		expect(await host.startRound(0)).toBe(false);
+		expect(append.mock.calls.length, 'спроба на наступному такті').toBe(tries);
+
+		room.tick(ANNOUNCE_RETRY_MS);
+		await host.startRound(0);
+		expect(append.mock.calls.length, 'після паузи — нова спроба').toBeGreaterThan(tries);
 		stop();
 	});
 });

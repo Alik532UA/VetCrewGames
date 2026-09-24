@@ -120,6 +120,7 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	});
 
 	watchHost(session);
+	journal(session);
 
 	// Кімнати більше немає — сказати про це й повернути на форму входу. Закрита й
 	// недоступна — різні слова: «партію завершено» про втрачений доступ збрехало б.
@@ -183,11 +184,44 @@ function watchHost<M extends RoomMatch>(session: RoomSession<M>): void {
 		void match
 			.takeLead()
 			.then((taken) => {
-				if (taken) toast.info('pairs.youLead');
+				if (!taken) return;
+				toast.info('pairs.youLead');
+				logService.info('network', 'lead taken', { code: session.code });
 			})
 			.catch((error: unknown) =>
-				logService.warn('network', 'lead not taken', { reason: String(error) })
+				logService.warn('network', 'lead not taken', { code: session.code, reason: String(error) })
 			)
 			.finally(() => (taking = false));
+	});
+}
+
+/**
+ * ЩО СТАЛОСЯ З КІМНАТОЮ — У ЖУРНАЛ, із кодом (аудит 2026-09-24).
+ *
+ * Звіт зі значка сервісу — єдине, що автор бачить після чужої партії, і доти в
+ * ньому не було двох найважливіших подій: коли людина лишалася без звʼязку й
+ * поверталася, і коли ведення переходило до іншого. Тобто «гра зависла» не мала
+ * з чим звіритися.
+ *
+ * Ключ — код кімнати: перехід в іншу кімнату — не «зміна господаря» й не
+ * «повернення звʼязку», а просто інша кімната.
+ */
+function journal<M extends RoomMatch>(session: RoomSession<M>): void {
+	let seen: { code: string; connected: boolean; host: string } | null = null;
+
+	$effect(() => {
+		const code = session.code;
+		const connected = session.connected;
+		const host = session.match?.hostUid ?? '';
+		if (code === '' || host === '') return;
+		if (seen?.code === code) {
+			if (seen.connected !== connected) {
+				logService.info('network', connected ? 'connection restored' : 'connection lost', { code });
+			}
+			if (seen.host !== host) {
+				logService.info('network', 'host changed', { code, from: seen.host, to: host });
+			}
+		}
+		seen = { code, connected, host };
 	});
 }
