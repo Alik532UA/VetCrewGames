@@ -86,6 +86,21 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	// покинуту кімнату від тієї, з якої щойно вийшли.
 	$effect(() => (session.match && session.code ? session.net.beat(session.code) : undefined));
 
+	/*
+	 * ПАРТІЯ СКІНЧИЛАСЯ — господар закриває її СТАТУСОМ. Доти `over` не писав
+	 * ніхто, і скінчена партія лишалася «живою»: смуга «Вас чекають» кликала в неї
+	 * кожного, хто вже вийшов із підсумку, поки суперник ще дивився на табло (аудит
+	 * 2026-09-24). Реванш повертає `playing` сам. Після відмови бази — не сам (див.
+	 * `autoHalted`): відкат запису інакше вертав би умову знову й знову.
+	 */
+	$effect(() => {
+		const match = session.match;
+		if (!match?.over || !session.amHost || match.status !== 'playing' || session.autoHalted) return;
+		void session
+			.hostAction((transport) => transport.setStatus('over'))
+			.then((done) => (session.autoHalted ||= !done));
+	});
+
 	// Бали — рівно раз на (кімнату, зерно), і між перезавантаженнями теж.
 	$effect(() => {
 		const match = session.match;

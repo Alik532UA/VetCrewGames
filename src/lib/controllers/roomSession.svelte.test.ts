@@ -490,3 +490,47 @@ describe('склад і реванш — з тих, хто на звʼязку',
 		expect(session.match?.countdownAt, 'рядок гостя лишився, але його немає').toBeNull();
 	});
 });
+
+/**
+ * СКІНЧЕНА ПАРТІЯ ЗАКРИВАЄТЬСЯ СТАТУСОМ (аудит 2026-09-24).
+ *
+ * Доти `over` не писав ніхто, і смуга «Вас чекають» кликала в партію, яка вже
+ * дограна, — поки суперник ще дивився на підсумок.
+ *
+ * Зворотний експеримент: прибрати політику «партія скінчилася → over» — червоніє
+ * перший випадок.
+ */
+describe('скінчена партія', () => {
+	it('господар закриває її статусом over', async () => {
+		const room = new LocalRoom(
+			roomInfo({ status: 'playing', roster: rosterOf(members()) }),
+			members()
+		);
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		session.match!.endedBy = GUEST;
+		flushSync();
+		await settle();
+
+		expect(room.status).toBe('over');
+	});
+
+	it('гість статусу не пише — це право господаря', async () => {
+		const room = new LocalRoom(
+			roomInfo({ status: 'playing', roster: rosterOf(members()) }),
+			members()
+		);
+		const { session } = sessionFor(room, roomInfo({ status: 'playing' }), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		session.match!.endedBy = HOST;
+		flushSync();
+		await settle();
+
+		expect(room.status).toBe('playing');
+	});
+});

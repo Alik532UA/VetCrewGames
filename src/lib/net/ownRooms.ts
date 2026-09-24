@@ -1,6 +1,7 @@
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import type { RoomInfo } from './roomTypes';
+import { roomLife } from '$lib/config/roomLife';
 
 /**
  * Індекс СВОїх кімнат і прибирання за собою — `myRooms/{uid}/{code}`.
@@ -151,7 +152,7 @@ export async function pruneOwnRooms(): Promise<void> {
 				continue;
 			}
 
-			const info = snapshot.val() as Pick<RoomInfo, 'status' | 'hostUid'> & {
+			const info = snapshot.val() as Pick<RoomInfo, 'status' | 'hostUid' | 'aliveAt'> & {
 				createdAt?: number;
 			};
 			/*
@@ -162,8 +163,14 @@ export async function pruneOwnRooms(): Promise<void> {
 			 * неправдоподібна, а навіть якби вона була, під ніж пішла б лише ВЛАСНА
 			 * кімната того, хто саме створює наступну.
 			 */
+			/*
+			 * Скінчена — лише коли в ній уже тихо, а не одразу. Відколи господар пише
+			 * `over` сам, «одразу» зносило б кімнату, з якої щойно почали іншу гру,
+			 * — ще ДО того, як у неї ляже `nextCode`, тобто решта не дізналася б, куди
+			 * переїхали.
+			 */
 			const abandoned =
-				info.status === 'over' ||
+				(info.status === 'over' && roomLife(info.aliveAt, Date.now()) !== 'alive') ||
 				(typeof info.createdAt === 'number' && Date.now() - info.createdAt > ROOM_TTL_MS);
 			if (!abandoned) continue;
 
