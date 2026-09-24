@@ -349,9 +349,16 @@ export async function saveProfile(
 export async function setSearchable(handle: string, on: boolean): Promise<void> {
 	try {
 		const { uid, db } = await connect();
-		const { ref, remove, set } = await import('firebase/database');
-		if (on) await set(ref(db, `find/${handle}`), uid);
-		else await remove(ref(db, `find/${handle}`));
+		const { get, ref, remove, set } = await import('firebase/database');
+		/*
+		 * Спершу — що там уже лежить. Правило не пускає ні створити наявне, ні
+		 * видалити відсутнє, тож «увімкнути ще раз» і «вимкнути вимкнене» доти
+		 * давали відмову й попередження в журналі на кожне збереження профілю.
+		 */
+		const node = ref(db, `find/${handle}`);
+		const mine = (await get(node)).val() === uid;
+		if (on && !mine) await set(node, uid);
+		else if (!on && mine) await remove(node);
 	} catch (error) {
 		logService.warn('network', 'search index not updated', { reason: String(error) });
 	}

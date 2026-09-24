@@ -1,18 +1,24 @@
 {
-  "database": {
-    "rules": "database.rules.json"
-  },
-  "emulators": {
-    "auth": {
-      "port": 9109
-    },
-    "database": {
-      "port": 9010
-    },
-    "ui": {
-      "enabled": true,
-      "port": 4010
-    },
-    "singleProjectMode": true
-  }
+	"database": {
+		"rules": "database.rules.json"
+	},
+	"emulators": {
+		"auth": {
+			"port": 9109
+		},
+		"database": {
+			"port": 9010
+		},
+		"hub": {
+			"port": 4410
+		},
+		"logging": {
+			"port": 4510
+		},
+		"ui": {
+			"enabled": true,
+			"port": 4010
+		},
+		"singleProjectMode": true
+	}
 }

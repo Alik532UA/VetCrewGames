@@ -86,10 +86,19 @@ export async function eraseMyData(): Promise<void> {
 	});
 	if (Object.keys(wipe).length > 0) await update(ref(db), wipe);
 
-	// Псевдонім і пошуковий індекс: обидва ключі — свої, обидва звільняються.
+	/*
+	 * ПСЕВДОНІМ І ПОШУК — лише те, що справді лежить і справді моє, і пошук ПЕРШИМ.
+	 *
+	 * Правило не пускає видаляти відсутнє, а запису в пошуку немає в кожного, хто
+	 * пошук вимкнув. Доти він видалявся беззастережно — і ПІСЛЯ псевдоніма, тож
+	 * відмова лишала псевдонім уже звільненим, а кожна наступна спроба падала
+	 * саме на ньому (аудит 2026-09-24). Тепер кожен крок перевіряє, чи є що
+	 * прибирати, і повторне видалення після обриву посередині доходить до кінця.
+	 */
 	if (profile?.handle) {
-		await remove(ref(db, `handles/${profile.handle}`));
-		await remove(ref(db, `find/${profile.handle}`));
+		for (const path of [`find/${profile.handle}`, `handles/${profile.handle}`]) {
+			if ((await get(ref(db, path))).val() === uid) await remove(ref(db, path));
+		}
 	}
 
 	await remove(ref(db, `leaders/${uid}`));
@@ -152,9 +161,8 @@ export async function changePassword(current: string, next: string): Promise<voi
 	const user = auth.currentUser;
 	if (!user?.email) throw new Error('no-password-account');
 
-	const { EmailAuthProvider, reauthenticateWithCredential, updatePassword } = await import(
-		'firebase/auth'
-	);
+	const { EmailAuthProvider, reauthenticateWithCredential, updatePassword } =
+		await import('firebase/auth');
 	await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, current));
 	await updatePassword(user, next);
 }

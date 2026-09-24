@@ -76,7 +76,7 @@ const RESOLVERS: Record<string, () => string> = {
 		};
 		const ports = config.emulators;
 		expect(ports, 'у firebase.json немає блоку emulators').toBeTruthy();
-		return `database ${ports?.database?.port}, auth ${ports?.auth?.port}, ui ${ports?.ui?.port}`;
+		return `database ${ports?.database?.port}, auth ${ports?.auth?.port}, ui ${ports?.ui?.port}, hub ${ports?.hub?.port}, logging ${ports?.logging?.port}`;
 	},
 
 	/** Адаптер визначає профіль (static / server), а з ним — половину пакета. */

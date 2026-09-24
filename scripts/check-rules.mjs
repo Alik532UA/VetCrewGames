@@ -1631,6 +1631,37 @@ const CASES = [
 		name: 'господар зносить кімнату',
 		allowed: true,
 		run: () => write(`rooms/${CODE}`, null, host.token)
+	},
+
+	/*
+	 * ВИДАЛЕННЯ АКАУНТА — останнім, бо воно прибирає дані гостя для всіх випадків
+	 * вище. Доти `users/{uid}` і `myRooms/{uid}` знести не міг ніхто, включно з
+	 * власником: права були лише на дітях (аудит 2026-09-24).
+	 */
+	{
+		name: 'сторонній зносить ЧУЖІ дані користувача',
+		allowed: false,
+		run: () => write(`users/${guest.uid}`, null, stranger.token)
+	},
+	{
+		name: 'сторонній зносить ЧУЖИЙ індекс кімнат',
+		allowed: false,
+		run: () => write(`myRooms/${guest.uid}`, null, stranger.token)
+	},
+	{
+		name: 'власник ПЕРЕПИСУЄ свої дані цілком, а не через дітей',
+		allowed: false,
+		run: () => write(`users/${guest.uid}`, { anything: 1 }, guest.token)
+	},
+	{
+		name: 'власник зносить свій індекс кімнат цілком',
+		allowed: true,
+		run: () => write(`myRooms/${guest.uid}`, null, guest.token)
+	},
+	{
+		name: 'власник зносить свої дані цілком',
+		allowed: true,
+		run: () => write(`users/${guest.uid}`, null, guest.token)
 	}
 ];
 

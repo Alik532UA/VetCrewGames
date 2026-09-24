@@ -1,7 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Database } from 'firebase/database';
+import { as, closeAll, signedIn, type Connection } from './emulatorSession';
 import { LocalRoom } from './localRoom';
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport, RosterEntry } from './roomTypes';
 
@@ -25,61 +23,16 @@ import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport, RosterEntry }
  * Запуск — `npm run check:rules`, тим самим запуском емулятора, що й правила.
  */
 
-interface Connection {
-	uid: string;
-	db: Database;
-	auth: Auth;
-	app: FirebaseApp;
-}
-
 /**
  * `connect()` веде туди, куди скаже тест: у емулятор і від імені вибраного
- * учасника. Справжній `net/firebase.ts` сюди не потрапляє — зі своїм ключем він
- * пішов би в ЖИВИЙ проєкт (і запобіжник `emulator-only.setup.ts` це зупинить).
+ * учасника (`emulatorSession.ts`). Справжній `net/firebase.ts` сюди не потрапляє —
+ * зі своїм ключем він пішов би в ЖИВИЙ проєкт (і запобіжник
+ * `emulator-only.setup.ts` це зупинить).
  */
-let current: Connection | null = null;
-vi.mock('$lib/net/firebase', () => ({
-	connect: async () => {
-		if (!current) throw new Error('контракт: не вибрано, від чийого імені діяти');
-		return current;
-	},
-	forget: () => {}
-}));
-
-const PROJECT = 'demo-vet-crew-games';
-const DB_HOST = process.env.FIREBASE_DATABASE_EMULATOR_HOST ?? '127.0.0.1:9010';
-const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '127.0.0.1:9109';
-
-async function signedIn(name: string): Promise<Connection> {
-	const { initializeApp } = await import('firebase/app');
-	const { connectAuthEmulator, getAuth, signInAnonymously } = await import('firebase/auth');
-	const { connectDatabaseEmulator, getDatabase } = await import('firebase/database');
-	const app = initializeApp(
-		{
-			apiKey: 'demo-key',
-			projectId: PROJECT,
-			databaseURL: `http://${DB_HOST}?ns=${PROJECT}-default-rtdb`
-		},
-		name
-	);
-	const auth = getAuth(app);
-	connectAuthEmulator(auth, `http://${AUTH_HOST}`, { disableWarnings: true });
-	const db = getDatabase(app);
-	const [host, port] = DB_HOST.split(':');
-	connectDatabaseEmulator(db, host, Number(port));
-	const { user } = await signInAnonymously(auth);
-	return { uid: user.uid, db, auth, app };
-}
-
-/** Зробити щось від імені учасника. Транспорт бере підʼєднання раз, при створенні. */
-async function as<T>(who: Connection, run: () => Promise<T>): Promise<T> {
-	current = who;
-	try {
-		return await run();
-	} finally {
-		current = null;
-	}
-}
+vi.mock('$lib/net/firebase', async () => {
+	const { currentConnection } = await import('$lib/net/emulatorSession');
+	return { connect: currentConnection, forget: () => {} };
+});
 
 /** Перший знімок, що задовольняє умову: у базі підписка приїжджає не одразу. */
 function until(
@@ -203,10 +156,7 @@ beforeAll(async () => {
 	};
 });
 
-afterAll(async () => {
-	const { deleteApp } = await import('firebase/app');
-	for (const who of Object.values(people ?? {})) await deleteApp(who.app);
-});
+afterAll(() => closeAll(Object.values(people ?? {})));
 
 const flip = (by: string, seq: number): Move => ({ seq, by, type: 'flip', payload: { index: 0 } });
 
