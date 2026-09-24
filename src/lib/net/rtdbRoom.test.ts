@@ -28,6 +28,8 @@ interface Write {
 const writes: Write[] = [];
 /** Підписки за шляхом — щоб подати знімок так, як його подає SDK. */
 const watchers = new Map<string, (snapshot: { val: () => unknown }) => void>();
+/** Третій аргумент `onValue` — скасування підписки базою. */
+const cancels = new Map<string, (error: Error) => void>();
 
 const ref = vi.fn((_db: unknown, path = '') => ({ path }));
 const set = vi.fn(async (node: { path: string }, value: unknown) => {
@@ -53,10 +55,17 @@ vi.mock('firebase/database', () => ({
 	remove,
 	get: vi.fn(),
 	off: vi.fn(),
-	onValue: vi.fn((node: { path: string }, handler: (snapshot: { val: () => unknown }) => void) => {
-		watchers.set(node.path, handler);
-		return handler;
-	}),
+	onValue: vi.fn(
+		(
+			node: { path: string },
+			handler: (snapshot: { val: () => unknown }) => void,
+			cancel?: (error: Error) => void
+		) => {
+			watchers.set(node.path, handler);
+			if (cancel) cancels.set(node.path, cancel);
+			return handler;
+		}
+	),
 	serverTimestamp: () => SERVER_TIME
 }));
 
@@ -231,5 +240,25 @@ describe('rtdbRoom: передача ведення й номер ходу', () 
 		});
 
 		expect(seen).toEqual([[1, 2]]);
+	});
+});
+
+/**
+ * ПІДПИСКА, ЯКУ СКАСУВАЛА БАЗА (аудит 2026-09-24). Доти вона гасла мовчки: дошка
+ * стояла, а смуга «немає звʼязку» не зʼявлялася, бо звʼязок якраз був. Тепер це
+ * `lost` — окремо від `closed`, бо «партію завершено» тут було б неправдою.
+ *
+ * Зворотний експеримент: прибрати третій аргумент `onValue` у `watch` — червоніє.
+ */
+describe('rtdbRoom: кімнати немає — і чому', () => {
+	it('порожній знімок — закрита, скасована підписка — недоступна', async () => {
+		const transport = await roomTransport('42');
+		const gone = vi.fn();
+		transport.watch(() => {}, gone);
+
+		watchers.get('rooms/42')?.({ val: () => null });
+		cancels.get('rooms/42')?.(new Error('permission_denied'));
+
+		expect(gone.mock.calls).toEqual([['closed'], ['lost']]);
 	});
 });

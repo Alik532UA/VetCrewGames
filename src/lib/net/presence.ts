@@ -143,11 +143,16 @@ export async function keepNode(
 		void register();
 	});
 	const onNode = watch
-		? onValue(node, (snapshot) => {
-				if (snapshot.exists() || !online) return;
-				registered = -1;
-				void register();
-			})
+		? onValue(
+				node,
+				(snapshot) => {
+					if (snapshot.exists() || !online) return;
+					registered = -1;
+					void register();
+				},
+				(error) =>
+					logService.warn('network', 'kept node not watched', { path, reason: String(error) })
+			)
 		: null;
 
 	return {
@@ -223,14 +228,22 @@ export async function watchHovers(
 	const { uid, db } = await connect();
 	const { off, onValue, ref } = await import('firebase/database');
 	const branch = ref(db, `presence/${code}`);
-	const handler = onValue(branch, (snapshot) => {
-		const out: Record<string, number> = {};
-		const all = (snapshot.val() ?? {}) as Record<string, { hover?: number }>;
-		for (const [who, node] of Object.entries(all)) {
-			if (who !== uid && typeof node?.hover === 'number') out[who] = node.hover;
+	const handler = onValue(
+		branch,
+		(snapshot) => {
+			const out: Record<string, number> = {};
+			const all = (snapshot.val() ?? {}) as Record<string, { hover?: number }>;
+			for (const [who, node] of Object.entries(all)) {
+				if (who !== uid && typeof node?.hover === 'number') out[who] = node.hover;
+			}
+			onChange(out);
+		},
+		// Підсвітка — довідка: без неї рамок просто немає, а не стара рамка назавжди.
+		(error) => {
+			logService.warn('network', 'hover listener cancelled', { code, reason: String(error) });
+			onChange({});
 		}
-		onChange(out);
-	});
+	);
 	return () => off(branch, 'value', handler);
 }
 
@@ -242,7 +255,18 @@ export async function watchPresence(
 	const { db } = await connect();
 	const { off, onValue, ref } = await import('firebase/database');
 	const branch = ref(db, `presence/${code}`);
-	const handler = onValue(branch, (snapshot) => onChange(Object.keys(snapshot.val() ?? {})));
+	/*
+	 * Скасовану підписку НАЗИВАЄМО, а не гасимо мовчки (аудит 2026-09-24). Порожнім
+	 * списком не підміняємо: «нікого немає» в партії означає «забрати ведення» й
+	 * «чекати всіх», тобто вигадана порожнеча зрушила б гру. Лишається останнє, що
+	 * було відомо, — і запис у журналі, за яким причину видно.
+	 */
+	const handler = onValue(
+		branch,
+		(snapshot) => onChange(Object.keys(snapshot.val() ?? {})),
+		(error) =>
+			logService.warn('network', 'presence listener cancelled', { code, reason: String(error) })
+	);
 	return () => off(branch, 'value', handler);
 }
 
@@ -278,8 +302,15 @@ export async function watchOthers(
 	const { uid, db } = await connect();
 	const { off, onValue, ref } = await import('firebase/database');
 	const branch = ref(db, `presence/${code}`);
-	const handler = onValue(branch, (snapshot) =>
-		onCount(Object.keys(snapshot.val() ?? {}).filter((other) => other !== uid).length)
+	const handler = onValue(
+		branch,
+		(snapshot) =>
+			onCount(Object.keys(snapshot.val() ?? {}).filter((other) => other !== uid).length),
+		// Читати не дають — для смуги «вас чекають» це «чекати нікому».
+		(error) => {
+			logService.warn('network', 'others listener cancelled', { code, reason: String(error) });
+			onCount(0);
+		}
 	);
 	return () => off(branch, 'value', handler);
 }

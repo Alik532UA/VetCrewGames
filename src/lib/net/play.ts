@@ -150,9 +150,13 @@ export async function watchPlay(onData: (data: PlayData | null) => void): Promis
 		const { uid, db } = await connect();
 		const { off, onValue, ref } = await import('firebase/database');
 		const node = ref(db, `users/${uid}/play`);
-		const listener = onValue(node, (snapshot) => {
-			onData(snapshot.exists() ? sanitize(snapshot.val()) : null);
-		});
+		const listener = onValue(
+			node,
+			(snapshot) => onData(snapshot.exists() ? sanitize(snapshot.val()) : null),
+			// Скасовану підписку називаємо: інакше рахунок тихо перестає доїжджати з
+			// іншого пристрою, і ніде не видно чому (аудит 2026-09-24).
+			(error) => logService.warn('network', 'play listener cancelled', { reason: String(error) })
+		);
 		return () => off(node, 'value', listener);
 	} catch (error) {
 		logService.warn('network', 'play data not watched', { reason: String(error) });

@@ -1,4 +1,4 @@
-import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import type { GoneReason, Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
@@ -171,13 +171,16 @@ export class QuizMatch {
 		this.#factor = factor;
 	}
 
-	/** Кімнати більше немає: господар її закрив або прибрав збирач. */
-	gone = $state(false);
+	/**
+	 * Кімнати більше немає: господар її закрив або прибрав збирач (`closed`), або
+	 * читати її мені вже не дають (`lost`). `null` — кімната є.
+	 */
+	gone = $state<GoneReason | null>(null);
 
 	listen(): () => void {
 		return this.#transport.watch(
 			(snapshot) => this.#apply(snapshot),
-			() => (this.gone = true)
+			(why) => (this.gone = why)
 		);
 	}
 

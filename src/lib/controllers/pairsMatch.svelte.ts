@@ -1,5 +1,12 @@
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
-import type { Member, Move, RosterEntry, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import type {
+	GoneReason,
+	Member,
+	Move,
+	RosterEntry,
+	RoomSnapshot,
+	RoomTransport
+} from '$lib/net/roomTypes';
 import { partyOf } from '$lib/utils/roster';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
 import { takeLead } from './takeLead';
@@ -159,8 +166,11 @@ export class PairsMatch {
 	 */
 	endedBy = $state<string | null>(null);
 
-	/** Кімнати більше немає: господар її закрив або прибрав збирач. */
-	gone = $state(false);
+	/**
+	 * Кімнати більше немає: господар її закрив або прибрав збирач (`closed`), або
+	 * читати її мені вже не дають (`lost`). `null` — кімната є.
+	 */
+	gone = $state<GoneReason | null>(null);
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -219,7 +229,7 @@ export class PairsMatch {
 	listen(): () => void {
 		const off = this.#transport.watch(
 			(snapshot) => this.#apply(snapshot),
-			() => (this.gone = true)
+			(why) => (this.gone = why)
 		);
 		return () => {
 			// Відкладене перегортання знімається разом із підпискою: інакше воно

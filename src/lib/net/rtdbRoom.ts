@@ -336,9 +336,15 @@ export async function watchRoomInfo(
 ): Promise<() => void> {
 	const { db } = await connect();
 	const { onValue, ref } = await import('firebase/database');
-	return onValue(ref(db, `rooms/${code}/info`), (snapshot) => {
-		onInfo(snapshot.exists() ? infoFromDb(snapshot.val()) : null);
-	});
+	return onValue(
+		ref(db, `rooms/${code}/info`),
+		(snapshot) => onInfo(snapshot.exists() ? infoFromDb(snapshot.val()) : null),
+		// Читати не дають — для смуги це те саме, що «кімнати немає»: кликати нікуди.
+		(error) => {
+			logService.warn('network', 'room info listener cancelled', { code, reason: String(error) });
+			onInfo(null);
+		}
+	);
 }
 
 export async function peekRoom(code: string): Promise<RoomInfo | null> {
@@ -370,13 +376,20 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				const value = Number(snapshot.val());
 				offset = Number.isFinite(value) ? value : 0;
 			});
-			const handler = onValue(room, (snapshot) => {
-				// Кімнати більше немає — сказати про це, а не лишити гостей перед
-				// дошкою, яка вже ні до чого. Форма з бази — у `roomShape.ts`.
-				const next = snapshotFromDb(snapshot.val());
-				if (next) onSnapshot(next);
-				else onGone?.();
-			});
+			const handler = onValue(
+				room,
+				(snapshot) => {
+					// Кімнати більше немає — сказати про це, а не лишити гостей перед
+					// дошкою, яка вже ні до чого. Форма з бази — у `roomShape.ts`.
+					const next = snapshotFromDb(snapshot.val());
+					if (next) onSnapshot(next);
+					else onGone?.('closed');
+				},
+				(error) => {
+					logService.error('network', 'room listener cancelled', { code, reason: String(error) });
+					onGone?.('lost');
+				}
+			);
 			return () => {
 				off(room, 'value', handler);
 				off(offsetNode, 'value', offsetHandler);

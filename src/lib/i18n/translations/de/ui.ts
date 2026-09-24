@@ -49,6 +49,7 @@ export const ui = {
 	'pairs.noRoom': 'Diesen Raum gibt es nicht.',
 	'pairs.oldVersion': 'Das Spiel wurde aktualisiert. Ladet die Seite neu — beide.',
 	'pairs.roomClosed': 'Der Raum wurde geschlossen – die Partie ist vorbei.',
+	'pairs.roomLost': 'Der Raum ist nicht mehr erreichbar – tritt ihm erneut bei.',
 	'pairs.removed': 'Der Gastgeber hat dich aus dem Raum entfernt.',
 	'pairs.offline': 'Keine Verbindung zum Server – wir warten, bis sie zurück ist.',
 	'pairs.roomOlder':

@@ -302,6 +302,56 @@ describe('хмарна база', () => {
 		expect(leaking, `підписка без відписки:\n${leaking.join('\n')}`).toEqual([]);
 	});
 
+	/**
+	 * КОЖНА ПІДПИСКА ПОЯСНЮЄ СВОЄ СКАСУВАННЯ (аудит 2026-09-24).
+	 *
+	 * Підписку, якій перестали давати читати (вийшов з акаунта в іншій вкладці, стер
+	 * його), база скасовує — і без третього аргументу `onValue` вона гасне МОВЧКИ:
+	 * дошка стоїть, у журналі порожньо, а смуга «немає звʼязку» не зʼявляється, бо
+	 * звʼязок якраз є. Виняток — службові вузли `.info/…`: їх SDK віддає сам, і
+	 * скасувати їх нікому.
+	 *
+	 * Рахуються аргументи ВЕРХНЬОГО рівня: кома всередині колбека — не аргумент.
+	 *
+	 * Зворотний експеримент: прибрати третій аргумент у будь-якій підписці — червоніє.
+	 */
+	it('кожна підписка на базу має обробник скасування', () => {
+		const net = walk('src/lib/net').filter((f) => f.endsWith('.ts') && !f.includes('.test.'));
+		const calls: Array<{ file: string; args: string[] }> = [];
+		for (const file of net) {
+			const text = readFileSync(file, 'utf8')
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.replace(/^\s*\/\/.*$/gm, '');
+			// Службові вузли: змінна, якій присвоєно ref(db, '.info/…').
+			const service = new Set(
+				[...text.matchAll(/(\w+)\s*=\s*ref\(\s*db\s*,\s*'\.info\//g)].map((match) => match[1])
+			);
+			for (const match of text.matchAll(/\bonValue\s*\(/g)) {
+				const args: string[] = [];
+				let depth = 0;
+				let current = '';
+				for (let i = (match.index ?? 0) + match[0].length; i < text.length; i += 1) {
+					const ch = text[i];
+					if (depth === 0 && (ch === ',' || ch === ')')) {
+						if (current.trim()) args.push(current.trim());
+						current = '';
+						if (ch === ')') break;
+						continue;
+					}
+					if ('([{'.includes(ch)) depth += 1;
+					if (')]}'.includes(ch)) depth -= 1;
+					current += ch;
+				}
+				if (!service.has(args[0])) calls.push({ file, args });
+			}
+		}
+		expect(calls.length, 'підписок не знайдено — перевірка мертва').toBeGreaterThan(3);
+		const silent = calls
+			.filter(({ args }) => args.length < 3)
+			.map(({ file, args }) => `${file}: onValue(${args[0]}, …)`);
+		expect(silent, `підписка без обробника скасування:\n${silent.join('\n')}`).toEqual([]);
+	});
+
 	it('версія правил гри піднята разом зі формою ходу (§ 8.4)', () => {
 		// Форма ходу змінилася (з’явився `at`), тож стара збірка з кешу пише ходи,
 		// які правило відкидає. Кімната мусить називати нову версію — інакше

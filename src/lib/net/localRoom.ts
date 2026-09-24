@@ -1,4 +1,5 @@
 import type {
+	GoneReason,
 	Member,
 	Move,
 	RoomInfo,
@@ -59,7 +60,7 @@ export class LocalRoom {
 	#moves: Move[] = [];
 	#listeners = new Set<(snapshot: RoomSnapshot) => void>();
 	/** Хто чекає на звістку «кімнати більше немає». */
-	#goneListeners = new Set<() => void>();
+	#goneListeners = new Set<(why: GoneReason) => void>();
 	/**
 	 * Хто «на звʼязку» — для правила передачі ведення. `null` — присутність не
 	 * задано: тоді господар вважається НА МІСЦІ, і ведення не передається, як і в
@@ -363,7 +364,12 @@ export class LocalRoom {
 
 	/** Знести кімнату — так, як це робить господар або збирач. */
 	close(): void {
-		for (const gone of this.#goneListeners) gone();
+		for (const gone of this.#goneListeners) gone('closed');
+	}
+
+	/** Читати кімнату більше не дають: база скасувала підписку (див. `GoneReason`). */
+	cutOff(): void {
+		for (const gone of this.#goneListeners) gone('lost');
 	}
 
 	/** Змінити склад — так, наче хтось зайшов або вийшов. */

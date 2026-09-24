@@ -121,10 +121,12 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 
 	watchHost(session);
 
-	// Кімнати більше немає — сказати про це й повернути на форму входу.
+	// Кімнати більше немає — сказати про це й повернути на форму входу. Закрита й
+	// недоступна — різні слова: «партію завершено» про втрачений доступ збрехало б.
 	$effect(() => {
-		if (!session.match?.gone) return;
-		toast.info('pairs.roomClosed');
+		const gone = session.match?.gone;
+		if (!gone) return;
+		toast.info(gone === 'lost' ? 'pairs.roomLost' : 'pairs.roomClosed');
 		void session.place.exit();
 	});
 

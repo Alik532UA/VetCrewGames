@@ -640,3 +640,26 @@ describe('прибрати учасника', () => {
 		expect(session.match?.members.map((member) => member.uid)).toEqual([HOST]);
 	});
 });
+
+describe('кімната недоступна', () => {
+	/**
+	 * Читати кімнату більше не дають (вийшов з акаунта в іншій вкладці): це не
+	 * «партію завершено», і слово мусить бути інше (аудит 2026-09-24).
+	 *
+	 * Зворотний експеримент: показувати 'pairs.roomClosed' на обидві причини — червоніє.
+	 */
+	it('скасована підписка — «недоступна», і назад на форму входу', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, place } = sessionFor(room, roomInfo(), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		room.cutOff();
+		await settle();
+
+		expect(toast.info).toHaveBeenCalledWith('pairs.roomLost');
+		expect(toast.info).not.toHaveBeenCalledWith('pairs.roomClosed');
+		expect(place.exit).toHaveBeenCalled();
+	});
+});

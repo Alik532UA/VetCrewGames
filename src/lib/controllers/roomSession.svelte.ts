@@ -6,7 +6,7 @@ import { toast } from './toast.svelte';
 import type { LobbyFeed } from './lobbyFeed.svelte';
 import type { PlayerIdentity } from './playerIdentity.svelte';
 import type { LobbyRoom } from '$lib/net/lobby';
-import type { Member, Role, RoomStatus, RoomTransport } from '$lib/net/roomTypes';
+import type { GoneReason, Member, Role, RoomStatus, RoomTransport } from '$lib/net/roomTypes';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { entryErrorKey, entryRefusal, quickPick } from '$lib/utils/roomEntry';
 import { playersOf, rosterOf } from '$lib/utils/roster';
@@ -24,7 +24,7 @@ export interface RoomMatch {
 	readonly listed: boolean;
 	readonly seed: number;
 	readonly over: boolean;
-	readonly gone: boolean;
+	readonly gone: GoneReason | null;
 	takeLead(): Promise<boolean>;
 }
 
