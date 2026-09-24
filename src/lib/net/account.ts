@@ -217,33 +217,23 @@ export async function handleFree(handle: string): Promise<boolean> {
 	 */
 	if (!handle) return false;
 	try {
-		const { db } = await connect();
+		const { uid, db } = await connect();
 		const { get, ref } = await import('firebase/database');
-		return !(await get(ref(db, `handles/${handle}`))).exists();
+		const owner = (await get(ref(db, `handles/${handle}`))).val();
+		if (owner === null || owner === uid) return true;
+		/*
+		 * ПОКИНУТИЙ — теж вільний: власник уже називає себе інакше (або профілю
+		 * немає), і правило дозволяє такий забрати (`database.rules.json`, `handles`).
+		 * Інакше форма казала б «зайнятий» про ключ, який ніхто не тримає.
+		 */
+		const named = (await get(ref(db, `users/${owner}/profile/handle`))).val();
+		return named !== handle;
 	} catch (error) {
 		logService.warn('network', 'handle check failed', { reason: String(error) });
 		return false;
 	}
 }
 
-/**
- * Зберегти профіль і зайняти псевдонім.
- *
- * ## Порядок: спершу ПСЕВДОНІМ, потім профіль
- *
- * Псевдонім — те, що може не вийти: його міг зайняти хтось інший між перевіркою
- * й записом, і саме від цього стоїть правило «створити лише вільний». Профіль же
- * не відмовить нікому.
- *
- * У зворотному порядку існував би стан, у якому профіль уже називає псевдонім, а
- * псевдонім належить іншому — тобто дві правди про те саме. Тут же невдача
- * лишає все як було.
- *
- * ## Старий псевдонім звільняється ПІСЛЯ
- *
- * Якщо звільнити його першим, а новий зайняти не вдасться, людина лишиться без
- * псевдоніма зовсім — гірше, ніж із двома на мить.
- */
 /**
  * ЗБЕРЕГТИ ЛИШЕ ІМʼЯ — одним записом у `profile/name`.
  *
@@ -287,28 +277,52 @@ export async function saveAvatar(avatar: string): Promise<void> {
 	await set(ref(db, `users/${uid}/profile/avatar`), avatar);
 }
 
+/**
+ * Зберегти профіль і зайняти псевдонім.
+ *
+ * ## Псевдонім і профіль — ОДНИМ записом
+ *
+ * Псевдонім — те, що може не вийти: його міг зайняти хтось інший між перевіркою
+ * й записом, і саме від цього стоїть правило «створити лише вільний». Одним
+ * записом невдача лишає все як було, а стану «профіль називає псевдонім, який
+ * належить іншому» не буває зовсім. Двома записами існувала б іще й мить «ключ
+ * уже мій, а профіль його не називає» — а такий ключ правило дозволяє забрати
+ * як покинутий.
+ *
+ * ## Старий псевдонім звільняється ПІСЛЯ
+ *
+ * Якщо звільнити його першим, а новий зайняти не вдасться, людина лишиться без
+ * псевдоніма зовсім — гірше, ніж із двома на мить.
+ */
 export async function saveProfile(
 	profile: Omit<Profile, 'uid'>,
 	previous?: string,
 	searchable = true
 ): Promise<void> {
 	const { uid, db } = await connect();
-	const { ref, remove, serverTimestamp, set } = await import('firebase/database');
+	const { get, ref, remove, serverTimestamp, update } = await import('firebase/database');
 
-	if (previous !== profile.handle) {
-		await set(ref(db, `handles/${profile.handle}`), uid);
-	}
-
-	await set(ref(db, `users/${uid}/profile`), {
-		name: profile.name,
-		handle: profile.handle,
-		// Поле або є, або його немає зовсім: `undefined` у `set()` кидає, а
-		// порожній рядок не пройшов би `.validate` (рівно дві літери).
-		...(profile.country ? { country: profile.country } : {}),
-		// Те саме й для аватара, і з тієї самої причини: його `.validate` вимагає
-		// взірця `значок:колір`, якому порожній рядок не відповідає.
-		...(profile.avatar ? { avatar: profile.avatar } : {}),
-		at: serverTimestamp()
+	/*
+	 * ПСЕВДОНІМ І ПРОФІЛЬ — ОДНИМ ЗАПИСОМ.
+	 *
+	 * Доти вони йшли двома, і між ними існувала мить, коли ключ уже мій, а профіль
+	 * ще називає старий. Відколи правило дозволяє забрати ПОКИНУТИЙ псевдонім (той,
+	 * якого профіль власника не називає), ця мить стала б вікном, у яке його
+	 * забирає хтось інший. Одним записом вікна немає: або обидва, або нічого.
+	 */
+	await update(ref(db), {
+		...(previous !== profile.handle ? { [`handles/${profile.handle}`]: uid } : {}),
+		[`users/${uid}/profile`]: {
+			name: profile.name,
+			handle: profile.handle,
+			// Поле або є, або його немає зовсім: `undefined` у записі кидає, а
+			// порожній рядок не пройшов би `.validate` (рівно дві літери).
+			...(profile.country ? { country: profile.country } : {}),
+			// Те саме й для аватара, і з тієї самої причини: його `.validate` вимагає
+			// взірця `значок:колір`, якому порожній рядок не відповідає.
+			...(profile.avatar ? { avatar: profile.avatar } : {}),
+			at: serverTimestamp()
+		}
 	});
 
 	/*
@@ -327,8 +341,11 @@ export async function saveProfile(
 		// Звільнення старого — прибирання, а не частина запису: невдача тут лишає
 		// зайнятий псевдонім, який більше нікого не називає. Це сміття, а не дефект.
 		try {
-			await remove(ref(db, `handles/${previous}`));
-			await remove(ref(db, `find/${previous}`));
+			// Пошук першим: правило пускає в пошук лише псевдонім з профілю, а
+			// видаляти відсутнє не дає — тому кожен ключ лише якщо він справді мій.
+			for (const path of [`find/${previous}`, `handles/${previous}`]) {
+				if ((await get(ref(db, path))).val() === uid) await remove(ref(db, path));
+			}
 		} catch (error) {
 			logService.warn('network', 'old handle not released', { reason: String(error) });
 		}

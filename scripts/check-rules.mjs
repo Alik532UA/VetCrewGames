@@ -326,9 +326,24 @@ const CASES = [
 	 * спирається на вже зайнятий.
 	 */
 	{
+		// Одним записом із профілем — рівно як `saveProfile`: псевдонім, якого профіль
+		// не називає, правило вважає покинутим і дозволяє забрати.
 		name: 'господар займає ВІЛЬНИЙ псевдонім на себе',
 		allowed: true,
-		run: () => write('handles/leader', host.uid, host.token)
+		run: () =>
+			patch(
+				'',
+				{
+					'handles/leader': host.uid,
+					[`users/${host.uid}/profile`]: { name: 'Господар', handle: 'leader', at: SERVER_TIME }
+				},
+				host.token
+			)
+	},
+	{
+		name: 'ключ псевдоніма не за форматом',
+		allowed: false,
+		run: () => write('handles/Bad-Key', guest.uid, guest.token)
 	},
 	{
 		// Правило вимагає `newData.val() === auth.uid`: інакше можна було б зайняти
@@ -376,11 +391,51 @@ const CASES = [
 	 * ПОШУКОВИЙ ІНДЕКС І ПРИВАТНІСТЬ. Три перемикачі, і кожен перевіряється тут
 	 * саме тому, що тримає його правило, а не екран: клієнтський фільтр приховує
 	 * лише від того, хто дивиться екраном.
+	 *
+	 * У пошук — лише СВІЙ псевдонім і лише той, що називає профіль (аудит
+	 * 2026-09-24): доти можна було зайняти пошук під чужим псевдонімом або
+	 * засипати його вигаданими записами з одного акаунта. Тому спершу — псевдонім
+	 * і профіль, і на них же спирається таблиця лідерів нижче.
 	 */
+	{
+		name: 'гість займає псевдонім разом із профілем',
+		allowed: true,
+		run: () =>
+			patch(
+				'',
+				{
+					'handles/guest_one': guest.uid,
+					[`users/${guest.uid}/profile`]: { name: 'Гість', handle: 'guest_one', at: SERVER_TIME }
+				},
+				guest.token
+			)
+	},
 	{
 		name: 'гість вписує себе в пошуковий індекс',
 		allowed: true,
 		run: () => write('find/guest_one', guest.uid, guest.token)
+	},
+	{
+		name: 'вписати в пошук ЧУЖИЙ псевдонім',
+		allowed: false,
+		run: () => write('find/leader', guest.uid, guest.token)
+	},
+	{
+		name: 'гість займає запасний псевдонім',
+		allowed: true,
+		run: () => write('handles/guest_spare', guest.uid, guest.token)
+	},
+	{
+		// Свій, але не той, що в профілі: інакше один акаунт тримав би в пошуку
+		// скільки завгодно записів.
+		name: 'вписати в пошук свій псевдонім, якого профіль не називає',
+		allowed: false,
+		run: () => write('find/guest_spare', guest.uid, guest.token)
+	},
+	{
+		name: 'ключ пошуку не за форматом',
+		allowed: false,
+		run: () => write('find/ab', guest.uid, guest.token)
 	},
 	{
 		name: 'пошук людей обмеженим запитом',
@@ -414,22 +469,23 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/privacy/secret`, true, guest.token)
 	},
 	{
-		/*
-		 * ГОЛОВНИЙ ВИПАДОК приватності: перемикач вимкнено — і база НЕ ДАЄ
-		 * повернутися в пошук. Саме цим він відрізняється від фільтра на екрані:
-		 * ні стара збірка з кешу, ні чужий клієнт, ні консоль браузера не
-		 * повернуть запис, поки перемикач `false`.
-		 */
-		name: 'вписатися в пошук із вимкненим пошуком',
-		allowed: false,
-		run: () => write('find/guest_two', guest.uid, guest.token)
-	},
-	{
 		// Прибрати себе з індексу можна ЗАВЖДИ: заборона вимкнути пошук через
 		// вимкнений пошук була б замком без ключа.
 		name: 'вийти з пошуку при вимкненому пошуку',
 		allowed: true,
 		run: () => write('find/guest_one', null, guest.token)
+	},
+	{
+		/*
+		 * ГОЛОВНИЙ ВИПАДОК приватності: перемикач вимкнено — і база НЕ ДАЄ
+		 * повернутися в пошук. Саме цим він відрізняється від фільтра на екрані:
+		 * ні стара збірка з кешу, ні чужий клієнт, ні консоль браузера не
+		 * повернуть запис, поки перемикач `false`. Псевдонім той самий, що в
+		 * профілі, — тобто відмова тут рівно через перемикач, а не через ключ.
+		 */
+		name: 'вписатися в пошук із вимкненим пошуком',
+		allowed: false,
+		run: () => write('find/guest_one', guest.uid, guest.token)
 	},
 	{
 		name: 'гість вертає пошук і знову вписується',
@@ -458,12 +514,7 @@ const CASES = [
 	 * ТАБЛИЦЯ ЛІДЕРІВ. Поріг і згода — умови ЗАПИСУ, а не фільтр показу: у гілці
 	 * немає нічого, чого не мусить бути видно.
 	 */
-	{
-		// Псевдонім у рядку таблиці мусить бути записаний на автора (аудит 2026-09-23).
-		name: 'гість реєструє свій псевдонім для таблиці',
-		allowed: true,
-		run: () => write('handles/guest_one', guest.uid, guest.token)
-	},
+
 	{
 		// Рядок таблиці не більший за власний рахунок гри.
 		name: 'гість має рахунок гри',
@@ -502,9 +553,25 @@ const CASES = [
 		run: () =>
 			write(
 				`leaders/${guest.uid}`,
-				{ name: 'Лідер', handle: 'leader', score: 120, at: SERVER_TIME },
+				{ name: 'Гість', handle: 'leader', score: 120, at: SERVER_TIME },
 				guest.token
 			)
+	},
+	{
+		name: 'рядок таблиці з ЧУЖИМ іменем',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Лідер', handle: 'guest_one', score: 120, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		// Щоб відмова нижче була саме через поріг, а не через відсутній рахунок гри.
+		name: 'господар має рахунок гри',
+		allowed: true,
+		run: () => write(`users/${host.uid}/play`, { score: 500, at: SERVER_TIME }, host.token)
 	},
 	{
 		name: 'рядок таблиці з рахунком понад свій рахунок гри',
@@ -644,6 +711,22 @@ const CASES = [
 				guest.token
 			)
 	},
+	/*
+	 * ПОКИНУТИЙ ПСЕВДОНІМ МОЖНА ЗАБРАТИ, ЖИВИЙ — НІ. Профіль гостя тепер називає
+	 * `guest`, тож `guest_one` він більше не тримає. Доти займати можна було
+	 * скільки завгодно ключів з одного акаунта й тримати їх назавжди (аудит
+	 * 2026-09-24).
+	 */
+	{
+		name: 'забрати ЖИВИЙ чужий псевдонім',
+		allowed: false,
+		run: () => write('handles/guest', host.uid, host.token)
+	},
+	{
+		name: 'забрати ПОКИНУТИЙ чужий псевдонім',
+		allowed: true,
+		run: () => write('handles/guest_one', host.uid, host.token)
+	},
 	{
 		name: 'аватар у профілі довший за 24 символи',
 		allowed: false,
@@ -708,9 +791,24 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/followers/${host.uid}`, { at: SERVER_TIME }, guest.token)
 	},
 	{
+		// Соціальний граф — лише власникові (аудит 2026-09-24): доти його бачив
+		// кожен із входом, хоч клієнт і не читає чужих.
 		name: 'підписки читає інший гравець',
-		allowed: true,
+		allowed: false,
 		run: () => read(`users/${guest.uid}/following`, host.token)
+	},
+	{
+		name: 'підписників читає інший гравець',
+		allowed: false,
+		run: () => read(`users/${host.uid}/followers`, guest.token)
+	},
+	{
+		name: 'свої підписки й підписників читає власник',
+		allowed: true,
+		run: async () => {
+			const following = await read(`users/${guest.uid}/following`, guest.token);
+			return following === 200 ? read(`users/${guest.uid}/followers`, guest.token) : following;
+		}
 	},
 	{
 		// «Прибери мене зі своїх підписок»: без цього дозволу відписати наполегливого
@@ -1631,6 +1729,27 @@ const CASES = [
 		name: 'господар зносить кімнату',
 		allowed: true,
 		run: () => write(`rooms/${CODE}`, null, host.token)
+	},
+
+	/*
+	 * ПОШУК — ЛИШЕ ПІД ВЛАСНИМ ПСЕВДОНІМОМ, навіть коли профіль його називає.
+	 * Буває й так: людина звільнила ключ, а профіль ще не переписала, і ключ
+	 * тим часом зайняв інший. Тоді пошук під ним належить уже не їй.
+	 */
+	{
+		name: 'гість звільняє свій псевдонім, лишаючи його в профілі',
+		allowed: true,
+		run: () => write('handles/guest', null, guest.token)
+	},
+	{
+		name: 'господар займає звільнений псевдонім',
+		allowed: true,
+		run: () => write('handles/guest', host.uid, host.token)
+	},
+	{
+		name: 'вписати в пошук псевдонім із профілю, що належить уже іншому',
+		allowed: false,
+		run: () => write('find/guest', guest.uid, guest.token)
 	},
 
 	/*

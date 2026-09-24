@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '55c52a4e4f99'" }
+      "$v": { ".read": "auth != null && $v === '5b8d6e795eb6'" }
     },
 
     "rooms": {
@@ -460,7 +460,7 @@
            * бачить.
            */
           "handle": {
-            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 20 && newData.val().matches(/^[a-z0-9_]+$/) && root.child('handles').child(newData.val()).val() === auth.uid"
+            ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 20 && newData.val().matches(/^[a-z0-9_]+$/) && newData.parent().parent().parent().parent().child('handles').child(newData.val()).val() === auth.uid"
           },
           "country": { ".validate": "newData.isString() && newData.val().length === 2" },
           // Аватар — той самий рядок і та сама межа, що в складі кімнати: це той
@@ -482,7 +482,9 @@
          * нічим. Та сама пара прав, що в сусідньому `Slovko`.
          */
         "following": {
-          ".read": "auth != null",
+          // Хто на кого підписаний — ЛИШЕ власникові: клієнт і не читає чужих, а
+          // доти будь-хто з входом бачив соціальний граф кожного (аудит 2026-09-24).
+          ".read": "auth != null && $uid === auth.uid",
           "$target": {
             ".write": "auth != null && ($uid === auth.uid || ($target === auth.uid && !newData.exists()))",
             ".validate": "newData.hasChildren(['at'])",
@@ -508,7 +510,7 @@
          * яка щойно його вимкнула, замкнула б наявних підписників назавжди.
          */
         "followers": {
-          ".read": "auth != null",
+          ".read": "auth != null && $uid === auth.uid",
           "$who": {
             ".write": "auth != null && (($who === auth.uid && (!newData.exists() || root.child('users').child($uid).child('privacy').child('follow').val() != false)) || ($uid === auth.uid && !newData.exists()))",
             ".validate": "newData.hasChildren(['at'])",
@@ -634,9 +636,17 @@
          * «зміна псевдоніма» виглядала б як перезапис чужого, і правило мусило б
          * розрізняти ці випадки за даними, яких у нього немає. Зміна робиться
          * двома діями: звільнити старий, зайняти новий.
+         *
+         * ОДИН ВИНЯТОК — ПОКИНУТИЙ: той, чий профіль уже називає себе інакше (або
+         * профілю немає зовсім), свого старого псевдоніма не тримає, і його можна
+         * забрати. Доти займати можна було скільки завгодно ключів з одного акаунта
+         * — тобто роздати собі всі короткі імена й тримати назавжди (аудит
+         * 2026-09-24). Тепер тримається рівно той, що в профілі, а решта вільна.
+         * Вікна «псевдонім уже мій, а профіль ще ні» теж немає: `saveProfile`
+         * пише обидва одним записом.
          */
-        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))",
-        ".validate": "newData.isString() && newData.val() === auth.uid"
+        ".write": "auth != null && ((newData.val() === auth.uid && (!data.exists() || root.child('users').child(data.val()).child('profile').child('handle').val() !== $handle)) || (data.val() === auth.uid && !newData.exists()))",
+        ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/)"
       }
     },
 
@@ -669,8 +679,12 @@
       ".read": "auth != null && query.orderByKey && query.limitToFirst <= 20",
       "$handle": {
         ".read": "auth != null",
-        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid && root.child('users').child(auth.uid).child('privacy').child('search').val() != false) || (data.val() === auth.uid && !newData.exists()))",
-        ".validate": "newData.isString() && newData.val() === auth.uid"
+        // Лише СВІЙ псевдонім і лише той, що називає профіль: доти вписати можна було
+        // будь-який ключ — зайняти пошук під чужим псевдонімом (і тоді його власник
+        // тихо не потрапляв у пошук) або засипати перший екран пошуку сотнею
+        // вигаданих записів з одного акаунта (аудит 2026-09-24).
+        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid && root.child('users').child(auth.uid).child('privacy').child('search').val() != false && root.child('handles').child($handle).val() === auth.uid && root.child('users').child(auth.uid).child('profile').child('handle').val() === $handle) || (data.val() === auth.uid && !newData.exists()))",
+        ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/)"
       }
     },
 
@@ -711,7 +725,9 @@
         ".read": "auth != null",
         ".write": "auth != null && $uid === auth.uid && (!newData.exists() || (newData.child('score').val() >= 50 && root.child('users').child(auth.uid).child('privacy').child('board').val() != false))",
         ".validate": "newData.hasChildren(['name', 'handle', 'score', 'at'])",
-        "name": { ".validate": "newData.isString() && newData.val().length <= 48" },
+        // Імʼя — те, що в профілі: інакше рядок публічної таблиці міг назватися ким
+        // завгодно, навіть із власним псевдонімом (аудит 2026-09-24).
+        "name": { ".validate": "newData.isString() && newData.val().length <= 48 && newData.val() === root.child('users').child(auth.uid).child('profile').child('name').val()" },
         /*
          * У ТАБЛИЦІ — ЛИШЕ СВІЙ ПСЕВДОНІМ І НЕ БІЛЬШЕ СВОГО РАХУНКУ.
          *
