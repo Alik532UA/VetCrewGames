@@ -1,31 +1,25 @@
 <script lang="ts">
-	import { withRoom, withoutRoom } from '$lib/utils/roomUrl';
-	import { awayStamps, waitView } from '$lib/utils/awayWait';
+	import { withoutRoom } from '$lib/utils/roomUrl';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { playerData } from '$lib/services/playerData.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
-	import { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
-	import { RoomSession, type RoomGame, type RoomPlace } from '$lib/controllers/roomSession.svelte';
-	import {
-		DEV_TIME_FACTOR,
-		ONLINE_GAMES,
-		gamesToConfig,
-		roomFitsGames
-	} from '$lib/config/quizOnline';
+	import { RoomSession } from '$lib/controllers/roomSession.svelte';
+	import { QuizRoom as QuizRoomState } from '$lib/controllers/quizRoom.svelte';
+	import { roomPlace } from '$lib/controllers/roomPlace';
+	import { DEV_TIME_FACTOR, gamesToConfig } from '$lib/config/quizOnline';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import NetLost from '$lib/components/pairs/NetLost.svelte';
 	import QuizRooms from '$lib/components/quiz/QuizRooms.svelte';
 	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
-	import { announceFrom, crossGameLinks } from '$lib/utils/crossGame';
+	import { crossGameLinks } from '$lib/utils/crossGame';
 	import type { PageData } from './$types';
 
 	/** Дані маршруту: словник цієї сторінки, завантажений у `+page.ts`. */
@@ -49,106 +43,23 @@
 	 */
 	const text = $derived((key: string) => data.quizText[key] ?? key);
 
-	/**
-	 * Версія ПРАВИЛ спільної вікторини. Різні версії в кімнату не пускають.
-	 *
-	 * ДВІЙКА З ПОЯВОЮ ШВИДКОСТІ КІМНАТИ: клієнт першої редакції полів швидкості не
-	 * читає й порахує собі СВІЙ дедлайн за старими числами — а очки залежать від
-	 * того, скільки тривав раунд.
-	 *
-	 * ТРІЙКА З ПОЯВОЮ «НЕ ОБМЕЖЕНОГО» РАУНДУ (`pace_round` = 3). Клієнт другої
-	 * редакції читає його як «стандартна»: у нього раунд скінчився б за межею, і
-	 * «поки кожен не відповість» не настало б ніколи.
-	 *
-	 * ЧЕТВІРКА: ПАУЗУ ПИШЕ КОЖЕН ГРАВЕЦЬ, а перепрогін бере НАЙБІЛЬШЕ (аудит
-	 * 2026-09-24). Клієнт третьої редакції рахував би лише ходи ведучого й ДОДАВАВ
-	 * їх — тобто в одній кімнаті вийшло б два різні дедлайни, і відповідь, яку один
-	 * зараховує, другий відкидав би.
+	/*
+	 * Адаптер, стан чекання й реакції вікторини — у `controllers/quizRoom.svelte.ts`,
+	 * адреса — у `roomPlace.ts`: там їх перевіряють тести, а маршрут тест не бере
+	 * (аудит 2026-09-24).
 	 */
-	const RULES_VERSION = 4;
-	const CLOCK_MS = 1000;
-
-	/**
-	 * ГОДИННИК ПАРТІЇ ЙДЕ ЧАСТІШЕ ЗА СЕКУНДУ: на ньому смуга таймера раунду, а
-	 * раунд і триває сім секунд — секундні стрибки були б майже всією смугою.
-	 */
-	const ROUND_CLOCK_MS = 100;
-
-	/** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
-	const MIN_PLAYERS = 2;
-
-	/**
-	 * Які ігри вибрано для НОВОЇ кімнати. Типово всі: людина, яка створює кімнату
-	 * не думаючи про набір, мусить отримати повну вікторину, а не порожню.
-	 */
-	let picked = $state<string[]>(ONLINE_GAMES.map((game) => game.id));
-	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
-	let awaySince = $state<Record<string, number>>({});
-
-	/**
-	 * Вікторина для сесії. Новачок у вже розпочату партію заходить ГРАВЦЕМ:
-	 * відповідати він може з поточного раунду, а роздачі, яку він міг би
-	 * перероздати, тут немає.
-	 */
-	const QUIZ: RoomGame<QuizMatch> = {
-		gameId: 'quiz',
-		rulesVersion: RULES_VERSION,
-		minPlayers: MIN_PLAYERS,
-		quickSeats: MIN_PLAYERS,
-		lateRole: 'player',
-		autoStartReady: (players) => players >= MIN_PLAYERS,
-		// НАБІР ІГОР ЇДЕ В `config` — конверт уже дозволяє `Record<string, number>`.
-		newRoom: () => ({ seed: Math.floor(Math.random() * 2 ** 31), config: gamesToConfig(picked) }),
-		createMatch: (me, transport) => new QuizMatch(me, transport, dev ? DEV_TIME_FACTOR : 1),
-		// Набір і в записі переліку: `rooms` перелічувати заборонено, тож фільтр списку
-		// бачить про чужу кімнату рівно те, що в самому записі.
-		listingExtras: () => ({ games: gamesToConfig(picked) }),
-		// «Швидка гра» без фільтра кидала б у кімнату з іграми, які людина щойно зняла.
-		fitsQuick: (room) => roomFitsGames(room.games, picked),
-		onPresence: (match, uids, now) => {
-			// ПРИСУТНІСТЬ ЇДЕ В МАТЧ, і саме це розморожує партію: раунд закінчується,
-			// коли відповіли ПРИСУТНІ, а не всі, хто колись зайшов.
-			match.present = uids;
-			awaySince = awayStamps(match.players, uids, awaySince, now);
-		},
-		award: (match, me) => {
-			// Глядач лише дивився — бали не його (той самий запобіжник, що в «Знайди пару»).
-			if (match.iAmSpectator) return;
-			playerData.awardQuizMatch(match.scores[me] ?? 0);
-		},
-		clockEvery: (match) => {
-			if (match.countdownAt !== null && match.status !== 'playing') return CLOCK_MS;
-			if (match.status === 'playing' && !match.over) return ROUND_CLOCK_MS;
-			return match.away.length > 0 ? ROUND_CLOCK_MS : null;
-		}
-	};
-
-	/** Адреса — джерело правди про кімнату; той самий взірець, що на `pairs/online`. */
-	const place: RoomPlace = {
-		urlRoom: () => (browser ? (page.url.searchParams.get('room') ?? '') : ''),
-		remember: async (code) => {
-			if (browser) await goto(withRoom(page.url, code), { noScroll: true, keepFocus: true });
-		},
-		exit: () => goto(withoutRoom(page.url), { noScroll: true, keepFocus: true }),
-		announce: (code) => announceFrom(page.url, code)
-	};
+	const quiz = new QuizRoomState(Math.random, dev ? DEV_TIME_FACTOR : 1);
+	const place = roomPlace(() => page.url, goto, browser);
 
 	const player = new PlayerIdentity(Math.random);
 	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
-	const lobby = new LobbyFeed(QUIZ.gameId);
-	const session = new RoomSession(QUIZ, place, player, lobby);
+	const lobby = new LobbyFeed(quiz.game.gameId);
+	const session = new RoomSession(quiz.game, place, player, lobby);
 	session.attach();
 
 	const match = $derived(session.match);
 	const takenNames = $derived(lobby.takenNames);
 	const joinUrl = $derived(browser && session.code !== '' ? page.url.href : '');
-
-	/**
-	 * Хто ОГОЛОШУЄ РАУНДИ — ведучий із журналу, а не господар кімнати. Поки ніхто
-	 * не підхоплював партію, це та сама людина; різниця зʼявляється, коли господар
-	 * зник і роль перейшла ходом `lead` (`utils/quizReplay.ts`).
-	 */
-	const amLeader = $derived(session.me !== '' && match?.leader === session.me);
 
 	/**
 	 * ЗМІНИТИ НАБІР ІГОР У КІМНАТІ — і, якщо кімната в переліку, там ТЕЖ: інакше
@@ -174,34 +85,8 @@
 		}
 	}
 
-	/*
-	 * НАСТУПНИЙ РАУНД ОГОЛОШУЄ ВЕДУЧИЙ, і рівно один раз: `$effect` перезапускається
-	 * на кожен такт годинника, а «час таблу вийшов» лишається правдою, доки раунд не
-	 * змінився. Журнал відкинув би повтори, але писати їх однаково не треба.
-	 */
-	let announcing = false;
-
-	$effect(() => {
-		if (!browser || !match || !amLeader) return;
-		if (match.status !== 'playing' || match.over || announcing) return;
-		// Партія щойно почалася — перший раунд оголошується без чекання.
-		const next = match.round < 0 ? 0 : match.nextDue(session.clock) ? match.round + 1 : null;
-		if (next === null) return;
-		announcing = true;
-		void match.startRound(next).finally(() => (announcing = false));
-	});
-
-	/**
-	 * Усе про чекання одним викликом — правила живуть у `utils/awayWait`: пауза й
-	 * зникнення дають один відлік і одне вікно.
-	 */
-	const wait = $derived(waitView(match, awaySince, session.clock, session.me));
-
-	/*
-	 * Пауза раунду — наслідок стану вище. Саме `$effect`, а не похідна: зсув
-	 * дедлайну — це ЗМІНА стану партії.
-	 */
-	$effect(() => void match?.setHold(wait.hold, session.clock));
+	quiz.attach(session);
+	const wait = $derived(quiz.wait);
 
 	onMount(() => {
 		/*
@@ -253,8 +138,8 @@
 					hasMore={lobby.hasMore}
 					unavailable={lobby.unavailable}
 					busy={session.busy}
-					{picked}
-					onPick={(games) => (picked = games)}
+					picked={quiz.picked}
+					onPick={(games) => (quiz.picked = games)}
 					onClose={(dead) =>
 						void lobby.close(dead).then((done) => {
 							if (!done) toast.error('pairs.actionFailed');

@@ -1,27 +1,25 @@
 <script lang="ts">
-	import { withRoom, withoutRoom } from '$lib/utils/roomUrl';
+	import { withoutRoom } from '$lib/utils/roomUrl';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { playerData } from '$lib/services/playerData.svelte';
-	import { PAIRS_DRAW_POINTS, PAIRS_WIN_POINTS } from '$lib/config/scoring';
 	import { toast } from '$lib/controllers/toast.svelte';
 	import { logService } from '$lib/services/logService.svelte';
-	import { layoutForViewport } from '$lib/config/memory-game';
-	import { PairsMatch, PEEK_MS } from '$lib/controllers/pairsMatch.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { HoverBeam } from '$lib/controllers/hoverBeam.svelte';
-	import { RoomSession, type RoomGame, type RoomPlace } from '$lib/controllers/roomSession.svelte';
+	import { RoomSession } from '$lib/controllers/roomSession.svelte';
+	import { attachPairsPolicies, pairsGame } from '$lib/controllers/pairsRoom.svelte';
+	import { roomPlace } from '$lib/controllers/roomPlace';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 	import NetLost from '$lib/components/pairs/NetLost.svelte';
-	import { announceFrom, crossGameLinks } from '$lib/utils/crossGame';
+	import { crossGameLinks } from '$lib/utils/crossGame';
 
 	/**
 	 * Спільна партія «Знайди пару»: створити кімнату або зайти за кодом.
@@ -36,92 +34,17 @@
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	/**
-	 * Версія ПРАВИЛ цієї гри. Різні версії в кімнату не пускають.
-	 *
-	 * 1 → 2: у ході з'явився серверний час (`at`), у кімнаті — позначка початку
-	 * партії (`startedAt`), і на них стоїть межа очікування. Стара збірка пише ходи
-	 * без часу — правило бази їх відкидає, тож змішувати версії не можна, і саме
-	 * для цього поле й існує: відмова зайти замість тихо зламаної партії.
-	 *
-	 * 2 → 3: роздача й черга — із ЗАМОРОЖЕНОГО складу (`info.roster`), а не з
-	 * поточних `members`. Стара збірка роздає за поточним складом і на першому ж
-	 * виході гравця посеред партії розійшлася б із новою.
-	 *
-	 * 3 → 4: хід `leave` — черга того, хто пішов назовсім, пропускається. Стара
-	 * збірка такого ходу не знає й чекала б на вибулого — черга розійшлася б.
-	 */
-	const RULES_VERSION = 4;
-
-	/** Годинник для ЦИФРИ відліку в лобі: вона міняється раз на секунду. */
-	const CLOCK_MS = 1000;
-
-	/**
-	 * Годинник для СМУГИ часу ходу — те саме число, що у вікторині: на секунді смуга
-	 * рухалася б стрибками, на ста мілісекундах читається як час, що спливає.
-	 */
-	const TURN_CLOCK_MS = 100;
-
-	/**
-	 * Двоє — це сама гра, а не налаштування: дошка ділиться між двома чергами, і
-	 * третій може бути лише глядачем. Не з правил бази: там стеля 12 на всі ігри.
-	 */
-	const PAIRS_PLAYERS = 2;
-
-	/**
 	 * Підсвітка чужого наведення — окремий контролер: підписка, канал надсилання й
 	 * затримка проти сплеску мають один обовʼязок.
 	 */
 	const beam = new HoverBeam();
 
-	/**
-	 * «Знайди пару» для сесії — рівно те, чим вона відрізняється від вікторини.
-	 *
-	 * Новачок у вже розпочату партію заходить ГЛЯДАЧЕМ: роздача залежить від складу,
-	 * і гравець, що зайшов за запрошенням посеред партії, перероздав би дошку всім —
-	 * зібрані пари зникали (аудит 2026-09-23). Автостарт — рівно на двох: третій у
-	 * кімнаті глядач, і його поява нічого не запускає.
+	/*
+	 * Адаптер гри й адреса — у контролерах (`pairsRoom.svelte.ts`, `roomPlace.ts`):
+	 * там їх перевіряють тести, а маршрут тест не бере (аудит 2026-09-24).
 	 */
-	const PAIRS: RoomGame<PairsMatch> = {
-		gameId: 'pairs',
-		rulesVersion: RULES_VERSION,
-		minPlayers: PAIRS_PLAYERS,
-		quickSeats: PAIRS_PLAYERS,
-		lateRole: 'spectator',
-		autoStartReady: (players) => players === PAIRS_PLAYERS,
-		newRoom: () => {
-			// Розкладка належить КІМНАТІ, а не екрану того, хто створив: сітка, різна
-			// на двох пристроях, дала б різні дошки з того самого зерна.
-			const layout = layoutForViewport();
-			return {
-				seed: Math.floor(Math.random() * 2 ** 31),
-				config: { pairs: layout.pairs, cols: layout.cols }
-			};
-		},
-		createMatch: (me, transport) => new PairsMatch(me, transport),
-		listen: async (code) => [await beam.listen(code)],
-		award: (match) => {
-			if (match.iAmSpectator) return;
-			if (match.iWon) playerData.awardOnline(PAIRS_WIN_POINTS);
-			else if (match.drawn) playerData.awardOnline(PAIRS_DRAW_POINTS);
-		},
-		clockEvery: (match) =>
-			match.turnEndsAt !== null ? TURN_CLOCK_MS : match.countdownAt !== null ? CLOCK_MS : null
-	};
-
-	/**
-	 * Адреса — ДЖЕРЕЛО ПРАВДИ про кімнату, і крок в історії робить `goto`, а не
-	 * `pushState`: поверхнева маршрутизація не присвоює `page.url`, і ефект «адреса
-	 * — джерело правди» бачив би «кімнати немає» одразу після входу (дефект
-	 * 2026-08-24, тепер під інваріантом у `src/structure.test.ts`).
-	 */
-	const place: RoomPlace = {
-		urlRoom: () => (browser ? (page.url.searchParams.get('room') ?? '') : ''),
-		remember: async (code) => {
-			if (browser) await goto(withRoom(page.url, code), { noScroll: true, keepFocus: true });
-		},
-		exit: () => goto(withoutRoom(page.url), { noScroll: true, keepFocus: true }),
-		announce: (code) => announceFrom(page.url, code)
-	};
+	const PAIRS = pairsGame(beam, Math.random);
+	const place = roomPlace(() => page.url, goto, browser);
 
 	const player = new PlayerIdentity(Math.random);
 	// Перелік читається з гілки СВОЄЇ гри: кімнати вікторини тут не з'являються.
@@ -138,24 +61,7 @@
 	 */
 	const joinUrl = $derived(browser && session.code !== '' ? page.url.href : '');
 
-	/**
-	 * Пауза після невдалої пари — і тільки на пристрої того, чия черга. `$effect`, а
-	 * не таймер у кліку: перегорнути треба й тоді, коли дошка чекає після
-	 * перезавантаження посеред чужого ходу.
-	 */
-	$effect(() => {
-		if (!browser || !match?.game.awaitingPeek || !match.myTurn) return;
-		const timer = setTimeout(() => void match?.resolve(), PEEK_MS);
-		return () => clearTimeout(timer);
-	});
-
-	/*
-	 * НАВЕДЕННЯ ТРАНСЛЮЄТЬСЯ ЛИШЕ В СВОЮ ЧЕРГУ — вибір автора: «він зараз тицьне ось
-	 * у цю». Умова тут, а не в контролері підсвітки: «чия черга» — правило гри.
-	 */
-	$effect(() => {
-		if (match?.myTurn === false) beam.clear();
-	});
+	attachPairsPolicies(session, beam);
 
 	/** Кнопки «забрати хід» і «завершити» існують лише коли межа вже вийшла. */
 	const canTakeTurn = $derived(Boolean(match?.canYieldAt(session.clock)));

@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
 
 /**
  * Інваріанти роботи з хмарною базою за CLOUD-DATABASE-v8 § 14.
@@ -356,9 +357,8 @@ describe('хмарна база', () => {
 		// Форма ходу змінилася (з’явився `at`), тож стара збірка з кешу пише ходи,
 		// які правило відкидає. Кімната мусить називати нову версію — інакше
 		// невідповідність збірок виглядає не як версії, а як зламана гра.
-		const page = readFileSync('src/routes/[[lang=lang]]/pairs/online/+page.svelte', 'utf8');
-		const version = page.match(/RULES_VERSION\s*=\s*(\d+)/);
-		expect(version, 'RULES_VERSION у сторінці не знайдено').not.toBeNull();
-		expect(Number(version?.[1]), 'форма ходу з `at` вимагає версії ≥ 2').toBeGreaterThanOrEqual(2);
+		// З модуля, а не регулярним виразом зі сторінки: версія живе в `config/roomRules.ts`,
+		// і її беруть і адаптер, і цей гейт (аудит 2026-09-24).
+		expect(PAIRS_RULES_VERSION, 'форма ходу з `at` вимагає версії ≥ 2').toBeGreaterThanOrEqual(2);
 	});
 });

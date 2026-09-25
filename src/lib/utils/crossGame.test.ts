@@ -103,12 +103,15 @@ describe('обвʼязка переїзду', () => {
 	});
 
 	it('оголошення переїзду стоїть на ОБОХ сторінках', () => {
+		// Адреса кімнати тепер одна на обидві сторінки (`controllers/roomPlace.ts`,
+		// аудит 2026-09-24): оголошення — у ній, а сторінки мусять її брати.
+		expect(read('src/lib/controllers/roomPlace.ts')).toContain('announceFrom(url(), code)');
 		for (const file of [
 			'src/routes/[[lang=lang]]/pairs/online/+page.svelte',
 			'src/routes/[[lang=lang]]/quiz/online/+page.svelte'
 		]) {
 			expect(read(file), `${file}: нова кімната не каже старій про себе`).toContain(
-				'announceFrom(page.url, code)'
+				'roomPlace(() => page.url, goto, browser)'
 			);
 		}
 	});
