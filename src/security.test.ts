@@ -91,9 +91,25 @@ const OUTSIDE_DATA: Array<string | RegExp> = [
 	 * Доти цього класу тут не було — і `formatFont(row.name)` у таблиці лідерів
 	 * проходив гейт повністю (аудит 2026-09-23).
 	 */
-	/\b(?:row|member|player|winner|leader|friend|profile)\.(?:name|handle)\b/,
-	/\.hostName\b/
+	/*
+	 * БУДЬ-ЯКЕ поле `name`/`handle`/`hostName`, а не перелік знайомих змінних
+	 * (аудит 2026-09-24). Доти тут стояло `row|member|player|…` — і
+	 * `formatFont(match.actor?.name)` проходив, бо `actor` у переліку не було.
+	 * Імʼя людини йде лише через `formatUserText`; поле зі СЛОВНИКА, що теж зветься
+	 * `name`, — лише поіменним винятком нижче (`DICTIONARY_FIELDS`).
+	 */
+	/\.(?:name|handle|hostName)\b/
 ];
+
+/**
+ * ПОЛЯ, ЩО ЗВУТЬСЯ `name`, АЛЕ ПРИХОДЯТЬ ЗІ СЛОВНИКА — поіменно, з причиною.
+ * Новий виняток — рядок тут, а не розширення правила: інакше воно знову
+ * стане переліком того, що «напевно безпечне».
+ */
+const DICTIONARY_FIELDS = new Set([
+	// Назва регіону в меню країн — `countriesByRegion(locale, t, text)`, тобто словник.
+	'formatFont(group.name)'
+]);
 
 /** Чи можна віддати цей вираз у `{@html}`. Обидві умови разом. */
 function isSafeHtmlExpression(expression: string): boolean {
@@ -104,9 +120,13 @@ function isSafeHtmlExpression(expression: string): boolean {
 		return true;
 	}
 	if (ESCAPING_SOURCES.some((safe) => expression.startsWith(safe))) return true;
+	if (DICTIONARY_FIELDS.has(expression)) return true;
 	if (!SAFE_HTML_SOURCES.some((safe) => expression.startsWith(safe))) return false;
+	// Ключ словника в лапках — не джерело: `text('account.handle')` лише звучить як поле.
+	// Шаблонні рядки не вирізаються: у `${…}` усередині може стояти справжнє імʼя.
+	const code = expression.replace(/'[^']*'|"[^"]*"/g, "''");
 	return !OUTSIDE_DATA.some((source) =>
-		source instanceof RegExp ? source.test(expression) : expression.includes(source)
+		source instanceof RegExp ? source.test(code) : code.includes(source)
 	);
 }
 
@@ -156,6 +176,21 @@ const HTML_EXPRESSION_CASES: Array<{ expression: string; safe: boolean; why: str
 		expression: 'formatFont(row.name)',
 		safe: false,
 		why: 'імʼя з таблиці лідерів пише сам гравець — форматер його не екранує'
+	},
+	{
+		expression: 'formatFont(match.actor?.name)',
+		safe: false,
+		why: 'імʼя того, чия черга, — з бази; змінної `actor` у давньому переліку не було'
+	},
+	{
+		expression: 'formatFont(entry.hostName)',
+		safe: false,
+		why: 'імʼя господаря в записі переліку кімнат пише сам господар'
+	},
+	{
+		expression: 'formatFont(group.name)',
+		safe: true,
+		why: 'назва регіону — зі словника, поіменний виняток'
 	},
 	{
 		expression: 'formatUserText(row.name)',

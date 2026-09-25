@@ -779,6 +779,36 @@ const CASES = [
 				guest.token
 			)
 	},
+	/*
+	 * ЛИСТКИ ПРОФІЛЮ ПООДИНЦІ — саме так їх пише застосунок (`saveName`,
+	 * `saveAvatar` у `net/account.ts`). Доти гейт писав профіль лише цілком, тож
+	 * листкові шляхи жили без жодного випадку (аудит 2026-09-24).
+	 */
+	{
+		name: 'гість міняє лише своє імʼя',
+		allowed: true,
+		run: () => write(`users/${guest.uid}/profile/name`, 'Гість', guest.token)
+	},
+	{
+		name: 'гість міняє лише свій аватар',
+		allowed: true,
+		run: () => write(`users/${guest.uid}/profile/avatar`, 'turtle:violet', guest.token)
+	},
+	{
+		name: 'чуже імʼя поодинці',
+		allowed: false,
+		run: () => write(`users/${host.uid}/profile/name`, 'Не я', guest.token)
+	},
+	{
+		name: 'чужий аватар поодинці',
+		allowed: false,
+		run: () => write(`users/${host.uid}/profile/avatar`, 'bug:pink', guest.token)
+	},
+	{
+		name: 'псевдонім у чужому профілі читає інший гравець',
+		allowed: true,
+		run: () => read(`users/${host.uid}/profile/handle`, guest.token)
+	},
 	{
 		name: 'у профілі поле, якого схема не знає',
 		allowed: false,
@@ -1026,6 +1056,18 @@ const CASES = [
 				{ ...lobbyEntry(host.uid), games: { game_myths: 1, game_feeding: 0 } },
 				host.token
 			)
+	},
+	{
+		// Набір ігор окремо — так його наздоганяє господар, змінивши набір у кімнаті
+		// (`updateGames` у `net/lobby.ts`).
+		name: 'господар оновлює набір ігор у переліку',
+		allowed: true,
+		run: () => write(`lobby/pairs/${CODE}/games`, { game_myths: 1 }, host.token)
+	},
+	{
+		name: 'гість міняє набір ігор у чужому записі переліку',
+		allowed: false,
+		run: () => write(`lobby/pairs/${CODE}/games`, { game_feeding: 1 }, guest.token)
 	},
 	{
 		name: 'прапорець гри рядком',

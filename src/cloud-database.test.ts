@@ -93,8 +93,10 @@ describe('хмарна база', () => {
 		const writes = [...rulesCode.matchAll(/"\.write"\s*:\s*"([^"]+)"/g)].map((m) => m[1]);
 		expect(writes.length).toBeGreaterThan(0);
 		// `auth != null` сам по собі означає «будь-який зареєстрований користувач
-		// переписує дані будь-якого іншого» — це не захист, а його вигляд.
-		const broad = writes.filter((rule) => !/auth\.uid|hostUid/.test(rule));
+		// переписує дані будь-якого іншого» — це не захист, а його вигляд. І саме
+		// `auth.uid`, а не будь-яка згадка `hostUid` (аудит 2026-09-24): правило
+		// «поле hostUid існує» проходило б перевірку, нічого не звужуючи.
+		const broad = writes.filter((rule) => !/auth\.uid/.test(rule));
 		expect(broad, `запис, не звужений до автора:\n${broad.join('\n')}`).toEqual([]);
 	});
 
@@ -157,9 +159,10 @@ describe('хмарна база', () => {
 		const validates = [...rulesCode.matchAll(/"\.validate"/g)].length;
 		expect(validates, 'форма записів ніде не перевіряється').toBeGreaterThan(0);
 		const others = [...rulesCode.matchAll(/"\$other"\s*:\s*\{\s*"\.validate"\s*:\s*false/g)].length;
-		// По одному на кожен вузол із відомою формою: info, members/$uid,
-		// moves/$seq, rooms/$code, myRooms/$uid/$code, presence/$code/$uid.
-		expect(others, 'вузли з відомою формою не закриті "$other"').toBeGreaterThanOrEqual(6);
+		// УСІ НАЯВНІ, а не шість (аудит 2026-09-24): доти поріг лишав зеленим
+		// прибирання десяти з шістнадцяти. Нова форма додає свій `$other`, і тоді
+		// число тут піднімається; прибрати наявний — червоне.
+		expect(others, 'вузли з відомою формою не закриті "$other"').toBeGreaterThanOrEqual(17);
 	});
 
 	it('порядок входу незмінний після першого запису (§ 4.6)', () => {
@@ -214,18 +217,36 @@ describe('хмарна база', () => {
 		 * у який застосунок пише, а правил для нього немає, забирає catch-all — і
 		 * функція просто не працює. У сусідньому `Slovko` так пролежала зламана
 		 * форма відгуку, у `MindStep` — кінець партії.
+		 *
+		 * НА ПОВНУ ГЛИБИНУ (аудит 2026-09-24): доти звірявся лише перший сегмент, тож
+		 * `rooms` у гейті «покривав» і `rooms/{code}/info/status`, і будь-яке нове поле.
+		 * `${…}` з обох боків — будь-який сегмент; літерали мусять збігтися.
 		 */
-		const gate = readFileSync('scripts/check-rules.mjs', 'utf8');
+		const wild = (path: string) => path.replace(/\$\{[^}]+\}/g, '*').replace(/^\/|\/$/g, '');
+		const gateText = readFileSync('scripts/check-rules.mjs', 'utf8');
+		const gate = [
+			...gateText.matchAll(
+				/[`'"]((?:rooms|users|lobby|presence|myRooms|handles|find|leaders|__rulesVersion)(?:\/[^`'"]*)?)[`'"]/g
+			)
+		].map((m) => wild(m[1]));
 		const paths = new Set<string>();
 		for (const file of sources) {
 			for (const m of readFileSync(file, 'utf8').matchAll(
-				/\bref\s*\(\s*[^,)]+,\s*[`'"]\/?([a-z_][\w-]*)/gi
+				/\bref\s*\(\s*[^,)]+,\s*([`'"])([^`'"]*)\1/g
 			)) {
-				paths.add(m[1]);
+				const path = wild(m[2]);
+				if (!path.startsWith('.info')) paths.add(path);
 			}
 		}
-		expect(paths.size, 'шляхів до бази не знайдено — перевірка мертва').toBeGreaterThan(0);
-		const uncovered = [...paths].filter((p) => !gate.includes(p));
+		expect(paths.size, 'шляхів до бази не знайдено — перевірка мертва').toBeGreaterThan(20);
+		const covers = (code: string, tested: string) => {
+			const a = code.split('/');
+			const b = tested.split('/');
+			return (
+				b.length >= a.length && a.every((seg, i) => seg === '*' || b[i] === '*' || seg === b[i])
+			);
+		};
+		const uncovered = [...paths].filter((path) => !gate.some((tested) => covers(path, tested)));
 		expect(uncovered, `шлях без випадку в гейті:\n${uncovered.join('\n')}`).toEqual([]);
 	});
 
