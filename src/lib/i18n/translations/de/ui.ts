@@ -213,5 +213,5 @@ export const ui = {
 	'pairs.modeAutoHint': 'Das Spiel beginnt von selbst, sobald zwei Spieler da sind.',
 	'pairs.modeConfirmHint': 'Das Spiel wartet, bis der Gastgeber „Spiel starten“ drückt.',
 	'pairs.rulesStale':
-		'Der Server lässt nicht in den Raum. Meist sind die Datenbankregeln älter als dieser Build.'
+		'Der Server lässt nicht in den Raum: diese Seite und die Datenbankregeln haben verschiedene Versionen. Lade die Seite neu; hilft das nicht, sind die neuen Regeln noch nicht veröffentlicht.'
 } as const;

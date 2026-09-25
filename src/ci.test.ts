@@ -629,6 +629,52 @@ describe('деплой чекає на кожен гейт (CI-CD-AND-TOOLS-v9 �
 			`публікація не чекає на ці джоби — їхні гейти стали порадою:\n${offenders.join('\n')}`
 		).toEqual([]);
 	});
+	/**
+	 * ПРАВИЛА БАЗИ ВИЇЖДЖАЮТЬ ЛИШЕ РАЗОМ ІЗ САЙТОМ (аудит 2026-09-24).
+	 *
+	 * Доти `rules_deploy` чекав лише на емулятор: червоні збірка чи E2E зупиняли
+	 * сайт, а правила однаково їхали — і нові правила жили зі СТАРИМ сайтом, хоч
+	 * бувають із ним несумісні (склад мапою замість масиву, поля ходу лише відомі).
+	 * Тож робота, що викладає правила, мусить чекати на все, на що чекає публікація
+	 * сайту, — крім себе самої.
+	 *
+	 * Зворотний експеримент: повернути `needs: rules` — червоніє.
+	 */
+	it('робота, що викладає правила, чекає на ті самі гейти, що й сайт', () => {
+		const offenders: string[] = [];
+		for (const file of deployFiles) {
+			const text = readFileSync(`${DIR}/${file}`, 'utf8');
+			const graph = needsOf(text);
+			const steps = stepsOf(text);
+			const awaitedBy = (job: string) => {
+				const seen = new Set<string>();
+				const queue = [...(graph.get(job) ?? [])];
+				while (queue.length > 0) {
+					const next = queue.pop()!;
+					if (seen.has(next)) continue;
+					seen.add(next);
+					queue.push(...(graph.get(next) ?? []));
+				}
+				return seen;
+			};
+			const site = steps.find((s) => /actions\/deploy-pages/.test(s.body))?.job;
+			const rules = steps.find((s) => /rules:deploy/.test(s.body))?.job;
+			expect(
+				site && rules,
+				`${file}: публікацію сайту чи правил не знайдено розбором`
+			).toBeTruthy();
+
+			const forRules = awaitedBy(rules!);
+			for (const job of awaitedBy(site!)) {
+				if (job !== rules && !forRules.has(job))
+					offenders.push(`${file}: ${rules} не чекає ${job}`);
+			}
+		}
+		expect(
+			offenders,
+			`правила виїдуть без сайту, якщо ці гейти червоні:\n${offenders.join('\n')}`
+		).toEqual([]);
+	});
 });
 
 /**

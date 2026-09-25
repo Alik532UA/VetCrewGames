@@ -208,5 +208,5 @@ export const ui = {
 	'pairs.modeAutoHint': 'Het spel begint zelf zodra er twee spelers zijn.',
 	'pairs.modeConfirmHint': 'Het spel wacht tot de host op „Spel starten” drukt.',
 	'pairs.rulesStale':
-		'De server laat je niet in de kamer. Meestal zijn de databaseregels ouder dan deze build.'
+		'De server laat je niet in de kamer: deze pagina en de databaseregels zijn verschillende versies. Laad de pagina opnieuw; helpt dat niet, dan zijn de nieuwe regels nog niet gepubliceerd.'
 } as const;

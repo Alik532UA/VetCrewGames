@@ -205,5 +205,5 @@ export const ui = {
 	'pairs.modeAutoHint': 'The game starts by itself as soon as two players are in.',
 	'pairs.modeConfirmHint': 'The game waits until the host presses “Start the game”.',
 	'pairs.rulesStale':
-		'The server refused to let you in. The usual cause is database rules older than this build.'
+		'The server refused to let you in: this page and the database rules are different versions. Reload the page; if that does not help, the new rules are not deployed yet.'
 } as const;

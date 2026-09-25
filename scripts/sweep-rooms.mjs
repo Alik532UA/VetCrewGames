@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { SWEEP_LIMIT, SWEEP_SILENCE_MS, planSweep } from './sweep-plan.mjs';
 
 /**
  * ПРИБИРАЛЬНИК ПОКИНУТИХ КІМНАТ — раз на добу, у GitHub Actions.
@@ -39,28 +40,34 @@ import { join } from 'node:path';
  * Поріг навмисно грубий: на екрані кімната зникає вже після п'яти хвилин тиші
  * (`config/roomLife.ts`), тож тут ідеться не про те, що бачить людина, а про те,
  * що лежить у базі.
- */
-
-const PROJECT = 'vet-crew-games';
-
-/** Скільки тиші означає «сюди більше ніхто не вернеться». */
-const SWEEP_SILENCE_MS = 6 * 60 * 60 * 1000;
-
-/**
- * Стеля видалень за прогін.
  *
- * Не заради квоти — у Realtime Database операції не тарифікуються поштучно, — а
- * заради очевидності: прогін, який зніс тисячу кімнат, мусить бути помітним
- * рішенням людини, а не тихим наслідком одного зіпсованого поля. Решта піде
- * наступної доби.
+ * ## Що саме зноситься — у `sweep-plan.mjs`
+ *
+ * Разом із кімнатою — перелік, присутність і індекс своїх кімнат, що на неї
+ * вказують, і привиди присутності в живих кімнатах. Рішення — чиста функція, і
+ * перевіряється вона без бази (`src/sweep-plan.test.ts`); тут лише читання,
+ * один запис і звіт.
+ *
+ * `SWEEP_PROJECT` — лише для перевірки над емулятором (`emulators:exec` ставить
+ * адресу бази сам); у розкладі змінної немає, і прибирається живий проєкт.
  */
-const SWEEP_LIMIT = 200;
+
+const PROJECT = process.env.SWEEP_PROJECT || 'vet-crew-games';
+
+/*
+ * Біля емулятора CLI не може спитати Google про проєкт (`demo-…` там немає — «Failed
+ * to get details for project»), тож екземпляр бази називаємо самі. Проти живого
+ * проєкту — ні: база там не в США, і її адресу CLI бере з опису проєкту.
+ */
+const INSTANCE = process.env.FIREBASE_DATABASE_EMULATOR_HOST
+	? ['--instance', `${PROJECT}-default-rtdb`]
+	: [];
 
 /** Виклик `firebase-tools` тією самою обгорткою, що й решта скриптів. */
 function firebase(args) {
 	const result = spawnSync(
 		process.execPath,
-		[join('scripts', 'firebase-cli.mjs'), ...args, '--project', PROJECT],
+		[join('scripts', 'firebase-cli.mjs'), ...args, '--project', PROJECT, ...INSTANCE],
 		{ encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }
 	);
 	if (result.status !== 0) {
@@ -69,57 +76,60 @@ function firebase(args) {
 	return result.stdout;
 }
 
-/**
- * Найпізніша серверна позначка кімнати. `null` — датувати нічим.
- *
- * Порядок не важливий: беремо максимум, бо будь-яка з них означає «тут щось
- * відбувалося», а найпізніша й є остання ознака життя.
- */
-function lastSeenOf(info) {
-	const stamps = [info?.aliveAt, info?.startedAt, info?.createdAt].filter(
-		(value) => typeof value === 'number' && Number.isFinite(value)
-	);
-	return stamps.length > 0 ? Math.max(...stamps) : null;
-}
+/** Скільки шляхів в одному записі: без межі тисяча привидів стала б одним важким запитом. */
+const PATCH_PATHS = 500;
 
 const temp = mkdtempSync(join(tmpdir(), 'vcg-sweep-'));
 try {
-	const dump = join(temp, 'rooms.json');
-	firebase(['database:get', '/rooms', '--output', dump]);
+	/** Гілка бази цілком; `null` — її немає. */
+	const read = (path) => {
+		const dump = join(temp, `${path.replace(/\W/g, '_')}.json`);
+		firebase(['database:get', path, '--output', dump]);
+		const raw = readFileSync(dump, 'utf8').trim();
+		return raw === '' || raw === 'null' ? null : JSON.parse(raw);
+	};
 
-	const raw = readFileSync(dump, 'utf8').trim();
-	const rooms = raw === '' || raw === 'null' ? {} : JSON.parse(raw);
-	const codes = Object.keys(rooms ?? {});
-	const now = Date.now();
+	const plan = planSweep({
+		rooms: read('/rooms'),
+		lobby: read('/lobby'),
+		presence: read('/presence'),
+		myRooms: read('/myRooms'),
+		now: Date.now()
+	});
 
-	const dead = [];
-	let undatable = 0;
-
-	for (const code of codes) {
-		const lastSeen = lastSeenOf(rooms[code]?.info);
-		if (lastSeen === null) {
-			undatable += 1;
-			continue;
-		}
-		if (now - lastSeen > SWEEP_SILENCE_MS) dead.push({ code, silence: now - lastSeen });
-	}
-
-	dead.sort((a, b) => b.silence - a.silence);
-	const doomed = dead.slice(0, SWEEP_LIMIT);
-
-	console.log(
-		`sweep-rooms: кімнат ${codes.length}, покинутих ${dead.length}, ` +
-			`без позначки часу ${undatable}, зносимо ${doomed.length}`
-	);
-
-	for (const { code, silence } of doomed) {
-		firebase(['database:remove', `/rooms/${code}`, '--force']);
-		console.log(`  знесено ${code} — тиша ${Math.round(silence / 3600000)} год`);
-	}
-
+	const report = [
+		`кімнат ${plan.total}, покинутих ${plan.doomed.length + plan.left} ` +
+			`(тиша понад ${SWEEP_SILENCE_MS / 3600000} год), без позначки часу ${plan.undatable}`,
+		`зносимо: кімнат ${plan.doomed.length} із межі ${SWEEP_LIMIT}, ` +
+			`разом із переліком, присутністю й індексами — ${plan.paths.length} шляхів`
+	];
 	// Обрізка НАЗИВАЄТЬСЯ ВГОЛОС: мовчазна межа читалася б як «прибрано все».
-	if (dead.length > doomed.length) {
-		console.log(`sweep-rooms: за межею прогону лишилося ${dead.length - doomed.length}`);
+	if (plan.left > 0) report.push(`за межею прогону лишилося кімнат: ${plan.left}`);
+	for (const line of report) console.log(`sweep-rooms: ${line}`);
+
+	if (plan.paths.length > 0) {
+		/*
+		 * ПАЧКАМИ ЗАПИСІВ, а не `database:remove` на кожен шлях: разом із переліком і
+		 * присутністю шляхів сотні, а кожен виклик — окремий процес CLI. `null` за
+		 * ключем-шляхом — це видалення, і кожну пачку база застосовує всю або жодної.
+		 * Шляхи плану не перекриваються (`sweep-plan.mjs`), інакше запис відхилили б.
+		 * Перевірено над емулятором тим самим запитом `PATCH /`, що робить CLI.
+		 */
+		for (let from = 0; from < plan.paths.length; from += PATCH_PATHS) {
+			const chunk = plan.paths.slice(from, from + PATCH_PATHS);
+			const patch = join(temp, `sweep-${from}.json`);
+			writeFileSync(patch, JSON.stringify(Object.fromEntries(chunk.map((path) => [path, null]))));
+			firebase(['database:update', '/', patch, '--force']);
+		}
+		for (const { code, silence } of plan.doomed) {
+			console.log(`  знесено ${code} — тиша ${Math.round(silence / 3600000)} год`);
+		}
+	}
+
+	// Підсумок — і на сторінку прогону: інакше його видно лише в журналі кроку.
+	if (process.env.GITHUB_STEP_SUMMARY) {
+		const summary = report.map((line) => `- ${line}\n`).join('');
+		writeFileSync(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' });
 	}
 } finally {
 	rmSync(temp, { recursive: true, force: true });
