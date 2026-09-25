@@ -280,7 +280,9 @@
 			online={session.online}
 			me={session.me}
 			amHost={session.amHost}
-			clock={session.clock}
+			myRole={session.myRole}
+			countdownLeft={session.countdownLeft}
+			ready={session.canStart}
 			onRole={(role) => session.setRole(role)}
 			onStart={() => session.start()}
 			onAutoStart={session.switchAutoStart}

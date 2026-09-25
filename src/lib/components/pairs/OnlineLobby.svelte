@@ -62,6 +62,15 @@
 		 */
 		countdownLeft: number | null;
 		/**
+		 * Чи досить гравців НА ЗВʼЯЗКУ, щоб почати, — `RoomSession.canStart`.
+		 *
+		 * Доти лобі рахувало своє: гравців у складі проти вписаної тут двійки. А старт
+		 * перевіряє присутніх і мінімум самої гри — тож кнопка бувала «готова», а
+		 * натиск відповідав «потрібні щонайменше двоє» (аудит 2026-09-24). Тепер це
+		 * одне й те саме число з одного місця.
+		 */
+		ready: boolean;
+		/**
 		 * Режим початку партії: сама чи за підтвердженням господаря.
 		 *
 		 * Налаштування КІМНАТИ, тож видно його обом — гість мусить знати, чого
@@ -96,22 +105,13 @@
 		amHost,
 		myRole,
 		countdownLeft,
+		ready,
 		autoStart,
 		onRole,
 		onStart,
 		onAutoStart,
 		settings
 	}: Props = $props();
-
-	/**
-	 * Скільком гравцям місце в партії. Двоє — це сама гра, а не налаштування.
-	 *
-	 * Число тут іменем, а не двома `< 2` по тексту: воно вирішує і статус, і
-	 * доступність кнопки, і розійтися ці два місця не мають права.
-	 */
-	const MIN_PLAYERS = 2;
-
-	const players = $derived(members.filter((member) => member.role === 'player'));
 
 	/**
 	 * ОДИН СТАТУС ЛОБІ, і рівно один — за пріоритетом перешкод.
@@ -139,7 +139,7 @@
 	const statusKey = $derived.by((): TranslationKey | null => {
 		// Найближча перешкода — склад. Однакова для лідера й гостя: обидва бачать,
 		// чому нічого не відбувається.
-		if (players.length < MIN_PLAYERS) return 'pairs.needPlayers';
+		if (!ready) return 'pairs.needPlayers';
 		if (countdownLeft !== null) return null;
 		if (autoStart) return 'pairs.modeAutoHint';
 		// Лідерові — ВКАЗІВКА, гостеві — опис. Доти обидва читали опис, і лідер
@@ -317,7 +317,7 @@
 					class="btn-primary lobby__start"
 					onclick={onStart}
 					data-testid="pairs-start-btn"
-					aria-disabled={players.length < MIN_PLAYERS}
+					aria-disabled={!ready}
 				>
 					{@html formatFont(t('pairs.start'))}
 				</button>

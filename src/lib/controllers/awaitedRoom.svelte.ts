@@ -141,12 +141,9 @@ export class AwaitedRoom {
 		if (!room || this.busy) return;
 		this.busy = true;
 		try {
-			const [{ leaveRoom }, { forgetOwnRoom }] = await Promise.all([
-				import('$lib/net/leave'),
-				import('$lib/net/ownRooms')
-			]);
+			const { leaveRoom } = await import('$lib/net/leave');
+			// І рядок складу, і свій індекс — одним викликом (`net/leave.ts`).
 			await leaveRoom(room.code);
-			await forgetOwnRoom(room.code);
 			this.#drop();
 			this.room = null;
 		} catch (error) {

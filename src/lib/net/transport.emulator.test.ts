@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { as, closeAll, signedIn, type Connection } from './emulatorSession';
+import { as, closeAll, peek, signedIn, type Connection } from './emulatorSession';
 import { LocalRoom } from './localRoom';
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport, RosterEntry } from './roomTypes';
 
@@ -423,6 +423,8 @@ describe('rtdbRoom + емулятор: піти назовсім', () => {
 			{ uid: guest.uid, name: 'Гість' }
 		]);
 		expect(await transport.append(flip(host.uid, 1))).toBe(true);
+		const index = `myRooms/${guest.uid}/${code}`;
+		expect(await peek(guest, index), 'перевірка жива: вхід записав індекс').not.toBeNull();
 
 		const { leaveRoom } = await import('./leave');
 		await as(guest, () => leaveRoom(code));
@@ -432,6 +434,8 @@ describe('rtdbRoom + емулятор: піти назовсім', () => {
 			(s) => !s.members.some((member) => member.uid === guest.uid)
 		);
 		expect(snapshot.moves.at(-1)).toMatchObject({ seq: 2, by: guest.uid, type: 'leave' });
+		// І свій індекс — тим самим викликом: інакше «вас чекають» кликало б назад.
+		expect(await peek(guest, index)).toBeNull();
 		await as(host, () => net.closeRoom(code));
 	});
 

@@ -238,18 +238,6 @@ export async function updateGames(
 	}
 }
 
-/** Зняти кімнату з переліку. Так само не кидає — і з тієї самої причини. */
-export async function unpublishRoom(gameId: string, code: string): Promise<void> {
-	try {
-		const { db } = await connect();
-		const { ref, remove } = await import('firebase/database');
-		listed.delete(listingKey(gameId, code));
-		await remove(ref(db, `lobby/${gameId}/${code}`));
-	} catch (error) {
-		logService.warn('network', 'lobby entry not removed', { code, reason: reasonOf(error) });
-	}
-}
-
 /**
  * Скільки записів переліку ПОКАЗУВАТИ.
  *

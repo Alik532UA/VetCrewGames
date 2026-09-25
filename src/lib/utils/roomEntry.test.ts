@@ -44,6 +44,7 @@ describe('повідомлення на невдалий вхід', () => {
 		expect(entryErrorKey('rules-missing')).toBe('pairs.rulesMissing');
 		expect(entryErrorKey('PERMISSION_DENIED: Permission denied')).toBe('pairs.rulesStale');
 		expect(entryErrorKey('timeout')).toBe('pairs.netFailed');
+		expect(entryErrorKey('room-full')).toBe('pairs.roomFull');
 	});
 });
 

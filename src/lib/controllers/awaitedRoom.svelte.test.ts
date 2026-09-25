@@ -347,8 +347,8 @@ describe('AwaitedRoom', () => {
 
 			await awaited.leave();
 
+			// Індекс прибирає сам `leaveRoom` (`net/leave.ts`) — смуга кличе лише його.
 			expect(leaveRoom).toHaveBeenCalledWith('AAAAA');
-			expect(forgetOwnRoom).toHaveBeenCalledWith('AAAAA');
 			expect(awaited.room).toBeNull();
 			expect(awaited.busy).toBe(false);
 			expect(stopped(stopInfo)).toContain('AAAAA');

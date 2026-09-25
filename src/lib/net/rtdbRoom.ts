@@ -253,6 +253,12 @@ export async function createRoom(options: NewRoom): Promise<string> {
  * тобто перероздав би дошку всім. Роль міняється лише тоді, коли її справді
  * натиснули.
  */
+/**
+ * Скільки учасників (гравців і глядачів разом) уміщає кімната. Те саме число, що
+ * `order <= 12` у правилі бази, — звіряє їх `rtdbRoom.test.ts`.
+ */
+export const ROOM_CAPACITY = 12;
+
 export async function joinRoom(
 	code: string,
 	name: string,
@@ -266,6 +272,11 @@ export async function joinRoom(
 
 	const snapshot = await get(ref(db, `rooms/${code}/members`));
 	const existing = (snapshot.val() ?? {}) as Record<string, Member>;
+	// Повна кімната — названа причина. Доти тринадцятого відкидало правило `order`,
+	// і людина чула «правила бази — різних версій» (аудит 2026-09-24).
+	if (!existing[uid] && Object.keys(existing).length >= ROOM_CAPACITY) {
+		throw new Error('room-full');
+	}
 	// Свій порядок не переписуємо з тієї самої причини: черга рахується зі складу.
 	const order = existing[uid]?.order ?? Object.keys(existing).length + 1;
 

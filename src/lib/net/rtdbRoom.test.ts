@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 /**
  * СПРАВЖНІЙ ТРАНСПОРТ: ЯКІ САМЕ ЗАПИСИ ВІН РОБИТЬ.
@@ -69,7 +70,8 @@ vi.mock('firebase/database', () => ({
 	serverTimestamp: () => SERVER_TIME
 }));
 
-const { roomTransport } = await import('./rtdbRoom');
+const { ROOM_CAPACITY, joinRoom, roomTransport } = await import('./rtdbRoom');
+const { get } = await import('firebase/database');
 
 describe('rtdbRoom: записи транспорту', () => {
 	beforeEach(() => {
@@ -260,5 +262,43 @@ describe('rtdbRoom: кімнати немає — і чому', () => {
 		cancels.get('rooms/42')?.(new Error('permission_denied'));
 
 		expect(gone.mock.calls).toEqual([['closed'], ['lost']]);
+	});
+});
+
+/**
+ * ПОВНА КІМНАТА — НАЗВАНА ПРИЧИНА (аудит 2026-09-24). Доти тринадцятого учасника
+ * відкидало правило `order <= 12`, і людина чула «правила бази — різних версій».
+ *
+ * Зворотний експеримент: прибрати перевірку місткості в `joinRoom` — червоніє перший.
+ */
+describe('rtdbRoom: повна кімната', () => {
+	const full = Object.fromEntries(
+		Array.from({ length: ROOM_CAPACITY }, (_, index) => [
+			`uid-${index}`,
+			{ name: `Гравець ${index}`, role: 'player', order: index + 1 }
+		])
+	);
+
+	it('новачка не пускає — з причиною «заповнена»', async () => {
+		vi.mocked(get).mockResolvedValue({ val: () => full } as never);
+		writes.length = 0;
+
+		await expect(joinRoom('42', 'Новачок')).rejects.toThrow('room-full');
+		expect(writes, 'рядок складу не записано').toEqual([]);
+	});
+
+	it('того, хто вже в складі, пускає — повторний вхід після перезавантаження', async () => {
+		vi.mocked(get).mockResolvedValue({
+			val: () => ({ ...full, 'uid-host': { name: 'Господар', role: 'player', order: 1 } })
+		} as never);
+		const withMe = Object.keys({ ...full, 'uid-host': {} }).length;
+		expect(withMe, 'перевірка жива: кімната понад межу').toBeGreaterThan(ROOM_CAPACITY);
+
+		await expect(joinRoom('42', 'Господар')).resolves.toBeUndefined();
+	});
+
+	it('місткість — те саме число, що межа `order` у правилі бази', () => {
+		const rules = readFileSync('database.rules.json', 'utf8');
+		expect(rules).toContain(`newData.val() >= 1 && newData.val() <= ${ROOM_CAPACITY}`);
 	});
 });

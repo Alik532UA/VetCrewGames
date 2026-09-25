@@ -47,10 +47,15 @@ export function entryRefusal(
  * старою вкладкою чула, що винні правила (аудит 2026-09-24). Тепер спершу
  * «оновіть сторінку» — це правда в обох випадках, — а тоді друга причина.
  */
-export type EntryError = 'pairs.rulesMissing' | 'pairs.rulesStale' | 'pairs.netFailed';
+export type EntryError =
+	| 'pairs.rulesMissing'
+	| 'pairs.rulesStale'
+	| 'pairs.roomFull'
+	| 'pairs.netFailed';
 
 export function entryErrorKey(reason: string): EntryError {
 	if (reason === 'rules-missing') return 'pairs.rulesMissing';
+	if (reason === 'room-full') return 'pairs.roomFull';
 	if (/permission[_ ]denied/i.test(reason)) return 'pairs.rulesStale';
 	return 'pairs.netFailed';
 }

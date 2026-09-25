@@ -1,5 +1,6 @@
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
+import { forgetOwnRoom } from './ownRooms';
 
 /*
  * Окремо від `rtdbRoom.ts`: це не дія над партією, а вихід із неї, і кличе її не
@@ -18,8 +19,10 @@ import { logService } from '$lib/services/logService.svelte';
  * голосувати не доводиться. Саме цього й просив автор: «кімната дізнається, що
  * гравець остаточно вийшов, і його не варто чекати».
  *
- * Індекс своїх кімнат чиститься теж: інакше сповіщення «вас чекають» показувало б
- * кімнату, з якої я щойно свідомо пішов.
+ * Індекс своїх кімнат чиститься теж — ТУТ, а не тим, хто кличе: інакше сповіщення
+ * «вас чекають» показувало б кімнату, з якої я щойно свідомо пішов. Доти це робив
+ * виклик у смузі поруч, а докблок обіцяв, що робить `leaveRoom`, — наступний, хто
+ * покликав би лише його, лишив би привида (аудит 2026-09-24).
  *
  * ПОСЕРЕД ПАРТІЇ — ЩЕ Й ХІД `leave`, тим самим записом (аудит 2026-09-24). У
  * «Знайди пару» склад заморожено на старті, тож рядка складу мало: черга
@@ -33,10 +36,10 @@ export async function leaveRoom(code: string): Promise<void> {
 	const { uid, db } = await connect();
 	const { get, limitToLast, orderByKey, query, ref, remove, serverTimestamp, update } =
 		await import('firebase/database');
-	const mine = ref(db, `rooms/${code}/members/${uid}`);
+	let left = false;
 	if ((await get(ref(db, `rooms/${code}/info/status`))).val() === 'playing') {
 		const moves = ref(db, `rooms/${code}/moves`);
-		for (let attempt = 0; attempt < LEAVE_TRIES; attempt += 1) {
+		for (let attempt = 0; attempt < LEAVE_TRIES && !left; attempt += 1) {
 			const last = await get(query(moves, orderByKey(), limitToLast(1)));
 			const seq = Number(Object.keys(last.val() ?? {})[0] ?? 0) + 1;
 			const key = String(seq).padStart(6, '0');
@@ -45,14 +48,16 @@ export async function leaveRoom(code: string): Promise<void> {
 					[`members/${uid}`]: null,
 					[`moves/${key}`]: { seq, by: uid, type: 'leave', at: serverTimestamp() }
 				});
-				return;
+				left = true;
 			} catch (error) {
 				if (!(error instanceof Error && /permission_denied/i.test(error.message))) throw error;
 			}
 		}
-		logService.warn('network', 'leave move not written', { code });
+		if (!left) logService.warn('network', 'leave move not written', { code });
 	}
-	await remove(mine);
+	if (!left) await remove(ref(db, `rooms/${code}/members/${uid}`));
+	// Індекс — за будь-якої дороги: і з ходом `leave`, і без нього (див. докблок).
+	await forgetOwnRoom(code);
 }
 
 /** Скільки разів боротися за номер ходу `leave`, перш ніж піти без нього. */

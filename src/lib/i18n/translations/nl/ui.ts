@@ -55,6 +55,7 @@ export const ui = {
 	'pairs.roomOlder': 'Dit spel is in een oudere versie gestart. Maak een nieuwe kamer aan.',
 	'pairs.rulesMissing': 'Samen spelen is nog niet ingeschakeld op de server.',
 	'pairs.netFailed': 'Kon niet in de ruimte komen. Probeer het opnieuw.',
+	'pairs.roomFull': 'De kamer is vol — er zitten al twaalf deelnemers in.',
 	'pairs.opponentGone': 'De tegenstander speelt al een tijd niet.',
 	'pairs.takeTurn': 'Zet overnemen',
 	'pairs.turnTimer': 'Zettijd',

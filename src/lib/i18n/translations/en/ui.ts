@@ -55,6 +55,7 @@ export const ui = {
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',
 	'pairs.rulesMissing': 'Shared play is not enabled on the server yet.',
 	'pairs.netFailed': 'Could not join the room. Please try again.',
+	'pairs.roomFull': 'The room is full — it already has twelve people.',
 	'pairs.opponentGone': 'Your opponent has been idle for a while.',
 	'pairs.takeTurn': 'Take the turn',
 	'pairs.turnTimer': 'Turn time',

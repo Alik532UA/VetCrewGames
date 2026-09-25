@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import type { Role } from '$lib/net/roomTypes';
-	import { COUNTDOWN_MS } from '$lib/config/roomLife';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import QuizGamePicker from './QuizGamePicker.svelte';
 	import QuizPacePicker from './QuizPacePicker.svelte';
@@ -40,8 +39,10 @@
 		online: string[];
 		me: string;
 		amHost: boolean;
-		/** Час однією величиною: від нього рахується відлік до автостарту. */
-		clock: number;
+		/** Моя роль, відлік і готовність — із сесії (`RoomSession`), як і в «Знайди пару». */
+		myRole: Role;
+		countdownLeft: number | null;
+		ready: boolean;
 		onRole: (role: Role) => void;
 		onStart: () => void;
 		onAutoStart: (on: boolean) => void;
@@ -62,40 +63,15 @@
 		online,
 		me,
 		amHost,
-		clock,
+		myRole,
+		countdownLeft,
+		ready,
 		onRole,
 		onStart,
 		onAutoStart,
 		onGames,
 		onPace
 	}: Props = $props();
-
-	/**
-	 * МОЯ РОЛЬ у кімнаті — гравець чи глядач.
-	 *
-	 * Рахується тут, бо потрібна лише лобі: далі роль читається зі складу самим
-	 * матчем. Склад і `me` тут уже є, тобто на сторінці це була похідна, яку вона
-	 * тримала для чужого екрана.
-	 */
-	const myRole = $derived<Role>(
-		match.members.find((member) => member.uid === me)?.role ?? 'player'
-	);
-
-	/**
-	 * Скільки секунд до автоматичного старту. `null` — відліку немає.
-	 *
-	 * Рахується ТУТ, а не на сторінці, бо це число нікому більше не потрібне:
-	 * сторінка знає лише сам факт відліку (від нього залежить, чи тікати
-	 * годиннику), і читає його з `match.countdownAt` напряму.
-	 *
-	 * Сама межа — з конфігу: на неї ж ставить таймер господар (сторінка), і
-	 * розійшовшись, показане число перестало б збігатися з миттю старту.
-	 */
-	const countdownLeft = $derived(
-		match.countdownAt === null || match.countdownAt === undefined
-			? null
-			: Math.max(0, Math.ceil((match.countdownAt + COUNTDOWN_MS - clock) / 1000))
-	);
 </script>
 
 <OnlineLobby
@@ -107,6 +83,7 @@
 	{amHost}
 	{myRole}
 	{countdownLeft}
+	{ready}
 	autoStart={match.autoStart}
 	{onRole}
 	{onStart}

@@ -260,6 +260,7 @@
 			amHost={session.amHost}
 			myRole={session.myRole}
 			countdownLeft={session.countdownLeft}
+			ready={session.canStart}
 			autoStart={match.autoStart}
 			onRole={(role) => session.setRole(role)}
 			onStart={() => session.start()}
