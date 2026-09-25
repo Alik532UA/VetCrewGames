@@ -97,7 +97,6 @@
 	 */
 	const away = $derived(match.players.filter((player) => !online.includes(player.uid)));
 
-
 	/** Скільки пар зібрав кожен: рахунок живе в правилах, не в кімнаті. */
 	const scoreOf = (uid: string) => match.game.players.find((p) => p.id === uid)?.score ?? 0;
 
@@ -213,6 +212,13 @@
 					{@html formatFont(t('pairs.draw'))}
 				{/if}
 			</b>
+			<!--
+				«ЗАКРИТИ» — ОКРЕМО ВІД «ЗІГРАТИ ЩЕ» (аудит 2026-09-25). Доти обидві кнопки
+				стояли під однією умовою, і господар, від якого суперник пішов (реванш без
+				пари не починається), бачив «Чекаємо, доки лідер почне» — тобто чекав сам на
+				себе й не мав чим закрити кімнату. Тепер господар без пари чує, чого бракує,
+				а закрити може завжди; гість, як і доти, чекає господаря.
+			-->
 			{#if onRematch}
 				<button
 					type="button"
@@ -222,11 +228,17 @@
 				>
 					{@html formatFont(t('pairs.rematch'))}
 				</button>
+			{:else if onClose}
+				<span class="board__wait" data-testid="pairs-need-players-text">
+					{@html formatFont(t('pairs.needPlayers'))}
+				</span>
+			{:else}
+				<span class="board__wait">{@html formatFont(t('pairs.waitingHost'))}</span>
+			{/if}
+			{#if onClose}
 				<button type="button" class="chip" onclick={onClose} data-testid="pairs-close-btn">
 					{@html formatFont(t('pairs.closeRoom'))}
 				</button>
-			{:else}
-				<span class="board__wait">{@html formatFont(t('pairs.waitingHost'))}</span>
 			{/if}
 
 			<!--
@@ -339,7 +351,7 @@
 		{/each}
 	</div>
 
-<!--
+	<!--
 		«ЗАБРАТИ ХІД» — КНОПКА, А НЕ АВТОМАТИКА, і ця панель тільки про неї.
 
 		Присутність гасне сама, і вона НЕ лежить у журналі ходів, отже не має права
