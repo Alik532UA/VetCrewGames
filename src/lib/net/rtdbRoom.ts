@@ -481,7 +481,9 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				});
 				return;
 			}
-			await set(ref(db, `rooms/${code}/info/status`), status);
+			// Будь-яка зміна статусу гасить відлік: він означає «от-от почнеться», а
+			// кінець партії — інша подія. Той самий контракт, що в `LocalRoom`.
+			await update(ref(db, `rooms/${code}/info`), { status, countdownAt: null });
 		},
 
 		async setAutoStart(on: boolean) {

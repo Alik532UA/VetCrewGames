@@ -341,6 +341,68 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		await table.close();
 	});
 
+	/*
+	 * ДІЇ ГОСПОДАРЯ НАД КІМНАТОЮ — той самий результат в обох реалізаціях (аудит
+	 * 2026-09-24). Доти контракт їх не торкався зовсім, і вони вже розходились:
+	 * `LocalRoom` гасив відлік на кінці партії, справжня база — ні.
+	 */
+	it('відлік: увімкнено — серверне число, скасовано — поля немає', async () => {
+		const table = await world.table();
+
+		await table.host.transport.setCountdown(true);
+		const on = await table.until((s) => typeof s.info.countdownAt === 'number');
+		expect(on.info.countdownAt).toBeGreaterThan(0);
+
+		await table.host.transport.setCountdown(false);
+		await table.until((s) => s.info.countdownAt === undefined);
+		await table.close();
+	});
+
+	it('зміна режиму старту гасить відлік тим самим записом', async () => {
+		const table = await world.table();
+		await table.host.transport.setCountdown(true);
+		await table.until((s) => typeof s.info.countdownAt === 'number');
+
+		await table.host.transport.setAutoStart(true);
+
+		const snapshot = await table.until((s) => s.info.autoStart === true);
+		expect(snapshot.info.countdownAt).toBeUndefined();
+		await table.close();
+	});
+
+	it('налаштування пишуться цілком', async () => {
+		const table = await world.table();
+
+		await table.host.transport.setConfig({ pairs: 6, cols: 4 });
+
+		const snapshot = await table.until((s) => s.info.config.pairs === 6);
+		expect(snapshot.info.config).toEqual({ pairs: 6, cols: 4 });
+		await table.close();
+	});
+
+	it('позначка життя — серверний час', async () => {
+		const table = await world.table();
+
+		await table.host.transport.touch();
+
+		const snapshot = await table.until((s) => typeof s.info.aliveAt === 'number');
+		expect(snapshot.info.aliveAt).toBeGreaterThan(0);
+		await table.close();
+	});
+
+	it('кінець партії статусом over гасить відлік', async () => {
+		const table = await world.table();
+		await table.host.transport.setStatus('playing', rosterOf(table));
+		await table.host.transport.setCountdown(true);
+		await table.until((s) => typeof s.info.countdownAt === 'number');
+
+		await table.host.transport.setStatus('over');
+
+		const snapshot = await table.until((s) => s.info.status === 'over');
+		expect(snapshot.info.countdownAt).toBeUndefined();
+		await table.close();
+	});
+
 	it('кімнату закрито — підписка чує «кімнати немає»', async () => {
 		const table = await world.table();
 		const gone = vi.fn();
