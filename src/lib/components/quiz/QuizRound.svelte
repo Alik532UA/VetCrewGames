@@ -48,11 +48,25 @@
 		limitMs: number;
 		/** Чи я вже відповів у цьому раунді. */
 		answered: boolean;
+		/**
+		 * Я глядач: дошку видно (грати подумки ніхто не забороняє), але відповідь не
+		 * йде нікуди — і про це сказано, а не мовчки.
+		 */
+		watching?: boolean;
 		onanswer: (correct: number) => void;
 	}
 
-	let { text, phase, step, leftMs, limitLeftMs, limitMs, answered, onanswer }: Props = $props();
-
+	let {
+		text,
+		phase,
+		step,
+		leftMs,
+		limitLeftMs,
+		limitMs,
+		answered,
+		watching = false,
+		onanswer
+	}: Props = $props();
 </script>
 
 {#if phase === 'round' && step}
@@ -98,7 +112,11 @@
 		<QuizBoard {text} {step} {onanswer} timeLeftMs={limitLeftMs} />
 	{/key}
 
-	{#if answered}
+	{#if watching}
+		<p class="round__wait text-panel" data-testid="quiz-watching-text">
+			{@html formatFont(text('quiz.watching'))}
+		</p>
+	{:else if answered}
 		<!-- На місце кнопки «Далі», яку в кімнаті ховає сама дошка (`hideNext`). -->
 		<p class="round__wait text-panel" data-testid="quiz-answered-text">
 			{@html formatFont(text('quiz.answered'))}

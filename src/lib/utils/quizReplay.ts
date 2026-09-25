@@ -190,6 +190,9 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		}
 
 		if (move.type !== 'answer') continue;
+		// Відповідають ГРАВЦІ: глядач партію не грає, і його відповідь доти давала йому
+		// очки, а на кінці — бали за вікторину, у якій він лише дивився (аудит 2026-09-24).
+		if (!players.has(move.by)) continue;
 		const correct = Number(move.payload?.correct);
 		if (!Number.isFinite(correct)) continue;
 		answered.push({ round, by: move.by, at, correct });

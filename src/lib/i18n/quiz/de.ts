@@ -30,6 +30,7 @@ export const quiz: Record<string, string> = {
 	'quiz.roundTimer': 'Rundenzeit',
 	'quiz.revealTimer': 'Bis zur nächsten Runde',
 	'quiz.answered': 'Warten auf die anderen.',
+	'quiz.watching': 'Du schaust zu – Antworten von Zuschauern zählen nicht.',
 	'quiz.awayWait': 'Warten:',
 	'quiz.pauseBy': 'Pause von:',
 	'quiz.paceRound': 'Rundenzeit',

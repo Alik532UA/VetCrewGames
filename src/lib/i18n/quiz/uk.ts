@@ -29,6 +29,7 @@ export const quiz: Record<string, string> = {
 	'quiz.roundTimer': 'Час раунду',
 	'quiz.revealTimer': 'До наступного раунду',
 	'quiz.answered': 'Чекаємо на решту.',
+	'quiz.watching': 'Ви дивитеся — відповіді глядача не зараховуються.',
 	'quiz.awayWait': 'Чекаємо:',
 	'quiz.pauseBy': 'Пауза:',
 	/*

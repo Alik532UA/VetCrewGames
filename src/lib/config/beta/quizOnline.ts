@@ -299,6 +299,17 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-round-progress'
+		},
+		{
+			id: 'quizonline_23',
+			category: { uk: 'Кімната', en: 'The room' },
+			text: {
+				uk: 'У лобі третім пристроєм виберіть роль «Глядач», а тоді почніть партію. Глядач мусить бачити питання й рядок «Ви дивитеся — відповіді глядача не зараховуються»; кнопки «Пауза» в нього НЕ мусить бути, а його відповідь НЕ мусить дати йому очок ні в табло, ні після фіналу.',
+				en: 'In the lobby pick the “Spectator” role on a third device, then start the game. The spectator must see the questions and the line “You are watching — a spectator’s answers do not count”; there must be NO “Pause” button for them, and their answer must NOT give them points on the scoreboard or after the final.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'quiz-watching-text'
 		}
 	]
 };

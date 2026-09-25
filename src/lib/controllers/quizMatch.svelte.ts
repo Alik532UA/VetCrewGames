@@ -199,6 +199,11 @@ export class QuizMatch {
 		return playersOf(this.members);
 	}
 
+	/** Я лише дивлюся: мої відповіді, пауза й голос партії не стосуються. */
+	get iAmSpectator(): boolean {
+		return !this.players.some((player) => player.uid === this.#me);
+	}
+
 	/** Програма партії — список раундів. Порожня, доки не приїхало зерно. */
 	get programme(): QuizStep[] {
 		if (this.seed === 0) return [];
@@ -715,7 +720,7 @@ export class QuizMatch {
 	 * «не вдалося»), а не дивитися на табло без своїх очок.
 	 */
 	async answer(correct: number): Promise<void> {
-		if (this.iAnswered || this.round < 0) return;
+		if (this.iAnswered || this.round < 0 || this.iAmSpectator) return;
 		const saved = await this.#append('answer', { round: this.round, correct });
 		if (!saved) throw new Error('answer-not-saved');
 	}

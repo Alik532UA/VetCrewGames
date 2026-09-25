@@ -111,7 +111,11 @@
 			match.present = uids;
 			awaySince = awayStamps(match.players, uids, awaySince, now);
 		},
-		award: (match, me) => playerData.awardQuizMatch(match.scores[me] ?? 0),
+		award: (match, me) => {
+			// Глядач лише дивився — бали не його (той самий запобіжник, що в «Знайди пару»).
+			if (match.iAmSpectator) return;
+			playerData.awardQuizMatch(match.scores[me] ?? 0);
+		},
 		clockEvery: (match) => {
 			if (match.countdownAt !== null && match.status !== 'playing') return CLOCK_MS;
 			if (match.status === 'playing' && !match.over) return ROUND_CLOCK_MS;

@@ -176,7 +176,7 @@
 		voted={goOn.length}
 		needed={wait.needed}
 		iVoted={goOn.includes(me)}
-		{onGoOn}
+		onGoOn={wait.canVote ? onGoOn : undefined}
 		pausedBy={wait.pausedBy}
 		onResume={wait.canResume ? onResume : undefined}
 		onkick={amHost ? onkick : undefined}
@@ -236,7 +236,7 @@
 				{me}
 			/>
 
-			{#if wait.pausedBy === null && match.pace.round !== 'unlimited'}
+			{#if wait.pausedBy === null && match.pace.round !== 'unlimited' && !match.iAmSpectator}
 				<button
 					type="button"
 					class="room__pause text-panel"
@@ -258,6 +258,7 @@
 			limitLeftMs={match.limitLeftMs(clock)}
 			limitMs={match.limitMs}
 			answered={match.iAnswered}
+			watching={match.iAmSpectator}
 			{onanswer}
 		/>
 	{/if}

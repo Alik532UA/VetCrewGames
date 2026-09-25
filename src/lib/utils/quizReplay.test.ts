@@ -345,3 +345,24 @@ describe('пауза в журналі', () => {
 		expect(log.held[0]).toBeUndefined();
 	});
 });
+
+/**
+ * ВІДПОВІДАЮТЬ ГРАВЦІ (аудит 2026-09-24). Глядач партію не грає, а його відповідь
+ * доти давала йому очки — і на кінці бали за вікторину, у якій він лише дивився.
+ *
+ * Зворотний експеримент: прибрати перевірку `players.has` для відповідей — червоніє.
+ */
+describe('відповідь глядача', () => {
+	it('не рахується, а гравця — рахується', () => {
+		const log = replayQuizLog(
+			snapshot([
+				move(HOST, 'round', 1000, { round: 0 }),
+				move(WATCHER, 'answer', 2000, { round: 0, correct: 1 }),
+				move(GUEST, 'answer', 2100, { round: 0, correct: 1 })
+			]),
+			{ limitOf }
+		);
+		expect(log.answers[0]?.[WATCHER]).toBeUndefined();
+		expect(log.answers[0]?.[GUEST]).toBeDefined();
+	});
+});

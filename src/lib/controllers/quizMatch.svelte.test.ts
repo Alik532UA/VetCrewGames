@@ -1652,3 +1652,28 @@ describe('оголошення раунду, якого база не прийн
 		stop();
 	});
 });
+
+/**
+ * ГЛЯДАЧ У ВІКТОРИНІ ЛИШЕ ДИВИТЬСЯ (аудит 2026-09-24): відповідь не пишеться
+ * (автопідтвердження теж кличе `answer`), а сам він знає, що він глядач.
+ *
+ * Зворотний експеримент: прибрати `iAmSpectator` з умови `answer` — червоніє.
+ */
+describe('глядач у вікторині', () => {
+	it('відповідь глядача в журнал не йде', async () => {
+		const eye: Member = { uid: 'uid-eye', name: 'Око', role: 'spectator', order: 3 };
+		const room = new LocalRoom(info(), [...members(), eye]);
+		const append = vi.fn(room.transport().append);
+		const watcher = new QuizMatch(eye.uid, { ...room.transport(), append });
+		const host = new QuizMatch(HOST, room.transport());
+		const stops = [watcher.listen(), host.listen()];
+		await host.startRound(0);
+
+		await watcher.answer(1);
+
+		expect(watcher.iAmSpectator).toBe(true);
+		expect(host.iAmSpectator).toBe(false);
+		expect(append).not.toHaveBeenCalled();
+		stops.forEach((stop) => stop());
+	});
+});

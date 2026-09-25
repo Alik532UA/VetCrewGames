@@ -167,6 +167,8 @@ export interface WaitView {
 	left: number;
 	pausedBy: Member | null;
 	canPause: boolean;
+	/** Чи мій голос «грати далі» рахується: глядача перепрогін не слухає. */
+	canVote: boolean;
 	/**
 	 * Чи можу я зняти паузу ОДРАЗУ — тобто чи ставив її я.
 	 *
@@ -196,10 +198,28 @@ export function waitView(
 	me: string
 ): WaitView {
 	if (!match) {
-		return { hold: false, needed: 1, left: 0, pausedBy: null, canPause: false, canResume: false };
+		return {
+			hold: false,
+			needed: 1,
+			left: 0,
+			pausedBy: null,
+			canPause: false,
+			canVote: false,
+			canResume: false
+		};
 	}
 
-	const present = Math.max(1, match.present.length);
+	/*
+	 * ГОЛОСИ ЛІЧАТЬСЯ ВІД ПРИСУТНІХ ГРАВЦІВ, а не від усіх присутніх. Глядачів
+	 * перепрогін не слухає (`quizReplay.ts`), тож доти двоє гравців при трьох
+	 * глядачах не могли набрати «більшості» ніколи, і партія стояла (аудит
+	 * 2026-09-24). Так само й пауза: кнопка глядача нічого не спиняла.
+	 */
+	const plays = match.players.some((player) => player.uid === me);
+	const present = Math.max(
+		1,
+		match.players.filter((player) => match.present.includes(player.uid)).length
+	);
 	const paused = match.pausedBy;
 
 	return {
@@ -210,7 +230,8 @@ export function waitView(
 				? awaySecondsLeft(match.away, since, now, (uid) => match.graceSpent(uid))
 				: pauseSecondsLeft(match.pausedAt, match.graceSpent(paused), now),
 		pausedBy: paused === null ? null : (match.players.find((p) => p.uid === paused) ?? null),
-		canPause: paused === null && now >= match.pauseReadyAt(me),
+		canPause: plays && paused === null && now >= match.pauseReadyAt(me),
+		canVote: plays,
 		canResume: paused === me
 	};
 }

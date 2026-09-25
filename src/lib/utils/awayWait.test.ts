@@ -176,6 +176,7 @@ describe('стан чекання одним викликом', () => {
 			left: 0,
 			pausedBy: null,
 			canPause: false,
+			canVote: false,
 			canResume: false
 		});
 	});
@@ -218,6 +219,25 @@ describe('стан чекання одним викликом', () => {
 
 	it('без паузи знімати нічого', () => {
 		expect(waitView(source(), {}, NOW, 'b').canResume).toBe(false);
+	});
+
+	/**
+	 * ГЛЯДАЧ НЕ ГОЛОСУЄ Й НЕ СПИНЯЄ (аудит 2026-09-24). Його голосу й паузи
+	 * перепрогін не рахує, тож доти двоє гравців при трьох глядачах не набирали
+	 * «більшості» ніколи, а кнопка паузи в глядача нічого не робила.
+	 *
+	 * Зворотний експеримент: рахувати більшість від усіх присутніх — червоніє перший.
+	 */
+	it('більшість — від присутніх гравців, а не від усіх присутніх', () => {
+		const crowd = source({ present: ['b', 'c', 'w1', 'w2', 'w3'] });
+		expect(waitView(crowd, { a: NOW }, NOW, 'b').needed).toBe(2);
+	});
+
+	it('глядачеві — ні паузи, ні голосу', () => {
+		const view = waitView(source({ away: [], present: ['b', 'c', 'w'] }), {}, NOW, 'w');
+		expect(view.canPause).toBe(false);
+		expect(view.canVote).toBe(false);
+		expect(waitView(source({ away: [] }), {}, NOW, 'b').canVote).toBe(true);
 	});
 });
 
