@@ -77,8 +77,26 @@ describe('адаптер вікторини', () => {
 		quiz.picked = only;
 
 		expect(quiz.game.newRoom().config).toEqual(gamesToConfig(only));
-		expect(quiz.game.listingExtras?.()).toEqual({ games: gamesToConfig(only) });
 		expect(quiz.game.fitsQuick?.({ games: gamesToConfig(only) } as never)).toBe(true);
+	});
+
+	/**
+	 * ЗАПИС ПЕРЕЛІКУ — З НАБОРУ КІМНАТИ, а не з фільтра на формі входу (аудит
+	 * 2026-09-25): перелік переоголошує й господар після перезавантаження, і новий
+	 * господар після перехоплення — у обох фільтр інший, ніж у кімнаті.
+	 *
+	 * Зворотний експеримент: повернути `this.picked` — червоніє.
+	 */
+	it('запис переліку несе набір кімнати, а не фільтр', () => {
+		const quiz = new QuizRoom(() => 0.5);
+		const inRoom = [ONLINE_GAMES[1].id];
+		const room = new LocalRoom(info({ config: gamesToConfig(inRoom) }), members());
+		const match = new QuizMatch(HOST, room.transport());
+		const off = match.listen();
+		quiz.picked = [ONLINE_GAMES[0].id];
+
+		expect(quiz.game.listingExtras?.(match)).toEqual({ games: gamesToConfig(inRoom) });
+		off();
 	});
 
 	it('присутність іде в матч, а мить зникнення — у стан чекання', () => {

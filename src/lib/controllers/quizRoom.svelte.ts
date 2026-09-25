@@ -69,8 +69,11 @@ export class QuizRoom {
 			}),
 			createMatch: (me, transport) => new QuizMatch(me, transport, factor),
 			// Набір і в записі переліку: `rooms` перелічувати заборонено, тож фільтр списку
-			// бачить про чужу кімнату рівно те, що в самому записі.
-			listingExtras: () => ({ games: gamesToConfig(this.picked) }),
+			// бачить про чужу кімнату рівно те, що в самому записі. Набір — КІМНАТИ, а не
+			// фільтра на формі входу: доти господар, що звузив набір у лобі й
+			// перезавантажився, оголошував кімнату з усіма шістьма іграми, а після
+			// перехоплення — з фільтром нового господаря (аудит 2026-09-25).
+			listingExtras: (match) => ({ games: gamesToConfig(match.games) }),
 			// «Швидка гра» без фільтра кидала б у кімнату з іграми, які людина щойно зняла.
 			fitsQuick: (room) => roomFitsGames(room.games, this.picked),
 			onPresence: (match, uids, now) => {

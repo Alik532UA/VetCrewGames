@@ -60,6 +60,7 @@ const pairsGame = {
 	newRoom: () => ({ seed: 777, config: { pairs: 4, cols: 4 } }),
 	createMatch: (me: string, transport: RoomTransport) => new PairsMatch(me, transport),
 	award,
+	listingExtras: vi.fn(() => ({})),
 	clockEvery: () => null
 };
 
@@ -424,6 +425,27 @@ describe('відмова бази на автоматичному записі',
 		expect(lobby.unpublish, 'невдалий старт прибрав кімнату з переліку').not.toHaveBeenCalled();
 	});
 
+	/**
+	 * ЗУПИНКА — ДЛЯ ТІЄЇ КІМНАТИ, а не для сторінки (аудит 2026-09-25). Доти вона
+	 * переходила в кожну наступну кімнату: нова «швидка гра» не рахувала відлік, а
+	 * скінчена партія не ставала `over`.
+	 *
+	 * Зворотний експеримент: не скидати `autoHalted` у `#open` — червоніє.
+	 */
+	it('наступна кімната починає з увімкненою автоматикою', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+		session.autoHalted = true;
+
+		session.leave();
+		await session.enter('create');
+		await settle();
+
+		expect(session.autoHalted).toBe(false);
+	});
+
 	it('людина може почати й після зупинки — і почує відмову', async () => {
 		const room = new LocalRoom(roomInfo(), members());
 		room.refuseWrites(['setStatus']);
@@ -582,6 +604,16 @@ describe('публічна кімната в переліку', () => {
 		await settle();
 
 		expect(lobby.publish).toHaveBeenCalledWith(expect.objectContaining({ hostUid: GUEST }));
+	});
+
+	it('добавку до запису бере з матчу кімнати, а не зі сторінки', async () => {
+		const room = new LocalRoom(roomInfo({ listed: true }), members().slice(0, 1));
+		const { session } = sessionFor(room, null, HOST);
+
+		await session.enter('create');
+		await settle();
+
+		expect(pairsGame.listingExtras).toHaveBeenCalledWith(session.match);
 	});
 
 	it('приватну — не оголошує', async () => {

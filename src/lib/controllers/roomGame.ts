@@ -39,8 +39,12 @@ export interface RoomGame<M extends RoomMatch> {
 	autoStartReady(players: number): boolean;
 	newRoom(): { seed: number; config: Record<string, number> };
 	createMatch(me: string, transport: RoomTransport): M;
-	/** Що кладе в запис переліку понад спільне (набір ігор вікторини). */
-	listingExtras?(): { games?: Record<string, number> };
+	/**
+	 * Що кладе в запис переліку понад спільне (набір ігор вікторини) — З КІМНАТИ,
+	 * а не зі сторінки: перелік тепер переоголошує й господар, що повернувся, і той,
+	 * хто перехопив ведення (аудит 2026-09-25).
+	 */
+	listingExtras?(match: M): { games?: Record<string, number> };
 	fitsQuick?(room: LobbyRoom): boolean;
 	/** Присутність приїхала — що з нею робить гра. */
 	onPresence?(match: M, online: string[], now: number): void;

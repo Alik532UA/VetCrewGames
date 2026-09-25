@@ -186,6 +186,11 @@ export class RoomSession<M extends RoomMatch> {
 
 	/** Підписки кімнати: матч, присутність, звʼязок, підписки гри, перелік. */
 	async #open(): Promise<void> {
+		// Зупинка автоматики належить КІМНАТІ, у якій база відмовила, а сесія живе,
+		// поки відкрита сторінка: доти вона переходила в кожну наступну кімнату — нова
+		// «швидка гра» не рахувала відлік, а скінчена партія не ставала `over`
+		// (аудит 2026-09-25).
+		this.autoHalted = false;
 		const transport = await this.net.roomTransport(this.code);
 		this.#transport = transport;
 		this.me = await this.net.me();
@@ -233,7 +238,7 @@ export class RoomSession<M extends RoomMatch> {
 				// оголошує кімнату, де вже сидять люди, а лічильник наздоганяє лише
 				// ЗМІНУ присутності (`roomPolicies`).
 				players: Math.max(1, this.presentPlayers.length),
-				...this.game.listingExtras?.()
+				...(this.match ? this.game.listingExtras?.(this.match) : {})
 			});
 		} catch (error) {
 			logService.warn('network', 'room not published', { code: this.code, reason: String(error) });
