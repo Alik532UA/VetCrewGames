@@ -322,7 +322,9 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
           npm run rules:deploy
 
-      # Перевірка ПІСЛЯ викладання: чи справді в базі тепер та редакція.
+      # Перевірка ПІСЛЯ викладання: чи справді в базі тепер та редакція. Випадкові
+      # збої (вхід, мережа раннера) зонд повторює сам і лишається гейтом сайту —
+      # чому саме так, а не окремою роботою, розписано в `scripts/check-rules-live.mjs`.
       - name: Verify deployed rules
         run: npm run check:rules:live
 
