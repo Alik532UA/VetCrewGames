@@ -1,6 +1,7 @@
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom } from './ownRooms';
+import { moveKey } from './roomShape';
 
 /*
  * Окремо від `rtdbRoom.ts`: це не дія над партією, а вихід із неї, і кличе її не
@@ -46,7 +47,7 @@ export async function leaveRoom(code: string): Promise<void> {
 		for (let attempt = 0; attempt < LEAVE_TRIES && !left; attempt += 1) {
 			const last = await get(query(moves, orderByKey(), limitToLast(1)));
 			const seq = Number(Object.keys(last.val() ?? {})[0] ?? 0) + 1;
-			const key = String(seq).padStart(6, '0');
+			const key = moveKey(seq);
 			try {
 				await update(ref(db, `rooms/${code}`), {
 					[`members/${uid}`]: null,

@@ -35,7 +35,7 @@ export const OVER_LEAD_AFTER_MS = 3 * LEAD_AFTER_MS;
 export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>): void {
 	// Адреса — джерело правди: «назад» знімає `?room`, і кімната мусить зникнути.
 	$effect(() => {
-		if (session.match && session.place.urlRoom() !== session.code) session.leave();
+		if (session.match && session.place.urlRoom() !== session.code) session.exitToGate();
 	});
 
 	// Словник імен довантажується, тож стежимо за мовою.

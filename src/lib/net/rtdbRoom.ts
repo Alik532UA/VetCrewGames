@@ -2,7 +2,7 @@ import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
-import { infoFromDb, rosterToRecord, snapshotFromDb } from './roomShape';
+import { infoFromDb, moveKey, rosterToRecord, snapshotFromDb } from './roomShape';
 
 /**
  * Кімната в Realtime Database — та сама, що `LocalRoom`, тільки справжня.
@@ -417,7 +417,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				// запису, тож окремо хід не пройшов би, а окремо господар — теж.
 				// `leadSeq` — вказівник для правила: `hostUid` міняється лише разом із
 				// ходом `lead`, і саме тим, на який він указує (аудит 2026-09-24).
-				const key = String(move.seq).padStart(6, '0');
+				const key = moveKey(move.seq);
 				await update(ref(db, `rooms/${code}`), {
 					'info/hostUid': move.by,
 					'info/leadSeq': key,
@@ -441,7 +441,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				// навколо серверного часу. Тому межу очікування ходу неможливо обійти
 				// підробленим числом: без цього гравець оголошував би чужий хід
 				// простроченим коли завгодно.
-				await set(ref(db, `rooms/${code}/moves/${String(move.seq).padStart(6, '0')}`), {
+				await set(ref(db, `rooms/${code}/moves/${moveKey(move.seq)}`), {
 					...move,
 					at: serverTimestamp()
 				});

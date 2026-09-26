@@ -715,7 +715,7 @@ describe('відмова бази на автоматичному записі',
 		await settle();
 		session.autoHalted = true;
 
-		session.leave();
+		session.exitToGate();
 		await session.enter('create');
 		await settle();
 

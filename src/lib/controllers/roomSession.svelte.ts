@@ -233,7 +233,7 @@ export class RoomSession<M extends RoomMatch> {
 			 * ще одну підписку. Найчастіша причина — застарілий шматок збірки після
 			 * викладки: динамічний імпорт падає посеред входу.
 			 */
-			this.leave();
+			this.exitToGate();
 			await this.place.exit();
 			throw error;
 		}
@@ -290,8 +290,13 @@ export class RoomSession<M extends RoomMatch> {
 		await this.enter('create', true);
 	}
 
-	/** Вийти на форму входу. Кімнату не закриває: у ній можуть сидіти інші. */
-	leave(): void {
+	/**
+	 * Вийти на форму входу. Кімнату не закриває: у ній можуть сидіти інші. І рядок
+	 * складу ЛИШАЄ: це «назад», а не «піти назовсім» (`net/leave.ts`, `leaveRoom`) —
+	 * імʼя тепер каже це саме (аудит 2026-09-25: доти `leave()` тут і `leaveRoom()`
+	 * там означали протилежне).
+	 */
+	exitToGate(): void {
 		this.dispose();
 		this.match = null;
 		this.code = '';

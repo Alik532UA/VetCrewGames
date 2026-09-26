@@ -432,7 +432,8 @@ export class PairsMatch {
 	async takeLead(): Promise<boolean> {
 		if (this.hostUid === this.#me) return true;
 		const seqs = (this.#last?.moves ?? []).map((move) => move.seq);
-		return takeLead(this.#transport, this.#me, this.hostUid, seqs);
+		// Журнал без дірок: кожна спроба — на той самий перший вільний номер.
+		return takeLead(this.#transport, this.#me, this.hostUid, seqs, true);
 	}
 
 	async #send(type: string, payload?: Record<string, number | string>): Promise<void> {
