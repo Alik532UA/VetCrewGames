@@ -68,7 +68,8 @@
 		/** Зняти свою паузу. Кнопки не буде, поки пауза не моя (`wait.canResume`). */
 		onResume: () => void;
 		onanswer: (correct: number) => void;
-		onRematch: () => void;
+		/** Немає — реваншу почати не можна: гравців на звʼязку замало (`RoomSession.canRematch`). */
+		onRematch?: () => void;
 		onClose: () => void;
 		/** Я дивився — і хочу грати наступну. `undefined` — я вже гравець. */
 		onPlayNext?: () => void;
@@ -147,7 +148,7 @@
 		{text}
 		title={t('common.gameOver')}
 		testId="quiz-over-panel"
-		note={amHost ? undefined : text('quiz.waitingLeader')}
+		note={amHost ? (onRematch ? undefined : t('pairs.needPlayers')) : text('quiz.waitingLeader')}
 		players={match.players}
 		scores={match.scores}
 		gains={match.roundGains}
@@ -164,15 +165,22 @@
 				нагорода, а «наступна партія» глядача до `over` не робить нічого.
 			-->
 			{#if amHost}
-				<button
-					type="button"
-					class="btn-primary"
-					onclick={onRematch}
-					disabled={!match.over}
-					data-testid="quiz-play-again-btn"
-				>
-					{@html formatFont(t('common.playAgain'))}
-				</button>
+				<!--
+					Без пари реваншу не почати — і кнопки для нього немає, а чого бракує, каже
+					примітка табла (`note` вище): так само, як у «Знайди пару» (шостий аудит).
+					Доти кнопка була, а натиск відповідав тостом, що зникав за кілька секунд.
+				-->
+				{#if onRematch}
+					<button
+						type="button"
+						class="btn-primary"
+						onclick={onRematch}
+						disabled={!match.over}
+						data-testid="quiz-play-again-btn"
+					>
+						{@html formatFont(t('common.playAgain'))}
+					</button>
+				{/if}
 				<button
 					type="button"
 					class="chip"
@@ -182,18 +190,16 @@
 				>
 					{@html formatFont(t('pairs.closeRoom'))}
 				</button>
-			{:else}
-				{#if onPlayNext}
-					<button
-						type="button"
-						class="chip"
-						onclick={onPlayNext}
-						disabled={!match.over}
-						data-testid="quiz-play-next-btn"
-					>
-						{@html formatFont(t('pairs.playNext'))}
-					</button>
-				{/if}
+			{:else if onPlayNext}
+				<button
+					type="button"
+					class="chip"
+					onclick={onPlayNext}
+					disabled={!match.over}
+					data-testid="quiz-play-next-btn"
+				>
+					{@html formatFont(t('pairs.playNext'))}
+				</button>
 			{/if}
 
 			<!--

@@ -488,6 +488,35 @@ describe('політики кімнати', () => {
 		expect(award, 'та сама кімната й зерно — вдруге не нараховується').toHaveBeenCalledTimes(1);
 	});
 
+	/**
+	 * РЕВАНШ — ОДНА УМОВА НА ОБИДВІ ГРИ (шостий аудит, A4): господар і гравців на
+	 * звʼязку досить. Сторінки обох ігор ховають кнопку за нею ж.
+	 */
+	it('реванш можна почати лише господареві й лише з парою на звʼязку', async () => {
+		const over = roomInfo({ status: 'over', roster: rosterOf(members()) });
+		const room = new LocalRoom(over, members());
+		const { session, setOnline } = sessionFor(room, over, HOST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		setOnline([HOST]);
+		flushSync();
+		expect(session.canRematch, 'сам — не реванш').toBe(false);
+		setOnline([HOST, GUEST]);
+		flushSync();
+		expect(session.canRematch).toBe(true);
+		cleanup?.();
+
+		const guest = sessionFor(room, over, GUEST);
+		guest.session.joinCode = '42';
+		await guest.session.enter('join');
+		await settle();
+		guest.setOnline([HOST, GUEST]);
+		flushSync();
+		expect(guest.session.canRematch, 'гість реваншу не починає').toBe(false);
+	});
+
 	it('господаря немає досить довго — ведення підхоплює перший присутній гравець', async () => {
 		// Посеред партії правило пускає лише склад старту — він і тут.
 		const started = roomInfo({ status: 'playing', roster: rosterOf(members()) });

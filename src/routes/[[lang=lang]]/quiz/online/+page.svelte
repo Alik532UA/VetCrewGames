@@ -215,7 +215,7 @@
 			goOn={match.goOn}
 			onGoOn={() => void session.act('quiz vote not written', () => match?.voteGoOn())}
 			onanswer={answer}
-			onRematch={session.rematch}
+			onRematch={session.canRematch ? session.rematch : undefined}
 			onClose={() => session.close()}
 			onPlayNext={session.myRole === 'spectator' ? () => session.setRole('player') : undefined}
 			onkick={session.kick}

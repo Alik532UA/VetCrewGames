@@ -77,7 +77,12 @@ async function lastTable() {
 	return { room, host, stop, clock };
 }
 
-const view = (match: InstanceType<typeof QuizMatch>, clock: number, amHost = true) =>
+const view = (
+	match: InstanceType<typeof QuizMatch>,
+	clock: number,
+	amHost = true,
+	canRematch = true
+) =>
 	render(QuizRoom, {
 		props: {
 			text: (key: string) => key,
@@ -92,7 +97,7 @@ const view = (match: InstanceType<typeof QuizMatch>, clock: number, amHost = tru
 			onPause: vi.fn(),
 			onResume: vi.fn(),
 			onanswer: vi.fn(),
-			onRematch: vi.fn(),
+			onRematch: canRematch ? vi.fn() : undefined,
 			onClose: vi.fn(),
 			cross: crossGameLinks('uk', 'quiz', '42', null),
 			onkick: vi.fn()
@@ -121,9 +126,7 @@ describe('фінал вікторини', () => {
 		const { host, stop, clock } = await lastTable();
 		view(host, clock);
 		const again = () => screen.getByTestId('quiz-play-again-btn') as HTMLButtonElement;
-		expect(again().disabled, 'реванш до запису кінця стер би журнал раніше за нагороду').toBe(
-			true
-		);
+		expect(again().disabled, 'реванш до запису кінця стер би журнал раніше за нагороду').toBe(true);
 
 		await host.startRound(QUIZ_ROUNDS);
 		flushSync();
@@ -136,12 +139,28 @@ describe('фінал вікторини', () => {
 		stop();
 	});
 
+	/**
+	 * ГОСПОДАР БЕЗ ПАРИ ЧУЄ, ЧОГО БРАКУЄ (шостий аудит, A4) — так само, як у «Знайди
+	 * пару»: кнопки реваншу немає, є слова. Доти кнопка була, а натиск відповідав
+	 * тостом. Зворотний експеримент: показувати кнопку завжди — червоніє.
+	 */
+	it('господар без пари — «бракує гравців» замість кнопки реваншу', async () => {
+		const { host, stop, clock } = await lastTable();
+		view(host, clock, true, false);
+		expect(screen.queryByTestId('quiz-play-again-btn')).toBeNull();
+		const note = screen.getByTestId('quiz-reveal-note-text').textContent ?? '';
+		expect(note.trim(), 'чого бракує — сказано').not.toBe('');
+		expect(note, 'це не «чекаємо на лідера»: лідер тут він сам').not.toContain(
+			'quiz.waitingLeader'
+		);
+		expect(screen.getByTestId('quiz-close-btn'), 'закрити кімнату можна завжди').toBeTruthy();
+		stop();
+	});
+
 	it('гість бачить, що чекають на лідера, — текстом вікторини', async () => {
 		const { host, stop, clock } = await lastTable();
 		view(host, clock, false);
-		expect(screen.getByTestId('quiz-waiting-host-text').textContent).toContain(
-			'quiz.waitingLeader'
-		);
+		expect(screen.getByTestId('quiz-reveal-note-text').textContent).toContain('quiz.waitingLeader');
 		stop();
 	});
 

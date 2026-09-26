@@ -377,6 +377,22 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			negative: true
+		},
+		{
+			/*
+			 * РЕВАНШ БЕЗ ПАРИ — ТАК САМО, ЯК У «ЗНАЙДИ ПАРУ» (шостий аудит, A4). Показ доводить
+			 * `QuizRoom.final.test.ts`, умову — тест сесії (`canRematch`).
+			 */
+			id: 'quizonline_29',
+			category: { uk: 'Фінал', en: 'The final' },
+			text: {
+				uk: 'Дограйте вікторину удвох, а тоді на пристрої гостя закрийте вкладку. У господаря замість «Грати знову» мусить стояти «Потрібні щонайменше двоє гравців.», а «Закрити кімнату» — лишитися.',
+				en: 'Play a quiz to the end with two players, then close the tab on the guest device. Instead of «Play again» the host must see «At least two players are needed.», and «Close room» must stay.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/components/quiz/QuizRoom.final.test.ts',
+			testid: 'quiz-reveal-note-text',
+			negative: true
 		}
 	]
 };

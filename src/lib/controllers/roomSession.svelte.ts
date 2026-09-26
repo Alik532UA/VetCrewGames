@@ -95,6 +95,15 @@ export class RoomSession<M extends RoomMatch> {
 		return this.presentPlayers.length >= this.game.minPlayers;
 	}
 
+	/**
+	 * РЕВАНШ МОЖНА ПОЧАТИ: я господар і гравців на звʼязку досить. Одна умова на обидві
+	 * гри (шостий аудит, A4): доти «Знайди пару» ховала кнопку без суперника й казала,
+	 * чого бракує, а вікторина показувала кнопку й відповідала на натиск тостом.
+	 */
+	get canRematch(): boolean {
+		return this.amHost && this.canStart;
+	}
+
 	get amHost(): boolean {
 		return this.me !== '' && this.match?.hostUid === this.me;
 	}

@@ -318,7 +318,7 @@
 		<div class="reveal__actions">{@render actions()}</div>
 	{/if}
 	{#if note}
-		<p class="reveal__note" data-testid="quiz-waiting-host-text">{@html formatFont(note)}</p>
+		<p class="reveal__note" data-testid="quiz-reveal-note-text">{@html formatFont(note)}</p>
 	{/if}
 </section>
 
