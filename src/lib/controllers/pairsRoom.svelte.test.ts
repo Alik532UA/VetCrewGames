@@ -129,3 +129,36 @@ describe('реакції «Знайди пару»', () => {
 		off();
 	});
 });
+
+/**
+ * ОДНА СІТКА НА ВСІХ, МІРИЛО — НАЙМЕНШИЙ ЕКРАН (рішення автора 2026-09-26): є
+ * серед присутніх хоч один телефон — розкладка телефонна для всіх.
+ *
+ * Зворотний експеримент: брати сітку творця кімнати (не з учасників) — червоніє
+ * «телефон серед присутніх».
+ */
+describe('сітка на старті', () => {
+	const game = pairsGame({ listen: async () => () => {} } as never, () => 0.5, () => ({ pairs: 14, cols: 7 }));
+	const member = (uid: string, compact?: boolean): Member =>
+		({ uid, name: uid, role: 'player', order: 1, ...(compact ? { compact } : {}) }) as Member;
+
+	it('телефон серед присутніх — телефонна сітка для всіх', () => {
+		const members = [member('a'), member('b', true)];
+		expect(game.startConfig?.(members, ['a', 'b'])).toEqual({ pairs: 10, cols: 4 });
+	});
+
+	it('самі великі екрани — повна колода', () => {
+		const members = [member('a'), member('b')];
+		expect(game.startConfig?.(members, ['a', 'b'])).toEqual({ pairs: 14, cols: 7 });
+	});
+
+	it('телефон, якого немає на звʼязку, сітки не вибирає', () => {
+		const members = [member('a'), member('b', true)];
+		expect(game.startConfig?.(members, ['a'])).toEqual({ pairs: 14, cols: 7 });
+	});
+
+	it('присутності ще немає — рахуються всі учасники', () => {
+		const members = [member('a'), member('b', true)];
+		expect(game.startConfig?.(members, [])).toEqual({ pairs: 10, cols: 4 });
+	});
+});

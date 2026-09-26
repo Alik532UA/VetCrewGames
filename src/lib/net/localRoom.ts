@@ -172,7 +172,7 @@ export class LocalRoom {
 				return true;
 			},
 
-			setStatus: async (status, roster) => {
+			setStatus: async (status, roster, config) => {
 				if (!hostOnly(this.#state(), options.as)) denied();
 				if (this.#refused.has('setStatus')) {
 					const { countdownAt: _gone, ...rest } = this.#info;
@@ -198,7 +198,13 @@ export class LocalRoom {
 				const { countdownAt: _stale, ...rest } = this.#info;
 				this.#info =
 					status === 'playing'
-						? { ...rest, status, startedAt: this.#now, ...(roster ? { roster: [...roster] } : {}) }
+						? {
+								...rest,
+								status,
+								startedAt: this.#now,
+								...(roster ? { roster: [...roster] } : {}),
+								...(config ? { config } : {})
+							}
 						: { ...rest, status };
 				this.#emit();
 			},
@@ -259,7 +265,7 @@ export class LocalRoom {
 				this.#emit();
 			},
 
-			restart: async (seed, roster) => {
+			restart: async (seed, roster, config) => {
 				if (!hostOnly(this.#state(), options.as)) denied();
 				if (!rosterAllowed(roster, this.#members)) throw new Error('PERMISSION_DENIED: roster');
 				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік, склад.
@@ -271,7 +277,8 @@ export class LocalRoom {
 					seed,
 					status: 'playing',
 					startedAt: this.#now,
-					roster: [...roster]
+					roster: [...roster],
+					...(config ? { config } : {})
 				};
 				this.#emit();
 			}

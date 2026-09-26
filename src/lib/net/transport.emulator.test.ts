@@ -278,6 +278,24 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		await table.close();
 	});
 
+	/**
+	 * РОЗКЛАДКА ТИМ САМИМ ЗАПИСОМ, що й старт (рішення автора 2026-09-26: сітку
+	 * «Знайди пару» вибирає найменший екран серед присутніх — у мить старту).
+	 * Окремим записом існувала б мить, у яку партія вже йде зі старою сіткою.
+	 */
+	it('старт і реванш пишуть розкладку тим самим записом', async () => {
+		const table = await world.table();
+
+		await table.host.transport.setStatus('playing', rosterOf(table), { pairs: 10, cols: 4 });
+		let snapshot = await table.until((s) => s.info.status === 'playing');
+		expect(snapshot.info.config).toEqual({ pairs: 10, cols: 4 });
+
+		await table.host.transport.restart(778, rosterOf(table), { pairs: 14, cols: 7 });
+		snapshot = await table.until((s) => s.info.seed === 778);
+		expect(snapshot.info.config).toEqual({ pairs: 14, cols: 7 });
+		await table.close();
+	});
+
 	it('глядач у складі — відмова всього запису', async () => {
 		const table = await world.table({ spectator: true });
 
@@ -538,6 +556,41 @@ describe('rtdbRoom + емулятор: створення кімнати', () =>
 		const info = await as(host, () => net.peekRoom(code));
 
 		expect(info?.listed).toBe(listed);
+		await as(host, () => net.closeRoom(code));
+	});
+
+	/**
+	 * ТЕЛЕФОН ПОЗНАЧАЄ СЕБЕ В РЯДКУ СКЛАДУ (`Member.compact`), і правила це поле
+	 * НАЗИВАЮТЬ: інакше `$other: false` відкинув би вхід із телефона цілком — не
+	 * «сітка не та», а «не вдалося зайти».
+	 *
+	 * Зворотний експеримент: прибрати `compact` із правил — червоніє.
+	 */
+	it('гість із телефона заходить і позначає малий екран', async () => {
+		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
+		const { host, guest } = people;
+		const net = await import('./rtdbRoom');
+		const code = await as(host, () =>
+			net.createRoom({
+				gameId: 'pairs',
+				rulesVersion: 3,
+				seed: 1,
+				config: CONFIG,
+				name: 'Господар',
+				isPrivate: true
+			})
+		);
+
+		vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) });
+		try {
+			await as(guest, () => net.joinRoom(code, 'Гість'));
+		} finally {
+			vi.unstubAllGlobals();
+		}
+
+		const { get, ref } = await import('firebase/database');
+		const row = await get(ref(guest.db, `rooms/${code}/members/${guest.uid}`));
+		expect(row.val()?.compact).toBe(true);
 		await as(host, () => net.closeRoom(code));
 	});
 });

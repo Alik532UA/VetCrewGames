@@ -1,3 +1,4 @@
+import { isCompactScreen as compactScreen } from '$lib/utils/screen';
 import { animals, type Animal } from './population-game';
 import { seededRandom, shuffle } from '$lib/utils/seededRandom';
 
@@ -60,7 +61,7 @@ export interface MemoryLayout {
  * Викликати можна лише в браузері: `matchMedia` під час prerender не існує.
  */
 export function layoutForViewport(): MemoryLayout {
-	if (!isCompactScreen()) return WIDE_LAYOUT;
+	if (!compactScreen()) return WIDE_LAYOUT;
 	// Телефон БОКОМ: ті самі десять пар двома рядами. Пʼять рядів по чотири в
 	// ≈250px висоти дали б картку вужчу за 56px — нижче, ніж тварину видно
 	// (прохання автора 2026-09-26: поле мусить влазити на телефоні).
@@ -73,16 +74,8 @@ export function layoutForViewport(): MemoryLayout {
 export const COMPACT_LAYOUT: MemoryLayout = { pairs: MEMORY_PAIRS_COMPACT, cols: 4 };
 export const WIDE_LAYOUT: MemoryLayout = { pairs: MEMORY_PAIRS, cols: 7 };
 
-/**
- * ТЕЛЕФОН — МЕНШИЙ БІК ЕКРАНА ВУЖЧИЙ ЗА 560px, у будь-якому положенні. Доти
- * рахувалася лише ширина, і телефон боком (844×390) діставав повну колоду на сім
- * колонок — чотири ряди в екран заввишки 390px не влазили.
- *
- * Викликати можна лише в браузері: `matchMedia` під час prerender не існує.
- */
-export function isCompactScreen(): boolean {
-	return window.matchMedia('(max-width: 559px), (max-height: 559px)').matches;
-}
+/** Телефон — менший бік екрана вужчий за 560px (`utils/screen.ts`). */
+export { isCompactScreen } from '$lib/utils/screen';
 
 /**
  * Розкладка КІМНАТИ «Знайди пару»: одна сітка на всіх, і телефон — її мірило

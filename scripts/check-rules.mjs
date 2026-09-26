@@ -1777,6 +1777,20 @@ const CASES = [
 			write(`rooms/${CODE}/members/${host.uid}`, { ...member, avatar: 'dog:red' }, guest.token)
 	},
 	{
+		// МАЛИЙ ЕКРАН — поле названо (інакше `$other: false` відкинув би вхід цілком), і
+		// воно лише булеве: будь-що інше — чужа рука або зламаний клієнт.
+		name: 'позначка малого екрана в своєму рядку складу',
+		allowed: true,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, compact: true }, guest.token)
+	},
+	{
+		name: 'позначка малого екрана — не булеве',
+		allowed: false,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, compact: 'yes' }, guest.token)
+	},
+	{
 		name: 'імʼя довше за 48 символів',
 		allowed: false,
 		run: () =>

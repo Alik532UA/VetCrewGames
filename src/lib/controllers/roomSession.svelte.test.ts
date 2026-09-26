@@ -696,6 +696,26 @@ describe('склад партії', () => {
 		expect(session.match?.seed).toBe(2234);
 	});
 
+	/**
+	 * СІТКУ ВИБИРАЄ СТАРТ — з учасників і присутності (рішення автора 2026-09-26:
+	 * найменший екран серед присутніх), і тим самим записом, що й статус.
+	 *
+	 * Зворотний експеримент: не передати `startConfig` у `setStatus` — червоніє.
+	 */
+	it('старт пише розкладку, яку дає гра, і партія роздана в ній', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const game = { ...pairsGame, startConfig: () => ({ pairs: 2, cols: 2 }) };
+		const { session } = sessionFor(room, null, HOST, game);
+		await session.enter('create');
+		await settle();
+
+		await session.start();
+		await settle();
+
+		expect(session.match?.game.cols).toBe(2);
+		expect(session.match?.game.slots).toHaveLength(4);
+	});
+
 	it('гра без обліку кімнати — реванш із новим зерном', async () => {
 		const room = new LocalRoom(roomInfo({ status: 'playing', seed: 1234 }), members());
 		const { session } = sessionFor(room, null, HOST);

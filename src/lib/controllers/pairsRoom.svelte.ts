@@ -63,6 +63,18 @@ export function pairsGame(
 			return { seed: Math.floor(random() * 2 ** 31), config: { pairs, cols } };
 		},
 		createMatch: (me, transport) => new PairsMatch(me, transport),
+		/*
+		 * ОДНА СІТКА НА ВСІХ, І МІРИЛО — НАЙМЕНШИЙ ЕКРАН (рішення автора 2026-09-26):
+		 * є серед присутніх хоч один телефон — розкладка телефонна для всіх. Доти
+		 * сітку раз вибирав екран того, хто створив кімнату, і гість із телефона
+		 * діставав сім колонок карток по 50px. Глядачі рахуються теж: вони так само
+		 * дивляться на дошку. Присутності ще немає — рахуються всі учасники.
+		 */
+		startConfig: (members, online) => {
+			const here = online.length > 0 ? members.filter((m) => online.includes(m.uid)) : members;
+			const { pairs, cols } = roomLayoutFor(here.some((member) => member.compact === true));
+			return { pairs, cols };
+		},
 		listen: async (code) => [await beam.listen(code)],
 		award: (match) => {
 			if (match.iAmSpectator) return;

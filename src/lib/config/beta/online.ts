@@ -201,6 +201,21 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'awaited-room-leave-btn'
+		},
+		{
+			/*
+			 * СІТКУ ВИБИРАЄ НАЙМЕНШИЙ ЕКРАН (рішення автора 2026-09-26). Правило вибору й
+			 * запис одним рядком доводять юніт-тести й контракт над емулятором; руками —
+			 * справжні два пристрої.
+			 */
+			id: 'online_19',
+			category: { uk: 'Дошка', en: 'The board' },
+			text: {
+				uk: 'Створіть кімнату з компʼютера, а зайдіть у неї з телефона. Після старту в ОБОХ дошка мусить бути телефонна — чотири колонки й пʼять рядів, — і на телефоні всі картки видно без прокрутки. Кімната лише з компʼютерів — сім колонок.',
+				en: 'Create a room on a computer and join it from a phone. After the start BOTH must get the phone board — four columns and five rows — and on the phone every card is visible without scrolling. A room of computers only gets seven columns.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-deck-container'
 		}
 	]
 };

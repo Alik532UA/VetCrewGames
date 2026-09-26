@@ -397,8 +397,9 @@ export class RoomSession<M extends RoomMatch> {
 			return;
 		}
 		// Склад заморожується тим самим записом, що й старт (`RoomInfo.roster`).
+		const config = this.game.startConfig?.(match.members, this.online);
 		const started = await this.hostAction((transport) =>
-			transport.setStatus('playing', rosterOf(this.presentPlayers))
+			transport.setStatus('playing', rosterOf(this.presentPlayers), config)
 		);
 		if (!started) {
 			if (auto) this.autoHalted = true;
@@ -438,7 +439,8 @@ export class RoomSession<M extends RoomMatch> {
 		await this.hostAction((transport) =>
 			transport.restart(
 				(this.match && this.game.rematchSeed?.(this.match)) ?? this.game.newRoom().seed,
-				rosterOf(this.presentPlayers)
+				rosterOf(this.presentPlayers),
+				this.game.startConfig?.(this.match?.members ?? [], this.online)
 			)
 		);
 	};

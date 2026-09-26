@@ -57,6 +57,12 @@ export interface RoomGame<M extends RoomMatch> {
 	 * повторювалися до вичерпання пулу. Немає — реванш бере нове зерно `newRoom`.
 	 */
 	rematchSeed?(match: M): number;
+	/**
+	 * Налаштування, які старт (і реванш) пише ТИМ САМИМ записом: «Знайди пару»
+	 * вибирає тут спільну сітку за найменшим екраном серед присутніх (рішення
+	 * автора 2026-09-26). Немає — налаштування кімнати лишаються як є.
+	 */
+	startConfig?(members: readonly Member[], online: readonly string[]): Record<string, number>;
 	createMatch(me: string, transport: RoomTransport): M;
 	/**
 	 * Що кладе в запис переліку понад спільне (набір ігор вікторини) — З КІМНАТИ,

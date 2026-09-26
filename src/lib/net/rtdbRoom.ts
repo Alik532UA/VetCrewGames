@@ -4,6 +4,7 @@ import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
 import { infoFromDb, moveKey, rosterToRecord, snapshotFromDb } from './roomShape';
+import { isCompactScreen } from '$lib/utils/screen';
 
 /**
  * Кімната в Realtime Database — та сама, що `LocalRoom`, тільки справжня.
@@ -234,7 +235,8 @@ export async function createRoom(options: NewRoom): Promise<string> {
 				// Поле або є, або його немає зовсім: `undefined` у `set()` кидає, а
 				// порожній рядок не пройшов би `.validate` (рівно дві літери).
 				...(options.country ? { country: options.country } : {}),
-				...(options.avatar ? { avatar: options.avatar } : {})
+				...(options.avatar ? { avatar: options.avatar } : {}),
+				...(isCompactScreen() ? { compact: true } : {})
 			});
 
 			// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
@@ -307,7 +309,10 @@ export async function joinRoom(
 		 * Те саме й аватар: він теж підпис, і теж міняється між заходами.
 		 */
 		...(country ? { country } : {}),
-		...(avatar ? { avatar } : {})
+		...(avatar ? { avatar } : {}),
+		// Малий екран — теж підпис пристрою, і теж переписується на кожному вході:
+		// за ним старт «Знайди пару» вибирає спільну сітку (`Member.compact`).
+		...(isCompactScreen() ? { compact: true } : {})
 	});
 
 	/*
@@ -460,7 +465,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			}
 		},
 
-		async setStatus(status, roster) {
+		async setStatus(status, roster, config) {
 			/*
 			 * Початок партії — це ДВА поля й ОДИН запис.
 			 *
@@ -481,7 +486,9 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 					status,
 					startedAt: serverTimestamp(),
 					countdownAt: null,
-					...(roster ? { roster: rosterToRecord(roster) } : {})
+					...(roster ? { roster: rosterToRecord(roster) } : {}),
+					// Розкладка, яку вибрав старт, — тим самим записом, що й роздача.
+					...(config ? { config } : {})
 				});
 				return;
 			}
@@ -542,7 +549,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 			await set(ref(db, `rooms/${code}/info/countdownAt`), active ? serverTimestamp() : null);
 		},
 
-		async restart(seed, roster) {
+		async restart(seed, roster, config) {
 			/*
 			 * `update` кількома шляхами — саме щоб проміжку не було.
 			 *
@@ -573,6 +580,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				// доти кнопка «перейти» висіла й над новою партією (аудит 2026-09-26).
 				'info/nextCode': null,
 				'info/roster': rosterToRecord(roster),
+				...(config ? { 'info/config': config } : {}),
 				moves: null
 			});
 		}

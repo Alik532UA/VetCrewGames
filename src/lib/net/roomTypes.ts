@@ -57,6 +57,12 @@ export interface Member {
 	 */
 	avatar?: string;
 	/**
+	 * МАЛИЙ ЕКРАН (телефон, `utils/screen.ts`). Сітку «Знайди пару» на старті
+	 * вибирає найменший екран серед присутніх (рішення автора 2026-09-26): є хоч
+	 * один телефон — розкладка телефонна для всіх. Поля немає — екран не малий.
+	 */
+	compact?: boolean;
+	/**
 	 * Порядок входу. Черга ходів рахується З НЬОГО, а не з порядку, у якому
 	 * приїхали дані: два учасники могли б отримати склад у різній послідовності й
 	 * розійтися на тому, чий зараз хід.
@@ -299,7 +305,12 @@ export interface RoomTransport {
 	 * самої причини: партія, що вже йде без складу, роздавала б дошку за тими, хто
 	 * встиг зайти чи вийти в проміжку.
 	 */
-	setStatus(status: RoomStatus, roster?: readonly RosterEntry[]): Promise<void>;
+	setStatus(
+		status: RoomStatus,
+		roster?: readonly RosterEntry[],
+		/** Налаштування партії тим самим записом — розкладка, яку вибрав старт. */
+		config?: Record<string, number>
+	): Promise<void>;
 	/**
 	 * Нова партія в ТІЙ САМІЙ кімнаті: нове зерно, порожній журнал і новий
 	 * `startedAt` серверним часом (статус — `playing`, відліку немає).
@@ -315,7 +326,11 @@ export interface RoomTransport {
 	 * `roster` — новий заморожений склад: реванш грають ті, хто в кімнаті ЗАРАЗ,
 	 * а не ті, хто починав попередню партію.
 	 */
-	restart(seed: number, roster: readonly RosterEntry[]): Promise<void>;
+	restart(
+		seed: number,
+		roster: readonly RosterEntry[],
+		config?: Record<string, number>
+	): Promise<void>;
 	/**
 	 * Увімкнути або скасувати відлік до автоматичного старту.
 	 *
