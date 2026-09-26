@@ -43,7 +43,20 @@ const STAMP_LENGTH = 12;
 /**
  * З ЧОГО РАХУЄТЬСЯ ПАРТІЯ — модулі, які з того самого журналу мусять дати той
  * самий стан на кожному клієнті, і рішення, які пишуть у журнал.
+ *
+ * І ДАНІ, З ЯКИХ РОЗДАЄТЬСЯ (шостий аудит, A2): пули питань, колода карток,
+ * генератор випадкових чисел, конверт кімнати й сам матч. Доти штамп бачив лише
+ * код перепрогону: нова тварина в `population-game` роздавала з того самого зерна
+ * іншу дошку, а версія лишалася та сама. Замкненість переліку стереже
+ * `replay-stamp.test.ts`: кожен імпорт модуля звідси — або тут, або в `NOT_REPLAY`.
  */
+const SHARED = [
+	'src/lib/utils/roster.ts',
+	'src/lib/utils/seededRandom.ts',
+	'src/lib/utils/roomEnvelope.ts',
+	'src/lib/controllers/roomEnvelopeState.svelte.ts',
+	'src/lib/config/population-game.ts'
+];
 export const GAMES = {
 	quiz: {
 		constant: 'QUIZ_RULES_VERSION',
@@ -53,10 +66,16 @@ export const GAMES = {
 			'src/lib/utils/quizScore.ts',
 			'src/lib/utils/quizHold.ts',
 			'src/lib/utils/awayWait.ts',
-			'src/lib/utils/roster.ts',
 			'src/lib/config/quizOnline.ts',
 			// Розклад раундів і вибір питань — колода кімнати (прохання автора 2026-09-26).
-			'src/lib/config/quizDeck.ts'
+			'src/lib/config/quizDeck.ts',
+			// Межа раунду для рахунку (`limitOf`) і склад партії складає матч.
+			'src/lib/controllers/quizMatch.svelte.ts',
+			'src/lib/config/myth-game.ts',
+			'src/lib/config/feeding-game.ts',
+			'src/lib/config/habitat-game.ts',
+			'src/lib/config/family-game.ts',
+			...SHARED
 		]
 	},
 	pairs: {
@@ -65,9 +84,25 @@ export const GAMES = {
 			'src/lib/controllers/pairsMatch.svelte.ts',
 			'src/lib/controllers/turnLimit.ts',
 			'src/lib/controllers/memoryGame.svelte.ts',
-			'src/lib/utils/roster.ts'
+			// Колода й розкладка кімнати (`buildDeck`, `roomLayoutOf`).
+			'src/lib/config/memory-game.ts',
+			...SHARED
 		]
 	}
+};
+
+/**
+ * ЩО МОДУЛІ ПЕРЕПРОГОНУ ІМПОРТУЮТЬ, АЛЕ НЕ ПЕРЕПРОГОН — із причиною. Новий імпорт
+ * без запису тут і без місця в `GAMES` червонить `replay-stamp.test.ts`.
+ */
+export const NOT_REPLAY = {
+	'src/lib/utils/journalSeq.ts': 'номер для НОВОГО запису, а не перепрогін записаного',
+	'src/lib/controllers/takeLead.ts': 'спроба підхопити ведення — запис, а не перепрогін',
+	'src/lib/services/logService.svelte.ts': 'журнал подій',
+	'src/lib/services/playerData.svelte.ts': 'соло-рахунок гравця на пристрої',
+	'src/lib/config/menu-games.ts': 'ідентифікатори соло-ігор',
+	'src/lib/utils/screen.ts': 'розкладка соло за екраном; кімнатну задає `config` кімнати',
+	'src/lib/utils/roomAvatars.ts': 'плитки біля імен, а не стан партії'
 };
 
 /**
