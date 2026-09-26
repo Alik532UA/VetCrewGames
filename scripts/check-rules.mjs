@@ -140,6 +140,12 @@ const stranger = await signIn('сторонній');
 
 /** Кімната з правильною формою `info`. Одна на весь прогін. */
 const CODE = '90417';
+/**
+ * Окрема ПУБЛІЧНА кімната в лобі — для переліку. Перелік тепер приймає лише таку
+ * (аудит 2026-09-25), а головна кімната гейту на той момент уже в партії, і
+ * господаря в її складі ще немає.
+ */
+const LIST = '90430';
 const info = (hostUid) => ({
 	gameId: 'pairs',
 	rulesVersion: 2,
@@ -1038,6 +1044,26 @@ const CASES = [
 		run: () => readQuery('lobby/pairs', 'orderBy=%22at%22&limitToLast=21', guest.token)
 	},
 	{
+		// Публічна кімната в лобі, де господар — учасник під тим самим імʼям, що в
+		// записі переліку: рівно те, що робить `createRoom` із публічністю.
+		name: 'господар створює публічну кімнату для переліку',
+		allowed: true,
+		run: async () => {
+			const created = await write(
+				`rooms/${LIST}/info`,
+				{ ...info(host.uid), listed: true },
+				host.token
+			);
+			return created === 200
+				? write(
+						`rooms/${LIST}/members/${host.uid}`,
+						{ ...member, name: lobbyEntry(host.uid).hostName, order: 1 },
+						host.token
+					)
+				: created;
+		}
+	},
+	{
 		/*
 		 * ВИПАДОК, ЯКИЙ ЗЛОВИВ БИ СПРАВЖНІЙ ДЕФЕКТ, і його тут не було.
 		 *
@@ -1055,12 +1081,43 @@ const CASES = [
 		 */
 		name: 'господар знімає ЩЕ НЕІСНУЮЧИЙ запис (як onDisconnect при реєстрації)',
 		allowed: true,
-		run: () => write(`lobby/pairs/${CODE}`, null, host.token)
+		run: () => write(`lobby/pairs/${LIST}`, null, host.token)
 	},
 	{
 		name: 'господар публікує СВОЮ кімнату в переліку',
 		allowed: true,
-		run: () => write(`lobby/pairs/${CODE}`, lobbyEntry(host.uid), host.token)
+		run: () => write(`lobby/pairs/${LIST}`, lobbyEntry(host.uid), host.token)
+	},
+	/*
+	 * ПЕРЕЛІК — ЛИШЕ ДЛЯ КІМНАТИ В ЛОБІ, ПУБЛІЧНОЇ, І ПІД ІМʼЯМ ІЗ СКЛАДУ (аудит
+	 * 2026-09-25). Кожен випадок нижче міняє рівно одну умову, а решту лишає
+	 * правильною, і повертає кімнату назад.
+	 */
+	{
+		name: 'запис у переліку з ЧУЖИМ іменем господаря',
+		allowed: false,
+		run: () =>
+			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), hostName: 'Хтось Інший' }, host.token)
+	},
+	{
+		name: 'запис у переліку для кімнати, що вже грає',
+		allowed: false,
+		run: async () => {
+			await write(`rooms/${LIST}/info/status`, 'playing', host.token);
+			const status = await write(`lobby/pairs/${LIST}`, lobbyEntry(host.uid), host.token);
+			await write(`rooms/${LIST}/info/status`, 'lobby', host.token);
+			return status;
+		}
+	},
+	{
+		name: 'запис у переліку для кімнати «лише друзі»',
+		allowed: false,
+		run: async () => {
+			await write(`rooms/${LIST}/info/listed`, false, host.token);
+			const status = await write(`lobby/pairs/${LIST}`, lobbyEntry(host.uid), host.token);
+			await write(`rooms/${LIST}/info/listed`, true, host.token);
+			return status;
+		}
 	},
 
 	{
@@ -1074,14 +1131,14 @@ const CASES = [
 		 */
 		name: 'кімнату не оголосити в переліку ЧУЖОЇ гри',
 		allowed: false,
-		run: () => write(`lobby/quiz/${CODE}`, lobbyEntry(host.uid), host.token)
+		run: () => write(`lobby/quiz/${LIST}`, lobbyEntry(host.uid), host.token)
 	},
 	{
 		// Кількість гравців веде господар: він єдиний, хто бачить склад і має
 		// право писати сюди.
 		name: 'господар оновлює кількість гравців у переліку',
 		allowed: true,
-		run: () => write(`lobby/pairs/${CODE}/players`, 2, host.token)
+		run: () => write(`lobby/pairs/${LIST}/players`, 2, host.token)
 	},
 	{
 		// Аватар господаря в переліку. Дозвіл доводить, що поле НАЗВАНЕ: без
@@ -1089,13 +1146,13 @@ const CASES = [
 		name: 'аватар господаря в переліку кімнат',
 		allowed: true,
 		run: () =>
-			write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'star:teal' }, host.token)
+			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), hostAvatar: 'star:teal' }, host.token)
 	},
 	{
 		name: 'аватар господаря без двокрапки',
 		allowed: false,
 		run: () =>
-			write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
+			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
 	},
 	{
 		/*
@@ -1110,7 +1167,7 @@ const CASES = [
 		allowed: true,
 		run: () =>
 			write(
-				`lobby/pairs/${CODE}`,
+				`lobby/pairs/${LIST}`,
 				{ ...lobbyEntry(host.uid), games: { game_myths: 1, game_feeding: 0 } },
 				host.token
 			)
@@ -1120,19 +1177,19 @@ const CASES = [
 		// (`updateGames` у `net/lobby.ts`).
 		name: 'господар оновлює набір ігор у переліку',
 		allowed: true,
-		run: () => write(`lobby/pairs/${CODE}/games`, { game_myths: 1 }, host.token)
+		run: () => write(`lobby/pairs/${LIST}/games`, { game_myths: 1 }, host.token)
 	},
 	{
 		name: 'гість міняє набір ігор у чужому записі переліку',
 		allowed: false,
-		run: () => write(`lobby/pairs/${CODE}/games`, { game_feeding: 1 }, guest.token)
+		run: () => write(`lobby/pairs/${LIST}/games`, { game_feeding: 1 }, guest.token)
 	},
 	{
 		name: 'прапорець гри рядком',
 		allowed: false,
 		run: () =>
 			write(
-				`lobby/pairs/${CODE}`,
+				`lobby/pairs/${LIST}`,
 				{ ...lobbyEntry(host.uid), games: { game_myths: 'yes' } },
 				host.token
 			)
@@ -1143,7 +1200,7 @@ const CASES = [
 		name: 'ключ гри, якої немає',
 		allowed: false,
 		run: () =>
-			write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), games: { game_hack: 1 } }, host.token)
+			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), games: { game_hack: 1 } }, host.token)
 	},
 
 	// --- сторонній не мусить цього могти ---
@@ -1445,7 +1502,7 @@ const CASES = [
 		// хтось інший. Без цього будь-хто відкривав би чужий код усьому світові.
 		name: 'ЧУЖУ кімнату оголошують публічною',
 		allowed: false,
-		run: () => write(`lobby/pairs/${CODE}`, lobbyEntry(guest.uid), guest.token)
+		run: () => write(`lobby/pairs/${LIST}`, lobbyEntry(guest.uid), guest.token)
 	},
 	{
 		// Запис, що не відповідає жодній кімнаті, — це привид у списку.
@@ -1456,24 +1513,33 @@ const CASES = [
 	{
 		name: 'чужий запис у переліку прибирають',
 		allowed: false,
-		run: () => write(`lobby/pairs/${CODE}`, null, guest.token)
+		run: () => write(`lobby/pairs/${LIST}`, null, guest.token)
 	},
 	{
 		// `seed` і `config` визначають роздачу: побачити їх, не заходячи в кімнату,
 		// означало б бачити дошку суперника до першого ходу.
 		name: 'у перелік кладуть зерно роздачі',
 		allowed: false,
-		run: () => write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), seed: 12345 }, host.token)
+		run: () => write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), seed: 12345 }, host.token)
 	},
 	{
 		name: 'запис у переліку з клієнтським часом',
 		allowed: false,
-		run: () => write(`lobby/pairs/${CODE}`, { ...lobbyEntry(host.uid), at: 1000 }, host.token)
+		run: () => write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), at: 1000 }, host.token)
 	},
 	{
 		name: 'запис у переліку без обовʼязкових полів',
 		allowed: false,
-		run: () => write(`lobby/pairs/${CODE}`, { hostUid: host.uid }, host.token)
+		run: () => write(`lobby/pairs/${LIST}`, { hostUid: host.uid }, host.token)
+	},
+	{
+		// Кімната переліку більше не потрібна: знести цілком, разом із записом.
+		name: 'господар зносить кімнату переліку й знімає запис',
+		allowed: true,
+		run: async () => {
+			const unlisted = await write(`lobby/pairs/${LIST}`, null, host.token);
+			return unlisted === 200 ? write(`rooms/${LIST}`, null, host.token) : unlisted;
+		}
 	},
 	{
 		// Якби пускало будь-який штамп, зонд завжди казав би «викладено» — тобто

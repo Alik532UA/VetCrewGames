@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '9e974af03c69'" }
+      "$v": { ".read": "auth != null && $v === '26f649f39c17'" }
     },
 
     "rooms": {
@@ -963,7 +963,11 @@
          * відтворює саму перевірку прав («видалити ще неіснуючий запис»), тепер
          * стоїть у `scripts/check-rules.mjs`.
          */
-        ".write": "auth != null && (!newData.exists() ? (data.child('hostUid').val() === auth.uid || root.child('rooms').child($code).child('info/hostUid').val() === auth.uid) : (newData.child('hostUid').val() === auth.uid && root.child('rooms').child($code).child('info/hostUid').val() === auth.uid))",
+        // ОГОЛОСИТИ — ЛИШЕ КІМНАТУ В ЛОБІ, ЯКУ ГОСПОДАР ЗРОБИВ ПУБЛІЧНОЮ (аудит 2026-09-25).
+        // Доти перелік приймав запис для кімнати в будь-якому стані й будь-якої
+        // публічності: партії, що вже йдуть, і «лише друзі» стояли в списку й у
+        // «швидкій грі», а скрипт засмічував перелік кімнатами, у які не зайти.
+        ".write": "auth != null && (!newData.exists() ? (data.child('hostUid').val() === auth.uid || root.child('rooms').child($code).child('info/hostUid').val() === auth.uid) : (newData.child('hostUid').val() === auth.uid && root.child('rooms').child($code).child('info/hostUid').val() === auth.uid && root.child('rooms').child($code).child('info/status').val() === 'lobby' && root.child('rooms').child($code).child('info/listed').val() === true))",
         ".validate": "newData.hasChildren(['hostUid', 'hostName', 'gameId', 'rulesVersion', 'players', 'at'])",
         "hostUid": { ".validate": "newData.isString() && newData.val().length <= 128" },
         // Та сама межа, що в `members/$uid/name`: імʼя тут те саме, і розходження
@@ -971,7 +975,10 @@
         // Та сама межа, що в `members/{uid}/name`, і з тієї самої причини: сюди
         // потрапляє те саме імʼя господаря. Розійшовшись, ці два числа дали б
         // кімнату, у яку можна зайти, але яку не можна оголосити.
-        "hostName": { ".validate": "newData.isString() && newData.val().length <= 48" },
+        // Імʼя господаря — ТЕ, ПІД ЯКИМ ВІН У КІМНАТІ, а не вільний рядок (аудит
+        // 2026-09-25): доти перелік, який бачить кожен відвідувач, можна було
+        // підписати будь-чим до 48 знаків — образою чи адресою.
+        "hostName": { ".validate": "newData.isString() && newData.val().length <= 48 && newData.val() === root.child('rooms').child($code).child('members').child(auth.uid).child('name').val()" },
         // Прапор господаря в переліку кімнат. Та сама межа, що в складі, і з тієї
         // самої причини: це той самий код країни того самого гравця.
         "hostCountry": {
