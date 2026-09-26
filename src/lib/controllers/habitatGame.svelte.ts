@@ -92,7 +92,7 @@ export class HabitatGameController {
 	#random: () => number;
 
 	/**
-	 * ПИТАННЯ З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `config/quizDeck.ts`) — для першого питання партії.
+	 * ПИТАННЯ З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `utils/quizDeck.ts`) — для першого питання партії.
 	 * Немає або невідоме цим даним (інша збірка) — вибір із власного зерна, як доти.
 	 */
 	readonly #pick: string | undefined;

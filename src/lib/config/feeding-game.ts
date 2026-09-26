@@ -232,7 +232,7 @@ export function buildFeedingRound(set: FeedingSet): FeedingRound | null {
 	};
 }
 
-/** Набір за ідентифікатором — для колоди кімнати (`config/quizDeck.ts`). */
+/** Набір за ідентифікатором — для колоди кімнати (`utils/quizDeck.ts`). */
 export const feedingSetById = (id: string): FeedingSet | null =>
 	feedingSets.find((set) => set.id === id) ?? null;
 

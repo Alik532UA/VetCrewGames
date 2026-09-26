@@ -112,7 +112,7 @@ export class PopulationGameController {
 	readonly #seed: number | undefined;
 
 	/**
-	 * ТРІЙКА З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `config/quizDeck.ts`) — для розкладу раунду (онлайн раунд один).
+	 * ТРІЙКА З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `utils/quizDeck.ts`) — для розкладу раунду (онлайн раунд один).
 	 * Немає або невідоме цим даним (інша збірка) — вибір із власного зерна, як доти.
 	 */
 	readonly #pick: string | undefined;

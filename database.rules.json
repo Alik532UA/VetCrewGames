@@ -163,7 +163,7 @@
           // І В МЕЖАХ (аудит 2026-09-26, шостий): програма вікторини рахується перепрогоном
           // усіх попередніх партій кімнати, тобто циклом до ⌊зерно / 2³¹⌋ — і кімната із
           // зерном 1e300 вішала вкладку кожного, хто заходив. Стеля — 1024 партії
-          // (`MAX_ROOM_SEED` у `config/quizDeck.ts`, звіряє `cloud-database.test.ts`).
+          // (`MAX_ROOM_SEED` у `utils/quizDeck.ts`, звіряє `cloud-database.test.ts`).
           "seed": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 2199023255552 && (!data.exists() || newData.val() === data.val() || data.parent().child('status').val() === 'lobby' || !newData.parent().parent().child('moves').exists())" },
           // Версія правил гри — та, під якою кімнату створено; інша версія в неї не
           // пускає (`utils/roomEntry.ts`), тож переписати її означало б вигнати всіх.

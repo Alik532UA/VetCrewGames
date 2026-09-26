@@ -1,10 +1,10 @@
-import { myths } from './myth-game';
-import { feedingSets } from './feeding-game';
-import { habitatEntries } from './habitat-game';
-import { familyPuzzles } from './family-game';
-import { animals } from './population-game';
-import { seededRandom, shuffle } from '$lib/utils/seededRandom';
-import { fnv1a } from '$lib/utils/fnv';
+import { myths } from '$lib/config/myth-game';
+import { feedingSets } from '$lib/config/feeding-game';
+import { habitatEntries } from '$lib/config/habitat-game';
+import { familyPuzzles } from '$lib/config/family-game';
+import { animals } from '$lib/config/population-game';
+import { seededRandom, shuffle } from './seededRandom';
+import { fnv1a } from './fnv';
 
 /**
  * КОЛОДА КІМНАТИ: ПИТАННЯ ВІКТОРИНИ БЕЗ ПОВТОРІВ (прохання автора 2026-09-26).

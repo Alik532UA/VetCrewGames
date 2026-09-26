@@ -2,7 +2,7 @@ import { playerData } from '$lib/services/playerData.svelte';
 import { logService } from '$lib/services/logService.svelte';
 import { awayStamps, settledPresence, waitView, type WaitView } from '$lib/utils/awayWait';
 import { ONLINE_GAMES, gamesToConfig, roomFitsGames } from '$lib/config/quizOnline';
-import { nextGameSeed } from '$lib/config/quizDeck';
+import { nextGameSeed } from '$lib/utils/quizDeck';
 import { QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { QuizMatch } from './quizMatch.svelte';
 import type { RoomGame } from './roomGame';
@@ -92,7 +92,7 @@ export class QuizRoomState {
 				config: gamesToConfig(this.picked)
 			}),
 			// Реванш — наступна партія ТІЄЇ САМОЇ колоди: питання кімнати не повторюються,
-			// доки не поставлено всі (`config/quizDeck.ts`, прохання автора 2026-09-26).
+			// доки не поставлено всі (`utils/quizDeck.ts`, прохання автора 2026-09-26).
 			rematchSeed: (match) => nextGameSeed(match.seed),
 			createMatch: (me, transport) => {
 				// Нова кімната — новий відлік: позначки відсутності СТАРОЇ кімнати тут нічого не

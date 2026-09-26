@@ -1,5 +1,5 @@
 import { habitatModeOf, type QuizStep } from '$lib/config/quizOnline';
-import { POPULATION_TRIO } from '$lib/config/quizDeck';
+import { POPULATION_TRIO } from '$lib/utils/quizDeck';
 import { FamilyGameController } from './familyGame.svelte';
 import { FeedingGameController } from './feedingGame.svelte';
 import { HabitatGameController } from './habitatGame.svelte';

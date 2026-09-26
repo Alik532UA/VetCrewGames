@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
 import { MOVE_SEQ_MAX } from '$lib/net/roomShape';
-import { MAX_ROOM_SEED } from '$lib/config/quizDeck';
+import { MAX_ROOM_SEED } from '$lib/utils/quizDeck';
 import { MEMORY_PAIRS, ROOM_COLS_MAX, ROOM_PAIRS_MIN } from '$lib/config/memory-game';
 import { GAME_ID } from '$lib/config/menu-games';
 

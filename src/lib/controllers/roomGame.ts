@@ -43,7 +43,7 @@ export interface RoomGame<M extends RoomMatch> {
 	newRoom(): { seed: number; config: Record<string, number> };
 	/**
 	 * Зерно РЕВАНШУ, коли гра веде облік кімнати між партіями: вікторина кладе номер
-	 * партії в старші розряди зерна (`config/quizDeck.ts`), щоб питання не
+	 * партії в старші розряди зерна (`utils/quizDeck.ts`), щоб питання не
 	 * повторювалися до вичерпання пулу. Немає — реванш бере нове зерно `newRoom`.
 	 */
 	rematchSeed?(match: M): number;

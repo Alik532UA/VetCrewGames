@@ -192,7 +192,7 @@ export function buildHabitatRound(entry: HabitatEntry, mode: HabitatMode): Habit
 	};
 }
 
-/** Запис за твариною — для колоди кімнати (`config/quizDeck.ts`). */
+/** Запис за твариною — для колоди кімнати (`utils/quizDeck.ts`). */
 export const habitatEntryById = (id: string): HabitatEntry | null =>
 	habitatEntries.find((entry) => entry.animalId === id) ?? null;
 

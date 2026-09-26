@@ -131,7 +131,7 @@ export function buildRound(puzzle: FamilyPuzzle, random: () => number): FamilyRo
 	};
 }
 
-/** Загадка за ідентифікатором — для колоди кімнати (`config/quizDeck.ts`). */
+/** Загадка за ідентифікатором — для колоди кімнати (`utils/quizDeck.ts`). */
 export const puzzleById = (id: string): FamilyPuzzle | null =>
 	familyPuzzles.find((puzzle) => puzzle.id === id) ?? null;
 

@@ -12,7 +12,7 @@ import {
 	poolOf,
 	type PlannedStep
 } from './quizDeck';
-import { ONLINE_GAMES, QUIZ_ROUNDS } from './quizOnline';
+import { ONLINE_GAMES, QUIZ_ROUNDS } from '$lib/config/quizOnline';
 
 /**
  * КОЛОДА КІМНАТИ: БЕЗ ПОВТОРІВ У ПАРТІЇ Й МІЖ ПАРТІЯМИ (прохання автора 2026-09-26).
