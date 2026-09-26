@@ -1,3 +1,4 @@
+import { ROOM_BEAT_MS } from '$lib/config/roomLife';
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 
@@ -39,13 +40,28 @@ export async function trackPresence(code: string): Promise<() => void> {
 	kept.ready.catch((error: unknown) =>
 		logService.warn('network', 'presence not registered', { code, reason: String(error) })
 	);
-	return kept.stop;
+	/*
+	 * СВІЖИЙ `at` ЗА РОЗКЛАДОМ СЕРЦЕБИТТЯ (аудит 2026-09-25). Доти він писався раз на
+	 * зʼєднання, і прибиральник, що стирає присутність, старшу за шість годин, стирав
+	 * живу — у господаря, який просто довго сидить на звʼязку. Лише поле `at`, а не
+	 * весь вузол: `set` усього вузла стирав би підсвітку наведення в «Знайди пару».
+	 */
+	const beat = setInterval(() => kept.touch('at', serverTimestamp()), ROOM_BEAT_MS);
+	return () => {
+		clearInterval(beat);
+		kept.stop();
+	};
 }
 
 /** Вузол, який `keepNode` тримає живим. */
 export interface KeptNode {
 	/** Перший запис: кидає, якщо база відмовила. Хто не чекає — нічого не втрачає. */
 	ready: Promise<void>;
+	/**
+	 * Оновити ОДНЕ поле живого вузла — лише коли він є й домовленість цього
+	 * зʼєднання вже стоїть: інакше частковий запис став би вузлом без прибирання.
+	 */
+	touch(field: string, value: unknown): void;
 	/** Перестати тримати й прибрати вузол. */
 	stop: () => void;
 }
@@ -92,7 +108,7 @@ export async function keepNode(
 	{ watch = true, refreshMs }: { watch?: boolean; refreshMs?: number } = {}
 ): Promise<KeptNode> {
 	const { db } = await connect();
-	const { off, onDisconnect, onValue, ref, remove, set } = await import('firebase/database');
+	const { child, off, onDisconnect, onValue, ref, remove, set } = await import('firebase/database');
 	const node = ref(db, path);
 	const status = ref(db, '.info/connected');
 
@@ -102,6 +118,8 @@ export async function keepNode(
 	let pending = false;
 	/** Номер зʼєднання: росте на кожне «на звʼязку». */
 	let epoch = 0;
+	/** Чи вузол зараз є — з власної підписки (лише коли `watch`). */
+	let exists = false;
 	/** Зʼєднання, у якому домовленість і запис уже зроблено; `-1` — ні в якому. */
 	let registered = -1;
 	let first: { resolve: () => void; reject: (error: unknown) => void } | null = null;
@@ -146,7 +164,8 @@ export async function keepNode(
 		? onValue(
 				node,
 				(snapshot) => {
-					if (snapshot.exists() || !online) return;
+					exists = snapshot.exists();
+					if (exists || !online) return;
 					registered = -1;
 					void register();
 				},
@@ -172,6 +191,12 @@ export async function keepNode(
 
 	return {
 		ready,
+		touch: (field, next) => {
+			if (stopped || !online || registered !== epoch || (watch && !exists)) return;
+			set(child(node, field), next).catch((error: unknown) =>
+				logService.warn('network', 'kept node not touched', { path, reason: String(error) })
+			);
+		},
 		stop: () => {
 			stopped = true;
 			if (refresh !== null) clearInterval(refresh);

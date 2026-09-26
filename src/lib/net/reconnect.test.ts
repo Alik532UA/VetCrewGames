@@ -46,6 +46,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 }));
 vi.mock('firebase/database', () => ({
 	ref,
+	child: (node: { path: string }, path: string) => ({ path: `${node.path}/${path}` }),
 	set: vi.fn(async (node: { path: string }, value: unknown) => {
 		ops.push({ op: 'set', path: node.path, value });
 		if (hang) await hang;
@@ -221,6 +222,53 @@ describe('присутність після обриву', () => {
 		await flush();
 
 		expect(ops).toEqual([]);
+	});
+
+	/**
+	 * СВІЖИЙ `at` ЗА РОЗКЛАДОМ (аудит 2026-09-25): доти він писався раз на зʼєднання,
+	 * і прибиральник стирав живу присутність того, хто довго сидить на звʼязку.
+	 * Лише поле — інакше зникала б підсвітка наведення; лише живого вузла — інакше
+	 * частковий запис лишився б без домовленості про прибирання.
+	 *
+	 * Зворотні експерименти: не ставити розкладу — червоніє перший; писати й без
+	 * вузла — другий.
+	 */
+	it('живий вузол оновлює лише свій `at` тим самим ритмом, що й серцебиття', async () => {
+		vi.useFakeTimers();
+		try {
+			const stop = await trackPresence('42');
+			await goOnline();
+			listeners.get(MINE)?.({ val: () => ({ at: 1 }), exists: () => true });
+			ops.length = 0;
+
+			await vi.advanceTimersByTimeAsync(ROOM_BEAT_MS);
+
+			expect(ops).toEqual([{ op: 'set', path: `${MINE}/at`, value: SERVER_TIME }]);
+			stop();
+			expect(vi.getTimerCount(), 'розклад знято разом із присутністю').toBe(0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('вузла немає — поле окремо не пишеться: без домовленості воно стало б привидом', async () => {
+		vi.useFakeTimers();
+		try {
+			const stop = await trackPresence('42');
+			await goOnline();
+			hang = new Promise(() => {}); // повторна реєстрація «висить»: вузла ще немає
+			vanish(MINE);
+			await flush();
+			ops.length = 0;
+
+			await vi.advanceTimersByTimeAsync(ROOM_BEAT_MS);
+
+			expect(ops.filter((op) => op.path === `${MINE}/at`)).toEqual([]);
+			stop();
+		} finally {
+			hang = null;
+			vi.useRealTimers();
+		}
 	});
 
 	it('стан звʼязку доходить до екрана', async () => {
