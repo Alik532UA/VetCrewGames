@@ -1850,6 +1850,26 @@ const CASES = [
 				guest.token
 			)
 	},
+	/*
+	 * ПЕРЕЇЗД ПІСЛЯ ПЕРЕХОПЛЕННЯ (аудит 2026-09-25): господар, що пішов створювати
+	 * кімнату іншої гри, ведення вже втратив — а сказати групі «перейти» мусить
+	 * саме він. Право — лише в того, чий uid стоїть у `from` ходу під `leadSeq`.
+	 */
+	{
+		name: 'колишній господар оголошує переїзд, коли ведення вже перехопили',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/info/nextCode`, 'cd', host.token)
+	},
+	{
+		name: 'сторонній, у кого ведення не забирали, переїзду не оголошує',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/nextCode`, 'cd', stranger.token)
+	},
+	{
+		name: 'колишній господар оголошує переїзд із задовгим кодом',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/nextCode`, 'abcdefghij', host.token)
+	},
 	{
 		name: 'колишній господар, якого немає на звʼязку, забирає ведення назад',
 		allowed: false,

@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '958fa4662270'" }
+      "$v": { ".read": "auth != null && $v === '0beda2de050a'" }
     },
 
     "rooms": {
@@ -182,7 +182,17 @@
           //
           // Межа вісім: коди тут дві-пʼять літер, тобто запас є, а поле не стає
           // місцем для довільного тексту.
-          "nextCode": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 8" },
+          //
+          // ОГОЛОСИТИ МОЖЕ Й ТОЙ, У КОГО ВЕДЕННЯ ЩОЙНО ПЕРЕХОПИЛИ (аудит 2026-09-25):
+          // господар, що натиснув «зіграти в іншу гру», зі старої кімнати ВИХОДИТЬ, і
+          // поки він заповнює форму нової, гість за межею терпіння підхоплює ведення.
+          // Доти запис коду після цього відкидався, група не бачила «перейти» й
+          // розходилася. Хто це — каже хід `lead`, на який указує `leadSeq`: його
+          // `from` і є попередній господар. Прав це не додає понад те, що в нього було.
+          "nextCode": {
+            ".write": "auth != null && data.parent().child('leadSeq').exists() && data.parent().parent().child('moves').child(data.parent().child('leadSeq').val()).child('payload/from').val() === auth.uid",
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 8"
+          },
           /*
            * СКЛАД ПАРТІЇ, ЗАМОРОЖЕНИЙ НА СТАРТІ (`RoomInfo.roster`).
            *

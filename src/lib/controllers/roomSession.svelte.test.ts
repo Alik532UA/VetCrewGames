@@ -26,7 +26,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 
 const { RoomSession } = await import('./roomSession.svelte');
 const { logService } = await import('$lib/services/logService.svelte');
-const { LEAD_AFTER_MS } = await import('./roomPolicies.svelte');
+const { LEAD_AFTER_MS, OVER_LEAD_AFTER_MS } = await import('./roomPolicies.svelte');
 const { PairsMatch } = await import('./pairsMatch.svelte');
 const { QuizMatch } = await import('./quizMatch.svelte');
 
@@ -401,6 +401,35 @@ describe('політики кімнати', () => {
 		flushSync();
 
 		expect(takeLead).not.toHaveBeenCalled();
+	});
+
+	/**
+	 * ДОГРАНА ПАРТІЯ — ТЕРПІННЯ ДОВШЕ (аудит 2026-09-25): господар, що пішов
+	 * створювати кімнату іншої гри, за двадцять секунд втрачав ведення.
+	 *
+	 * Зворотний експеримент: брати `LEAD_AFTER_MS` і для дограної — червоніє.
+	 */
+	it('у дограній партії ведення підхоплюють пізніше', async () => {
+		const started = roomInfo({ status: 'playing', roster: rosterOf(members()) });
+		const room = new LocalRoom(started, members());
+		const { session, setOnline } = sessionFor(room, started, GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		const takeLead = vi.spyOn(session.match!, 'takeLead').mockResolvedValue(true);
+		session.match!.endedBy = GUEST;
+		setOnline([GUEST]);
+		session.clock = 1_000_000;
+		flushSync();
+		expect(session.match!.over, 'перевірка жива: партію дограно').toBe(true);
+
+		session.clock = 1_000_000 + LEAD_AFTER_MS;
+		flushSync();
+		expect(takeLead, 'звичайна межа — ще рано').not.toHaveBeenCalled();
+
+		session.clock = 1_000_000 + OVER_LEAD_AFTER_MS;
+		flushSync();
+		expect(takeLead).toHaveBeenCalledTimes(1);
 	});
 
 	it('кімнату знесли — «кімнату закрито» й геть із неї', async () => {

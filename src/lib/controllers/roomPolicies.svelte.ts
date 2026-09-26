@@ -14,6 +14,14 @@ import type { RoomMatch, RoomSession } from './roomSession.svelte';
 export const LEAD_AFTER_MS = 20_000;
 
 /**
+ * Терпіння в ДОГРАНІЙ партії — утричі довше. Раундів, що стоять, там немає, а
+ * господар, який натиснув «зіграти в іншу гру», зі старої кімнати ВИХОДИТЬ і
+ * заповнює форму нової: за двадцять секунд ведення в нього забирали, і гості
+ * чули «тепер ведете ви», поки він просто створював кімнату (аудит 2026-09-25).
+ */
+export const OVER_LEAD_AFTER_MS = 3 * LEAD_AFTER_MS;
+
+/**
  * ПОЛІТИКИ КІМНАТИ — те, що сесія робить САМА, коли змінюється стан.
  *
  * Окремо від самої сесії, бо це інший рід коду: сесія — дії на прохання людини
@@ -195,9 +203,10 @@ function watchHost<M extends RoomMatch>(session: RoomSession<M>): void {
 		);
 		const rank = here.findIndex((player) => player.uid === session.me);
 		if (rank < 0 || taking || clock < retryAt) return;
-		if (clock - goneSince < LEAD_AFTER_MS * (rank + 1)) return;
+		const patience = match.over ? OVER_LEAD_AFTER_MS : LEAD_AFTER_MS;
+		if (clock - goneSince < patience * (rank + 1)) return;
 		taking = true;
-		retryAt = clock + LEAD_AFTER_MS;
+		retryAt = clock + patience;
 		void match
 			.takeLead()
 			.then((taken) => {
