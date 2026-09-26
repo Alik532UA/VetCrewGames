@@ -290,6 +290,28 @@ describe('свій рядок у переліку', () => {
 		expect(publishRoom).toHaveBeenCalledWith({ ...entry, gameId: GAME });
 	});
 
+	/**
+	 * «НАЗАД» ПОСЕРЕД ПЕРШОГО ЗАПИСУ (аудит 2026-09-25): доти `unpublish` не знімав
+	 * нічого, поки запис не ліг, і кімната-привид жила в переліку до кінця вкладки.
+	 *
+	 * Зворотний експеримент: прибрати `#epoch` — червоніє.
+	 */
+	it('знятий посеред першого запису — знімається, щойно запис ліг', async () => {
+		let land!: (stop: () => void) => void;
+		publishRoom.mockReturnValueOnce(new Promise((resolve) => (land = resolve)));
+		const feed = new LobbyFeed(GAME);
+
+		const published = feed.publish(entry);
+		feed.unpublish();
+		await vi.waitFor(() => expect(land).toBeTypeOf('function'));
+		land(unlist);
+		await published;
+
+		expect(unlist).toHaveBeenCalledTimes(1);
+		feed.unpublish();
+		expect(unlist, 'знятий — другий раз нічого').toHaveBeenCalledTimes(1);
+	});
+
 	it('знімає рядок, і другий раз нічого не робить', async () => {
 		const feed = new LobbyFeed(GAME);
 		await feed.publish(entry);

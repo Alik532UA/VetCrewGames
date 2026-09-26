@@ -145,11 +145,24 @@ export class LobbyFeed {
 	 * тобто ціна помилки — не битий список, а неможливість створити кімнату).
 	 */
 	#unlist: (() => void) | null = null;
+	/**
+	 * Номер публікації. `unpublish` посеред першого запису робить його застарілим —
+	 * доти «Назад», натиснуте раніше, ніж запис ліг, не знімало нічого: `#unlist` ще
+	 * був порожній, і кімната-привид лишалася в переліку й переоголошувалася на
+	 * кожному перепідключенні до кінця вкладки (аудит 2026-09-25).
+	 */
+	#epoch = 0;
 
 	/** Оголосити свою кімнату публічною. Кидає: без переліку кімната закрита. */
 	async publish(entry: Omit<LobbyRoom, 'at' | 'gameId'>): Promise<void> {
+		const epoch = ++this.#epoch;
+		// Попередній запис — чужа кімната: наступна публікація його не успадковує.
+		this.#unlist?.();
+		this.#unlist = null;
 		const list = await import('$lib/net/lobby');
-		this.#unlist = await list.publishRoom({ ...entry, gameId: this.#gameId });
+		const unlist = await list.publishRoom({ ...entry, gameId: this.#gameId });
+		if (epoch === this.#epoch) this.#unlist = unlist;
+		else unlist();
 	}
 
 	/**
@@ -177,8 +190,9 @@ export class LobbyFeed {
 		await list.updatePlayers(this.#gameId, code, players);
 	}
 
-	/** Зняти свою кімнату з переліку. Двічі — те саме, що раз. */
+	/** Зняти свою кімнату з переліку. Двічі — те саме, що раз; і посеред запису теж. */
 	unpublish(): void {
+		this.#epoch += 1;
 		this.#unlist?.();
 		this.#unlist = null;
 	}
