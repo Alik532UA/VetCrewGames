@@ -3,7 +3,8 @@
 	import { innerWidth } from 'svelte/reactivity/window';
 	import { flip } from 'svelte/animate';
 	import { cubicOut } from 'svelte/easing';
-	import { rankedByPhase } from '$lib/utils/revealOrder';
+	import { phaseScore, rankedByPhase } from '$lib/utils/revealOrder';
+	import { placesOf } from '$lib/utils/standings';
 	import { formatFont } from '$lib/i18n';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
@@ -211,6 +212,8 @@
 	 * бачить, що ті самі вузли змінили місця, і рухає їх плавно.
 	 */
 	const ranked = $derived(rankedByPhase(players, scores, gains, moved));
+	/** Рівні бали ділять місце: 1, 1, 3 (`utils/standings.ts`) — за рахунком тієї самої фази. */
+	const places = $derived(placesOf(players, phaseScore(scores, gains, moved)));
 </script>
 
 <section class="reveal text-panel" style:--reveal-unit="{unit}px" data-testid="quiz-reveal-panel">
@@ -232,7 +235,7 @@
 	<h2 class="reveal__title">{@html formatFont(text('quiz.nextRound'))}</h2>
 
 	<ul class="reveal__list">
-		{#each ranked as player, place (player.uid)}
+		{#each ranked as player (player.uid)}
 			<li
 				class="reveal__row"
 				class:player-away={away.includes(player.uid)}
@@ -244,7 +247,9 @@
 					гравець бачив би нове число на старому місці — тобто саме те
 					протиріччя, яке табло й мусить розв'язати.
 				-->
-				<b class="reveal__place">{place + 1}</b>
+				<b class="reveal__place" data-testid="quiz-reveal-{player.uid}-place-value">
+					{places[player.uid]}
+				</b>
 				<span class="reveal__who">
 					<Flag code={player.country} height={Math.max(14, Math.round(unit * 0.75))} />
 					<Avatar avatar={player.avatar} size={Math.max(22, Math.round(unit * 1.2))} />

@@ -3,6 +3,7 @@
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
+	import { placesOf, rankedBy } from '$lib/utils/standings';
 
 	/**
 	 * Спільне табло вікторини: хто на якому кроці й скільки набрав.
@@ -67,13 +68,12 @@
 	 * хтось відповів, — тобто показувало б те, що ми навмисно ховаємо. Тому в
 	 * раунді порядок за входом: стабільний і нічого не виказує.
 	 */
+	const byScore = (uid: string) => scores[uid] ?? 0;
 	const ranked = $derived(
-		withScores
-			? [...players].sort(
-					(a, b) => (scores[b.uid] ?? 0) - (scores[a.uid] ?? 0) || a.order - b.order
-				)
-			: [...players].sort((a, b) => a.order - b.order)
+		withScores ? rankedBy(players, byScore) : [...players].sort((a, b) => a.order - b.order)
 	);
+	/** Рівні бали ділять місце: 1, 1, 3 (`utils/standings.ts`). */
+	const places = $derived(placesOf(players, byScore));
 </script>
 
 <!--
@@ -100,7 +100,7 @@
 	class:scores--table={layout === 'table'}
 	data-testid="quiz-scores-list"
 >
-	{#each ranked as player, place (player.uid)}
+	{#each ranked as player (player.uid)}
 		<!--
 			ФОН РЯДКА — ЦЕ Й Є «ВІН УЖЕ ВІДПОВІВ».
 			
@@ -119,7 +119,9 @@
 					Місце числом, і саме в таблиці: у смузі воно означало б порядок, який
 					під час раунду навмисно нічого не виказує.
 				-->
-				<b class="scores__place" data-testid="quiz-score-{player.uid}-count">{place + 1}</b>
+				<b class="scores__place" data-testid="quiz-score-{player.uid}-place-value">
+					{places[player.uid]}
+				</b>
 			{/if}
 			<!--
 				ПОЗНАЧКА ПОПЕРЕДУ, а не в хвості імені — так само, як у таблі «Знайди

@@ -1,4 +1,5 @@
 import type { Member } from '$lib/net/roomTypes';
+import { rankedBy } from './standings';
 
 /**
  * ПОРЯДОК РЯДКІВ НА ТАБЛІ МІЖ РАУНДАМИ — дві фази, а не одна.
@@ -28,11 +29,20 @@ export const scoreBefore = (
 ): number => (scores[uid] ?? 0) - (gains[uid] ?? 0);
 
 /**
- * Склад у порядку показу для поточної фази.
+ * Рахунок, за яким стоїть рядок у поточній фазі.
  *
- * `moved === false` — фаза набору: порядок МИНУЛОГО раунду, і він не міняється,
- * поки біжать числа. `moved === true` — після паузи: підсумковий порядок, і всі
- * рядки їдуть разом, один раз.
+ * `moved === false` — фаза набору: рахунок МИНУЛОГО раунду, і порядок не
+ * міняється, поки біжать числа. `moved === true` — після паузи: підсумок, і всі
+ * рядки їдуть разом, один раз. Той самий рахунок дає і порядок, і номер місця
+ * (`utils/standings.ts`): інакше номер показав би нове місце на старому рядку.
+ */
+export const phaseScore =
+	(scores: Record<string, number>, gains: Record<string, number>, moved: boolean) =>
+	(uid: string): number =>
+		moved ? (scores[uid] ?? 0) : scoreBefore(uid, scores, gains);
+
+/**
+ * Склад у порядку показу для поточної фази.
  *
  * Рівний рахунок розводить `order` — порядок входу в кімнату. Без нього два
  * гравці з однаковими очками могли б переставлятися місцями від перемалювання до
@@ -44,6 +54,5 @@ export function rankedByPhase(
 	gains: Record<string, number>,
 	moved: boolean
 ): Member[] {
-	const rank = (uid: string) => (moved ? (scores[uid] ?? 0) : scoreBefore(uid, scores, gains));
-	return [...players].sort((a, b) => rank(b.uid) - rank(a.uid) || a.order - b.order);
+	return rankedBy(players, phaseScore(scores, gains, moved));
 }

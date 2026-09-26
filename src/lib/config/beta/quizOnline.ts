@@ -310,6 +310,18 @@ export const quizOnlineTab: BetaTab = {
 			negative: true,
 			coverage: 'manual',
 			testid: 'quiz-watching-text'
+		},
+		{
+			// РІВНІ БАЛИ ДІЛЯТЬ МІСЦЕ (прохання автора 2026-09-26): 1, 1, 3, як у спорті.
+			id: 'quizonline_24',
+			category: { uk: 'Очки', en: 'Points' },
+			text: {
+				uk: 'Двома пристроями відповідайте однаково й однаково швидко, доки рахунок не зрівняється. На таблі між раундами й на підсумку обидва мусять стояти на ОДНОМУ місці (1 і 1), а наступний гравець — на третьому.',
+				en: 'On two devices answer the same way and equally fast until the scores are level. On the scoreboard between rounds and on the final one both must share ONE place (1 and 1), and the next player must be third.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/components/quiz/standings.test.ts',
+			testid: 'quiz-reveal-*-place-value'
 		}
 	]
 };
