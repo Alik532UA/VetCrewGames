@@ -75,6 +75,12 @@ export const ui = {
 	'pairs.otherName': 'Andere naam',
 	'pairs.avatarChange': 'Avatar wijzigen',
 	'pairs.myAvatar': 'Je avatar',
+	'pairs.inviteTitle': 'Je bent uitgenodigd voor kamer',
+	'pairs.inviteHint': 'Zo zien de anderen je. Je kunt het nu wijzigen of later in de lobby.',
+	'pairs.inviteJoin': 'Meedoen',
+	'pairs.inviteBack': 'Naar de kamerlijst',
+	'pairs.inviteAvatarTaken':
+		'Een andere speler hier heeft deze avatar al. Kies een andere — of doe gewoon mee, dan krijg je een vrije.',
 	'pairs.avatarReplaced':
 		'Een andere speler in deze kamer heeft je avatar al, dus je kreeg een andere. Je kunt hem in de lobby wijzigen.',
 	'pairs.nickname': 'Bijnaam',

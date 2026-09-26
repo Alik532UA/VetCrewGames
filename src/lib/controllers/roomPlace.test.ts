@@ -45,4 +45,14 @@ describe('адреса кімнати', () => {
 		await roomPlace(at('https://x.test/pairs/online/'), navigate, false).remember('42');
 		expect(navigate).not.toHaveBeenCalled();
 	});
+	it('переїзд групи — з `?move=1`, а на пререндері адреси не читаємо', () => {
+		const navigate = async () => {};
+		expect(roomPlace(at('https://x.test/quiz/online/?room=7&move=1'), navigate, true).moved()).toBe(
+			true
+		);
+		expect(roomPlace(at('https://x.test/quiz/online/?room=7'), navigate, true).moved()).toBe(false);
+		expect(
+			roomPlace(at('https://x.test/quiz/online/?room=7&move=1'), navigate, false).moved()
+		).toBe(false);
+	});
 });

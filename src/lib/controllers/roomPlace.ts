@@ -27,6 +27,7 @@ export function roomPlace(url: () => URL, navigate: Navigate, browser: boolean):
 	const step = { noScroll: true, keepFocus: true };
 	return {
 		urlRoom: () => (browser ? (url().searchParams.get('room') ?? '') : ''),
+		moved: () => browser && url().searchParams.get('move') === '1',
 		remember: async (code) => {
 			if (browser) await navigate(withRoom(url(), code), step);
 		},

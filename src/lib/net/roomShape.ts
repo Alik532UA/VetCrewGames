@@ -59,6 +59,11 @@ export function infoFromDb(raw: RawInfo): RoomInfo {
  * Порядок ЗАДАЄМО самі: покладатися на порядок ключів обʼєкта означало б грати
  * партію в різній послідовності на різних пристроях.
  */
+/** Склад із запису бази: uid — ключ, решта — поля рядка. */
+export const membersFromDb = (
+	record: Record<string, Omit<Member, 'uid'>> | null | undefined
+): Member[] => Object.entries(record ?? {}).map(([uid, member]) => ({ uid, ...member }));
+
 export function snapshotFromDb(
 	value: {
 		info?: RawInfo;
@@ -69,7 +74,7 @@ export function snapshotFromDb(
 	if (!value?.info) return null;
 	return {
 		info: infoFromDb(value.info),
-		members: Object.entries(value.members ?? {}).map(([uid, member]) => ({ uid, ...member })),
+		members: membersFromDb(value.members),
 		moves: Object.entries(value.moves ?? {})
 			.map(([key, move]) => ({ ...move, seq: Number(key) }))
 			.filter((move) => Number.isInteger(move.seq))

@@ -26,6 +26,8 @@ export function withRoom(url: URL, code: string): URL {
 	const next = new URL(url);
 	next.searchParams.set('room', code);
 	next.searchParams.delete('from');
+	// `?move` теж відслужив: він потрібен лише до входу (`RoomInvite.check`).
+	next.searchParams.delete('move');
 	return next;
 }
 

@@ -64,4 +64,9 @@ describe('?room у адресі', () => {
 		expect(source.searchParams.get('room')).toBe('ab12');
 		expect(stripped).not.toBe(source);
 	});
+	it('кімната в адресі знімає й ?move — він потрібен лише до входу', () => {
+		const inside = withRoom(at('/quiz/online/?room=77&move=1'), '77');
+		expect(inside.searchParams.has('move')).toBe(false);
+		expect(inside.searchParams.get('room')).toBe('77');
+	});
 });

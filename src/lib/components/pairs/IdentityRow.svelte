@@ -26,6 +26,8 @@
 		onAvatar: (avatar: string) => void;
 		/** Кубик: підставити інше імʼя (словник і зайняті імена знає сторінка). */
 		onRandomName: () => void;
+		/** Пари, які вже тримають у кімнаті (вікно «вас запросили»), — їх не вибрати. */
+		taken?: ReadonlyMap<string, string>;
 	}
 
 	let {
@@ -33,7 +35,8 @@
 		country = $bindable(),
 		avatar,
 		onAvatar,
-		onRandomName
+		onRandomName,
+		taken
 	}: Props = $props();
 
 	let nameInput = $state<HTMLInputElement | null>(null);
@@ -64,11 +67,12 @@
 		-->
 		<CountryPicker bind:value={country} scope="pairs-country" compact />
 		<!--
-			АВАТАРКА — між прапором і іменем. Тут — будь-яка з усіх: кімнати ще немає, і
-			зайнятою пара бути не може (прохання автора 2026-09-26). Вибір розгортається
-			окремим рядком під цим (`AvatarChooser`).
+			АВАТАРКА — між прапором і іменем. У формі входу — будь-яка з усіх: кімнати ще
+			немає, і зайнятою пара бути не може (прохання автора 2026-09-26); у вікні «вас
+			запросили» — лише вільні (`taken`). Вибір розгортається окремим рядком під цим
+			(`AvatarChooser`).
 		-->
-		<AvatarChooser value={avatar} onpick={onAvatar} scope="pairs-avatar" />
+		<AvatarChooser value={avatar} onpick={onAvatar} scope="pairs-avatar" {taken} />
 		<div class="field-shell has-input-tools identity__field">
 			<input
 				id="pairs-name"

@@ -3,7 +3,7 @@ import { connect, serverNow, serverTime } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
-import { infoFromDb, moveKey, rosterToRecord, snapshotFromDb } from './roomShape';
+import { infoFromDb, membersFromDb, moveKey, rosterToRecord, snapshotFromDb } from './roomShape';
 import { isCompactScreen } from '$lib/utils/screen';
 
 /**
@@ -375,6 +375,19 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 	const { get, ref } = await import('firebase/database');
 	const snapshot = await get(ref(db, `rooms/${code}/info`));
 	return snapshot.exists() ? infoFromDb(snapshot.val()) : null;
+}
+
+/**
+ * СКЛАД КІМНАТИ ДО ВХОДУ — для вікна «вас запросили» (рішення автора 2026-09-26):
+ * чи я вже серед учасників (тоді заходжу сам) і які аватарки зайняті. `null` —
+ * складу немає, тобто й кімнати. Читати склад до входу правила дозволяють: саме так
+ * його читає `joinRoom`.
+ */
+export async function peekMembers(code: string): Promise<Member[] | null> {
+	const { db } = await connect();
+	const { get, ref } = await import('firebase/database');
+	const snapshot = await get(ref(db, `rooms/${code}/members`));
+	return snapshot.exists() ? membersFromDb(snapshot.val()) : null;
 }
 
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */

@@ -75,6 +75,12 @@ export const ui = {
 	'pairs.otherName': 'Another name',
 	'pairs.avatarChange': 'Change avatar',
 	'pairs.myAvatar': 'Your avatar',
+	'pairs.inviteTitle': 'You are invited to room',
+	'pairs.inviteHint': 'This is how others will see you. You can change it now or later in the lobby.',
+	'pairs.inviteJoin': 'Join',
+	'pairs.inviteBack': 'To the room list',
+	'pairs.inviteAvatarTaken':
+		'Another player here already has this avatar. Pick another one — or just join, and you will get a free one.',
 	'pairs.avatarReplaced':
 		'Another player in this room already has your avatar, so you got a different one. You can change it in the lobby.',
 	'pairs.nickname': 'Nickname',

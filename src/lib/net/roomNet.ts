@@ -39,6 +39,8 @@ export interface RoomNet {
 		newcomer: Member['role']
 	): Promise<void>;
 	peekRoom(code: string): Promise<RoomInfo | null>;
+	/** Склад кімнати до входу; `null` — кімнати немає (`rtdbRoom.peekMembers`). */
+	peekMembers(code: string): Promise<Member[] | null>;
 	roomTransport(code: string): Promise<RoomTransport>;
 	closeRoom(code: string): Promise<void>;
 	/** Хто я в базі — `uid` сесії. */
@@ -58,6 +60,7 @@ export const liveNet: RoomNet = {
 	joinRoom: async (code, name, role, country, avatar, newcomer) =>
 		(await import('./rtdbRoom')).joinRoom(code, name, role, country, avatar, newcomer),
 	peekRoom: async (code) => (await import('./rtdbRoom')).peekRoom(code),
+	peekMembers: async (code) => (await import('./rtdbRoom')).peekMembers(code),
 	roomTransport: async (code) => (await import('./rtdbRoom')).roomTransport(code),
 	closeRoom: async (code) => (await import('./rtdbRoom')).closeRoom(code),
 	me: async () => (await (await import('./firebase')).connect()).uid,

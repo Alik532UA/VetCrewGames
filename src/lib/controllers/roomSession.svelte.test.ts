@@ -87,6 +87,7 @@ function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 		createRoom: vi.fn(async () => '42'),
 		joinRoom: vi.fn(async () => {}),
 		peekRoom: vi.fn(async () => peek),
+		peekMembers: vi.fn(async () => [] as Member[]),
 		roomTransport: vi.fn(async () => room.transport()),
 		closeRoom: vi.fn(async () => {}),
 		me: vi.fn(async () => me),
@@ -114,6 +115,7 @@ function stubs() {
 	let url = '';
 	const place = {
 		urlRoom: () => url,
+		moved: () => false,
 		remember: vi.fn(async (code: string) => {
 			url = code;
 		}),

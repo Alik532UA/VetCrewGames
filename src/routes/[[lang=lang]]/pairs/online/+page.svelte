@@ -13,6 +13,8 @@
 	import { HoverBeam } from '$lib/controllers/hoverBeam.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
 	import { chooseRoomAvatar } from '$lib/controllers/roomAvatar';
+	import { RoomInvite } from '$lib/controllers/roomInvite.svelte';
+	import InviteWindow from '$lib/components/pairs/InviteWindow.svelte';
 	import { attachPairsPolicies, pairsGame } from '$lib/controllers/pairsRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
@@ -51,6 +53,8 @@
 	// Перелік читається з гілки СВОЄЇ гри: кімнати вікторини тут не з'являються.
 	const lobby = new LobbyFeed(PAIRS.gameId);
 	const session = new RoomSession(PAIRS, place, player, lobby);
+	/** Посилання чи QR-код новачка — спершу коротке вікно, а не мовчазний вхід. */
+	const invite = new RoomInvite(session);
 	session.attach();
 
 	const match = $derived(session.match);
@@ -111,7 +115,7 @@
 		// Прапор питається РІВНО ОДИН РАЗ: запит іде до сторонньої служби з IP.
 		void player.loadCountry();
 		// Код в адресі означає «я вже був у цій кімнаті» — повертаємося самі.
-		session.resume();
+		void invite.check();
 
 		return () => {
 			session.dispose();
@@ -127,7 +131,21 @@
 		lost={match !== null && !session.connected}
 		reload={session.reload.reason ?? (updated.current ? 'build' : null)}
 	/>
-	{#if !match}
+	{#if !match && invite.open}
+		<!-- Вас запросили: посилання чи QR-код, і вас ще немає в складі (`RoomInvite`). -->
+		<InviteWindow
+			code={invite.code ?? ''}
+			bind:name={player.value}
+			bind:country={player.country}
+			avatar={player.avatar}
+			taken={invite.taken}
+			busy={session.busy}
+			onAvatar={(avatar) => player.chooseAvatar(avatar)}
+			onRandomName={() => player.reroll(takenNames)}
+			onJoin={() => invite.accept()}
+			onBack={() => invite.decline()}
+		/>
+	{:else if !match}
 		<OnlineGate
 			bind:name={player.value}
 			bind:joinCode={session.joinCode}

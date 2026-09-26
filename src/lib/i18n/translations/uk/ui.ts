@@ -85,6 +85,12 @@ export const ui = {
 	'pairs.otherName': 'Інше імʼя',
 	'pairs.avatarChange': 'Змінити аватарку',
 	'pairs.myAvatar': 'Ваша аватарка',
+	'pairs.inviteTitle': 'Вас запросили в кімнату',
+	'pairs.inviteHint': 'Так вас побачать інші. Змінити можна й зараз, і потім у лобі.',
+	'pairs.inviteJoin': 'Зайти',
+	'pairs.inviteBack': 'До переліку кімнат',
+	'pairs.inviteAvatarTaken':
+		'Цю аватарку тут уже вибрав інший гравець. Виберіть іншу — або заходьте так, і вам дістанеться вільна.',
 	'pairs.avatarReplaced':
 		'Вашу аватарку в цій кімнаті вже вибрав інший гравець — вам дісталася інша. Змінити її можна в лобі.',
 	'pairs.nickname': 'Нікнейм',

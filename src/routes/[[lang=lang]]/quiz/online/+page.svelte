@@ -11,6 +11,8 @@
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
 	import { chooseRoomAvatar } from '$lib/controllers/roomAvatar';
+	import { RoomInvite } from '$lib/controllers/roomInvite.svelte';
+	import InviteWindow from '$lib/components/pairs/InviteWindow.svelte';
 	import { QuizRoomState } from '$lib/controllers/quizRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import { DEV_TIME_FACTOR, gamesToConfig } from '$lib/config/quizOnline';
@@ -55,6 +57,8 @@
 	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
 	const lobby = new LobbyFeed(quiz.game.gameId);
 	const session = new RoomSession(quiz.game, place, player, lobby);
+	/** Посилання чи QR-код новачка — спершу коротке вікно, а не мовчазний вхід. */
+	const invite = new RoomInvite(session);
 	session.attach();
 
 	const match = $derived(session.match);
@@ -95,7 +99,7 @@
 				})
 		);
 		void player.loadCountry();
-		session.resume();
+		void invite.check();
 
 		return () => {
 			session.dispose();
@@ -111,7 +115,21 @@
 		lost={match !== null && !session.connected}
 		reload={session.reload.reason ?? (updated.current ? 'build' : null)}
 	/>
-	{#if !match}
+	{#if !match && invite.open}
+		<!-- Вас запросили: посилання чи QR-код, і вас ще немає в складі (`RoomInvite`). -->
+		<InviteWindow
+			code={invite.code ?? ''}
+			bind:name={player.value}
+			bind:country={player.country}
+			avatar={player.avatar}
+			taken={invite.taken}
+			busy={session.busy}
+			onAvatar={(avatar) => player.chooseAvatar(avatar)}
+			onRandomName={() => player.reroll(takenNames)}
+			onJoin={() => invite.accept()}
+			onBack={() => invite.decline()}
+		/>
+	{:else if !match}
 		<OnlineGate
 			bind:name={player.value}
 			bind:joinCode={session.joinCode}

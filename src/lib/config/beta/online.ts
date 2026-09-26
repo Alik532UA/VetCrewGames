@@ -255,6 +255,20 @@ export const onlineTab: BetaTab = {
 			coverage: 'manual',
 			testid: 'lobby-avatar-toggle-btn',
 			negative: true
+		},
+		{
+			/*
+			 * ВІКНО «ВАС ЗАПРОСИЛИ» (рішення автора 2026-09-26). Кому його показувати, доводить
+			 * юніт-тест `roomInvite`; руками — справжній QR-код і справжній телефон.
+			 */
+			id: 'online_23',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Відскануйте QR-код лобі телефоном, на якому ви ще не заходили в цю кімнату. Мусить відкритися вікно «Вас запросили в кімнату» з кодом: імʼя, прапор і аватарка (зайняті в кімнаті — не вибрати) і кнопка «Зайти». Лише після неї ви в лобі — з тим підписом, який вибрали. Оновіть сторінку вже в кімнаті: вікна більше немає, ви повертаєтеся самі.',
+				en: 'Scan the lobby QR code with a phone that has never joined this room. A «You are invited to room» window with the code must open: name, flag and avatar (the ones taken in the room cannot be picked) and a «Join» button. Only after it you are in the lobby — with the signature you picked. Reload the page once inside: the window is gone, you come back by yourself.'
+			},
+			coverage: 'manual',
+			testid: 'room-invite-join-btn'
 		}
 	]
 };

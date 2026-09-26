@@ -87,6 +87,11 @@ export interface RoomGame<M extends RoomMatch> {
 export interface RoomPlace {
 	/** Код кімнати з адреси; порожньо — адреса без кімнати. */
 	urlRoom(): string;
+	/**
+	 * Адреса — посилання «перейти» з кімнати ІНШОЇ гри (`?move=1`, `utils/crossGame`):
+	 * група переїжджає разом, і вікна «вас запросили» їй не треба.
+	 */
+	moved(): boolean;
 	/** Записати код у адресу КРОКОМ в історії. */
 	remember(code: string): Promise<void>;
 	/** Зі знесеної чи закритої кімнати — геть. */

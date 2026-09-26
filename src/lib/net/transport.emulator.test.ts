@@ -566,6 +566,38 @@ describe('rtdbRoom + емулятор: створення кімнати', () =>
 	 *
 	 * Зворотний експеримент: прибрати `compact` із правил — червоніє.
 	 */
+	/**
+	 * СКЛАД ДО ВХОДУ — для вікна «вас запросили» (рішення автора 2026-09-26): не
+	 * учасник бачить, хто вже в кімнаті (і які аватарки зайняті), а після входу — і
+	 * себе серед них. Кімнати немає — `null`, а не порожній склад.
+	 */
+	it('склад до входу: хто вже тут — і я серед них після входу', async () => {
+		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
+		const { host, guest } = people;
+		const net = await import('./rtdbRoom');
+		const code = await as(host, () =>
+			net.createRoom({
+				gameId: 'pairs',
+				rulesVersion: 3,
+				seed: 1,
+				config: CONFIG,
+				name: 'Господар',
+				avatar: 'cat:blue',
+				isPrivate: true
+			})
+		);
+
+		const before = await as(guest, () => net.peekMembers(code));
+		expect(before?.map((member) => member.uid)).toEqual([host.uid]);
+		expect(before?.[0]?.avatar, 'зайняту аватарку видно до входу').toBe('cat:blue');
+
+		await as(guest, () => net.joinRoom(code, 'Гість'));
+		const after = await as(guest, () => net.peekMembers(code));
+		expect(after?.map((member) => member.uid).sort()).toEqual([host.uid, guest.uid].sort());
+		expect(await as(guest, () => net.peekMembers('99999')), 'кімнати немає').toBeNull();
+		await as(host, () => net.closeRoom(code));
+	});
+
 	it('гість із телефона заходить і позначає малий екран', async () => {
 		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
 		const { host, guest } = people;

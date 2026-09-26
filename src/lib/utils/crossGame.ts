@@ -71,7 +71,11 @@ export function crossGameLinks(
 	return {
 		create: code ? `${pagePath}?from=${encodeURIComponent(code)}` : pagePath,
 		createLabel: INVITE[other],
-		next: nextCode ? `${pagePath}?room=${encodeURIComponent(nextCode)}` : null
+		/*
+		 * `move=1` — «це група переїжджає»: вікна «вас запросили» (`RoomInvite`) їй не
+		 * треба, бо все про себе вона сказала в попередній кімнаті хвилину тому.
+		 */
+		next: nextCode ? `${pagePath}?room=${encodeURIComponent(nextCode)}&move=1` : null
 	};
 }
 
