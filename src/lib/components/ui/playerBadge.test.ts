@@ -267,7 +267,10 @@ describe('шапка партії', () => {
 		 */
 		expect(room, 'смуги часу ходу немає').toContain('<TimerBar');
 		expect(room, 'смуга привʼязана до межі «забрати чергу»').not.toContain('yieldInMs');
-		expect(room, 'смуга показується не за залишком ходу').toMatch(/\{#if turnLeftMs !== null\}/);
+		// Смуга стоїть над дошкою в `MemoryDeck` (`above`), і показує її та сама умова.
+		expect(room, 'смуга показується не за залишком ходу').toMatch(
+			/above=\{turnLeftMs !== null \? timer : undefined\}/
+		);
 	});
 
 	it('чия черга — обводка, а не колір тексту', () => {

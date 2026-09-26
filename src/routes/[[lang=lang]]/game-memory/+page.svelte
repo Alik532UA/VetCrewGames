@@ -10,6 +10,7 @@
 	import { toast } from '$lib/controllers/toast.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
+	import MemoryDeck from '$lib/components/MemoryDeck.svelte';
 
 	/**
 	 * Правила — у контролері; тут показ і введення (SVELTE-CORE-v8 § 3.1).
@@ -149,11 +150,8 @@
 			</span>
 		</div>
 
-			<!--
-				Колонки приходять зі СТАНУ ПАРТІЇ, а не з медіазапиту: сітка, яку
-				перебудовує ширина вікна, стирає запам'ятане.
-			-->
-			<div class="deck" style="--cols: {game.cols}; --rows: {Math.ceil(game.slots.length / game.cols)}" data-testid="memory-deck-container">
+		<!-- Уся дошка на екрані й колонки — з партії (`MemoryDeck`). -->
+		<MemoryDeck cols={game.cols} count={game.slots.length} testId="memory-deck-container">
 			{#each game.slots as slot, index (slot.card.id)}
 				<MemoryCard
 					{slot}
@@ -163,7 +161,7 @@
 					testId="memory-card-btn-{slot.card.id}"
 				/>
 			{/each}
-		</div>
+		</MemoryDeck>
 	{/if}
 </div>
 
@@ -228,42 +226,4 @@
 	.scoreboard__moves {
 		color: var(--color-text-muted);
 	}
-
-	/*
-	 * Дошка займає 90% екрана — але не сліпо.
-	 *
-	 * Сама лише ширина в 90vw на 1920px дала б картку завширшки 247px, а при
-	 * 3:4 це 329 у висоту й 1316 на чотири ряди — тобто дошка, яка не
-	 * вміщається у власний екран. Тому друга межа рахує ширину, за якої чотири
-	 * ряди 3:4-карток ще влазять у відведену висоту:
-	 *
-	 *     ширина = висота × колонки × 3 / (ряди × 4)
-	 *
-	 * `min()` бере те з двох, що менше, тож на широкому й низькому екрані
-	 * вирішує висота, на вузькому — ширина.
-	 */
-	/*
-	 * `--cols` і `--rows` приходять ІНЛАЙНОМ зі стану партії — тут лише запасні
-	 * значення на випадок, коли розмітка ще не встигла їх поставити. Медіазапит
-	 * звідси прибраний свідомо: він перебудовував сітку на кожну зміну ширини
-	 * вікна, а розкладка належить партії, а не вікну.
-	 */
-	.deck {
-		--cols: 7;
-		--rows: 4;
-		/*
-		 * Скільки заввишки лишається дошці: усе вікно мінус те, що над нею.
-		 *
-		 * 190px — це шапка, підказка, табло й відступи разом, і воно НЕ частка
-		 * екрана, а стала висота, тож віднімається в пікселях. Частка тут дала б
-		 * дошку, яка на низькому вікні вилазить, а на високому лишає порожнечу.
-		 */
-		--deck-height: calc(96dvh - 190px);
-
-		display: grid;
-		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-		gap: var(--space-xs);
-		width: min(90vw, calc(var(--deck-height) * var(--cols) * 3 / (var(--rows) * 4)));
-	}
-
 </style>

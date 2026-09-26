@@ -1,6 +1,6 @@
 import { playerData } from '$lib/services/playerData.svelte';
 import { PAIRS_DRAW_POINTS, PAIRS_WIN_POINTS } from '$lib/config/scoring';
-import { layoutForViewport } from '$lib/config/memory-game';
+import { isCompactScreen, roomLayoutFor } from '$lib/config/memory-game';
 import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
 import { PairsMatch, PEEK_MS } from './pairsMatch.svelte';
 import type { RoomGame } from './roomGame';
@@ -47,7 +47,7 @@ export interface PairsBeam {
 export function pairsGame(
 	beam: PairsBeam,
 	random: () => number,
-	layout: () => { pairs: number; cols: number } = layoutForViewport
+	layout: () => { pairs: number; cols: number } = () => roomLayoutFor(isCompactScreen())
 ): RoomGame<PairsMatch> {
 	return {
 		gameId: 'pairs',

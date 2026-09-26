@@ -7,6 +7,18 @@ import {
 	layoutForViewport
 } from '$lib/config/memory-game';
 
+/** Запит, яким питали «чи це телефон», — щоб перевірити, що й за висотою. */
+let compactQuery = '';
+
+/** Екран для перевірки порогу: телефон чи ні, боком чи стоячи. */
+function screen({ compact, landscape }: { compact: boolean; landscape: boolean }): void {
+	vi.stubGlobal('matchMedia', (query: string) => {
+		if (query.includes('orientation')) return { matches: landscape, media: query };
+		compactQuery = query;
+		return { matches: compact, media: query };
+	});
+}
+
 /*
  * Рахунок і рекорди живуть у `playerData`, і мокається саме він: доти тут
  * стояв мок `settings`, бо рахунок був полем налаштувань. Переїзд перевіряти
@@ -61,13 +73,26 @@ describe('колода «Знайди пару»', () => {
 	 * сім рядів, під які місця не рахували, і партію доводиться гортати.
 	 */
 	it('вузький екран дає меншу колоду, широкий — повну', () => {
-		const stub = (matches: boolean) =>
-			vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query }));
-
-		stub(true);
+		screen({ compact: true, landscape: false });
 		expect(layoutForViewport()).toEqual({ pairs: MEMORY_PAIRS_COMPACT, cols: 4 });
-		stub(false);
+		screen({ compact: false, landscape: true });
 		expect(layoutForViewport()).toEqual({ pairs: MEMORY_PAIRS, cols: 7 });
+	});
+
+	/**
+	 * ТЕЛЕФОН БОКОМ — ТІ САМІ ДЕСЯТЬ ПАР ДВОМА РЯДАМИ (прохання автора 2026-09-26:
+	 * поле мусить влазити). Доти телефон боком (844×390) діставав повну колоду на сім
+	 * колонок, бо рахувалася лише ширина.
+	 *
+	 * Зворотний експеримент: прибрати `max-height` з умови телефона — червоніє.
+	 */
+	it('телефон боком — компактна колода двома рядами', () => {
+		screen({ compact: true, landscape: true });
+		expect(layoutForViewport()).toEqual({
+			pairs: MEMORY_PAIRS_COMPACT,
+			cols: MEMORY_PAIRS_COMPACT
+		});
+		expect(compactQuery, 'телефон — і за висотою').toContain('max-height');
 	});
 
 	/**
@@ -76,14 +101,13 @@ describe('колода «Знайди пару»', () => {
 	 * медіазапит, а пари — функція, і зв'язок тримався на тому, що обидва пороги
 	 * випадково однакові.
 	 */
-	it('колода лягає повними рядами в обох розкладках', () => {
-		const stub = (matches: boolean) =>
-			vi.stubGlobal('matchMedia', (query: string) => ({ matches, media: query }));
-
-		for (const narrow of [true, false]) {
-			stub(narrow);
-			const { pairs, cols } = layoutForViewport();
-			expect((pairs * 2) % cols, `${pairs} пар у ${cols} колонок лишають хвостик`).toBe(0);
+	it('колода лягає повними рядами в усіх розкладках', () => {
+		for (const compact of [true, false]) {
+			for (const landscape of [true, false]) {
+				screen({ compact, landscape });
+				const { pairs, cols } = layoutForViewport();
+				expect((pairs * 2) % cols, `${pairs} пар у ${cols} колонок лишають хвостик`).toBe(0);
+			}
 		}
 	});
 

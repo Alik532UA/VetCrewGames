@@ -13,8 +13,11 @@ export const memoryTab: BetaTab = {
 				uk: 'Дошка мусить уміщуватися в екран цілком — і на телефоні, і на компʼютері — без прокрутки сторінки, щоб побачити нижній рядок карток.',
 				en: 'The whole board must fit on the screen — on a phone and on a computer alike — with no page scrolling needed to see the bottom row of cards.'
 			},
+			// Доти тут стояв `fitZoom.test.ts` — але сторінка «Знайди пару» `fitToViewport`
+			// не вживає, тож «покрито» було неправдою (аудит 2026-09-26). Поле на екрані
+			// міряє e2e на шести розмірах, від iPhone із панелями Safari до монітора.
 			coverage: 'covered',
-			test: 'src/lib/utils/fitZoom.test.ts',
+			test: 'tests/memory-fit.spec.ts',
 			testid: 'memory-deck-container'
 		},
 		{

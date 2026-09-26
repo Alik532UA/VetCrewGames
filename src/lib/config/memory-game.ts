@@ -60,10 +60,37 @@ export interface MemoryLayout {
  * Викликати можна лише в браузері: `matchMedia` під час prerender не існує.
  */
 export function layoutForViewport(): MemoryLayout {
-	return window.matchMedia('(max-width: 559px)').matches
-		? { pairs: MEMORY_PAIRS_COMPACT, cols: 4 }
-		: { pairs: MEMORY_PAIRS, cols: 7 };
+	if (!isCompactScreen()) return WIDE_LAYOUT;
+	// Телефон БОКОМ: ті самі десять пар двома рядами. Пʼять рядів по чотири в
+	// ≈250px висоти дали б картку вужчу за 56px — нижче, ніж тварину видно
+	// (прохання автора 2026-09-26: поле мусить влазити на телефоні).
+	return window.matchMedia('(orientation: landscape)').matches
+		? { pairs: MEMORY_PAIRS_COMPACT, cols: MEMORY_PAIRS_COMPACT }
+		: COMPACT_LAYOUT;
 }
+
+/** Розкладка для телефона — 4×5 — і для решти екранів — 7×4. */
+export const COMPACT_LAYOUT: MemoryLayout = { pairs: MEMORY_PAIRS_COMPACT, cols: 4 };
+export const WIDE_LAYOUT: MemoryLayout = { pairs: MEMORY_PAIRS, cols: 7 };
+
+/**
+ * ТЕЛЕФОН — МЕНШИЙ БІК ЕКРАНА ВУЖЧИЙ ЗА 560px, у будь-якому положенні. Доти
+ * рахувалася лише ширина, і телефон боком (844×390) діставав повну колоду на сім
+ * колонок — чотири ряди в екран заввишки 390px не влазили.
+ *
+ * Викликати можна лише в браузері: `matchMedia` під час prerender не існує.
+ */
+export function isCompactScreen(): boolean {
+	return window.matchMedia('(max-width: 559px), (max-height: 559px)').matches;
+}
+
+/**
+ * Розкладка КІМНАТИ «Знайди пару»: одна сітка на всіх, і телефон — її мірило
+ * (рішення автора 2026-09-26). Телефонна — 4×5 стоячи; боком онлайн-сітка
+ * лишається тією самою, бо вона спільна для всіх, хто за дошкою.
+ */
+export const roomLayoutFor = (compact: boolean): MemoryLayout =>
+	compact ? COMPACT_LAYOUT : WIDE_LAYOUT;
 
 /**
  * Колода на `pairs` пар із зерна `seed`.

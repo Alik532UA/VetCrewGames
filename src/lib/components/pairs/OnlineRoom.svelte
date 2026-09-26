@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
 	import MemoryCard from '$lib/components/MemoryCard.svelte';
+	import MemoryDeck from '$lib/components/MemoryDeck.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
 	import PlayerBadge from '$lib/components/ui/PlayerBadge.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
@@ -114,10 +115,9 @@
 	 */
 	const winner = $derived(match.players.find((player) => player.uid === match.winnerUid) ?? null);
 
-	const rows = $derived(Math.ceil(match.game.slots.length / match.game.cols));
 </script>
 
-<div class="board" style="--cols: {match.game.cols}; --rows: {rows}">
+<div class="board">
 	<!--
 		Підпис черги — головне, що людина шукає очима в спільній грі. Тому окремим
 		ЧЕРГА БІЛЬШЕ НЕ ПИШЕТЬСЯ СЛОВАМИ НА ЕКРАНІ — але лишається для скрінрідера.
@@ -163,22 +163,14 @@
 		саме стрибання, просто тонше на шість пікселів. Заодно вона правдива: межа
 		стосується й мого ходу — просто діяти за нею може суперник, а не я.
 	-->
-	{#if turnLeftMs !== null}
-		<!--
-			Смуга завужена до ДОШКИ, а не до сторінки. `.board` розтягнутий на всю
-			ширину, тобто смуга на `width: 100%` йшла б від краю до краю над дошкою в
-			півтора рази вужчою — і читалася б як смужка сторінки, а не як час цієї
-			партії. Ширина рахується тим самим виразом, що й дошка, з одного місця.
-		-->
-		<div class="board__timer">
-			<TimerBar
-				leftMs={turnLeftMs}
-				limitMs={match.turnLimitMs}
-				label={t('pairs.turnTimer')}
-				testId="pairs-turn-progress"
-			/>
-		</div>
-	{/if}
+	{#snippet timer()}
+		<TimerBar
+			leftMs={turnLeftMs ?? 0}
+			limitMs={match.turnLimitMs}
+			label={t('pairs.turnTimer')}
+			testId="pairs-turn-progress"
+		/>
+	{/snippet}
 
 	{#if match.over}
 		<!--
@@ -344,10 +336,18 @@
 	</div>
 
 	<!--
-		Колонки приходять із КІМНАТИ, а не з екрана: сітка, яку перебудовує ширина
-		вікна, стирає запамʼятане — і в спільній грі ще й розводить двох гравців.
+		ДОШКА — УСЯ НА ЕКРАНІ (`MemoryDeck`, прохання автора 2026-09-26), а смуга часу
+		ходу — над нею й рівно в її ширину: смуга на `width: 100%` йшла б від краю до
+		краю над дошкою в півтора рази вужчою й читалася б як смужка сторінки, а не як
+		час цієї партії. Тепер обидві рахуються від тієї самої коробки. Колонки — з
+		КІМНАТИ, а не з екрана: сітка, яку перебудовує ширина вікна, стирає запамʼятане.
 	-->
-	<div class="board__deck" data-testid="pairs-deck-container">
+	<MemoryDeck
+		cols={match.game.cols}
+		count={match.game.slots.length}
+		testId="pairs-deck-container"
+		above={turnLeftMs !== null ? timer : undefined}
+	>
 		{#each match.game.slots as slot, index (slot.card.id)}
 			<MemoryCard
 				{slot}
@@ -360,7 +360,7 @@
 				testId="pairs-card-btn-{slot.card.id}"
 			/>
 		{/each}
-	</div>
+	</MemoryDeck>
 
 	<!--
 		«ЗАБРАТИ ХІД» — КНОПКА, А НЕ АВТОМАТИКА, і ця панель тільки про неї.
@@ -410,34 +410,39 @@
 </div>
 
 <style>
+	/*
+	 * Дошка займає ЗАЛИШОК висоти сторінки: розмір карток рахує `MemoryDeck` від
+	 * своєї коробки, тож тут лише те, щоб коробці було звідки тягнутися.
+	 */
 	.board {
+		position: relative;
 		display: flex;
+		flex: 1;
 		flex-direction: column;
 		align-items: center;
 		gap: var(--space-sm);
 		width: 100%;
-		/*
-		 * Ширина дошки — В ОДНОМУ місці, бо на неї рівняється не лише дошка.
-		 *
-		 * `--cols` приходить із КІМНАТИ (розкладку, яку перебудовує ширина вікна, тут
-		 * заборонено — вона розводить двох гравців), тож змінна стоїть на корені
-		 * дошки, а не на сітці: смуга часу читає той самий вираз, і дві копії
-		 * формули розійтися не можуть.
-		 */
-		--deck-width: min(96vw, calc(var(--cols) * 8rem));
+		min-height: 0;
 	}
 
-	.board__timer {
-		width: 100%;
-		max-width: var(--deck-width);
-	}
-
+	/*
+	 * «ЗАБРАТИ ХІД» — НАКЛАДКОЮ ВНИЗУ, а не рядком під дошкою (прохання автора: її
+	 * поява нічого не мусить зсувати). Під дошкою вона тепер забирала б висоту в
+	 * коробки, і картки меншали б саме тоді, коли панель зʼявилась. Накладка ж
+	 * стоїть лише на ЧУЖОМУ ході, коли свої картки однаково не перевертаються.
+	 */
 	.board__stall {
+		position: absolute;
+		inset-inline: 0;
+		bottom: 0;
+		z-index: 1;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: center;
 		gap: var(--space-sm);
+		width: fit-content;
+		margin-inline: auto;
 		font-size: var(--font-size-sm);
 	}
 
@@ -550,13 +555,5 @@
 	.board__moves {
 		display: inline-flex;
 		align-items: center;
-	}
-
-	.board__deck {
-		display: grid;
-		grid-template-columns: repeat(var(--cols), 1fr);
-		gap: clamp(4px, 1vw, var(--space-sm));
-		width: 100%;
-		max-width: var(--deck-width);
 	}
 </style>
