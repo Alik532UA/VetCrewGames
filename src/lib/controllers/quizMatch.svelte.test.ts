@@ -733,6 +733,30 @@ describe('приріст за раунд', () => {
 		expect(Object.values(host.roundGains)).toEqual([0, 0]);
 		stop();
 	});
+
+	/**
+	 * ФІНАЛ — ТАБЛО ОСТАННЬОГО РАУНДУ з його «+балами» (прохання автора 2026-09-26).
+	 * Партія закінчується ходом ведучого, який оголошує раунд за межею програми, і
+	 * доти приріст рахувався саме за цим неіснуючим раундом — нуль у всіх: «+бали»
+	 * зникали з фіналу в ту мить, коли партію записано скінченою.
+	 *
+	 * Зворотний експеримент: прибрати межу в `roundGains` — червоніє.
+	 */
+	it('після кінця партії приріст — останнього раунду, а не нульовий', async () => {
+		const { room, host, stop } = table();
+		host.present = [HOST];
+		for (let round = 0; round < QUIZ_ROUNDS; round++) await host.startRound(round);
+		await host.answer(1);
+		const last = { ...host.roundGains };
+		expect(last[HOST], 'перевірка жива: останній раунд щось дав').toBeGreaterThan(0);
+
+		await host.startRound(QUIZ_ROUNDS);
+
+		expect(host.over).toBe(true);
+		expect(host.roundGains).toEqual(last);
+		room.tick(0);
+		stop();
+	});
 });
 
 /**
@@ -1077,8 +1101,8 @@ describe('той, хто зник із кімнати', () => {
 		// Третій раунд лишається без відповіді — «не встиг».
 		await host.startRound(3);
 
-		expect(host.myRounds).toEqual(['correct', 'partial', 'incorrect']);
-		expect(host.myRounds, 'у переліку є ще не зіграні раунди').toHaveLength(3);
+		expect(host.myRoundsThrough(host.round)).toEqual(['correct', 'partial', 'incorrect']);
+		expect(host.myRoundsThrough(host.round), 'у переліку є ще не зіграні раунди').toHaveLength(3);
 		room.tick(0);
 		stop();
 	});

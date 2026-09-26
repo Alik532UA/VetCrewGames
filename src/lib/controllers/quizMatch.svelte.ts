@@ -370,14 +370,17 @@ export class QuizMatch implements RoomEnvelope {
 		return totalScores(this.#log);
 	}
 
-	/** Скільки очок дав САМЕ ЦЕЙ раунд — кожному. Табло між раундами показує приріст. */
+	/**
+	 * Скільки очок дав САМЕ ЦЕЙ раунд — кожному; після партії — ОСТАННІЙ: фінал і є
+	 * табло останнього раунду з його «+балами» (`utils/quizScreen.ts`).
+	 */
 	get roundGains(): Record<string, number> {
-		return roundGains(this.#log, this.round);
+		return roundGains(this.#log, Math.min(this.round, this.programme.length - 1));
 	}
 
-	/** Мої результати по зіграних раундах — для смужок прогресу в таблі. */
-	get myRounds(): RoundStatus[] {
-		return roundOutcomes(this.answers, this.round, this.#me);
+	/** Мої результати по перших `played` раундах — для смужок прогресу в таблі. */
+	myRoundsThrough(played: number): RoundStatus[] {
+		return roundOutcomes(this.answers, played, this.#me);
 	}
 
 	/*

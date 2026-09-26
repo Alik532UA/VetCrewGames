@@ -45,5 +45,6 @@ export const quiz: Record<string, string> = {
 	'quiz.awayGoOn': 'Play on',
 	'quiz.awayVoted': 'Your vote is counted',
 	'quiz.awayKick': 'Remove',
-	'quiz.nextRound': 'Next round'
+	'quiz.nextRound': 'Next round',
+	'quiz.waitingLeader': 'Waiting for the host to start a new game.'
 };

@@ -1,14 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/svelte';
+import { createRawSnippet } from 'svelte';
 import type { Member } from '$lib/net/roomTypes';
 
 /**
- * РІВНІ БАЛИ ДІЛЯТЬ МІСЦЕ — у ТАБЛИЦЯХ, а не лише у функції (прохання автора
+ * РІВНІ БАЛИ ДІЛЯТЬ МІСЦЕ — на таблі, а не лише у функції (прохання автора
  * 2026-09-26). Знімок автора: двоє з 277 очками стояли першим і другим на таблі
- * між раундами; підсумкова таблиця рахувала так само — номером рядка.
+ * між раундами. І ФІНАЛ — те саме табло, великим, із заголовком «Гру завершено!»
+ * і діями під ним (прохання автора того самого дня).
  *
- * Зворотний експеримент: повернути в будь-якій із двох таблиць `{place + 1}` —
- * червоніє її випадок.
+ * Зворотний експеримент: повернути `{place + 1}` — червоніють місця; прибрати
+ * заголовок чи дії фіналу — червоніє «фінал».
  */
 
 vi.mock('$lib/services/settings.svelte', () => ({
@@ -26,7 +28,6 @@ vi.stubGlobal('matchMedia', (media: string) => ({
 vi.stubGlobal('requestAnimationFrame', () => 0);
 vi.stubGlobal('cancelAnimationFrame', () => {});
 
-const { default: QuizScores } = await import('./QuizScores.svelte');
 const { default: QuizReveal } = await import('./QuizReveal.svelte');
 
 const players: Member[] = [
@@ -38,24 +39,6 @@ const players: Member[] = [
 const place = (id: string) => screen.getByTestId(id).textContent?.trim();
 
 afterEach(() => cleanup());
-
-describe('підсумкова таблиця вікторини', () => {
-	it('277 і 277 — обидва перші, наступний третій', () => {
-		render(QuizScores, {
-			props: {
-				players,
-				answered: [],
-				scores: { a: 277, b: 277, c: 90 },
-				withScores: true,
-				layout: 'table',
-				me: 'b'
-			}
-		});
-		expect(place('quiz-score-a-place-value')).toBe('1');
-		expect(place('quiz-score-b-place-value')).toBe('1');
-		expect(place('quiz-score-c-place-value')).toBe('3');
-	});
-});
 
 describe('табло між раундами', () => {
 	const base = { text: (key: string) => key, players, me: 'b', settle: 0, travel: 0 };
@@ -78,5 +61,52 @@ describe('табло між раундами', () => {
 		expect(place('quiz-reveal-a-place-value')).toBe('1');
 		expect(place('quiz-reveal-b-place-value')).toBe('1');
 		expect(place('quiz-reveal-c-place-value')).toBe('3');
+	});
+});
+
+describe('фінал — те саме табло, великим', () => {
+	it('заголовок «Гру завершено!», місця й дії під табло', () => {
+		const actions = createRawSnippet(() => ({
+			render: () => '<button data-testid="final-action-btn">Грати знову</button>'
+		}));
+		render(QuizReveal, {
+			props: {
+				text: (key: string) => key,
+				players,
+				me: 'b',
+				duration: 0,
+				settle: 0,
+				travel: 0,
+				title: 'Гру завершено!',
+				testId: 'quiz-over-panel',
+				actions,
+				scores: { a: 702, b: 632, c: 632 },
+				gains: { a: 89, b: 41 }
+			}
+		});
+		expect(screen.getByTestId('quiz-over-panel')).toBeTruthy();
+		expect(screen.getByRole('heading').textContent).toContain('Гру завершено!');
+		expect(screen.getByTestId('final-action-btn'), 'дій під табло немає').toBeTruthy();
+		expect(place('quiz-reveal-a-place-value')).toBe('1');
+		expect(place('quiz-reveal-b-place-value')).toBe('2');
+		expect(place('quiz-reveal-c-place-value')).toBe('2');
+	});
+
+	it('між раундами — типовий заголовок і без дій', () => {
+		render(QuizReveal, {
+			props: {
+				text: (key: string) => key,
+				players,
+				me: 'b',
+				duration: 0,
+				settle: 0,
+				travel: 0,
+				scores: { a: 10, b: 5, c: 1 },
+				gains: {}
+			}
+		});
+		expect(screen.getByRole('heading').textContent).toContain('quiz.nextRound');
+		expect(screen.queryByTestId('final-action-btn')).toBeNull();
+		expect(screen.getByTestId('quiz-reveal-panel')).toBeTruthy();
 	});
 });

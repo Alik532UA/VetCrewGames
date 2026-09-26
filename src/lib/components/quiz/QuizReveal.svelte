@@ -13,6 +13,7 @@
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import TimerBar from '$lib/components/ui/TimerBar.svelte';
 	import type { RoundStatus } from '$lib/types/game';
+	import type { Snippet } from 'svelte';
 
 	/**
 	 * ТАБЛО МІЖ РАУНДАМИ: посередині екрана, з набором балів.
@@ -100,6 +101,18 @@
 		leftMs?: number;
 		/** Скільки триває табло, мс. Нуль — без смуги. */
 		limitMs?: number;
+		/**
+		 * ЗАГОЛОВОК. Типовий — «Наступний раунд»; на таблі ОСТАННЬОГО раунду це
+		 * «Гру завершено!» (прохання автора 2026-09-26): табло останнього раунду і є
+		 * фінал, а не проміжний крок перед маленьким підсумком.
+		 */
+		title?: string;
+		/** Дії під табло — лише у фіналі: реванш, закрити кімнату, меню. */
+		actions?: Snippet;
+		/** Рядок під діями фіналу — гостеві: на кого чекаємо. Всередині панелі, тож на тлі. */
+		note?: string;
+		/** Ідентифікатор панелі: фінал — `quiz-over-panel`, як і доти. */
+		testId?: string;
 	}
 
 	let {
@@ -115,7 +128,11 @@
 		rounds = [],
 		roundsTotal = 0,
 		leftMs = 0,
-		limitMs = 0
+		limitMs = 0,
+		title,
+		actions,
+		note,
+		testId = 'quiz-reveal-panel'
 	}: Props = $props();
 
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
@@ -216,7 +233,7 @@
 	const places = $derived(placesOf(players, phaseScore(scores, gains, moved)));
 </script>
 
-<section class="reveal text-panel" style:--reveal-unit="{unit}px" data-testid="quiz-reveal-panel">
+<section class="reveal text-panel" style:--reveal-unit="{unit}px" data-testid={testId}>
 	<!--
 		СКІЛЬКИ ЧЕКАТИ НАСТУПНИЙ РАУНД — тією самою смугою, що в раунді.
 
@@ -232,7 +249,7 @@
 		<TimerBar {leftMs} {limitMs} label={text('quiz.revealTimer')} testId="quiz-reveal-progress" />
 	{/if}
 
-	<h2 class="reveal__title">{@html formatFont(text('quiz.nextRound'))}</h2>
+	<h2 class="reveal__title">{@html formatFont(title ?? text('quiz.nextRound'))}</h2>
 
 	<ul class="reveal__list">
 		{#each ranked as player (player.uid)}
@@ -250,10 +267,17 @@
 				<b class="reveal__place" data-testid="quiz-reveal-{player.uid}-place-value">
 					{places[player.uid]}
 				</b>
+				<!--
+					«ВИ» ПОПЕРЕДУ, а не в хвості імені — як у смузі гравців і в «Знайди пару»
+					(прохання автора: «статуси треба ставити на початку»). У хвості позначку
+					на телефоні обрізав «+бали»: довге імʼя доходило до них раніше за неї, і
+					тепер, коли фінал — це саме це табло, так виглядав би й фінал.
+				-->
 				<span class="reveal__who">
+					{#if player.uid === me}<YouTag />{/if}
 					<Flag code={player.country} height={Math.max(14, Math.round(unit * 0.75))} />
 					<Avatar avatar={player.avatar} size={Math.max(22, Math.round(unit * 1.2))} />
-					{player.name}{#if player.uid === me}&nbsp;<YouTag />{/if}
+					{player.name}
 				</span>
 				<!--
 					Приріст стоїть ЛІВОРУЧ від суми: очима читають зліва направо, а
@@ -288,6 +312,13 @@
 	-->
 	{#if roundsTotal > 0}
 		<RoundIndicator current={rounds.length + 1} total={roundsTotal} results={rounds} />
+	{/if}
+
+	{#if actions}
+		<div class="reveal__actions">{@render actions()}</div>
+	{/if}
+	{#if note}
+		<p class="reveal__note" data-testid="quiz-waiting-host-text">{@html formatFont(note)}</p>
 	{/if}
 </section>
 
@@ -428,6 +459,27 @@
 	 * лишалися б без видимої відповіді. Нижні межі — ті самі сталі числа: на
 	 * телефоні табло таке саме, як було.
 	 */
+	/*
+	 * ДІЇ ФІНАЛУ — рядком, що переноситься: на телефоні дві кнопки поруч не
+	 * вміщаються, а обрізана кнопка гірша за дві в стовпчик. Самі кнопки й їхній
+	 * вигляд — у `QuizRoom`: сніпет стилізує той, хто його написав.
+	 */
+	.reveal__actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
+		width: 100%;
+	}
+
+	.reveal__note {
+		margin: 0;
+		text-align: center;
+		font-size: var(--font-size-sm);
+		color: var(--color-text-muted);
+	}
+
 	.reveal :global(.timer) {
 		height: max(6px, calc(var(--u) / 3));
 	}

@@ -55,5 +55,6 @@ export const quiz: Record<string, string> = {
 	'quiz.awayGoOn': 'Грати далі',
 	'quiz.awayVoted': 'Ваш голос враховано',
 	'quiz.awayKick': 'Виключити',
-	'quiz.nextRound': 'Наступний раунд'
+	'quiz.nextRound': 'Наступний раунд',
+	'quiz.waitingLeader': 'Чекаємо, доки лідер почне нову партію.'
 };

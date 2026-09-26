@@ -9,6 +9,7 @@
 	import QuizAway from './QuizAway.svelte';
 	import QuizRound from './QuizRound.svelte';
 	import QuizReveal from './QuizReveal.svelte';
+	import { isFinalTable, playedRounds } from '$lib/utils/quizScreen';
 	import type { CrossGameLinks } from '$lib/utils/crossGame';
 
 	/**
@@ -96,85 +97,25 @@
 		onkick,
 		cross
 	}: Props = $props();
+
+	const phase = $derived(match.phase(clock));
+	/** Табло ОСТАННЬОГО раунду і є фінал (`utils/quizScreen.ts`). */
+	const final = $derived(isFinalTable(match.over, phase, match.round, match.programme.length));
+	/** Смужки табло: щойно зіграний раунд — уже зіграний, у фіналі — усі. */
+	const outcomes = $derived(
+		match.myRoundsThrough(playedRounds(final, match.round, match.programme.length))
+	);
 </script>
 
-{#if match.over}
-	<section class="over text-panel" data-testid="quiz-over-panel">
-		<h2 class="over__title">{@html formatFont(t('common.gameOver'))}</h2>
-
-		<!--
-			Відсутні позначені й у підсумку, а не лише під час партії: рядок «хто зник»
-			і є відповідь на питання, чому в когось менше очок.
-		-->
-		<QuizScores
-			players={match.players}
-			answered={match.answered}
-			scores={match.scores}
-			withScores
-			layout="table"
-			away={match.awayOthers.map((player) => player.uid)}
-			{me}
-		/>
-
-		{#if amHost}
-			<div class="over__actions">
-				<button
-					type="button"
-					class="btn-primary"
-					onclick={onRematch}
-					data-testid="quiz-play-again-btn"
-				>
-					{@html formatFont(t('common.playAgain'))}
-				</button>
-				<button type="button" class="chip" onclick={onClose} data-testid="quiz-close-btn">
-					{@html formatFont(t('pairs.closeRoom'))}
-				</button>
-			</div>
-		{:else}
-			{#if onPlayNext}
-				<button type="button" class="chip" onclick={onPlayNext} data-testid="quiz-play-next-btn">
-					{@html formatFont(t('pairs.playNext'))}
-				</button>
-			{/if}
-			<p class="over__wait" data-testid="quiz-waiting-host-text">
-				{@html formatFont(t('pairs.waitingHost'))}
-			</p>
-		{/if}
-
-		<!--
-			Вихід у меню — посиланням, а не кнопкою: це навігація, і «відкрити в новій
-			вкладці» мусить працювати.
-		-->
-		<!--
-			ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом.
-		
-			Прохання автора: «після фіналу можна повторити і поточну гру „Грати
-			знову“, і іншу гру». Кнопки дві, бо це два різні кроки: господар створює
-			кімнату іншої гри (посилання несе код цієї, щоб нова могла про себе
-			сказати), а решта чекає й переходить за оголошеним кодом.
-		
-			Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці» мусить
-			працювати. Той самий взірець, що у виході в меню поруч.
-		-->
-		{#if cross.next}
-			<a href={cross.next} class="btn-primary" data-testid="room-next-link">
-				{@html formatFont(t('room.goNext'))}
-			</a>
-		{:else if amHost}
-			<a href={cross.create} class="chip" data-testid="room-other-game-link">
-				{@html formatFont(t(cross.createLabel))}
-			</a>
-		{/if}
-
-		<a href={langPath(lang)} class="chip" data-testid="quiz-main-menu-link">
-			{@html formatFont(t('common.mainMenu'))}
-		</a>
-	</section>
-{:else}
+{#if !match.over}
 	<!--
 		Вікно очікування ІСНУЄ, лише поки партія чекає. Ухвалене рішення прибирає
 		його: питати вже нема чого, а хто саме офлайн — видно сірим рядком у
 		переліку гравців.
+
+		І НАД ФІНАЛОМ ТЕЖ, поки кінець партії не записано: той, хто відпав на
+		останньому питанні, так само тримає партію, і голос «граємо далі» мусить
+		лишитися під рукою — інакше кнопки фіналу чекали б без кінця.
 	-->
 	<QuizAway
 		{text}
@@ -189,87 +130,176 @@
 		onResume={wait.canResume ? onResume : undefined}
 		onkick={amHost ? onkick : undefined}
 	/>
+{/if}
 
-	{@const phase = match.phase(clock)}
-	{#if phase === 'reveal'}
-		<!--
-			ТАБЛО МІЖ РАУНДАМИ — і смуга гравців зверху на цей час ЗНИКАЄ.
+{#if final}
+	<!--
+		ФІНАЛ — ТАБЛО ОСТАННЬОГО РАУНДУ (прохання автора 2026-09-26): великим, із
+		«+балами» останнього раунду, що докочуються в підсумок, і з діями під ним.
+		Доти за табло «Наступний раунд» ішла маленька панель із тими самими числами.
+		Ця гілка — і мить табла, і записаний кінець партії, тож анімація не
+		повторюється, коли партія стає `over` (`utils/quizScreen.ts`).
 
-			Дві таблиці одночасно (смуга вгорі й панель посередині) показували б ті
-			самі числа двічі, а очі тим часом шукали б, котра з них головна. Автор
-			попросив рівно це: «панель по центру екрана на час табла, рядок зверху на
-			цей час ховається».
-		-->
-		<QuizReveal
-			{text}
-			players={match.players}
-			scores={match.scores}
-			gains={match.roundGains}
-			away={match.awayOthers.map((player) => player.uid)}
-			rounds={match.myRounds}
-			roundsTotal={match.programme.length}
-			leftMs={match.revealLeftMs(clock)}
-			limitMs={match.revealMs}
-			{me}
-		/>
-	{:else}
-		<!--
-			ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
-
-			Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу саме
-			тоді, коли вона потрібна на питанні. Під час раунду видно лише склад
-			гравців із позначкою «вже відповів».
-		-->
-		<!--
-			КНОПКА ПАУЗИ — ТУТ, поруч зі смугою гравців, а не в дошці.
-			
-			Смуга — це все про кімнату: хто грає, хто відповів, кого немає. Пауза
-			належить туди ж: вона про партію, а не про питання. У дошці вона стояла б
-			поруч із відповідями й читалася б як одна з них.
-
-			Поки пауза стоїть, кнопки немає: зняти її можна у вікні, яке її й показує.
-
-			У раунді БЕЗ МЕЖІ кнопки немає теж. Пауза тут — зсув дедлайну, щоб ніхто не
-			втрачав час, а дедлайну немає: раунд і так чекає кожного. Кнопка, яка
-			нічого не спиняє, але накриває всім питання вікном, була б лише способом
-			заважати.
-		-->
-		<div class="room__strip">
-			<QuizScores
-				players={match.players}
-				answered={match.answered}
-				scores={match.scores}
-				withScores={false}
-				away={match.awayOthers.map((player) => player.uid)}
-				{me}
-			/>
-
-			{#if wait.pausedBy === null && match.pace.round !== 'unlimited' && !match.iAmSpectator}
+		Відсутні позначені й тут: рядок «хто зник» і є відповідь на питання, чому в
+		когось менше очок.
+	-->
+	<QuizReveal
+		{text}
+		title={t('common.gameOver')}
+		testId="quiz-over-panel"
+		note={amHost ? undefined : text('quiz.waitingLeader')}
+		players={match.players}
+		scores={match.scores}
+		gains={match.roundGains}
+		away={match.awayOthers.map((player) => player.uid)}
+		rounds={outcomes}
+		roundsTotal={match.programme.length}
+		{me}
+	>
+		{#snippet actions()}
+			<!--
+				КНОПКИ ОЖИВАЮТЬ, ЛИШЕ КОЛИ КІНЕЦЬ ПАРТІЇ ЗАПИСАНО. Табло останнього раунду
+				вже на екрані, а ведучий закриває раунд окремим ходом, коли табло
+				простояло свій час. Реванш раніше стер би журнал до того, як запишеться
+				нагорода, а «наступна партія» глядача до `over` не робить нічого.
+			-->
+			{#if amHost}
 				<button
 					type="button"
-					class="room__pause text-panel"
-					disabled={!wait.canPause}
-					onclick={onPause}
-					data-testid="quiz-pause-btn"
+					class="btn-primary"
+					onclick={onRematch}
+					disabled={!match.over}
+					data-testid="quiz-play-again-btn"
 				>
-					<Pause size={16} aria-hidden="true" />
-					{@html formatFont(text('quiz.pause'))}
+					{@html formatFont(t('common.playAgain'))}
 				</button>
+				<button
+					type="button"
+					class="chip"
+					onclick={onClose}
+					disabled={!match.over}
+					data-testid="quiz-close-btn"
+				>
+					{@html formatFont(t('pairs.closeRoom'))}
+				</button>
+			{:else}
+				{#if onPlayNext}
+					<button
+						type="button"
+						class="chip"
+						onclick={onPlayNext}
+						disabled={!match.over}
+						data-testid="quiz-play-next-btn"
+					>
+						{@html formatFont(t('pairs.playNext'))}
+					</button>
+				{/if}
 			{/if}
-		</div>
 
-		<QuizRound
-			{text}
-			{phase}
-			step={match.step}
-			leftMs={match.leftMs(clock)}
-			limitLeftMs={match.limitLeftMs(clock)}
-			limitMs={match.limitMs}
-			answered={match.iAnswered}
-			watching={match.iAmSpectator}
-			{onanswer}
+			<!--
+				ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом.
+
+				Прохання автора: «після фіналу можна повторити і поточну гру „Грати
+				знову“, і іншу гру». Кнопки дві, бо це два різні кроки: господар створює
+				кімнату іншої гри (посилання несе код цієї, щоб нова могла про себе
+				сказати), а решта чекає й переходить за оголошеним кодом.
+
+				Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці» мусить
+				працювати. Кімнату іншої гри — лише після записаного кінця: інакше
+				господар пішов би з партії, яку ще не закрито.
+			-->
+			{#if cross.next}
+				<a href={cross.next} class="btn-primary" data-testid="room-next-link">
+					{@html formatFont(t('room.goNext'))}
+				</a>
+			{:else if amHost && match.over}
+				<a href={cross.create} class="chip" data-testid="room-other-game-link">
+					{@html formatFont(t(cross.createLabel))}
+				</a>
+			{/if}
+
+			<a href={langPath(lang)} class="chip" data-testid="quiz-main-menu-link">
+				{@html formatFont(t('common.mainMenu'))}
+			</a>
+		{/snippet}
+	</QuizReveal>
+{:else if phase === 'reveal'}
+	<!--
+		ТАБЛО МІЖ РАУНДАМИ — і смуга гравців зверху на цей час ЗНИКАЄ.
+
+		Дві таблиці одночасно (смуга вгорі й панель посередині) показували б ті
+		самі числа двічі, а очі тим часом шукали б, котра з них головна. Автор
+		попросив рівно це: «панель по центру екрана на час табла, рядок зверху на
+		цей час ховається».
+	-->
+	<QuizReveal
+		{text}
+		testId="quiz-reveal-panel"
+		players={match.players}
+		scores={match.scores}
+		gains={match.roundGains}
+		away={match.awayOthers.map((player) => player.uid)}
+		rounds={outcomes}
+		roundsTotal={match.programme.length}
+		leftMs={match.revealLeftMs(clock)}
+		limitMs={match.revealMs}
+		{me}
+	/>
+{:else}
+	<!--
+		ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
+
+		Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу саме
+		тоді, коли вона потрібна на питанні. Під час раунду видно лише склад
+		гравців із позначкою «вже відповів».
+	-->
+	<!--
+		КНОПКА ПАУЗИ — ТУТ, поруч зі смугою гравців, а не в дошці.
+		
+		Смуга — це все про кімнату: хто грає, хто відповів, кого немає. Пауза
+		належить туди ж: вона про партію, а не про питання. У дошці вона стояла б
+		поруч із відповідями й читалася б як одна з них.
+
+		Поки пауза стоїть, кнопки немає: зняти її можна у вікні, яке її й показує.
+
+		У раунді БЕЗ МЕЖІ кнопки немає теж. Пауза тут — зсув дедлайну, щоб ніхто не
+		втрачав час, а дедлайну немає: раунд і так чекає кожного. Кнопка, яка
+		нічого не спиняє, але накриває всім питання вікном, була б лише способом
+		заважати.
+	-->
+	<div class="room__strip">
+		<QuizScores
+			players={match.players}
+			answered={match.answered}
+			away={match.awayOthers.map((player) => player.uid)}
+			{me}
 		/>
-	{/if}
+
+		{#if wait.pausedBy === null && match.pace.round !== 'unlimited' && !match.iAmSpectator}
+			<button
+				type="button"
+				class="room__pause text-panel"
+				disabled={!wait.canPause}
+				onclick={onPause}
+				data-testid="quiz-pause-btn"
+			>
+				<Pause size={16} aria-hidden="true" />
+				{@html formatFont(text('quiz.pause'))}
+			</button>
+		{/if}
+	</div>
+
+	<QuizRound
+		{text}
+		{phase}
+		step={match.step}
+		leftMs={match.leftMs(clock)}
+		limitLeftMs={match.limitLeftMs(clock)}
+		limitMs={match.limitMs}
+		answered={match.iAnswered}
+		watching={match.iAmSpectator}
+		{onanswer}
+	/>
 {/if}
 
 <style>
@@ -317,45 +347,11 @@
 	}
 
 	/*
-	 * ПІДСУМОК ВУЗЬКИЙ, хоч стовпець під партію й широкий: це таблиця з кількох
-	 * рядків, і на 1100px вона перетворюється на рядок, який око не проходить за
-	 * раз. Те саме число, що в соло-підсумках ігор.
+	 * ФІНАЛ — ВЕЛИКИЙ, у розмірі табла між раундами (прохання автора 2026-09-26),
+	 * тож власної панелі тут більше немає: доти підсумок стояв вузькою карткою на
+	 * 560px із дрібним шрифтом — і головний екран партії виходив найменшим. Рядок
+	 * «на кого чекаємо» малює саме табло (`note`), під діями, всередині панелі.
 	 */
-	.over {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-md);
-		width: 100%;
-		max-width: var(--measure-feeding);
-		padding: var(--space-md);
-		box-sizing: border-box;
-	}
-
-	.over__title {
-		margin: 0;
-		font-size: var(--font-size-xl);
-		text-align: center;
-	}
-
-	/*
-	 * Дії — рядком, що переноситься: на телефоні дві кнопки поруч не вміщаються, а
-	 * обрізана кнопка гірша за дві в стовпчик.
-	 */
-	.over__actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: var(--space-sm);
-	}
-
-	.over__wait {
-		margin: 0;
-		text-align: center;
-		font-size: var(--font-size-sm);
-		color: var(--color-text-muted);
-	}
-
 	.chip {
 		display: inline-flex;
 		align-items: center;
@@ -367,5 +363,11 @@
 		font: inherit;
 		text-decoration: none;
 		cursor: pointer;
+	}
+
+	/* Дії фіналу до запису кінця партії: на місці, але ще не приймають натиску. */
+	.chip:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 </style>

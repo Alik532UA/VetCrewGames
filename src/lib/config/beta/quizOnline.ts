@@ -156,7 +156,7 @@ export const quizOnlineTab: BetaTab = {
 				en: 'Play two rounds: answer at once in the first, and just before the bar runs out in the second. A correct fast answer must bring more points than a correct slow one.'
 			},
 			coverage: 'manual',
-			testid: 'quiz-score-*-value'
+			testid: 'quiz-reveal-*-value'
 		},
 		{
 			id: 'quizonline_12',
@@ -322,6 +322,21 @@ export const quizOnlineTab: BetaTab = {
 			coverage: 'covered',
 			test: 'src/lib/components/quiz/standings.test.ts',
 			testid: 'quiz-reveal-*-place-value'
+		},
+		{
+			/*
+			 * ФІНАЛ — ТАБЛО ОСТАННЬОГО РАУНДУ (прохання автора 2026-09-26). Правило
+			 * екрана перевіряє `utils/quizScreen.test.ts`, вигляд — `standings.test.ts`;
+			 * руками — те, чого вони не мають: справжня партія до кінця.
+			 */
+			id: 'quizonline_25',
+			category: { uk: 'Фінал', en: 'The final' },
+			text: {
+				uk: 'Дограйте партію до кінця. Після останнього раунду мусить одразу зʼявитися ВЕЛИКЕ табло «Гру завершено!» з «+балами» останнього раунду й місцями — без проміжного «Наступний раунд» і без маленької панелі після нього. Кнопки «Грати знову» й «Закрити кімнату» за кілька секунд мусять ожити; у гостя під табло — «Чекаємо, доки лідер почне нову партію.»',
+				en: 'Play the game to the end. Right after the last round a BIG “Game over!” scoreboard must appear with the last round’s “+points” and the places — with no “Next round” step and no small panel after it. The “Play again” and “Close room” buttons must come alive within a few seconds; a guest sees “Waiting for the host to start a new game.” under the scoreboard.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-over-panel'
 		}
 	]
 };
