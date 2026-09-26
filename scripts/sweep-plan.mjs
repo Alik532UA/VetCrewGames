@@ -18,6 +18,10 @@
  * (обрив посеред запису в старій збірці), тримав «господаря на звʼязку» назавжди.
  * Вузол, старший за тишу, зноситься; справжня вкладка поставить свій знову сама
  * (`keepNode` у `net/presence.ts` стежить за своїм вузлом).
+ *
+ * І ЗАПИСИ АВТОМАТИЧНОГО ПОШУКУ (`seek/{uid}`, рішення автора 2026-09-26), старші за тишу:
+ * живий запис гасне сам (`onDisconnect`), а той, що пережив обрив, інакше тримався б
+ * у кожному списку пошуку. Справжня вкладка, що досі чекає, поставить свій знову.
  */
 
 /** Скільки тиші означає «сюди більше ніхто не вернеться». */
@@ -76,6 +80,7 @@ export function lastSeenOf(info) {
  *   lobby: Branch,
  *   presence: Branch,
  *   myRooms: Branch,
+ *   seek?: Branch,
  *   now: number
  * }} SweepInput
  * @typedef {{
@@ -111,7 +116,7 @@ const branch = (value) =>
  * @param {SweepInput} input
  * @returns {SweepPlan}
  */
-export function planSweep({ rooms, lobby, presence, myRooms, now }) {
+export function planSweep({ rooms, lobby, presence, myRooms, seek, now }) {
 	const all = branch(rooms);
 	/** @type {DeadRoom[]} */
 	const dead = [];
@@ -188,6 +193,11 @@ export function planSweep({ rooms, lobby, presence, myRooms, now }) {
 		for (const [code, entry] of Object.entries(branch(codes))) {
 			if (!alive(code) && !fresh(entry)) paths.push(`myRooms/${uid}/${code}`);
 		}
+	}
+
+	// Запис пошуку ні на яку кімнату не вказує: старий — привид, хай що в ньому лежить.
+	for (const [uid, entry] of Object.entries(branch(seek))) {
+		if (!fresh(entry)) paths.push(`seek/${uid}`);
 	}
 
 	return {

@@ -185,6 +185,16 @@ const QUIZ = '90432';
  * створенні, тобто з рівно однієї причини: решта `info` правильна.
  */
 const BOUNDS = '90433';
+/**
+ * Кімнати для ЗБІГУ автоматичного пошуку (рішення автора 2026-09-26): господаря й
+ * стороннього — у лобі, ще одна господаря — уже в партії. Усі «Знайди пару» тієї самої
+ * версії, що в `info()`, тож відмову збігу дає саме та умова, що в назві випадку.
+ */
+const SEEK = '90434';
+const SEEK_B = '90435';
+const SEEK_PLAY = '90436';
+/** Запис пошуку: гра → версія правил її збірки, і серверна мить. */
+const seekEntry = (games) => ({ games, at: SERVER_TIME });
 const info = (hostUid) => ({
 	gameId: 'pairs',
 	rulesVersion: 2,
@@ -2229,6 +2239,206 @@ const CASES = [
 			const closed = await write(`rooms/${LIST}`, null, host.token);
 			return closed === 200 ? write(`lobby/pairs/${LIST}`, null, host.token) : closed;
 		}
+	},
+
+	/*
+	 * АВТОМАТИЧНИЙ ПОШУК — `seek/{uid}` (рішення автора 2026-09-26). Кожна відмова — з
+	 * рівно однієї причини: решта запису правильна, а кімната збігу — у лобі тієї самої
+	 * гри й версії, яку шукач просив, якщо назва випадку не каже іншого.
+	 */
+	{
+		// Реєстрація `onDisconnect().remove()` — це право видалити запис, якого ще немає:
+		// саме на ній колись падав перелік кімнат (докблок `lobby/$gameId/$code`).
+		name: 'шукач домовляється прибрати запис, якого ще немає',
+		allowed: true,
+		run: () => write(`seek/${guest.uid}`, null, guest.token)
+	},
+	{
+		name: 'шукач ставить свій запис автопошуку',
+		allowed: true,
+		run: () => write(`seek/${guest.uid}`, seekEntry({ pairs: 2, quiz: 2 }), guest.token)
+	},
+	{
+		name: 'шукач читає свій запис',
+		allowed: true,
+		run: () => read(`seek/${guest.uid}`, guest.token)
+	},
+	{
+		name: 'автопошук читають обмеженим запитом за часом',
+		allowed: true,
+		run: () => readQuery('seek', 'orderBy=%22at%22&limitToLast=25', host.token)
+	},
+	{
+		name: 'автопошук читають БЕЗ обмеження',
+		allowed: false,
+		run: () => read('seek', host.token)
+	},
+	{
+		name: 'автопошук читають із ЗАВЕЛИКОЮ межею',
+		allowed: false,
+		run: () => readQuery('seek', 'orderBy=%22at%22&limitToLast=26', host.token)
+	},
+	{
+		name: 'автопошук читають з межею, але в іншому порядку',
+		allowed: false,
+		run: () => readQuery('seek', 'orderBy=%22%24key%22&limitToLast=10', host.token)
+	},
+	{
+		name: 'сторонній читає ЧУЖИЙ запис автопошуку',
+		allowed: false,
+		run: () => read(`seek/${guest.uid}`, stranger.token)
+	},
+	{
+		name: 'сторонній ставить запис автопошуку за іншого',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, seekEntry({ pairs: 2 }), stranger.token)
+	},
+	{
+		name: 'запис автопошуку без ігор',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		// Правила дітей не діють, коли замість обʼєкта лягає рядок (докблок `games` у `lobby`).
+		name: 'ігри автопошуку — рядок, а не набір',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, { games: 'pairs', at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'автопошук у невідому гру',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, seekEntry({ chess: 1 }), guest.token)
+	},
+	{
+		name: 'версія «Знайди пару» в автопошуку — не число',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, seekEntry({ pairs: '2' }), guest.token)
+	},
+	{
+		name: 'версія вікторини в автопошуку — не число',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, seekEntry({ quiz: '2' }), guest.token)
+	},
+	{
+		name: 'запис автопошуку з клієнтським часом',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, { ...seekEntry({ pairs: 2 }), at: 1000 }, guest.token)
+	},
+	{
+		name: 'запис автопошуку з часом із майбутнього',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, { ...seekEntry({ pairs: 2 }), at: FUTURE() }, guest.token)
+	},
+	{
+		// Імені тут немає навмисно: списку автопошуку не показує жоден екран.
+		name: 'у запис автопошуку кладуть імʼя',
+		allowed: false,
+		run: () =>
+			write(`seek/${guest.uid}`, { ...seekEntry({ pairs: 2 }), name: 'Гість' }, guest.token)
+	},
+	{
+		name: 'господар створює кімнату для збігу',
+		allowed: true,
+		run: () => write(`rooms/${SEEK}/info`, info(host.uid), host.token)
+	},
+	{
+		name: 'збіг на кімнату, де господар — інший',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}/match`, { code: SEEK, gameId: 'pairs' }, stranger.token)
+	},
+	{
+		// Шукач згоден і на вікторину тієї самої версії, тож відмова — рівно через те, що
+		// кімната іншої гри, ніж названо.
+		name: 'збіг називає іншу гру, ніж у кімнати',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}/match`, { code: SEEK, gameId: 'quiz' }, host.token)
+	},
+	{
+		name: 'збіг на кімнату, де вже йде партія',
+		allowed: false,
+		run: async () => {
+			await seed(`rooms/${SEEK_PLAY}/info`, {
+				...info(host.uid),
+				status: 'playing',
+				createdAt: Date.now()
+			});
+			return write(`seek/${guest.uid}/match`, { code: SEEK_PLAY, gameId: 'pairs' }, host.token);
+		}
+	},
+	{
+		name: 'у збіг кладуть зайве поле',
+		allowed: false,
+		run: () =>
+			write(`seek/${guest.uid}/match`, { code: SEEK, gameId: 'pairs', by: host.uid }, host.token)
+	},
+	{
+		name: 'другий шукач ставить запис лише у вікторину',
+		allowed: true,
+		run: () => write(`seek/${stranger.uid}`, seekEntry({ quiz: 2 }), stranger.token)
+	},
+	{
+		name: 'збіг на гру, якої шукач не просив',
+		allowed: false,
+		run: () => write(`seek/${stranger.uid}/match`, { code: SEEK, gameId: 'pairs' }, host.token)
+	},
+	{
+		// Версію звіряє база, а не лише пошук: інакше дві несумісні збірки зводив би
+		// будь-хто з підробленим клієнтом.
+		name: 'збіг на кімнату іншої версії правил',
+		allowed: false,
+		run: async () => {
+			const rewritten = await write(
+				`seek/${stranger.uid}`,
+				seekEntry({ pairs: 3 }),
+				stranger.token
+			);
+			if (rewritten !== 200) return rewritten;
+			return write(`seek/${stranger.uid}/match`, { code: SEEK, gameId: 'pairs' }, host.token);
+		}
+	},
+	{
+		name: 'господар кімнати в лобі вписує збіг у чужий запис',
+		allowed: true,
+		run: () => write(`seek/${guest.uid}/match`, { code: SEEK, gameId: 'pairs' }, host.token)
+	},
+	{
+		name: 'другий господар створює кімнату для збігу',
+		allowed: true,
+		run: () => write(`rooms/${SEEK_B}/info`, info(stranger.uid), stranger.token)
+	},
+	{
+		// Двоє знайшли одного — лягає перший, другий чує відмову й шукає далі.
+		name: 'другий збіг поверх першого',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}/match`, { code: SEEK_B, gameId: 'pairs' }, stranger.token)
+	},
+	{
+		// Так після обриву запис ставить `keepNode` — і так стер би збіг, що саме ліг.
+		name: 'шукач переписує свій запис після збігу, стираючи збіг',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, seekEntry({ pairs: 2, quiz: 2 }), guest.token)
+	},
+	{
+		// Заборонено лише ЗАГУБИТИ збіг: решту свого запису власник править і далі.
+		name: 'шукач після збігу править свої ігри, лишаючи збіг',
+		allowed: true,
+		run: () => write(`seek/${guest.uid}/games/quiz`, 5, guest.token)
+	},
+	{
+		name: 'сторонній знімає ЧУЖИЙ запис автопошуку',
+		allowed: false,
+		run: () => write(`seek/${guest.uid}`, null, stranger.token)
+	},
+	{
+		name: 'шукач знімає свій запис зі збігом',
+		allowed: true,
+		run: () => write(`seek/${guest.uid}`, null, guest.token)
+	},
+	{
+		// Прибрати за собою: контракт автопошуку над емулятором іде тим самим запуском.
+		name: 'другий шукач знімає свій запис',
+		allowed: true,
+		run: () => write(`seek/${stranger.uid}`, null, stranger.token)
 	},
 	{
 		// Якби пускало будь-який штамп, зонд завжди казав би «викладено» — тобто

@@ -320,7 +320,7 @@ describe('хмарна база', () => {
 		const gateText = readFileSync('scripts/check-rules.mjs', 'utf8');
 		const gate = [
 			...gateText.matchAll(
-				/[`'"]((?:rooms|users|lobby|presence|myRooms|handles|find|leaders|__rulesVersion)(?:\/[^`'"]*)?)[`'"]/g
+				/[`'"]((?:rooms|users|lobby|presence|myRooms|handles|find|leaders|seek|__rulesVersion)(?:\/[^`'"]*)?)[`'"]/g
 			)
 		].map((m) => wild(m[1]));
 		// Випадки гейту, що пишуть КІЛЬКОМА шляхами (`patch`), — так само основа плюс ключі.
