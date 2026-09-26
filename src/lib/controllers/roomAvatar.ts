@@ -2,7 +2,6 @@ import { DEFAULT_AVATAR } from '$lib/config/avatars';
 import { sessionStore } from '$lib/services/storage';
 import { takenAvatars } from '$lib/utils/roomAvatars';
 import { toast } from './toast.svelte';
-import type { Role } from '$lib/net/roomTypes';
 import type { RoomMatch, RoomSession } from './roomSession.svelte';
 
 /**
@@ -36,18 +35,16 @@ export function roomAvatarOf<M extends RoomMatch>(session: RoomSession<M>): stri
 	return mine ? mine.avatar : session.player.forRoom();
 }
 
-/** Переписати свій рядок складу з іншою аватаркою; роль лишається як була. */
+/**
+ * Переписати у своєму рядку складу ЛИШЕ аватарку: імʼя, прапор і роль лишаються як
+ * були. Доти рядок писався заново цілком (`joinRoom`), з імʼям, обчисленим знову.
+ */
 function rewrite<M extends RoomMatch>(
 	session: RoomSession<M>,
 	label: string,
 	avatar: string | undefined
 ): Promise<boolean> {
-	const name = session.player.forEntry(session.lobby.takenNames);
-	const { country } = session.player;
-	const role: Role = session.myRole;
-	return session.act(label, () =>
-		session.net.joinRoom(session.code, name, undefined, country, avatar, role)
-	);
+	return session.act(label, () => session.net.updateMe(session.code, { avatar: avatar ?? null }));
 }
 
 /**

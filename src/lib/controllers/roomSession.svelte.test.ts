@@ -86,6 +86,7 @@ function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 	const net = {
 		createRoom: vi.fn(async () => '42'),
 		joinRoom: vi.fn(async () => {}),
+		updateMe: vi.fn(async () => {}),
 		peekRoom: vi.fn(async () => peek),
 		peekMembers: vi.fn(async () => [] as Member[]),
 		roomTransport: vi.fn(async () => room.transport()),
@@ -257,14 +258,31 @@ describe('вхід у кімнату', () => {
 
 		await session.enter('join');
 
-		expect(net.joinRoom).toHaveBeenCalledWith(
-			'42',
-			'Гравець',
-			undefined,
-			'',
-			undefined,
-			'spectator'
-		);
+		expect(net.joinRoom).toHaveBeenCalledWith('42', {
+			name: 'Гравець',
+			country: '',
+			newcomer: 'spectator'
+		});
+	});
+
+	/**
+	 * ПОЗНАЧКА МАЛОГО ЕКРАНА — ВІД АДАПТЕРА ГРИ, А НЕ З МЕРЕЖІ (шостий аудит, A3): доти
+	 * її читав сам `rtdbRoom`, і в сесії з кімнатою в памʼяті вона була невидима.
+	 *
+	 * Зворотний експеримент: не передавати `compact` на вході — червоніє.
+	 */
+	it('позначку малого екрана вхід і створення беруть в адаптера гри', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const phone = { ...pairsGame, compact: () => true };
+		const { session, net } = sessionFor(room, roomInfo(), GUEST, phone);
+		session.joinCode = '42';
+		await session.enter('join');
+		expect(net.joinRoom).toHaveBeenCalledWith('42', expect.objectContaining({ compact: true }));
+		cleanup?.();
+
+		const host = sessionFor(room, null, HOST, phone);
+		await host.session.enter('create');
+		expect(host.net.createRoom).toHaveBeenCalledWith(expect.objectContaining({ compact: true }));
 	});
 
 	/**
@@ -283,7 +301,11 @@ describe('вхід у кімнату', () => {
 
 		await session.enter('join');
 
-		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', undefined, '', undefined, 'player');
+		expect(net.joinRoom).toHaveBeenCalledWith('42', {
+			name: 'Гравець',
+			country: '',
+			newcomer: 'player'
+		});
 	});
 
 	it('між партіями глядач може стати гравцем, а посеред партії — ні', async () => {
@@ -294,16 +316,14 @@ describe('вхід у кімнату', () => {
 		session.joinCode = '42';
 		await session.enter('join');
 		await settle();
-		net.joinRoom.mockClear();
-
 		await session.setRole('player');
-		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', 'player', '', undefined, 'player');
+		expect(net.updateMe).toHaveBeenCalledWith('42', { role: 'player' });
 
-		net.joinRoom.mockClear();
+		net.updateMe.mockClear();
 		await room.transport().setStatus('playing', rosterOf(members()));
 		await settle();
 		await session.setRole('player');
-		expect(net.joinRoom, 'посеред партії роль не міняється').not.toHaveBeenCalled();
+		expect(net.updateMe, 'посеред партії роль не міняється').not.toHaveBeenCalled();
 	});
 
 	it('помилка правил — порада про правила, а не «спробуйте ще раз»', async () => {
@@ -865,7 +885,11 @@ describe('склад партії', () => {
 
 		await session.enter('join');
 
-		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', undefined, '', undefined, 'player');
+		expect(net.joinRoom).toHaveBeenCalledWith('42', {
+			name: 'Гравець',
+			country: '',
+			newcomer: 'player'
+		});
 	});
 });
 
@@ -1450,7 +1474,8 @@ describe('аватарка в кімнаті', () => {
 
 		const shown = session.match?.members.find((m) => m.uid === GUEST)?.avatar;
 		expect(shown).not.toBe(TAKEN);
-		expect(net.joinRoom).toHaveBeenLastCalledWith('42', 'Гравець', undefined, '', shown, 'player');
+		expect(net.joinRoom, 'сам вхід — власною парою').toHaveBeenCalledTimes(1);
+		expect(net.updateMe).toHaveBeenLastCalledWith('42', { avatar: shown });
 		expect(toast.info).toHaveBeenCalledWith('pairs.avatarReplaced', 8000);
 	});
 
@@ -1463,10 +1488,8 @@ describe('аватарка в кімнаті', () => {
 
 		const again = await guestIn(room);
 
-		expect(
-			again.net.joinRoom,
-			'записати — щоразу: вхід знову писав власну пару'
-		).toHaveBeenCalledTimes(2);
+		expect(again.net.joinRoom, 'вхід знову пише власну пару').toHaveBeenCalledTimes(1);
+		expect(again.net.updateMe, 'тож заміну — щоразу').toHaveBeenCalledTimes(1);
 		expect(toast.info).not.toHaveBeenCalled();
 		expect(sessionStore.get(SWAP_TOLD_KEY)).toMatch(/^42:/);
 	});
@@ -1480,6 +1503,7 @@ describe('аватарка в кімнаті', () => {
 
 		expect(session.match?.members.find((m) => m.uid === HOST)?.avatar).toBe(TAKEN);
 		expect(net.joinRoom, 'тільки сам вхід').toHaveBeenCalledTimes(1);
+		expect(net.updateMe).not.toHaveBeenCalled();
 		expect(toast.info).not.toHaveBeenCalled();
 	});
 
@@ -1489,20 +1513,15 @@ describe('аватарка в кімнаті', () => {
 			{ ...clashing()[1], avatar: 'dog:red' }
 		]);
 		const { session, net } = await guestIn(room);
-		net.joinRoom.mockClear();
+		net.updateMe.mockClear();
 
 		expect(await chooseRoomAvatar(session, TAKEN)).toBe(false);
-		expect(net.joinRoom).not.toHaveBeenCalled();
+		expect(net.updateMe).not.toHaveBeenCalled();
 
 		expect(await chooseRoomAvatar(session, 'fish:pink')).toBe(true);
-		expect(net.joinRoom).toHaveBeenCalledWith(
-			'42',
-			'Гравець',
-			undefined,
-			'',
-			'fish:pink',
-			'player'
-		);
+		expect(net.updateMe, 'лише плитка: імʼя, прапор і роль лишаються').toHaveBeenCalledWith('42', {
+			avatar: 'fish:pink'
+		});
 		expect(session.player.chooseAvatar).toHaveBeenCalledWith('fish:pink');
 	});
 
@@ -1514,24 +1533,28 @@ describe('аватарка в кімнаті', () => {
 		const { session, net } = await guestIn(room);
 		await room.transport().setStatus('playing', rosterOf(members()));
 		await settle();
-		net.joinRoom.mockClear();
+		net.updateMe.mockClear();
 
 		expect(await chooseRoomAvatar(session, 'fish:pink')).toBe(false);
-		expect(net.joinRoom).not.toHaveBeenCalled();
+		expect(net.updateMe).not.toHaveBeenCalled();
 	});
 
-	it('роль переписує рядок ТІЄЮ плиткою, що в кімнаті, а не глобальною', async () => {
+	/**
+	 * РОЛЬ МІНЯЄ ЛИШЕ РОЛЬ (шостий аудит, A3). Доти зміна ролі писала рядок складу
+	 * заново цілком — з імʼям, прапором і плиткою, обчисленими знову, — і плитку треба
+	 * було окремо стерегти, щоб глобальна не перетерла кімнатну.
+	 */
+	it('роль міняє лише роль — плитка в кімнаті лишається, якою була', async () => {
 		const room = new LocalRoom(roomInfo({ status: 'over', createdAt: 5 }), clashing());
 		const { session, net } = sessionFor(room, roomInfo({ status: 'over' }), GUEST);
 		session.joinCode = '42';
 		await session.enter('join');
 		await settle();
-		const shown = session.match?.members.find((m) => m.uid === GUEST)?.avatar;
-		net.joinRoom.mockClear();
+		net.updateMe.mockClear();
 
 		await session.setRole('spectator');
 
-		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', 'spectator', '', shown, 'spectator');
+		expect(net.updateMe).toHaveBeenCalledWith('42', { role: 'spectator' });
 	});
 
 	it('господар змінив аватарку — запис переліку наздоганяє', async () => {

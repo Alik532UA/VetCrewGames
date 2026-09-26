@@ -554,6 +554,24 @@ ${guilty.join(String.fromCharCode(10))}`
 		).toEqual([]);
 	});
 
+	/**
+	 * МЕРЕЖЕВИЙ ШАР НЕ БАЧИТЬ ЕКРАНА (шостий аудит, A3). Доти `rtdbRoom` сам питав
+	 * `matchMedia`, чи це телефон: у `RoomNet` такого поля не було, тож у сесії з
+	 * кімнатою в памʼяті позначку не було ні видно, ні чим підставити. Тепер її дає
+	 * адаптер гри (`RoomGame.compact`), а мережі — аргументом.
+	 *
+	 * Зворотний експеримент: повернути `isCompactScreen()` у `rtdbRoom` — червоніє.
+	 */
+	it('net/ не читає екрана й DOM', () => {
+		const code = (text: string) =>
+			text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+		const DOM = /\b(?:window|document|navigator)\s*[.?[]|matchMedia|utils\/screen|\$app\//;
+		const guilty = sources
+			.filter((f) => f.startsWith('src/lib/net/') && !isTest(f))
+			.filter((f) => DOM.test(code(read(f))));
+		expect(guilty, `мережа читає екран чи DOM:\n${guilty.join('\n')}`).toEqual([]);
+	});
+
 	describe('розмір файлу (§ 7)', () => {
 		const LIMITS: Array<[RegExp, number]> = [
 			[/\/routes\/.*\+page\.svelte$/, 400],

@@ -132,7 +132,7 @@ describe('після відписки колбек не приходить', () 
 		const net = await import('./rtdbRoom');
 		const presence = await import('./presence');
 		const code = await roomOf(host);
-		await as(guest, () => net.joinRoom(code, 'Гість'));
+		await as(guest, () => net.joinRoom(code, { name: 'Гість' }));
 
 		const who = (onEvent: (online: string[]) => void) =>
 			as(host, () => presence.watchPresence(code, onEvent));
@@ -155,7 +155,7 @@ describe('після відписки колбек не приходить', () 
 		const net = await import('./rtdbRoom');
 		const presence = await import('./presence');
 		const code = await roomOf(host);
-		await as(guest, () => net.joinRoom(code, 'Гість'));
+		await as(guest, () => net.joinRoom(code, { name: 'Гість' }));
 		// Наведення живе у вузлі присутності: без нього поле окремо не пишеться.
 		const leave = await as(guest, () => presence.trackPresence(code));
 		const hovers = (onEvent: (byUid: Record<string, number>) => void) =>

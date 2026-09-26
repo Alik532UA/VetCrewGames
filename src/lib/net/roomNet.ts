@@ -1,5 +1,5 @@
 import type { NewRoom } from './rtdbRoom';
-import type { Member, RoomInfo, RoomTransport } from './roomTypes';
+import type { Member, MemberPatch, RoomEntry, RoomInfo, RoomTransport } from './roomTypes';
 import { startRoomBeat } from './roomBeat';
 import { checkLiveRules } from './rulesLive';
 
@@ -26,18 +26,10 @@ import { checkLiveRules } from './rulesLive';
  */
 export interface RoomNet {
 	createRoom(options: NewRoom): Promise<string>;
-	/**
-	 * Зайти або повернутися. `newcomer` — роль того, кого в складі ще немає (у
-	 * розпочату партію «Знайди пару» новачок заходить глядачем).
-	 */
-	joinRoom(
-		code: string,
-		name: string,
-		role: Member['role'] | undefined,
-		country: string | undefined,
-		avatar: string | undefined,
-		newcomer: Member['role']
-	): Promise<void>;
+	/** Зайти або повернутися (`RoomEntry`: роль новачка, підпис, позначка екрана). */
+	joinRoom(code: string, entry: RoomEntry): Promise<void>;
+	/** Змінити у своєму рядку складу роль чи аватарку — без нового входу. */
+	updateMe(code: string, patch: MemberPatch): Promise<void>;
 	peekRoom(code: string): Promise<RoomInfo | null>;
 	/** Склад кімнати до входу; `null` — кімнати немає (`rtdbRoom.peekMembers`). */
 	peekMembers(code: string): Promise<Member[] | null>;
@@ -57,8 +49,8 @@ export interface RoomNet {
 /** Справжня мережа. */
 export const liveNet: RoomNet = {
 	createRoom: async (options) => (await import('./rtdbRoom')).createRoom(options),
-	joinRoom: async (code, name, role, country, avatar, newcomer) =>
-		(await import('./rtdbRoom')).joinRoom(code, name, role, country, avatar, newcomer),
+	joinRoom: async (code, entry) => (await import('./rtdbRoom')).joinRoom(code, entry),
+	updateMe: async (code, patch) => (await import('./rtdbRoom')).updateMe(code, patch),
 	peekRoom: async (code) => (await import('./rtdbRoom')).peekRoom(code),
 	peekMembers: async (code) => (await import('./rtdbRoom')).peekMembers(code),
 	roomTransport: async (code) => (await import('./rtdbRoom')).roomTransport(code),

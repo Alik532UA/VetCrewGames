@@ -158,9 +158,11 @@ const emulator: World = {
 				isPrivate: true
 			})
 		);
-		await as(guest, () => net.joinRoom(code, 'Гість'));
-		if (spectator) await as(stranger, () => net.joinRoom(code, 'Глядач', 'spectator'));
-		if (strangerPlays) await as(stranger, () => net.joinRoom(code, 'Сторонній', 'player'));
+		await as(guest, () => net.joinRoom(code, { name: 'Гість' }));
+		if (spectator)
+			await as(stranger, () => net.joinRoom(code, { name: 'Глядач', role: 'spectator' }));
+		if (strangerPlays)
+			await as(stranger, () => net.joinRoom(code, { name: 'Сторонній', role: 'player' }));
 		const seat = async (who: Connection): Promise<Seat> => ({
 			uid: who.uid,
 			transport: await as(who, () => net.roomTransport(code))
@@ -683,13 +685,6 @@ describe('rtdbRoom + емулятор: створення кімнати', () =>
 	});
 
 	/**
-	 * ТЕЛЕФОН ПОЗНАЧАЄ СЕБЕ В РЯДКУ СКЛАДУ (`Member.compact`), і правила це поле
-	 * НАЗИВАЮТЬ: інакше `$other: false` відкинув би вхід із телефона цілком — не
-	 * «сітка не та», а «не вдалося зайти».
-	 *
-	 * Зворотний експеримент: прибрати `compact` із правил — червоніє.
-	 */
-	/**
 	 * СКЛАД ДО ВХОДУ — для вікна «вас запросили» (рішення автора 2026-09-26): не
 	 * учасник бачить, хто вже в кімнаті (і які аватарки зайняті), а після входу — і
 	 * себе серед них. Кімнати немає — `null`, а не порожній склад.
@@ -714,13 +709,20 @@ describe('rtdbRoom + емулятор: створення кімнати', () =>
 		expect(before?.map((member) => member.uid)).toEqual([host.uid]);
 		expect(before?.[0]?.avatar, 'зайняту аватарку видно до входу').toBe('cat:blue');
 
-		await as(guest, () => net.joinRoom(code, 'Гість'));
+		await as(guest, () => net.joinRoom(code, { name: 'Гість' }));
 		const after = await as(guest, () => net.peekMembers(code));
 		expect(after?.map((member) => member.uid).sort()).toEqual([host.uid, guest.uid].sort());
 		expect(await as(guest, () => net.peekMembers('99999')), 'кімнати немає').toBeNull();
 		await as(host, () => net.closeRoom(code));
 	});
 
+	/**
+	 * ТЕЛЕФОН ПОЗНАЧАЄ СЕБЕ В РЯДКУ СКЛАДУ (`Member.compact`), і правила це поле
+	 * НАЗИВАЮТЬ: інакше `$other: false` відкинув би вхід із телефона цілком — не
+	 * «сітка не та», а «не вдалося зайти».
+	 *
+	 * Зворотний експеримент: прибрати `compact` із правил — червоніє.
+	 */
 	it('гість із телефона заходить і позначає малий екран', async () => {
 		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
 		const { host, guest } = people;
@@ -736,16 +738,45 @@ describe('rtdbRoom + емулятор: створення кімнати', () =>
 			})
 		);
 
-		vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) });
-		try {
-			await as(guest, () => net.joinRoom(code, 'Гість'));
-		} finally {
-			vi.unstubAllGlobals();
-		}
+		// Позначку дає адаптер гри, а мережа отримує її аргументом (шостий аудит, A3).
+		await as(guest, () => net.joinRoom(code, { name: 'Гість', compact: true }));
 
 		const { get, ref } = await import('firebase/database');
 		const row = await get(ref(guest.db, `rooms/${code}/members/${guest.uid}`));
 		expect(row.val()?.compact).toBe(true);
+		await as(host, () => net.closeRoom(code));
+	});
+
+	/**
+	 * СВІЙ РЯДОК — ОДНИМ ПОЛЕМ (шостий аудит, A3): роль і плитка міняються, а імʼя й
+	 * порядок лишаються. А того, кого прибрали, `updateMe` назад не вписує — без
+	 * імені рядок не складається, і правило його відкидає.
+	 */
+	it('роль і плитка — одним полем свого рядка; прибраного назад не вписати', async () => {
+		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
+		const { host, guest } = people;
+		const net = await import('./rtdbRoom');
+		const code = await as(host, () =>
+			net.createRoom({
+				gameId: 'pairs',
+				rulesVersion: 3,
+				seed: 1,
+				config: CONFIG,
+				name: 'Господар',
+				isPrivate: true
+			})
+		);
+		await as(guest, () => net.joinRoom(code, { name: 'Гість', avatar: 'cat:blue' }));
+
+		await as(guest, () => net.updateMe(code, { role: 'spectator', avatar: null }));
+		const { get, ref } = await import('firebase/database');
+		const row = (await get(ref(guest.db, `rooms/${code}/members/${guest.uid}`))).val();
+		expect(row).toMatchObject({ name: 'Гість', role: 'spectator', order: 2 });
+		expect(row?.avatar).toBeUndefined();
+
+		const transport = await as(host, () => net.roomTransport(code));
+		await transport.removeMember(guest.uid);
+		await expect(as(guest, () => net.updateMe(code, { role: 'player' }))).rejects.toThrow();
 		await as(host, () => net.closeRoom(code));
 	});
 });
@@ -773,7 +804,7 @@ describe('rtdbRoom + емулятор: піти назовсім', () => {
 				isPrivate: true
 			})
 		);
-		await as(guest, () => net.joinRoom(code, 'Гість'));
+		await as(guest, () => net.joinRoom(code, { name: 'Гість' }));
 		const transport = await as(host, () => net.roomTransport(code));
 		return { net, code, host, guest, transport };
 	}

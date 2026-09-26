@@ -356,7 +356,7 @@ describe('rtdbRoom: повна кімната', () => {
 		vi.mocked(get).mockResolvedValue({ val: () => full } as never);
 		writes.length = 0;
 
-		await expect(joinRoom('42', 'Новачок')).rejects.toThrow('room-full');
+		await expect(joinRoom('42', { name: 'Новачок' })).rejects.toThrow('room-full');
 		expect(writes, 'рядок складу не записано').toEqual([]);
 	});
 
@@ -367,7 +367,7 @@ describe('rtdbRoom: повна кімната', () => {
 		const withMe = Object.keys({ ...full, 'uid-host': {} }).length;
 		expect(withMe, 'перевірка жива: кімната понад межу').toBeGreaterThan(ROOM_CAPACITY);
 
-		await expect(joinRoom('42', 'Господар')).resolves.toBeUndefined();
+		await expect(joinRoom('42', { name: 'Господар' })).resolves.toBeUndefined();
 	});
 
 	it('місткість — те саме число, що межа `order` у правилі бази', () => {

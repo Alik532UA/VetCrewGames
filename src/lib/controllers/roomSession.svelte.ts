@@ -13,7 +13,6 @@ import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from '$lib/utils
 import { playersOf, rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 import { ReloadAdvice } from './reloadAdvice.svelte';
-import { roomAvatarOf } from './roomAvatar';
 
 export type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 
@@ -171,7 +170,8 @@ export class RoomSession<M extends RoomMatch> {
 					country: this.player.country,
 					avatar: this.player.forRoom(),
 					autoStart: quick,
-					isPrivate: quick ? false : this.isPrivate
+					isPrivate: quick ? false : this.isPrivate,
+					compact: this.game.compact?.()
 				});
 				if (stale()) return;
 				this.code = code;
@@ -224,7 +224,13 @@ export class RoomSession<M extends RoomMatch> {
 		if (stale()) return null;
 		const newcomer = newcomerRole(room, me, this.game.lateRole);
 		const { country } = this.player;
-		await this.net.joinRoom(wanted, who, undefined, country, this.player.forRoom(), newcomer);
+		await this.net.joinRoom(wanted, {
+			name: who,
+			country,
+			avatar: this.player.forRoom(),
+			newcomer,
+			compact: this.game.compact?.()
+		});
 		return wanted;
 	}
 
@@ -453,11 +459,7 @@ export class RoomSession<M extends RoomMatch> {
 	/** Змінити свою роль — у лобі й між партіями (перед реваншем), але не посеред гри. */
 	async setRole(role: Role): Promise<void> {
 		if (!this.match || this.match.status === 'playing') return;
-		const name = this.player.forEntry(this.lobby.takenNames);
-		const { country } = this.player;
-		await this.act('role not changed', () =>
-			this.net.joinRoom(this.code, name, role, country, roomAvatarOf(this), role)
-		);
+		await this.act('role not changed', () => this.net.updateMe(this.code, { role }));
 	}
 
 	/** Дія не вдалася: сказати людині й записати З КОДОМ кімнати — інакше звіт не скаже, де. */

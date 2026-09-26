@@ -55,6 +55,12 @@ export interface RoomGame<M extends RoomMatch> {
 	startConfig?(members: readonly Member[], online: readonly string[]): Record<string, number>;
 	createMatch(me: string, transport: RoomTransport): M;
 	/**
+	 * Позначка малого екрана для свого рядка складу (`Member.compact`): за нею старт
+	 * «Знайди пару» вибирає спільну сітку. Екран читає адаптер гри, а не мережа
+	 * (шостий аудит, A3). Немає — позначка не пишеться: гра нею не користується.
+	 */
+	compact?(): boolean;
+	/**
 	 * Що кладе в запис переліку понад спільне (набір ігор вікторини) — З КІМНАТИ,
 	 * а не зі сторінки: перелік тепер переоголошує й господар, що повернувся, і той,
 	 * хто перехопив ведення (аудит 2026-09-25).

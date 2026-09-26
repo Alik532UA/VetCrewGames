@@ -63,6 +63,7 @@ export function pairsGame(
 			return { seed: Math.floor(random() * 2 ** 31), config: { pairs, cols } };
 		},
 		createMatch: (me, transport) => new PairsMatch(me, transport),
+		compact: isCompactScreen,
 		/*
 		 * ОДНА СІТКА НА ВСІХ, І МІРИЛО — НАЙМЕНШИЙ ЕКРАН (рішення автора 2026-09-26):
 		 * є серед присутніх хоч один телефон — розкладка телефонна для всіх. Доти

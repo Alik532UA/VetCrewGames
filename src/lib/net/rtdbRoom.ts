@@ -2,9 +2,8 @@ import { isDenied } from './denied';
 import { connect, serverNow, serverTime } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
-import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
+import type { Member, MemberPatch, Move, RoomEntry, RoomInfo, RoomTransport } from './roomTypes';
 import { infoFromDb, membersFromDb, moveKey, rosterToRecord, snapshotFromDb } from './roomShape';
-import { isCompactScreen } from '$lib/utils/screen';
 
 /**
  * Кімната в Realtime Database — та сама, що `LocalRoom`, тільки справжня.
@@ -118,6 +117,8 @@ export interface NewRoom {
 	 * приходить лише намір, бо від нього залежить код.
 	 */
 	isPrivate?: boolean;
+	/** Малий екран господаря (`Member.compact`) — аргументом, як і в `RoomEntry`. */
+	compact?: boolean;
 	random?: () => number;
 }
 
@@ -236,7 +237,7 @@ export async function createRoom(options: NewRoom): Promise<string> {
 				// порожній рядок не пройшов би `.validate` (рівно дві літери).
 				...(options.country ? { country: options.country } : {}),
 				...(options.avatar ? { avatar: options.avatar } : {}),
-				...(isCompactScreen() ? { compact: true } : {})
+				...(options.compact ? { compact: true } : {})
 			});
 
 			// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
@@ -263,19 +264,11 @@ export const ROOM_CAPACITY = 12;
 /**
  * Зайти в кімнату — або повернутися в неї.
  *
- * `role` без значення означає «лишити як було»: після перезавантаження сторінка
- * заходить знову, і глядач, якого мовчки перевели в гравці, змінив би СКЛАД —
- * тобто перероздав би дошку всім. Роль міняється лише тоді, коли її справді
- * натиснули.
+ * `role` без значення означає «лишити як було» (`RoomEntry.role`). Роль міняється
+ * лише тоді, коли її справді натиснули, — і тоді вже `updateMe`, а не новий вхід.
  */
-export async function joinRoom(
-	code: string,
-	name: string,
-	role?: Member['role'],
-	country?: string,
-	avatar?: string,
-	newcomer: Member['role'] = 'player'
-): Promise<void> {
+export async function joinRoom(code: string, entry: RoomEntry): Promise<void> {
+	const { name, role, country, avatar, newcomer = 'player', compact } = entry;
 	const { uid, db } = await connect();
 	const { get, ref, set } = await import('firebase/database');
 
@@ -312,7 +305,7 @@ export async function joinRoom(
 		...(avatar ? { avatar } : {}),
 		// Малий екран — теж підпис пристрою, і теж переписується на кожному вході:
 		// за ним старт «Знайди пару» вибирає спільну сітку (`Member.compact`).
-		...(isCompactScreen() ? { compact: true } : {})
+		...(compact ? { compact: true } : {})
 	});
 
 	/*
@@ -327,6 +320,21 @@ export async function joinRoom(
 	 * скасовує входу в кімнату.
 	 */
 	await rememberOwnRoom(code);
+}
+
+/**
+ * ЗМІНИТИ СВІЙ РЯДОК СКЛАДУ — роль чи аватарку — не заходячи знову (шостий аудит,
+ * A3). Доти для цього кликали `joinRoom`: читання всього складу, повний запис рядка,
+ * а імʼя й прапор обчислювались заново — зміна плитки в лобі могла й перейменувати.
+ * Рядка немає (прибрали) — запис відкидає правило: без імені рядок не складається.
+ */
+export async function updateMe(code: string, patch: MemberPatch): Promise<void> {
+	const { uid, db } = await connect();
+	const { ref, update } = await import('firebase/database');
+	await update(ref(db, `rooms/${code}/members/${uid}`), {
+		...(patch.role ? { role: patch.role } : {}),
+		...(patch.avatar !== undefined ? { avatar: patch.avatar } : {})
+	});
 }
 
 /**

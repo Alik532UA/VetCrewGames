@@ -84,7 +84,7 @@ async function busyAccount(searchable: boolean) {
 			isPrivate: true
 		})
 	);
-	await as(alice, () => rooms.joinRoom(guestCode, 'Аліса'));
+	await as(alice, () => rooms.joinRoom(guestCode, { name: 'Аліса' }));
 	return { handle, code, guestCode };
 }
 
