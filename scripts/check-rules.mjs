@@ -198,9 +198,21 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/members/${guest.uid}`, member, guest.token)
 	},
 	{
-		name: 'господар переводить кімнату в playing',
+		/*
+		 * СТАРТ — СТАТУС І СКЛАД ОДНИМ ЗАПИСОМ, як у `rtdbRoom.setStatus`. Доти тут
+		 * писався лише статус, і кімната гейту йшла в партію без складу — стан, якого
+		 * клієнт не створює і в якому посеред «Знайди пару» хід тепер не лягає зовсім
+		 * (аудит 2026-09-25). Господаря в складі кімнати ще немає — див. «господар у
+		 * складі кімнати» нижче, — тож у складі старту лише гість.
+		 */
+		name: 'господар переводить кімнату в playing разом зі складом',
 		allowed: true,
-		run: () => write(`rooms/${CODE}/info/status`, 'playing', host.token)
+		run: () =>
+			patch(
+				`rooms/${CODE}`,
+				{ 'info/status': 'playing', 'info/roster': { [guest.uid]: { name: 'Тест', seat: 0 } } },
+				host.token
+			)
 	},
 	{
 		name: 'господар ставить серверну позначку початку партії',
@@ -1913,6 +1925,28 @@ const CASES = [
 				? write(`presence/${CODE}/${stranger.uid}`, { at: SERVER_TIME }, stranger.token)
 				: joined;
 		}
+	},
+	{
+		// `net/leave.ts` читає свій рядок складу, щоб знати, чи потрібен хід `leave`:
+		// черги є лише в тих, хто в складі.
+		name: 'учасник читає свій рядок складу',
+		allowed: true,
+		run: () => read(`rooms/${CODE}/info/roster/${guest.uid}`, guest.token)
+	},
+	{
+		/*
+		 * ПОСЕРЕД ПАРТІЇ «ЗНАЙДИ ПАРУ» ХІД — ЛИШЕ ЗІ СКЛАДУ (аудит 2026-09-25). Роль
+		 * `player` він написав собі сам, членство є, номер вільний, поля правильні —
+		 * відмова рівно через склад.
+		 */
+		name: 'посеред партії «Знайди пару» хід пише той, кого немає в складі',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000090`,
+				{ seq: 90, by: stranger.uid, type: 'flip', at: SERVER_TIME, payload: { index: 0 } },
+				stranger.token
+			)
 	},
 	{
 		// Роль `player` він написав собі сам — але в заморожений склад не потрапив.

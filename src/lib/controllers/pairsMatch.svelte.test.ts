@@ -50,6 +50,8 @@ const info = (over: Partial<RoomInfo> = {}): RoomInfo => ({
 	seed: 20260800,
 	status: 'playing',
 	hostUid: HOST,
+	// Партія йде — склад заморожено: посеред партії хід пише лише він (правило бази).
+	roster: rosterOf(members()),
 	// Чотири пари — партія коротка, але всі переходи в ній є.
 	config: { pairs: 4, cols: 4 },
 	...over
@@ -390,22 +392,23 @@ describe('пізній учасник відтворює, а не отримує
 		stop();
 	});
 
-	it('склад гравців змінився — дошка роздається заново', async () => {
+	it('кімната без складу (старша за поле) — новий гравець роздає дошку заново', () => {
 		/*
-		 * Черга рахується зі складу, тож новий гравець посеред партії означає іншу
-		 * партію. Це не «оптимізація на потім»: без переroзданої дошки двоє
-		 * рахували б чергу від різних списків.
+		 * Черга рахується зі складу, а без нього — з поточних `members`, тож новий
+		 * гравець означає іншу партію. Без переросданої дошки двоє рахували б чергу
+		 * від різних списків. Ходів тут немає: посеред партії без складу правило бази
+		 * ходу не пропускає (аудит 2026-09-25), тож кімната така — лише стара.
 		 */
-		const { room, host, stop } = table();
-		const [a] = findPair(host);
-		await host.flip(a);
-		expect(host.applied).toBe(1);
+		const room = new LocalRoom(info({ roster: undefined }), members());
+		const host = new PairsMatch(HOST, room.transport());
+		const off = host.listen();
+		expect(host.game.players, 'перевірка жива: роздано на двох').toHaveLength(2);
 
 		room.setMembers([...members(), { uid: 'uid-third', name: 'Третій', role: 'player', order: 3 }]);
 
-		expect(host.applied, 'журнал прокручується спочатку').toBe(1);
 		expect(host.players).toHaveLength(3);
-		stop();
+		expect(host.game.players, 'роздано заново — на трьох').toHaveLength(3);
+		off();
 	});
 });
 
@@ -637,7 +640,8 @@ describe('господар — той, кого назвала кімната', 
 	});
 
 	it('черга рахується за входом, а не за порядком у списку', () => {
-		const room = new LocalRoom(info(), [
+		// Без складу — щоб черга справді бралася з `members` і їхнього `order`.
+		const room = new LocalRoom(info({ roster: undefined }), [
 			{ uid: 'aaa-guest', name: 'Гість', role: 'player', order: 2 },
 			{ uid: HOST, name: 'Господар', role: 'player', order: 1 }
 		]);

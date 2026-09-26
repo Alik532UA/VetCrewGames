@@ -37,7 +37,11 @@ export async function leaveRoom(code: string): Promise<void> {
 	const { get, limitToLast, orderByKey, query, ref, remove, serverTimestamp, update } =
 		await import('firebase/database');
 	let left = false;
-	if ((await get(ref(db, `rooms/${code}/info/status`))).val() === 'playing') {
+	// Хід `leave` — лише тому, хто в СКЛАДІ: черги є лише в нього, а решті правило
+	// ходу посеред партії однаково відмовить (аудит 2026-09-25).
+	const playing = (await get(ref(db, `rooms/${code}/info/status`))).val() === 'playing';
+	const inRoster = playing && (await get(ref(db, `rooms/${code}/info/roster/${uid}`))).exists();
+	if (inRoster) {
 		const moves = ref(db, `rooms/${code}/moves`);
 		for (let attempt = 0; attempt < LEAVE_TRIES && !left; attempt += 1) {
 			const last = await get(query(moves, orderByKey(), limitToLast(1)));

@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'fa74de0fd755'" }
+      "$v": { ".read": "auth != null && $v === '9e974af03c69'" }
     },
 
     "rooms": {
@@ -362,8 +362,15 @@
              * справжнього, а пауза чужою рукою спиняла вікторину (аудит 2026-09-23).
              * Глядач лишається учасником — законність його ходів вирішують правила
              * гри, і однаково в усіх.
+             *
+             * АЛЕ ПОСЕРЕД ПАРТІЇ «ЗНАЙДИ ПАРУ» — ЛИШЕ СКЛАД СТАРТУ (аудит 2026-09-25).
+             * Журнал там без дірок: хід бере рівно наступний номер. Доти будь-який
+             * учасник, зокрема глядач, займав наступні номери сміттям раніше за гравців —
+             * і кожен тап людини падав на зайнятий номер, партія стояла. Вікторина
+             * пускає й новачка-гравця (склад у неї відкритий в один бік,
+             * `utils/roster.ts`), а номер бере першою діркою з повторами.
              */
-            ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid && root.child('rooms').child($code).child('members').child(auth.uid).exists()",
+            ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid && root.child('rooms').child($code).child('members').child(auth.uid).exists() && (root.child('rooms').child($code).child('info/status').val() !== 'playing' || root.child('rooms').child($code).child('info/gameId').val() === 'quiz' || root.child('rooms').child($code).child('info/roster').child(auth.uid).exists())",
             /*
              * КЛЮЧ — РІВНО ШІСТЬ ЦИФР, і номер ходу в межах цих шести. Доти ключ і
              * `seq` не мали жодної межі: хід із `seq: 1e20` робив «найбільший плюс

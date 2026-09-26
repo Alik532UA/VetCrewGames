@@ -314,6 +314,19 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		await table.close('guest');
 	});
 
+	/**
+	 * ПОСЕРЕД ПАРТІЇ «ЗНАЙДИ ПАРУ» ХІД ПИШЕ ЛИШЕ СКЛАД (аудит 2026-09-25): доти глядач
+	 * займав наступні номери сміттям раніше за гравців, і партія стояла.
+	 */
+	it('посеред партії «Знайди пару» хід того, кого немає в складі, не лягає', async () => {
+		const table = await world.table({ spectator: true });
+		await table.host.transport.setStatus('playing', rosterOf(table));
+
+		expect(await table.stranger.transport.append(flip(table.stranger.uid, 1))).toBe(false);
+		expect(await table.guest.transport.append(flip(table.guest.uid, 1))).toBe(true);
+		await table.close();
+	});
+
 	it('посеред партії ведення не бере той, кого немає в складі', async () => {
 		const table = await world.table({ strangerPlays: true });
 		await table.host.transport.setStatus('playing', rosterOf(table));

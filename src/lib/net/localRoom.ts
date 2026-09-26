@@ -327,6 +327,11 @@ export class LocalRoom {
 	 */
 	#allowed(move: Move): boolean {
 		if (!this.#members.some((member) => member.uid === move.by)) return false;
+		// Посеред партії «Знайди пару» — лише склад старту (правило `moves/$seq`).
+		const party = this.#info.status !== 'playing' || this.#info.gameId === 'quiz';
+		if (!party && !(this.#info.roster ?? []).some((entry) => entry.uid === move.by)) {
+			return false;
+		}
 		if (!this.#validSeq(move.seq)) return false;
 		if (!this.#validPayload(move.payload)) return false;
 		if (move.type === 'lead') {
