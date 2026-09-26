@@ -7,11 +7,14 @@ import type { Member, RoomSnapshot, RoomStatus, RosterEntry } from '$lib/net/roo
  * і кожне нове поле кімнати мусило не забутися двічі (аудит 2026-09-25). Тепер
  * знімок розкладається тут один раз, а матч лише приймає розклад — і додає своє
  * (роздачу, програму раундів).
+ *
+ * Обидва матчі `implements RoomEnvelope` (аудит 2026-09-26): `Object.assign` типів не
+ * перевіряє, і поле, перейменоване в конверті, у матчі мовчки лишилося б старим.
  */
 export interface RoomEnvelope {
 	members: Member[];
 	/** Заморожений склад партії; `null` — лобі або кімната старша за поле. */
-	roster: RosterEntry[] | null;
+	roster: readonly RosterEntry[] | null;
 	status: RoomStatus;
 	hostUid: string;
 	countdownAt: number | null;

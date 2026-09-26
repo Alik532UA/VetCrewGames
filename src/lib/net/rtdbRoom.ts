@@ -1,3 +1,4 @@
+import { isDenied } from './denied';
 import { connect, serverNow, serverTime } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
@@ -214,8 +215,7 @@ export async function createRoom(options: NewRoom): Promise<string> {
 				 * означає, що інший код не допоможе — SDK відкидає такий запис ще до
 				 * мережі, — тож помилка йде далі негайно.
 				 */
-				const reason = error instanceof Error ? error.message : String(error);
-				if (!/permission[_ ]denied/i.test(reason)) throw error;
+				if (!isDenied(error)) throw error;
 
 				/*
 				 * Відмова правил. Це або справді зайнятий код, або невалідний вміст —
@@ -427,8 +427,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				});
 				return true;
 			} catch (error) {
-				const denied = error instanceof Error && /permission_denied/i.test(error.message ?? '');
-				if (!denied) throw error;
+				if (!isDenied(error)) throw error;
 				return false;
 			}
 		},
@@ -456,8 +455,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				 * `undefined` кидає) зникав безслідно. Дошка чекала на перегортання,
 				 * якого не буде, і жодного слова ні в консолі, ні в логах.
 				 */
-				const denied = error instanceof Error && /permission_denied/i.test(error.message ?? '');
-				if (!denied) throw error;
+				if (!isDenied(error)) throw error;
 				return false;
 			}
 		},

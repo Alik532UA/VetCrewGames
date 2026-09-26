@@ -1,3 +1,4 @@
+import { isDenied } from './denied';
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom } from './ownRooms';
@@ -55,7 +56,7 @@ export async function leaveRoom(code: string): Promise<void> {
 				});
 				left = true;
 			} catch (error) {
-				if (!(error instanceof Error && /permission_denied/i.test(error.message))) throw error;
+				if (!isDenied(error)) throw error;
 			}
 		}
 		if (!left) logService.warn('network', 'leave move not written', { code });

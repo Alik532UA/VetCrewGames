@@ -21,22 +21,26 @@ import type { RoomTransport } from './roomTypes';
  *
  * Пише в журнал і пробує знову на наступному такті. Невдалий такт означає лише те,
  * що кімната зайвий раз повисить у списку, — але мовчати про нього не можна: доти
- * впалий імпорт чи вхід давав «необроблену відмову промісу» без кімнати, а кожен
- * такт ще й створював новий транспорт (аудит 2026-09-25).
+ * впалий імпорт чи вхід давав «необроблену відмову промісу» без кімнати (аудит
+ * 2026-09-25).
+ *
+ * ## Тим самим транспортом, що й партія (аудит 2026-09-26)
+ *
+ * Доти серцебиття будувало свій — другий `roomTransport` на ту саму кімнату, з
+ * власним входом і динамічним імпортом, — і його невдача нічого не казала про
+ * транспорт, яким грає партія. Тепер сесія віддає свій (`RoomSession.beat`).
  */
-export function startRoomBeat(code: string): () => void {
+export function startRoomBeat(transport: RoomTransport): () => void {
 	let stopped = false;
-	let room: Promise<RoomTransport> | null = null;
 
 	const beat = () => {
 		if (stopped) return;
-		room ??= import('./rtdbRoom').then((net) => net.roomTransport(code));
-		room
-			.then((transport) => transport.touch())
-			.catch((error: unknown) => {
-				room = null;
-				logService.warn('network', 'room beat failed', { code, reason: String(error) });
+		transport.touch().catch((error: unknown) => {
+			logService.warn('network', 'room beat failed', {
+				code: transport.code,
+				reason: String(error)
 			});
+		});
 	};
 
 	// Перший удар — ОДРАЗУ, а не через інтервал: інакше кімната, у яку зайшли й

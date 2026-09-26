@@ -1,4 +1,4 @@
-import { envelopeOf } from '$lib/utils/roomEnvelope';
+import { envelopeOf, type RoomEnvelope } from '$lib/utils/roomEnvelope';
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
 import type {
 	GoneReason,
@@ -80,7 +80,7 @@ const REAL_CLOCK: PeekClock = {
  * учасник, який спробує зіграти позачергово, не зламає партію: його хід просто
  * нічого не означає, і всі бачать це однаково.
  */
-export class PairsMatch {
+export class PairsMatch implements RoomEnvelope {
 	readonly game = new MemoryGameController();
 
 	/** Скільки ходів журналу вже застосовано до дошки. */

@@ -1,3 +1,4 @@
+import { isDenied } from '$lib/net/denied';
 import { settings } from '$lib/services/settings.svelte';
 import { logService } from '$lib/services/logService.svelte';
 import { playerData } from '$lib/services/playerData.svelte';
@@ -111,6 +112,11 @@ export class RoomSession<M extends RoomMatch> {
 	/** Серверний час зараз. */
 	now(): number {
 		return this.#transport?.now() ?? Date.now();
+	}
+
+	/** Серцебиття відкритої кімнати — тим самим транспортом, що й партія (`net/roomBeat.ts`). */
+	beat(): (() => void) | undefined {
+		return this.#transport ? this.net.beat(this.#transport) : undefined;
 	}
 
 	/** Поставити ефекти сесії. Кличе сторінка під час ініціалізації. */
@@ -457,6 +463,6 @@ export class RoomSession<M extends RoomMatch> {
 	#failed(what: string, error: unknown): void {
 		toast.error('pairs.actionFailed');
 		logService.error('network', what, { code: this.code, reason: String(error) });
-		if (/permission[_ ]denied/i.test(String(error))) this.reload.noteDenial(this.code);
+		if (isDenied(error)) this.reload.noteDenial(this.code);
 	}
 }

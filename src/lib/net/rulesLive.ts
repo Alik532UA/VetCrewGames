@@ -1,3 +1,4 @@
+import { isDenied } from './denied';
 import { connect } from './firebase';
 import { RULES_VERSION } from './rulesVersion';
 import { logService } from '$lib/services/logService.svelte';
@@ -66,7 +67,7 @@ export async function checkLiveRules(): Promise<LiveRulesResult> {
 		 * `Error` без коду — на відміну від Firestore, де є `FirebaseError.code`.
 		 */
 		const message = error instanceof Error ? error.message : String(error);
-		const denied = /permission[_ ]denied/i.test(message);
+		const denied = isDenied(error);
 		if (!denied) {
 			logService.warn('network', 'live rules check inconclusive', { reason: message });
 		}

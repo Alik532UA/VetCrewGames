@@ -106,7 +106,7 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 
 	// Серцебиття кімнати, поки вона відкрита: за ним «продовжити партію» відрізняє
 	// покинуту кімнату від тієї, з якої щойно вийшли.
-	$effect(() => (session.match && session.code ? session.net.beat(session.code) : undefined));
+	$effect(() => (session.match && session.code ? session.beat() : undefined));
 
 	/*
 	 * ПАРТІЯ СКІНЧИЛАСЯ — господар закриває її СТАТУСОМ. Доти `over` не писав

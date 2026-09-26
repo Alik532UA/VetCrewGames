@@ -468,6 +468,25 @@ describe('хмарна база', () => {
 	 *
 	 * Зворотний експеримент: прибрати третій аргумент у будь-якій підписці — червоніє.
 	 */
+	/**
+	 * ВІДМОВА ПРАВИЛ РОЗПІЗНАЄТЬСЯ В ОДНОМУ МІСЦІ (аудит 2026-09-26): доти регулярка
+	 * стояла в семи місцях двома написаннями, і кожна нова копія могла взяти не те.
+	 *
+	 * Зворотний експеримент: повернути регулярку в будь-який модуль — червоніє.
+	 */
+	it('відмова правил розпізнається лише в `net/denied.ts`', () => {
+		const files = [...walk('src/lib'), ...walk('src/routes')].filter(
+			(file) => /\.(ts|svelte)$/.test(file) && !file.includes('.test.')
+		);
+		const copies = files.filter(
+			(file) =>
+				!file.replace(/\\/g, '/').endsWith('net/denied.ts') &&
+				/permission(\[_ \]|_)denied\//i.test(readFileSync(file, 'utf8'))
+		);
+		expect(files.length, 'джерел не знайдено — перевірка мертва').toBeGreaterThan(50);
+		expect(copies, `копія розпізнавання відмови:\n${copies.join('\n')}`).toEqual([]);
+	});
+
 	it('кожна підписка на базу має обробник скасування', () => {
 		const net = walk('src/lib/net').filter((f) => f.endsWith('.ts') && !f.includes('.test.'));
 		const calls: Array<{ file: string; args: string[] }> = [];

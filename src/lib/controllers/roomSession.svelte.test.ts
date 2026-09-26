@@ -98,7 +98,7 @@ function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 			onChange(true);
 			return () => {};
 		}),
-		beat: vi.fn(() => () => {}),
+		beat: vi.fn((_transport: Parameters<RoomNet['beat']>[0]) => () => {}),
 		checkRules: vi.fn(async (): Promise<'fresh' | 'stale' | 'unknown'> => 'fresh')
 	} satisfies RoomNet;
 	return {
@@ -213,6 +213,9 @@ describe('вхід у кімнату', () => {
 		expect(lobby.publish).toHaveBeenCalledWith(expect.objectContaining({ code: '42', players: 1 }));
 		expect(playerData.beginOnline).toHaveBeenCalled();
 		expect(session.match).not.toBeNull();
+		// Серцебиття — тим самим транспортом, що й партія, а не другим на ту саму кімнату.
+		// Тотожність, а не рівність: копія того самого транспорту — це вже другий транспорт.
+		expect(net.beat.mock.calls[0]?.[0]).toBe(await net.roomTransport.mock.results[0].value);
 	});
 
 	it('кімнати немає — не заходимо й кажемо чому', async () => {

@@ -1,4 +1,4 @@
-import { envelopeOf } from '$lib/utils/roomEnvelope';
+import { envelopeOf, type RoomEnvelope } from '$lib/utils/roomEnvelope';
 import type {
 	GoneReason,
 	Member,
@@ -99,9 +99,12 @@ export const ANNOUNCE_RETRY_MS = 5000;
  * Половина, яку підробляли легше за все — множник за швидкість, — тепер закрита,
  * і це головна різниця з попередньою моделью, де в журнал їхало саме число очок.
  */
-export class QuizMatch {
-	/** Скільки ходів журналу вже врахували. */
-	applied = $state(0);
+export class QuizMatch implements RoomEnvelope {
+	/**
+	 * Скільки ходів журналу приїхало. Не `$state`: на екрані його не показує ніщо, а
+	 * тести читають синхронно (аудит 2026-09-26 — доти реактивне поле без читачів).
+	 */
+	applied = 0;
 	/**
 	 * ЗАЙНЯТІ НОМЕРИ ЖУРНАЛУ, за зростанням. Наступний хід бере ПЕРШУ ДІРКУ.
 	 *

@@ -46,8 +46,8 @@ export interface RoomNet {
 	trackPresence(code: string): Promise<() => void>;
 	watchPresence(code: string, onChange: (online: string[]) => void): Promise<() => void>;
 	watchConnected(onChange: (connected: boolean) => void): Promise<() => void>;
-	/** Серцебиття кімнати, поки вона на екрані. */
-	beat(code: string): () => void;
+	/** Серцебиття кімнати, поки вона на екрані, — транспортом самої кімнати. */
+	beat(transport: RoomTransport): () => void;
 	/** Чи діють у базі ті самі правила, що лежать у цій збірці (`net/rulesLive.ts`). */
 	checkRules(): Promise<'fresh' | 'stale' | 'unknown'>;
 }
@@ -65,6 +65,6 @@ export const liveNet: RoomNet = {
 	watchPresence: async (code, onChange) =>
 		(await import('./presence')).watchPresence(code, onChange),
 	watchConnected: async (onChange) => (await import('./presence')).watchConnected(onChange),
-	beat: (code) => startRoomBeat(code),
+	beat: (transport) => startRoomBeat(transport),
 	checkRules: async () => (await checkLiveRules()).state
 };
