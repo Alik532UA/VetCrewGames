@@ -20,6 +20,8 @@ import type {
 export interface RoomMatch {
 	listen(): () => void;
 	readonly members: Member[];
+	/** Кого замінено через повтор аватарки: uid → показана пара (`utils/roomAvatars`). */
+	readonly avatarSwaps: Record<string, string>;
 	readonly players: Member[];
 	/** Заморожений склад: на нього спирається правило перехоплення ведення. */
 	readonly roster: readonly RosterEntry[] | null;

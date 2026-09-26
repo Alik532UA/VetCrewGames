@@ -84,6 +84,9 @@ export const ui = {
 	'pairs.resumeOne': 'Вернутися',
 	'pairs.otherName': 'Інше імʼя',
 	'pairs.avatarChange': 'Змінити аватарку',
+	'pairs.myAvatar': 'Ваша аватарка',
+	'pairs.avatarReplaced':
+		'Вашу аватарку в цій кімнаті вже вибрав інший гравець — вам дісталася інша. Змінити її можна в лобі.',
 	'pairs.nickname': 'Нікнейм',
 	'pairs.country': 'Прапор',
 	/*

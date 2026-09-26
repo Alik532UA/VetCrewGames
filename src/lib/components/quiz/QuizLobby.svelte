@@ -44,6 +44,8 @@
 		countdownLeft: number | null;
 		ready: boolean;
 		onRole: (role: Role) => void;
+		/** Вибрати свою аватарку в лобі — лише вільну (`OnlineLobby`). */
+		onAvatar: (avatar: string) => void;
 		onStart: () => void;
 		onAutoStart: (on: boolean) => void;
 		/** Змінити набір ігор. Мережу знає сторінка — сюда приходить лише виклик. */
@@ -67,6 +69,7 @@
 		countdownLeft,
 		ready,
 		onRole,
+		onAvatar,
 		onStart,
 		onAutoStart,
 		onGames,
@@ -86,6 +89,7 @@
 	{ready}
 	autoStart={match.autoStart}
 	{onRole}
+	{onAvatar}
 	{onStart}
 	{onAutoStart}
 >

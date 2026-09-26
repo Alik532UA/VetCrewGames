@@ -230,6 +230,31 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'pairs-avatar-toggle-btn'
+		},
+		{
+			/*
+			 * ОДНА ПАРА НА КІМНАТУ (рішення автора 2026-09-26). Правило заміни доводять
+			 * юніт-тести (`utils/roomAvatars`, сесія над `LocalRoom`); руками — два пристрої.
+			 */
+			id: 'online_21',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Удвох на двох пристроях виберіть у формі входу ОДНАКОВУ аватарку — той самий значок і колір — і зайдіть в одну кімнату. Хто зайшов другим, мусить отримати іншу плитку й коротке пояснення; у того, хто зайшов першим, аватарка лишається своя. На обох екранах біля кожного імені мусить стояти та сама плитка, що й на іншому.',
+				en: 'Two people on two devices pick the SAME avatar in the entry form — the same icon and colour — and enter one room. Whoever entered second must get another tile and a short explanation; the one who entered first keeps their own. On both screens every name must have the same tile as on the other screen.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-member-*-item'
+		},
+		{
+			id: 'online_22',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'У лобі натисніть плитку біля «Ваша аватарка» під складом. Пари, які вже тримають інші, мусять бути приглушені й не натискатися, а скрінрідер мусить називати, чия це пара. Вибір вільної мусить одразу змінити плитку біля вашого імені — і на екрані іншого гравця теж.',
+				en: 'In the lobby press the tile next to «Your avatar» under the list. Pairs other people already hold must be dimmed and not pressable, and a screen reader must say whose pair it is. Picking a free one must change the tile next to your name at once — on the other player’s screen too.'
+			},
+			coverage: 'manual',
+			testid: 'lobby-avatar-toggle-btn',
+			negative: true
 		}
 	]
 };

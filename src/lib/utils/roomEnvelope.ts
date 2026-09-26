@@ -1,4 +1,5 @@
 import type { Member, RoomSnapshot, RoomStatus, RosterEntry } from '$lib/net/roomTypes';
+import { uniqueAvatars } from './roomAvatars';
 
 /**
  * СПІЛЬНІ ПОЛЯ КІМНАТИ — ті, що обидва матчі тримають однаково.
@@ -12,7 +13,17 @@ import type { Member, RoomSnapshot, RoomStatus, RosterEntry } from '$lib/net/roo
  * перевіряє, і поле, перейменоване в конверті, у матчі мовчки лишилося б старим.
  */
 export interface RoomEnvelope {
+	/**
+	 * Склад з УНІКАЛЬНИМИ аватарками (`uniqueAvatars`): повтор пари розвʼязано тут,
+	 * один раз на обидві гри, — тож кожен екран кімнати (лобі, табло, дошка) бачить
+	 * те саме, що й решта учасників.
+	 */
 	members: Member[];
+	/**
+	 * Кого з учасників замінено: uid → пара, яку показують замість його власної.
+	 * Сесія переписує свій рядок складу цією парою (`RoomSession.takeAvatar`).
+	 */
+	avatarSwaps: Record<string, string>;
 	/** Заморожений склад партії; `null` — лобі або кімната старша за поле. */
 	roster: readonly RosterEntry[] | null;
 	status: RoomStatus;
@@ -30,8 +41,11 @@ export interface RoomEnvelope {
 /** Розклад знімка на спільні поля. Відсутнє поле — його значення «за замовчуванням». */
 export function envelopeOf(snapshot: RoomSnapshot): RoomEnvelope {
 	const { info } = snapshot;
+	// Сіль — мітка створення: спільна для всіх учасників і стала, поки кімната жива.
+	const avatars = uniqueAvatars(snapshot.members, info.createdAt ?? 0);
 	return {
-		members: snapshot.members,
+		members: avatars.members,
+		avatarSwaps: avatars.swaps,
 		roster: info.roster ?? null,
 		status: info.status,
 		hostUid: info.hostUid,

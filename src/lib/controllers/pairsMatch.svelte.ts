@@ -95,6 +95,8 @@ export class PairsMatch implements RoomEnvelope {
 	 */
 	seed = $state(0);
 	members = $state<Member[]>([]);
+	/** Кого замінено через повтор аватарки: uid → показана пара (`RoomEnvelope`). */
+	avatarSwaps = $state<Record<string, string>>({});
 	/** Заморожений склад партії (`RoomInfo.roster`); `null` — кімната старша за поле. */
 	roster = $state<RosterEntry[] | null>(null);
 	/**

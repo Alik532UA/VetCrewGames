@@ -26,6 +26,7 @@ describe('спільні поля кімнати', () => {
 	it('відсутні поля — `null` і `false`, а не `undefined`', () => {
 		expect(envelopeOf(snapshot({}))).toEqual({
 			members: [],
+			avatarSwaps: {},
 			roster: null,
 			status: 'lobby',
 			hostUid: 'uid-host',
@@ -56,5 +57,23 @@ describe('спільні поля кімнати', () => {
 			status: 'over',
 			createdAt: 7
 		});
+	});
+	/**
+	 * Повтор аватарки розвʼязує КОНВЕРТ — одне місце на обидві гри: інакше лобі,
+	 * табло й дошка кожен розвʼязували б його по-своєму, або не розвʼязували зовсім.
+	 * Зворотний експеримент: віддати `snapshot.members` як є — червоніє цей випадок.
+	 */
+	it('повтор аватарки в складі розвʼязано: перший лишає, другого замінено', () => {
+		const envelope = envelopeOf({
+			...snapshot({ createdAt: 7 }),
+			members: [
+				{ uid: 'uid-host', name: 'Господар', role: 'player', order: 1, avatar: 'cat:blue' },
+				{ uid: 'uid-guest', name: 'Гість', role: 'player', order: 2, avatar: 'cat:blue' }
+			]
+		});
+
+		expect(envelope.members[0].avatar).toBe('cat:blue');
+		expect(envelope.members[1].avatar).not.toBe('cat:blue');
+		expect(envelope.avatarSwaps).toEqual({ 'uid-guest': envelope.members[1].avatar });
 	});
 });

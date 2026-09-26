@@ -100,10 +100,22 @@ describe('перелік публічних кімнат над справжні
 		await as(host, () => lobby.updatePlayers('pairs', code, 2));
 		await becomes(mine, (room) => room?.players === 2, 'лічильник наздогнав');
 
+		// Аватарку господар міняє в лобі — запис наздоганяє одним полем (рішення автора 2026-09-26).
+		await as(host, () => lobby.updateHostAvatar('pairs', code, 'cat:red'));
+		await becomes(mine, (room) => room?.hostAvatar === 'cat:red', 'аватарка наздогнала');
+
 		goOffline(host.db);
 		await becomes(mine, (room) => room === null, 'обрив: сервер виконав домовленість');
 		goOnline(host.db);
 		await becomes(mine, (room) => room?.players === 2, 'повернення: той самий запис знову');
+		expect(mine()?.hostAvatar, 'повернення: з новою аватаркою, а не зі старою').toBe('cat:red');
+
+		await as(host, () => lobby.updateHostAvatar('pairs', code, undefined));
+		await becomes(
+			mine,
+			(room) => room !== null && room.hostAvatar === undefined,
+			'типова — поля немає'
+		);
 
 		unlist();
 		await becomes(mine, (room) => room === null, 'зняття прибирає запис');

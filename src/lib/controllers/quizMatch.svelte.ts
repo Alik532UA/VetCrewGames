@@ -122,6 +122,8 @@ export class QuizMatch implements RoomEnvelope {
 	#seqs: number[] = [];
 	status = $state<RoomStatus>('lobby');
 	members = $state<Member[]>([]);
+	/** Кого замінено через повтор аватарки: uid → показана пара (`RoomEnvelope`). */
+	avatarSwaps = $state<Record<string, string>>({});
 	/** Заморожений склад партії (`RoomInfo.roster`); `null` — лобі або кімната старша за поле. */
 	roster = $state.raw<QuizPartySource['roster']>(null);
 	hostUid = $state('');

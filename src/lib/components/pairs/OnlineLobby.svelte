@@ -8,6 +8,8 @@
 	import RoomQr from '$lib/components/pairs/RoomQr.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarChooser from '$lib/components/ui/AvatarChooser.svelte';
+	import { takenAvatars } from '$lib/utils/roomAvatars';
 
 	/**
 	 * Лобі кімнати: код, склад, роль і кнопка «почати».
@@ -78,6 +80,11 @@
 		 */
 		autoStart: boolean;
 		onRole: (role: Role) => void;
+		/**
+		 * Вибрати свою аватарку — лише з вільних у кімнаті (рішення автора 2026-09-26).
+		 * Немає — вибору в лобі немає (напр. у тесті, що перевіряє лише склад).
+		 */
+		onAvatar?: (avatar: string) => void;
 		onStart: () => void;
 		/** Перемкнути режим. Кличеться лише з боку господаря. */
 		onAutoStart: (on: boolean) => void;
@@ -108,6 +115,7 @@
 		ready,
 		autoStart,
 		onRole,
+		onAvatar,
 		onStart,
 		onAutoStart,
 		settings
@@ -152,6 +160,10 @@
 	 * інакше «хто перший» читається з екрана неправильно.
 	 */
 	const shown = $derived([...members].sort((a, b) => a.order - b.order));
+
+	/** Моя плитка в кімнаті й пари, які тримають інші (з іменами власників). */
+	const myAvatar = $derived(members.find((member) => member.uid === me)?.avatar ?? '');
+	const taken = $derived(takenAvatars(members, me));
 </script>
 
 <!--
@@ -222,6 +234,21 @@
 					</li>
 				{/each}
 			</ul>
+
+			<!--
+				АВАТАРКА — ПІД СКЛАДОМ, поруч із роллю: це теж «як мене видно», і теж моє.
+
+				Не в самому рядку складу: вибір розгортається на всю ширину панелі, а
+				рядок — це підпис і роль праворуч. Тут пропонуються лише ВІЛЬНІ пари:
+				зайняті видно, але не натиснути, і підпис каже, чия пара (рішення автора
+				2026-09-26 — «лише не зайняті іншими»).
+			-->
+			{#if onAvatar}
+				<div class="lobby__avatar">
+					<span class="lobby__avatar-label">{@html formatFont(t('pairs.myAvatar'))}</span>
+					<AvatarChooser value={myAvatar} {taken} onpick={onAvatar} scope="lobby-avatar" />
+				</div>
+			{/if}
 
 			<!--
 				РОЛЬ — ТОЙ САМИЙ СЕГМЕНТОВАНИЙ ВИБІР, що й режим початку партії.
@@ -637,4 +664,17 @@
 	 * і саме на цьому в проєкті вже одного разу лишилася мертва копія компонента.
 	 * Компілятор Svelte про це попереджає — попередження тут гейт, а не шум.
 	 */
+
+	/* Підпис і плитка в ряд; вибір розгортається під ними на всю ширину (`AvatarChooser`). */
+	.lobby__avatar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-sm);
+	}
+
+	.lobby__avatar-label {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-on-panel);
+	}
 </style>

@@ -12,6 +12,7 @@
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { HoverBeam } from '$lib/controllers/hoverBeam.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
+	import { chooseRoomAvatar } from '$lib/controllers/roomAvatar';
 	import { attachPairsPolicies, pairsGame } from '$lib/controllers/pairsRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
@@ -176,6 +177,7 @@
 			ready={session.canStart}
 			autoStart={match.autoStart}
 			onRole={(role) => session.setRole(role)}
+			onAvatar={(avatar) => void chooseRoomAvatar(session, avatar)}
 			onStart={() => session.start()}
 			onAutoStart={session.switchAutoStart}
 		/>

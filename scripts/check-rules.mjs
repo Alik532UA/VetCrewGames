@@ -1448,6 +1448,25 @@ const CASES = [
 			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
 	},
 	{
+		// Аватарку господар міняє в лобі (рішення автора 2026-09-26), і запис переліку
+		// наздоганяє ОДНИМ полем — тим самим шляхом, що лічильник гравців
+		// (`net/lobby.updateHostAvatar`).
+		name: 'господар міняє свою аватарку в записі переліку',
+		allowed: true,
+		run: () => write(`lobby/pairs/${LIST}/hostAvatar`, 'cat:red', host.token)
+	},
+	{
+		// Типова плитка в перелік не пишеться — вибір її прибирає поле, а не пише порожнє.
+		name: 'господар прибирає свою аватарку з запису переліку',
+		allowed: true,
+		run: () => write(`lobby/pairs/${LIST}/hostAvatar`, null, host.token)
+	},
+	{
+		name: 'гість міняє аватарку господаря в чужому записі переліку',
+		allowed: false,
+		run: () => write(`lobby/pairs/${LIST}/hostAvatar`, 'cat:red', guest.token)
+	},
+	{
 		/*
 		 * НАБІР ІГОР У ЗАПИСІ ПЕРЕЛІКУ — те, на чому стоїть фільтр списку.
 		 *

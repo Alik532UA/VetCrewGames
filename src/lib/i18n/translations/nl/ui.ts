@@ -74,6 +74,9 @@ export const ui = {
 	'pairs.resumeOne': 'Terug',
 	'pairs.otherName': 'Andere naam',
 	'pairs.avatarChange': 'Avatar wijzigen',
+	'pairs.myAvatar': 'Je avatar',
+	'pairs.avatarReplaced':
+		'Een andere speler in deze kamer heeft je avatar al, dus je kreeg een andere. Je kunt hem in de lobby wijzigen.',
 	'pairs.nickname': 'Bijnaam',
 	'pairs.country': 'Vlag',
 	/* Naam voor code `xr` — ISO kent deze entiteit niet, zie `OWN_COUNTRY_NAMES`. */

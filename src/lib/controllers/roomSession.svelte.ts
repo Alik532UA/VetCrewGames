@@ -13,6 +13,7 @@ import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from '$lib/utils
 import { playersOf, rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 import { ReloadAdvice } from './reloadAdvice.svelte';
+import { roomAvatarOf } from './roomAvatar';
 
 export type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 
@@ -297,7 +298,7 @@ export class RoomSession<M extends RoomMatch> {
 				hostUid: this.me,
 				hostName: who,
 				hostCountry: this.player.country,
-				hostAvatar: this.player.forRoom(),
+				hostAvatar: roomAvatarOf(this),
 				rulesVersion: this.game.rulesVersion,
 				// Не одиниця: господар, що повернувся, чи новий після перехоплення
 				// оголошує кімнату, де вже сидять люди, а лічильник наздоганяє лише
@@ -461,7 +462,7 @@ export class RoomSession<M extends RoomMatch> {
 		const name = this.player.forEntry(this.lobby.takenNames);
 		const { country } = this.player;
 		await this.act('role not changed', () =>
-			this.net.joinRoom(this.code, name, role, country, this.player.forRoom(), role)
+			this.net.joinRoom(this.code, name, role, country, roomAvatarOf(this), role)
 		);
 	}
 

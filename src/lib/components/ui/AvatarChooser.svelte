@@ -55,9 +55,11 @@
 		onpick: (avatar: string) => void;
 		/** Основа локаторів і імен радіогруп — унікальна на сторінці. */
 		scope: string;
+		/** Пари, які тримають інші в кімнаті (пара → імʼя), — їх не вибрати. */
+		taken?: ReadonlyMap<string, string>;
 	}
 
-	let { value, onpick, scope }: Props = $props();
+	let { value, onpick, scope, taken }: Props = $props();
 
 	let open = $state(false);
 	let dict = $state<Record<string, string> | null>(null);
@@ -95,7 +97,7 @@
 	{#if open}
 		<div class="chooser__panel" id="{scope}-panel" data-testid="{scope}-panel">
 			{#if dict}
-				<AvatarPicker value={shown} {text} {scope} onchange={onpick} preview={false} />
+				<AvatarPicker value={shown} {text} {scope} onchange={onpick} preview={false} {taken} />
 			{/if}
 		</div>
 	{/if}

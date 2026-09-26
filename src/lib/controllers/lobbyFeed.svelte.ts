@@ -164,6 +164,12 @@ export class LobbyFeed {
 	 * окремо від самого запису (аудит 2026-09-26).
 	 */
 	#listed: string | null = null;
+	/**
+	 * Аватарка господаря, що стоїть у записі. Політика кличе оновлення на КОЖНУ зміну
+	 * складу (плитка виводиться з нього), тож без цієї памʼяті кожен вхід гостя
+	 * переписував би поле тим самим значенням.
+	 */
+	#hostAvatar: string | undefined;
 
 	/**
 	 * Оголосити свою кімнату публічною. Кидає: без переліку кімната закрита. Невдача
@@ -172,6 +178,7 @@ export class LobbyFeed {
 	async publish(entry: Omit<LobbyRoom, 'at' | 'gameId'>): Promise<void> {
 		if (this.#listed === entry.code) return;
 		this.#listed = entry.code;
+		this.#hostAvatar = entry.hostAvatar;
 		const epoch = ++this.#epoch;
 		// Попередній запис — чужа кімната: наступна публікація його не успадковує.
 		this.#unlist?.();
@@ -210,6 +217,14 @@ export class LobbyFeed {
 		if (!this.#unlist) return;
 		const list = await import('$lib/net/lobby');
 		await list.updatePlayers(this.#gameId, code, players);
+	}
+
+	/** Аватарка господаря змінилася в лобі — наздогнати запис у переліку. */
+	async setHostAvatar(code: string, avatar: string | undefined): Promise<void> {
+		if (!this.#unlist || this.#listed !== code || this.#hostAvatar === avatar) return;
+		this.#hostAvatar = avatar;
+		const list = await import('$lib/net/lobby');
+		await list.updateHostAvatar(this.#gameId, code, avatar);
 	}
 
 	/** Зняти свою кімнату з переліку. Двічі — те саме, що раз; і посеред запису теж. */

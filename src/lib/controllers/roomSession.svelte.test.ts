@@ -32,6 +32,8 @@ const { QuizMatch } = await import('./quizMatch.svelte');
 const { pairsGame: realPairsGame, attachPairsPolicies } = await import('./pairsRoom.svelte');
 const { QuizRoomState } = await import('./quizRoom.svelte');
 const { QUIZ_RULES_VERSION, PAIRS_RULES_VERSION } = await import('$lib/config/roomRules');
+const { chooseRoomAvatar, SWAP_TOLD_KEY } = await import('./roomAvatar');
+const { sessionStore } = await import('$lib/services/storage');
 
 type Session = InstanceType<typeof RoomSession<InstanceType<typeof PairsMatch>>>;
 
@@ -124,6 +126,7 @@ function stubs() {
 		load: vi.fn(async () => {}),
 		forEntry: vi.fn(() => 'Гравець'),
 		forRoom: vi.fn(() => undefined),
+		chooseAvatar: vi.fn(),
 		settle: vi.fn(),
 		country: ''
 	};
@@ -134,7 +137,8 @@ function stubs() {
 		load: vi.fn(() => () => {}),
 		publish: vi.fn(async () => {}),
 		unpublish: vi.fn(),
-		setPlayers: vi.fn(async () => {})
+		setPlayers: vi.fn(async () => {}),
+		setHostAvatar: vi.fn(async () => {})
 	};
 	return { place, player, lobby };
 }
@@ -1287,5 +1291,135 @@ describe('сесія зі справжніми адаптерами ігор', (
 
 		expect(session.match?.status).toBe('playing');
 		expect(session.match?.round, 'перший раунд оголошено').toBe(0);
+	});
+});
+
+/**
+ * АВАТАРКА В КІМНАТІ — одна пара «значок + колір» на людину (рішення автора
+ * 2026-09-26): перший лишає свою, новачок отримує вільну й сам її записує; у лобі
+ * вибирають лише з вільних.
+ *
+ * Зворотні експерименти: прибрати політику заміни — червоніє «новачок записує»;
+ * казати щоразу — червоніє «раз»; не звіряти зайняті в `chooseRoomAvatar` — червоніє
+ * «зайняту не взяти»; роль переписувати глобальною парою — червоніє «роль».
+ */
+describe('аватарка в кімнаті', () => {
+	const TAKEN = 'cat:blue';
+	const clashing = (): Member[] => [
+		{ uid: HOST, name: 'Господар', role: 'player', order: 1, avatar: TAKEN },
+		{ uid: GUEST, name: 'Гість', role: 'player', order: 2, avatar: TAKEN }
+	];
+
+	beforeEach(() => sessionStore.remove(SWAP_TOLD_KEY));
+
+	async function guestIn(room: LocalRoom) {
+		const entered = sessionFor(room, roomInfo(), GUEST);
+		entered.session.joinCode = '42';
+		await entered.session.enter('join');
+		await settle();
+		return entered;
+	}
+
+	it('новачок, чию пару вже тримає господар, записує вільну — ту, що всі бачать', async () => {
+		const room = new LocalRoom(roomInfo({ createdAt: 5 }), clashing());
+		const { session, net } = await guestIn(room);
+
+		const shown = session.match?.members.find((m) => m.uid === GUEST)?.avatar;
+		expect(shown).not.toBe(TAKEN);
+		expect(net.joinRoom).toHaveBeenLastCalledWith('42', 'Гравець', undefined, '', shown, 'player');
+		expect(toast.info).toHaveBeenCalledWith('pairs.avatarReplaced', 8000);
+	});
+
+	it('про ту саму заміну кажуть раз — і після перезавантаження теж', async () => {
+		const room = new LocalRoom(roomInfo({ createdAt: 5 }), clashing());
+		await guestIn(room);
+		cleanup?.();
+		cleanup = null;
+		toast.info.mockClear();
+
+		const again = await guestIn(room);
+
+		expect(
+			again.net.joinRoom,
+			'записати — щоразу: вхід знову писав власну пару'
+		).toHaveBeenCalledTimes(2);
+		expect(toast.info).not.toHaveBeenCalled();
+		expect(sessionStore.get(SWAP_TOLD_KEY)).toMatch(/^42:/);
+	});
+
+	it('господар свою пару не віддає', async () => {
+		const room = new LocalRoom(roomInfo({ createdAt: 5 }), clashing());
+		const { session, net } = sessionFor(room, roomInfo(), HOST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		expect(session.match?.members.find((m) => m.uid === HOST)?.avatar).toBe(TAKEN);
+		expect(net.joinRoom, 'тільки сам вхід').toHaveBeenCalledTimes(1);
+		expect(toast.info).not.toHaveBeenCalled();
+	});
+
+	it('у лобі зайняту пару не взяти, а вільну — так, і це вибір людини', async () => {
+		const room = new LocalRoom(roomInfo(), [
+			clashing()[0],
+			{ ...clashing()[1], avatar: 'dog:red' }
+		]);
+		const { session, net } = await guestIn(room);
+		net.joinRoom.mockClear();
+
+		expect(await chooseRoomAvatar(session, TAKEN)).toBe(false);
+		expect(net.joinRoom).not.toHaveBeenCalled();
+
+		expect(await chooseRoomAvatar(session, 'fish:pink')).toBe(true);
+		expect(net.joinRoom).toHaveBeenCalledWith(
+			'42',
+			'Гравець',
+			undefined,
+			'',
+			'fish:pink',
+			'player'
+		);
+		expect(session.player.chooseAvatar).toHaveBeenCalledWith('fish:pink');
+	});
+
+	it('посеред партії аватарка не міняється', async () => {
+		const room = new LocalRoom(roomInfo(), [
+			clashing()[0],
+			{ ...clashing()[1], avatar: 'dog:red' }
+		]);
+		const { session, net } = await guestIn(room);
+		await room.transport().setStatus('playing', rosterOf(members()));
+		await settle();
+		net.joinRoom.mockClear();
+
+		expect(await chooseRoomAvatar(session, 'fish:pink')).toBe(false);
+		expect(net.joinRoom).not.toHaveBeenCalled();
+	});
+
+	it('роль переписує рядок ТІЄЮ плиткою, що в кімнаті, а не глобальною', async () => {
+		const room = new LocalRoom(roomInfo({ status: 'over', createdAt: 5 }), clashing());
+		const { session, net } = sessionFor(room, roomInfo({ status: 'over' }), GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		const shown = session.match?.members.find((m) => m.uid === GUEST)?.avatar;
+		net.joinRoom.mockClear();
+
+		await session.setRole('spectator');
+
+		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', 'spectator', '', shown, 'spectator');
+	});
+
+	it('господар змінив аватарку — запис переліку наздоганяє', async () => {
+		const room = new LocalRoom(roomInfo({ listed: true }), members());
+		const { session, lobby } = sessionFor(room, roomInfo({ listed: true }), HOST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		room.setMembers([{ ...members()[0], avatar: 'star:teal' }, members()[1]]);
+		await settle();
+
+		expect(lobby.setHostAvatar).toHaveBeenLastCalledWith('42', 'star:teal');
 	});
 });

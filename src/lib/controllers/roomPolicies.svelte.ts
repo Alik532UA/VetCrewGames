@@ -5,6 +5,7 @@ import { awardOnce } from '$lib/services/onlineAwards';
 import { COUNTDOWN_MS } from '$lib/config/roomLife';
 import { leadCandidates } from '$lib/utils/roster';
 import { toast } from './toast.svelte';
+import { roomAvatarOf, takeRoomAvatar } from './roomAvatar';
 import type { RoomMatch, RoomSession } from './roomSession.svelte';
 
 /**
@@ -70,6 +71,24 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 		if (!match || !session.amHost || match.status !== 'lobby' || !match.listed) return;
 		// Поза стеженням: склад і присутність, з яких складається запис, політику не будять.
 		untrack(() => void session.publishListing());
+	});
+
+	/*
+	 * МОЮ ПАРУ ВЖЕ ТРИМАЄ РАНІШИЙ — записати заміну й сказати про це (рішення автора
+	 * 2026-09-26: «перший лишає, новачок отримує вільну»). Заміну вибирає конверт
+	 * кімнати (`utils/roomAvatars`), однаково в усіх; тут лише запис свого рядка.
+	 */
+	$effect(() => {
+		const swap = session.match?.avatarSwaps[session.me];
+		if (swap) untrack(() => void takeRoomAvatar(session, swap));
+	});
+
+	// Господар міняє аватарку в лобі — запис переліку наздоганяє (`LobbyFeed.setHostAvatar`).
+	$effect(() => {
+		const match = session.match;
+		if (!match || !session.amHost || match.status !== 'lobby' || !match.listed) return;
+		const avatar = roomAvatarOf(session);
+		untrack(() => void session.lobby.setHostAvatar(session.code, avatar));
 	});
 
 	// Господар веде лічильник гравців у своєму записі переліку — у ОБОХ іграх.

@@ -68,9 +68,36 @@
 		 * плиткою-кнопкою, яка й так показує поточну аватарку (`AvatarChooser`).
 		 */
 		preview?: boolean;
+		/**
+		 * ЗАЙНЯТІ ПАРИ — у кімнаті (рішення автора 2026-09-26): пара → імʼя власника.
+		 * Клітинка зайнятої пари видна, але не натискається, і підпис каже, чия вона:
+		 * зникла клітинка читалася б як «такого кольору немає».
+		 */
+		taken?: ReadonlyMap<string, string>;
 	}
 
-	let { value, text, scope, onchange, disabled = false, preview = true }: Props = $props();
+	let { value, text, scope, onchange, disabled = false, preview = true, taken }: Props = $props();
+
+	/** Чия пара — або `undefined`, якщо вільна. */
+	const holderOf = (avatar: string) => taken?.get(avatar);
+
+	/**
+	 * Вибрати пару — лише вільну. `disabled` на клітинці тримає це для людини, а тут
+	 * — для будь-якого іншого шляху до `change` (подія, надіслана скриптом, старий
+	 * браузер): правило «зайняту не взяти» не мусить триматися на одному атрибуті.
+	 */
+	const pick = (pair: string) => {
+		if (holderOf(pair) === undefined) onchange(pair);
+	};
+
+	/** Підпис клітинки: назва варіанта, а для зайнятої — ще й чия вона. */
+	const labelOf = (key: string, avatar: string) => {
+		const holder = holderOf(avatar);
+		const name = text(key);
+		return holder === undefined
+			? name
+			: `${name} — ${text('account.avatarTakenBy').replace('{name}', holder)}`;
+	};
 
 	/*
 	 * Розібраний аватар, а не два окремих стани.
@@ -94,16 +121,21 @@
 		<legend class="pick__legend">{@html formatFont(text('account.avatarColors'))}</legend>
 		<div class="seg-track">
 			{#each AVATAR_COLORS as color (color)}
-				<label class="seg-item pick__cell" class:pick__cell--on={look.color === color}>
+				{@const pair = formatAvatar(look.icon, color)}
+				<label
+					class="seg-item pick__cell"
+					class:pick__cell--on={look.color === color}
+					class:pick__cell--taken={holderOf(pair) !== undefined}
+				>
 					<input
 						class="pick__radio"
 						type="radio"
 						name="{scope}-color"
 						value={color}
 						checked={look.color === color}
-						onchange={() => onchange(formatAvatar(look.icon, color))}
-						{disabled}
-						aria-label={text(`account.avatarColor.${color}`)}
+						onchange={() => pick(pair)}
+						disabled={disabled || holderOf(pair) !== undefined}
+						aria-label={labelOf(`account.avatarColor.${color}`, pair)}
 						data-testid="{scope}-color-{color}-radio"
 					/>
 					<!--
@@ -121,16 +153,21 @@
 		<legend class="pick__legend">{@html formatFont(text('account.avatarIcons'))}</legend>
 		<div class="seg-track">
 			{#each AVATAR_ICONS as icon (icon)}
-				<label class="seg-item pick__cell" class:pick__cell--on={look.icon === icon}>
+				{@const pair = formatAvatar(icon, look.color)}
+				<label
+					class="seg-item pick__cell"
+					class:pick__cell--on={look.icon === icon}
+					class:pick__cell--taken={holderOf(pair) !== undefined}
+				>
 					<input
 						class="pick__radio"
 						type="radio"
 						name="{scope}-icon"
 						value={icon}
 						checked={look.icon === icon}
-						onchange={() => onchange(formatAvatar(icon, look.color))}
-						{disabled}
-						aria-label={text(`account.avatarIcon.${icon}`)}
+						onchange={() => pick(pair)}
+						disabled={disabled || holderOf(pair) !== undefined}
+						aria-label={labelOf(`account.avatarIcon.${icon}`, pair)}
 						data-testid="{scope}-icon-{icon}-radio"
 					/>
 					<Avatar avatar={formatAvatar(icon, look.color)} size={30} showDefault />
@@ -217,6 +254,16 @@
 	 * власної підкладки клітинки; акцентна підкладка лишилася як тепла підказка, а
 	 * не носій стану.
 	 */
+	/*
+	 * Зайнята пара — приглушена й без курсора-руки. Контраст тут не мірило: WCAG
+	 * 1.4.3/1.4.11 не поширюються на НЕАКТИВНІ елементи, а що клітинка неактивна, каже
+	 * сам `disabled` (і підпис — чия вона).
+	 */
+	.pick__cell--taken {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
 	.pick__cell--on {
 		box-shadow: inset 0 0 0 2px var(--color-text-on-panel);
 		background: color-mix(in srgb, var(--color-accent), transparent 80%);

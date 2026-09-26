@@ -228,6 +228,35 @@ export async function updatePlayers(gameId: string, code: string, players: numbe
 }
 
 /**
+ * Оновити АВАТАРКУ ГОСПОДАРЯ у своєму записі; `undefined` — прибрати поле.
+ *
+ * Господар міняє її в лобі (прохання автора 2026-09-26), а запис переліку
+ * пишеться раз — без цього рядок у списку показував би стару плитку до кінця
+ * кімнати. Кеш `listed` оновлюється разом: після обриву звʼязку запис
+ * переоголошується саме з нього.
+ *
+ * НЕ КИДАЄ — з тієї самої причини, що `updatePlayers`: це довідка, а не стан.
+ */
+export async function updateHostAvatar(
+	gameId: string,
+	code: string,
+	avatar: string | undefined
+): Promise<void> {
+	try {
+		const { db } = await connect();
+		const { ref, set } = await import('firebase/database');
+		const current = listed.get(listingKey(gameId, code));
+		if (current) {
+			const { hostAvatar: _old, ...rest } = current;
+			listed.set(listingKey(gameId, code), avatar ? { ...rest, hostAvatar: avatar } : rest);
+		}
+		await set(ref(db, `lobby/${gameId}/${code}/hostAvatar`), avatar ?? null);
+	} catch (error) {
+		logService.warn('network', 'lobby host avatar not updated', { code, reason: reasonOf(error) });
+	}
+}
+
+/**
  * Оновити НАБІР ІГОР у своєму записі.
  *
  * Потрібно тому, що набір тепер правиться В КІМНАТІ, а запис переліку лежить

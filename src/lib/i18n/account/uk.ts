@@ -67,6 +67,7 @@ export const account: Record<string, string> = {
 	'account.avatarIcon.heart': 'Серце',
 	'account.avatarIcon.zap': 'Блискавка',
 	'account.avatarIcon.target': 'Ціль',
+	'account.avatarTakenBy': 'зайнято: {name}',
 	'account.save': 'Зберегти',
 	'account.signOut': 'Вийти з акаунта',
 	'account.findTitle': 'Знайти людей',

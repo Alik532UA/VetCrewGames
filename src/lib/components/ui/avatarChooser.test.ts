@@ -21,7 +21,8 @@ import { AVATAR_COLORS, AVATAR_ICONS } from '$lib/config/avatars';
 const loadAccountText = vi.fn(async () => {
 	const dict: Record<string, string> = {
 		'account.avatarColors': 'Колір',
-		'account.avatarIcons': 'Значок'
+		'account.avatarIcons': 'Значок',
+		'account.avatarTakenBy': 'зайнято: {name}'
 	};
 	for (const color of AVATAR_COLORS) dict[`account.avatarColor.${color}`] = `колір ${color}`;
 	for (const icon of AVATAR_ICONS) dict[`account.avatarIcon.${icon}`] = `значок ${icon}`;
@@ -39,9 +40,9 @@ afterEach(() => {
 	loadAccountText.mockClear();
 });
 
-function mounted(value = 'cat:blue') {
+function mounted(value = 'cat:blue', taken?: ReadonlyMap<string, string>) {
 	const onpick = vi.fn();
-	render(AvatarChooser, { props: { value, onpick, scope: 'test-avatar' } });
+	render(AvatarChooser, { props: { value, onpick, scope: 'test-avatar', taken } });
 	return { onpick, toggle: screen.getByTestId('test-avatar-toggle-btn') };
 }
 
@@ -90,5 +91,25 @@ describe('вибір аватарки поруч з іменем', () => {
 
 		expect(toggle.getAttribute('aria-expanded')).toBe('false');
 		expect(screen.queryByTestId('test-avatar-panel')).toBeNull();
+	});
+	/**
+	 * У КІМНАТІ — лише вільні пари (рішення автора 2026-09-26). Зайнята клітинка
+	 * лишається на місці, але не натискається, і підпис каже, чия вона: зникла
+	 * клітинка читалася б як «такого кольору немає».
+	 *
+	 * Зворотний експеримент: не вимикати зайняту — червоніє «не натиснути».
+	 */
+	it('зайняту пару видно, але не натиснути, і підпис каже чия', async () => {
+		const { toggle, onpick } = mounted('cat:blue', new Map([['cat:red', 'Анна']]));
+		await fireEvent.click(toggle);
+		const red = (await screen.findByTestId('test-avatar-color-red-radio')) as HTMLInputElement;
+
+		expect(red.disabled).toBe(true);
+		expect(red.getAttribute('aria-label')).toBe('колір red — зайнято: Анна');
+		await fireEvent.click(red);
+		expect(onpick).not.toHaveBeenCalled();
+
+		const green = screen.getByTestId('test-avatar-color-green-radio') as HTMLInputElement;
+		expect(green.disabled, 'вільна пара — вільна').toBe(false);
 	});
 });
