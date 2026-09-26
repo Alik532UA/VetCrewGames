@@ -2077,9 +2077,10 @@ const CASES = [
 		run: () => read(`myRooms/${host.uid}`, guest.token)
 	},
 	{
+		// Ключ правильної форми: доти тут стояв `ZZZZZ`, і запис відкидав ще й формат ключа.
 		name: 'ЧУЖИЙ індекс кімнат — запис',
 		allowed: false,
-		run: () => write(`myRooms/${host.uid}/ZZZZZ`, { at: SERVER_TIME }, guest.token)
+		run: () => write(`myRooms/${host.uid}/${CODE}`, { at: SERVER_TIME }, guest.token)
 	},
 	{
 		name: 'перелічити ВСІ індекси кімнат',
@@ -2551,6 +2552,42 @@ const CASES = [
 			)
 	},
 	/*
+	 * СВІЙ СТАРИЙ lead (шостий аудит): гравець складу на звʼязку, господаря немає, хід
+	 * під вказівником — справжній `lead` самого гравця, лише не новий. Без умови «хід
+	 * новий» гравець повертав би собі ведення старим слідом, а перепрогін вікторини
+	 * лишав би ведучим іншого — партія стояла б.
+	 */
+	{
+		// Господар (ведення щойно повернуто йому) передає його вказівником на СТАРИЙ хід
+		// гостя: тип і автор правильні, відмова — лише через те, що хід не новий (R7 у
+		// `.validate` діє й на господаря, чий `.write` — право батька).
+		name: 'господар передає ведення вказівником на старий lead гостя',
+		allowed: false,
+		run: () =>
+			patch(`rooms/${CODE}`, { 'info/hostUid': guest.uid, 'info/leadSeq': '000005' }, host.token)
+	},
+	{
+		name: 'господар знову йде зі звʼязку',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${host.uid}`, null, host.token)
+	},
+	{
+		name: 'гість повертається на звʼязок',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${guest.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'гравець складу повертає собі ведення вказівником на свій старий lead',
+		allowed: false,
+		run: () =>
+			patch(`rooms/${CODE}`, { 'info/hostUid': guest.uid, 'info/leadSeq': '000005' }, guest.token)
+	},
+	{
+		name: 'господар знову на звʼязку',
+		allowed: true,
+		run: () => write(`presence/${CODE}/${host.uid}`, { at: SERVER_TIME }, host.token)
+	},
+	/*
 	 * Журнал тут уже НЕ порожній (ходи `lead` вище), тобто партія йде: склад не
 	 * міняється й не прибирається — а реванш, що стирає журнал, ставить новий.
 	 */
@@ -2940,6 +2977,13 @@ const CASES = [
 		name: 'господар завершує партію',
 		allowed: true,
 		run: () => write(`rooms/${LEAD}/info/status`, 'over', guest.token)
+	},
+	{
+		// Після партії журнал стирає лише господар: R9 тут не діє (партія не йде), тож
+		// відмова — рівно через те, що пише не господар (шостий аудит).
+		name: 'не господар стирає журнал дограної партії',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/moves`, null, host.token)
 	},
 	{
 		name: 'після партії звичайний хід не лягає',

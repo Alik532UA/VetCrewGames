@@ -17,9 +17,10 @@ import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport, RosterEntry }
  * Тут кожен сценарій іде по ОБОХ реалізаціях з однаковим очікуванням. Розійдуться
  * — червоніє та, що бреше.
  *
- * Чого тут навмисно немає: чужої особи. `LocalRoom` не знає, хто за транспортом
- * сидить (так задумано), тож «гість прибирає чужий рядок» або «хід від чужого
- * імені» тут не порівняти — це стереже `check:rules` напряму.
+ * Особа — однаково в обох: `LocalRoom` знає, хто за транспортом сидить
+ * (`transport({ as })`, аудит 2026-09-26), тож «гість не починає партії» чи «хід під
+ * чужим іменем» порівнюються тут так само, як решта. Доти в цьому абзаці стояло
+ * протилежне — і пережило саму зміну на місяць (шостий аудит).
  *
  * Запуск — `npm run check:rules`, тим самим запуском емулятора, що й правила.
  */
@@ -567,6 +568,33 @@ describe.each([local, emulator])('контракт транспорту: $name',
 
 		const snapshot = await table.until((s) => s.moves.length === 1);
 		expect(snapshot.info.status).toBe('playing');
+		await table.close();
+	});
+
+	/**
+	 * РЕВАНШ ТИМ САМИМ ЗЕРНОМ ПОСЕРЕД ПАРТІЇ — ДУБЛЬ (R9) і НАЛАШТУВАННЯ ПІСЛЯ ПАРТІЇ
+	 * ЛИШЕ ЗІ СТЕРТИМ ЖУРНАЛОМ (R4) — однаково в обох реалізаціях (шостий аудит: доти
+	 * цих сценаріїв у контракті не було, і дзеркало могло розійтися з базою мовчки).
+	 */
+	it('реванш тим самим зерном посеред партії журналу не стирає, а новим — стирає', async () => {
+		const table = await world.table();
+		await started(table);
+		expect(await table.guest.transport.append(flip(table.guest.uid, 1))).toBe(true);
+
+		await expect(table.host.transport.restart(1, rosterOf(table))).rejects.toThrow();
+		await table.until((s) => s.moves.length === 1);
+		await table.host.transport.restart(2, rosterOf(table));
+		await table.until((s) => s.moves.length === 0 && s.info.seed === 2);
+		await table.close();
+	});
+
+	it('після партії налаштування — лише разом зі стертим журналом', async () => {
+		const table = await world.table();
+		await started(table);
+		expect(await table.guest.transport.append(flip(table.guest.uid, 1))).toBe(true);
+		await table.host.transport.setStatus('over');
+
+		await expect(table.host.transport.setConfig({ pairs: 6, cols: 4 })).rejects.toThrow();
 		await table.close();
 	});
 

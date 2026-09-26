@@ -113,6 +113,9 @@ export function leadAllowed(state: RoomState, move: Move, caller?: string): bool
 	const { info, members, moves, present } = state;
 	if (caller !== undefined && move.by !== caller) return false;
 	const author = members.find((member) => member.uid === move.by);
+	// Хід `lead` — такий самий хід журналу: база вимагає рядка в складі й відомих полів
+	// (`moves/$seq`), тож і дзеркало не мʼякше за неї (шостий аудит).
+	if (!author || !validPayload(move.payload)) return false;
 	const inParty =
 		info.status === 'lobby'
 			? author?.role === 'player'

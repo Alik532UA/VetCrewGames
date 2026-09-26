@@ -165,12 +165,14 @@ describe('склад партії — як правило info/roster', () => {
 		).rejects.toThrow();
 	});
 
-	it('посеред партії склад не міняється, а реванш ставить новий', async () => {
+	// Посеред партії старт із новим складом — це дубль старту, і база відкидає його
+	// цілком (R9, A2): склад лишається той самий. Реванш — новим зерном — ставить новий.
+	it('посеред партії склад не міняється (дубль старту відкинуто), а реванш ставить новий', async () => {
 		const room = new LocalRoom(info, members);
 		const transport = room.transport();
 		await transport.append({ seq: 1, by: GUEST, type: 'goon' });
 
-		await expect(transport.setStatus('playing', roster)).rejects.toThrow();
+		await expect(transport.setStatus('playing', roster)).rejects.toThrow(/start/);
 		await transport.restart(2, roster);
 		expect(room.moves).toHaveLength(0);
 	});
@@ -194,17 +196,24 @@ describe('склад партії — як правило info/roster', () => {
 	});
 
 	/**
-	 * У лобі в журналі вже бувають ходи `lead` (ведення підхопили за відсутнього
-	 * господаря). Умова — ПЕРЕХІД у `playing`, а не порожній журнал: інакше старт
-	 * такої кімнати відкидався б.
+	 * У лобі в журналі бувають ходи `lead` (ведення підхопили за відсутнього господаря),
+	 * а старт СТИРАЄ журнал лобі тим самим записом (A2): склад лягає, журнал порожній.
 	 */
-	it('старт із ходом у журналі лобі — склад лягає', async () => {
+	it('старт із ходом у журналі лобі — склад лягає, а журнал стерто', async () => {
 		const room = new LocalRoom(lobby, members);
 		const transport = room.transport();
-		await transport.append({ seq: 1, by: HOST, type: 'lead', payload: { from: HOST } });
+		const laid = await transport.append({
+			seq: 1,
+			by: HOST,
+			type: 'lead',
+			payload: { from: HOST }
+		});
+		expect(laid, 'хід lead у лобі — законний').toBe(true);
+		expect(room.moves).toHaveLength(1);
 
 		await transport.setStatus('playing', roster);
 		expect(room.status).toBe('playing');
+		expect(room.moves).toHaveLength(0);
 	});
 });
 
@@ -323,5 +332,23 @@ describe('журнал поза партією й старт (A2)', () => {
 		await expect(
 			room('lobby').transport({ as: HOST }).setConfig({ pairs: 6 })
 		).resolves.toBeUndefined();
+	});
+});
+
+/**
+ * ВЕДЕННЯ — ЛИШЕ УЧАСНИК КІМНАТИ (шостий аудит, дзеркало правил). Хід `lead` — такий
+ * самий хід журналу, і база вимагає рядка в складі (`moves/$seq`). Доти дзеркало пускало
+ * гравця ЗАМОРОЖЕНОГО складу, чий рядок уже прибрано, — тобто було мʼякшим за базу.
+ *
+ * Зворотний експеримент: прибрати перевірку `author` у `leadAllowed` — червоніє.
+ */
+describe('ведення без рядка в складі', () => {
+	it('гравець складу, чий рядок прибрано, ведення не бере', async () => {
+		const room = new LocalRoom(info, members);
+		room.setMembers(members.filter((member) => member.uid !== GUEST));
+		room.setPresent([GUEST]);
+		const lead = { seq: 1, by: GUEST, type: 'lead', payload: { from: HOST } };
+
+		expect(await room.transport({ as: GUEST }).takeLead(lead)).toBe(false);
 	});
 });

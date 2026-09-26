@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'fdac6ca22518'" }
+      "$v": { ".read": "auth != null && $v === '4019d42dc216'" }
     },
 
     "rooms": {
@@ -130,8 +130,12 @@
              * вікторина вела б відлік ведучих від нового господаря з нульового ходу й
              * губила б усі раунди, оголошені до передачі.
              */
-            ".write": "auth != null && newData.val() === auth.uid && (root.child('rooms').child($code).child('info/status').val() === 'lobby' ? root.child('rooms').child($code).child('members').child(auth.uid).child('role').val() === 'player' : root.child('rooms').child($code).child('info/roster').child(auth.uid).exists()) && root.child('presence').child($code).child(auth.uid).exists() && !root.child('presence').child($code).child(data.val()).exists() && newData.parent().parent().child('moves').child(newData.parent().child('leadSeq').val()).child('type').val() === 'lead' && !data.parent().parent().child('moves').child(newData.parent().child('leadSeq').val()).exists()",
+            ".write": "auth != null && newData.val() === auth.uid && (root.child('rooms').child($code).child('info/status').val() === 'lobby' ? root.child('rooms').child($code).child('members').child(auth.uid).child('role').val() === 'player' : root.child('rooms').child($code).child('info/roster').child(auth.uid).exists()) && root.child('presence').child($code).child(auth.uid).exists() && !root.child('presence').child($code).child(data.val()).exists()",
             /*
+             * «НОВИЙ ХІД lead, ЯКИЙ НАПИСАВ НОВИЙ ГОСПОДАР» — ЛИШЕ ТУТ (шостий аудит): доти
+             * та сама умова стояла ще й у `.write`, і прибрати будь-яку одну з двох копій
+             * гейт не помітив би — друга однаково відмовляла.
+             *
              * І ТЕ САМЕ ДЛЯ ГОСПОДАРЯ (аудит 2026-09-26, A2). `.write` вище — дозвіл
              * НЕ-господареві; господар пише `info` правом батька, і дочірній `.write`
              * його не звужує (у RTDB дозволи каскадують). Тож доти господар міг назвати
