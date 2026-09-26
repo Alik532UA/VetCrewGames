@@ -1,11 +1,13 @@
 import {
+	configAllowed,
 	hostOnly,
 	leadAllowed,
 	moveAllowed,
 	removeAllowed,
 	rosterAllowed,
 	touchAllowed,
-	type RoomState
+	type RoomState,
+	wipeAllowed
 } from './localRules';
 import type {
 	GoneReason,
@@ -180,10 +182,19 @@ export class LocalRoom {
 				}
 				// Склад — ті самі умови, що в правилі бази: лише гравці з їхніми іменами і
 				// лише на старті, а не посеред партії. Відмова, як і там, скасовує ВЕСЬ запис.
-				const midGame = this.#info.status === 'playing' && this.#moves.length > 0;
-				if (roster && (status !== 'playing' || midGame || !rosterAllowed(roster, this.#members))) {
+				if (roster && (status !== 'playing' || !rosterAllowed(roster, this.#members))) {
 					throw new Error('PERMISSION_DENIED: roster');
 				}
+				/*
+				 * Старт СТИРАЄ журнал лобі (A2) — тим самим записом, як у справжній базі, — а
+				 * дубль старту (партія вже йде) база відкидає цілком: журнал посеред партії
+				 * стирає лише реванш із новим зерном (`wipeAllowed`).
+				 */
+				const starting = status === 'playing';
+				if (starting && !wipeAllowed(this.#state(), this.#info.seed)) {
+					throw new Error('PERMISSION_DENIED: start');
+				}
+				if (starting) this.#moves = [];
 				/*
 				 * `countdownAt` гасне разом із початком партії — так само, як у справжній
 				 * базі (там це один `update` із `null`).
@@ -219,6 +230,8 @@ export class LocalRoom {
 
 			setConfig: async (config) => {
 				if (!hostOnly(this.#state(), options.as)) denied();
+				// Після партії — лише разом зі стертим журналом (A2), як і зерно.
+				if (!configAllowed(this.#state())) throw new Error('PERMISSION_DENIED: config');
 				this.#info = { ...this.#info, config };
 				this.#emit();
 			},
@@ -268,6 +281,8 @@ export class LocalRoom {
 			restart: async (seed, roster, config) => {
 				if (!hostOnly(this.#state(), options.as)) denied();
 				if (!rosterAllowed(roster, this.#members)) throw new Error('PERMISSION_DENIED: roster');
+				// Посеред партії журнал стирає лише НОВЕ зерно (A2): інакше це дубль старту.
+				if (!wipeAllowed(this.#state(), seed)) throw new Error('PERMISSION_DENIED: restart');
 				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік, склад.
 				this.#moves = [];
 				// Відлік і оголошений переїзд — від попередньої партії, до реваншу не стосуються.

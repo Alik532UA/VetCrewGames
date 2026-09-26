@@ -2203,10 +2203,10 @@ const CASES = [
 			)
 	},
 	/*
-	 * СТАРТ ІЗ ХОДОМ У ЖУРНАЛІ ЛОБІ. Там бувають ходи `lead` (ведення підхопили за
-	 * відсутнього господаря), тож умова правила — ПЕРЕХІД у `playing`, а не порожній
-	 * журнал: інакше старт такої кімнати відкидався б. Номер 900 — щоб не зайняти
-	 * тих, на яких випадки нижче перевіряють інше.
+	 * ЖУРНАЛ ЛОБІ Й СТАРТ (аудит 2026-09-26, A2). Поза партією журнал приймає лише
+	 * `lead`, а старт стирає журнал лобі тим самим записом — правило `status` пускає в
+	 * партію лише з порожнім журналом. Старт, що лишає журнал, і дубль старту —
+	 * у кімнаті перехоплення нижче (`LEAD`): там у журналі лобі лежить законний `lead`.
 	 */
 	{
 		name: 'господар повертає кімнату в лобі',
@@ -2214,8 +2214,8 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/status`, 'lobby', host.token)
 	},
 	{
-		name: 'у журналі лобі вже є хід',
-		allowed: true,
+		name: 'у лобі звичайний хід не лягає',
+		allowed: false,
 		run: () => write(`rooms/${CODE}/moves/000900`, move(guest.uid, 900), guest.token)
 	},
 	{
@@ -2225,23 +2225,33 @@ const CASES = [
 			write(`rooms/${CODE}/info/roster`, { [guest.uid]: { name: 'Тест', seat: 0 } }, host.token)
 	},
 	{
-		// Рівно тим записом, яким його робить `rtdbRoom.setStatus('playing', склад)`.
-		name: 'господар починає партію й заморожує склад одним записом',
+		// Рівно тим записом, яким його робить `rtdbRoom.setStatus('playing', склад)`:
+		// на рівні кімнати, зі стертим журналом лобі й вказівником на нього (A2).
+		name: 'господар починає партію, заморожує склад і стирає журнал лобі одним записом',
 		allowed: true,
 		run: () =>
 			patch(
-				`rooms/${CODE}/info`,
+				`rooms/${CODE}`,
 				{
-					status: 'playing',
-					startedAt: SERVER_TIME,
-					countdownAt: null,
-					roster: {
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/leadSeq': null,
+					'info/roster': {
 						[host.uid]: { name: 'Тест', seat: 0 },
 						[guest.uid]: { name: 'Тест', seat: 1 }
-					}
+					},
+					moves: null
 				},
 				host.token
 			)
+	},
+	{
+		// Номер 900 — щоб не зайняти тих, на яких випадки нижче перевіряють інше; на
+		// ньому ж стоїть «ведення з вказівником на наявний хід».
+		name: 'гравець складу дописує хід посеред партії',
+		allowed: true,
+		run: () => write(`rooms/${CODE}/moves/000900`, move(guest.uid, 900), guest.token)
 	},
 	{
 		name: 'гість на звʼязку',
@@ -2702,6 +2712,171 @@ const CASES = [
 					}
 				},
 				host.token
+			)
+	},
+	/*
+	 * ЖУРНАЛ, СТАРТ І РЕВАНШ (аудит 2026-09-26, A2) — у тій самій кімнаті: у журналі її
+	 * лобі лежить законний хід `lead` (000002), і господар тепер — гість. Кожна відмова
+	 * нижче — рівно з однієї причини.
+	 */
+	{
+		// Без складу: інакше відмова мала б дві причини (склад теж вимагає порожнього журналу).
+		name: 'старт, що лишає журнал лобі, не лягає',
+		allowed: false,
+		run: () =>
+			patch(`rooms/${LEAD}/info`, { status: 'playing', startedAt: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'старт стирає журнал лобі й вказівник на нього одним записом',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/nextCode': null,
+					'info/leadSeq': null,
+					'info/roster': { [guest.uid]: { name: member.name, seat: 0 } },
+					moves: null
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'гравець складу ходить посеред партії',
+		allowed: true,
+		run: () => write(`rooms/${LEAD}/moves/000001`, move(guest.uid, 1), guest.token)
+	},
+	{
+		// Другий натиск «почати»: тим самим зерном журнал посеред партії не стерти.
+		name: 'дубль старту партію не стирає',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/nextCode': null,
+					'info/leadSeq': null,
+					'info/roster': { [guest.uid]: { name: member.name, seat: 0 } },
+					moves: null
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'реванш посеред партії — з новим зерном — стирає журнал',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/seed': 2,
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/nextCode': null,
+					'info/leadSeq': null,
+					'info/roster': { [guest.uid]: { name: member.name, seat: 0 } },
+					moves: null
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'гравець складу ходить у реванші',
+		allowed: true,
+		run: () => write(`rooms/${LEAD}/moves/000001`, move(guest.uid, 1), guest.token)
+	},
+	{
+		name: 'склад посеред партії з журналом',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${LEAD}/info/roster`,
+				{ [guest.uid]: { name: member.name, seat: 0 } },
+				guest.token
+			)
+	},
+	{
+		name: 'початок партії переписано посеред партії',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/startedAt`, SERVER_TIME, guest.token)
+	},
+	{
+		name: 'мітку створення переписано',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/createdAt`, SERVER_TIME, guest.token)
+	},
+	{
+		// Господар пише `info` правом батька, тож умову несе `.validate` `hostUid`.
+		name: 'господар передає ведення без ходу lead',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/hostUid`, host.uid, guest.token)
+	},
+	{
+		name: 'гравець складу ходить із полем from',
+		allowed: true,
+		run: () =>
+			write(
+				`rooms/${LEAD}/moves/000002`,
+				{ seq: 2, by: guest.uid, type: 'flip', at: SERVER_TIME, payload: { from: host.uid } },
+				guest.token
+			)
+	},
+	{
+		name: 'господар указує вказівником на хід, що не lead',
+		allowed: true,
+		run: () => write(`rooms/${LEAD}/info/leadSeq`, '000002', guest.token)
+	},
+	{
+		// Названий у `from` — не господар; без перевірки типу він оголосив би переїзд.
+		name: 'переїзд під вказівником на хід, що не lead',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/nextCode`, '77', host.token)
+	},
+	{
+		name: 'господар завершує партію',
+		allowed: true,
+		run: () => write(`rooms/${LEAD}/info/status`, 'over', guest.token)
+	},
+	{
+		name: 'після партії звичайний хід не лягає',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/moves/000003`, move(guest.uid, 3), guest.token)
+	},
+	{
+		name: 'після партії нове зерно без стертого журналу',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/seed`, 99, guest.token)
+	},
+	{
+		name: 'після партії налаштування без стертого журналу',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/config`, { pairs: 6, cols: 4 }, guest.token)
+	},
+	{
+		// Рівно тим записом, яким його робить `rtdbRoom.restart`.
+		name: 'реванш після партії стирає журнал і вказівник',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/seed': 3,
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/nextCode': null,
+					'info/leadSeq': null,
+					'info/roster': { [guest.uid]: { name: member.name, seat: 0 } },
+					moves: null
+				},
+				guest.token
 			)
 	},
 	{

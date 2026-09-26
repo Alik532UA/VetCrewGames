@@ -981,6 +981,8 @@ describe('суперник відпав', () => {
 		 */
 		it('початок партії гасить відлік', async () => {
 			const { room, host, guest, stop } = table();
+			// Відлік іде в ЛОБІ: старт поверх партії, що вже йде, — дубль, і база його відкидає (A2).
+			await room.transport().setStatus('lobby');
 			await room.transport().setCountdown(true);
 			await room.transport().setStatus('playing');
 

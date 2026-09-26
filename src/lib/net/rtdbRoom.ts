@@ -495,13 +495,25 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				 */
 				// Склад — тим самим записом: партія без нього роздавала б дошку за тими,
 				// хто встиг зайти чи вийти в проміжку (`RoomInfo.roster`).
-				await update(ref(db, `rooms/${code}/info`), {
-					status,
-					startedAt: serverTimestamp(),
-					countdownAt: null,
-					...(roster ? { roster: rosterToRecord(roster) } : {}),
+				/*
+				 * І ЖУРНАЛ ЛОБІ СТИРАЄТЬСЯ ТИМ САМИМ ЗАПИСОМ (аудит 2026-09-26, A2). Правило
+				 * `status` пускає в партію лише з порожнім журналом: доти все, що лежало в
+				 * лобі, перепрогін рахував першими ходами партії. У лобі там бувають лише
+				 * ходи `lead` (ведення підхопили), і разом із ними гасне вказівник на них —
+				 * `leadSeq` указував би на хід, якого вже немає.
+				 *
+				 * Дубль старту (партія вже йде) правило відкидає ЦІЛКОМ: журнал посеред
+				 * партії стирає лише реванш — із новим зерном.
+				 */
+				await update(ref(db, `rooms/${code}`), {
+					'info/status': status,
+					'info/startedAt': serverTimestamp(),
+					'info/countdownAt': null,
+					'info/leadSeq': null,
+					...(roster ? { 'info/roster': rosterToRecord(roster) } : {}),
 					// Розкладка, яку вибрав старт, — тим самим записом, що й роздача.
-					...(config ? { config } : {})
+					...(config ? { 'info/config': config } : {}),
+					moves: null
 				});
 				return;
 			}
@@ -592,6 +604,8 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				// Переїзд, оголошений після попередньої партії, до реваншу не стосується:
 				// доти кнопка «перейти» висіла й над новою партією (аудит 2026-09-26).
 				'info/nextCode': null,
+				// Вказівник на хід `lead` гасне разом зі стертим журналом (A2).
+				'info/leadSeq': null,
 				'info/roster': rosterToRecord(roster),
 				...(config ? { 'info/config': config } : {}),
 				moves: null

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LocalRoom } from './localRoom';
-import type { Member, RoomInfo } from './roomTypes';
+import type { Member, RoomInfo, RoomSnapshot } from './roomTypes';
 
 /**
  * ПІДСТАВКА НЕ ЛАГІДНІША ЗА БАЗУ.
@@ -221,7 +221,8 @@ describe('особа транспорту — як auth.uid у правилах'
 	const lobbyRoom = (): RoomInfo => ({ ...info, status: 'lobby', roster: undefined });
 
 	it('хід під чужим іменем не лягає, під своїм — лягає', async () => {
-		const room = new LocalRoom(lobbyRoom(), members);
+		// Посеред партії: у лобі ходу гри не буває зовсім (A2 — див. нижче).
+		const room = new LocalRoom(info, members);
 		const guest = room.transport({ as: GUEST });
 		expect(await guest.append({ seq: 1, by: HOST, type: 'goon' })).toBe(false);
 		expect(await guest.append({ seq: 1, by: GUEST, type: 'goon' })).toBe(true);
@@ -258,5 +259,69 @@ describe('особа транспорту — як auth.uid у правилах'
 			/PERMISSION_DENIED/
 		);
 		await room.transport({ as: GUEST }).touch();
+	});
+});
+
+/**
+ * ЖУРНАЛ ПОЗА ПАРТІЄЮ Й СТАРТ (аудит 2026-09-26, A2) — дзеркало правил `moves`, `status`,
+ * `seed`, `config`: у лобі й після партії журнал приймає лише `lead`; старт стирає журнал
+ * лобі тим самим записом; дубль старту й реванш без нового зерна не стирають партію; після
+ * партії налаштування міняються лише разом зі стертим журналом.
+ *
+ * Зворотні експерименти: прибрати перевірку статусу з `moveAllowed` — червоніє «лобі»;
+ * не стирати журнал на старті — червоніє «старт»; прибрати `wipeAllowed` — червоніє
+ * «дубль»; прибрати `configAllowed` — червоніє «після партії».
+ */
+describe('журнал поза партією й старт (A2)', () => {
+	const room = (status: RoomInfo['status']) =>
+		new LocalRoom(
+			{ ...info, status, roster: status === 'playing' ? info.roster : undefined },
+			members
+		);
+	const goon = (seq: number) => ({ seq, by: GUEST, type: 'goon' });
+
+	it('у лобі й після партії хід гри не лягає', async () => {
+		for (const status of ['lobby', 'over'] as const) {
+			const guest = room(status).transport({ as: GUEST });
+			expect(await guest.append(goon(1)), status).toBe(false);
+		}
+	});
+
+	it('старт стирає журнал лобі тим самим записом', async () => {
+		const lobby = room('lobby');
+		lobby.setPresent([GUEST]);
+		const lead = { seq: 1, by: GUEST, type: 'lead', payload: { from: HOST } };
+		expect(await lobby.transport({ as: GUEST }).takeLead(lead), 'ведення в лобі — законне').toBe(
+			true
+		);
+		const guest = lobby.transport({ as: GUEST });
+		await guest.setStatus('playing', info.roster);
+
+		// Перший знімок підписка дає одразу — підписатися й одразу відписатися.
+		const snapshot = await new Promise<RoomSnapshot>((resolve) => guest.watch(resolve)());
+		expect(snapshot.info.status).toBe('playing');
+		expect(snapshot.moves).toEqual([]);
+	});
+
+	it('дубль старту й реванш без нового зерна партію не стирають', async () => {
+		const playing = room('playing');
+		const host = playing.transport({ as: HOST });
+		expect(await playing.transport({ as: GUEST }).append(goon(1))).toBe(true);
+
+		await expect(host.setStatus('playing', info.roster)).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(host.restart(info.seed, info.roster ?? [])).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(host.restart(info.seed + 1, info.roster ?? [])).resolves.toBeUndefined();
+	});
+
+	it('після партії налаштування — лише разом зі стертим журналом', async () => {
+		const played = room('playing');
+		expect(await played.transport({ as: GUEST }).append(goon(1))).toBe(true);
+		const host = played.transport({ as: HOST });
+		await host.setStatus('over');
+
+		await expect(host.setConfig({ pairs: 6 })).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(
+			room('lobby').transport({ as: HOST }).setConfig({ pairs: 6 })
+		).resolves.toBeUndefined();
 	});
 });

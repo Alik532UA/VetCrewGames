@@ -200,9 +200,17 @@ const rosterOf = (table: Table): RosterEntry[] => [
 	{ uid: table.guest.uid, name: 'Гість' }
 ];
 
+/**
+ * Почати партію складом «господар і гість». Хід гри тепер лягає ЛИШЕ посеред партії
+ * (аудит 2026-09-26, A2): сценарії про хід без старту відкидалися б правилом статусу,
+ * а не тим, яке перевіряють, — тобто проходили б за чужою причиною.
+ */
+const started = async (table: Table) => table.host.transport.setStatus('playing', rosterOf(table));
+
 describe.each([local, emulator])('контракт транспорту: $name', (world) => {
 	it('учасник дописує хід, а той самий номер удруге — ні', async () => {
 		const table = await world.table();
+		await started(table);
 
 		expect(await table.guest.transport.append(flip(table.guest.uid, 1))).toBe(true);
 		expect(await table.host.transport.append(flip(table.host.uid, 1))).toBe(false);
@@ -215,12 +223,14 @@ describe.each([local, emulator])('контракт транспорту: $name',
 
 	it('хід від того, кого немає в складі, не лягає', async () => {
 		const table = await world.table();
+		await started(table);
 		expect(await table.stranger.transport.append(flip(table.stranger.uid, 1))).toBe(false);
 		await table.close();
 	});
 
 	it('номер поза межею не лягає, а на самій межі — лягає', async () => {
 		const table = await world.table();
+		await started(table);
 		expect(await table.guest.transport.append(flip(table.guest.uid, 0))).toBe(false);
 		expect(await table.guest.transport.append(flip(table.guest.uid, 1_000_000))).toBe(false);
 		// Межа — 9 999, а не мільйон (аудит 2026-09-26, `MOVE_SEQ_MAX`).
@@ -243,6 +253,7 @@ describe.each([local, emulator])('контракт транспорту: $name',
 
 	it('хід лише з відомими полями: чуже поле чи частка понад одиницю не лягають', async () => {
 		const table = await world.table();
+		await started(table);
 		const by = table.guest.uid;
 		expect(
 			await table.guest.transport.append({ seq: 1, by, type: 'say', payload: { word: 'кіт' } })
@@ -423,6 +434,7 @@ describe.each([local, emulator])('контракт транспорту: $name',
 
 	it('хід під чужим іменем не лягає', async () => {
 		const table = await world.table();
+		await started(table);
 		expect(await table.guest.transport.append(flip(table.host.uid, 1))).toBe(false);
 		await table.close();
 	});
@@ -510,6 +522,51 @@ describe.each([local, emulator])('контракт транспорту: $name',
 
 		const snapshot = await table.until((s) => s.info.status === 'over');
 		expect(snapshot.info.countdownAt).toBeUndefined();
+		await table.close();
+	});
+
+	/**
+	 * ЖУРНАЛ ПОЗА ПАРТІЄЮ Й СТАРТ (аудит 2026-09-26, A2): у лобі й після партії хід гри
+	 * не лягає; старт стирає журнал лобі тим самим записом (там лежить законний `lead`);
+	 * дубль старту журналу партії не чіпає.
+	 */
+	it('у лобі й після партії хід гри не лягає', async () => {
+		const table = await world.table();
+		expect(await table.guest.transport.append(flip(table.guest.uid, 1)), 'лобі').toBe(false);
+		await started(table);
+		await table.host.transport.setStatus('over');
+		expect(await table.guest.transport.append(flip(table.guest.uid, 1)), 'після').toBe(false);
+		await table.close();
+	});
+
+	it('старт стирає журнал лобі тим самим записом', async () => {
+		const table = await world.table();
+		await table.present([table.guest.uid]);
+		const lead: Move = {
+			seq: 1,
+			by: table.guest.uid,
+			type: 'lead',
+			payload: { from: table.host.uid }
+		};
+		expect(await table.guest.transport.takeLead(lead), 'ведення в лобі').toBe(true);
+		await table.until((s) => s.moves.length === 1 && s.info.hostUid === table.guest.uid);
+
+		await table.guest.transport.setStatus('playing', rosterOf(table));
+
+		const snapshot = await table.until((s) => s.info.status === 'playing' && s.moves.length === 0);
+		expect(snapshot.info.hostUid).toBe(table.guest.uid);
+		await table.close('guest');
+	});
+
+	it('дубль старту партію не стирає', async () => {
+		const table = await world.table();
+		await started(table);
+		expect(await table.guest.transport.append(flip(table.guest.uid, 1))).toBe(true);
+
+		await expect(started(table)).rejects.toThrow();
+
+		const snapshot = await table.until((s) => s.moves.length === 1);
+		expect(snapshot.info.status).toBe('playing');
 		await table.close();
 	});
 

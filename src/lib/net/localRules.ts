@@ -81,6 +81,8 @@ export function moveAllowed(state: RoomState, move: Move, caller?: string): bool
 	const { info, members, moves } = state;
 	if (caller !== undefined && move.by !== caller) return false;
 	if (!members.some((member) => member.uid === move.by)) return false;
+	// Поза партією — лише `lead` (A2): у лобі й після партії гри немає.
+	if (info.status !== 'playing' && move.type !== 'lead') return false;
 	const party = info.status !== 'playing' || info.gameId === 'quiz';
 	if (!party && !(info.roster ?? []).some((entry) => entry.uid === move.by)) return false;
 	if (!validSeq(move.seq) || !validPayload(move.payload)) return false;
@@ -90,6 +92,17 @@ export function moveAllowed(state: RoomState, move: Move, caller?: string): bool
 	}
 	return true;
 }
+
+/**
+ * Правило `moves` (стерти журнал) разом зі `status`/`seed` (A2): посеред партії журнал
+ * стирає лише реванш — із новим зерном; дубль старту партію не зітре.
+ */
+export const wipeAllowed = (state: RoomState, seed: number): boolean =>
+	state.info.status !== 'playing' || seed !== state.info.seed;
+
+/** Правило `info/config` (A2): у лобі або разом із порожнім журналом. */
+export const configAllowed = (state: RoomState): boolean =>
+	state.info.status === 'lobby' || state.moves.length === 0;
 
 /**
  * Правило `info/hostUid` разом із ходом `lead`: автор — гравець (у лобі) чи зі

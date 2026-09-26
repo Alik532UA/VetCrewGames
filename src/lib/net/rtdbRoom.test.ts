@@ -109,6 +109,8 @@ describe('rtdbRoom: записи транспорту', () => {
 					'info/countdownAt': null,
 					// Переїзд попередньої партії до реваншу не стосується (аудит 2026-09-26).
 					'info/nextCode': null,
+					// Вказівник на хід `lead` гасне разом зі стертим журналом (A2).
+					'info/leadSeq': null,
 					// Склад у базі — мапа за uid: правило питає «чи він у складі».
 					'info/roster': { 'uid-host': { name: 'Господар', seat: 0 } },
 					moves: null
@@ -117,15 +119,28 @@ describe('rtdbRoom: записи транспорту', () => {
 		]);
 	});
 
-	it('початок партії ставить startedAt тим самим записом, що й статус', async () => {
+	/**
+	 * СТАРТ — ОДИН ЗАПИС НА РІВНІ КІМНАТИ (аудит 2026-09-26, A2): статус, `startedAt` і
+	 * СТЕРТИЙ журнал лобі разом із вказівником `leadSeq`. Правило `status` пускає в партію
+	 * лише з порожнім журналом, тож записом лише `info` старт тепер відкидався б.
+	 *
+	 * Зворотний експеримент: прибрати `moves: null` — червоніє (і над емулятором теж).
+	 */
+	it('початок партії ставить startedAt і стирає журнал лобі тим самим записом', async () => {
 		const transport = await roomTransport('42');
 		await transport.setStatus('playing');
 
 		expect(writes).toEqual([
 			{
 				op: 'update',
-				path: 'rooms/42/info',
-				value: { status: 'playing', startedAt: SERVER_TIME, countdownAt: null }
+				path: 'rooms/42',
+				value: {
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/leadSeq': null,
+					moves: null
+				}
 			}
 		]);
 	});
@@ -148,15 +163,17 @@ describe('rtdbRoom: записи транспорту', () => {
 		expect(writes).toEqual([
 			{
 				op: 'update',
-				path: 'rooms/42/info',
+				path: 'rooms/42',
 				value: {
-					status: 'playing',
-					startedAt: SERVER_TIME,
-					countdownAt: null,
-					roster: {
+					'info/status': 'playing',
+					'info/startedAt': SERVER_TIME,
+					'info/countdownAt': null,
+					'info/leadSeq': null,
+					'info/roster': {
 						'uid-host': { name: 'Господар', seat: 0 },
 						'uid-guest': { name: 'Гість', seat: 1 }
-					}
+					},
+					moves: null
 				}
 			}
 		]);
