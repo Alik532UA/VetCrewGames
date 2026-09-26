@@ -13,7 +13,7 @@ import { uk } from '$lib/i18n/translations/uk';
 const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
 vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
-const { FamilyGameController } = await import('./familyGame.svelte');
+const { FamilyGameController, familyReview } = await import('./familyGame.svelte');
 
 /**
  * Дані цієї гри перевіряються нарівні з логікою, і це не педантизм: набір, що
@@ -75,6 +75,50 @@ describe('набори «Хто з іншої родини?»', () => {
 			Math.random
 		);
 		expect(round).toBeNull();
+	});
+});
+
+/**
+ * ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26): відповіданий раунд
+ * лишається знімком — тим самим порядком карток і з вибором гравця.
+ *
+ * Зворотний експеримент: не писати історію — червоніє «знімок»; не чистити на
+ * «Грати знову» — червоніє «нова партія».
+ */
+describe('історія для перегляду', () => {
+	it('відповіданий раунд — знімок загадки й вибору, і наступний раунд його не міняє', () => {
+		const game = new FamilyGameController(3);
+		game.start();
+		const round = game.round!;
+		const odd = round.oddAnimal;
+		game.choose(odd);
+		game.nextRound();
+		game.choose(game.round!.cards.find((a) => a.id !== game.round!.oddAnimal.id)!);
+
+		expect(game.history).toHaveLength(2);
+		expect(game.history[0].round.id).toBe(round.id);
+		expect(game.history[0].round.cards.map((a) => a.id)).toEqual(round.cards.map((a) => a.id));
+		expect(game.history[0].chosen.id).toBe(odd.id);
+		expect(familyReview(game.history[0])).toMatchObject({ answered: true, isCorrect: true });
+		expect(familyReview(game.history[1]).isCorrect).toBe(false);
+	});
+
+	it('нова партія починає з порожньою історією', () => {
+		const game = new FamilyGameController(3);
+		game.start();
+		game.choose(game.round!.oddAnimal);
+		game.reset();
+		expect(game.history).toEqual([]);
+	});
+
+	it('у перегляді натиснути нічого: дії — порожні', () => {
+		const game = new FamilyGameController(3);
+		game.start();
+		game.choose(game.round!.oddAnimal);
+		const view = familyReview(game.history[0]);
+		view.choose(game.history[0].round.cards[0]);
+		view.nextRound();
+		expect(game.roundNumber, 'перегляд зрушив живу партію').toBe(1);
 	});
 });
 

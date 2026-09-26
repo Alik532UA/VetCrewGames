@@ -32,6 +32,12 @@ export class FamilyGameController {
 
 	/** Картка, яку обрав гравець. `null`, доки він не відповів. */
 	chosen = $state<Animal | null>(null);
+	/**
+	 * ВІДПОВІДАНІ РАУНДИ — знімком для перегляду (прохання автора 2026-09-26):
+	 * загадка з тим самим порядком карток і вибір гравця. Доти про минулий раунд
+	 * лишалося тільки «правильно / ні».
+	 */
+	history = $state<FamilyRecord[]>([]);
 
 	/** Набори, показані в цій партії: повторів у межах партії не буває. */
 	#used: string[] = [];
@@ -84,6 +90,10 @@ export class FamilyGameController {
 		this.chosen = animal;
 		const correct = animal.id === this.round.oddAnimal.id;
 		this.roundResults.push(correct ? 'correct' : 'incorrect');
+		this.history.push({
+			round: $state.snapshot(this.round) as FamilyRound,
+			chosen: $state.snapshot(animal) as Animal
+		});
 
 		if (correct) {
 			// Бінарний раунд: три очки за правильну відповідь (config/scoring.ts).
@@ -107,6 +117,7 @@ export class FamilyGameController {
 		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
+		this.history = [];
 		this.sessionScore = 0;
 		this.gameOver = false;
 		this.#used = [];
@@ -162,3 +173,25 @@ export class FamilyGameController {
 		this.round = round;
 	}
 }
+
+/** Відповіданий раунд: загадка тим самим порядком карток і вибір гравця. */
+export interface FamilyRecord {
+	round: FamilyRound;
+	chosen: Animal;
+}
+
+/** Те, що дошка читає з гри: і з живої партії, і зі знімка для перегляду. */
+export type FamilyView = Pick<
+	FamilyGameController,
+	'round' | 'chosen' | 'answered' | 'isCorrect' | 'choose' | 'nextRound'
+>;
+
+/** Минулий раунд для дошки — у стані «відповіли», і натиснути в ньому нічого. */
+export const familyReview = (record: FamilyRecord): FamilyView => ({
+	round: record.round,
+	chosen: record.chosen,
+	answered: true,
+	isCorrect: record.chosen.id === record.round.oddAnimal.id,
+	choose: () => {},
+	nextRound: () => {}
+});

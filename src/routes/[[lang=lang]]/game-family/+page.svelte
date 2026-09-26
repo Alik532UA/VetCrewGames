@@ -4,14 +4,19 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { FamilyGameController } from '$lib/controllers/familyGame.svelte';
+	import { FamilyGameController, familyReview } from '$lib/controllers/familyGame.svelte';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import FamilyBoard from '$lib/components/FamilyBoard.svelte';
+	import ReviewPanel from '$lib/components/ReviewPanel.svelte';
+	import ReviewList from '$lib/components/ReviewList.svelte';
+	import { td } from '$lib/i18n';
 
 	// Правила — у контролері; тут лише показ і кліки (SVELTE-CORE-v8 § 3.1).
 	const game = new FamilyGameController();
+	/** Котре минуле питання переглядають (від нуля); `null` — грають поточне. */
+	let viewing = $state<number | null>(null);
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	onMount(() => {
@@ -27,24 +32,59 @@
 
 <div class="game-page" use:fitToViewport>
 	{#if game.gameOver}
-		<GameOverCard
-			score={game.sessionScore}
-			total={game.maxScore}
-			{lang}
-			onPlayAgain={() => game.reset()}
-			testId="family-game-over"
-		/>
+		{#if viewing === null}
+			<GameOverCard
+				score={game.sessionScore}
+				total={game.maxScore}
+				{lang}
+				onPlayAgain={() => {
+					viewing = null;
+					game.reset();
+				}}
+				testId="family-game-over"
+			/>
+			<!-- Питання партії переліком — перегляд у кінці (прохання автора 2026-09-26). -->
+			<ReviewList
+				results={game.roundResults}
+				label={(i) => (game.history[i]?.round.cards ?? []).map((a) => td(a.nameKey)).join(', ')}
+				onopen={(i) => (viewing = i)}
+			/>
+		{:else}
+			{@render review('review.backToResults')}
+		{/if}
 	{:else if game.round}
 		<div class="round-indicator-wrapper">
+			<!-- Відповідані сегменти відкривають питання свого раунду. -->
 			<RoundIndicator
 				current={game.roundNumber}
 				total={game.totalRounds}
 				results={game.roundResults}
+				onreview={(i) => (viewing = i)}
+				{viewing}
 			/>
 		</div>
 
-		<FamilyBoard {game} />
+		{#if viewing === null}
+			<FamilyBoard {game} />
+		{:else}
+			{@render review('review.back')}
+		{/if}
 	{/if}
+
+	<!-- Перегляд — та сама дошка в стані «відповіли», без «Далі» (`familyReview`). -->
+	{#snippet review(backKey: 'review.back' | 'review.backToResults')}
+		{@const record = game.history[viewing ?? 0]}
+		{#if record}
+			<ReviewPanel
+				index={viewing ?? 0}
+				total={game.totalRounds}
+				{backKey}
+				onback={() => (viewing = null)}
+			>
+				<FamilyBoard game={familyReview(record)} hideNext />
+			</ReviewPanel>
+		{/if}
+	{/snippet}
 </div>
 
 <style>

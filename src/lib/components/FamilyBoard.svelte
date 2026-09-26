@@ -2,7 +2,7 @@
 	import { fade, fly, slide } from 'svelte/transition';
 	import { CheckCircle2, XCircle } from 'lucide-svelte';
 	import { t, td, formatFont } from '$lib/i18n';
-	import type { FamilyGameController } from '$lib/controllers/familyGame.svelte';
+	import type { FamilyView } from '$lib/controllers/familyGame.svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
 
 	/**
@@ -32,7 +32,8 @@
 	 * щоб дошка не стрибала.
 	 */
 	interface Props {
-		game: FamilyGameController;
+		/** Жива партія або минулий раунд для перегляду (`familyReview`). */
+		game: FamilyView;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
 	}
