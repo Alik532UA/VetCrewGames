@@ -68,6 +68,23 @@ describe('MythGameController', () => {
 		expect(storageMock.setJSON).toHaveBeenCalledWith('shown_myths', [game.current!.id]);
 	});
 
+	/**
+	 * СПІЛЬНА ПАРТІЯ (ІЗ ЗЕРНОМ) СОЛО-ПАМʼЯТІ НЕ ЧІПАЄ — ні читанням, ні записом
+	 * (аудит 2026-09-26). Доти вона не читала, але писала: кожен раунд онлайн-вікторини
+	 * перезаписував «показане назавжди» одним питанням.
+	 *
+	 * Зворотний експеримент: прибрати перевірку зерна в `#persistUsed` — червоніє.
+	 */
+	it('партія із зерном не пише памʼять показаних і не читає її', () => {
+		const game = new MythGameController(1, 42);
+
+		game.start();
+
+		expect(game.current, 'перевірка жива: питання є').not.toBeNull();
+		expect(storageMock.getJSON).not.toHaveBeenCalledWith('shown_myths');
+		expect(storageMock.setJSON).not.toHaveBeenCalledWith('shown_myths', expect.anything());
+	});
+
 	it('правильна відповідь піднімає обидва рахунки, неправильна — жодного', () => {
 		const game = new MythGameController();
 		game.start();
