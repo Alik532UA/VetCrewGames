@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.555",
+	"version": "0.6.556",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -18,6 +18,8 @@
 		"firebase:login": "node scripts/firebase-cli.mjs login",
 		"rules:stamp": "node scripts/rules-stamp.mjs",
 		"rules:stamp:check": "node scripts/rules-stamp.mjs --check",
+		"replay:stamp": "node scripts/replay-stamp.mjs",
+		"replay:stamp:check": "node scripts/replay-stamp.mjs --check",
 		"check:rules:live": "node scripts/check-rules-live.mjs",
 		"rules:deploy": "node scripts/rules-deploy.mjs",
 		"rooms:sweep": "node scripts/sweep-rooms.mjs",
