@@ -30,7 +30,7 @@ const { LEAD_AFTER_MS, OVER_LEAD_AFTER_MS } = await import('./roomPolicies.svelt
 const { PairsMatch } = await import('./pairsMatch.svelte');
 const { QuizMatch } = await import('./quizMatch.svelte');
 const { pairsGame: realPairsGame, attachPairsPolicies } = await import('./pairsRoom.svelte');
-const { QuizRoom } = await import('./quizRoom.svelte');
+const { QuizRoomState } = await import('./quizRoom.svelte');
 const { QUIZ_RULES_VERSION, PAIRS_RULES_VERSION } = await import('$lib/config/roomRules');
 
 type Session = InstanceType<typeof RoomSession<InstanceType<typeof PairsMatch>>>;
@@ -1224,7 +1224,7 @@ describe('сесія зі справжніми адаптерами ігор', (
 			}),
 			members()
 		);
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const { session, setOnline } = wired(room, HOST, quiz.game, (s) => quiz.attach(s));
 
 		await session.enter('create');

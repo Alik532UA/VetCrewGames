@@ -10,7 +10,7 @@
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
-	import { QuizRoom as QuizRoomState } from '$lib/controllers/quizRoom.svelte';
+	import { QuizRoomState } from '$lib/controllers/quizRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import { DEV_TIME_FACTOR, gamesToConfig } from '$lib/config/quizOnline';
 	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';

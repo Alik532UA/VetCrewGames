@@ -23,7 +23,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 }));
 
 const { QuizMatch } = await import('./quizMatch.svelte');
-const { QuizRoom, QUIZ_MIN_PLAYERS, LATE_ANNOUNCE_MS } = await import('./quizRoom.svelte');
+const { QuizRoomState, QUIZ_MIN_PLAYERS, LATE_ANNOUNCE_MS } = await import('./quizRoom.svelte');
 const { AWAY_HOLD_DELAY_MS } = await import('$lib/utils/awayWait');
 const { QUIZ_RULES_VERSION } = await import('$lib/config/roomRules');
 const { logService } = await import('$lib/services/logService.svelte');
@@ -70,14 +70,14 @@ function host(match: Match, me: string, clock = 0) {
 
 describe('адаптер вікторини', () => {
 	it('версія, мінімум і роль новачка — з гри', () => {
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		expect(quiz.game.rulesVersion).toBe(QUIZ_RULES_VERSION);
 		expect(quiz.game.minPlayers).toBe(QUIZ_MIN_PLAYERS);
 		expect(quiz.game.lateRole).toBe('player');
 	});
 
 	it('нова кімната й «швидка гра» — з вибраного набору ігор', () => {
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const only = [ONLINE_GAMES[0].id];
 		quiz.picked = only;
 
@@ -93,7 +93,7 @@ describe('адаптер вікторини', () => {
 	 * Зворотний експеримент: повернути `this.picked` — червоніє.
 	 */
 	it('запис переліку несе набір кімнати, а не фільтр', () => {
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const inRoom = [ONLINE_GAMES[1].id];
 		const room = new LocalRoom(info({ config: gamesToConfig(inRoom) }), members());
 		const match = new QuizMatch(HOST, room.transport());
@@ -105,7 +105,7 @@ describe('адаптер вікторини', () => {
 	});
 
 	it('присутність іде в матч, а мить зникнення — у стан чекання', () => {
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const room = new LocalRoom(info(), members());
 		const match = new QuizMatch(HOST, room.transport());
 		const off = match.listen();
@@ -125,7 +125,7 @@ describe('адаптер вікторини', () => {
 	 * Зворотний експеримент: не скидати `awaySince` у `createMatch` — червоніє.
 	 */
 	it('позначки відсутності старої кімнати в нову не переходять', () => {
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const first = new LocalRoom(info(), members());
 		const old = quiz.game.createMatch(HOST, first.transport());
 		const off = old.listen();
@@ -140,7 +140,7 @@ describe('адаптер вікторини', () => {
 	});
 
 	it('глядачеві балів немає', () => {
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const eye: Member = { uid: 'uid-eye', name: 'Око', role: 'spectator', order: 3 };
 		const room = new LocalRoom(info(), [...members(), eye]);
 		const watcher = new QuizMatch(eye.uid, room.transport());
@@ -158,7 +158,7 @@ describe('реакції вікторини', () => {
 		const room = new LocalRoom(info(), members());
 		const lead = new QuizMatch(HOST, room.transport());
 		const off = lead.listen();
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const seat = host(lead, HOST);
 		cleanup = $effect.root(() => quiz.attach(seat));
 
@@ -175,7 +175,7 @@ describe('реакції вікторини', () => {
 		const append = vi.fn(room.transport().append);
 		const guest = new QuizMatch(GUEST, { ...room.transport(), append });
 		const off = guest.listen();
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const seat = host(guest, GUEST);
 		cleanup = $effect.root(() => quiz.attach(seat));
 
@@ -199,7 +199,7 @@ describe('реакції вікторини', () => {
 		const off = lead.listen();
 		await lead.startRound(0);
 		await lead.answer(1);
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		const now = room.tick(0);
 		quiz.game.onPresence?.(lead, [HOST], now);
 		// Зник не щойно, а вже досить давно, щоб партія стала його чекати.
@@ -231,7 +231,7 @@ describe('реакції вікторини', () => {
 		await lead.startRound(0);
 		// Десять хвилин по тому: я не дивився, коли раунд скінчився.
 		const late = room.tick(0) + 600_000;
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST, GUEST], late);
 		const seat = host(lead, HOST, late);
 		cleanup = $effect.root(() => quiz.attach(seat));
@@ -274,7 +274,7 @@ describe('реакції вікторини', () => {
 		// Ведучий «перезавантажився»: нова партія й нові реакції, посеред паузи.
 		const lead = new QuizMatch(HOST, room.transport());
 		const off = lead.listen();
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST, GUEST], reloadAt);
 		const seat = host(lead, HOST, reloadAt);
 		cleanup = $effect.root(() => quiz.attach(seat));
@@ -309,7 +309,7 @@ describe('реакції вікторини', () => {
 		const lead = new QuizMatch(HOST, room.transport());
 		const off = lead.listen();
 		await lead.startRound(0);
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST], 1_000);
 		const opened = 1_000 + AWAY_HOLD_DELAY_MS;
 		const seat = host(lead, HOST, opened);
@@ -343,7 +343,7 @@ describe('реакції вікторини', () => {
 		const off = lead.listen();
 		await lead.startRound(0);
 		append.mockClear();
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST], 1_000);
 		const seat = host(lead, HOST, 1_000);
 		cleanup = $effect.root(() => quiz.attach(seat));
@@ -366,7 +366,7 @@ describe('реакції вікторини', () => {
 		const lead = new QuizMatch(HOST, room.transport());
 		const off = lead.listen();
 		await lead.startRound(0);
-		const quiz = new QuizRoom(() => 0.5);
+		const quiz = new QuizRoomState(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST], 1_000);
 		const seat = host(lead, HOST, 1_000 + AWAY_HOLD_DELAY_MS);
 		cleanup = $effect.root(() => quiz.attach(seat));

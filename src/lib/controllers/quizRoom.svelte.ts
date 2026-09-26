@@ -47,7 +47,12 @@ export interface QuizHost {
 	readonly code: string;
 }
 
-export class QuizRoom {
+/**
+ * Імʼя — `QuizRoomState`, а не `QuizRoom`: так зветься й компонент кімнати
+ * (`components/quiz/QuizRoom.svelte`), і сторінка, що бере обидва, доти ховала збіг
+ * за псевдонімом (аудит 2026-09-26).
+ */
+export class QuizRoomState {
 	/**
 	 * Які ігри вибрано для НОВОЇ кімнати. Типово всі: людина, яка створює кімнату
 	 * не думаючи про набір, мусить отримати повну вікторину, а не порожню.
