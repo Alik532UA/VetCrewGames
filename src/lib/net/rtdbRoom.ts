@@ -571,6 +571,9 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 				'info/status': 'playing',
 				'info/startedAt': serverTimestamp(),
 				'info/countdownAt': null,
+				// Переїзд, оголошений після попередньої партії, до реваншу не стосується:
+				// доти кнопка «перейти» висіла й над новою партією (аудит 2026-09-26).
+				'info/nextCode': null,
 				'info/roster': rosterToRecord(roster),
 				moves: null
 			});

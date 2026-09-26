@@ -107,6 +107,8 @@ describe('rtdbRoom: записи транспорту', () => {
 					'info/status': 'playing',
 					'info/startedAt': SERVER_TIME,
 					'info/countdownAt': null,
+					// Переїзд попередньої партії до реваншу не стосується (аудит 2026-09-26).
+					'info/nextCode': null,
 					// Склад у базі — мапа за uid: правило питає «чи він у складі».
 					'info/roster': { 'uid-host': { name: 'Господар', seat: 0 } },
 					moves: null

@@ -176,6 +176,24 @@ describe('склад партії — як правило info/roster', () => {
 	});
 
 	/**
+	 * РЕВАНШ СТИРАЄ ОГОЛОШЕНИЙ ПЕРЕЇЗД (аудит 2026-09-26): доти кнопка «перейти» у
+	 * кімнату іншої гри висіла й над новою партією.
+	 *
+	 * Зворотний експеримент: не прибирати `nextCode` у `restart` — червоніє.
+	 */
+	it('реванш прибирає переїзд попередньої партії', async () => {
+		const room = new LocalRoom({ ...info, status: 'over', nextCode: '77' }, members);
+		const transport = room.transport();
+		let next: string | undefined = '77';
+		const stop = transport.watch((snapshot) => (next = snapshot.info.nextCode));
+
+		await transport.restart(2, roster);
+
+		expect(next).toBeUndefined();
+		stop();
+	});
+
+	/**
 	 * У лобі в журналі вже бувають ходи `lead` (ведення підхопили за відсутнього
 	 * господаря). Умова — ПЕРЕХІД у `playing`, а не порожній журнал: інакше старт
 	 * такої кімнати відкидався б.

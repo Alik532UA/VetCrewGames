@@ -36,6 +36,20 @@ describe('?room у адресі', () => {
 		expect(url.searchParams.get('theme')).toBe('dark');
 	});
 
+	/**
+	 * `?from` ВІДСЛУЖИВ, ЩОЙНО КІМНАТА В АДРЕСІ (аудит 2026-09-26): доти він
+	 * переживав «назад», і кожне наступне створення знову оголошувало переїзд у
+	 * стару кімнату.
+	 *
+	 * Зворотний експеримент: не знімати `from` у `withRoom` — червоніє.
+	 */
+	it('кімната в адресі знімає ?from, і «назад» його вже не повертає', () => {
+		const inside = withRoom(at('/quiz/online/?from=42&theme=dark'), '77');
+		expect(inside.searchParams.has('from'), 'переїзд оголошувався б знову').toBe(false);
+		expect(inside.searchParams.get('theme')).toBe('dark');
+		expect(withoutRoom(inside).searchParams.has('from')).toBe(false);
+	});
+
 	it('зняти те, чого немає, — не помилка', () => {
 		expect(withoutRoom(at('/quiz/online/')).search).toBe('');
 	});

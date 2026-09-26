@@ -267,7 +267,8 @@ export class LocalRoom {
 				if (!this.#rosterAllowed(roster)) throw new Error('PERMISSION_DENIED: roster');
 				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік, склад.
 				this.#moves = [];
-				const { countdownAt: _stale, ...rest } = this.#info;
+				// Відлік і оголошений переїзд — від попередньої партії, до реваншу не стосуються.
+				const { countdownAt: _stale, nextCode: _moved, ...rest } = this.#info;
 				this.#info = {
 					...rest,
 					seed,
