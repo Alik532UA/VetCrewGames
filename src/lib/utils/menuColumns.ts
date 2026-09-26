@@ -174,6 +174,22 @@ const GUTTER = 8;
 const STEP = 6;
 
 /**
+ * Предки, які прокручуються, плюс саме вікно.
+ *
+ * Разом це повний перелік того, від чого панель може «відклеїтися»: рухає її на
+ * екрані будь-хто з них, а подія прокрутки не булькає, тож на кожного потрібен
+ * свій слухач.
+ */
+function scrollParents(from: HTMLElement | null): EventTarget[] {
+	const found: EventTarget[] = [window];
+	for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
+		const style = getComputedStyle(node);
+		if (/auto|scroll|overlay/.test(`${style.overflowY} ${style.overflowX}`)) found.push(node);
+	}
+	return found;
+}
+
+/**
  * Дія: сказати панелі, СКІЛЬКИ місця в неї є — праворуч і вниз.
  *
  * ## Що було не так
@@ -233,22 +249,6 @@ const STEP = 6;
  * `capture: true` — бо подія прокрутки не булькає, а прокручувати можуть і
  * вікно, і внутрішній контейнер.
  */
-/**
- * Предки, які прокручуються, плюс саме вікно.
- *
- * Разом це повний перелік того, від чого панель може «відклеїтися»: рухає її на
- * екрані будь-хто з них, а подія прокрутки не булькає, тож на кожного потрібен
- * свій слухач.
- */
-function scrollParents(from: HTMLElement | null): EventTarget[] {
-	const found: EventTarget[] = [window];
-	for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
-		const style = getComputedStyle(node);
-		if (/auto|scroll|overlay/.test(`${style.overflowY} ${style.overflowX}`)) found.push(node);
-	}
-	return found;
-}
-
 export function fitMenu(node: HTMLElement, anchor: HTMLElement | null) {
 	/*
 	 * Переїзд — саме тут, а не в окремій дії: розмір і положення панелі — одне

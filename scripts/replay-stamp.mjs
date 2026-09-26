@@ -69,6 +69,7 @@ export const GAMES = {
 			'src/lib/config/quizOnline.ts',
 			// Розклад раундів і вибір питань — колода кімнати (прохання автора 2026-09-26).
 			'src/lib/config/quizDeck.ts',
+			'src/lib/utils/fnv.ts',
 			// Межа раунду для рахунку (`limitOf`) і склад партії складає матч.
 			'src/lib/controllers/quizMatch.svelte.ts',
 			'src/lib/config/myth-game.ts',

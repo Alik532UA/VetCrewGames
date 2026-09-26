@@ -6,6 +6,7 @@ import {
 	isCustomAvatar
 } from '$lib/config/avatars';
 import type { Member } from '$lib/net/roomTypes';
+import { fnv1a } from './fnv';
 
 /**
  * АВАТАРКА В КІМНАТІ — ОДНА ПАРА «ЗНАЧОК + КОЛІР» НА ЛЮДИНУ (рішення автора 2026-09-26).
@@ -17,7 +18,7 @@ import type { Member } from '$lib/net/roomTypes';
  *  • ПЕРШИЙ ЛИШАЄ СВОЮ. Хто зайшов раніше (`order`), той і власник пари: інакше
  *    новачок забирав би аватарку в того, до кого прийшов.
  *  • НОВАЧОК ОТРИМУЄ ВІЛЬНУ, випадкову — «щоб нікому не було образливо», — сам
- *    переписує її у свій рядок складу (`RoomSession.takeAvatar`), і сторінка каже
+ *    переписує її у свій рядок складу (`takeRoomAvatar` у `controllers/roomAvatar.ts`), і сторінка каже
  *    йому про це. Змінити її можна в лобі — лише на вільну (`takenAvatars`).
  *
  * ## Чому розвʼязує ПОКАЗ, а не лише запис
@@ -37,16 +38,6 @@ import type { Member } from '$lib/net/roomTypes';
 export const ROOM_AVATARS: readonly string[] = AVATAR_ICONS.flatMap((icon) =>
 	AVATAR_COLORS.map((color) => formatAvatar(icon, color))
 ).filter((avatar) => avatar !== DEFAULT_AVATAR);
-
-/** FNV-1a, 32 біти: той самий хеш у всіх учасників — отже й та сама заміна. */
-export function hashOf(text: string): number {
-	let hash = 0x811c9dc5;
-	for (let i = 0; i < text.length; i++) {
-		hash ^= text.charCodeAt(i);
-		hash = Math.imul(hash, 0x01000193);
-	}
-	return hash >>> 0;
-}
 
 export interface UniqueAvatars {
 	/** Склад із розвʼязаними аватарками — те, що показують усі екрани кімнати. */
@@ -80,7 +71,8 @@ export function uniqueAvatars(members: Member[], salt: string | number): UniqueA
 		const free = ROOM_AVATARS.filter((avatar) => !held.has(avatar));
 		// 111 пар на 12 місць кімнати: вільна є завжди, але межу краще назвати, ніж упасти.
 		if (free.length === 0) break;
-		const pick = free[hashOf(`${salt}:${member.uid}`) % free.length];
+		// Той самий хеш у всіх учасників — отже й та сама заміна.
+		const pick = free[fnv1a(`${salt}:${member.uid}`) % free.length];
 		held.add(pick);
 		swaps[member.uid] = pick;
 	}

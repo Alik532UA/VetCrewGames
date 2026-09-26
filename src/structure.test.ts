@@ -562,6 +562,91 @@ ${guilty.join(String.fromCharCode(10))}`
 	 *
 	 * Зворотний експеримент: повернути `isCompactScreen()` у `rtdbRoom` — червоніє.
 	 */
+	/**
+	 * ДОКБЛОК ДОКУМЕНТУЄ ТЕ, ЩО ПІД НИМ (шостий аудит, Q2). Докблок, за яким одразу
+	 * йде ще один, не документує нічого: так лишалися описи функцій, між якими й
+	 * їхнім кодом вставили нове оголошення, — пʼятнадцять таких місць на 2026-09-26.
+	 * Виняток — перший докблок файлу чи `<script>`: це опис модуля над першим
+	 * оголошенням.
+	 *
+	 * Зворотний експеримент: вставити оголошення між докблоком і функцією — червоніє.
+	 */
+	it('за докблоком не йде одразу інший докблок', () => {
+		const PAIR = /\/\*\*(?:(?!\*\/)[\s\S])*\*\/[ \t]*\r?\n[ \t]*\/\*\*/g;
+		const guilty: string[] = [];
+		for (const f of sources.filter((file) => !isTest(file))) {
+			const text = read(f);
+			const scripts = [...text.matchAll(/<script[^>]*>/g)].map((m) => (m.index ?? 0) + m[0].length);
+			for (const m of text.matchAll(PAIR)) {
+				const at = m.index ?? 0;
+				const start = Math.max(0, ...scripts.filter((open) => open <= at));
+				if (!text.slice(start, at).includes('/**')) continue;
+				guilty.push(`${f}:${text.slice(0, at).split('\n').length}`);
+			}
+		}
+		expect(guilty, `докблок, що не документує нічого:\n${guilty.join('\n')}`).toEqual([]);
+	});
+
+	/**
+	 * ЗГАДКА `Тип.член` У КОМЕНТАРІ ВЕДЕ НА НАЯВНИЙ ЧЛЕН (шостий аудит, Q1). Так у двох
+	 * докблоках лишився `RoomSession.takeAvatar`, коли метод переїхав у `takeRoomAvatar`:
+	 * коментар посилався на те, чого вже немає, і вів читача не туди. Перевіряються лише
+	 * класи й інтерфейси проєкту (з батьками через `extends`); `Тип.svelte` і `Тип.ts` — це
+	 * імена файлів, а не члени.
+	 *
+	 * Зворотний експеримент: повернути `RoomSession.takeAvatar` у докблок — червоніє.
+	 */
+	it('згадка «Тип.член» у коментарі веде на наявний член', () => {
+		const strip = (text: string) =>
+			text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+		const bodies = new Map<string, Array<{ body: string; parents: string[] }>>();
+		for (const file of sources) {
+			const code = strip(read(file));
+			for (const m of code.matchAll(/\b(?:class|interface)\s+([A-Z]\w*)\b([^{]*)\{/g)) {
+				let depth = 1;
+				let i = (m.index ?? 0) + m[0].length;
+				while (i < code.length && depth > 0) {
+					if (code[i] === '{') depth += 1;
+					else if (code[i] === '}') depth -= 1;
+					i += 1;
+				}
+				const parents = [...m[2].matchAll(/\b([A-Z]\w*)/g)].map((p) => p[1]);
+				const found = bodies.get(m[1]) ?? [];
+				found.push({ body: code.slice(m.index, i), parents });
+				bodies.set(m[1], found);
+			}
+		}
+		const declares = (type: string, member: string, seen = new Set<string>()): boolean | null => {
+			const found = bodies.get(type);
+			if (!found) return null;
+			if (seen.has(type)) return false;
+			seen.add(type);
+			const own = new RegExp(
+				'(^|[\\s;{(,])(?:(?:readonly|static|async|get|set|private|public|protected|override)\\s+)*#?' +
+					member +
+					'\\s*[?!]?\\s*[(:=<]',
+				'm'
+			);
+			return found.some(
+				({ body, parents }) =>
+					own.test(body) || parents.some((parent) => declares(parent, member, seen) === true)
+			);
+		};
+		const guilty: string[] = [];
+		// Лише код: у тестах докблоки розповідають історію й називають колишні імена.
+		for (const file of sources.filter((f) => !isTest(f))) {
+			const comments = [...read(file).matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g)]
+				.map((m) => m[0])
+				.join('\n');
+			for (const m of comments.matchAll(/`([A-Z]\w*)\.(#?[A-Za-z_]\w*)`/g)) {
+				if (m[2] === 'svelte' || m[2] === 'ts') continue;
+				if (declares(m[1], m[2].replace('#', '')) === false)
+					guilty.push(`${file}: ${m[1]}.${m[2]}`);
+			}
+		}
+		expect(guilty, `згадка члена, якого немає:\n${guilty.join('\n')}`).toEqual([]);
+	});
+
 	it('net/ не читає екрана й DOM', () => {
 		const code = (text: string) =>
 			text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');

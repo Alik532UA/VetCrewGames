@@ -190,7 +190,6 @@ export const feedingSets: readonly FeedingSet[] = [
 	}
 ];
 
-/** Куди страва має потрапити: до однієї з тварин або в смітник. */
 /**
  * Скільки страв у раунді.
  *
@@ -203,6 +202,7 @@ export const feedingSets: readonly FeedingSet[] = [
  */
 export const FOODS_PER_ROUND = 3;
 
+/** Куди страва має потрапити: до однієї з тварин або в смітник. */
 export const BIN = 'bin' as const;
 export type Target = string | typeof BIN;
 
@@ -232,11 +232,11 @@ export function buildFeedingRound(set: FeedingSet): FeedingRound | null {
 	};
 }
 
-/** Наступний набір. Генератор — параметром: див. `getNextPuzzle` у грі 5. */
 /** Набір за ідентифікатором — для колоди кімнати (`config/quizDeck.ts`). */
 export const feedingSetById = (id: string): FeedingSet | null =>
 	feedingSets.find((set) => set.id === id) ?? null;
 
+/** Наступний набір. Генератор — параметром: див. `getNextPuzzle` у грі 5. */
 export function getNextFeedingSet(
 	excludeIds: readonly string[],
 	random: () => number

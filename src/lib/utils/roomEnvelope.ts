@@ -21,7 +21,7 @@ export interface RoomEnvelope {
 	members: Member[];
 	/**
 	 * Кого з учасників замінено: uid → пара, яку показують замість його власної.
-	 * Сесія переписує свій рядок складу цією парою (`RoomSession.takeAvatar`).
+	 * Сесія переписує свій рядок складу цією парою (`takeRoomAvatar`, `controllers/roomAvatar.ts`).
 	 */
 	avatarSwaps: Record<string, string>;
 	/** Заморожений склад партії; `null` — лобі або кімната старша за поле. */

@@ -11,9 +11,6 @@
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
 	import { onMount } from 'svelte';
 
-	/** Стабільний між сервером і клієнтом ідентифікатор для `aria-labelledby` (SVELTE-CORE-v9 § 1.7). */
-	const uid = $props.id();
-
 	/**
 	 * ДОШКА «Хто численніший?»: сортування карток за чисельністю виду.
 	 *
@@ -56,6 +53,9 @@
 	}
 
 	let { game, hideNext = false }: Props = $props();
+
+	/** Стабільний між сервером і клієнтом ідентифікатор для `aria-labelledby` (SVELTE-CORE-v9 § 1.7). */
+	const uid = $props.id();
 
 	/** Чисто візуальний стан — контролер про нього не знає й знати не має. */
 	let isActuallyDragging = $state(false);

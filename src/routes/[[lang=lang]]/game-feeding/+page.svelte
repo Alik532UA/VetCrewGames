@@ -32,10 +32,11 @@
 	 */
 
 	/**
+	 * Куди можна покласти страву одним дотиком — для раунду поточного й минулого.
+	 *
 	 * Кнопки «кому віддати» стоять довкола страви: тварини ліворуч і праворуч,
 	 * смітник — зверху. Усі три накладками, тож ширини страві вони не додають.
 	 */
-	/** Куди можна покласти страву одним дотиком — для раунду поточного й минулого. */
 	const targetsOf = (round: FeedingRound): QuickTarget[] => [
 		{
 			id: round.animals[0].id,
@@ -81,7 +82,12 @@
 {#snippet review(backKey: 'review.back' | 'review.backToResults')}
 	{@const record = game.history[viewing ?? 0]}
 	{#if record}
-		<ReviewPanel index={viewing ?? 0} total={game.totalRounds} {backKey} onback={() => (viewing = null)}>
+		<ReviewPanel
+			index={viewing ?? 0}
+			total={game.totalRounds}
+			{backKey}
+			onback={() => (viewing = null)}
+		>
 			<FeedingBoard game={feedingReview(record)} targets={targetsOf(record.round)} hideNext />
 		</ReviewPanel>
 	{/if}
@@ -172,5 +178,4 @@
 		font-size: var(--font-size-xs);
 		color: var(--color-text-muted);
 	}
-
 </style>

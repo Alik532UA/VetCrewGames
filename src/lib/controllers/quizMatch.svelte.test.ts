@@ -599,7 +599,7 @@ describe('рахунок спільної вікторини', () => {
 		// Обходимо власну перевірку контролера й пишемо в журнал напряму — саме так
 		// вчинив би той, хто відкрив консоль.
 		await room.transport().append({
-			seq: host.applied + 1,
+			seq: room.moves.length + 1,
 			by: HOST,
 			type: 'answer',
 			payload: { round: 0, correct: 1 }
@@ -1048,7 +1048,7 @@ describe('той, хто зник із кімнати', () => {
 		off();
 		await room
 			.transport()
-			.append({ seq: host.applied + 1, by: GUEST, type: 'goon', payload: { round: 0 } });
+			.append({ seq: room.moves.length + 1, by: GUEST, type: 'goon', payload: { round: 0 } });
 
 		await host.answer(1);
 
@@ -1115,7 +1115,7 @@ describe('той, хто зник із кімнати', () => {
 		for (let seq = 5; seq <= 9; seq += 1) {
 			await raw.append({ seq, by: GUEST, type: 'goon', payload: { round: 0 } });
 		}
-		expect(host.applied, 'журнал не приїхав').toBe(5);
+		expect(room.moves, 'журнал не приїхав').toHaveLength(5);
 
 		await host.startRound(0);
 

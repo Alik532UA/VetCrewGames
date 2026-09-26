@@ -54,6 +54,11 @@ export function infoFromDb(raw: RawInfo): RoomInfo {
 	return party ? { ...rest, config: settings, roster: party } : { ...rest, config: settings };
 }
 
+/** Склад із запису бази: uid — ключ, решта — поля рядка. */
+export const membersFromDb = (
+	record: Record<string, Omit<Member, 'uid'>> | null | undefined
+): Member[] => Object.entries(record ?? {}).map(([uid, member]) => ({ uid, ...member }));
+
 /**
  * Знімок кімнати з сирого значення вузла `rooms/{code}`. `null` — кімнати немає.
  *
@@ -65,11 +70,6 @@ export function infoFromDb(raw: RawInfo): RoomInfo {
  * Порядок ЗАДАЄМО самі: покладатися на порядок ключів обʼєкта означало б грати
  * партію в різній послідовності на різних пристроях.
  */
-/** Склад із запису бази: uid — ключ, решта — поля рядка. */
-export const membersFromDb = (
-	record: Record<string, Omit<Member, 'uid'>> | null | undefined
-): Member[] => Object.entries(record ?? {}).map(([uid, member]) => ({ uid, ...member }));
-
 export function snapshotFromDb(
 	value: {
 		info?: RawInfo;

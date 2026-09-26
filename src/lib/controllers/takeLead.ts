@@ -33,11 +33,12 @@ const LEAD_TRIES = 3;
  *
  * @param from той, хто господар ЗАРАЗ, — правило вимагає назвати саме його
  * @param seqs зайняті номери журналу, за зростанням
- * @param contiguous журнал БЕЗ ДІРОК («Знайди пару»): кожна спроба — на той самий
- *   перший вільний номер. Вікторина пропускає вільні номери між спробами, а в
- *   «Знайди пару» пропуск зупинив би партію: хід за діркою чекає, поки її заповнять
- *   (аудит 2026-09-25). Невдача тут — не біда: наступна спроба прийде зі свіжим
- *   знімком (`roomPolicies`, `watchHost`).
+ * @param contiguous журнал БЕЗ ДІРОК («Знайди пару»): ОДНА спроба — на перший
+ *   вільний номер. Вікторина пропускає вільні номери між спробами, а в «Знайди
+ *   пару» пропуск зупинив би партію: хід за діркою чекає, поки її заповнять (аудит
+ *   2026-09-25). А повтор на той самий номер із тим самим знімком відмовив би так
+ *   само — доти це були три однакові записи (шостий аудит, Q4). Наступна спроба
+ *   прийде зі свіжим знімком (`roomPolicies`, `watchHost`).
  * @returns `true` — ведення тепер моє
  */
 export async function takeLead(
@@ -47,9 +48,9 @@ export async function takeLead(
 	seqs: readonly number[],
 	contiguous = false
 ): Promise<boolean> {
-	for (let attempt = 0; attempt < LEAD_TRIES; attempt += 1) {
+	for (let attempt = 0; attempt < (contiguous ? 1 : LEAD_TRIES); attempt += 1) {
 		const taken = await transport.takeLead({
-			seq: freeSeq(seqs, contiguous ? 0 : attempt),
+			seq: freeSeq(seqs, attempt),
 			by: me,
 			type: 'lead',
 			payload: { from }

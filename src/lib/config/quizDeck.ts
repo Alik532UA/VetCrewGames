@@ -4,6 +4,7 @@ import { habitatEntries } from './habitat-game';
 import { familyPuzzles } from './family-game';
 import { animals } from './population-game';
 import { seededRandom, shuffle } from '$lib/utils/seededRandom';
+import { fnv1a } from '$lib/utils/fnv';
 
 /**
  * КОЛОДА КІМНАТИ: ПИТАННЯ ВІКТОРИНИ БЕЗ ПОВТОРІВ (прохання автора 2026-09-26).
@@ -75,8 +76,10 @@ const safeSeed = (seed: number): number =>
 	Number.isSafeInteger(seed) && seed >= 0 && seed < MAX_ROOM_SEED ? seed : 0;
 export const deckSeedOf = (seed: number): number => safeSeed(seed) % GAME_SPAN;
 export const gameIndexOf = (seed: number): number => Math.floor(safeSeed(seed) / GAME_SPAN);
-/** Зерно наступної партії в тій самій кімнаті: колода та сама, номер наступний. */
-/** Зерно реваншу: наступна партія, а після останньої дозволеної — знову нульова. */
+/**
+ * Зерно реваншу — наступна партія в тій самій кімнаті: колода та сама, номер
+ * наступний; після останньої дозволеної — знову нульова.
+ */
 export const nextGameSeed = (seed: number): number =>
 	gameIndexOf(seed) + 1 < MAX_ROOM_GAMES ? safeSeed(seed) + GAME_SPAN : deckSeedOf(seed);
 
@@ -115,7 +118,8 @@ const perRound = (game: string): number => (game === 'population' ? POPULATION_T
 
 /**
  * Зерно з кількох чисел — щоб колода кожної гри, кожне коло й кожна партія мали
- * свій потік, а не сусідні ділянки одного. Множники — непарні константи Кнута.
+ * свій потік, а не сусідні ділянки одного. Основа й перший множник — FNV-1a
+ * (`0x811c9dc5`, `0x01000193`), другий — непарна стала, що перемішує біти.
  */
 function mix(...parts: number[]): number {
 	let h = 0x811c9dc5;
@@ -127,11 +131,7 @@ function mix(...parts: number[]): number {
 }
 
 /** Число з назви гри: колода кожної гри — свій потік, незалежно від набору. */
-function gameKey(game: string): number {
-	let h = 0x811c9dc5;
-	for (let i = 0; i < game.length; i += 1) h = Math.imul(h ^ game.charCodeAt(i), 0x01000193) >>> 0;
-	return h;
-}
+const gameKey = (game: string): number => fnv1a(game);
 
 /** Колода однієї гри в кімнаті: порядок кола, що вже поставлено, котре коло. */
 interface GameDeck {
