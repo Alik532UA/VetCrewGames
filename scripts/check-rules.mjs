@@ -166,6 +166,8 @@ const CODE = '90417';
  * господаря в її складі ще немає.
  */
 const LIST = '90430';
+/** Кімната в лобі для перехоплення ведення (гілка лобі правила `info/hostUid`). */
+const LEAD = '90431';
 const info = (hostUid) => ({
 	gameId: 'pairs',
 	rulesVersion: 2,
@@ -246,6 +248,13 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/startedAt`, SERVER_TIME, host.token)
 	},
 	{
+		// Від `startedAt` рахується межа першого ходу: клієнтське число оголошувало б
+		// першу чергу простроченою коли завгодно (аудит 2026-09-25 — випадку не було).
+		name: 'позначка початку партії з клієнтським часом',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/startedAt`, 1000, host.token)
+	},
+	{
 		name: 'господар перемикає режим початку партії',
 		allowed: true,
 		run: () => write(`rooms/${CODE}/info/autoStart`, true, host.token)
@@ -298,6 +307,69 @@ const CASES = [
 					type: 'answer',
 					at: SERVER_TIME,
 					payload: { round: 0, correct: 2 }
+				},
+				guest.token
+			)
+	},
+	/*
+	 * МЕЖІ ПОЛІВ ХОДУ, крім `correct` (аудит 2026-09-25): доти випадком стояла лише
+	 * частка правильності, а решта меж не перевірялася нічим. Кожен хід нижче вірний
+	 * в усьому, крім одного поля.
+	 */
+	{
+		name: 'номер картки поза колодою',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{ seq: 2, by: guest.uid, type: 'flip', at: SERVER_TIME, payload: { index: 1000 } },
+				guest.token
+			)
+	},
+	{
+		name: 'від’ємний номер раунду',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{
+					seq: 2,
+					by: guest.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: -1, correct: 1 }
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'пауза довша за добу',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{
+					seq: 2,
+					by: guest.uid,
+					type: 'held',
+					at: SERVER_TIME,
+					payload: { round: 0, ms: 86400001 }
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'uid у ході довший за 32 знаки',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{
+					seq: 2,
+					by: guest.uid,
+					type: 'held',
+					at: SERVER_TIME,
+					payload: { round: 0, ms: 1, uid: 'x'.repeat(33) }
 				},
 				guest.token
 			)
@@ -499,6 +571,12 @@ const CASES = [
 			)
 	},
 	{
+		// Реєстр прибирає лише той, чий псевдонім (аудит 2026-09-25 — випадку не було).
+		name: 'чужий псевдонім знести',
+		allowed: false,
+		run: () => write('handles/guest_one', null, host.token)
+	},
+	{
 		name: 'гість вписує себе в пошуковий індекс',
 		allowed: true,
 		run: () => write('find/guest_one', guest.uid, guest.token)
@@ -550,6 +628,14 @@ const CASES = [
 		name: 'чужі перемикачі приватності читає інший гравець',
 		allowed: false,
 		run: () => read(`users/${guest.uid}/privacy`, host.token)
+	},
+	{
+		// Перемикачі вирішують, хто може підписатися й знайти людину: чужою рукою
+		// їх не ввімкнути (аудит 2026-09-25 — випадку не було).
+		name: 'чужі перемикачі приватності пише інший гравець',
+		allowed: false,
+		run: () =>
+			write(`users/${guest.uid}/privacy`, { search: true, follow: true, board: true }, host.token)
 	},
 	{
 		name: 'у приватності поле, якого схема не знає',
@@ -1295,6 +1381,11 @@ const CASES = [
 	},
 	{
 		// Без позначки створення кімнату не датує й не зносить ніхто (аудит 2026-09-25).
+		name: 'нова кімната з клієнтським createdAt',
+		allowed: false,
+		run: () => write('rooms/90423/info', { ...info(stranger.uid), createdAt: 1000 }, stranger.token)
+	},
+	{
 		name: 'нова кімната без createdAt',
 		allowed: false,
 		run: () =>
@@ -1329,6 +1420,14 @@ const CASES = [
 		name: 'ПЕРЕЗАПИС уже зайнятого номера ходу',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/moves/000001`, move(guest.uid, 1), guest.token)
+	},
+	{
+		// Господареві на журнал дано ЛИШЕ стерти його цілком (`moves/.write` з
+		// `!newData.exists()`): переписати чужий хід своїм підписом він не може
+		// (аудит 2026-09-25 — випадку не було).
+		name: 'господар переписує ЧУЖИЙ хід своїм підписом',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves/000001`, move(host.uid, 1), host.token)
 	},
 	{
 		name: 'хід, підписаний ЧУЖИМ uid',
@@ -2228,6 +2327,84 @@ const CASES = [
 		name: 'господар зносить кімнату',
 		allowed: true,
 		run: () => write(`rooms/${CODE}`, null, host.token)
+	},
+
+	/*
+	 * ПЕРЕХОПЛЕННЯ ВЕДЕННЯ В ЛОБІ (аудит 2026-09-25): кожен сценарій перехоплення
+	 * доти йшов уже посеред партії, і гілка лобі — «гравець кімнати», а не склад, —
+	 * не перевірялася нічим. Окрема кімната: господар створює й іде, гість і
+	 * глядач лишаються на звʼязку.
+	 */
+	{
+		name: 'кімната в лобі для перехоплення: господар, гравець і глядач',
+		allowed: true,
+		run: async () => {
+			const steps = [
+				() => write(`rooms/${LEAD}/info`, info(host.uid), host.token),
+				() => write(`rooms/${LEAD}/members/${host.uid}`, { ...member, order: 1 }, host.token),
+				() => write(`rooms/${LEAD}/members/${guest.uid}`, member, guest.token),
+				() =>
+					write(
+						`rooms/${LEAD}/members/${stranger.uid}`,
+						{ ...member, role: 'spectator', order: 3 },
+						stranger.token
+					),
+				() => write(`presence/${LEAD}/${guest.uid}`, { at: SERVER_TIME }, guest.token),
+				() => write(`presence/${LEAD}/${stranger.uid}`, { at: SERVER_TIME }, stranger.token)
+			];
+			for (const step of steps) {
+				const status = await step();
+				if (status !== 200) return status;
+			}
+			return 200;
+		}
+	},
+	{
+		// Господаря немає, глядач на звʼязку, хід `lead` правильний — відмова рівно
+		// через роль: у лобі вести може лише гравець кімнати.
+		name: 'у лобі ведення бере глядач, коли господаря немає',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/hostUid': stranger.uid,
+					'info/leadSeq': '000001',
+					'moves/000001': {
+						seq: 1,
+						by: stranger.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				stranger.token
+			)
+	},
+	{
+		name: 'у лобі ведення бере гравець кімнати, коли господаря немає',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/hostUid': guest.uid,
+					'info/leadSeq': '000002',
+					'moves/000002': {
+						seq: 2,
+						by: guest.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'новий господар зносить кімнату перехоплення',
+		allowed: true,
+		run: () => write(`rooms/${LEAD}`, null, guest.token)
 	},
 
 	/*
