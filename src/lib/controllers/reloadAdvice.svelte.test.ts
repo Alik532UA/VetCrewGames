@@ -4,7 +4,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 	logService: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 }));
 
-const { ReloadAdvice, RULES_RECHECK_MS } = await import('./reloadAdvice.svelte');
+const { ReloadAdvice, RULES_RECHECK_MS, reloadBanner } = await import('./reloadAdvice.svelte');
 const { logService } = await import('$lib/services/logService.svelte');
 
 /**
@@ -102,5 +102,27 @@ describe('помилка, за якою стоїть застаріла збір
 		await settle();
 		advice.noteFailure(missing);
 		expect(advice.reason).toBe('rules');
+	});
+});
+
+/**
+ * СМУГА «НОВА ЗБІРКА» З ОПИТУВАННЯ — НЕ ПОСЕРЕД ПАРТІЇ (сьомий аудит, R7.1): оновлення там
+ * забирає саму партію — присутність зникає, а після підняття версії правил гри кімната стає
+ * «старшою». Справжня причина (відмова правил, відсутній шматок) — завжди.
+ *
+ * Зворотний експеримент: прибрати умову статусу — червоніє перший.
+ */
+describe('яку смугу показати', () => {
+	it('посеред партії опитування мовчить, а в лобі, після партії й на формі — каже', () => {
+		expect(reloadBanner(null, true, 'playing')).toBeNull();
+		expect(reloadBanner(null, true, 'lobby')).toBe('build');
+		expect(reloadBanner(null, true, 'over')).toBe('build');
+		expect(reloadBanner(null, true, undefined), 'форма входу').toBe('build');
+		expect(reloadBanner(null, false, 'lobby')).toBeNull();
+	});
+
+	it('справжня причина — і посеред партії', () => {
+		expect(reloadBanner('rules', false, 'playing')).toBe('rules');
+		expect(reloadBanner('build', true, 'playing')).toBe('build');
 	});
 });

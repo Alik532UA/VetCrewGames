@@ -55,7 +55,7 @@ export const ui = {
 	'pairs.rulesChanged':
 		'The server rules have been updated and this page is out of date, so moves are not going through. Reload the page — the game continues where it left off.',
 	'pairs.newBuild':
-		'A new version of the game is out. Reload the page — if you were in a room, you will be back in it.',
+		'A new version of the game is out — reload the page. The room you were in opens again unless the game rules changed.',
 	'pairs.reload': 'Reload page',
 	'pairs.noLead':
 		'The host is gone, and nobody here can take over the lead. You can leave the room or create a new one.',
@@ -79,7 +79,8 @@ export const ui = {
 	'pairs.avatarChange': 'Change avatar',
 	'pairs.myAvatar': 'Your avatar',
 	'pairs.inviteTitle': 'You are invited to room',
-	'pairs.inviteHint': 'This is how others will see you. You can change it now or later in the lobby.',
+	'pairs.inviteHint':
+		'This is how others will see you. You can change it now or later in the lobby.',
 	'pairs.inviteJoin': 'Join',
 	'pairs.inviteBack': 'To the room list',
 	'pairs.inviteAvatarTaken':

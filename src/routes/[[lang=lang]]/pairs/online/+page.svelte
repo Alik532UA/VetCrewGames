@@ -12,6 +12,7 @@
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { HoverBeam } from '$lib/controllers/hoverBeam.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
+	import { reloadBanner } from '$lib/controllers/reloadAdvice.svelte';
 	import { chooseRoomAvatar } from '$lib/controllers/roomAvatar';
 	import { RoomInvite } from '$lib/controllers/roomInvite.svelte';
 	import InviteWindow from '$lib/components/pairs/InviteWindow.svelte';
@@ -126,10 +127,11 @@
 
 <div class="online-page">
 	<!-- Нова збірка на сервері видна й без відмови: опитування версії (`updated`) каже
-	     про неї раніше, ніж перша ж спроба зайти впаде на відсутньому шматку. -->
+	     про неї раніше, ніж перша ж спроба зайти впаде на відсутньому шматку. Але не
+	     посеред партії (`reloadBanner`): там оновлення забрало б саму партію. -->
 	<NetLost
 		lost={match !== null && !session.connected}
-		reload={session.reload.reason ?? (updated.current ? 'build' : null)}
+		reload={reloadBanner(session.reload.reason, updated.current, match?.status)}
 		stranded={match !== null && session.stranded}
 		onLeave={() => void session.place.exit()}
 		onNewRoom={() => void session.freshRoom()}

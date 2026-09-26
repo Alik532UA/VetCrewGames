@@ -55,7 +55,7 @@ export const ui = {
 	'pairs.rulesChanged':
 		'Die Serverregeln wurden aktualisiert und diese Seite ist veraltet, deshalb gehen Züge nicht durch. Lade die Seite neu – die Partie geht an derselben Stelle weiter.',
 	'pairs.newBuild':
-		'Eine neue Version des Spiels ist da. Lade die Seite neu – warst du in einem Raum, kommst du wieder hinein.',
+		'Eine neue Version des Spiels ist da – lade die Seite neu. Der Raum, in dem du warst, öffnet sich wieder, sofern sich die Spielregeln nicht geändert haben.',
 	'pairs.reload': 'Seite neu laden',
 	'pairs.noLead':
 		'Der Gastgeber ist weg, und niemand hier kann die Leitung übernehmen. Du kannst den Raum verlassen oder einen neuen erstellen.',
@@ -80,7 +80,8 @@ export const ui = {
 	'pairs.avatarChange': 'Avatar ändern',
 	'pairs.myAvatar': 'Ihr Avatar',
 	'pairs.inviteTitle': 'Sie sind eingeladen in Raum',
-	'pairs.inviteHint': 'So sehen Sie die anderen. Ändern können Sie das jetzt oder später in der Lobby.',
+	'pairs.inviteHint':
+		'So sehen Sie die anderen. Ändern können Sie das jetzt oder später in der Lobby.',
 	'pairs.inviteJoin': 'Beitreten',
 	'pairs.inviteBack': 'Zur Raumliste',
 	'pairs.inviteAvatarTaken':

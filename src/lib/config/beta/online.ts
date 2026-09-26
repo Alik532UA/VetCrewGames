@@ -293,6 +293,21 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			negative: true
+		},
+		{
+			/*
+			 * ВІКНО ВИКЛАДКИ (сьомий аудит, R7.1). Правило смуги доводить тест `reloadBanner`; руками —
+			 * справжня викладка під відкритою партією.
+			 */
+			id: 'online_26',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Грайте партію, поки виходить нова версія сайту (або почніть її до викладки й грайте ще ~5 хв після). Посеред партії смуги «Вийшла нова версія гри» бути не мусить — партія йде далі; після фіналу й у лобі смуга мусить зʼявитися.',
+				en: 'Play a game while a new version of the site goes out (or start it before the deploy and keep playing for ~5 min after). Mid-game there must be no «A new version of the game is out» strip — the game goes on; after the final and in the lobby the strip must appear.'
+			},
+			coverage: 'manual',
+			testid: 'net-lost-text',
+			negative: true
 		}
 	]
 };

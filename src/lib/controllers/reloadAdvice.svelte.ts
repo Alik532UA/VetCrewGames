@@ -1,5 +1,6 @@
 import { logService } from '$lib/services/logService.svelte';
 import { chunkMissing } from '$lib/utils/staleBuild';
+import type { RoomStatus } from '$lib/net/roomTypes';
 
 /**
  * ЧОМУ СТОРІНКУ ТРЕБА ОНОВИТИ — одне поле на обидві причини (аудит 2026-09-26).
@@ -9,6 +10,23 @@ import { chunkMissing } from '$lib/utils/staleBuild';
  *   завантажила, там більше немає (`utils/staleBuild.ts`).
  */
 export type ReloadReason = 'rules' | 'build';
+
+/**
+ * ЯКУ СМУГУ «ОНОВІТЬ» ПОКАЗАТИ (сьомий аудит, R7.1). Справжню причину (`reason`: відмова
+ * правил чи відсутній шматок збірки) — завжди. А нову збірку, про яку сказало лише
+ * опитування версії (`updated`), — не посеред партії: доти смуга ставала в кожній кімнаті
+ * за ≤ 5 хв після будь-якої викладки. Хто послухався, випадав із присутності (у вікторині
+ * всім відкривалося «Чекаємо»), а після підняття версії правил гри — діставав «кімната
+ * старша» замість своєї ж партії, хоч стара вкладка догравала б її спокійно. У лобі, після
+ * партії й на формі входу — показувати: там оновлення нічого не забирає.
+ */
+export function reloadBanner(
+	reason: ReloadReason | null,
+	polled: boolean,
+	status: RoomStatus | undefined
+): ReloadReason | null {
+	return reason ?? (polled && status !== 'playing' ? 'build' : null);
+}
 
 /** Не частіше за це звіряти правила, поки звірка каже «ті самі». */
 export const RULES_RECHECK_MS = 60_000;

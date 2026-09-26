@@ -55,7 +55,7 @@ export const ui = {
 	'pairs.rulesChanged':
 		'De serverregels zijn bijgewerkt en deze pagina is verouderd, dus zetten komen niet door. Laad de pagina opnieuw — het spel gaat verder waar het was.',
 	'pairs.newBuild':
-		'Er is een nieuwe versie van het spel. Laad de pagina opnieuw — zat je in een kamer, dan kom je er weer in.',
+		'Er is een nieuwe versie van het spel — laad de pagina opnieuw. De kamer waarin je zat, opent weer, tenzij de spelregels zijn veranderd.',
 	'pairs.reload': 'Pagina herladen',
 	'pairs.noLead':
 		'De gastheer is weg en niemand hier kan het leiden overnemen. Je kunt de kamer verlaten of een nieuwe maken.',
