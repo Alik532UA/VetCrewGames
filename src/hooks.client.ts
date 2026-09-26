@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/public';
 import { dev } from '$app/environment';
 import { logService } from '$lib/services/logService.svelte';
 import { hasAccount } from '$lib/services/accountFlag';
-import { sessionStore } from '$lib/services/storage';
+import { chunkMissing, reloadOnce } from '$lib/utils/staleBuild';
 import type { HandleClientError } from '@sveltejs/kit';
 
 /**
@@ -138,36 +138,6 @@ const tracker =
  * помилки РЕНДЕРУ, а слухач `window.error` — помилки з обробників подій. Помилку
  * `load` не бачив ні той, ні той, і у звіті бета-тестувальника її не було.
  */
-/**
- * Чи це «частини застосунку більше немає на сервері».
- *
- * Саме та помилка, яку автор побачив на проді: `GET …/_app/immutable/nodes/2.
- * W34Pfrl5.js 404` і слідом «Internal Error, status 500». Причина не в коді
- * сторінки — сторінку відкрили до деплою, а деплой перейменував усі частини за
- * хешем вмісту. Тобто перелік адрес у відкритій вкладці показує на файли, яких на
- * сервері вже немає, і перший перехід між сторінками падає.
- *
- * Текст помилки в різних браузерах різний, тому перевіряються всі три відомі
- * формулювання: Chromium, Firefox і Safari кажуть про це своїми словами.
- */
-const chunkMissing = (error: unknown): boolean => {
-	const text = error instanceof Error ? error.message : String(error);
-	return /dynamically imported module|Importing a module script failed|error loading dynamically imported/i.test(
-		text
-	);
-};
-
-/**
- * Ключ, під яким запам'ятовується вже зроблене перезавантаження.
- *
- * Потрібен проти ЦИКЛУ. Якщо частина зникла не через деплой, а тому що збірка
- * справді зламана, перезавантаження нічого не виправить — і без цієї позначки
- * сторінка перезавантажувалася б вічно, тобто дефект «сторінка не відкривається»
- * перетворився б на «браузер не відпускає». Ключ пам'ятає САМУ адресу: інша
- * сторінка пізніше в тій самій сесії має право на свою спробу.
- */
-const RELOAD_KEY = 'staleReload';
-
 export const handleError: HandleClientError = async ({ error, event, status, message }) => {
 	const route = event.route.id ?? 'unknown';
 	logService.error('app', 'Unhandled client error', { message, status, route });
@@ -184,11 +154,13 @@ export const handleError: HandleClientError = async ({ error, event, status, mes
 	 * повне завантаження ЩЕ ДО помилки, щойно стало відомо про нову версію. Сюди
 	 * доїжджає те, що головний шар пропустив: деплой, який стався між двома
 	 * опитуваннями версії.
+	 *
+	 * Розпізнавання й захист від циклу — спільні з рештою застосунку
+	 * (`utils/staleBuild.ts`): ту саму помилку дають і динамічні імпорти всередині
+	 * сторінки, а не лише переходи.
 	 */
-	if (chunkMissing(error) && sessionStore.get(RELOAD_KEY) !== event.url.href) {
-		sessionStore.set(RELOAD_KEY, event.url.href);
+	if (chunkMissing(error) && reloadOnce(event.url.href)) {
 		logService.warn('app', 'stale build — reloading', { to: event.url.pathname });
-		window.location.href = event.url.href;
 		return;
 	}
 

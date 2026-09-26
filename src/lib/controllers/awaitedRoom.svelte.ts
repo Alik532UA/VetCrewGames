@@ -2,6 +2,7 @@ import { logService } from '$lib/services/logService.svelte';
 import { hasSession, rememberSession } from '$lib/services/accountFlag';
 import type { OwnRoom } from '$lib/net/ownRooms';
 import { roomsAwaitingMe } from '$lib/utils/awaitedRoom';
+import { chunkMissing, reloadOnce } from '$lib/utils/staleBuild';
 
 /** Так Firebase Auth називає свою базу в IndexedDB — там лежить відновлювана сесія. */
 const FIREBASE_AUTH_STORE = 'firebaseLocalStorageDb';
@@ -151,6 +152,9 @@ export class AwaitedRoom {
 			this.room = null;
 		} catch (error) {
 			logService.warn('network', 'room not left', { code: room.code, reason: String(error) });
+			// Шматка збірки немає (вкладку відкрито до викладки): повтор не допоможе, а
+			// оновлена сторінка покаже ту саму смугу вже з робочою кнопкою (аудит 2026-09-26).
+			if (chunkMissing(error)) reloadOnce(window.location.href);
 		} finally {
 			this.busy = false;
 		}

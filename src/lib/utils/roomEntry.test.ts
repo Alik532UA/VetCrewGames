@@ -46,6 +46,13 @@ describe('повідомлення на невдалий вхід', () => {
 		expect(entryErrorKey('timeout')).toBe('pairs.netFailed');
 		expect(entryErrorKey('room-full')).toBe('pairs.roomFull');
 	});
+
+	// Шматка збірки на сервері вже немає: доти це було «спробуйте ще раз» без кінця.
+	it('нова збірка на сервері — «оновіть сторінку», а не «спробуйте ще раз»', () => {
+		expect(
+			entryErrorKey('Failed to fetch dynamically imported module: https://x/rtdbRoom.js')
+		).toBe('pairs.newBuild');
+	});
 });
 
 describe('кімната для швидкої гри', () => {

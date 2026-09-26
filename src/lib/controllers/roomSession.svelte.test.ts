@@ -599,7 +599,8 @@ describe('склад партії', () => {
  * звіряє штамп правил, і на `stale` кімната каже оновити сторінку.
  *
  * Зворотні експерименти: не кликати `noteDenial` з `#failed` — червоніє перший;
- * прибрати політику `refused` — другий; прибрати `#rulesAsked` — «раз на сторінку».
+ * прибрати політику `refused` — другий; не памʼятати знайденої причини — «вдруге
+ * не звіряє»; не розпізнавати шматка збірки на вході — «нова збірка».
  */
 /**
  * ДІЯ, ЯКУ ПОЧАЛА ЛЮДИНА (аудит 2026-09-25): набір ігор, темп, пауза й «граємо
@@ -649,11 +650,11 @@ describe('правила бази новіші за сторінку', () => {
 		await session.start();
 		await settle();
 		expect(net.checkRules).toHaveBeenCalledTimes(1);
-		expect(session.rulesStale).toBe(true);
+		expect(session.reload.reason).toBe('rules');
 
 		await session.start();
 		await settle();
-		expect(net.checkRules, 'раз на сторінку').toHaveBeenCalledTimes(1);
+		expect(net.checkRules, 'знайдену причину вдруге не звіряє').toHaveBeenCalledTimes(1);
 	});
 
 	it('хід, якого база не прийняла, — теж привід звірити, а свіжі правила смуги не дають', async () => {
@@ -668,7 +669,25 @@ describe('правила бази новіші за сторінку', () => {
 		await settle();
 
 		expect(net.checkRules).toHaveBeenCalledTimes(1);
-		expect(session.rulesStale).toBe(false);
+		expect(session.reload.reason).toBeNull();
+	});
+
+	/**
+	 * НОВА ЗБІРКА НА СЕРВЕРІ (аудит 2026-09-26): вкладка, відкрита до викладки, не
+	 * може завантажити шматок мережевого шару, і доти чула «спробуйте ще раз» на
+	 * кожну спробу, аж до ручного оновлення.
+	 */
+	it('вхід, що впав на відсутньому шматку збірки, — смуга «оновити» й окреме повідомлення', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net } = sessionFor(room, null, HOST);
+		net.roomTransport.mockRejectedValueOnce(
+			new TypeError('Failed to fetch dynamically imported module: https://x/rtdbRoom.js')
+		);
+
+		await session.enter('create');
+
+		expect(session.reload.reason).toBe('build');
+		expect(toast.error).toHaveBeenCalledWith('pairs.newBuild');
 	});
 });
 

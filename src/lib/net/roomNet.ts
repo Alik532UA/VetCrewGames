@@ -1,6 +1,7 @@
 import type { NewRoom } from './rtdbRoom';
 import type { Member, RoomInfo, RoomTransport } from './roomTypes';
 import { startRoomBeat } from './roomBeat';
+import { checkLiveRules } from './rulesLive';
 
 /**
  * УСЕ, ЩО СЕСІЇ КІМНАТИ ПОТРІБНО ВІД МЕРЕЖІ, — одним інтерфейсом.
@@ -19,7 +20,9 @@ import { startRoomBeat } from './roomBeat';
  * тест сесії їх не бере; їх перевіряють свої тести.
  *
  * Модулі мережі — ДИНАМІЧНИМИ імпортами: SDK бази не мусить лежати в першому
- * завантаженні сторінки.
+ * завантаженні сторінки. Крім звірки правил (`rulesLive`, пів кілобайта без SDK):
+ * вона потрібна саме тоді, коли на сервері вже інша збірка, — а динамічний імпорт
+ * її шматка в ту мить падав би 404 (аудит 2026-09-26).
  */
 export interface RoomNet {
 	createRoom(options: NewRoom): Promise<string>;
@@ -63,5 +66,5 @@ export const liveNet: RoomNet = {
 		(await import('./presence')).watchPresence(code, onChange),
 	watchConnected: async (onChange) => (await import('./presence')).watchConnected(onChange),
 	beat: (code) => startRoomBeat(code),
-	checkRules: async () => (await (await import('./rulesLive')).checkLiveRules()).state
+	checkRules: async () => (await checkLiveRules()).state
 };

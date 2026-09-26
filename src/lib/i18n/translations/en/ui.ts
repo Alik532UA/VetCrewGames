@@ -54,6 +54,8 @@ export const ui = {
 	'pairs.offline': 'No connection to the server — waiting for it to come back.',
 	'pairs.rulesChanged':
 		'The server rules have been updated and this page is out of date, so moves are not going through. Reload the page — the game continues where it left off.',
+	'pairs.newBuild':
+		'A new version of the game is out. Reload the page — if you were in a room, you will be back in it.',
 	'pairs.reload': 'Reload page',
 	'pairs.playNext': 'Play in the next game',
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',

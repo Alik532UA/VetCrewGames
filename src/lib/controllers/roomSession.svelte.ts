@@ -11,6 +11,7 @@ import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { entryErrorKey, entryRefusal, quickPick } from '$lib/utils/roomEntry';
 import { playersOf, rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
+import { ReloadAdvice } from './reloadAdvice.svelte';
 
 export type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 
@@ -43,17 +44,16 @@ export class RoomSession<M extends RoomMatch> {
 	/** Звʼязок із базою. `true`, поки не доведено протилежне. */
 	connected = $state(true);
 	/**
-	 * ПРАВИЛА БАЗИ НОВІШІ ЗА СТОРІНКУ — звірено після відмови, якої гра не пояснює.
+	 * ЧОМУ СТОРІНКУ ТРЕБА ОНОВИТИ: правила бази новіші за неї або на сервері вже
+	 * інша збірка (`reloadAdvice.svelte.ts`).
 	 *
 	 * Доти вкладка, відкрита до викладки нових правил, посеред партії не чула
 	 * нічого: у «Знайди пару» кожен тап показувався й мовчки відкочувався, дошка
-	 * виглядала замерзлою, а коментар у `deploy.yml` обіцяв «оновіть сторінку»,
-	 * якого ніде не було (аудит 2026-09-25). Тепер перша така відмова раз на
-	 * сторінку питає базу про штамп правил (`net/rulesLive.ts`), і на `stale`
-	 * смуга кімнати каже оновити сторінку.
+	 * виглядала замерзлою (аудит 2026-09-25). А вкладка, відкрита до викладки
+	 * нової збірки, не могла зайти в кімнату: «спробуйте ще раз» без кінця (аудит
+	 * 2026-09-26). Смуга кімнати в обох випадках каже оновити сторінку.
 	 */
-	rulesStale = $state(false);
-	#rulesAsked = false;
+	readonly reload = new ReloadAdvice(() => this.net.checkRules());
 	/** Годинник сторінки — СЕРВЕРНИЙ час (`transport.now()`), а не час пристрою. */
 	clock = $state(Date.now());
 
@@ -153,6 +153,8 @@ export class RoomSession<M extends RoomMatch> {
 			await this.#open();
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error);
+			// Шматка збірки немає — смуга з кнопкою «оновити», а не «спробуйте ще раз».
+			this.reload.noteFailure(error);
 			toast.error(entryErrorKey(reason));
 			// З кодом: доти звіт казав «не вдалося зайти», а в яку кімнату — ні.
 			logService.error('network', 'room entry failed', {
@@ -446,16 +448,6 @@ export class RoomSession<M extends RoomMatch> {
 	#failed(what: string, error: unknown): void {
 		toast.error('pairs.actionFailed');
 		logService.error('network', what, { code: this.code, reason: String(error) });
-		if (/permission[_ ]denied/i.test(String(error))) this.noteDenial();
-	}
-
-	/** База відмовила без пояснення з боку гри — раз на сторінку звірити правила. */
-	noteDenial(): void {
-		if (this.#rulesAsked) return;
-		this.#rulesAsked = true;
-		void this.net.checkRules().then((state) => {
-			logService.warn('network', 'rules checked after denial', { code: this.code, state });
-			if (state === 'stale') this.rulesStale = true;
-		});
+		if (/permission[_ ]denied/i.test(String(error))) this.reload.noteDenial(this.code);
 	}
 }

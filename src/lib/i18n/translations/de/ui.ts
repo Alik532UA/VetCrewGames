@@ -54,6 +54,8 @@ export const ui = {
 	'pairs.offline': 'Keine Verbindung zum Server – wir warten, bis sie zurück ist.',
 	'pairs.rulesChanged':
 		'Die Serverregeln wurden aktualisiert und diese Seite ist veraltet, deshalb gehen Züge nicht durch. Lade die Seite neu – die Partie geht an derselben Stelle weiter.',
+	'pairs.newBuild':
+		'Eine neue Version des Spiels ist da. Lade die Seite neu – warst du in einem Raum, kommst du wieder hinein.',
 	'pairs.reload': 'Seite neu laden',
 	'pairs.playNext': 'In der nächsten Partie mitspielen',
 	'pairs.roomOlder':

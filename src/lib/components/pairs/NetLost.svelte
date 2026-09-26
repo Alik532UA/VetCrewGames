@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
+	import type { ReloadReason } from '$lib/controllers/reloadAdvice.svelte';
 
 	/**
 	 * СМУГА «НЕМАЄ ЗВʼЯЗКУ» — поки база не відповідає.
@@ -16,11 +17,13 @@
 	 * ЖИВА ОБЛАСТЬ ІСНУЄ ЗАВЖДИ, міняється лише текст: скрінрідер надійно оголошує
 	 * зміну вмісту наявного `role="status"`, а не появу нового елемента.
 	 *
-	 * `stale` — ПРАВИЛА БАЗИ НОВІШІ ЗА СТОРІНКУ (`RoomSession.rulesStale`): звʼязок
-	 * є, а ходи не проходять. Це важливіше за обрив і показується одразу, разом із
-	 * кнопкою: оновлена сторінка повертається в ту саму кімнату за адресою.
+	 * `reload` — СТОРІНКУ ТРЕБА ОНОВИТИ (`RoomSession.reload`): правила бази новіші
+	 * за неї (звʼязок є, а ходи не проходять) або на сервері вже інша збірка (зайти
+	 * в кімнату з цієї вкладки не вийде). Це важливіше за обрив і показується
+	 * одразу, разом із кнопкою: оновлена сторінка повертається в ту саму кімнату за
+	 * адресою.
 	 */
-	let { lost, stale = false }: { lost: boolean; stale?: boolean } = $props();
+	let { lost, reload = null }: { lost: boolean; reload?: ReloadReason | null } = $props();
 
 	const DELAY_MS = 1500;
 
@@ -36,13 +39,15 @@
 	});
 </script>
 
-<div class="net-lost" class:text-panel={shown || stale}>
+<div class="net-lost" class:text-panel={shown || reload !== null}>
 	<p class="net-lost__text" role="status" data-testid="net-lost-text">
-		{#if stale}{@html formatFont(t('pairs.rulesChanged'))}{:else if shown}{@html formatFont(
-				t('pairs.offline')
-			)}{/if}
+		{#if reload === 'rules'}{@html formatFont(
+				t('pairs.rulesChanged')
+			)}{:else if reload === 'build'}{@html formatFont(
+				t('pairs.newBuild')
+			)}{:else if shown}{@html formatFont(t('pairs.offline'))}{/if}
 	</p>
-	{#if stale}
+	{#if reload !== null}
 		<button
 			type="button"
 			class="btn-primary net-lost__reload"

@@ -48,6 +48,8 @@ import { readFileSync } from 'node:fs';
 const CONFIG = 'svelte.config.js';
 const LAYOUT = 'src/routes/+layout.svelte';
 const HOOKS = 'src/hooks.client.ts';
+/** Розпізнавання й захист від циклу — спільні для переходів і імпортів усередині сторінки. */
+const STALE = 'src/lib/utils/staleBuild.ts';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
@@ -79,18 +81,21 @@ describe('нова збірка й відкрита вкладка', () => {
 
 	it('запасний шар ловить те, що прослизнуло між опитуваннями', () => {
 		const hooks = code(HOOKS);
+		const stale = code(STALE);
 		/*
 		 * Текст помилки в трьох браузерах різний, і перевіряються всі три: у Firefox і
 		 * Safari формулювання інші, ніж у Chromium, — тобто «перевірив у себе» тут
 		 * означало б «працює в одному браузері з трьох».
 		 */
-		expect(hooks, 'помилка «частини немає» не розпізнається').toMatch(
+		expect(stale, 'помилка «частини немає» не розпізнається').toMatch(
 			/dynamically imported module/
 		);
-		expect(hooks, 'розпізнається лише Chromium').toMatch(/Importing a module script failed/);
-		expect(hooks, 'людину вертають не туда, куди вона йшла').toMatch(
-			/window\.location\.href = event\.url\.href/
+		expect(stale, 'розпізнається лише Chromium').toMatch(/Importing a module script failed/);
+		expect(hooks, 'помилка переходу не розпізнається').toMatch(/chunkMissing\(error\)/);
+		expect(hooks, 'людину вертають не туди, куди вона йшла').toMatch(
+			/reloadOnce\(event\.url\.href\)/
 		);
+		expect(stale, 'перезавантаження не веде на адресу').toMatch(/window\.location\.href = href/);
 	});
 
 	it('запасний шар не крутить цикл перезавантажень', () => {
@@ -104,9 +109,9 @@ describe('нова збірка й відкрита вкладка', () => {
 		 * спроба своя. І пам'ятає саму адресу, а не сам факт: інша сторінка пізніше в
 		 * тій самій сесії має право на свою спробу.
 		 */
-		const hooks = code(HOOKS);
-		expect(hooks, 'перезавантаження без захисту від циклу').toMatch(/sessionStore\.get\(/);
-		expect(hooks, 'позначка не ставиться — захист не працює').toMatch(/sessionStore\.set\(/);
-		expect(hooks, 'позначка не привʼязана до адреси').toMatch(/!== event\.url\.href/);
+		const stale = code(STALE);
+		expect(stale, 'перезавантаження без захисту від циклу').toMatch(/sessionStore\.get\(/);
+		expect(stale, 'позначка не ставиться — захист не працює').toMatch(/sessionStore\.set\(/);
+		expect(stale, 'позначка не привʼязана до адреси').toMatch(/=== href\)/);
 	});
 });

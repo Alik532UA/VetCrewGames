@@ -54,6 +54,8 @@ export const ui = {
 	'pairs.offline': 'Geen verbinding met de server — we wachten tot die terug is.',
 	'pairs.rulesChanged':
 		'De serverregels zijn bijgewerkt en deze pagina is verouderd, dus zetten komen niet door. Laad de pagina opnieuw — het spel gaat verder waar het was.',
+	'pairs.newBuild':
+		'Er is een nieuwe versie van het spel. Laad de pagina opnieuw — zat je in een kamer, dan kom je er weer in.',
 	'pairs.reload': 'Pagina herladen',
 	'pairs.playNext': 'Meespelen in het volgende spel',
 	'pairs.roomOlder': 'Dit spel is in een oudere versie gestart. Maak een nieuwe kamer aan.',

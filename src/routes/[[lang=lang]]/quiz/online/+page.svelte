@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
-	import { page } from '$app/state';
+	import { page, updated } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
@@ -104,7 +104,12 @@
 </script>
 
 <div class="quiz-online" class:quiz-online--playing={match !== null && match.status !== 'lobby'}>
-	<NetLost lost={match !== null && !session.connected} stale={session.rulesStale} />
+	<!-- Нова збірка на сервері видна й без відмови: опитування версії (`updated`) каже
+	     про неї раніше, ніж перша ж спроба зайти впаде на відсутньому шматку. -->
+	<NetLost
+		lost={match !== null && !session.connected}
+		reload={session.reload.reason ?? (updated.current ? 'build' : null)}
+	/>
 	{#if !match}
 		<OnlineGate
 			bind:name={player.value}

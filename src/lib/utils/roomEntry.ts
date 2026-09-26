@@ -1,3 +1,4 @@
+import { chunkMissing } from './staleBuild';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { RoomInfo } from '$lib/net/roomTypes';
 
@@ -51,12 +52,16 @@ export type EntryError =
 	| 'pairs.rulesMissing'
 	| 'pairs.rulesStale'
 	| 'pairs.roomFull'
+	| 'pairs.newBuild'
 	| 'pairs.netFailed';
 
 export function entryErrorKey(reason: string): EntryError {
 	if (reason === 'rules-missing') return 'pairs.rulesMissing';
 	if (reason === 'room-full') return 'pairs.roomFull';
 	if (/permission[_ ]denied/i.test(reason)) return 'pairs.rulesStale';
+	// Шматка збірки на сервері вже немає: повтор не допоможе, допоможе оновлення
+	// сторінки (аудит 2026-09-26 — доти це було «спробуйте ще раз» без кінця).
+	if (chunkMissing(reason)) return 'pairs.newBuild';
 	return 'pairs.netFailed';
 }
 
