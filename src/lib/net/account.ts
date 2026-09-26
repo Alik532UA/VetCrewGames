@@ -402,9 +402,12 @@ export async function readMyProfile(): Promise<Profile | null> {
 export async function readProfile(uid: string): Promise<Profile | null> {
 	const { db } = await connect();
 	const { get, ref } = await import('firebase/database');
-	const snapshot = await get(ref(db, `users/${uid}/profile`));
-	if (!snapshot.exists()) return null;
-	return { uid, ...(snapshot.val() as Omit<Profile, 'uid'>) };
+	return profileOf(uid, await get(ref(db, `users/${uid}/profile`)));
+}
+
+/** Профіль зі знімка — спільне для одного читання й для пошуку. */
+function profileOf(uid: string, snapshot: { exists(): boolean; val(): unknown }): Profile | null {
+	return snapshot.exists() ? { uid, ...(snapshot.val() as Omit<Profile, 'uid'>) } : null;
 }
 
 /** Скільком знахідкам показуватися в пошуку. Правило бази вимагає межі. */
@@ -448,15 +451,27 @@ export async function searchHandles(prefix: string): Promise<Profile[]> {
 		);
 		if (!found.exists()) return [];
 
-		const uids = Object.values(found.val() as Record<string, string>);
+		const entries = Object.entries(found.val() as Record<string, string>);
 		/*
 		 * Профілі читаються ПАРАЛЕЛЬНО, і невдалі просто зникають зі списку.
 		 *
 		 * Псевдонім міг лишитися після профілю (звільнення не вдалося — див.
 		 * `saveProfile`), і тоді запис у `handles` вказує в порожнє. Це сміття, а
 		 * не дефект: у пошуку його просто не видно.
+		 *
+		 * І ЛИШЕ ТІ, ЧИЙ ПРОФІЛЬ НАЗИВАЄ ЗНАЙДЕНИЙ ПСЕВДОНІМ (аудит 2026-09-25): доти
+		 * застарілий запис показував того, хто колись його займав, — пошук «h…»
+		 * видавав чужу людину замість справжнього власника.
 		 */
-		const profiles = await Promise.all(uids.map((uid) => readProfile(uid).catch(() => null)));
+		const profiles = await Promise.all(
+			entries.map(([handle, uid]) =>
+				// Тим самим SDK, що й запит: без окремого імпорту на кожен профіль.
+				get(ref(db, `users/${uid}/profile`))
+					.then((snapshot) => profileOf(uid, snapshot))
+					.then((profile) => (profile?.handle === handle ? profile : null))
+					.catch(() => null)
+			)
+		);
 		return profiles.filter((profile): profile is Profile => profile !== null);
 	} catch (error) {
 		logService.warn('network', 'handle search failed', { reason: String(error) });

@@ -2230,6 +2230,45 @@ const CASES = [
 		allowed: false,
 		run: () => write('find/guest', guest.uid, guest.token)
 	},
+	/*
+	 * ЗАСТАРІЛИЙ ЗАПИС ПОШУКУ НЕ ТРИМАЄ ПСЕВДОНІМА (аудит 2026-09-25). Стан
+	 * «запис лишився, а профіль уже називає інше» готується записом власника:
+	 * сьогоднішніми правилами він виникає за кілька кроків, і кожен із них уже
+	 * перевірено вище.
+	 */
+	{
+		name: 'застарілий запис пошуку прибирає будь-хто',
+		allowed: true,
+		run: async () => {
+			await seed('find/squat', stranger.uid);
+			return write('find/squat', null, host.token);
+		}
+	},
+	{
+		name: 'живий запис пошуку чужою рукою не прибрати',
+		allowed: false,
+		run: async () => {
+			await seed('handles/alive', stranger.uid);
+			await seed(`users/${stranger.uid}/profile`, { name: 'Сторонній', handle: 'alive', at: 1 });
+			await seed('find/alive', stranger.uid);
+			return write('find/alive', null, host.token);
+		}
+	},
+	{
+		name: 'новий власник переписує застарілий запис пошуку на себе',
+		allowed: true,
+		run: async () => {
+			await seed('find/renewed', stranger.uid);
+			const claimed = await write('handles/renewed', host.uid, host.token);
+			if (claimed !== 200) return claimed;
+			const named = await write(
+				`users/${host.uid}/profile`,
+				{ name: 'Господар', handle: 'renewed', at: SERVER_TIME },
+				host.token
+			);
+			return named === 200 ? write('find/renewed', host.uid, host.token) : named;
+		}
+	},
 
 	/*
 	 * ВИДАЛЕННЯ АКАУНТА — останнім, бо воно прибирає дані гостя для всіх випадків

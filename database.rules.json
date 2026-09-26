@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '26f649f39c17'" }
+      "$v": { ".read": "auth != null && $v === 'fd5f488f6eb9'" }
     },
 
     "rooms": {
@@ -750,7 +750,14 @@
         // будь-який ключ — зайняти пошук під чужим псевдонімом (і тоді його власник
         // тихо не потрапляв у пошук) або засипати перший екран пошуку сотнею
         // вигаданих записів з одного акаунта (аудит 2026-09-24).
-        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid && root.child('users').child(auth.uid).child('privacy').child('search').val() != false && root.child('handles').child($handle).val() === auth.uid && root.child('users').child(auth.uid).child('profile').child('handle').val() === $handle) || (data.val() === auth.uid && !newData.exists()))",
+        // ЗАСТАРІЛИЙ ЗАПИС НЕ ТРИМАЄ ПСЕВДОНІМА (аудит 2026-09-25). Доти запис
+        // перевірявся лише при створенні, а прибрати його міг тільки той, на кого він
+        // указує. Один акаунт по черзі займав псевдоніми, вписувався в пошук і йшов
+        // далі — кожен запис лишався на нього, і справжній власник псевдоніма вже
+        // ніколи не знаходився пошуком. Застарілий — коли профіль того, на кого
+        // указує запис, цього псевдоніма вже не називає, або реєстр віддав його
+        // іншому. Такий запис прибирає будь-хто, а новий власник переписує на себе.
+        ".write": "auth != null && ((newData.val() === auth.uid && root.child('users').child(auth.uid).child('privacy').child('search').val() != false && root.child('handles').child($handle).val() === auth.uid && root.child('users').child(auth.uid).child('profile').child('handle').val() === $handle && (!data.exists() || (root.child('users').child(data.val()).child('profile').child('handle').val() !== $handle || root.child('handles').child($handle).val() !== data.val()))) || (!newData.exists() && (data.val() === auth.uid || (root.child('users').child(data.val()).child('profile').child('handle').val() !== $handle || root.child('handles').child($handle).val() !== data.val()))))",
         ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/)"
       }
     },
