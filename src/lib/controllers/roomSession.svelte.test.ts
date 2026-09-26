@@ -29,6 +29,9 @@ const { logService } = await import('$lib/services/logService.svelte');
 const { LEAD_AFTER_MS, OVER_LEAD_AFTER_MS } = await import('./roomPolicies.svelte');
 const { PairsMatch } = await import('./pairsMatch.svelte');
 const { QuizMatch } = await import('./quizMatch.svelte');
+const { pairsGame: realPairsGame, attachPairsPolicies } = await import('./pairsRoom.svelte');
+const { QuizRoom } = await import('./quizRoom.svelte');
+const { QUIZ_RULES_VERSION, PAIRS_RULES_VERSION } = await import('$lib/config/roomRules');
 
 type Session = InstanceType<typeof RoomSession<InstanceType<typeof PairsMatch>>>;
 
@@ -1015,5 +1018,78 @@ describe('журнал кімнати', () => {
 			from: HOST,
 			to: GUEST
 		});
+	});
+});
+
+/**
+ * СЕСІЯ ЗІ СПРАВЖНІМИ АДАПТЕРАМИ ІГОР — і з тією самою проводкою, що на сторінках
+ * (аудит 2026-09-25). Решта файлу — на мініатюрі гри, щоб кермувати годинником і
+ * нагородою вручну; а дві останні знахідки аудиту (склад вікторини, набір ігор у
+ * переліку) були саме про стик сесії з адаптером — і проводку сторінки
+ * (`quiz.attach(session)`, `attachPairsPolicies`) не брав жоден тест.
+ *
+ * Зворотні експерименти: не кликати `quiz.attach` у проводці — червоніє вікторина;
+ * адаптер «Знайди пару» без `listen` — червоніє його випадок.
+ */
+describe('сесія зі справжніми адаптерами ігор', () => {
+	/** Мережа, заглушки й сесія — як на сторінці: `attach` плюс реакції самої гри. */
+	function wired<M extends InstanceType<typeof PairsMatch> | InstanceType<typeof QuizMatch>>(
+		room: LocalRoom,
+		me: string,
+		game: ConstructorParameters<typeof RoomSession<M>>[0],
+		wire: (session: InstanceType<typeof RoomSession<M>>) => void
+	) {
+		const { net, setOnline } = fakeNet(room, null, me);
+		const { place, player, lobby } = stubs();
+		let session!: InstanceType<typeof RoomSession<M>>;
+		cleanup = $effect.root(() => {
+			session = new RoomSession(game, place, player as never, lobby as never, net);
+			session.attach();
+			wire(session);
+		});
+		return { session, setOnline };
+	}
+
+	it('«Знайди пару»: підсвітка слухається з кімнатою, а старт заморожує склад із присутніх', async () => {
+		const room = new LocalRoom(roomInfo({ rulesVersion: PAIRS_RULES_VERSION }), members());
+		const beam = { listen: vi.fn(async () => () => {}), clear: vi.fn() };
+		const game = realPairsGame(
+			beam,
+			() => 0.5,
+			() => ({ pairs: 4, cols: 4 })
+		);
+		const { session, setOnline } = wired(room, HOST, game, (s) => attachPairsPolicies(s, beam));
+
+		await session.enter('create');
+		await settle();
+		setOnline([HOST, GUEST]);
+		await session.start();
+		await settle();
+
+		expect(beam.listen).toHaveBeenCalledWith('42');
+		expect(session.match?.status).toBe('playing');
+		expect(session.match?.roster?.map((entry) => entry.uid)).toEqual([HOST, GUEST]);
+	});
+
+	it('вікторина: з проводкою сторінки ведучий сам оголошує перший раунд', async () => {
+		const room = new LocalRoom(
+			roomInfo({
+				gameId: 'quiz',
+				rulesVersion: QUIZ_RULES_VERSION,
+				config: gamesToConfig(ONLINE_GAMES.map((entry) => entry.id))
+			}),
+			members()
+		);
+		const quiz = new QuizRoom(() => 0.5);
+		const { session, setOnline } = wired(room, HOST, quiz.game, (s) => quiz.attach(s));
+
+		await session.enter('create');
+		await settle();
+		setOnline([HOST, GUEST]);
+		await session.start();
+		await settle();
+
+		expect(session.match?.status).toBe('playing');
+		expect(session.match?.round, 'перший раунд оголошено').toBe(0);
 	});
 });
