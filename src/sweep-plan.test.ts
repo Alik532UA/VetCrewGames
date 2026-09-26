@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { SWEEP_LIMIT, SWEEP_SILENCE_MS, planSweep } from '../scripts/sweep-plan.mjs';
+import {
+	SWEEP_LIMIT,
+	SWEEP_SILENCE_MS,
+	confirmedPaths,
+	planSweep
+} from '../scripts/sweep-plan.mjs';
 
 /**
  * ЩО ЗНОСИТЬ ПРИБИРАЛЬНИК — без бази й без ключів (аудит 2026-09-24).
@@ -38,7 +43,9 @@ describe('прибиральник', () => {
 		const plan = planSweep({
 			rooms: { '42': room(OLD), '43': room(FRESH) },
 			lobby: { quiz: { '42': {}, '43': {} }, pairs: { '7': {} } },
-			presence: { '42': { a: { at: FRESH } } },
+			// Присутність у мертвій кімнаті — стара: свіжа означала б живу вкладку, і її
+			// прибиральник лишає (див. «свіжий запис… без кімнати лишаються»).
+			presence: { '42': { a: { at: OLD } } },
 			myRooms: { a: { '42': {}, '43': {} }, b: { '99': {} } },
 			now: NOW
 		});
@@ -83,6 +90,37 @@ describe('прибиральник', () => {
 		});
 		expect(plan.undatable).toBe(2);
 		expect(plan.paths).toEqual(['rooms/42', 'rooms/43', 'lobby/quiz/42']);
+	});
+
+	/**
+	 * ВКАЗІВНИК, ЖИВИЙ ЗА ВЛАСНИМ ГОДИННИКОМ, — НЕ ПРИВИД (аудит 2026-09-25): кімната,
+	 * створена після читання `rooms`, у знімку відсутня, а її свіжий запис переліку
+	 * й індексу вже є.
+	 *
+	 * Зворотний експеримент: прибрати перевірку `fresh` — червоніє.
+	 */
+	it('свіжий запис переліку, присутність і індекс без кімнати лишаються, старі — ні', () => {
+		const plan = planSweep({
+			rooms: {},
+			lobby: { pairs: { '42': { at: FRESH }, '43': { at: OLD } } },
+			presence: { '42': { a: { at: FRESH } }, '43': { a: { at: OLD } } },
+			myRooms: { u: { '42': { at: FRESH }, '43': { at: OLD } } },
+			now: NOW
+		});
+		expect(plan.paths).toEqual(['lobby/pairs/43', 'presence/43', 'myRooms/u/43']);
+	});
+
+	/**
+	 * ЗНОСИТЬСЯ ЛИШЕ ТЕ, НА ЧОМУ ЗІЙШЛИСЯ ДВА ПЛАНИ (аудит 2026-09-25): кімнату,
+	 * створену під тим самим кодом між читанням і записом, запис знищив би.
+	 */
+	it('кімнату, що зʼявилася між двома читаннями, не зносить разом із її вказівниками', () => {
+		const pointers = { lobby: { pairs: { '42': {} } }, presence: null, myRooms: null, now: NOW };
+		const first = planSweep({ rooms: { '42': room(OLD) }, ...pointers });
+		const second = planSweep({ rooms: { '42': room(FRESH) }, ...pointers });
+		expect(first.paths, 'перевірка жива: перший план зносить').toContain('rooms/42');
+
+		expect(confirmedPaths(first, second)).toEqual([]);
 	});
 
 	it('понад межу прогону — найтихіші першими, решта зі своїм переліком чекає', () => {

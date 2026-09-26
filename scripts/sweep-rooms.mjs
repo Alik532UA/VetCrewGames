@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SWEEP_LIMIT, SWEEP_SILENCE_MS, planSweep } from './sweep-plan.mjs';
+import { SWEEP_LIMIT, SWEEP_SILENCE_MS, confirmedPaths, planSweep } from './sweep-plan.mjs';
 
 /**
  * ПРИБИРАЛЬНИК ПОКИНУТИХ КІМНАТ — раз на добу, у GitHub Actions.
@@ -33,9 +33,9 @@ import { SWEEP_LIMIT, SWEEP_SILENCE_MS, planSweep } from './sweep-plan.mjs';
  *
  * Тиша понад `SWEEP_SILENCE_MS` за СЕРВЕРНОЮ позначкою: `info.aliveAt` (її
  * оновлює кожен, хто тримає кімнату відкритою), а для кімнат зі старіших збірок —
- * `startedAt`/`createdAt`. Кімната, у якої немає жодної позначки часу, НЕ
- * чіпається: датувати її нічим, а видаляти те, чого не можеш датувати, — це
- * вгадування.
+ * `startedAt`/`createdAt`. Кімната без жодної позначки часу зноситься першою
+ * (з 2026-09-26): жива такою не буває, а доти такі кімнати тримали коди
+ * зайнятими назавжди — подробиці в `sweep-plan.mjs`.
  *
  * Поріг навмисно грубий: на екрані кімната зникає вже після п'яти хвилин тиші
  * (`config/roomLife.ts`), тож тут ідеться не про те, що бачить людина, а про те,
@@ -89,13 +89,16 @@ try {
 		return raw === '' || raw === 'null' ? null : JSON.parse(raw);
 	};
 
-	const plan = planSweep({
-		rooms: read('/rooms'),
+	const rooms = read('/rooms');
+	const pointers = {
 		lobby: read('/lobby'),
 		presence: read('/presence'),
-		myRooms: read('/myRooms'),
-		now: Date.now()
-	});
+		myRooms: read('/myRooms')
+	};
+	const now = Date.now();
+	const plan = planSweep({ rooms, ...pointers, now });
+	// Друге читання кімнат — ПІСЛЯ решти гілок і перед самим записом (`confirmedPaths`).
+	const paths = confirmedPaths(plan, planSweep({ rooms: read('/rooms'), ...pointers, now }));
 
 	const report = [
 		`кімнат ${plan.total}, покинутих ${plan.doomed.length + plan.left} ` +
@@ -105,9 +108,14 @@ try {
 	];
 	// Обрізка НАЗИВАЄТЬСЯ ВГОЛОС: мовчазна межа читалася б як «прибрано все».
 	if (plan.left > 0) report.push(`за межею прогону лишилося кімнат: ${plan.left}`);
+	if (paths.length < plan.paths.length) {
+		report.push(
+			`відкладено шляхів: ${plan.paths.length - paths.length} — кімнату тим часом створили знову`
+		);
+	}
 	for (const line of report) console.log(`sweep-rooms: ${line}`);
 
-	if (plan.paths.length > 0) {
+	if (paths.length > 0) {
 		/*
 		 * ПАЧКАМИ ЗАПИСІВ, а не `database:remove` на кожен шлях: разом із переліком і
 		 * присутністю шляхів сотні, а кожен виклик — окремий процес CLI. `null` за
@@ -115,13 +123,15 @@ try {
 		 * Шляхи плану не перекриваються (`sweep-plan.mjs`), інакше запис відхилили б.
 		 * Перевірено над емулятором тим самим запитом `PATCH /`, що робить CLI.
 		 */
-		for (let from = 0; from < plan.paths.length; from += PATCH_PATHS) {
-			const chunk = plan.paths.slice(from, from + PATCH_PATHS);
+		for (let from = 0; from < paths.length; from += PATCH_PATHS) {
+			const chunk = paths.slice(from, from + PATCH_PATHS);
 			const patch = join(temp, `sweep-${from}.json`);
 			writeFileSync(patch, JSON.stringify(Object.fromEntries(chunk.map((path) => [path, null]))));
 			firebase(['database:update', '/', patch, '--force']);
 		}
-		for (const { code, silence } of plan.doomed) {
+		for (const { code, silence } of plan.doomed.filter(({ code }) =>
+			paths.includes(`rooms/${code}`)
+		)) {
 			const age = Number.isFinite(silence)
 				? `тиша ${Math.round(silence / 3600000)} год`
 				: 'без позначки часу';

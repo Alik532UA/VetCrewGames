@@ -117,15 +117,28 @@ export function planSweep({ rooms, lobby, presence, myRooms, now }) {
 
 	const paths = doomed.map(({ code }) => `rooms/${code}`);
 
+	/*
+	 * ВКАЗІВНИК, ЖИВИЙ ЗА ВЛАСНИМ ГОДИННИКОМ, — НЕ ПРИВИД (аудит 2026-09-25).
+	 * Гілки читаються одна за одною: кімната, створена після читання `rooms`, у
+	 * знімку відсутня, а її свіжий запис переліку чи індексу вже є — і план зносив
+	 * його як сироту. Публічні коди тут двоцифрові, тож повторюються часто. Свіжий
+	 * запис лишається до наступного прогону: якщо він справді сирота, піде тоді.
+	 */
+	/** @param {unknown} node */
+	const fresh = (node) => {
+		const at = branch(node).at;
+		return typeof at === 'number' && now - at <= SWEEP_SILENCE_MS;
+	};
+
 	for (const [game, entries] of Object.entries(branch(lobby))) {
-		for (const code of Object.keys(branch(entries))) {
-			if (!alive(code)) paths.push(`lobby/${game}/${code}`);
+		for (const [code, entry] of Object.entries(branch(entries))) {
+			if (!alive(code) && !fresh(entry)) paths.push(`lobby/${game}/${code}`);
 		}
 	}
 
 	for (const [code, nodes] of Object.entries(branch(presence))) {
 		if (!alive(code)) {
-			paths.push(`presence/${code}`);
+			if (!Object.values(branch(nodes)).some(fresh)) paths.push(`presence/${code}`);
 			continue;
 		}
 		for (const [uid, node] of Object.entries(branch(nodes))) {
@@ -137,8 +150,8 @@ export function planSweep({ rooms, lobby, presence, myRooms, now }) {
 	}
 
 	for (const [uid, codes] of Object.entries(branch(myRooms))) {
-		for (const code of Object.keys(branch(codes))) {
-			if (!alive(code)) paths.push(`myRooms/${uid}/${code}`);
+		for (const [code, entry] of Object.entries(branch(codes))) {
+			if (!alive(code) && !fresh(entry)) paths.push(`myRooms/${uid}/${code}`);
 		}
 	}
 
@@ -149,4 +162,23 @@ export function planSweep({ rooms, lobby, presence, myRooms, now }) {
 		total: Object.keys(all).length,
 		paths
 	};
+}
+
+/**
+ * ШЛЯХИ, НА ЯКИХ ЗІЙШЛИСЯ ДВА ПЛАНИ — з двома читаннями `rooms`, до й після решти
+ * гілок (аудит 2026-09-25).
+ *
+ * Прибиральник читає, планує й одним записом зносить. Кімнату, створену під тим
+ * самим кодом між читанням і записом, запис знищив би разом із її переліком і
+ * індексом — а публічні коди двоцифрові. Друге читання `rooms` перед записом
+ * лишає вікно в секунду, а не на весь прогін: зноситься лише те, що мертве в
+ * обох знімках.
+ *
+ * @param {SweepPlan} first
+ * @param {SweepPlan} second
+ * @returns {string[]}
+ */
+export function confirmedPaths(first, second) {
+	const again = new Set(second.paths);
+	return first.paths.filter((path) => again.has(path));
 }
