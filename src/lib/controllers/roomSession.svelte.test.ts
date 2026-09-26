@@ -433,6 +433,35 @@ describe('політики кімнати', () => {
 		expect(takeLead).toHaveBeenCalledTimes(1);
 	});
 
+	/**
+	 * НЕВДАЛИЙ ВХІД НЕ ЛИШАЄ ПІВКІМНАТИ (аудит 2026-09-25): підписка, пауза
+	 * локального рахунку, код і адреса знімаються, а людина чує, що не вийшло.
+	 *
+	 * Зворотний експеримент: прибрати `catch` у `#open` — червоніє.
+	 */
+	it('вхід, що впав посеред відкриття кімнати, прибирає за собою все', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const transport = room.transport();
+		const unwatch = vi.fn();
+		vi.spyOn(transport, 'watch').mockReturnValue(unwatch);
+		const { session, net, place } = sessionFor(room, roomInfo(), GUEST);
+		net.roomTransport.mockResolvedValue(transport);
+		net.watchPresence.mockRejectedValueOnce(
+			new Error('Failed to fetch dynamically imported module')
+		);
+		session.joinCode = '42';
+
+		await session.enter('join');
+		await settle();
+
+		expect(unwatch, 'підписка на кімнату знята').toHaveBeenCalled();
+		expect(playerData.endOnline).toHaveBeenCalled();
+		expect(session.match).toBeNull();
+		expect(session.code).toBe('');
+		expect(place.exit).toHaveBeenCalled();
+		expect(toast.error).toHaveBeenCalled();
+	});
+
 	it('кімнату знесли — «кімнату закрито» й геть із неї', async () => {
 		const room = new LocalRoom(roomInfo(), members());
 		const { session, place } = sessionFor(room, null, HOST);

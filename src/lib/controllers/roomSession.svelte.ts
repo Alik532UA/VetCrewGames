@@ -203,23 +203,36 @@ export class RoomSession<M extends RoomMatch> {
 		// «швидка гра» не рахувала відлік, а скінчена партія не ставала `over`
 		// (аудит 2026-09-25).
 		this.autoHalted = false;
-		const transport = await this.net.roomTransport(this.code);
-		this.#transport = transport;
-		this.me = await this.net.me();
-		const match = this.game.createMatch(this.me, transport);
-		this.#stops.push(match.listen());
-		// Локальний рахунок на паузі, поки триває спільна партія: бали — в кінці.
-		playerData.beginOnline();
-		this.#stops.push(await this.net.trackPresence(this.code));
-		this.#stops.push(
-			await this.net.watchPresence(this.code, (uids) => {
-				this.online = uids;
-				this.game.onPresence?.(match, uids, this.now());
-			})
-		);
-		this.#stops.push(await this.net.watchConnected((online) => (this.connected = online)));
-		for (const stop of (await this.game.listen?.(this.code)) ?? []) this.#stops.push(stop);
-		this.match = match;
+		try {
+			const transport = await this.net.roomTransport(this.code);
+			this.#transport = transport;
+			this.me = await this.net.me();
+			const match = this.game.createMatch(this.me, transport);
+			this.#stops.push(match.listen());
+			// Локальний рахунок на паузі, поки триває спільна партія: бали — в кінці.
+			playerData.beginOnline();
+			this.#stops.push(await this.net.trackPresence(this.code));
+			this.#stops.push(
+				await this.net.watchPresence(this.code, (uids) => {
+					this.online = uids;
+					this.game.onPresence?.(match, uids, this.now());
+				})
+			);
+			this.#stops.push(await this.net.watchConnected((online) => (this.connected = online)));
+			for (const stop of (await this.game.listen?.(this.code)) ?? []) this.#stops.push(stop);
+			this.match = match;
+		} catch (error) {
+			/*
+			 * НЕВДАЛИЙ ВХІД НЕ ЛИШАЄ ПІВКІМНАТИ (аудит 2026-09-25). Доти підписка на
+			 * кімнату жила далі, локальний рахунок стояв на паузі, а код і транспорт
+			 * лишалися, поки на екрані вже форма входу; кожна наступна спроба додавала
+			 * ще одну підписку. Найчастіша причина — застарілий шматок збірки після
+			 * викладки: динамічний імпорт падає посеред входу.
+			 */
+			this.leave();
+			await this.place.exit();
+			throw error;
+		}
 	}
 
 	/** Код, який ЦЯ сесія вже оголосила в переліку; `null` — нічого. */
