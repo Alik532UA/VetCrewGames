@@ -1,4 +1,12 @@
-import { MOVE_SEQ_MAX } from './roomShape';
+import {
+	hostOnly,
+	leadAllowed,
+	moveAllowed,
+	removeAllowed,
+	rosterAllowed,
+	touchAllowed,
+	type RoomState
+} from './localRules';
 import type {
 	GoneReason,
 	Member,
@@ -6,8 +14,7 @@ import type {
 	RoomInfo,
 	RoomSnapshot,
 	RoomStatus,
-	RoomTransport,
-	RosterEntry
+	RoomTransport
 } from './roomTypes';
 
 /** Як поводиться транспорт ОДНОГО учасника. */
@@ -26,21 +33,19 @@ export interface LocalTransportOptions {
 	 * до інших клієнтів не доходить.
 	 */
 	echo?: boolean;
+	/**
+	 * ХТО ЗА ЦИМ ТРАНСПОРТОМ СИДИТЬ — `uid`, як `auth.uid` у правилах бази (аудит
+	 * 2026-09-26). Заданий — транспорт пише лише від нього: хід під чужим іменем,
+	 * запис `info` не господарем, прибирання чужого рядка не господарем база
+	 * відкидає, і підставка теж. Не заданий — особа не перевіряється, як у всіх
+	 * тестах до появи поля (`net/localRules.ts`).
+	 */
+	as?: string;
 }
 
-const count = (max: number) => (value: unknown) =>
-	typeof value === 'number' && value >= 0 && value <= max;
-const short = (value: unknown) => typeof value === 'string' && value.length <= 32;
-
-/** Поля ходу та їхні межі — ті самі, що в правилі `moves/$seq/payload`. */
-const PAYLOAD: Record<string, (value: unknown) => boolean> = {
-	index: count(999),
-	from: short,
-	round: count(9999),
-	correct: count(1),
-	ms: count(86_400_000),
-	uid: short,
-	spent: count(86_400_000)
+/** Відмова правил — тим самим текстом, що кидає SDK (`net/denied.ts`). */
+const denied = (): never => {
+	throw new Error('PERMISSION_DENIED: Permission denied');
 };
 
 /**
@@ -149,8 +154,7 @@ export class LocalRoom {
 					for (const listener of own) listener(echoed);
 					await Promise.resolve();
 				}
-				const refused =
-					!this.#allowed(move) || this.#moves.some((existing) => existing.seq === move.seq);
+				const refused = !moveAllowed(this.#state(), move, options.as);
 				if (options.echo && refused) {
 					// Відмова бази (номер зайнятий або хід недозволений): відлуння зникає, і на
 					// номері лишається те, що там було.
@@ -169,6 +173,7 @@ export class LocalRoom {
 			},
 
 			setStatus: async (status, roster) => {
+				if (!hostOnly(this.#state(), options.as)) denied();
 				if (this.#refused.has('setStatus')) {
 					const { countdownAt: _gone, ...rest } = this.#info;
 					this.#refuse(own, options, { ...rest, status, startedAt: this.#now });
@@ -176,7 +181,7 @@ export class LocalRoom {
 				// Склад — ті самі умови, що в правилі бази: лише гравці з їхніми іменами і
 				// лише на старті, а не посеред партії. Відмова, як і там, скасовує ВЕСЬ запис.
 				const midGame = this.#info.status === 'playing' && this.#moves.length > 0;
-				if (roster && (status !== 'playing' || midGame || !this.#rosterAllowed(roster))) {
+				if (roster && (status !== 'playing' || midGame || !rosterAllowed(roster, this.#members))) {
 					throw new Error('PERMISSION_DENIED: roster');
 				}
 				/*
@@ -199,6 +204,7 @@ export class LocalRoom {
 			},
 
 			setAutoStart: async (on) => {
+				if (!hostOnly(this.#state(), options.as)) denied();
 				// Той самий контракт, що в справжній базі: зміна режиму гасить відлік.
 				const { countdownAt: _reset, ...rest } = this.#info;
 				this.#info = { ...rest, autoStart: on };
@@ -206,6 +212,7 @@ export class LocalRoom {
 			},
 
 			setConfig: async (config) => {
+				if (!hostOnly(this.#state(), options.as)) denied();
 				this.#info = { ...this.#info, config };
 				this.#emit();
 			},
@@ -217,21 +224,7 @@ export class LocalRoom {
 				 * записом: господар і хід разом або ніяк.
 				 */
 				// Посеред партії — лише той, хто в заморожений склад потрапив; у лобі — гравець.
-				const author = this.#members.find((member) => member.uid === move.by);
-				const inParty =
-					this.#info.status === 'lobby'
-						? author?.role === 'player'
-						: (this.#info.roster ?? []).some((entry) => entry.uid === move.by);
-				const hostAway = this.#present !== null && !this.#present.has(this.#info.hostUid);
-				const authorHere = this.#present !== null && this.#present.has(move.by);
-				if (!inParty || !hostAway || !authorHere) return false;
-				if (move.type !== 'lead' || move.payload?.from !== this.#info.hostUid) return false;
-				if (
-					!this.#validSeq(move.seq) ||
-					this.#moves.some((existing) => existing.seq === move.seq)
-				) {
-					return false;
-				}
+				if (!leadAllowed(this.#state(), move, options.as)) return false;
 				this.#info = { ...this.#info, hostUid: move.by };
 				this.#moves.push({ ...move, at: this.#now });
 				this.#moves.sort((a, b) => a.seq - b.seq);
@@ -240,12 +233,14 @@ export class LocalRoom {
 			},
 
 			touch: async () => {
+				if (!touchAllowed(this.#state(), options.as)) denied();
 				// Той самий контракт, що в справжній базі: позначка серверного часу.
 				this.#info = { ...this.#info, aliveAt: this.#now };
 				this.#emit();
 			},
 
 			removeMember: async (uid) => {
+				if (!removeAllowed(this.#state(), uid, options.as)) denied();
 				// Той самий контракт, що в справжній базі: рядок учасника зникає цілком.
 				// Підставка, добріша за оригінал, доводила б не те, що треба.
 				this.#members = this.#members.filter((member) => member.uid !== uid);
@@ -255,6 +250,7 @@ export class LocalRoom {
 			setCountdown: async (active) => {
 				// Підставний транспорт тримає той самий контракт: увімкнено — число,
 				// скасовано — поля немає. Саме на це й дивиться сторінка.
+				if (!hostOnly(this.#state(), options.as)) denied();
 				const { countdownAt: _drop, ...rest } = this.#info;
 				if (this.#refused.has('setCountdown')) {
 					this.#refuse(own, options, active ? { ...rest, countdownAt: this.#now } : rest);
@@ -264,7 +260,8 @@ export class LocalRoom {
 			},
 
 			restart: async (seed, roster) => {
-				if (!this.#rosterAllowed(roster)) throw new Error('PERMISSION_DENIED: roster');
+				if (!hostOnly(this.#state(), options.as)) denied();
+				if (!rosterAllowed(roster, this.#members)) throw new Error('PERMISSION_DENIED: roster');
 				// Усе одночасно, як і в справжній базі: зерно, журнал, початок, відлік, склад.
 				this.#moves = [];
 				// Відлік і оголошений переїзд — від попередньої партії, до реваншу не стосуються.
@@ -320,53 +317,12 @@ export class LocalRoom {
 	}
 
 	/**
-	 * ТЕ САМЕ, ЩО ПЕРЕВІРЯЄ ПРАВИЛО БАЗИ `moves/$seq` — окрім підпису (транспорт тут
-	 * не знає, хто за ним сидить).
-	 *
-	 * Доти підставка приймала будь-що: хід від не-учасника, номер `1e20`, `lead` без
-	 * передачі ведення. Тобто тест проходив там, де жива база відмовить, — підставка,
-	 * лагідніша за оригінал (аудит 2026-09-23).
+	 * Стан кімнати так, як його бачить правило, — для дзеркала правил
+	 * (`net/localRules.ts`). Доти підставка приймала будь-що: хід від не-учасника,
+	 * номер `1e20`, `lead` без передачі ведення (аудит 2026-09-23).
 	 */
-	#allowed(move: Move): boolean {
-		if (!this.#members.some((member) => member.uid === move.by)) return false;
-		// Посеред партії «Знайди пару» — лише склад старту (правило `moves/$seq`).
-		const party = this.#info.status !== 'playing' || this.#info.gameId === 'quiz';
-		if (!party && !(this.#info.roster ?? []).some((entry) => entry.uid === move.by)) {
-			return false;
-		}
-		if (!this.#validSeq(move.seq)) return false;
-		if (!this.#validPayload(move.payload)) return false;
-		if (move.type === 'lead') {
-			return move.by === this.#info.hostUid && move.payload?.from === this.#info.hostUid;
-		}
-		return true;
-	}
-
-	/**
-	 * Поля ходу — рівно ті, що пускає правило `moves/$seq/payload`: відомі імена з
-	 * їхніми межами, решта відкидається (аудит 2026-09-24).
-	 */
-	#validPayload(payload: Move['payload']): boolean {
-		if (payload === undefined) return true;
-		return Object.entries(payload).every(([key, value]) => {
-			const rule = PAYLOAD[key];
-			return rule !== undefined && rule(value);
-		});
-	}
-
-	/** Ті самі умови, що правило `info/roster`: кожен — гравець складу, імʼя — його. */
-	#rosterAllowed(roster: readonly RosterEntry[]): boolean {
-		return roster.every((entry) =>
-			this.#members.some(
-				(member) =>
-					member.uid === entry.uid && member.role === 'player' && member.name === entry.name
-			)
-		);
-	}
-
-	/** Номер ходу — від 1 до `MOVE_SEQ_MAX`, як у правилі `moves/$seq`. */
-	#validSeq(seq: number): boolean {
-		return Number.isInteger(seq) && seq >= 1 && seq <= MOVE_SEQ_MAX;
+	#state(): RoomState {
+		return { info: this.#info, members: this.#members, moves: this.#moves, present: this.#present };
 	}
 
 	/** Знести кімнату — так, як це робить господар або збирач. */

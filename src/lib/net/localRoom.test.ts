@@ -207,3 +207,56 @@ describe('склад партії — як правило info/roster', () => {
 		expect(room.status).toBe('playing');
 	});
 });
+
+/**
+ * ОСОБА ТРАНСПОРТУ — ЯК `auth.uid` У ПРАВИЛАХ (аудит 2026-09-26). Доти підставка не
+ * знала, хто за нею сидить, і гість на ній міняв налаштування, починав партію й
+ * писав хід під чужим іменем — чого база не дає. Без `as` особа не перевіряється,
+ * як у всіх тестах до появи поля.
+ *
+ * Зворотні експерименти: прибрати перевірку особи в ходах — червоніє перший; у
+ * записах господаря — другий; у прибиранні рядка — третій.
+ */
+describe('особа транспорту — як auth.uid у правилах', () => {
+	const lobbyRoom = (): RoomInfo => ({ ...info, status: 'lobby', roster: undefined });
+
+	it('хід під чужим іменем не лягає, під своїм — лягає', async () => {
+		const room = new LocalRoom(lobbyRoom(), members);
+		const guest = room.transport({ as: GUEST });
+		expect(await guest.append({ seq: 1, by: HOST, type: 'goon' })).toBe(false);
+		expect(await guest.append({ seq: 1, by: GUEST, type: 'goon' })).toBe(true);
+	});
+
+	it('записи господаря — лише господареві', async () => {
+		const room = new LocalRoom(lobbyRoom(), members);
+		const guest = room.transport({ as: GUEST });
+		const host = room.transport({ as: HOST });
+
+		await expect(guest.setConfig({ pairs: 6 })).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(guest.setAutoStart(true)).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(guest.setCountdown(true)).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(guest.setStatus('over')).rejects.toThrow(/PERMISSION_DENIED/);
+		await expect(guest.restart(2, [])).rejects.toThrow(/PERMISSION_DENIED/);
+		await host.setConfig({ pairs: 6 });
+		expect(room.status, 'перевірка жива: господар пише').toBe('lobby');
+	});
+
+	it('свій рядок прибирає будь-хто, чужий — лише господар', async () => {
+		const room = new LocalRoom(lobbyRoom(), members);
+		const guest = room.transport({ as: GUEST });
+		await expect(guest.removeMember(HOST)).rejects.toThrow(/PERMISSION_DENIED/);
+		await guest.removeMember(GUEST);
+		await room.transport({ as: HOST }).removeMember(WATCHER);
+		const seen: string[][] = [];
+		room.transport().watch((snapshot) => seen.push(snapshot.members.map((member) => member.uid)));
+		expect(seen.at(-1)).toEqual([HOST]);
+	});
+
+	it('позначку життя пише лише учасник', async () => {
+		const room = new LocalRoom(lobbyRoom(), members);
+		await expect(room.transport({ as: 'uid-stranger' }).touch()).rejects.toThrow(
+			/PERMISSION_DENIED/
+		);
+		await room.transport({ as: GUEST }).touch();
+	});
+});

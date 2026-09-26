@@ -125,7 +125,8 @@ const local: World = {
 			config: configOf(gameId)
 		};
 		const room = new LocalRoom(info, members);
-		const seat = (uid: string): Seat => ({ uid, transport: room.transport() });
+		// Особа — як `auth.uid` у справжньої бази: кожен пише лише від себе.
+		const seat = (uid: string): Seat => ({ uid, transport: room.transport({ as: uid }) });
 		const host = seat(HOST);
 		return {
 			host,
@@ -388,6 +389,36 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		expect(await table.stranger.transport.takeLead(lead(table.stranger)), 'пізній').toBe(false);
 		expect(await table.guest.transport.takeLead(lead(table.guest)), 'зі складу').toBe(true);
 		await table.close('guest');
+	});
+
+	/**
+	 * ОСОБА ТРАНСПОРТУ (аудит 2026-09-26): гість не пише за господаря — ні
+	 * налаштувань, ні старту, ні ходу під чужим іменем, — а свій рядок прибирає сам.
+	 * Доти `LocalRoom` не знала, хто за нею сидить, і пускала все це.
+	 */
+	it('гість не міняє налаштувань і не починає партію', async () => {
+		const table = await world.table();
+		await expect(table.guest.transport.setConfig({ pairs: 6, cols: 4 })).rejects.toThrow();
+		await expect(table.guest.transport.setStatus('playing', rosterOf(table))).rejects.toThrow();
+		await table.close();
+	});
+
+	it('хід під чужим іменем не лягає', async () => {
+		const table = await world.table();
+		expect(await table.guest.transport.append(flip(table.host.uid, 1))).toBe(false);
+		await table.close();
+	});
+
+	it('гість прибирає лише себе, а не господаря', async () => {
+		const table = await world.table();
+		await expect(table.guest.transport.removeMember(table.host.uid)).rejects.toThrow();
+		await table.guest.transport.removeMember(table.guest.uid);
+
+		const snapshot = await table.until(
+			(s) => !s.members.some((member) => member.uid === table.guest.uid)
+		);
+		expect(snapshot.members.map((member) => member.uid)).toEqual([table.host.uid]);
+		await table.close();
 	});
 
 	it('господар прибирає учасника — рядок зникає цілком', async () => {
