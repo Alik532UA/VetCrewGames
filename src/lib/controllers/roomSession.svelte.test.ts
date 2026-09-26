@@ -1425,3 +1425,29 @@ describe('аватарка в кімнаті', () => {
 		expect(lobby.setHostAvatar).toHaveBeenLastCalledWith('42', 'star:teal');
 	});
 });
+
+/**
+ * ДУБЛЬ СТАРТУ — ТИХО (шостий аудит, хвости A2): партію вже почала інша вкладка
+ * господаря, і база такий запис відкидає цілком. Доти вкладка показувала «не вдалося»,
+ * писала помилку в журнал і зупиняла автоматику — назавжди, до перезавантаження.
+ *
+ * Зворотний експеримент: прибрати `match.status === 'playing'` зі `start` — червоніє.
+ */
+describe('дубль старту', () => {
+	it('партія вже йде — старт нічого не пише й автоматики не зупиняє', async () => {
+		const room = new LocalRoom(
+			roomInfo({ status: 'playing', roster: rosterOf(members()) }),
+			members()
+		);
+		const { session } = sessionFor(room, roomInfo({ status: 'playing' }), HOST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		toast.error.mockClear();
+
+		await session.start(true);
+
+		expect(toast.error).not.toHaveBeenCalled();
+		expect(session.autoHalted).toBe(false);
+	});
+});

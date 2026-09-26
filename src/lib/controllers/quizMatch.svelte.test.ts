@@ -1831,3 +1831,47 @@ describe('глядач у вікторині', () => {
 		stops.forEach((stop) => stop());
 	});
 });
+
+/**
+ * ПОЗА ПАРТІЄЮ ХОДИ НЕ ПРОБУЮТЬСЯ (шостий аудит, хвости A2): журнал приймає там лише
+ * `lead`, і шістнадцять спроб кожна отримала б ту саму відмову, а лічильник відмов
+ * звіряв би правила даремно. Відповідь, що доїхала після фіналу, — не помилка людини.
+ *
+ * Зворотний експеримент: прибрати перевірку статусу з `#append` — червоніє «після
+ * партії»; прибрати `this.over` з `answer` — червоніє «після фіналу».
+ */
+describe('ходи поза партією', () => {
+	it('після партії оголошення раунду не пробується зовсім — ні спроб, ні відмов', async () => {
+		const room = new LocalRoom(info({ status: 'over' }), members());
+		const transport = room.transport();
+		const append = vi.spyOn(transport, 'append');
+		const host = new QuizMatch(HOST, transport);
+		const off = host.listen();
+		const stop = () => off();
+		await settle();
+
+		expect(await host.startRound(0)).toBe(false);
+
+		expect(append).not.toHaveBeenCalled();
+		expect(host.refused).toBe(0);
+		stop();
+	});
+
+	it('відповідь після фіналу — тиша, а не «не вдалося», і в журнал нічого', async () => {
+		const room = new LocalRoom(info(), members());
+		const transport = room.transport();
+		const host = new QuizMatch(HOST, transport);
+		const off = host.listen();
+		await settle();
+		// Раунд іде — інакше відповідь повернулася б раніше, за іншою причиною (раунд −1).
+		expect(await host.startRound(0)).toBe(true);
+		await settle();
+		expect(host.round).toBe(0);
+		vi.spyOn(host, 'over', 'get').mockReturnValue(true);
+		const append = vi.spyOn(transport, 'append');
+
+		await expect(host.answer(1)).resolves.toBeUndefined();
+		expect(append).not.toHaveBeenCalled();
+		off();
+	});
+});

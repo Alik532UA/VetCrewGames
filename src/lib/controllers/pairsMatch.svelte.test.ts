@@ -1418,3 +1418,28 @@ describe('заморожений склад', () => {
 		table.stop();
 	});
 });
+
+/**
+ * ХІД ЛОБІ НЕ ЗАСТОСОВУЄТЬСЯ (шостий аудит, хвости A2): у лобі журнал приймає лише
+ * `lead`, а старт стирає його тим самим записом. Застосований `lead` із лобі робив би
+ * стерте на старті схожим на відкат — і в журнал ішло «pairs board re-dealt» без відкату.
+ *
+ * Зворотний експеримент: застосовувати ходи й у лобі — червоніє.
+ */
+describe('журнал лобі', () => {
+	it('ведення, підхоплене в лобі, і старт не пишуть «перероздано»', async () => {
+		const lobby = { ...info(), status: 'lobby' as const, roster: undefined };
+		const room = new LocalRoom(lobby, members());
+		room.setPresent([GUEST]);
+		const guest = new PairsMatch(GUEST, room.transport({ as: GUEST }));
+		const stop = guest.listen();
+		const said = vi.spyOn(logService, 'info');
+
+		expect(await guest.takeLead(), 'ведення в лобі — законне').toBe(true);
+		await room.transport({ as: GUEST }).setStatus('playing', rosterOf(members()));
+
+		expect(said.mock.calls.map((call) => call[1])).not.toContain('pairs board re-dealt');
+		expect(guest.applied).toBe(0);
+		stop();
+	});
+});

@@ -428,7 +428,10 @@ export class QuizMatch extends RoomEnvelopeState {
 		this.#pending = { ...this.#pending, [released.round]: released.total };
 
 		// Пише КОЖЕН ГРАВЕЦЬ (див. докблок паузи вище); запис глядача перепрогін не рахує.
-		if (this.players.some((player) => player.uid === this.#me)) {
+		// Чекання, яке зняв кінець партії, не пишеться: раундів, яким воно подовжило б
+		// час, уже немає, а поза `playing` хід однаково відкинула б база (A2).
+		const playing = this.status === 'playing' && !this.over;
+		if (playing && this.players.some((player) => player.uid === this.#me)) {
 			void this.#writeHeld(released);
 		}
 	}
@@ -667,6 +670,9 @@ export class QuizMatch extends RoomEnvelopeState {
 	 * ламає — див. докблок `#seqs`.
 	 */
 	async #append(type: string, payload: Record<string, number | string>): Promise<boolean> {
+		// Поза партією журнал приймає лише `lead` (правило R1, A2): шістнадцять спроб
+		// кожна отримала б ту саму відмову, а лічильник відмов звіряв би правила даремно.
+		if (this.status !== 'playing') return false;
 		const move = { by: this.#me, type, payload };
 		for (let attempt = 0; attempt < APPEND_TRIES; attempt += 1) {
 			// `attempt` вільних номерів пропускається: якщо знімок із номером
@@ -693,7 +699,8 @@ export class QuizMatch extends RoomEnvelopeState {
 	 * «не вдалося»), а не дивитися на табло без своїх очок.
 	 */
 	async answer(correct: number): Promise<void> {
-		if (this.iAnswered || this.round < 0 || this.iAmSpectator) return;
+		// Відповідь, що доїхала після фіналу, — не помилка людини: партію вже дограно.
+		if (this.iAnswered || this.round < 0 || this.iAmSpectator || this.over) return;
 		await this.#must('answer', { round: this.round, correct });
 	}
 

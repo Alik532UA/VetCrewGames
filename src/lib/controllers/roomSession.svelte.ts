@@ -392,7 +392,9 @@ export class RoomSession<M extends RoomMatch> {
 	/** Почати партію. `auto` — це відлік, а не людина: невдача зупиняє автоматику. */
 	async start(auto = false): Promise<void> {
 		const match = this.match;
-		if (!match || (auto && this.autoHalted)) return;
+		// Партія вже йде (друга вкладка господаря встигла першою): дубль старту база
+		// відкидає цілком (A2), тож і писати його нема чого.
+		if (!match || match.status === 'playing' || (auto && this.autoHalted)) return;
 		if (!this.canStart) {
 			toast.info('pairs.needPlayers');
 			return;
@@ -403,7 +405,8 @@ export class RoomSession<M extends RoomMatch> {
 			transport.setStatus('playing', rosterOf(this.presentPlayers), config)
 		);
 		if (!started) {
-			if (auto) this.autoHalted = true;
+			// Відмову дубля (партію почала інша вкладка) зупинкою автоматики не рахуємо.
+			if (auto && this.match?.status !== 'playing') this.autoHalted = true;
 			return;
 		}
 		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача. Лише

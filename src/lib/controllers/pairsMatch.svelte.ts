@@ -450,7 +450,13 @@ export class PairsMatch extends RoomEnvelopeState {
 		this.#last = snapshot;
 		const head = snapshot.moves[snapshot.moves.length - 1]?.seq;
 
-		for (const move of snapshot.moves) {
+		/*
+		 * У ЛОБІ ходів гри немає: журнал там приймає лише `lead` (A2), а старт стирає його
+		 * тим самим записом. Застосований `lead` із лобі робив би стерте на старті схожим
+		 * на відкат — і в журналі зʼявлявся «pairs board re-dealt» без жодного відкату.
+		 */
+		const moves = snapshot.info.status === 'lobby' ? [] : snapshot.moves;
+		for (const move of moves) {
 			if (move.seq <= this.applied) continue;
 			// Пропуск у нумерації означає, що хід ще не приїхав. Чекаємо: застосувати
 			// наступний означало б зіграти партію в іншому порядку, ніж сусід.
