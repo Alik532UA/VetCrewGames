@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'fd5f488f6eb9'" }
+      "$v": { ".read": "auth != null && $v === '181bdd1e9d6b'" }
     },
 
     "rooms": {
@@ -506,7 +506,12 @@
           // Читає кожен авторизований: профіль і існує, щоб його бачили.
           ".read": "auth != null",
           ".write": "auth != null && $uid === auth.uid",
-          ".validate": "newData.hasChildren(['name', 'handle'])",
+          // ОСОБА — ЛИШЕ В ПРИВʼЯЗАНОГО АКАУНТА (аудит 2026-09-25). Клієнт і доти
+          // пропонував профіль, псевдонім, пошук, підписки й таблицю лідерів лише
+          // привʼязаному акаунту, а база приймала їх і від анонімного входу: скрипт
+          // карбував анонімні uid і тримав на кожному по короткому псевдоніму. Умова —
+          // у `.validate`, тож прибрати своє можна, як і доти, завжди.
+          ".validate": "newData.hasChildren(['name', 'handle']) && auth.token.firebase.sign_in_provider != 'anonymous'",
           // Ті самі межі, що в складі кімнати: це те саме імʼя того самого
           // гравця, і розійшовшись, два числа дали б профіль, який не влазить у
           // кімнату.
@@ -554,7 +559,7 @@
           ".read": "auth != null && $uid === auth.uid",
           "$target": {
             ".write": "auth != null && ($uid === auth.uid || ($target === auth.uid && !newData.exists()))",
-            ".validate": "newData.hasChildren(['at'])",
+            ".validate": "newData.hasChildren(['at']) && auth.token.firebase.sign_in_provider != 'anonymous'",
             "at": { ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 5000" },
             "$other": { ".validate": false }
           }
@@ -580,7 +585,7 @@
           ".read": "auth != null && $uid === auth.uid",
           "$who": {
             ".write": "auth != null && (($who === auth.uid && (!newData.exists() || root.child('users').child($uid).child('privacy').child('follow').val() != false)) || ($uid === auth.uid && !newData.exists()))",
-            ".validate": "newData.hasChildren(['at'])",
+            ".validate": "newData.hasChildren(['at']) && auth.token.firebase.sign_in_provider != 'anonymous'",
             "at": { ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 5000" },
             "$other": { ".validate": false }
           }
@@ -609,6 +614,7 @@
         "privacy": {
           ".read": "auth != null && $uid === auth.uid",
           ".write": "auth != null && $uid === auth.uid",
+          ".validate": "auth.token.firebase.sign_in_provider != 'anonymous'",
           "search": { ".validate": "newData.isBoolean()" },
           "follow": { ".validate": "newData.isBoolean()" },
           "board": { ".validate": "newData.isBoolean()" },
@@ -713,7 +719,7 @@
          * пише обидва одним записом.
          */
         ".write": "auth != null && ((newData.val() === auth.uid && (!data.exists() || root.child('users').child(data.val()).child('profile').child('handle').val() !== $handle)) || (data.val() === auth.uid && !newData.exists()))",
-        ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/)"
+        ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/) && auth.token.firebase.sign_in_provider != 'anonymous'"
       }
     },
 
@@ -758,7 +764,7 @@
         // указує запис, цього псевдоніма вже не називає, або реєстр віддав його
         // іншому. Такий запис прибирає будь-хто, а новий власник переписує на себе.
         ".write": "auth != null && ((newData.val() === auth.uid && root.child('users').child(auth.uid).child('privacy').child('search').val() != false && root.child('handles').child($handle).val() === auth.uid && root.child('users').child(auth.uid).child('profile').child('handle').val() === $handle && (!data.exists() || (root.child('users').child(data.val()).child('profile').child('handle').val() !== $handle || root.child('handles').child($handle).val() !== data.val()))) || (!newData.exists() && (data.val() === auth.uid || (root.child('users').child(data.val()).child('profile').child('handle').val() !== $handle || root.child('handles').child($handle).val() !== data.val()))))",
-        ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/)"
+        ".validate": "newData.isString() && newData.val() === auth.uid && $handle.matches(/^[a-z0-9_]{3,20}$/) && auth.token.firebase.sign_in_provider != 'anonymous'"
       }
     },
 
@@ -798,7 +804,7 @@
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && $uid === auth.uid && (!newData.exists() || (newData.child('score').val() >= 50 && root.child('users').child(auth.uid).child('privacy').child('board').val() != false))",
-        ".validate": "newData.hasChildren(['name', 'handle', 'score', 'at'])",
+        ".validate": "newData.hasChildren(['name', 'handle', 'score', 'at']) && auth.token.firebase.sign_in_provider != 'anonymous'",
         // Імʼя — те, що в профілі: інакше рядок публічної таблиці міг назватися ким
         // завгодно, навіть із власним псевдонімом (аудит 2026-09-24).
         "name": { ".validate": "newData.isString() && newData.val().length <= 48 && newData.val() === root.child('users').child(auth.uid).child('profile').child('name').val()" },

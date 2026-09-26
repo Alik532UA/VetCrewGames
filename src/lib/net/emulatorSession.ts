@@ -33,10 +33,18 @@ export async function currentConnection(): Promise<Connection> {
 	return current;
 }
 
-/** Новий учасник: свій застосунок, свій анонімний вхід в емулятор. */
-export async function signedIn(name: string): Promise<Connection> {
+/**
+ * Новий учасник: свій застосунок, свій вхід в емулятор. Типово — анонімний, як
+ * у грі; `account` — привʼязаний акаунт (пошта й пароль): профіль, псевдонім,
+ * пошук, підписки й таблицю лідерів база приймає лише від такого.
+ */
+export async function signedIn(
+	name: string,
+	{ account = false }: { account?: boolean } = {}
+): Promise<Connection> {
 	const { initializeApp } = await import('firebase/app');
-	const { connectAuthEmulator, getAuth, signInAnonymously } = await import('firebase/auth');
+	const { connectAuthEmulator, createUserWithEmailAndPassword, getAuth, signInAnonymously } =
+		await import('firebase/auth');
 	const { connectDatabaseEmulator, getDatabase } = await import('firebase/database');
 	const app = initializeApp(
 		{
@@ -51,7 +59,13 @@ export async function signedIn(name: string): Promise<Connection> {
 	const db = getDatabase(app);
 	const [host, port] = DB_HOST.split(':');
 	connectDatabaseEmulator(db, host, Number(port));
-	const { user } = await signInAnonymously(auth);
+	const { user } = account
+		? await createUserWithEmailAndPassword(
+				auth,
+				`${name}-${Date.now()}@example.test`,
+				'emulator-only'
+			)
+		: await signInAnonymously(auth);
 	return { uid: user.uid, db, auth, app };
 }
 

@@ -28,8 +28,9 @@ let alice: Connection;
 let bob: Connection;
 
 beforeAll(async () => {
-	alice = await signedIn('erase-alice');
-	bob = await signedIn('erase-bob');
+	// Профіль і підписки — лише в привʼязаного акаунта (правило бази).
+	alice = await signedIn('erase-alice', { account: true });
+	bob = await signedIn('erase-bob', { account: true });
 });
 
 afterAll(() => closeAll([alice, bob]));

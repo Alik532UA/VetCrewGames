@@ -32,13 +32,32 @@ const NS = `${PROJECT}-default-rtdb`;
  * перевіряє, і саме тому тут не потрібні бойові ключі проєкту.
  * @param {string} label
  */
+/**
+ * Учасник гейту — ПРИВʼЯЗАНИЙ акаунт (пошта й пароль в емуляторі): профіль,
+ * псевдонім, пошук, підписки й таблицю лідерів база тепер приймає лише від такого
+ * (аудит 2026-09-25). Для кімнат різниці немає — там правила про вхід не питають.
+ */
+let accounts = 0;
 async function signIn(label) {
+	accounts += 1;
+	return signUp(label, {
+		email: `gate-${accounts}-${Date.now()}@example.test`,
+		password: 'emulator-only'
+	});
+}
+
+/** Анонімний вхід — рівно такий, яким у грі входить кожен гравець. */
+async function signInAnonymously(label) {
+	return signUp(label, {});
+}
+
+async function signUp(label, credentials) {
 	const res = await fetch(
 		`http://${AUTH_HOST}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=emulator`,
 		{
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ returnSecureToken: true })
+			body: JSON.stringify({ ...credentials, returnSecureToken: true })
 		}
 	);
 	if (!res.ok) throw new Error(`емулятор Auth не дав токен для ${label}: ${res.status}`);
@@ -137,6 +156,7 @@ const host = await signIn('господар');
 const guest = await signIn('гість');
 /** Увійшов, знає код, але в кімнату НЕ заходив. */
 const stranger = await signIn('сторонній');
+const anon = await signInAnonymously('анонім');
 
 /** Кімната з правильною формою `info`. Одна на весь прогін. */
 const CODE = '90417';
@@ -2268,6 +2288,62 @@ const CASES = [
 			);
 			return named === 200 ? write('find/renewed', host.uid, host.token) : named;
 		}
+	},
+
+	/*
+	 * ОСОБА — ЛИШЕ В ПРИВʼЯЗАНОГО АКАУНТА (аудит 2026-09-25). Кожен випадок нижче
+	 * вірний у всьому, крім одного — входу анонімом: реєстр, профіль і рахунок для
+	 * нього підготовлено записом власника, щоб відмова була рівно через вхід.
+	 */
+	{
+		name: 'анонім пише профіль',
+		allowed: false,
+		run: async () => {
+			await seed('handles/anonh', anon.uid);
+			await seed(`users/${anon.uid}/profile`, { name: 'Анонім', handle: 'anonh', at: 1 });
+			await seed(`users/${anon.uid}/play`, { score: 500, at: 1 });
+			return write(
+				`users/${anon.uid}/profile`,
+				{ name: 'Анонім', handle: 'anonh', at: SERVER_TIME },
+				anon.token
+			);
+		}
+	},
+	{
+		name: 'анонім займає вільний псевдонім',
+		allowed: false,
+		run: () => write('handles/anonfree', anon.uid, anon.token)
+	},
+	{
+		name: 'анонім вписується в пошук',
+		allowed: false,
+		run: () => write('find/anonh', anon.uid, anon.token)
+	},
+	{
+		name: 'анонім пише рядок таблиці лідерів',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${anon.uid}`,
+				{ name: 'Анонім', handle: 'anonh', score: 120, at: SERVER_TIME },
+				anon.token
+			)
+	},
+	{
+		name: 'анонім підписується',
+		allowed: false,
+		run: () => write(`users/${anon.uid}/following/${guest.uid}`, { at: SERVER_TIME }, anon.token)
+	},
+	{
+		name: 'анонім вмикає перемикачі приватності',
+		allowed: false,
+		run: () => write(`users/${anon.uid}/privacy`, { search: true }, anon.token)
+	},
+	{
+		// Прибрати своє — завжди: умова стоїть на створенні й зміні, а не на видаленні.
+		name: 'анонім прибирає свій профіль',
+		allowed: true,
+		run: () => write(`users/${anon.uid}/profile`, null, anon.token)
 	},
 
 	/*

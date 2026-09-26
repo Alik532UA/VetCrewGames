@@ -79,6 +79,21 @@ export async function linkEmail(email: string, password: string): Promise<void> 
 	const { EmailAuthProvider, linkWithCredential } = await import('firebase/auth');
 	const credential = EmailAuthProvider.credential(email, password);
 	await linkWithCredential(user, credential);
+	await freshToken(user);
+}
+
+/**
+ * ТОКЕН — ОДРАЗУ ПІСЛЯ ПРИВʼЯЗКИ. Правила бази тепер дивляться, чим людина
+ * ввійшла: профіль, псевдонім, пошук, підписки й таблицю лідерів вони приймають
+ * лише від привʼязаного акаунта (аудит 2026-09-25). `uid` при привʼязці той самий,
+ * а вхід у токені має стати не анонімним ще до першого запису профілю.
+ *
+ * SDK робить це й сам — тест над емулятором (`identity.emulator.test.ts`) зелений
+ * і без цього виклику. Він тут, щоб не залежати від того, КОЛИ саме SDK оновить
+ * токен: привʼязка буває раз на життя акаунта, а зайвий запит коштує копійки.
+ */
+async function freshToken(user: { getIdToken(force?: boolean): Promise<string> }): Promise<void> {
+	await user.getIdToken(true);
 }
 
 /**
@@ -142,6 +157,7 @@ export async function signInGoogle(): Promise<void> {
 
 	try {
 		await linkWithPopup(user, provider);
+		await freshToken(user);
 	} catch (error) {
 		const code = (error as { code?: string }).code ?? '';
 		if (code !== 'auth/credential-already-in-use') throw error;
