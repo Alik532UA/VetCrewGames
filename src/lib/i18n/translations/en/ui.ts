@@ -214,5 +214,13 @@ export const ui = {
 	'pairs.modeAutoHint': 'The game starts by itself as soon as two players are in.',
 	'pairs.modeConfirmHint': 'The game waits until the host presses “Start the game”.',
 	'pairs.rulesStale':
-		'The server refused to let you in: this page and the database rules are different versions. Reload the page; if that does not help, the new rules are not deployed yet.'
+		'The server refused to let you in: this page and the database rules are different versions. Reload the page; if that does not help, the new rules are not deployed yet.',
+	'review.question': 'Question',
+	'review.of': 'of',
+	'review.correct': 'correct',
+	'review.incorrect': 'wrong',
+	'review.partial': 'partly right',
+	'review.back': 'Back to the current question',
+	'review.backToResults': 'Back to the results',
+	'review.list': 'This game’s questions'
 } as const;

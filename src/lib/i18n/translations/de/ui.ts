@@ -222,5 +222,13 @@ export const ui = {
 	'pairs.modeAutoHint': 'Das Spiel beginnt von selbst, sobald zwei Spieler da sind.',
 	'pairs.modeConfirmHint': 'Das Spiel wartet, bis der Gastgeber „Spiel starten“ drückt.',
 	'pairs.rulesStale':
-		'Der Server lässt nicht in den Raum: diese Seite und die Datenbankregeln haben verschiedene Versionen. Lade die Seite neu; hilft das nicht, sind die neuen Regeln noch nicht veröffentlicht.'
+		'Der Server lässt nicht in den Raum: diese Seite und die Datenbankregeln haben verschiedene Versionen. Lade die Seite neu; hilft das nicht, sind die neuen Regeln noch nicht veröffentlicht.',
+	'review.question': 'Frage',
+	'review.of': 'von',
+	'review.correct': 'richtig',
+	'review.incorrect': 'falsch',
+	'review.partial': 'teilweise richtig',
+	'review.back': 'Zurück zur aktuellen Frage',
+	'review.backToResults': 'Zurück zum Ergebnis',
+	'review.list': 'Fragen dieser Partie'
 } as const;

@@ -3,16 +3,31 @@
 	// звідси, тобто з компонента, і залежність текла в зворотний бік
 	// (SVELTE-CORE-v8 § 3.5).
 	import type { RoundStatus } from '$lib/types/game';
+	import { t } from '$lib/i18n';
 
 	let {
 		current,
 		total,
-		results = []
+		results = [],
+		onreview,
+		viewing = null
 	}: {
 		current: number;
 		total: number;
 		results?: RoundStatus[];
+		/**
+		 * ПЕРЕГЛЯД МИНУЛОГО ПИТАННЯ (прохання автора 2026-09-26): відповідані сегменти
+		 * стають кнопками, і натиск відкриває питання цього раунду (індекс від нуля).
+		 * Немає — сегменти лише показують поступ, як доти (онлайн-табло, перевірка).
+		 */
+		onreview?: (round: number) => void;
+		/** Який раунд зараз переглядають — його сегмент позначено як натиснутий. */
+		viewing?: number | null;
 	} = $props();
+
+	/** Підпис для скрінрідера: «Питання 3: правильно» — колір сам по собі не каже нічого. */
+	const labelOf = (round: number, status: RoundStatus) =>
+		`${t('review.question')} ${round}: ${t(`review.${status}` as 'review.correct')}`;
 
 	const rounds = $derived(Array.from({ length: total }, (_, i) => i + 1));
 </script>
@@ -24,22 +39,46 @@
 		`total`, крім десяти — обидві гри зараз мають рівно десять раундів, тож
 		помітити це було б нічим.
 	-->
-	<div class="segments-wrapper" style:--rounds={total}>
+	<div
+		class="segments-wrapper"
+		class:segments-wrapper--review={onreview !== undefined}
+		style:--rounds={total}
+	>
 		{#each rounds as r (r)}
 			{@const result = results[r - 1]}
 			{@const status = result ? result : r === current ? 'current' : 'future'}
-			<div
-				class="segment"
-				class:status-current={status === 'current'}
-				class:status-correct={status === 'correct'}
-				class:status-incorrect={status === 'incorrect'}
-				class:status-partial={status === 'partial'}
-				class:status-future={status === 'future'}
-			>
-				{#if status === 'current'}
-					<div class="segment-glow"></div>
-				{/if}
-			</div>
+			{#snippet bar()}
+				<div
+					class="segment"
+					class:status-current={status === 'current'}
+					class:status-correct={status === 'correct'}
+					class:status-incorrect={status === 'incorrect'}
+					class:status-partial={status === 'partial'}
+					class:status-future={status === 'future'}
+				>
+					{#if status === 'current'}
+						<div class="segment-glow"></div>
+					{/if}
+				</div>
+			{/snippet}
+			{#if onreview && result}
+				<!--
+					Кнопка вища за смужку: 6px — не ціль для пальця. Поле дотику 44px,
+					а видно ту саму смужку посередині (ACCESSIBILITY-v8 § 8).
+				-->
+				<button
+					type="button"
+					class="segment-hit"
+					aria-label={labelOf(r, result)}
+					aria-pressed={viewing === r - 1}
+					onclick={() => onreview(r - 1)}
+					data-testid="round-review-{r}-btn"
+				>
+					{@render bar()}
+				</button>
+			{:else}
+				{@render bar()}
+			{/if}
 		{/each}
 	</div>
 </div>
@@ -66,6 +105,34 @@
 		width: 100%;
 		max-width: 300px;
 		gap: 4px;
+	}
+
+	/*
+	 * Сегменти-кнопки ширші за смужку: десять полів по 44px, а не десять смужок на
+	 * 300px, — інакше ціль на телефоні вужча за палець.
+	 */
+	.segments-wrapper--review {
+		max-width: calc(var(--rounds, 10) * 44px + (var(--rounds, 10) - 1) * 4px);
+		align-items: center;
+	}
+
+	.segment-hit {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0;
+		border: 0;
+		background: none;
+		cursor: pointer;
+	}
+
+	.segment-hit > .segment {
+		flex: 1;
+	}
+
+	.segment-hit[aria-pressed='true'] > .segment {
+		outline: 2px solid var(--color-text);
+		outline-offset: 2px;
 	}
 
 	.segment {

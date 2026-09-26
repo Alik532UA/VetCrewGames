@@ -85,6 +85,35 @@ describe('MythGameController', () => {
 		expect(storageMock.setJSON).not.toHaveBeenCalledWith('shown_myths', expect.anything());
 	});
 
+	/**
+	 * ІСТОРІЯ ДЛЯ ПЕРЕГЛЯДУ (прохання автора 2026-09-26): відповідане питання
+	 * лишається знімком — зі своєю відповіддю, навіть коли партія пішла далі.
+	 *
+	 * Зворотний експеримент: класти в історію не знімок, а саме питання — червоніє
+	 * «знімок»; не чистити на «Грати знову» — червоніє «нова партія».
+	 */
+	it('відповідане питання лишається в історії знімком зі своєю відповіддю', () => {
+		const game = new MythGameController(3);
+		game.start();
+		const first = game.current!;
+		game.answer(first.isTrue);
+		game.nextRound();
+		game.answer(!game.current!.isTrue);
+
+		expect(game.history.map((q) => q.id)).toEqual([first.id, game.current!.id]);
+		expect(game.history[0]).toMatchObject({ answered: true, isCorrect: true, selectedTrue: first.isTrue });
+		expect(game.history[1]).toMatchObject({ answered: true, isCorrect: false });
+		expect(game.history[0], 'знімок, а не саме питання').not.toBe(first);
+	});
+
+	it('нова партія починає з порожньою історією', () => {
+		const game = new MythGameController(3);
+		game.start();
+		game.answer(true);
+		game.reset();
+		expect(game.history).toEqual([]);
+	});
+
 	it('правильна відповідь піднімає обидва рахунки, неправильна — жодного', () => {
 		const game = new MythGameController();
 		game.start();

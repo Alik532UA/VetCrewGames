@@ -50,6 +50,12 @@ export class MythGameController {
 	}
 
 	current = $state<ActiveQuestion | null>(null);
+	/**
+	 * ВІДПОВІДАНІ ПИТАННЯ ПАРТІЇ — знімком після відповіді, для перегляду (прохання
+	 * автора 2026-09-26: «можна перейти на попередні питання, щоб переглянути їх»).
+	 * Доти про минулий раунд лишалося тільки «правильно / ні».
+	 */
+	history = $state<ActiveQuestion[]>([]);
 	roundNumber = $state(1);
 	roundResults = $state<RoundOutcome[]>([]);
 	sessionScore = $state(0);
@@ -115,6 +121,7 @@ export class MythGameController {
 		question.answered = true;
 
 		this.roundResults.push(question.isCorrect ? 'correct' : 'incorrect');
+		this.history.push({ ...question });
 
 		if (question.isCorrect) {
 			// Бінарний раунд коштує три очки: одиниця була б несумірна з раундом,
@@ -140,6 +147,7 @@ export class MythGameController {
 		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
+		this.history = [];
 		this.sessionScore = 0;
 		this.gameOver = false;
 		this.#usedThisGame = [];

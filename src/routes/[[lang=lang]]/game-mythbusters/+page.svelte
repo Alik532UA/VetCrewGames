@@ -10,6 +10,9 @@
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MythCard from '$lib/components/MythCard.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
+	import ReviewPanel from '$lib/components/ReviewPanel.svelte';
+	import ReviewList from '$lib/components/ReviewList.svelte';
+	import { td } from '$lib/i18n';
 
 	const lang = $derived(languageFromParam(page.params.lang));
 
@@ -17,6 +20,8 @@
 	// Стан партії гине разом зі сторінкою — саме тому контролер тут `new`, а не
 	// module-level синглтон.
 	const game = new MythGameController();
+	/** Котре минуле питання переглядають (від нуля); `null` — грають поточне. */
+	let viewing = $state<number | null>(null);
 
 	onMount(() => {
 		game.start();
@@ -48,32 +53,70 @@
 			Заразом сюди приїхало те, чого копія не мала зовсім: `data-testid` на
 			картці, рахунку й обох кнопках, і `aria-hidden` на значках.
 		-->
-		<GameOverCard
-			score={game.sessionScore}
-			total={game.maxScore}
-			{lang}
-			onPlayAgain={() => game.reset()}
-			testId="mythbusters-game-over"
-		/>
+		{#if viewing === null}
+			<GameOverCard
+				score={game.sessionScore}
+				total={game.maxScore}
+				{lang}
+				onPlayAgain={() => {
+					viewing = null;
+					game.reset();
+				}}
+				testId="mythbusters-game-over"
+			/>
+			<!-- Питання партії переліком — перегляд у кінці (прохання автора 2026-09-26). -->
+			<ReviewList
+				results={game.roundResults}
+				label={(i) => td(game.history[i]?.statementKey ?? '')}
+				onopen={(i) => (viewing = i)}
+			/>
+		{:else}
+			{@render review('review.backToResults')}
+		{/if}
 	{:else if game.current}
 		<div class="round-indicator-wrapper">
+			<!-- Відповідані сегменти відкривають питання свого раунду. -->
 			<RoundIndicator
 				current={game.roundNumber}
 				total={game.totalRounds}
 				results={game.roundResults}
+				onreview={(i) => (viewing = i)}
+				{viewing}
 			/>
 		</div>
 
-		<div class="myth-card-wrapper" in:fade={{ duration: 300 }}>
-			{#each [game.current] as q (q.id)}
-				<MythCard
-					question={q}
-					onanswer={(truth) => game.answer(truth)}
-					onnext={() => game.nextRound()}
-				/>
-			{/each}
-		</div>
+		{#if viewing === null}
+			<div class="myth-card-wrapper" in:fade={{ duration: 300 }}>
+				{#each [game.current] as q (q.id)}
+					<MythCard
+						question={q}
+						onanswer={(truth) => game.answer(truth)}
+						onnext={() => game.nextRound()}
+					/>
+				{/each}
+			</div>
+		{:else}
+			{@render review('review.back')}
+		{/if}
 	{/if}
+
+	<!--
+		ПЕРЕГЛЯД — та сама картка в стані «відповіли», без «Далі»: поточне питання
+		тим часом лежить у контролері неторкане, і «назад» відкриває його як було.
+	-->
+	{#snippet review(backKey: 'review.back' | 'review.backToResults')}
+		{@const asked = game.history[viewing ?? 0]}
+		{#if asked}
+			<ReviewPanel
+				index={viewing ?? 0}
+				total={game.totalRounds}
+				{backKey}
+				onback={() => (viewing = null)}
+			>
+				<MythCard question={asked} onanswer={() => {}} onnext={() => {}} hideNext />
+			</ReviewPanel>
+		{/if}
+	{/snippet}
 </div>
 
 <style>

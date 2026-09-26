@@ -217,5 +217,13 @@ export const ui = {
 	'pairs.modeAutoHint': 'Het spel begint zelf zodra er twee spelers zijn.',
 	'pairs.modeConfirmHint': 'Het spel wacht tot de host op „Spel starten” drukt.',
 	'pairs.rulesStale':
-		'De server laat je niet in de kamer: deze pagina en de databaseregels zijn verschillende versies. Laad de pagina opnieuw; helpt dat niet, dan zijn de nieuwe regels nog niet gepubliceerd.'
+		'De server laat je niet in de kamer: deze pagina en de databaseregels zijn verschillende versies. Laad de pagina opnieuw; helpt dat niet, dan zijn de nieuwe regels nog niet gepubliceerd.',
+	'review.question': 'Vraag',
+	'review.of': 'van',
+	'review.correct': 'goed',
+	'review.incorrect': 'fout',
+	'review.partial': 'deels goed',
+	'review.back': 'Terug naar de huidige vraag',
+	'review.backToResults': 'Terug naar de uitslag',
+	'review.list': 'Vragen van dit spel'
 } as const;
