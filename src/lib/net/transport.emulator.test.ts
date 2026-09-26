@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { as, closeAll, peek, signedIn, type Connection } from './emulatorSession';
 import { LocalRoom } from './localRoom';
+import { MOVE_SEQ_MAX } from './roomShape';
 import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport, RosterEntry } from './roomTypes';
 
 /**
@@ -208,10 +209,13 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		await table.close();
 	});
 
-	it('номер поза шістьма цифрами не лягає', async () => {
+	it('номер поза межею не лягає, а на самій межі — лягає', async () => {
 		const table = await world.table();
 		expect(await table.guest.transport.append(flip(table.guest.uid, 0))).toBe(false);
 		expect(await table.guest.transport.append(flip(table.guest.uid, 1_000_000))).toBe(false);
+		// Межа — 9 999, а не мільйон (аудит 2026-09-26, `MOVE_SEQ_MAX`).
+		expect(await table.guest.transport.append(flip(table.guest.uid, MOVE_SEQ_MAX + 1))).toBe(false);
+		expect(await table.guest.transport.append(flip(table.guest.uid, MOVE_SEQ_MAX))).toBe(true);
 		await table.close();
 	});
 

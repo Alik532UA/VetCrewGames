@@ -24,12 +24,28 @@
 export const SWEEP_SILENCE_MS = 6 * 60 * 60 * 1000;
 
 /**
- * Стеля знесених КІМНАТ за прогін.
+ * СКІЛЬКИ ЖИВЕ КІМНАТА, ХАЙ ЩО (аудит 2026-09-26). Від `createdAt`, а не від тиші.
+ *
+ * Позначку життя (`aliveAt`) пише будь-який учасник, тож кімнату, яку тримає
+ * скрипт, тиша не зносила б ніколи: коди вичерпні (публічних — одинадцять тисяч),
+ * і купа «живих» порожніх кімнат забирала б їх назавжди. Дві доби — більше, ніж
+ * триває будь-яка партія з друзями; реванш у тій самій кімнаті `createdAt` не
+ * міняє, тож і група, що грає щодня за тим самим посиланням, через дві доби
+ * створює нову кімнату. Ціна названа.
+ */
+export const SWEEP_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
+
+/**
+ * Стеля знесених КІМНАТ за прогін — КІМНАТ, У ЯКИХ ХТОСЬ Є (склад чи присутність).
  *
  * Не заради квоти — у Realtime Database операції не тарифікуються поштучно, — а
  * заради очевидності: прогін, який зніс тисячу кімнат, мусить бути помітним
  * рішенням людини, а не тихим наслідком одного зіпсованого поля. Решта піде
  * наступної доби.
+ *
+ * ПОРОЖНІ МЕРТВІ КІМНАТИ ЙДУТЬ УСІ (аудит 2026-09-26): у кімнаті без складу й
+ * без присутності немає кого зачепити навіть зіпсованим полем, а стеля тримала б
+ * засмічені коди зайнятими тижнями — по двісті на добу.
  */
 export const SWEEP_LIMIT = 200;
 
@@ -66,6 +82,8 @@ export function lastSeenOf(info) {
  *   doomed: DeadRoom[],
  *   left: number,
  *   undatable: number,
+ *   overAge: number,
+ *   empty: number,
  *   total: number,
  *   paths: string[]
  * }} SweepPlan
@@ -97,20 +115,37 @@ export function planSweep({ rooms, lobby, presence, myRooms, now }) {
 	const all = branch(rooms);
 	/** @type {DeadRoom[]} */
 	const dead = [];
+	/** @type {DeadRoom[]} */
+	const empty = [];
 	let undatable = 0;
+	let overAge = 0;
+	const here = branch(presence);
 
 	for (const [code, room] of Object.entries(all)) {
-		const lastSeen = lastSeenOf(branch(room).info);
+		const info = branch(branch(room).info);
+		const lastSeen = lastSeenOf(info);
+		const created = info.createdAt;
+		const old = typeof created === 'number' && now - created > SWEEP_MAX_AGE_MS;
+		/** @type {number | null} */
+		let silence = null;
 		if (lastSeen === null) {
 			undatable += 1;
-			dead.push({ code, silence: Number.POSITIVE_INFINITY });
-			continue;
+			silence = Number.POSITIVE_INFINITY;
+		} else if (now - lastSeen > SWEEP_SILENCE_MS) silence = now - lastSeen;
+		else if (old) {
+			overAge += 1;
+			silence = now - lastSeen;
 		}
-		if (now - lastSeen > SWEEP_SILENCE_MS) dead.push({ code, silence: now - lastSeen });
+		if (silence === null) continue;
+		const inhabited =
+			Object.keys(branch(branch(room).members)).length > 0 ||
+			Object.keys(branch(here[code])).length > 0;
+		(inhabited ? dead : empty).push({ code, silence });
 	}
 
 	dead.sort((a, b) => b.silence - a.silence);
-	const doomed = dead.slice(0, SWEEP_LIMIT);
+	// Порожні — усі, а стеля — лише тим, у яких хтось є (`SWEEP_LIMIT`).
+	const doomed = [...empty, ...dead.slice(0, SWEEP_LIMIT)];
 	const gone = new Set(doomed.map((room) => room.code));
 	/** @param {string} code */
 	const alive = (code) => code in all && !gone.has(code);
@@ -157,8 +192,10 @@ export function planSweep({ rooms, lobby, presence, myRooms, now }) {
 
 	return {
 		doomed,
-		left: dead.length - doomed.length,
+		left: dead.length - Math.min(dead.length, SWEEP_LIMIT),
 		undatable,
+		overAge,
+		empty: empty.length,
 		total: Object.keys(all).length,
 		paths
 	};

@@ -2,7 +2,13 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SWEEP_LIMIT, SWEEP_SILENCE_MS, confirmedPaths, planSweep } from './sweep-plan.mjs';
+import {
+	SWEEP_LIMIT,
+	SWEEP_MAX_AGE_MS,
+	SWEEP_SILENCE_MS,
+	confirmedPaths,
+	planSweep
+} from './sweep-plan.mjs';
 
 /**
  * ПРИБИРАЛЬНИК ПОКИНУТИХ КІМНАТ — раз на добу, у GitHub Actions.
@@ -102,8 +108,9 @@ try {
 
 	const report = [
 		`кімнат ${plan.total}, покинутих ${plan.doomed.length + plan.left} ` +
-			`(тиша понад ${SWEEP_SILENCE_MS / 3600000} год), з них без позначки часу ${plan.undatable}`,
-		`зносимо: кімнат ${plan.doomed.length} із межі ${SWEEP_LIMIT}, ` +
+			`(тиша понад ${SWEEP_SILENCE_MS / 3600000} год або вік понад ${SWEEP_MAX_AGE_MS / 3600000} год), ` +
+			`з них без позначки часу ${plan.undatable}, за віком ${plan.overAge}, порожніх ${plan.empty}`,
+		`зносимо: кімнат ${plan.doomed.length} (порожні — усі, решта — з межі ${SWEEP_LIMIT}), ` +
 			`разом із переліком, присутністю й індексами — ${plan.paths.length} шляхів`
 	];
 	// Обрізка НАЗИВАЄТЬСЯ ВГОЛОС: мовчазна межа читалася б як «прибрано все».

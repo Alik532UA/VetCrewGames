@@ -1,3 +1,4 @@
+import { MOVE_SEQ_MAX } from './roomShape';
 import type {
 	GoneReason,
 	Member,
@@ -362,9 +363,9 @@ export class LocalRoom {
 		);
 	}
 
-	/** Ключ ходу — рівно шість цифр, тобто номер від 1 до 999999. */
+	/** Номер ходу — від 1 до `MOVE_SEQ_MAX`, як у правилі `moves/$seq`. */
 	#validSeq(seq: number): boolean {
-		return Number.isInteger(seq) && seq >= 1 && seq <= 999_999;
+		return Number.isInteger(seq) && seq >= 1 && seq <= MOVE_SEQ_MAX;
 	}
 
 	/** Знести кімнату — так, як це робить господар або збирач. */

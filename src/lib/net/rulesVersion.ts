@@ -8,4 +8,4 @@
  * Чому це не поле в базі, чому хеш, а не лічильник, і чому хешується семантика, а
  * не файл — усе в докблоці самого скрипта.
  */
-export const RULES_VERSION = '181bdd1e9d6b';
+export const RULES_VERSION = 'd71a1fd6fbc8';

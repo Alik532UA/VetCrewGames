@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
+import { MOVE_SEQ_MAX } from '$lib/net/roomShape';
 
 /**
  * Інваріанти роботи з хмарною базою за CLOUD-DATABASE-v8 § 14.
@@ -502,6 +503,25 @@ describe('хмарна база', () => {
 			.filter(({ args }) => args.length < 3)
 			.map(({ file, args }) => `${file}: onValue(${args[0]}, …)`);
 		expect(silent, `підписка без обробника скасування:\n${silent.join('\n')}`).toEqual([]);
+	});
+
+	/**
+	 * МЕЖА НОМЕРА ХОДУ — ОДНА НА ПРАВИЛА Й КОД (аудит 2026-09-26). У правилі вона двічі
+	 * (ключ і поле), у коді — `MOVE_SEQ_MAX`, з яким працює `LocalRoom`; розійшовшись,
+	 * вони дали б тести партії на підставці, що приймає ходи, яких база не бере.
+	 *
+	 * Зворотний експеримент: змінити будь-яке з трьох чисел — червоніє.
+	 */
+	it('межа номера ходу в правилах — та сама, що в коді', () => {
+		const rules = readFileSync('database.rules.json', 'utf8');
+		const key = /\$seq < '(\d{6})'/.exec(rules)?.[1];
+		const field =
+			/"seq": \{ "\.validate": "newData\.isNumber\(\) && newData\.val\(\) >= 1 && newData\.val\(\) <= (\d+)" \}/.exec(
+				rules
+			)?.[1];
+		expect(key, 'межі ключа ходу в правилах не знайдено').toBeDefined();
+		expect(Number(key) - 1, 'межа ключа').toBe(MOVE_SEQ_MAX);
+		expect(Number(field), 'межа поля seq').toBe(MOVE_SEQ_MAX);
 	});
 
 	it('версія правил гри піднята разом зі формою ходу (§ 8.4)', () => {
