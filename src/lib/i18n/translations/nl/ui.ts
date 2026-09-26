@@ -154,6 +154,8 @@ export const ui = {
 	'header.toggleLocale': 'Taal wisselen',
 	'header.toggleFullscreen': 'Volledig scherm aan',
 	'header.exitFullscreen': 'Volledig scherm uit',
+	'header.fullscreenHint':
+		'Volledig scherm op iPhone: tik in Safari op ‘Deel’ → ‘Zet op beginscherm’ en open de site vanaf daar.',
 	'header.score': 'Totaalscore',
 
 	// Schakelaar voor sneltoetsen met één teken (WCAG SC 2.1.4, niveau A).

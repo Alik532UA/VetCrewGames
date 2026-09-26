@@ -1,31 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fullscreen } from './fullscreen.svelte';
+import { canFullscreen, fullscreen, wantsHomeScreenHint } from './fullscreen.svelte';
+import { logService } from '$lib/services/logService.svelte';
 
 /**
- * Повний екран — і його підробка.
+ * Повний екран — лише там, де браузер його ВМІЄ (прохання автора 2026-09-26).
  *
  * ## Головне, що тут доводиться
  *
- * З підробки МОЖНА ВИЙТИ. Перевірка `hasAttribute` мусить іти першою, і колись
- * вона стояла всередині гілки для iOS — тоді на комп'ютері підробка була станом
- * без виходу: `fullscreenElement` при ній порожній, тож кнопка знову просила
- * справжній повний екран, діставала ту саму відмову й знову вмикала підробку.
- * Зовні це виглядає як «кнопка не працює», а не як дефект логіки, тож без тесту
- * повернути цей порядок легко.
+ * На iPhone кнопка більше НІЧОГО не вдає. Доти там вмикалася підробка —
+ * атрибут на `<html>` і `position: fixed`, — яка панелей Safari не ховала: людина
+ * бачила кнопку, що міняє лише власний значок, і читала це як баг сайту. Тепер
+ * рішення — за можливістю (`fullscreenEnabled`), а не за моделлю, і там, де
+ * можливості немає, `toggle()` не робить нічого.
  *
  * ## Чому все підмінюється властивостями документа
  *
  * Fullscreen API в jsdom немає зовсім: ні `requestFullscreen`, ні
- * `fullscreenElement`, ні їхніх `webkit`-двійників. Саме тому кожен випадок тут
- * збирається руками — і саме тому їх стільки: увесь сенс цього модуля в
- * умовляннях із браузером, у якого половини потрібного може не бути.
+ * `fullscreenEnabled`, ні їхніх `webkit`-двійників. Тому кожен випадок збирається
+ * руками — і саме тому їх стільки: увесь сенс модуля в умовляннях із браузером,
+ * у якого половини потрібного може не бути.
  */
 
-/** Той самий атрибут, що в `global.css`. Модуль його не експортує. */
-const FAKE = 'data-fake-fullscreen';
-
 const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0';
-const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/605.1';
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/605.1';
+/** iPadOS звітує як Mac — і повний екран уміє. */
+const IPAD_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1';
 
 /** Що саме ми домалювали до документа — щоб зняти це рівно так само. */
 const patched: Array<[object, string]> = [];
@@ -36,198 +35,199 @@ function patch(target: object, key: string, value: unknown): void {
 }
 
 const ua = (value: string) => patch(navigator, 'userAgent', value);
+const able = () => patch(document, 'fullscreenEnabled', true);
 
 afterEach(() => {
 	for (const [target, key] of patched.reverse()) Reflect.deleteProperty(target, key);
 	patched.length = 0;
-	document.documentElement.removeAttribute(FAKE);
 	fullscreen.active = false;
+	vi.restoreAllMocks();
 	vi.doUnmock('$app/environment');
 	vi.resetModules();
 });
 
-describe('fullscreen', () => {
-	it('перевірка жива: спочатку ні справжнього, ні підробленого', () => {
-		expect(fullscreen.active).toBe(false);
-		expect(document.documentElement.hasAttribute(FAKE)).toBe(false);
+describe('чи вміє браузер', () => {
+	it('без жодної ознаки — не вміє (iPhone, вкладений фрейм без дозволу)', () => {
+		expect(canFullscreen()).toBe(false);
 	});
 
-	/** iPhone не вміє Fullscreen API для елементів узагалі — там одразу підробка. */
-	it('на iPhone одразу підробка, без спроби справжнього', () => {
+	it('стандартна ознака', () => {
+		able();
+		expect(canFullscreen()).toBe(true);
+	});
+
+	it('ознака старого WebKit', () => {
+		patch(document, 'webkitFullscreenEnabled', true);
+		expect(canFullscreen()).toBe(true);
+	});
+
+	it('браузер сказав «ні» — це «ні», хоч би які методи в нього були', () => {
+		patch(document, 'fullscreenEnabled', false);
+		patch(document.documentElement, 'requestFullscreen', vi.fn(async () => {}));
+		expect(canFullscreen()).toBe(false);
+	});
+});
+
+describe('перемикання', () => {
+	/**
+	 * Зворотний експеримент: повернути підробку для iPhone (атрибут на `<html>`
+	 * без запиту) — червоніє тут.
+	 */
+	it('iPhone: не вміє — нічого не просить і нічого не вдає', () => {
 		ua(IPHONE_UA);
 		const request = vi.fn(async () => {});
 		patch(document.documentElement, 'requestFullscreen', request);
 
 		fullscreen.toggle();
 
-		expect(document.documentElement.hasAttribute(FAKE)).toBe(true);
-		expect(fullscreen.active).toBe(true);
-		expect(request, 'на iPhone попросили справжній повний екран').not.toHaveBeenCalled();
-	});
-
-	/**
-	 * ГОЛОВНИЙ тест файлу: з підробки є вихід, і саме на комп'ютері.
-	 *
-	 * Порядок перевірок у `toggle()` тримається саме тут. Якщо `hasAttribute`
-	 * знову з'їде всередину гілки для iOS, цей тест почервоніє — а екран ні.
-	 */
-	it('відмова вмикає підробку, і другий натиск її ВИМИКАЄ', async () => {
-		ua(DESKTOP_UA);
-		patch(document.documentElement, 'requestFullscreen', () =>
-			Promise.reject(new Error('gesture required'))
-		);
-		patch(document, 'fullscreenElement', null);
-
-		fullscreen.toggle();
-		await Promise.resolve();
-		await Promise.resolve();
-
-		expect(document.documentElement.hasAttribute(FAKE), 'відмову не відпрацювали').toBe(true);
-		expect(fullscreen.active).toBe(true);
-
-		fullscreen.toggle();
-
-		expect(document.documentElement.hasAttribute(FAKE), 'підробка — стан без виходу').toBe(false);
+		expect(request).not.toHaveBeenCalled();
 		expect(fullscreen.active).toBe(false);
+		expect(document.documentElement.getAttributeNames()).not.toContain('data-fake-fullscreen');
 	});
 
-	it('справжній повний екран не лишає підробки', async () => {
+	it('уміє — просить справжній повний екран', () => {
 		ua(DESKTOP_UA);
+		able();
 		const request = vi.fn(async () => {});
 		patch(document.documentElement, 'requestFullscreen', request);
-		patch(document, 'fullscreenElement', null);
 
 		fullscreen.toggle();
-		await Promise.resolve();
 
 		expect(request).toHaveBeenCalledTimes(1);
-		expect(document.documentElement.hasAttribute(FAKE)).toBe(false);
 	});
 
-	it('без стандартного запиту йде `webkit`-двійник', async () => {
-		ua(DESKTOP_UA);
-		const webkit = vi.fn(async () => {});
-		patch(document.documentElement, 'webkitRequestFullscreen', webkit);
-		patch(document, 'fullscreenElement', null);
+	/**
+	 * Старий WebKit (Safari й iPadOS до 16.4) повертає з запиту `undefined`, а не
+	 * проміс. Доти на ньому стояв `.catch` — і натиск кидав `TypeError`.
+	 */
+	it('старий WebKit: запит без промісу не кидає', () => {
+		patch(document, 'webkitFullscreenEnabled', true);
+		const request = vi.fn(() => undefined);
+		patch(document.documentElement, 'webkitRequestFullscreen', request);
+
+		expect(() => fullscreen.toggle()).not.toThrow();
+		expect(request).toHaveBeenCalledTimes(1);
+	});
+
+	it('відмова браузера — у журнал, а не підробка', async () => {
+		able();
+		const warn = vi.spyOn(logService, 'warn').mockImplementation(() => {});
+		patch(
+			document.documentElement,
+			'requestFullscreen',
+			vi.fn(async () => {
+				throw new Error('denied');
+			})
+		);
 
 		fullscreen.toggle();
 		await Promise.resolve();
+		await Promise.resolve();
 
-		expect(webkit).toHaveBeenCalledTimes(1);
-		expect(document.documentElement.hasAttribute(FAKE)).toBe(false);
+		expect(warn).toHaveBeenCalledWith('ui', 'fullscreen refused', expect.anything());
+		expect(fullscreen.active).toBe(false);
+		expect(document.documentElement.getAttributeNames()).not.toContain('data-fake-fullscreen');
 	});
 
-	/** Ні того, ні того — підробка лишається єдиним, що можна дати людині. */
-	it('браузер без Fullscreen API взагалі дістає підробку', () => {
-		ua(DESKTOP_UA);
-		patch(document, 'fullscreenElement', null);
-
-		fullscreen.toggle();
-
-		expect(document.documentElement.hasAttribute(FAKE)).toBe(true);
-		expect(fullscreen.active).toBe(true);
-	});
-
-	it('зі справжнього повного екрана виходить стандартним викликом', () => {
-		ua(DESKTOP_UA);
+	it('уже повний екран — виходить', () => {
+		able();
+		patch(document, 'fullscreenElement', document.documentElement);
 		const exit = vi.fn(async () => {});
-		patch(document, 'fullscreenElement', document.body);
 		patch(document, 'exitFullscreen', exit);
+		const request = vi.fn(async () => {});
+		patch(document.documentElement, 'requestFullscreen', request);
 
-		fullscreen.active = true;
 		fullscreen.toggle();
 
 		expect(exit).toHaveBeenCalledTimes(1);
-		expect(fullscreen.active).toBe(false);
+		expect(request).not.toHaveBeenCalled();
 	});
 
-	it('`webkit`-повний екран виходить `webkit`-викликом', () => {
-		ua(DESKTOP_UA);
-		const exit = vi.fn(async () => {});
-		patch(document, 'fullscreenElement', null);
-		patch(document, 'webkitFullscreenElement', document.body);
+	it('старий WebKit: вихід без промісу не кидає', () => {
+		patch(document, 'webkitFullscreenEnabled', true);
+		patch(document, 'webkitFullscreenElement', document.documentElement);
+		const exit = vi.fn(() => undefined);
 		patch(document, 'webkitExitFullscreen', exit);
 
-		fullscreen.active = true;
-		fullscreen.toggle();
-
+		expect(() => fullscreen.toggle()).not.toThrow();
 		expect(exit).toHaveBeenCalledTimes(1);
-		expect(fullscreen.active).toBe(false);
 	});
+});
 
-	/**
-	 * Виходу немає, а стан треба зняти однаково: інакше шапка показувала б
-	 * «повний екран» на сторінці, яка з нього вже вийшла.
-	 */
-	it('повний екран без жодного виходу все одно знімає стан', () => {
-		ua(DESKTOP_UA);
+describe('стан', () => {
+	it('подія браузера вмикає й вимикає стан', () => {
+		const stop = fullscreen.watch();
+
+		patch(document, 'fullscreenElement', document.documentElement);
+		document.dispatchEvent(new Event('fullscreenchange'));
+		expect(fullscreen.active).toBe(true);
+
 		patch(document, 'fullscreenElement', null);
-		patch(document, 'webkitFullscreenElement', document.body);
+		document.dispatchEvent(new Event('fullscreenchange'));
+		expect(fullscreen.active).toBe(false);
 
-		fullscreen.active = true;
-		fullscreen.toggle();
+		stop();
+	});
 
+	it('префіксована подія старого WebKit', () => {
+		const stop = fullscreen.watch();
+
+		patch(document, 'webkitFullscreenElement', document.documentElement);
+		document.dispatchEvent(new Event('webkitfullscreenchange'));
+		expect(fullscreen.active).toBe(true);
+
+		stop();
+	});
+
+	it('після прибирання подія стан не чіпає', () => {
+		const stop = fullscreen.watch();
+		stop();
+
+		patch(document, 'fullscreenElement', document.documentElement);
+		document.dispatchEvent(new Event('fullscreenchange'));
 		expect(fullscreen.active).toBe(false);
 	});
+});
 
-	describe('watch(): вихід ЗЗОВНІ — Esc або системна кнопка', () => {
-		it('ловить справжній вихід і вхід, а після прибирання вже ні', () => {
-			patch(document, 'fullscreenElement', document.body);
-			const stop = fullscreen.watch();
-
-			document.dispatchEvent(new Event('fullscreenchange'));
-			expect(fullscreen.active).toBe(true);
-
-			patch(document, 'fullscreenElement', null);
-			document.dispatchEvent(new Event('fullscreenchange'));
-			expect(fullscreen.active).toBe(false);
-
-			stop();
-			patch(document, 'fullscreenElement', document.body);
-			document.dispatchEvent(new Event('fullscreenchange'));
-			expect(fullscreen.active, 'підписка живе довше за компонент').toBe(false);
-		});
-
-		it('`webkit`-подія й `webkit`-стан теж лічаться', () => {
-			patch(document, 'fullscreenElement', null);
-			patch(document, 'webkitFullscreenElement', document.body);
-			const stop = fullscreen.watch();
-
-			document.dispatchEvent(new Event('webkitfullscreenchange'));
-			expect(fullscreen.active).toBe(true);
-
-			stop();
-		});
-
-		/** Підробка — теж повний екран: шапка мусить показувати те саме. */
-		it('підробка лічиться повним екраном', () => {
-			patch(document, 'fullscreenElement', null);
-			document.documentElement.setAttribute(FAKE, 'true');
-			const stop = fullscreen.watch();
-
-			document.dispatchEvent(new Event('fullscreenchange'));
-			expect(fullscreen.active).toBe(true);
-
-			stop();
-		});
+describe('підказка «на початковий екран»', () => {
+	it('iPhone у браузері — так', () => {
+		ua(IPHONE_UA);
+		expect(wantsHomeScreenHint()).toBe(true);
 	});
 
-	/**
-	 * На сервері DOM немає, і звертатися до нього не можна: `document` там просто
-	 * не існує. Обидва входи мусять тихо нічого не робити.
-	 */
-	describe('без браузера', () => {
-		it('toggle() і watch() нічого не роблять і не кидають', async () => {
-			vi.resetModules();
-			vi.doMock('$app/environment', () => ({ browser: false, dev: false }));
-			const { fullscreen: ssr } = await import('./fullscreen.svelte');
+	it('iPhone, відкритий з початкового екрана, — ні: там уже без панелей', () => {
+		ua(IPHONE_UA);
+		patch(navigator, 'standalone', true);
+		expect(wantsHomeScreenHint()).toBe(false);
+	});
 
-			expect(() => ssr.toggle()).not.toThrow();
-			expect(ssr.active).toBe(false);
+	it('iPad — ні: звітує як Mac і повний екран уміє', () => {
+		ua(IPAD_UA);
+		able();
+		expect(wantsHomeScreenHint()).toBe(false);
+	});
 
-			const stop = ssr.watch();
-			expect(() => stop()).not.toThrow();
-			expect(document.documentElement.hasAttribute(FAKE)).toBe(false);
-		});
+	it('комп’ютер — ні', () => {
+		ua(DESKTOP_UA);
+		able();
+		expect(wantsHomeScreenHint()).toBe(false);
+	});
+});
+
+/**
+ * На сервері DOM немає, і звертатися до нього не можна: `document` там просто не
+ * існує. Усі входи мусять тихо нічого не робити.
+ */
+describe('без браузера', () => {
+	it('нічого не роблять і не кидають', async () => {
+		vi.resetModules();
+		vi.doMock('$app/environment', () => ({ browser: false, dev: false }));
+		const ssr = await import('./fullscreen.svelte');
+
+		expect(ssr.canFullscreen()).toBe(false);
+		expect(ssr.wantsHomeScreenHint()).toBe(false);
+		expect(() => ssr.fullscreen.toggle()).not.toThrow();
+		const stop = ssr.fullscreen.watch();
+		expect(() => stop()).not.toThrow();
 	});
 });

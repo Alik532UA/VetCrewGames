@@ -2,7 +2,7 @@
 	import { Sun, Moon, Snowflake, Leaf, Keyboard, KeyboardOff, CircleUser } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, formatPlain } from '$lib/i18n';
-	import { fullscreen } from '$lib/services/fullscreen.svelte';
+	import { canFullscreen, fullscreen } from '$lib/services/fullscreen.svelte';
 	import { acceptsShortcut } from '$lib/services/keyboard';
 	import { settings } from '$lib/services/settings.svelte';
 	import { LANGUAGE_META, flagSrc, languageLabel } from '$lib/i18n/languages';
@@ -132,8 +132,10 @@
 			return;
 		}
 
-		if (event.code === 'KeyF') {
-			void fullscreen.toggle();
+		// Там, де браузер повного екрана не вміє, клавіша F нічого не перехоплює —
+		// так само, як кнопки там немає.
+		if (event.code === 'KeyF' && canFullscreen()) {
+			fullscreen.toggle();
 			event.preventDefault();
 		}
 	}

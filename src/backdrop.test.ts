@@ -165,9 +165,10 @@ const VOID_TAGS = new Set([
  * власному файлі, там її й перевірять.
  *
  * Доти це не спливало, бо `.app-shell` вважався підкладкою — через правило
- * `[data-fake-fullscreen] .app-shell { background-color: … }`. Тобто перевірка
- * зараховувала УМОВНИЙ фон, який у звичайному стані не діє, як безумовний, і
- * була зелена з неправильної причини.
+ * тодішнього запасного повного екрана (`[data-fake-fullscreen] .app-shell
+ * { background-color: … }`, прибраний 2026-09-26). Тобто перевірка зараховувала
+ * УМОВНИЙ фон, який у звичайному стані не діє, як безумовний, і була зелена з
+ * неправильної причини.
  */
 function isVisibleText(chunk: string): boolean {
 	let out = '';
@@ -348,13 +349,14 @@ describe('текст на підкладці', () => {
 	 * по одному на тему, і на `.app-shell` живуть саме `winter` та
 	 * `orange-purple`.
 	 *
-	 * Перевіряються обидві половини дефекту окремо, бо кожна ламає фон сама.
+	 * Лишилася половина про `display: none`: сам запасний режим прибрано
+	 * 2026-09-26 (на iPhone він панелей Safari не ховав, тож кнопка читалася як
+	 * баг), і перевірка його тла стала б порожньою — зеленою ні про що.
 	 *
-	 * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): повернути в блок
-	 * `[data-fake-fullscreen]` рядок `background-color: var(--color-bg)` — перша
-	 * перевірка червона; повернути `display: none` на псевдоелементи — друга.
+	 * Зворотний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): повернути
+	 * `display: none` на псевдоелементи шарів — червоніє.
 	 */
-	/** Файли, у яких живуть шари фону й режим повного екрана. */
+	/** Файли, у яких живуть шари фону. */
 	const globalCss: Array<[string, string]> = [
 		'src/lib/styles/global.css',
 		'src/lib/styles/animations.css'
@@ -371,23 +373,6 @@ describe('текст на підкладці', () => {
 				if (!LAYER_SELECTOR.test(selector)) continue;
 				if (/display\s*:\s*none/.test(m[2])) {
 					guilty.push(`${file}: ${selector} — display: none гасить фото теми`);
-				}
-			}
-		}
-		expect(guilty, guilty.join('\n')).toEqual([]);
-	});
-
-	it('запасний повний екран не накриває фото непрозорим тлом', () => {
-		const guilty: string[] = [];
-		for (const [file, css] of globalCss) {
-			for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-				const selector = m[1].trim().replace(/\s+/g, ' ');
-				if (!selector.includes('data-fake-fullscreen')) continue;
-				const body = m[2];
-				// Прозоре тло законне; будь-яке інше накриє фото, бо коробка на весь екран.
-				const bg = /background(?:-color)?\s*:\s*([^;]+)/.exec(body)?.[1]?.trim();
-				if (bg && !/^(transparent|none|rgba\([^)]*,\s*0\s*\))$/.test(bg)) {
-					guilty.push(`${file}: ${selector} — тло «${bg}» поверх фотографії теми`);
 				}
 			}
 		}

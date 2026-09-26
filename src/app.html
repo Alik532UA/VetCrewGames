@@ -113,6 +113,16 @@
 					document.documentElement.classList.add('has-custom-scrollbar');
 				}
 			} catch (e) {}
+			// SYNC: та сама умова, що в `canFullscreen` (services/fullscreen.svelte.ts).
+			// iPhone не дає сторінкам повного екрана, і кнопка, яка нічого не робить,
+			// читалася як баг сайту (прохання автора 2026-09-26). Ховається ДО гідрації,
+			// тож не блимає: правило з цим класом — у стилях `GameHeader`, а стилі
+			// компонента зібраний сайт кладе в <head>. Звіряє умови `src/fullscreen-first-frame.test.ts`.
+			try {
+				if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+					document.documentElement.classList.add('no-fullscreen');
+				}
+			} catch (e) {}
 		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover">

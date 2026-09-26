@@ -204,8 +204,10 @@ export const commonTab: BetaTab = {
 		 * Пункти, дописані 2026-08-19 після дефекту, знайденого ОКОМ, а не гейтом:
 		 * НАТИСК на кнопку повного екрана заливав фон однотонним кольором —
 		 * фотографія теми зникала. Причина була в запасному режимі повного екрана
-		 * (`data-fake-fullscreen`), який вмикається не лише на iPhone, а щоразу,
-		 * коли справжній Fullscreen API відмовив.
+		 * (`data-fake-fullscreen`), який вмикався не лише на iPhone, а щоразу,
+		 * коли справжній Fullscreen API відмовив. Сам режим прибрано 2026-09-26: на
+		 * iPhone він панелей Safari не ховав, тож кнопка читалася як баг; тепер її
+		 * там немає зовсім (`common_29`).
 		 *
 		 * Причина, чому цього не було в чеклисті, важливіша за сам дефект: кнопки
 		 * повного екрана не згадував жоден пункт узагалі. Інваріант § 5.1 цього не
@@ -227,8 +229,8 @@ export const commonTab: BetaTab = {
 			id: 'common_15',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Натисніть кнопку розгортання на весь екран у шапці. Сторінка мусить зайняти весь екран, а значок зі стрілок НАЗОВНІ мусить стати стрілками ВСЕРЕДИНУ; повторне натискання мусить повернути як було.',
-				en: 'Press the full-screen button in the header. The page must fill the screen, and the arrows pointing OUT must become arrows pointing IN; pressing it again must bring back the previous view.'
+				uk: 'На компʼютері чи Android натисніть кнопку розгортання на весь екран у шапці (на iPhone її немає — для нього окремий пункт нижче). Сторінка мусить зайняти весь екран, а значок зі стрілок НАЗОВНІ мусить стати стрілками ВСЕРЕДИНУ; повторне натискання мусить повернути як було.',
+				en: 'On a computer or Android press the full-screen button in the header (an iPhone has none — it has its own item below). The page must fill the screen, and the arrows pointing OUT must become arrows pointing IN; pressing it again must bring back the previous view.'
 			},
 			coverage: 'manual',
 			testid: 'header-fullscreen-btn'
@@ -239,6 +241,24 @@ export const commonTab: BetaTab = {
 			text: {
 				uk: 'Розгорніть на весь екран і подивіться на фон. Фотографія теми мусить лишитися на місці; фон НЕ мусить стати суцільним кольором. Перевірте в кожній із чотирьох тем — на «Зимовій» і «Помаранчево-фіолетовій» фотографія інша, ніж на решті.',
 				en: 'Go full screen and look at the background. The theme photograph must stay in place; the background must NOT turn into a solid colour. Check in each of the four themes — «Winter» and «Orange-purple» use a different photograph from the other two.'
+			},
+			coverage: 'manual',
+			testid: 'header-fullscreen-btn',
+			negative: true
+		},
+		{
+			/*
+			 * iPhone не дає сторінкам повного екрана (лише відео), і кнопка, що міняла
+			 * тільки власний значок, читалася як баг сайту (прохання автора 2026-09-26).
+			 * Ховання й умову перевіряють `src/fullscreen-first-frame.test.ts` і
+			 * `features/homeScreenHint.test.ts`; руками — те, чого jsdom не має:
+			 * справжній Safari на телефоні.
+			 */
+			id: 'common_29',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Відкрийте сайт на iPhone у Safari. Кнопки «на весь екран» у шапці НЕ мусить бути; при першому відкритті внизу мусить зʼявитися підказка «Поділитися → На початковий екран», а після перезавантаження — вже ні. Відкрийте сайт з початкового екрана: ні кнопки, ні підказки.',
+				en: 'Open the site on an iPhone in Safari. There must be NO full-screen button in the header; on the first visit a hint “Share → Add to Home Screen” must appear at the bottom, and after a reload it must not. Open the site from the Home Screen: neither the button nor the hint.'
 			},
 			coverage: 'manual',
 			testid: 'header-fullscreen-btn',

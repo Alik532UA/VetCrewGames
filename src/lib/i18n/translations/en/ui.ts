@@ -150,6 +150,8 @@ export const ui = {
 	'header.toggleLocale': 'Change language',
 	'header.toggleFullscreen': 'Enter fullscreen',
 	'header.exitFullscreen': 'Exit fullscreen',
+	'header.fullscreenHint':
+		'Full screen on iPhone: in Safari tap “Share” → “Add to Home Screen” and open the site from there.',
 	'header.score': 'Total score',
 
 	// Switch for single-character shortcuts (WCAG SC 2.1.4, level A). The label

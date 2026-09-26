@@ -158,6 +158,8 @@ export const ui = {
 	'header.toggleLocale': 'Sprache wechseln',
 	'header.toggleFullscreen': 'Vollbild einschalten',
 	'header.exitFullscreen': 'Vollbild beenden',
+	'header.fullscreenHint':
+		'Vollbild auf dem iPhone: Tippen Sie in Safari auf „Teilen“ → „Zum Home-Bildschirm“ und öffnen Sie die Seite von dort.',
 	'header.score': 'Gesamtpunktzahl',
 
 	// Schalter für Einzeltasten-Kürzel (WCAG SC 2.1.4, Stufe A).

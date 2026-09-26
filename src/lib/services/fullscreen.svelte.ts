@@ -1,93 +1,111 @@
 import { browser } from '$app/environment';
+import { logService } from '$lib/services/logService.svelte';
 
 /**
- * Повноекранний режим — і його підробка для iOS.
+ * Повноекранний режим — лише там, де браузер його справді ВМІЄ.
  *
- * Винесено з шапки не заради розміру: це шістдесят рядків умовлянь із
- * браузерним API, префіксами `webkit` і винятками, і до самої шапки вони
- * стосунку не мають. Шапці треба лише «зараз повний екран чи ні» і «перемкни».
+ * Винесено з шапки не заради розміру: це умовляння браузерного API з префіксами
+ * `webkit`, і до самої шапки вони стосунку не мають. Шапці треба лише «чи можна»,
+ * «зараз повний екран чи ні» і «перемкни».
  *
- * **iPhone не вміє Fullscreen API для елементів узагалі.** Тому там одразу
- * підробка: атрибут `data-fake-fullscreen` на `<html>`, а решту робить CSS у
- * `global.css`. Той самий шлях — запасний і для всіх інших: якщо справжній
- * запит відхилено, ми не лишаємо користувача ні з чим.
+ * ## Чому без підробки (прохання автора 2026-09-26)
+ *
+ * iPhone не дає сторінкам повноекранного режиму взагалі — лише відео. Доти там
+ * вмикалася ПІДРОБКА: атрибут на `<html>` і `position: fixed` у стилях. Панелей
+ * Safari вона не ховала, тож людина бачила кнопку, що міняє лише власний значок, —
+ * і читала це як зламаний сайт. Той самий «запасний» шлях вмикався й будь-де, де
+ * справжній запит відхилено, і там теж нічого не ховав.
+ *
+ * Тепер кнопка стоїть лише там, де браузер уміє (`canFullscreen`): її ховає клас
+ * `no-fullscreen`, який ставить скрипт першого кадру в `app.html`, — з тією самою
+ * умовою, тож кнопка не блимає до гідрації. Визначення — за МОЖЛИВІСТЮ, а не за
+ * моделлю: iPad звітує як Mac і повний екран уміє, а вкладений фрейм без
+ * `allow="fullscreen"` не вміє на будь-якому пристрої.
  */
 
 interface FullscreenDocument extends Document {
-	webkitFullscreenElement?: Element;
-	webkitExitFullscreen?: () => Promise<void>;
+	webkitFullscreenEnabled?: boolean;
+	webkitFullscreenElement?: Element | null;
+	/** Старий WebKit повертає `undefined`, а не проміс. */
+	webkitExitFullscreen?: () => Promise<void> | undefined;
 }
 
 interface FullscreenHTMLElement extends HTMLElement {
-	webkitRequestFullscreen?: () => Promise<void>;
+	/** Старий WebKit (Safari й iPadOS до 16.4) повертає `undefined`, а не проміс. */
+	webkitRequestFullscreen?: () => Promise<void> | undefined;
 }
 
-const FAKE_ATTRIBUTE = 'data-fake-fullscreen';
+/**
+ * Чи вміє браузер повний екран для сторінки.
+ *
+ * SYNC: та сама умова стоїть у скрипті першого кадру (`src/app.html`), який
+ * ховає кнопку до гідрації. Звіряє їх `src/fullscreen-first-frame.test.ts`.
+ */
+export function canFullscreen(): boolean {
+	if (!browser) return false;
+	const doc = document as FullscreenDocument;
+	return Boolean(doc.fullscreenEnabled || doc.webkitFullscreenEnabled);
+}
 
-const isIOS = () => browser && /iPad|iPhone|iPod/.test(navigator.userAgent);
+/** Сторінку відкрито з початкового екрана — вона вже без панелей браузера. */
+export function isStandalone(): boolean {
+	if (!browser) return false;
+	const nav = navigator as Navigator & { standalone?: boolean };
+	return nav.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches === true;
+}
+
+/**
+ * ПІДКАЗКА ЗАМІСТЬ КНОПКИ — лише на iPhone у браузері.
+ *
+ * Єдиний справжній повний екран там — «Поділитися → На початковий екран»: звідти
+ * сторінка відкривається без панелей Safari (`apple-mobile-web-app-capable` у
+ * `app.html`). Модель тут потрібна саме для ТЕКСТУ підказки, а не для рішення,
+ * чи вміє браузер: це вже сказав `canFullscreen`.
+ */
+export function wantsHomeScreenHint(): boolean {
+	return (
+		browser && /iPhone|iPod/.test(navigator.userAgent) && !canFullscreen() && !isStandalone()
+	);
+}
+
+/** Відмова браузера — не падіння: кнопка лишається, а в журналі видно чому. */
+function settle(result: Promise<void> | undefined, action: string): void {
+	result?.catch((error: unknown) =>
+		logService.warn('ui', 'fullscreen refused', { action, reason: String(error) })
+	);
+}
 
 class FullscreenState {
-	/** Чи зараз повний екран — справжній або підроблений. */
+	/** Чи зараз повний екран. */
 	active = $state(false);
 
-	#setFake(on: boolean) {
-		const root = document.documentElement;
-		if (on) root.setAttribute(FAKE_ATTRIBUTE, 'true');
-		else root.removeAttribute(FAKE_ATTRIBUTE);
-		this.active = on;
-	}
-
 	toggle(): void {
-		if (!browser) return;
-
-		/*
-		 * Підробка активна — вимикаємо саме її, ким би ми не були.
-		 *
-		 * Перевірка мусить іти ПЕРШОЮ. Доти вона стояла всередині гілки для iOS,
-		 * і на комп'ютері з підробки не було виходу взагалі: `fullscreenElement`
-		 * при ній порожній, тож кнопка знову просила справжній повний екран —
-		 * діставала ту саму відмову й знову вмикала підробку. Стан, у який можна
-		 * лише зайти.
-		 */
-		if (document.documentElement.hasAttribute(FAKE_ATTRIBUTE)) {
-			this.#setFake(false);
-			return;
-		}
-
-		if (isIOS()) {
-			this.#setFake(true);
-			return;
-		}
+		if (!canFullscreen()) return;
 
 		const doc = document as FullscreenDocument;
 		const root = document.documentElement as FullscreenHTMLElement;
 
 		if (doc.fullscreenElement || doc.webkitFullscreenElement) {
-			const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
-			if (exit) exit.call(doc);
-			this.#setFake(false);
+			const exit = doc.exitFullscreen ?? doc.webkitExitFullscreen;
+			settle(exit?.call(doc), 'exit');
 			return;
 		}
 
-		const request = root.requestFullscreen || root.webkitRequestFullscreen;
-		// Відмову теж треба відпрацювати: браузер може не дати повний екран без
-		// жесту, який він визнає, і тоді підробка — єдине, що лишається.
-		if (request) request.call(root).catch(() => this.#setFake(true));
-		else this.#setFake(true);
+		const request = root.requestFullscreen ?? root.webkitRequestFullscreen;
+		settle(request?.call(root), 'enter');
 	}
 
 	/**
-	 * Стежити за виходом ЗЗОВНІ — клавішею Esc або системною кнопкою. Повертає
-	 * прибирання: життєвий цикл веде компонент, бо тут `$effect` недоступний
-	 * (module-level singleton, SVELTE-CORE-v8 § 2.6).
+	 * Стежити за станом — зокрема за виходом ЗЗОВНІ, клавішею Esc або системною
+	 * кнопкою. Повертає прибирання: життєвий цикл веде компонент, бо тут `$effect`
+	 * недоступний (module-level singleton, SVELTE-CORE-v8 § 2.6).
 	 */
 	watch(): () => void {
 		if (!browser) return () => {};
 
 		const sync = () => {
 			const doc = document as FullscreenDocument;
-			const native = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
-			this.active = native || document.documentElement.hasAttribute(FAKE_ATTRIBUTE);
+			this.active = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
 		};
 
 		document.addEventListener('fullscreenchange', sync);

@@ -2,6 +2,7 @@
 	import { Expand, Shrink } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { fullscreen } from '$lib/services/fullscreen.svelte';
+	import { hintHomeScreenOnce } from '$lib/features/homeScreenHint';
 	import HeaderControls from './HeaderControls.svelte';
 	import HeaderNav from './HeaderNav.svelte';
 	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
@@ -50,7 +51,12 @@
 	// Мова сторінки поїхала в `HeaderNav` разом із посиланнями, які її вживають:
 	// «назад» і «додому» ведуть у меню ТІЄЇ САМОЇ мови, і знати її має той, хто
 	// будує адресу.
-	onMount(() => fullscreen.watch());
+	onMount(() => {
+		// На iPhone кнопки повного екрана немає — замість неї один раз підказка
+		// «Поділитися → На початковий екран» (`features/homeScreenHint`).
+		hintHomeScreenOnce();
+		return fullscreen.watch();
+	});
 </script>
 
 <header class="game-header">
@@ -97,9 +103,15 @@
 		<div class="game-header__right">
 			<HeaderControls />
 
+			<!--
+				КНОПКИ НЕМАЄ ТАМ, ДЕ БРАУЗЕР НЕ ВМІЄ (прохання автора 2026-09-26): на iPhone
+				вона лише міняла власний значок і читалася як баг. Ховає її клас
+				`no-fullscreen`, який ставить скрипт першого кадру в `app.html`, — до
+				гідрації, тож кнопка не блимає, а шапка не стрибає.
+			-->
 			<button
 				type="button"
-				class="header-btn"
+				class="header-btn fullscreen-btn"
 				onclick={() => fullscreen.toggle()}
 				aria-label={t(fullscreen.active ? 'header.exitFullscreen' : 'header.toggleFullscreen')}
 				aria-keyshortcuts={settings.shortcutsEnabled ? 'F' : undefined}
@@ -315,6 +327,14 @@
 	 * цього файлу вона до нього не доходила, і перемикач мови стояв у шапці
 	 * голою кнопкою браузера.
 	 */
+
+	/*
+	 * Кнопки «на весь екран» немає там, де браузер не вміє (iPhone): клас на
+	 * `<html>` ставить скрипт першого кадру в `app.html`, ще до гідрації.
+	 */
+	:global(html.no-fullscreen) .fullscreen-btn {
+		display: none;
+	}
 
 	@media (max-width: 768px) {
 		.game-title {
