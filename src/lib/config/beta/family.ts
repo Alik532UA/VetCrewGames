@@ -89,15 +89,17 @@ export const familyTab: BetaTab = {
 			coverage: 'manual'
 		},
 		{
-			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26).
+			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Рівень `testable`, а
+			// не `covered` (§ 3: рівень — те, що тест СПРАВДІ доводить): юніт-тест тримає
+			// знімок раунду й дошку перегляду, але що сегмент на СТОРІНЦІ відкриває саме
+			// це питання, а «назад» повертає поточне, — не доводить жоден.
 			id: 'family_9',
 			category: { uk: 'Перегляд питань', en: 'Reviewing questions' },
 			text: {
 				uk: 'Відповідайте на два питання й натисніть перший сегмент смужки вгорі. Мусять відкритися ті самі чотири тварини в тому самому порядку, ваш вибір і правильна відповідь із поясненням; натиснути тварину там не можна. Під підсумком — перелік усіх питань, і рядок відкриває своє.',
 				en: 'Answer two questions and press the first segment of the bar on top. The same four animals must open in the same order, with your choice and the right answer with its explanation; the animals there cannot be pressed. Under the summary there is a list of every question, and a row opens its own.'
 			},
-			coverage: 'covered',
-			test: 'src/lib/controllers/familyGame.svelte.test.ts',
+			coverage: 'testable',
 			testid: 'round-review-*-btn'
 		}
 	]

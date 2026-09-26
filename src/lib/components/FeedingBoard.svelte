@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t, td } from '$lib/i18n';
-	import type { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
+	import type { FeedingView } from '$lib/controllers/feedingGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { BIN } from '$lib/config/feeding-game';
 	import FeedingZone from './FeedingZone.svelte';
@@ -20,7 +20,8 @@
 	 * переписувати той самий інтерфейс удруге.
 	 */
 	interface Props {
-		game: FeedingGameController;
+		/** Жива партія або минулий раунд для перегляду (`feedingReview`). */
+		game: FeedingView;
 		targets: QuickTarget[];
 		/** Онлайн: кнопки «Далі» немає — передається далі в `FeedingTable`, де вона й живе. */
 		hideNext?: boolean;

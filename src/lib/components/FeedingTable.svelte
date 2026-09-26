@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
-	import type { FeedingGameController } from '$lib/controllers/feedingGame.svelte';
+	import type { FeedingView } from '$lib/controllers/feedingGame.svelte';
 	import FeedingDish, { type QuickTarget } from './FeedingDish.svelte';
 
 	/**
@@ -12,7 +12,8 @@
 	 * не треба тягнутися вниз повз увесь розбір.
 	 */
 	interface Props {
-		game: FeedingGameController;
+		/** Жива партія або минулий раунд для перегляду (`feedingReview`). */
+		game: FeedingView;
 		targets: QuickTarget[];
 		/**
 		 * Онлайн: кнопки «Далі» немає.

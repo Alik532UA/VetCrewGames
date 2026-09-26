@@ -31,6 +31,22 @@ export interface FeedingVerdict {
 	isCorrect: boolean;
 }
 
+/** Присуди раунду: куди поклали кожну страву й куди вона мала лягти. */
+export function verdictsOf(round: FeedingRound, placements: Placements): FeedingVerdict[] {
+	const animalIds = round.animals.map((animal) => animal.id);
+	return round.foods.map((food) => {
+		const chosen = placements[food.id] ?? BIN;
+		const correct = correctTarget(food, animalIds);
+		return { food, chosen, correct, isCorrect: chosen === correct };
+	});
+}
+
+/** Нагодований раунд: набір страв і куди гравець їх поклав. */
+export interface FeedingRecord {
+	round: FeedingRound;
+	placements: Placements;
+}
+
 export class FeedingGameController {
 	readonly totalRounds: number;
 
@@ -41,6 +57,11 @@ export class FeedingGameController {
 	gameOver = $state(false);
 
 	placements = $state<Placements>({});
+	/**
+	 * НАГОДОВАНІ РАУНДИ — знімком для перегляду (прохання автора 2026-09-26):
+	 * набір і куди поклав кожну страву. Доти присуди раунду зникали разом із ним.
+	 */
+	history = $state<FeedingRecord[]>([]);
 	fed = $state(false);
 
 	/** Страва, яку гравець узяв: наступний клік по зоні покладе її туди. */
@@ -117,15 +138,9 @@ export class FeedingGameController {
 	canFeed = $derived(!this.fed && this.round !== null && this.unplaced.length < this.foodsPerRound);
 
 	/** Розбір кожної страви. Порожній, доки не натиснуто «Погодувати». */
-	verdicts = $derived.by<FeedingVerdict[]>(() => {
-		if (!this.fed || !this.round) return [];
-		const animalIds = this.round.animals.map((animal) => animal.id);
-		return this.round.foods.map((food) => {
-			const chosen = this.placements[food.id] ?? BIN;
-			const correct = correctTarget(food, animalIds);
-			return { food, chosen, correct, isCorrect: chosen === correct };
-		});
-	});
+	verdicts = $derived.by<FeedingVerdict[]>(() =>
+		!this.fed || !this.round ? [] : verdictsOf(this.round, this.placements)
+	);
 
 	start(): void {
 		this.#next();
@@ -191,6 +206,12 @@ export class FeedingGameController {
 
 		this.fed = true;
 		this.picked = null;
+		if (this.round) {
+			this.history.push({
+				round: $state.snapshot(this.round) as FeedingRound,
+				placements: $state.snapshot(this.placements) as Placements
+			});
+		}
 
 		const correct = this.verdicts.filter((verdict) => verdict.isCorrect).length;
 
@@ -222,6 +243,7 @@ export class FeedingGameController {
 		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
+		this.history = [];
 		this.sessionScore = 0;
 		this.gameOver = false;
 		this.#used = [];
@@ -275,4 +297,38 @@ export class FeedingGameController {
 
 		this.round = round;
 	}
+}
+
+/** Те, що дошка «Що їмо?» читає з гри: і з живої партії, і зі знімка. */
+export type FeedingView = Pick<
+	FeedingGameController,
+	| 'round'
+	| 'fed'
+	| 'picked'
+	| 'unplaced'
+	| 'verdicts'
+	| 'placedAt'
+	| 'pick'
+	| 'moveTo'
+	| 'place'
+	| 'takeBack'
+	| 'nextRound'
+>;
+
+/** Минулий раунд для дошки — «нагодовано», з присудами, і перекласти нічого. */
+export function feedingReview(record: FeedingRecord): FeedingView {
+	const { round, placements } = record;
+	return {
+		round,
+		fed: true,
+		picked: null,
+		unplaced: [],
+		verdicts: verdictsOf(round, placements),
+		placedAt: (target) => round.foods.filter((food) => placements[food.id] === target),
+		pick: () => {},
+		moveTo: () => {},
+		place: () => {},
+		takeBack: () => {},
+		nextRound: () => {}
+	};
 }

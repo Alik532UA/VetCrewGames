@@ -87,6 +87,20 @@ export const feedingTab: BetaTab = {
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/quizSeed.test.ts'
+		},
+		{
+			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Рівень `testable`, а
+			// не `covered` (§ 3: рівень — те, що тест СПРАВДІ доводить): юніт-тест тримає
+			// знімок раунду й дошку перегляду, але що сегмент на СТОРІНЦІ відкриває саме
+			// це питання, а «назад» повертає поточне, — не доводить жоден.
+			id: 'feeding_9',
+			category: { uk: 'Перегляд питань', en: 'Reviewing questions' },
+			text: {
+				uk: 'Нагодуйте два раунди й натисніть перший сегмент смужки вгорі. Мусить відкритися той самий стіл: ті самі тварини й страви там, куди ви їх поклали, із присудами; перекласти страву там не можна, а «Годувати» немає. Під підсумком — перелік усіх питань.',
+				en: 'Feed two rounds and press the first segment of the bar on top. The same table must open: the same animals and the food where you put it, with the verdicts; no food can be moved there and there is no «Feed». Under the summary there is a list of every question.'
+			},
+			coverage: 'testable',
+			testid: 'round-review-*-btn'
 		}
 	]
 };

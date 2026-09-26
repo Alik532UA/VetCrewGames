@@ -88,16 +88,17 @@ export const mythTab: BetaTab = {
 			coverage: 'manual'
 		},
 		{
-			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Логіку тримають юніт-тести;
-			// руками — справжня партія до кінця.
+			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Рівень `testable`, а
+			// не `covered` (§ 3: рівень — те, що тест СПРАВДІ доводить): юніт-тест тримає
+			// знімок раунду й дошку перегляду, але що сегмент на СТОРІНЦІ відкриває саме
+			// це питання, а «назад» повертає поточне, — не доводить жоден.
 			id: 'myth_9',
 			category: { uk: 'Перегляд питань', en: 'Reviewing questions' },
 			text: {
 				uk: 'Відповідайте на три питання й натисніть перший сегмент смужки вгорі. Мусить відкритися ПЕРШЕ питання з вашою відповіддю й поясненням, а «До поточного питання» — повернути те питання, на якому ви були. Дограйте партію: під підсумком мусить стояти перелік усіх питань із позначками, і натиск на рядок відкриває його питання.',
 				en: 'Answer three questions and press the first segment of the bar on top. The FIRST question must open with your answer and the explanation, and «Back to the current question» must bring back the question you were on. Finish the game: under the summary there must be a list of every question with marks, and pressing a row opens its question.'
 			},
-			coverage: 'covered',
-			test: 'src/lib/components/review.test.ts',
+			coverage: 'testable',
 			testid: 'round-review-*-btn'
 		}
 	]

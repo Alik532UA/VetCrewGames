@@ -14,7 +14,7 @@ import { uk } from '$lib/i18n/translations/uk';
 const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
 vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
-const { FeedingGameController } = await import('./feedingGame.svelte');
+const { FeedingGameController, feedingReview } = await import('./feedingGame.svelte');
 
 describe('дані «Що їмо?»', () => {
 	const animalIds = new Set(animals.map((animal) => animal.id));
@@ -123,6 +123,55 @@ describe('FeedingGameController', () => {
 			game.place(correctTarget(food, ids));
 		}
 	};
+
+	/**
+	 * ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26): нагодований раунд
+	 * лишається знімком — набір і куди поклали кожну страву, — і перегляд показує ті
+	 * самі присуди.
+	 *
+	 * Зворотний експеримент: не писати історію — червоніє «знімок»; не чистити на
+	 * «Грати знову» — червоніє «нова партія».
+	 */
+	it('нагодований раунд — знімок набору й розкладки, з тими самими присудами', () => {
+		const game = started(3);
+		const round = game.round!;
+		solve(game);
+		game.feed();
+		const verdicts = game.verdicts.map((v) => [v.food.id, v.chosen, v.isCorrect]);
+		game.nextRound();
+		const second = game.round!.foods[0];
+		game.pick(second);
+		game.place(BIN);
+		game.feed();
+
+		expect(game.history).toHaveLength(2);
+		expect(game.history[0].round.foods.map((food) => food.id)).toEqual(round.foods.map((food) => food.id));
+		const view = feedingReview(game.history[0]);
+		expect(view.fed).toBe(true);
+		expect(view.verdicts.map((v) => [v.food.id, v.chosen, v.isCorrect])).toEqual(verdicts);
+		expect(view.unplaced).toEqual([]);
+	});
+
+	it('у перегляді страву нікуди не перекласти', () => {
+		const game = started(3);
+		solve(game);
+		game.feed();
+		const view = feedingReview(game.history[0]);
+		const food = game.history[0].round.foods[0];
+		const before = view.placedAt(BIN).length;
+		view.pick(food);
+		view.moveTo(food, BIN);
+		view.takeBack(food);
+		expect(view.placedAt(BIN)).toHaveLength(before);
+	});
+
+	it('нова партія починає з порожньою історією', () => {
+		const game = started(3);
+		solve(game);
+		game.feed();
+		game.reset();
+		expect(game.history).toEqual([]);
+	});
 
 	it('start() накриває стіл: дві тварини й три страви', () => {
 		const game = started();
