@@ -30,13 +30,16 @@ vi.mock('$lib/net/firebase', async () => {
 
 let host: Connection;
 let guest: Connection;
+/** Дані гравця синхронізує лише акаунт — анонімові їх писати правило не дає (шостий аудит). */
+let account: Connection;
 
 beforeAll(async () => {
 	host = await signedIn('listeners-host');
 	guest = await signedIn('listeners-guest');
+	account = await signedIn('listeners-account', { account: true });
 });
 
-afterAll(() => closeAll([host, guest]));
+afterAll(() => closeAll([host, guest, account]));
 
 async function roomOf(who: Connection, isPrivate = true): Promise<string> {
 	const net = await import('./rtdbRoom');
@@ -223,10 +226,10 @@ describe('після відписки колбек не приходить', () 
 	it('дані гравця (`watchPlay`)', async () => {
 		const play = await import('./play');
 		type Seen = { score: number } | null;
-		const data = (onEvent: (value: Seen) => void) => as(host, () => play.watchPlay(onEvent));
+		const data = (onEvent: (value: Seen) => void) => as(account, () => play.watchPlay(onEvent));
 
 		const late = await silencedAfterStop(data);
-		await as(host, () => play.writePlay({ score: 7, games: {} }));
+		await as(account, () => play.writePlay({ score: 7, games: {} }));
 		await seenByFresh(data, (value) => value?.score === 7);
 
 		expect(late(), 'стара підписка даних гравця досі чує').toBe(0);

@@ -7,6 +7,7 @@ import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
 import { MOVE_SEQ_MAX } from '$lib/net/roomShape';
 import { MAX_ROOM_SEED } from '$lib/config/quizDeck';
 import { MEMORY_PAIRS, ROOM_COLS_MAX, ROOM_PAIRS_MIN } from '$lib/config/memory-game';
+import { GAME_ID } from '$lib/config/menu-games';
 
 /**
  * Інваріанти роботи з хмарною базою за CLOUD-DATABASE-v8 § 14.
@@ -568,6 +569,20 @@ describe('хмарна база', () => {
 		expect(Number(pairs?.[1]), 'найменше пар').toBe(ROOM_PAIRS_MIN);
 		expect(Number(pairs?.[2]), 'найбільше пар').toBe(MEMORY_PAIRS);
 		expect(Number(cols?.[1]), 'найбільше колонок').toBe(ROOM_COLS_MAX);
+	});
+
+	/**
+	 * ПЕРЕЛІК ІГОР У ДАНИХ ГРАВЦЯ — ТОЙ САМИЙ, ЩО В КОДІ (шостий аудит). Розійшовшись, він
+	 * відкидав би рекорд нової гри (перелік у правилах коротший) або знову пускав би
+	 * будь-які ключі (довший).
+	 *
+	 * Зворотний експеримент: прибрати гру з правил чи додати в `GAME_ID` — червоніє.
+	 */
+	it('ігри в даних гравця — рівно `GAME_ID`', () => {
+		const rules = readFileSync('database.rules.json', 'utf8');
+		const list = /\$gameId\.matches\(\/\^\(([a-z|-]+)\)\$\/\)/.exec(rules)?.[1];
+		expect(list, 'переліку ігор у правилах не знайдено').toBeDefined();
+		expect(list?.split('|').sort()).toEqual(Object.values(GAME_ID).sort());
 	});
 
 	it('версія правил гри піднята разом зі формою ходу (§ 8.4)', () => {

@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'd81090fab1eb'" }
+      "$v": { ".read": "auth != null && $v === 'fdac6ca22518'" }
     },
 
     "rooms": {
@@ -727,7 +727,10 @@
           ".read": "auth != null && $uid === auth.uid",
           ".write": "auth != null && $uid === auth.uid",
           // КОНТЕЙНЕР — ЛИШЕ ОБʼЄКТ (аудит 2026-09-26): правила дітей не діють, коли замість обʼєкта лягає рядок, тож один рядок на десять мегабайтів обходив би кожну межу нижче.
-          ".validate": "newData.hasChildren()",
+          // І ЛИШЕ АКАУНТ (шостий аудит): дані гравця синхронізує тільки той, хто ввійшов
+          // (`services/playerSync`), а анонім, якого завести — один запит, писав би сюди
+          // без жодного власника, і прибиральник цієї гілки не чистить.
+          ".validate": "newData.hasChildren() && auth.token.firebase.sign_in_provider != 'anonymous'",
           "score": {
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
           },
@@ -735,10 +738,11 @@
           "games": {
             ".validate": "newData.hasChildren()",
             "$gameId": {
-              // Ключ гри — той самий рядок, що в коді (`config/menu-games.ts`):
-              // малі латинські, цифри й дефіс, від двох до двадцяти чотирьох
-              // символів.
-              ".validate": "newData.hasChildren() && $gameId.matches(/^[a-z][a-z0-9-]{1,23}$/)",
+              // Ключ гри — ЛИШЕ ВІДОМА ГРА (`GAME_ID` у `config/menu-games.ts`, звіряє
+              // `cloud-database.test.ts`). Доти тут стояв взірець, і один акаунт кількома
+              // PATCH клав мільйони ключів — стеля безкоштовного тарифу для всієї бази.
+              // Нова гра тепер — рядок і тут, і це ціна меж (шостий аудит).
+              ".validate": "newData.hasChildren() && $gameId.matches(/^(mythbusters|population|habitat|family|feeding|memory)$/)",
               "best": {
                 ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
               },

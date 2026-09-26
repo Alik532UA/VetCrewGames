@@ -1,4 +1,5 @@
 import { connect } from './firebase';
+import { GAME_ID } from '$lib/config/menu-games';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
@@ -83,6 +84,19 @@ export function mergePlay(local: PlayData | null, cloud: PlayData | null): PlayD
  * скінченне невід'ємне число — інакше `NaN` розійшовся б по всьому рахунку й
  * ніде не впав.
  */
+const KNOWN_GAMES: ReadonlySet<string> = new Set(Object.values(GAME_ID));
+
+/**
+ * Лише відомі ігри (шостий аудит): правило `play/games/$gameId` пускає тільки `GAME_ID`,
+ * і ключ старої збірки — із бази чи з локального сховища — відкинув би ВЕСЬ запис даних
+ * гравця. Тому фільтр стоїть і на читанні, і на записі.
+ */
+export function knownGames(
+	games: Readonly<Record<string, GameRecord>>
+): Record<string, GameRecord> {
+	return Object.fromEntries(Object.entries(games).filter(([id]) => KNOWN_GAMES.has(id)));
+}
+
 function sanitize(raw: unknown): PlayData | null {
 	if (typeof raw !== 'object' || raw === null) return null;
 	const source = raw as { score?: unknown; games?: unknown };
@@ -95,7 +109,7 @@ function sanitize(raw: unknown): PlayData | null {
 		}
 	}
 
-	return { score: count(source.score), games };
+	return { score: count(source.score), games: knownGames(games) };
 }
 
 function count(value: unknown): number {
@@ -127,7 +141,7 @@ export async function writePlay(data: PlayData): Promise<boolean> {
 		const { ref, serverTimestamp, set } = await import('firebase/database');
 		await set(ref(db, `users/${uid}/play`), {
 			score: data.score,
-			games: data.games,
+			games: knownGames(data.games),
 			at: serverTimestamp()
 		});
 		return true;

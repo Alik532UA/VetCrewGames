@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_PLAY, mergePlay, type PlayData } from './play';
+import { EMPTY_PLAY, knownGames, mergePlay, type PlayData } from './play';
 
 /**
  * ЗЛИТТЯ ДАНИХ ГРАВЦЯ — єдина частина `net/play.ts`, яку можна перевірити без
@@ -60,5 +60,21 @@ describe('злиття даних гравця', () => {
 		expect(mergePlay(local, null)).toEqual(local);
 		expect(mergePlay(null, local)).toEqual(local);
 		expect(mergePlay(null, null)).toEqual(EMPTY_PLAY);
+	});
+});
+
+/**
+ * ЛИШЕ ВІДОМІ ІГРИ (шостий аудит): правило пускає тільки `GAME_ID`, і ключ старої збірки
+ * відкинув би весь запис даних гравця.
+ *
+ * Зворотний експеримент: пропускати всі ключі — червоніє.
+ */
+describe('ігри в даних гравця', () => {
+	it('ключ, якого немає в `GAME_ID`, відпадає, відомий лишається', () => {
+		const games = knownGames({
+			memory: { best: 3, plays: 1 },
+			'old-game': { best: 9, plays: 9 }
+		});
+		expect(Object.keys(games)).toEqual(['memory']);
 	});
 });
