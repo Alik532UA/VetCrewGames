@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'b61bde9dc49f'" }
+      "$v": { ".read": "auth != null && $v === '6dc63b5b8384'" }
     },
 
     "rooms": {
@@ -188,7 +188,8 @@
           "config": {
             // Налаштування — те саме, що зерно: посеред партії з журналом не міняються
             // (аудит 2026-09-26). Клієнт і так пише їх лише в лобі (`setConfig`).
-            ".validate": "!data.exists() || data.parent().child('status').val() !== 'playing' || !newData.parent().parent().child('moves').exists()",
+            // КОНТЕЙНЕР — ЛИШЕ ОБʼЄКТ (аудит 2026-09-26): правила дітей не діють, коли замість обʼєкта лягає рядок, тож один рядок на десять мегабайтів обходив би кожну межу нижче.
+            ".validate": "newData.hasChildren() && (!data.exists() || data.parent().child('status').val() !== 'playing' || !newData.parent().parent().child('moves').exists())",
             // Лише відомі ключі: доти їх кількість нічим не обмежувалася, і один
             // запис міг покласти в кімнату мегабайти, які завантажує кожен учасник.
             "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/)" }
@@ -236,7 +237,8 @@
            *    `members`, а табло мусить і далі його називати.
            */
           "roster": {
-            ".validate": "newData.parent().child('status').val() === 'playing' && (data.parent().child('status').val() !== 'playing' || !newData.parent().parent().child('moves').exists())",
+            // КОНТЕЙНЕР — ЛИШЕ ОБʼЄКТ (аудит 2026-09-26): правила дітей не діють, коли замість обʼєкта лягає рядок, тож один рядок на десять мегабайтів обходив би кожну межу нижче.
+            ".validate": "newData.hasChildren() && newData.parent().child('status').val() === 'playing' && (data.parent().child('status').val() !== 'playing' || !newData.parent().parent().child('moves').exists())",
             // Мапою за uid, а не масивом: так правило перехоплення може спитати
             // «чи він у складі» одним `child(auth.uid)`. Порядок черги — у `seat`.
             "$uid": {
@@ -426,10 +428,13 @@
              */
             "at": { ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 5000" },
             "payload": {
+              // КОНТЕЙНЕР — ЛИШЕ ОБʼЄКТ (аудит 2026-09-26): правила дітей не діють, коли замість обʼєкта лягає рядок, тож один рядок на десять мегабайтів обходив би кожну межу нижче.
+              ".validate": "newData.hasChildren()",
               // Числа й короткі рядки. Спершу тут були лише числа — і перша ж
               // гра, якій потрібне слово чи літера, вимагала б правити правила
               // в консолі разом із релізом. Межа довжини лишається: вона й
-              // захищає від рядка на десять мегабайтів у своєму ж ході.
+              // захищає від рядка на десять мегабайтів у своєму ж полі, а від
+              // рядка на місці самого `payload` — `hasChildren()` вище.
               //
               // `$other` тут немає навмисно: перелік полів ходу свій у кожної
               // гри, тож межа накладається на значення. Кількість полів правилом
@@ -632,7 +637,8 @@
         "privacy": {
           ".read": "auth != null && $uid === auth.uid",
           ".write": "auth != null && $uid === auth.uid",
-          ".validate": "auth.token.firebase.sign_in_provider != 'anonymous'",
+          // Контейнер — лише обʼєкт: див. `payload` ходу (аудит 2026-09-26).
+          ".validate": "newData.hasChildren() && auth.token.firebase.sign_in_provider != 'anonymous'",
           "search": { ".validate": "newData.isBoolean()" },
           "follow": { ".validate": "newData.isBoolean()" },
           "board": { ".validate": "newData.isBoolean()" },
@@ -670,16 +676,19 @@
         "play": {
           ".read": "auth != null && $uid === auth.uid",
           ".write": "auth != null && $uid === auth.uid",
+          // КОНТЕЙНЕР — ЛИШЕ ОБʼЄКТ (аудит 2026-09-26): правила дітей не діють, коли замість обʼєкта лягає рядок, тож один рядок на десять мегабайтів обходив би кожну межу нижче.
+          ".validate": "newData.hasChildren()",
           "score": {
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
           },
           "at": { ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 5000" },
           "games": {
+            ".validate": "newData.hasChildren()",
             "$gameId": {
               // Ключ гри — той самий рядок, що в коді (`config/menu-games.ts`):
               // малі латинські, цифри й дефіс, від двох до двадцяти чотирьох
               // символів.
-              ".validate": "$gameId.matches(/^[a-z][a-z0-9-]{1,23}$/)",
+              ".validate": "newData.hasChildren() && $gameId.matches(/^[a-z][a-z0-9-]{1,23}$/)",
               "best": {
                 ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
               },
@@ -1066,6 +1075,8 @@
          * роздачі» у гейті); захистом роздачі це не є (докблок гілки вище).
          */
         "games": {
+          // КОНТЕЙНЕР — ЛИШЕ ОБʼЄКТ (аудит 2026-09-26): правила дітей не діють, коли замість обʼєкта лягає рядок, тож один рядок на десять мегабайтів обходив би кожну межу нижче.
+          ".validate": "newData.hasChildren()",
           "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/)" }
         },
         // МИТЬ СТВОРЕННЯ КІМНАТИ — рівно її `createdAt` (аудит 2026-09-26): за нею

@@ -377,6 +377,16 @@ const CASES = [
 	 * в усьому, крім одного поля.
 	 */
 	{
+		name: 'хід, у якого payload — рядок, а не обʼєкт',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{ seq: 2, by: guest.uid, type: 'flip', at: SERVER_TIME, payload: 'x'.repeat(64) },
+				guest.token
+			)
+	},
+	{
 		name: 'номер картки поза колодою',
 		allowed: false,
 		run: () =>
@@ -774,6 +784,21 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/play`, { score: 500, at: SERVER_TIME }, guest.token)
 	},
 	{
+		name: 'дані гравця — рядок, а не обʼєкт',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play`, 'x'.repeat(64), guest.token)
+	},
+	{
+		name: 'ігри в даних гравця — рядок, а не обʼєкт',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/games`, 'x'.repeat(64), guest.token)
+	},
+	{
+		name: 'одна гра в даних гравця — рядок, а не обʼєкт',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play/games/memory`, 'x'.repeat(64), guest.token)
+	},
+	{
 		name: 'рахунок гри з клієнтським часом',
 		allowed: false,
 		run: () => write(`users/${guest.uid}/play`, { score: 500, at: 1000 }, guest.token)
@@ -803,6 +828,11 @@ const CASES = [
 				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'ua', at: SERVER_TIME },
 				guest.token
 			)
+	},
+	{
+		name: 'приватність — рядок, а не обʼєкт',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/privacy`, 'x'.repeat(64), guest.token)
 	},
 	{
 		name: 'рядок таблиці з клієнтським часом',
@@ -1441,6 +1471,11 @@ const CASES = [
 		name: 'господар оновлює набір ігор у переліку',
 		allowed: true,
 		run: () => write(`lobby/pairs/${LIST}/games`, { game_myths: 1 }, host.token)
+	},
+	{
+		name: 'набір ігор у записі переліку — рядок, а не обʼєкт',
+		allowed: false,
+		run: () => write(`lobby/pairs/${LIST}/games`, 'x'.repeat(64), host.token)
 	},
 	{
 		name: 'гість міняє набір ігор у чужому записі переліку',
@@ -2682,6 +2717,21 @@ const CASES = [
 		name: 'невідомий ключ у налаштуваннях',
 		allowed: false,
 		run: () => write(`rooms/${QUIZ}/info/config/mode`, 5, host.token)
+	},
+	{
+		name: 'налаштування кімнати — рядок, а не обʼєкт',
+		allowed: false,
+		run: () => write(`rooms/${QUIZ}/info/config`, 'x'.repeat(64), host.token)
+	},
+	{
+		name: 'склад старту — рядок, а не обʼєкт',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${QUIZ}`,
+				{ 'info/status': 'playing', 'info/roster': 'x'.repeat(64) },
+				host.token
+			)
 	},
 	{
 		name: 'склад старту з місцем поза столом',
