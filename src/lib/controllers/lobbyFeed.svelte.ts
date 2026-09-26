@@ -153,17 +153,34 @@ export class LobbyFeed {
 	 * кожному перепідключенні до кінця вкладки (аудит 2026-09-25).
 	 */
 	#epoch = 0;
+	/**
+	 * Код, оголошений ЦІЄЮ сторінкою; `null` — нічого. Політика кімнати кличе
+	 * публікацію на кожну зміну кімнати, а запис переліку тримає живим сам `keepNode`
+	 * — тож той самий код удруге не пишеться. Доти цю памʼять тримала сесія кімнати,
+	 * окремо від самого запису (аудит 2026-09-26).
+	 */
+	#listed: string | null = null;
 
-	/** Оголосити свою кімнату публічною. Кидає: без переліку кімната закрита. */
+	/**
+	 * Оголосити свою кімнату публічною. Кидає: без переліку кімната закрита. Невдача
+	 * не памʼятається — наступна зміна кімнати спробує знову.
+	 */
 	async publish(entry: Omit<LobbyRoom, 'at' | 'gameId'>): Promise<void> {
+		if (this.#listed === entry.code) return;
+		this.#listed = entry.code;
 		const epoch = ++this.#epoch;
 		// Попередній запис — чужа кімната: наступна публікація його не успадковує.
 		this.#unlist?.();
 		this.#unlist = null;
-		const list = await import('$lib/net/lobby');
-		const unlist = await list.publishRoom({ ...entry, gameId: this.#gameId });
-		if (epoch === this.#epoch) this.#unlist = unlist;
-		else unlist();
+		try {
+			const list = await import('$lib/net/lobby');
+			const unlist = await list.publishRoom({ ...entry, gameId: this.#gameId });
+			if (epoch === this.#epoch) this.#unlist = unlist;
+			else unlist();
+		} catch (error) {
+			if (epoch === this.#epoch) this.#listed = null;
+			throw error;
+		}
 	}
 
 	/**
@@ -194,6 +211,7 @@ export class LobbyFeed {
 	/** Зняти свою кімнату з переліку. Двічі — те саме, що раз; і посеред запису теж. */
 	unpublish(): void {
 		this.#epoch += 1;
+		this.#listed = null;
 		this.#unlist?.();
 		this.#unlist = null;
 	}

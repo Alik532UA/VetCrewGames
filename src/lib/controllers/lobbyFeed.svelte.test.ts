@@ -323,6 +323,37 @@ describe('свій рядок у переліку', () => {
 	});
 
 	/**
+	 * ТОЙ САМИЙ КОД УДРУГЕ НЕ ПИШЕТЬСЯ (аудит 2026-09-26): політика кімнати кличе
+	 * публікацію на кожну зміну кімнати, а живим запис тримає `keepNode`. Доти цю
+	 * памʼять тримала сесія, окремо від самого запису.
+	 *
+	 * Зворотні експерименти: прибрати памʼять коду — червоніє перший; не забувати
+	 * невдачі — другий; не забувати коду при знятті — третій.
+	 */
+	it('та сама кімната вдруге в перелік не пишеться', async () => {
+		const feed = new LobbyFeed(GAME);
+		await feed.publish(entry);
+		await feed.publish(entry);
+		expect(publishRoom).toHaveBeenCalledTimes(1);
+	});
+
+	it('невдача не памʼятається: наступна спроба пише знову', async () => {
+		publishRoom.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+		const feed = new LobbyFeed(GAME);
+		await expect(feed.publish(entry)).rejects.toThrow('PERMISSION_DENIED');
+		await feed.publish(entry);
+		expect(publishRoom).toHaveBeenCalledTimes(2);
+	});
+
+	it('знята кімната, оголошена знову, пишеться знову', async () => {
+		const feed = new LobbyFeed(GAME);
+		await feed.publish(entry);
+		feed.unpublish();
+		await feed.publish(entry);
+		expect(publishRoom).toHaveBeenCalledTimes(2);
+	});
+
+	/**
 	 * Закрита кімната («лише друзі») у перелік не писалася — оновлювати нічого. Це
 	 * не тихе ігнорування, а відповідь: без цієї межі кожна зміна набору в закритій
 	 * кімнаті стукала б у базу за записом, якого немає.

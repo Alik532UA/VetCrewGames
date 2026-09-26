@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { entryErrorKey, entryRefusal, quickPick } from './roomEntry';
+import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from './roomEntry';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { RoomInfo } from '$lib/net/roomTypes';
 
@@ -52,6 +52,22 @@ describe('повідомлення на невдалий вхід', () => {
 		expect(
 			entryErrorKey('Failed to fetch dynamically imported module: https://x/rtdbRoom.js')
 		).toBe('pairs.newBuild');
+	});
+});
+
+describe('роль того, кого в кімнаті ще немає', () => {
+	const roster = [{ uid: 'uid-back', name: 'Вернувся' }];
+
+	it('у розпочату партію — роль гри; у лобі й дограну — гравцем', () => {
+		expect(newcomerRole(info({ status: 'playing' }), 'uid-new', 'spectator')).toBe('spectator');
+		expect(newcomerRole(info({ status: 'lobby' }), 'uid-new', 'spectator')).toBe('player');
+		expect(newcomerRole(info({ status: 'over' }), 'uid-new', 'spectator')).toBe('player');
+	});
+
+	it('той, хто в складі, — гравець і посеред партії', () => {
+		expect(newcomerRole(info({ status: 'playing', roster }), 'uid-back', 'spectator')).toBe(
+			'player'
+		);
 	});
 });
 

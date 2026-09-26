@@ -68,7 +68,8 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	$effect(() => {
 		const match = session.match;
 		if (!match || !session.amHost || match.status !== 'lobby' || !match.listed) return;
-		void session.publishListing();
+		// Поза стеженням: склад і присутність, з яких складається запис, політику не будять.
+		untrack(() => void session.publishListing());
 	});
 
 	// Господар веде лічильник гравців у своєму записі переліку — у ОБОХ іграх.

@@ -83,7 +83,12 @@ export class QuizRoom {
 				seed: Math.floor(random() * 2 ** 31),
 				config: gamesToConfig(this.picked)
 			}),
-			createMatch: (me, transport) => new QuizMatch(me, transport, factor),
+			createMatch: (me, transport) => {
+				// Нова кімната — новий відлік: позначки відсутності СТАРОЇ кімнати тут нічого не
+				// означають, а той самий гравець у новій показував би чужий час (аудит 2026-09-26).
+				this.awaySince = {};
+				return new QuizMatch(me, transport, factor);
+			},
 			// Набір і в записі переліку: `rooms` перелічувати заборонено, тож фільтр списку
 			// бачить про чужу кімнату рівно те, що в самому записі. Набір — КІМНАТИ, а не
 			// фільтра на формі входу: доти господар, що звузив набір у лобі й

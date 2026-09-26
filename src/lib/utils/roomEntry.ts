@@ -1,6 +1,6 @@
 import { chunkMissing } from './staleBuild';
 import type { LobbyRoom } from '$lib/net/lobby';
-import type { RoomInfo } from '$lib/net/roomTypes';
+import type { Role, RoomInfo } from '$lib/net/roomTypes';
 
 /**
  * ВХІД У КІМНАТУ — чисті рішення, спільні для обох спільних ігор.
@@ -63,6 +63,26 @@ export function entryErrorKey(reason: string): EntryError {
 	// сторінки (аудит 2026-09-26 — доти це було «спробуйте ще раз» без кінця).
 	if (chunkMissing(reason)) return 'pairs.newBuild';
 	return 'pairs.netFailed';
+}
+
+/**
+ * У ЯКІЙ РОЛІ ЗАХОДИТЬ ТОЙ, КОГО В КІМНАТІ ЩЕ НЕМАЄ.
+ *
+ * Новачок у вже розпочату партію — у тій ролі, яку йому дає гра (`lateRole`). Але
+ * той, хто В СКЛАДІ партії (вийшов і вернувся), — гравець: місце в черзі в нього
+ * є, і реванш мусить його бачити. Дограна партія — те саме, що лобі: наступна буде
+ * реваншем, і той, хто прийшов грати, мусить у ньому бути. Доти він заходив
+ * глядачем назавжди, а реваншу бракувало гравців — кімната ставала глухим кутом
+ * (аудит 2026-09-25).
+ */
+export function newcomerRole(
+	room: Pick<RoomInfo, 'status' | 'roster'> | null,
+	me: string,
+	lateRole: Role
+): Role {
+	const inRoster = room?.roster?.some((entry) => entry.uid === me) ?? false;
+	const between = room?.status === 'lobby' || room?.status === 'over';
+	return between || inRoster ? 'player' : lateRole;
 }
 
 /**

@@ -306,6 +306,111 @@ describe('вхід у кімнату', () => {
 
 		expect(toast.error).toHaveBeenCalledWith('pairs.rulesMissing');
 	});
+
+	/**
+	 * ЗВІТ КАЖЕ, ЯКУ КІМНАТУ ЩОЙНО СТВОРИЛИ (аудит 2026-09-26): невдалий вхід стирає
+	 * `code`, і доти рядок «room entry failed» після створення називав поле входу —
+	 * тобто порожнечу, — а не кімнату.
+	 */
+	it('створена кімната, у яку не вдалося зайти, — у журналі своїм кодом', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net } = sessionFor(room, null, HOST);
+		net.roomTransport.mockRejectedValueOnce(new Error('boom'));
+
+		await session.enter('create');
+
+		expect(logService.error).toHaveBeenCalledWith(
+			'network',
+			'room entry failed',
+			expect.objectContaining({ code: '42' })
+		);
+	});
+});
+
+/**
+ * ВХІД, ВІД ЯКОГО ВЖЕ ПІШЛИ (аудит 2026-09-26). Доти вхід скасувати було нічим:
+ * «швидка гра» й одразу «назад» дописували `?room` у чужу сторінку, лишали
+ * присутність-привида з серцебиттям (господар рахував його гравцем і стартував),
+ * а локальний рахунок ставав на паузу до перезавантаження.
+ *
+ * Зворотні експерименти: не перевіряти номер входу після `peekRoom` — червоніє
+ * перший; не знімати підписок застарілого входу — другий; не віддавати кнопок
+ * у `dispose` або відпускати їх із застарілого входу — третій.
+ */
+describe('вхід, від якого вже пішли', () => {
+	/** Виклик мережі, що «висить», поки тест його не відпустить. */
+	function hanging<T>() {
+		let release!: (value: T) => void;
+		const promise = new Promise<T>((resolve) => (release = resolve));
+		return { promise, release };
+	}
+
+	it('пішли, поки питали кімнату, — ні адреси, ні рядка складу', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net, place } = sessionFor(room, roomInfo(), GUEST);
+		const peek = hanging<RoomInfo | null>();
+		net.peekRoom.mockReturnValueOnce(peek.promise);
+		session.joinCode = '42';
+
+		const entering = session.enter('join');
+		await settle();
+		session.exitToGate();
+		peek.release(roomInfo());
+		await entering;
+		await settle();
+
+		expect(net.joinRoom, 'рядок складу від того, хто вже пішов').not.toHaveBeenCalled();
+		expect(place.remember, 'код кімнати в адресі чужої сторінки').not.toHaveBeenCalled();
+		expect(session.code).toBe('');
+		expect(session.match).toBeNull();
+	});
+
+	it('пішли посеред підписок — усе, що встигло підписатися, знято, і гри немає', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net } = sessionFor(room, null, HOST);
+		const presence = hanging<() => void>();
+		const left = vi.fn();
+		net.trackPresence.mockReturnValueOnce(presence.promise);
+
+		const entering = session.enter('create');
+		await vi.waitFor(() => expect(net.trackPresence).toHaveBeenCalled());
+		session.dispose();
+		presence.release(left);
+		await entering;
+		await settle();
+
+		expect(left, 'присутність-привид лишилась').toHaveBeenCalled();
+		expect(net.watchPresence, 'після виходу підписалися далі').not.toHaveBeenCalled();
+		expect(playerData.beginOnline, 'рахунок став на паузу').not.toHaveBeenCalled();
+		expect(session.match).toBeNull();
+	});
+
+	it('після покинутого входу кнопки вільні, а покинутий не відпускає кнопок нового', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net } = sessionFor(room, roomInfo(), GUEST);
+		const first = hanging<RoomInfo | null>();
+		const second = hanging<RoomInfo | null>();
+		net.peekRoom.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+		session.joinCode = '42';
+
+		const abandoned = session.enter('join');
+		await settle();
+		session.exitToGate();
+		expect(session.busy, 'кнопки й далі зайняті покинутим входом').toBe(false);
+
+		const next = session.enter('join');
+		await settle();
+		first.release(roomInfo());
+		await abandoned;
+		expect(session.busy, 'покинутий вхід відпустив кнопки нового').toBe(true);
+
+		second.release(roomInfo());
+		await next;
+		await settle();
+		expect(session.match, 'новий вхід доїхав').not.toBeNull();
+		expect(net.joinRoom).toHaveBeenCalledTimes(1);
+		expect(session.busy).toBe(false);
+	});
 });
 
 describe('політики кімнати', () => {

@@ -8,7 +8,7 @@ import type { PlayerIdentity } from './playerIdentity.svelte';
 import type { Member, Role, RoomTransport } from '$lib/net/roomTypes';
 import type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
-import { entryErrorKey, entryRefusal, quickPick } from '$lib/utils/roomEntry';
+import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from '$lib/utils/roomEntry';
 import { playersOf, rosterOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 import { ReloadAdvice } from './reloadAdvice.svelte';
@@ -126,16 +126,31 @@ export class RoomSession<M extends RoomMatch> {
 		void this.enter('join');
 	}
 
+	/**
+	 * НОМЕР ВХОДУ: росте, коли сесія виходить (`dispose`). Вхід, що доїхав після
+	 * виходу, застарів: людина вже на іншій сторінці чи на формі входу, і писати
+	 * адресу, присутність чи підписки від її імені він не має права. Доти вхід
+	 * скасувати було нічим: «швидка гра» й одразу «назад» дописували `?room` у чужу
+	 * сторінку, лишали присутність-привида з серцебиттям (господар рахував його
+	 * гравцем і стартував) і ставили локальний рахунок на паузу (аудит 2026-09-26).
+	 */
+	#entry = 0;
+
 	/** Зайти в кімнату або створити її. `quick` — дорога «швидкої гри» (автостарт). */
 	async enter(action: 'create' | 'join', quick = false): Promise<void> {
 		if (this.busy) return;
 		this.busy = true;
+		const entry = this.#entry;
+		const stale = () => entry !== this.#entry;
+		// Свій код, а не `this.code`: невдалий вхід його вже стер, а звіт мусить сказати, куди йшли.
+		let code = '';
 		try {
 			// Словник імен ДОЧЕКАТИСЯ: інакше в кімнату їде ключ замість імені.
 			await this.player.load(settings.locale, this.lobby.takenNames);
+			if (stale()) return;
 			const who = this.player.forEntry(this.lobby.takenNames);
 			if (action === 'create') {
-				this.code = await this.net.createRoom({
+				code = await this.net.createRoom({
 					gameId: this.game.gameId,
 					rulesVersion: this.game.rulesVersion,
 					...this.game.newRoom(),
@@ -145,12 +160,16 @@ export class RoomSession<M extends RoomMatch> {
 					autoStart: quick,
 					isPrivate: quick ? false : this.isPrivate
 				});
-				await this.place.announce(this.code);
-			} else if (!(await this.#join(who))) {
-				return;
+				if (stale()) return;
+				this.code = code;
+				await this.place.announce(code);
+			} else {
+				code = (await this.#join(who, stale)) ?? '';
+				if (!code) return;
 			}
-			await this.place.remember(this.code);
-			await this.#open();
+			if (stale()) return;
+			await this.place.remember(code);
+			if (!stale()) await this.#open(code, stale);
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error);
 			// Шматка збірки немає — смуга з кнопкою «оновити», а не «спробуйте ще раз».
@@ -160,72 +179,83 @@ export class RoomSession<M extends RoomMatch> {
 			logService.error('network', 'room entry failed', {
 				game: this.game.gameId,
 				action,
-				code: this.code || this.joinCode,
+				code: code || this.joinCode,
 				reason
 			});
 		} finally {
-			this.busy = false;
+			// Застарілий вхід кнопок не відпускає: ними вже володіє наступний (`dispose`).
+			if (!stale()) this.busy = false;
 		}
 	}
 
-	/** Зайти за кодом. `false` — не пустили, і людина вже почула чому. */
-	async #join(who: string): Promise<boolean> {
+	/** Зайти за кодом. `null` — не пустили (людина вже почула чому) або вхід застарів. */
+	async #join(who: string, stale: () => boolean): Promise<string | null> {
 		const wanted = this.joinCode.replace(/\D/g, '');
 		const room = await this.net.peekRoom(wanted);
+		if (stale()) return null;
 		const refusal = entryRefusal(room, this.game);
 		if (refusal) {
 			toast.error(refusal);
-			return false;
+			return null;
 		}
 		this.code = wanted;
-		/*
-		 * Роль не передаємо: повернувшись, кожен лишається в своїй. Новачок у вже
-		 * розпочату партію — у тій ролі, яку йому дає гра. Але той, хто В СКЛАДІ
-		 * партії (вийшов і вернувся), — гравець: місце в черзі в нього є, і реванш
-		 * мусить його бачити (`rosterOf` бере гравців із рядків складу).
-		 */
+		// Роль не передаємо: повернувшись, кожен лишається в своїй. Роль НОВАЧКА — `newcomerRole`.
 		const me = await this.net.me();
-		const inRoster = room?.roster?.some((entry) => entry.uid === me) ?? false;
-		// Дограна партія — те саме, що лобі: наступна буде реваншем, і той, хто прийшов
-		// грати, мусить у ньому бути. Доти він заходив глядачем назавжди, а реваншу
-		// бракувало гравців — кімната ставала глухим кутом (аудит 2026-09-25).
-		const between = room?.status === 'lobby' || room?.status === 'over';
-		const newcomer = between || inRoster ? 'player' : this.game.lateRole;
-		await this.net.joinRoom(
-			this.code,
-			who,
-			undefined,
-			this.player.country,
-			this.player.forRoom(),
-			newcomer
-		);
-		return true;
+		if (stale()) return null;
+		const newcomer = newcomerRole(room, me, this.game.lateRole);
+		const { country } = this.player;
+		await this.net.joinRoom(wanted, who, undefined, country, this.player.forRoom(), newcomer);
+		return wanted;
 	}
 
-	/** Підписки кімнати: матч, присутність, звʼязок, підписки гри, перелік. */
-	async #open(): Promise<void> {
+	/**
+	 * Підписки кімнати: матч, присутність, звʼязок, підписки гри. Сесії вони
+	 * віддаються лише тоді, коли вхід доїхав до кінця, а застарілий вхід знімає все,
+	 * що встиг підписати, сам.
+	 */
+	async #open(code: string, stale: () => boolean): Promise<void> {
 		// Зупинка автоматики належить КІМНАТІ, у якій база відмовила, а сесія живе,
 		// поки відкрита сторінка: доти вона переходила в кожну наступну кімнату — нова
 		// «швидка гра» не рахувала відлік, а скінчена партія не ставала `over`
 		// (аудит 2026-09-25).
 		this.autoHalted = false;
+		const stops: Array<() => void> = [];
+		const abandon = () => {
+			for (const stop of stops) stop();
+			logService.info('network', 'room entry abandoned', { code });
+		};
 		try {
-			const transport = await this.net.roomTransport(this.code);
+			const transport = await this.net.roomTransport(code);
+			const me = await this.net.me();
+			if (stale()) return;
 			this.#transport = transport;
-			this.me = await this.net.me();
-			const match = this.game.createMatch(this.me, transport);
-			this.#stops.push(match.listen());
+			this.me = me;
+			const match = this.game.createMatch(me, transport);
+			stops.push(match.listen());
+			for (const next of [
+				() => this.net.trackPresence(code),
+				() =>
+					this.net.watchPresence(code, (uids) => {
+						if (stale()) return;
+						this.online = uids;
+						this.game.onPresence?.(match, uids, this.now());
+					}),
+				() =>
+					this.net.watchConnected((online) => {
+						if (!stale()) this.connected = online;
+					}),
+				// Підписки гри — однією відпискою, як і решта.
+				async () => {
+					const own = (await this.game.listen?.(code)) ?? [];
+					return () => own.forEach((stop) => stop());
+				}
+			]) {
+				stops.push(await next());
+				if (stale()) return abandon();
+			}
+			this.#stops.push(...stops);
 			// Локальний рахунок на паузі, поки триває спільна партія: бали — в кінці.
 			playerData.beginOnline();
-			this.#stops.push(await this.net.trackPresence(this.code));
-			this.#stops.push(
-				await this.net.watchPresence(this.code, (uids) => {
-					this.online = uids;
-					this.game.onPresence?.(match, uids, this.now());
-				})
-			);
-			this.#stops.push(await this.net.watchConnected((online) => (this.connected = online)));
-			for (const stop of (await this.game.listen?.(this.code)) ?? []) this.#stops.push(stop);
 			this.match = match;
 		} catch (error) {
 			/*
@@ -235,25 +265,23 @@ export class RoomSession<M extends RoomMatch> {
 			 * ще одну підписку. Найчастіша причина — застарілий шматок збірки після
 			 * викладки: динамічний імпорт падає посеред входу.
 			 */
+			for (const stop of stops) stop();
+			if (stale()) return;
 			this.exitToGate();
 			await this.place.exit();
 			throw error;
 		}
 	}
 
-	/** Код, який ЦЯ сесія вже оголосила в переліку; `null` — нічого. */
-	#listed: string | null = null;
-
 	/**
 	 * Відкрита кімната — у перелік. Невдача не скасовує входу: кімната працює й так.
 	 *
 	 * Кличе політика (`roomPolicies`), а не вхід: так кімната повертається в перелік
 	 * і після перезавантаження господаря, і в нового господаря після перехоплення.
-	 * Невдача не повторюється сама — лише коли знову зміниться кімната.
+	 * Той самий код удруге перелік не пише (`LobbyFeed.publish`), а невдача не
+	 * повторюється сама — лише коли знову зміниться кімната.
 	 */
 	async publishListing(): Promise<void> {
-		if (this.#listed === this.code) return;
-		this.#listed = this.code;
 		const who =
 			this.match?.members.find((member) => member.uid === this.me)?.name ??
 			this.player.forEntry(this.lobby.takenNames);
@@ -273,23 +301,17 @@ export class RoomSession<M extends RoomMatch> {
 			});
 		} catch (error) {
 			logService.warn('network', 'room not published', { code: this.code, reason: String(error) });
-			if (this.#listed === this.code) this.#listed = null;
 		}
 	}
 
 	/** Швидка гра: найстаріша вільна кімната, а якщо такої немає — своя відкрита. */
 	async quickGame(): Promise<void> {
 		if (this.busy) return;
-		const free = quickPick(this.lobby.rooms, this.game, this.game.quickSeats, (room) =>
-			this.game.fitsQuick ? this.game.fitsQuick(room) : true
-		);
-		if (free) {
-			this.joinCode = free.code;
-			await this.enter('join');
-			return;
-		}
-		this.isPrivate = false;
-		await this.enter('create', true);
+		const fits = this.game.fitsQuick ?? (() => true);
+		const free = quickPick(this.lobby.rooms, this.game, this.game.quickSeats, fits);
+		if (free) this.joinCode = free.code;
+		else this.isPrivate = false;
+		await this.enter(free ? 'join' : 'create', !free);
 	}
 
 	/**
@@ -313,11 +335,13 @@ export class RoomSession<M extends RoomMatch> {
 	 * онлайн-кімнати не додавали очок до перезавантаження.
 	 */
 	dispose(): void {
+		// Вхід, що зараз у дорозі, застарів — і кнопки вже не його (`#entry`).
+		this.#entry += 1;
+		this.busy = false;
 		playerData.endOnline();
 		for (const stop of this.#stops) stop();
 		this.#stops = [];
 		this.lobby.unpublish();
-		this.#listed = null;
 	}
 
 	/**
@@ -335,14 +359,9 @@ export class RoomSession<M extends RoomMatch> {
 
 	/** Дія господаря — один каркас: перевірка, транспорт, помилка вголос. `false` — не вийшло. */
 	async hostAction(run: (transport: RoomTransport) => Promise<void>): Promise<boolean> {
-		if (!this.match || !this.amHost || !this.#transport) return false;
-		try {
-			await run(this.#transport);
-			return true;
-		} catch (error) {
-			this.#failed('host action denied', error);
-			return false;
-		}
+		const transport = this.#transport;
+		if (!this.match || !this.amHost || !transport) return false;
+		return this.act('host action denied', () => run(transport));
 	}
 
 	/**
@@ -381,20 +400,17 @@ export class RoomSession<M extends RoomMatch> {
 		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача. Лише
 		// ПІСЛЯ старту: доти невдалий старт ще й прибирав кімнату з переліку.
 		this.lobby.unpublish();
-		this.#listed = null;
 	}
 
 	/** Закрити кімнату — ЯВНОЮ дією: «пішов назовсім» від «перезавантажив» не відрізнити. */
 	async close(): Promise<void> {
 		if (!this.match || !this.amHost) return;
-		try {
-			// Спершу з переліку: навпаки був би рядок кімнати, якої вже немає.
-			this.lobby.unpublish();
+		// Спершу з переліку: навпаки був би рядок кімнати, якої вже немає.
+		this.lobby.unpublish();
+		await this.act('room not closed', async () => {
 			await this.net.closeRoom(this.code);
 			await this.place.exit();
-		} catch (error) {
-			this.#failed('room not closed', error);
-		}
+		});
 	}
 
 	// Зерно реваншу — з тієї самої дороги, що й зерно нової кімнати: випадковість
@@ -430,18 +446,11 @@ export class RoomSession<M extends RoomMatch> {
 	/** Змінити свою роль — у лобі й між партіями (перед реваншем), але не посеред гри. */
 	async setRole(role: Role): Promise<void> {
 		if (!this.match || this.match.status === 'playing') return;
-		try {
-			await this.net.joinRoom(
-				this.code,
-				this.player.forEntry(this.lobby.takenNames),
-				role,
-				this.player.country,
-				this.player.forRoom(),
-				role
-			);
-		} catch (error) {
-			this.#failed('role not changed', error);
-		}
+		const name = this.player.forEntry(this.lobby.takenNames);
+		const { country } = this.player;
+		await this.act('role not changed', () =>
+			this.net.joinRoom(this.code, name, role, country, this.player.forRoom(), role)
+		);
 	}
 
 	/** Дія не вдалася: сказати людині й записати З КОДОМ кімнати — інакше звіт не скаже, де. */

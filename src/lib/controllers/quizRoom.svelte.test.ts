@@ -116,6 +116,28 @@ describe('адаптер вікторини', () => {
 		off();
 	});
 
+	/**
+	 * НОВА КІМНАТА — НОВИЙ ВІДЛІК (аудит 2026-09-26): позначки відсутності живуть в
+	 * адаптері, спільному для всіх кімнат сторінки, і той самий гравець у новій
+	 * кімнаті показував би час, що почав іти ще в старій.
+	 *
+	 * Зворотний експеримент: не скидати `awaySince` у `createMatch` — червоніє.
+	 */
+	it('позначки відсутності старої кімнати в нову не переходять', () => {
+		const quiz = new QuizRoom(() => 0.5);
+		const first = new LocalRoom(info(), members());
+		const old = quiz.game.createMatch(HOST, first.transport());
+		const off = old.listen();
+		quiz.game.onPresence?.(old, [HOST], 5_000);
+		expect(quiz.awaySince, 'перевірка жива: позначка стоїть').toEqual({ [GUEST]: 5_000 });
+		off();
+
+		const second = new LocalRoom(info(), members());
+		quiz.game.createMatch(HOST, second.transport());
+
+		expect(quiz.awaySince).toEqual({});
+	});
+
 	it('глядачеві балів немає', () => {
 		const quiz = new QuizRoom(() => 0.5);
 		const eye: Member = { uid: 'uid-eye', name: 'Око', role: 'spectator', order: 3 };
