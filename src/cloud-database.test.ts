@@ -211,6 +211,96 @@ describe('хмарна база', () => {
 		expect(presence?.[1], 'час присутності не серверний').toContain('now');
 	});
 
+	/**
+	 * Шляхи з `update(ref(db, основа), значення)`: основа плюс кожен ключ ВЕРХНЬОГО
+	 * рівня. Значення буває обʼєктом-літералом (ключі — літерали, `[`…`]` чи імена) або
+	 * змінною, яку наповнюють присвоєннями `змінна[`…`] = …`. Ключі вкладених обʼєктів
+	 * (`{ ...move, at: … }`) — не шляхи, тож рахується глибина дужок.
+	 */
+	function updatePaths(text: string): string[] {
+		const found: string[] = [];
+		const call = /\bupdate\s*\(\s*ref\s*\(\s*\w+\s*(?:,\s*([`'"])([^`'"]*)\1)?\s*\)\s*,\s*/g;
+		for (const m of text.matchAll(call)) {
+			const base = m[2] ?? '';
+			const join = (key: string) => (base ? `${base}/${key}` : key);
+			const rest = text.slice((m.index ?? 0) + m[0].length);
+			if (rest.startsWith('{')) {
+				for (const key of topLevelKeys(rest)) found.push(join(key));
+				continue;
+			}
+			const name = /^[A-Za-z_$][\w$]*/.exec(rest)?.[0];
+			if (!name) continue;
+			const assign = new RegExp(`\\b${name}\\[\\s*([\`'"])([^\`'"]+)\\1\\s*\\]\\s*=`, 'g');
+			for (const a of text.matchAll(assign)) found.push(join(a[2]));
+			const literal = new RegExp(`\\b${name}\\s*(?::[^=]+)?=\\s*\\{`).exec(text);
+			if (literal) {
+				const start = (literal.index ?? 0) + literal[0].length - 1;
+				for (const key of topLevelKeys(text.slice(start))) found.push(join(key));
+			}
+		}
+		return found;
+	}
+
+	/**
+	 * Ключі-шляхи обʼєкта-літерала, що починається з `{`: кожен ключ ВЕРХНЬОГО рівня
+	 * (літерал, `[`…`]`, імʼя чи скорочення `{ status }`) і на будь-якій глибині —
+	 * обчислений `[`…`]` зі скісною рискою: так пишеться шлях у розгортанні з умовою
+	 * `...(c ? { [`handles/…`]: uid } : {})`. Імена у вкладених обʼєктах (`at`,
+	 * `seq`) — поля значення, а не шляхи, і не рахуються.
+	 */
+	function topLevelKeys(source: string): string[] {
+		const keys: string[] = [];
+		let depth = 0;
+		for (let i = 0; i < source.length; i += 1) {
+			const ch = source[i];
+			if (ch === '{' || ch === '[' || ch === '(') depth += 1;
+			else if (ch === '}' || ch === ']' || ch === ')') {
+				depth -= 1;
+				if (depth === 0) break;
+			}
+			if (!(ch === '{' || ch === ',')) continue;
+			const tail = source.slice(i);
+			const quoted = /^[{,]\s*(?:\[\s*([`'"])([^`'"]+)\1\s*\]|([`'"])([^`'"]+)\3)\s*:/.exec(tail);
+			const key = quoted?.[2] ?? quoted?.[4];
+			if (key && (depth === 1 || key.includes('/'))) {
+				keys.push(key);
+				continue;
+			}
+			if (depth !== 1) continue;
+			const named = /^[{,]\s*([A-Za-z_$][\w$]*)\s*[:,}]/.exec(tail);
+			if (named) keys.push(named[1]);
+		}
+		return keys;
+	}
+
+	it('ключі багатошляхових записів — теж шляхи: розбір живий', () => {
+		// Канарка на сам розбір: без неї мовчазне «нуль ключів» виглядало б як «усе
+		// покрито». Рядки — рівно тих форм, що стоять у коді.
+		const sample = [
+			'await update(ref(db, `rooms/${code}`), {',
+			"	'info/hostUid': move.by,",
+			'	[`moves/${key}`]: { ...move, at: serverTimestamp() }',
+			'});',
+			'const wipe: Record<string, null> = {};',
+			'wipe[`users/${uid}/following/${child.key}`] = null;',
+			'await update(ref(db), wipe);',
+			'await update(ref(db, `rooms/${code}/info`), { status, countdownAt: null });',
+			'await update(ref(db), {',
+			'	...(fresh ? { [`handles/${handle}`]: uid } : {}),',
+			'	[`users/${uid}/profile`]: { name, at: serverTimestamp() }',
+			'});'
+		].join('\n');
+		expect(updatePaths(sample)).toEqual([
+			'rooms/${code}/info/hostUid',
+			'rooms/${code}/moves/${key}',
+			'users/${uid}/following/${child.key}',
+			'rooms/${code}/info/status',
+			'rooms/${code}/info/countdownAt',
+			'handles/${handle}',
+			'users/${uid}/profile'
+		]);
+	});
+
 	it('кожен шлях із коду має випадок у гейті (§ 3.5)', () => {
 		/*
 		 * Напрямок тут зворотний до § 3.3, і він ловить інший клас дефекту: шлях,
@@ -229,16 +319,28 @@ describe('хмарна база', () => {
 				/[`'"]((?:rooms|users|lobby|presence|myRooms|handles|find|leaders|__rulesVersion)(?:\/[^`'"]*)?)[`'"]/g
 			)
 		].map((m) => wild(m[1]));
+		// Випадки гейту, що пишуть КІЛЬКОМА шляхами (`patch`), — так само основа плюс ключі.
+		for (const m of gateText.matchAll(/\bpatch\s*\(\s*([`'"])([^`'"]*)\1\s*,\s*/g)) {
+			const rest = gateText.slice((m.index ?? 0) + m[0].length);
+			if (!rest.startsWith('{')) continue;
+			for (const key of topLevelKeys(rest)) gate.push(wild(`${m[2]}/${key}`));
+		}
 		const paths = new Set<string>();
 		for (const file of sources) {
-			for (const m of readFileSync(file, 'utf8').matchAll(
-				/\bref\s*\(\s*[^,)]+,\s*([`'"])([^`'"]*)\1/g
-			)) {
+			const text = readFileSync(file, 'utf8');
+			for (const m of text.matchAll(/\bref\s*\(\s*[^,)]+,\s*([`'"])([^`'"]*)\1/g)) {
 				const path = wild(m[2]);
 				if (!path.startsWith('.info')) paths.add(path);
 			}
+			// І КЛЮЧІ БАГАТОШЛЯХОВИХ ЗАПИСІВ (аудит 2026-09-25): доти `update(ref(db), …)`
+			// не давав жодного шляху, а `update(ref(db, `rooms/…`), …)` — лише корінь
+			// кімнати, тож «на повну глибину» трималося тільки для літералів у `ref()`.
+			for (const path of updatePaths(text)) paths.add(wild(path));
 		}
 		expect(paths.size, 'шляхів до бази не знайдено — перевірка мертва').toBeGreaterThan(20);
+		// `leadSeq` пишеться ЛИШЕ багатошляховим записом (`rtdbRoom.takeLead`): без нього
+		// розбір ключів міг би тихо не дійти до перевірки, і все одно зеленіти.
+		expect(paths.has('rooms/*/info/leadSeq'), 'ключі `update()` не дійшли до перевірки').toBe(true);
 		const covers = (code: string, tested: string) => {
 			const a = code.split('/');
 			const b = tested.split('/');
