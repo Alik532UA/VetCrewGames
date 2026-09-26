@@ -1,4 +1,5 @@
 import { playerData } from '$lib/services/playerData.svelte';
+import { logService } from '$lib/services/logService.svelte';
 import { awayStamps, waitView, type WaitView } from '$lib/utils/awayWait';
 import { ONLINE_GAMES, gamesToConfig, roomFitsGames } from '$lib/config/quizOnline';
 import { QUIZ_RULES_VERSION } from '$lib/config/roomRules';
@@ -42,6 +43,8 @@ export interface QuizHost {
 	readonly match: QuizMatch | null;
 	readonly me: string;
 	readonly clock: number;
+	/** Код кімнати — для журналу: без нього рядок не скаже, де партія стояла. */
+	readonly code: string;
 }
 
 export class QuizRoom {
@@ -154,7 +157,24 @@ export class QuizRoom {
 		/*
 		 * Пауза раунду — наслідок стану чекання. Саме `$effect`, а не похідна: зсув
 		 * дедлайну — це ЗМІНА стану партії.
+		 *
+		 * І В ЖУРНАЛ — коли чекання почалося й скінчилося (аудит 2026-09-25): доти
+		 * звіт про «вікторина зависла» не мав з чим звіритися — ні коли партія стала,
+		 * ні чи через паузу, ні скільки людей бракувало.
 		 */
-		$effect(() => void host.match?.setHold(this.wait.hold, host.clock));
+		let holding = false;
+		$effect(() => {
+			const match = host.match;
+			const hold = this.wait.hold;
+			match?.setHold(hold, host.clock);
+			if (!match || hold === holding) return;
+			holding = hold;
+			logService.info('network', hold ? 'quiz hold opened' : 'quiz hold released', {
+				code: host.code,
+				round: match.round,
+				away: match.awayOthers.length,
+				paused: match.pausedBy !== null
+			});
+		});
 	}
 }

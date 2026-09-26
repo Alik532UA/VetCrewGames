@@ -21,7 +21,9 @@ const CONTEXT = {
 	url: 'https://alik532ua.github.io/VetCrewGames/game-memory/',
 	userAgent: 'Mozilla/5.0 (Test)',
 	online: false,
-	takenAt: '2026-08-20T01:02:03.000Z'
+	takenAt: '2026-08-20T01:02:03.000Z',
+	uid: 'uid-reporter',
+	rules: 'abc123def456'
 };
 
 const ENTRY: LogEntry = {
@@ -39,12 +41,18 @@ describe('звіт про збій', () => {
 	describe('шапка', () => {
 		const header = buildLogReportHeader(CONTEXT);
 
-		it('несе ВСІ пʼять полів — зникнення будь-якого робить звіт нерозбірним', () => {
+		it('несе ВСІ сім полів — зникнення будь-якого робить звіт нерозбірним', () => {
 			expect(header).toContain('DATE: 2026-08-20T01:02:03.000Z');
 			expect(header).toContain('URL: https://alik532ua.github.io/VetCrewGames/game-memory/');
 			expect(header).toContain('DEVICE: Mozilla/5.0 (Test)');
 			expect(header).toContain('VERSION: 0.6.260');
 			expect(header).toContain('ONLINE: false');
+			expect(header).toContain('RULES: abc123def456');
+			expect(header).toContain('UID: uid-reporter');
+		});
+
+		it('без входу — `UID: none`, а не `null` чи порожнеча', () => {
+			expect(buildLogReportHeader({ ...CONTEXT, uid: null })).toMatch(/^UID: none$/m);
 		});
 
 		it('`ONLINE: false` не зникає, бо це саме те, що пояснює половину збоїв', () => {

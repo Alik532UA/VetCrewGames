@@ -112,6 +112,7 @@ async function open(): Promise<Connection> {
 	await auth.authStateReady();
 
 	const user = auth.currentUser ?? (await authModule.signInAnonymously(auth)).user;
+	logService.sessionUid = user.uid;
 	// Відтепер у браузера можуть бути свої кімнати — і лише відтепер про них
 	// варто питати на вході в застосунок (`services/accountFlag.ts`).
 	rememberSession();
@@ -128,4 +129,5 @@ async function open(): Promise<Connection> {
  */
 export function forget(): void {
 	pending = null;
+	logService.sessionUid = null;
 }

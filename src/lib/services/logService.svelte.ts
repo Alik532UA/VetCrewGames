@@ -87,6 +87,12 @@ class LogService {
 	private mirrorLimit = 100;
 	public errorCount = $state(0);
 	public appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
+	/**
+	 * Чий це звіт — `uid` поточного входу; `null`, поки не входили. Пише його
+	 * `net/firebase.ts`: значок сервісу про мережу не знає нічого (аудит 2026-09-25 —
+	 * доти звіт не казав, чию кімнату й чий журнал шукати в базі).
+	 */
+	public sessionUid: string | null = null;
 
 	constructor() {
 		if (browser) {

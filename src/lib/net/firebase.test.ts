@@ -130,6 +130,18 @@ describe('під’єднання до Firebase', () => {
 		expect(rememberSession).toHaveBeenCalledTimes(1);
 	});
 
+	/**
+	 * ЧИЙ ЦЕ ЗВІТ (аудит 2026-09-25): після входу логер знає `uid`, і шапка звіту
+	 * зі значка сервісу його несе; після скидання під’єднання — вже ні.
+	 */
+	it('після входу логер знає uid, після скидання — ні', async () => {
+		const { logService } = await import('$lib/services/logService.svelte');
+		await connect();
+		expect(logService.sessionUid).toBe('uid-anon');
+		forget();
+		expect(logService.sessionUid).toBeNull();
+	});
+
 	/** Два виклики — одне під’єднання: інакше в кімнаті було б два `uid`. */
 	it('другий виклик чекає на той самий вхід', async () => {
 		const [first, second] = await Promise.all([connect(), connect()]);

@@ -35,6 +35,16 @@ export interface LogReportContext {
 	 * чому (I18N-v8 § 4.3).
 	 */
 	takenAt: string;
+	/**
+	 * Хто звітує — `uid` входу, або `null`. З ним у базі видно саме його кімнати
+	 * й записи; без нього звіт про «гра зависла» ні з чим не звірити (аудит 2026-09-25).
+	 */
+	uid: string | null;
+	/**
+	 * Якої редакції правил чекає ЦЯ збірка (`RULES_VERSION`). Звіт зі старої
+	 * вкладки після викладки нових правил інакше не відрізнити від справжньої поломки.
+	 */
+	rules: string;
 }
 
 /** Шапка звіту: усе, чого немає в самих записах логу. */
@@ -44,6 +54,8 @@ DATE: ${context.takenAt}
 URL: ${context.url}
 DEVICE: ${context.userAgent}
 VERSION: ${context.version}
+RULES: ${context.rules}
+UID: ${context.uid ?? 'none'}
 ONLINE: ${context.online}
 ------------------------
 `;

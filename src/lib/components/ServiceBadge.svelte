@@ -8,6 +8,7 @@
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { createKeySequence } from '$lib/services/keySequence';
 	import { buildLogReport } from '$lib/services/logReport';
+	import { RULES_VERSION } from '$lib/net/rulesVersion';
 	import { logService } from '$lib/services/logService.svelte';
 	import { hardReset, RESET_PRESSES_DEV, RESET_PRESSES_PROD } from '$lib/services/resetService';
 	import { settings } from '$lib/services/settings.svelte';
@@ -136,7 +137,9 @@
 			url: window.location.href,
 			userAgent: navigator.userAgent,
 			online: navigator.onLine,
-			takenAt: new Date().toISOString()
+			takenAt: new Date().toISOString(),
+			uid: logService.sessionUid,
+			rules: RULES_VERSION
 		});
 
 		try {

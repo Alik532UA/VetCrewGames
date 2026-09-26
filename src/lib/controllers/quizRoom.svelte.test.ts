@@ -18,10 +18,14 @@ import { gamesToConfig, ONLINE_GAMES } from '$lib/config/quizOnline';
 const playerData = { awardQuizMatch: vi.fn() };
 vi.mock('$lib/services/playerData.svelte', () => ({ playerData }));
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { addScore: vi.fn(), locale: 'uk' } }));
+vi.mock('$lib/services/logService.svelte', () => ({
+	logService: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+}));
 
 const { QuizMatch } = await import('./quizMatch.svelte');
 const { QuizRoom, QUIZ_MIN_PLAYERS, LATE_ANNOUNCE_MS } = await import('./quizRoom.svelte');
 const { QUIZ_RULES_VERSION } = await import('$lib/config/roomRules');
+const { logService } = await import('$lib/services/logService.svelte');
 
 type Match = InstanceType<typeof QuizMatch>;
 
@@ -59,7 +63,7 @@ afterEach(() => {
 
 /** Сесія очима реакцій: матч, я й годинник — реактивно, як у `RoomSession`. */
 function host(match: Match, me: string, clock = 0) {
-	const seat = $state({ match: match as Match | null, me, clock });
+	const seat = $state({ match: match as Match | null, me, clock, code: '42' });
 	return seat;
 }
 
@@ -235,6 +239,35 @@ describe('реакції вікторини', () => {
 		flushSync();
 
 		expect(lead.heldMs(6_000)).toBe(5_000);
+		off();
+	});
+
+	/**
+	 * ЧЕКАННЯ — У ЖУРНАЛ, з кодом кімнати (аудит 2026-09-25): доти звіт про «вікторина
+	 * зависла» не мав з чим звіритися.
+	 *
+	 * Зворотний експеримент: прибрати запис у журнал — червоніє.
+	 */
+	it('чекання, що почалося й скінчилося, лишає в журналі по рядку', async () => {
+		const room = new LocalRoom(info(), members());
+		const lead = new QuizMatch(HOST, room.transport());
+		const off = lead.listen();
+		await lead.startRound(0);
+		const quiz = new QuizRoom(() => 0.5);
+		quiz.game.onPresence?.(lead, [HOST], 1_000);
+		const seat = host(lead, HOST, 1_000);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+
+		quiz.game.onPresence?.(lead, [HOST, GUEST], 2_000);
+		seat.clock = 2_000;
+		flushSync();
+
+		const lines = vi
+			.mocked(logService.info)
+			.mock.calls.filter(([, message]) => String(message).startsWith('quiz hold'))
+			.map(([, message, data]) => `${message}:${(data as { code: string }).code}`);
+		expect(lines).toEqual(['quiz hold opened:42', 'quiz hold released:42']);
 		off();
 	});
 });
