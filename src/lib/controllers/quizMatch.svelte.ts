@@ -551,7 +551,7 @@ export class QuizMatch {
 	/** Поставити паузу. Дозволено будь-кому, хто в партії. */
 	async pause(): Promise<void> {
 		if (this.round < 0 || this.pausedBy !== null) return;
-		await this.#append('pause', { round: this.round });
+		await this.#must('pause', { round: this.round });
 	}
 
 	/**
@@ -563,7 +563,7 @@ export class QuizMatch {
 	 */
 	async resume(): Promise<void> {
 		if (this.pausedBy !== this.#me) return;
-		await this.#append('resume', { round: this.round });
+		await this.#must('resume', { round: this.round });
 	}
 
 	/** Скільки пільгового часу цей гравець уже витратив за партію. */
@@ -717,8 +717,16 @@ export class QuizMatch {
 	 */
 	async answer(correct: number): Promise<void> {
 		if (this.iAnswered || this.round < 0 || this.iAmSpectator) return;
-		const saved = await this.#append('answer', { round: this.round, correct });
-		if (!saved) throw new Error('answer-not-saved');
+		await this.#must('answer', { round: this.round, correct });
+	}
+
+	/**
+	 * Хід, який почала ЛЮДИНА, кидає, коли не ліг: вона мусить почути, що кнопка не
+	 * спрацювала (`RoomSession.act`). Автоматичні ходи — `#append`: там відповідь —
+	 * пауза між спробами, а не повідомлення.
+	 */
+	async #must(type: string, payload: Record<string, number | string>): Promise<void> {
+		if (!(await this.#append(type, payload))) throw new Error(`${type}-not-saved`);
 	}
 
 	/**
@@ -734,7 +742,7 @@ export class QuizMatch {
 	 */
 	async voteGoOn(): Promise<void> {
 		if (this.round < 0 || this.goOn.includes(this.#me)) return;
-		await this.#append('goon', { round: this.round });
+		await this.#must('goon', { round: this.round });
 	}
 
 	/** Хто вже проголосував «граємо далі» в ЦЬОМУ раунді. */

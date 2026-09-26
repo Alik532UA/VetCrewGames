@@ -559,6 +559,42 @@ describe('склад партії', () => {
  * Зворотні експерименти: не кликати `noteDenial` з `#failed` — червоніє перший;
  * прибрати політику `refused` — другий; прибрати `#rulesAsked` — «раз на сторінку».
  */
+/**
+ * ДІЯ, ЯКУ ПОЧАЛА ЛЮДИНА (аудит 2026-09-25): набір ігор, темп, пауза й «граємо
+ * далі» у вікторині йшли повз обробку помилок, і відмова не казала нічого.
+ *
+ * Зворотний експеримент: ковтати помилку в `act` без `#failed` — червоніє.
+ */
+describe('дія людини', () => {
+	it('що не вдалася, — вголос і в журнал із кодом кімнати', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		const done = await session.act('quiz pace not changed', async () => {
+			throw new Error('boom');
+		});
+
+		expect(done).toBe(false);
+		expect(toast.error).toHaveBeenCalledWith('pairs.actionFailed');
+		expect(logService.error).toHaveBeenCalledWith(
+			'network',
+			'quiz pace not changed',
+			expect.objectContaining({ code: '42' })
+		);
+	});
+
+	it('що вдалася, — тиша', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+
+		expect(await session.act('quiz pace not changed', async () => {})).toBe(true);
+		expect(toast.error).not.toHaveBeenCalled();
+	});
+});
+
 describe('правила бази новіші за сторінку', () => {
 	it('відмова дії господаря звіряє правила, і на «stale» кімната каже оновити сторінку', async () => {
 		const room = new LocalRoom(roomInfo(), members());

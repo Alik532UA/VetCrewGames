@@ -1487,6 +1487,23 @@ describe('пауза однакова в усіх', () => {
  * Зворотний експеримент (§ 1.1): прибрати перевірку `pausedBy[round] !== move.by` у
  * перепрогоні — червоніє «чужу паузу не зняти».
  */
+/**
+ * ХІД, ЯКИЙ ПОЧАЛА ЛЮДИНА, КИДАЄ, КОЛИ НЕ ЛІГ (аудит 2026-09-25): доти пауза й
+ * «граємо далі» без звʼязку з базою просто не лягали, і кнопка не казала нічого.
+ *
+ * Зворотний експеримент: `#must` без винятку — червоніє.
+ */
+describe('хід людини, що не ліг', () => {
+	it('пауза й голос кидають — сесія покаже, що не вийшло', async () => {
+		const { host, guest, stop } = table(info(), { deafGuest: true });
+		await host.startRound(0);
+
+		await expect(guest.pause()).rejects.toThrow('pause-not-saved');
+		await expect(guest.voteGoOn()).rejects.toThrow('goon-not-saved');
+		stop();
+	});
+});
+
 describe('пауза', () => {
 	it('ставиться й видна обом', async () => {
 		const { host, guest, stop } = table();

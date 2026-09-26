@@ -334,6 +334,23 @@ export class RoomSession<M extends RoomMatch> {
 		}
 	}
 
+	/**
+	 * ДІЯ, ЯКУ ПОЧАЛА ЛЮДИНА, — той самий каркас, що `hostAction`, для кожного запису
+	 * з екрана гри: помилка вголос і в журнал із кодом кімнати. Доти набір ігор,
+	 * темп, пауза й «граємо далі» у вікторині йшли повз нього: відмова бази не
+	 * казала людині нічого, а в журналі лишалося загальне «необроблена відмова
+	 * промісу» без кімнати (аудит 2026-09-25). `false` — не вийшло.
+	 */
+	async act(label: string, run: () => Promise<unknown> | undefined): Promise<boolean> {
+		try {
+			await run();
+			return true;
+		} catch (error) {
+			this.#failed(label, error);
+			return false;
+		}
+	}
+
 	/** Почати партію. `auto` — це відлік, а не людина: невдача зупиняє автоматику. */
 	async start(auto = false): Promise<void> {
 		const match = this.match;

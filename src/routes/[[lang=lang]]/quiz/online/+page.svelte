@@ -7,7 +7,6 @@
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
-	import { logService } from '$lib/services/logService.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
@@ -65,24 +64,17 @@
 	 * ЗМІНИТИ НАБІР ІГОР У КІМНАТІ — і, якщо кімната в переліку, там ТЕЖ: інакше
 	 * фільтр бреше саме тому, хто ним скористався. Спершу кімната, потім довідка.
 	 */
-	async function changeGames(games: string[]) {
-		if (!match) return;
-		await match.setGames(games);
-		await lobby.setGames(session.code, gamesToConfig(games));
+	function changeGames(games: string[]) {
+		void session.act('quiz games not changed', async () => {
+			if (!match) return;
+			await match.setGames(games);
+			await lobby.setGames(session.code, gamesToConfig(games));
+		});
 	}
 
 	/** Я відповів — частка правильного в журнал. Очки порахує кожен сам. */
 	async function answer(correct: number) {
-		if (!match) return;
-		try {
-			await match.answer(correct);
-		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', 'quiz answer not saved', {
-				code: session.code,
-				reason: String(error)
-			});
-		}
+		await session.act('quiz answer not saved', () => match?.answer(correct));
 	}
 
 	quiz.attach(session);
@@ -172,7 +164,7 @@
 			onStart={() => session.start()}
 			onAutoStart={session.switchAutoStart}
 			onGames={changeGames}
-			onPace={(pace) => void match?.setPace(pace)}
+			onPace={(pace) => void session.act('quiz pace not changed', () => match?.setPace(pace))}
 		/>
 	{:else}
 		<!--
@@ -188,10 +180,10 @@
 			amHost={session.amHost}
 			clock={session.clock}
 			{wait}
-			onPause={() => void match?.pause()}
-			onResume={() => void match?.resume()}
+			onPause={() => void session.act('quiz pause not written', () => match?.pause())}
+			onResume={() => void session.act('quiz resume not written', () => match?.resume())}
 			goOn={match.goOn}
-			onGoOn={() => void match?.voteGoOn()}
+			onGoOn={() => void session.act('quiz vote not written', () => match?.voteGoOn())}
 			onanswer={answer}
 			onRematch={session.rematch}
 			onClose={() => session.close()}
