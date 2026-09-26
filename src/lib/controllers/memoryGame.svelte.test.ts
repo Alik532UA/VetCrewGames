@@ -394,3 +394,21 @@ describe('MemoryGameController', () => {
 		expect(game.flip(0)).toBe(false);
 	});
 });
+
+/**
+ * РОЗКЛАДКА З НАЛАШТУВАНЬ КІМНАТИ (аудит 2026-09-26): `pairs` понад колоду давав партію,
+ * що не закінчується ніколи, `cols: 0` — дошку без колонок. Межі — ті самі, що в правилі.
+ *
+ * Зворотний експеримент: брати `config.pairs` як є — червоніє.
+ */
+describe('розкладка з налаштувань кімнати', () => {
+	it('в межах — як є; поза межами, дробове чи відсутнє — стандартна', async () => {
+		const { roomLayoutOf, WIDE_LAYOUT } = await import('$lib/config/memory-game');
+		expect(roomLayoutOf({ pairs: 10, cols: 4 })).toEqual({ pairs: 10, cols: 4 });
+		// Кожне поле — окремо: законне лишається, незаконне стає стандартним.
+		expect(roomLayoutOf({ pairs: 1e9, cols: 4 })).toEqual({ pairs: WIDE_LAYOUT.pairs, cols: 4 });
+		expect(roomLayoutOf({ pairs: 6, cols: 0 })).toEqual({ pairs: 6, cols: WIDE_LAYOUT.cols });
+		expect(roomLayoutOf({ pairs: 2.5, cols: -1 })).toEqual(WIDE_LAYOUT);
+		expect(roomLayoutOf({})).toEqual(WIDE_LAYOUT);
+	});
+});

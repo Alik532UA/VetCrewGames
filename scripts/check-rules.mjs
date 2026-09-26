@@ -180,6 +180,11 @@ const LEAD = '90431';
  * складу в правилі перехоплення посеред партії не перевірялися нічим.
  */
 const QUIZ = '90432';
+/**
+ * Кімната для МЕЖ ЗЕРНА Й РОЗКЛАДКИ (аудит 2026-09-26, шостий). Кожна відмова — на
+ * створенні, тобто з рівно однієї причини: решта `info` правильна.
+ */
+const BOUNDS = '90433';
 const info = (hostUid) => ({
 	gameId: 'pairs',
 	rulesVersion: 2,
@@ -2584,6 +2589,81 @@ const CASES = [
 		run: () => write(`rooms/${CODE}`, null, host.token)
 	},
 
+	/*
+	 * МЕЖІ ЗЕРНА Й РОЗКЛАДКИ (аудит 2026-09-26, шостий). Програма вікторини — перепрогін
+	 * усіх партій кімнати до ⌊зерно / 2³¹⌋, тож зерно 1e300 вішало вкладку кожного, хто
+	 * заходив; `pairs` понад колоду давав партію без кінця, `cols: 0` — дошку без колонок.
+	 */
+	{
+		name: 'кімната із зерном на стелі',
+		allowed: false,
+		run: () => write(`rooms/${BOUNDS}/info`, { ...info(host.uid), seed: 2199023255552 }, host.token)
+	},
+	{
+		name: 'кімната з відʼємним зерном',
+		allowed: false,
+		run: () => write(`rooms/${BOUNDS}/info`, { ...info(host.uid), seed: -1 }, host.token)
+	},
+	{
+		name: 'кімната з пар понад колоду',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 15, cols: 4 } },
+				host.token
+			)
+	},
+	{
+		name: 'кімната без жодної колонки',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 8, cols: 0 } },
+				host.token
+			)
+	},
+	{
+		name: 'прапорець гри — не нуль і не одиниця',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 8, cols: 4, game_myths: 2 } },
+				host.token
+			)
+	},
+	{
+		name: 'рівень швидкості поза шкалою',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 8, cols: 4, pace_round: 10 } },
+				host.token
+			)
+	},
+	{
+		// Самі межі — законні: зерно перед стелею, найбільші розкладка й рівні.
+		name: 'кімната на самих межах зерна й розкладки',
+		allowed: true,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{
+					...info(host.uid),
+					seed: 2199023255551,
+					config: { pairs: 14, cols: 14, game_myths: 1, pace_round: 9 }
+				},
+				host.token
+			)
+	},
+	{
+		name: 'господар зносить кімнату меж',
+		allowed: true,
+		run: () => write(`rooms/${BOUNDS}`, null, host.token)
+	},
 	/*
 	 * ПЕРЕХОПЛЕННЯ ВЕДЕННЯ В ЛОБІ (аудит 2026-09-25): кожен сценарій перехоплення
 	 * доти йшов уже посеред партії, і гілка лобі — «гравець кімнати», а не склад, —

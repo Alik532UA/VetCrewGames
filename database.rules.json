@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '1626429357b7'" }
+      "$v": { ".read": "auth != null && $v === 'e96c9341fffc'" }
     },
 
     "rooms": {
@@ -150,7 +150,11 @@
           // І ПІСЛЯ ПАРТІЇ ТЕЖ (A2): у `over` журнал — це дограна партія, і нове зерно без
           // його стирання перероздало б дошку під підсумком. Лише в лобі або разом із
           // порожнім журналом (реванш).
-          "seed": { ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val() || data.parent().child('status').val() === 'lobby' || !newData.parent().parent().child('moves').exists())" },
+          // І В МЕЖАХ (аудит 2026-09-26, шостий): програма вікторини рахується перепрогоном
+          // усіх попередніх партій кімнати, тобто циклом до ⌊зерно / 2³¹⌋ — і кімната із
+          // зерном 1e300 вішала вкладку кожного, хто заходив. Стеля — 1024 партії
+          // (`MAX_ROOM_SEED` у `config/quizDeck.ts`, звіряє `cloud-database.test.ts`).
+          "seed": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 2199023255552 && (!data.exists() || newData.val() === data.val() || data.parent().child('status').val() === 'lobby' || !newData.parent().parent().child('moves').exists())" },
           // Версія правил гри — та, під якою кімнату створено; інша версія в неї не
           // пускає (`utils/roomEntry.ts`), тож переписати її означало б вигнати всіх.
           "rulesVersion": { ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())" },
@@ -212,7 +216,10 @@
             ".validate": "newData.hasChildren() && (!data.exists() || data.parent().child('status').val() === 'lobby' || !newData.parent().parent().child('moves').exists())",
             // Лише відомі ключі: доти їх кількість нічим не обмежувалася, і один
             // запис міг покласти в кімнату мегабайти, які завантажує кожен учасник.
-            "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/)" }
+            // І В МЕЖАХ ГРИ (аудит 2026-09-26, шостий): `pairs` понад колоду давав партію,
+            // що не закінчується ніколи, а `cols: 0` — дошку без колонок. Межі — ті самі, що
+            // в `roomLayoutOf` (`config/memory-game.ts`); швидкість — номер рівня, гра — прапорець.
+            "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/) && ($key !== 'pairs' || (newData.val() >= 2 && newData.val() <= 14)) && ($key !== 'cols' || (newData.val() >= 1 && newData.val() <= 14)) && (!$key.beginsWith('pace_') || (newData.val() >= 0 && newData.val() <= 9)) && (!$key.beginsWith('game_') || newData.val() === 0 || newData.val() === 1)" }
           },
           // КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА — для «зіграти в іншу гру».
           //

@@ -43,9 +43,15 @@ export function rosterFromRecord(record: unknown): RosterEntry[] | undefined {
 
 /** `info` із бази: склад — із мапи в чергу, решта — як лежить. */
 export function infoFromDb(raw: RawInfo): RoomInfo {
-	const { roster, ...rest } = raw;
+	const { roster, config, ...rest } = raw;
 	const party = rosterFromRecord(roster);
-	return party ? { ...rest, roster: party } : rest;
+	/*
+	 * НАЛАШТУВАННЯ — ЗАВЖДИ ОБʼЄКТ (аудит 2026-09-26): правило не вимагає `config`, і
+	 * кімната без нього валила обидві гри на першому ж читанні (`config.pairs` у
+	 * «Знайди пару», `config[...]` у вікторині) — у кожного, хто заходив.
+	 */
+	const settings = typeof config === 'object' && config !== null ? config : {};
+	return party ? { ...rest, config: settings, roster: party } : { ...rest, config: settings };
 }
 
 /**

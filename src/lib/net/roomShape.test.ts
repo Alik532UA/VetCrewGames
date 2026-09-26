@@ -82,4 +82,26 @@ describe('знімок кімнати', () => {
 		]);
 		expect(snapshot?.members).toEqual([{ uid: 'uid-a', name: 'А', role: 'player', order: 1 }]);
 	});
+	/**
+	 * КІМНАТА БЕЗ НАЛАШТУВАНЬ (аудит 2026-09-26): правило `config` не вимагає, і доти
+	 * обидві гри падали на першому ж читанні в кожного, хто заходив.
+	 */
+	it('налаштування — завжди обʼєкт, навіть коли в базі їх немає', () => {
+		const bare = snapshotFromDb({
+			info: { gameId: 'pairs', rulesVersion: 4, seed: 1, status: 'lobby', hostUid: 'h' } as never,
+			members: {}
+		});
+		expect(bare?.info.config).toEqual({});
+		const junk = snapshotFromDb({
+			info: {
+				gameId: 'quiz',
+				rulesVersion: 5,
+				seed: 1,
+				status: 'lobby',
+				hostUid: 'h',
+				config: 7
+			} as never
+		});
+		expect(junk?.info.config).toEqual({});
+	});
 });

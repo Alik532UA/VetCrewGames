@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import {
 	GAME_SPAN,
+	MAX_ROOM_GAMES,
+	MAX_ROOM_SEED,
 	POPULATION_TRIO,
 	deckSeedOf,
 	gameIndexOf,
@@ -141,5 +143,34 @@ describe('облік кімнати між партіями', () => {
 			const repeated = two.filter((key) => one.includes(key));
 			expect(repeated, `зерно ${first}`).toEqual([]);
 		}
+	});
+});
+
+/**
+ * ЗЕРНО З ЧУЖИХ РУК (аудит 2026-09-26, шостий): програма рахується перепрогоном усіх
+ * попередніх партій кімнати, тож номер партії із зерна — межа циклу. Кімната із зерном
+ * `1e300` вішала вкладку кожного, хто заходив.
+ *
+ * Зворотний експеримент: прибрати `safeSeed` із `gameIndexOf` — тест «величезне зерно»
+ * не закінчується (межа часу vitest), а решта червоніє.
+ */
+describe('зерно з чужих рук', () => {
+	it('величезне, відʼємне чи дробове зерно — як нульове, і програма рахується одразу', () => {
+		for (const seed of [1e300, Number.MAX_SAFE_INTEGER, MAX_ROOM_SEED, -5, 1.5, Number.NaN]) {
+			expect(gameIndexOf(seed), String(seed)).toBe(0);
+			const started = Date.now();
+			const steps = planGames(seed, ALL, QUIZ_ROUNDS);
+			expect(steps, String(seed)).toHaveLength(QUIZ_ROUNDS);
+			expect(Date.now() - started, 'мілісекунди, а не вічність').toBeLessThan(2000);
+		}
+	});
+
+	it('остання дозволена партія — найбільший номер, а реванш після неї — знову нульова', () => {
+		const deck = 12345;
+		const last = deck + (MAX_ROOM_GAMES - 1) * GAME_SPAN;
+		expect(gameIndexOf(last)).toBe(MAX_ROOM_GAMES - 1);
+		expect(nextGameSeed(last), 'по колу, а не понад стелю правила').toBe(deck);
+		expect(nextGameSeed(deck)).toBe(deck + GAME_SPAN);
+		expect(deckSeedOf(nextGameSeed(last))).toBe(deckSeedOf(last));
 	});
 });

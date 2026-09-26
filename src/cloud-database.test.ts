@@ -5,6 +5,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
 import { MOVE_SEQ_MAX } from '$lib/net/roomShape';
+import { MAX_ROOM_SEED } from '$lib/config/quizDeck';
+import { MEMORY_PAIRS, ROOM_COLS_MAX, ROOM_PAIRS_MIN } from '$lib/config/memory-game';
 
 /**
  * Інваріанти роботи з хмарною базою за CLOUD-DATABASE-v8 § 14.
@@ -541,6 +543,31 @@ describe('хмарна база', () => {
 		expect(key, 'межі ключа ходу в правилах не знайдено').toBeDefined();
 		expect(Number(key) - 1, 'межа ключа').toBe(MOVE_SEQ_MAX);
 		expect(Number(field), 'межа поля seq').toBe(MOVE_SEQ_MAX);
+	});
+
+	/**
+	 * СТЕЛЯ ЗЕРНА Й МЕЖІ РОЗКЛАДКИ — ОДНІ НА ПРАВИЛА Й КОД (аудит 2026-09-26, шостий).
+	 * Розійшовшись, вони дали б або кімнату, яку клієнт мовчки вважає іншою (зерно понад
+	 * стелю — нульове), або відмову бази на законній розкладці.
+	 *
+	 * Зворотний експеримент: змінити будь-яке число в правилі чи в коді — червоніє.
+	 */
+	it('стеля зерна й межі розкладки в правилах — ті самі, що в коді', () => {
+		const rules = readFileSync('database.rules.json', 'utf8');
+		const seed =
+			/"seed": \{ "\.validate": "newData\.isNumber\(\) && newData\.val\(\) >= 0 && newData\.val\(\) < (\d+)/.exec(
+				rules
+			)?.[1];
+		const pairs =
+			/\$key !== 'pairs' \|\| \(newData\.val\(\) >= (\d+) && newData\.val\(\) <= (\d+)\)/.exec(
+				rules
+			);
+		const cols =
+			/\$key !== 'cols' \|\| \(newData\.val\(\) >= 1 && newData\.val\(\) <= (\d+)\)/.exec(rules);
+		expect(Number(seed), 'стеля зерна').toBe(MAX_ROOM_SEED);
+		expect(Number(pairs?.[1]), 'найменше пар').toBe(ROOM_PAIRS_MIN);
+		expect(Number(pairs?.[2]), 'найбільше пар').toBe(MEMORY_PAIRS);
+		expect(Number(cols?.[1]), 'найбільше колонок').toBe(ROOM_COLS_MAX);
 	});
 
 	it('версія правил гри піднята разом зі формою ходу (§ 8.4)', () => {

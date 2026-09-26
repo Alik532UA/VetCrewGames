@@ -91,6 +91,25 @@ export const roomLayoutFor = (compact: boolean): MemoryLayout =>
  * Те саме зерно завжди дає ту саму колоду — і ту саму розкладку в усіх, хто
  * грає разом.
  */
+/**
+ * РОЗКЛАДКА КІМНАТИ З ЇЇ НАЛАШТУВАНЬ — у межах, у яких партія може закінчитися
+ * (аудит 2026-09-26). Партія скінчена, коли зібрано `pairs` пар, а колода — не більша
+ * за набір тварин: `pairs` понад нього давав партію, що не закінчується ніколи, а
+ * `cols: 0` — дошку без жодної колонки. Ті самі межі стоять у правилі `config`.
+ */
+export const ROOM_PAIRS_MIN = 2;
+export const ROOM_COLS_MAX = 14;
+export function roomLayoutOf(config: Readonly<Record<string, number>>): MemoryLayout {
+	const whole = (value: unknown, min: number, max: number, fallback: number) =>
+		typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
+			? value
+			: fallback;
+	return {
+		pairs: whole(config.pairs, ROOM_PAIRS_MIN, MEMORY_PAIRS, WIDE_LAYOUT.pairs),
+		cols: whole(config.cols, 1, ROOM_COLS_MAX, WIDE_LAYOUT.cols)
+	};
+}
+
 export function buildDeck(seed: number, pairs: number = MEMORY_PAIRS): MemoryCard[] {
 	const random = seededRandom(seed);
 	const chosen: Animal[] = shuffle([...animals], random).slice(0, pairs);

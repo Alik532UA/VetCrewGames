@@ -10,6 +10,7 @@ import type {
 	RosterEntry
 } from '$lib/net/roomTypes';
 import { partyOf } from '$lib/utils/roster';
+import { roomLayoutOf } from '$lib/config/memory-game';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
 import { takeLead } from './takeLead';
 import { logService } from '$lib/services/logService.svelte';
@@ -630,10 +631,12 @@ export class PairsMatch implements RoomEnvelope {
 			local: member.uid === this.#me
 		}));
 
+		// Розкладка — у межах колоди: чужі руки могли покласти в налаштування будь-яке число.
+		const layout = roomLayoutOf(snapshot.info.config);
 		this.game.start({
 			seed: snapshot.info.seed,
-			pairs: snapshot.info.config.pairs,
-			cols: snapshot.info.config.cols,
+			pairs: layout.pairs,
+			cols: layout.cols,
 			// Глядач дивиться партію, у якій його немає; порожній список неможливий,
 			// бо кімната без гравців не переходить у `playing`.
 			players: players.length > 0 ? players : undefined

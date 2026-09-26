@@ -56,10 +56,29 @@ export const POPULATION_TRIO = 3;
 /** Скільки зерен на кімнату: номер партії — старші розряди зерна. */
 export const GAME_SPAN = 2 ** 31;
 
-export const deckSeedOf = (seed: number): number => seed % GAME_SPAN;
-export const gameIndexOf = (seed: number): number => Math.floor(seed / GAME_SPAN);
+/**
+ * СТЕЛЯ НОМЕРА ПАРТІЇ В КІМНАТІ (аудит 2026-09-26, шостий: зерно без межі).
+ *
+ * Програма партії рахується перепрогоном УСІХ попередніх партій кімнати (так колода
+ * знає, що вже було), тобто цикл до номера партії із зерна. Правило бази доти
+ * перевіряло зерно лише як число, і кімната із зерном `1e300` вішала вкладку кожного,
+ * хто в неї заходив, — а «швидка гра» сама вела туди найстаршою вільною. Тепер стелю
+ * тримають і правило (`info/seed` < `MAX_ROOM_SEED`, звіряє `cloud-database.test.ts`),
+ * і клієнт: номер понад стелю — остання партія, а реванш після неї починає колоду з
+ * нульової. Тисяча двадцять чотири партії в кімнаті, що живе дві доби, — запас.
+ */
+export const MAX_ROOM_GAMES = 1024;
+export const MAX_ROOM_SEED = MAX_ROOM_GAMES * GAME_SPAN;
+
+/** Зерно, якому можна вірити: ціле в межах кімнати. Інше — ніби нульове. */
+const safeSeed = (seed: number): number =>
+	Number.isSafeInteger(seed) && seed >= 0 && seed < MAX_ROOM_SEED ? seed : 0;
+export const deckSeedOf = (seed: number): number => safeSeed(seed) % GAME_SPAN;
+export const gameIndexOf = (seed: number): number => Math.floor(safeSeed(seed) / GAME_SPAN);
 /** Зерно наступної партії в тій самій кімнаті: колода та сама, номер наступний. */
-export const nextGameSeed = (seed: number): number => seed + GAME_SPAN;
+/** Зерно реваншу: наступна партія, а після останньої дозволеної — знову нульова. */
+export const nextGameSeed = (seed: number): number =>
+	gameIndexOf(seed) + 1 < MAX_ROOM_GAMES ? safeSeed(seed) + GAME_SPAN : deckSeedOf(seed);
 
 /**
  * Пул кожної гри онлайн — у порядку даних; перемішує колода кімнати. «Де живе»
@@ -141,7 +160,14 @@ function balancedGames(games: readonly string[], rounds: number, random: () => n
  * траплялася двічі. «Хто численніший?» — останнім: із 85 тварин трійка без
  * повторів знайдеться майже завжди.
  */
-const PICK_ORDER = ['family', 'feeding', 'habitat-biomes', 'habitat-continents', 'myths', 'population'];
+const PICK_ORDER = [
+	'family',
+	'feeding',
+	'habitat-biomes',
+	'habitat-continents',
+	'myths',
+	'population'
+];
 const pickRank = (game: string): number => {
 	const rank = PICK_ORDER.indexOf(game);
 	return rank < 0 ? PICK_ORDER.length : rank;
@@ -182,7 +208,11 @@ function drawFor(state: GameDeck, deck: number, game: string, count: number): Dr
 	 * наборів на дванадцять раундів): тоді свіжі з нового кола йдуть першими, а
 	 * якщо не вистачає й цілого кола — наступні кола по черзі.
 	 */
-	for (let cycle = state.cycle + 1; choices.length < take || cycle === state.cycle + 1; cycle += 1) {
+	for (
+		let cycle = state.cycle + 1;
+		choices.length < take || cycle === state.cycle + 1;
+		cycle += 1
+	) {
 		const next = deckFor(deck, game, cycle);
 		const fresh = cycle === state.cycle + 1 ? next.filter((item) => !forced.has(item.id)) : next;
 		const again = cycle === state.cycle + 1 ? next.filter((item) => forced.has(item.id)) : [];
@@ -312,11 +342,7 @@ let cached: { key: string; steps: PlannedStep[] } | null = null;
  * Програма партії із зерна: ті самі кроки на кожному пристрої, питання — з колоди
  * кімнати, без повторів у партії й до вичерпання пулу між партіями.
  */
-export function planGames(
-	seed: number,
-	games: readonly string[],
-	rounds: number
-): PlannedStep[] {
+export function planGames(seed: number, games: readonly string[], rounds: number): PlannedStep[] {
 	const key = `${seed}|${games.join(',')}|${rounds}`;
 	if (cached?.key === key) return cached.steps;
 	const deck = deckSeedOf(seed);
