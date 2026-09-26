@@ -35,9 +35,9 @@
  *
  * Відомі вижилі лежать у `scripts/rules-mutants.known.json`, і перелік може лише
  * коротшати: новий вижилий червонить прогін (свіжа прогалина — випадок у гейті), і
- * відомий, якого тепер убито, — теж (викреслити з переліку). На 2026-09-26 відомих —
- * ті, що вижили в першому повному прогоні: запаси, які вже тримає інше правило, і
- * справжні прогалини, які закриваються випадками в гейті.
+ * відомий, якого тепер убито, — теж (викреслити з переліку). Перелік — словник «мітка →
+ * чому вижив»: з 113 вижилих першого прогону (2026-09-26) 67 були прогалинами й убиті
+ * випадками в гейті, а 46 — запаси, які вже тримає інше правило, і кожен із причиною.
  *
  * Не в CI: повний прогін — хвилин десять. Для нової умови — `--only` на її шлях.
  */
@@ -353,7 +353,13 @@ async function main() {
 	 * тому самому місці). Той самий прийом, що в переліку завеликих файлів
 	 * (`structure.test.ts`, `OVERSIZED_ALLOWLIST`).
 	 */
-	const known = new Set(JSON.parse(readFileSync(KNOWN, 'utf8')));
+	/*
+	 * Перелік — словник «мітка → чому вижив»: кожен прийнятий запас із причиною, а не
+	 * мовчки. `--update` причини зберігає, новим ставить «не розібрано».
+	 */
+	/** @type {Record<string, string>} */
+	const reasons = JSON.parse(readFileSync(KNOWN, 'utf8'));
+	const known = new Set(Object.keys(reasons));
 	/** @param {string} label */
 	const inScope = (label) => !only || label.split('  ')[0].includes(only);
 	const all = new Set(mutants.map(({ label }) => label));
@@ -363,10 +369,15 @@ async function main() {
 	);
 	if (process.argv.includes('--update')) {
 		if (only) throw new Error('--update — лише для повного прогону, без --only');
-		writeFileSync(KNOWN, `${JSON.stringify([...survived].sort(), null, '\t')}\n`);
+		/** @type {Record<string, string>} */
+		const next = {};
+		for (const label of [...survived].sort()) next[label] = reasons[label] ?? 'не розібрано';
+		writeFileSync(KNOWN, `${JSON.stringify(next, null, '\t')}\n`);
 		console.log(`\nrules-mutants: ${KNOWN} — ${survived.length} відомих вижилих.`);
 		return;
 	}
+	const undecided = [...known].filter((label) => reasons[label] === 'не розібрано');
+	if (undecided.length > 0) console.warn(`  не розібрано у ${KNOWN}: ${undecided.length}`);
 	for (const label of fresh) console.error(`  НОВИЙ вижилий: ${label}`);
 	for (const label of stale) console.error(`  убито, викреслити з ${KNOWN}: ${label}`);
 	if (fresh.length > 0 || stale.length > 0) {

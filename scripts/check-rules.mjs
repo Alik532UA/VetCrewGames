@@ -571,6 +571,18 @@ const CASES = [
 		run: () => write(`myRooms/${host.uid}/${CODE}`, { at: SERVER_TIME }, host.token)
 	},
 	{
+		name: 'рядок індексу кімнат без мітки',
+		allowed: false,
+		run: () => write(`myRooms/${host.uid}/${CODE}`, true, host.token)
+	},
+	{
+		// Цілим вузлом індекс лише зносять: рядок на місці записів обійшов би межі кожного.
+		name: 'свій індекс кімнат рядком, а не записами',
+		allowed: false,
+		run: () => write(`myRooms/${host.uid}`, 'x'.repeat(64), host.token)
+	},
+
+	{
 		name: 'господар читає свій індекс кімнат',
 		allowed: true,
 		run: () => read(`myRooms/${host.uid}`, host.token)
@@ -885,6 +897,53 @@ const CASES = [
 			)
 	},
 	{
+		name: 'рядок таблиці без часу',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'ua' },
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з кодом країни не з двох літер',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'uaa', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з задовгою аватаркою',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{
+					name: 'Гість',
+					handle: 'guest_one',
+					score: 120,
+					avatar: 'aaaaaaaaaaaaa:bbbbbbbbbbbb',
+					at: SERVER_TIME
+				},
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з аватаркою без двокрапки',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, avatar: 'bad', at: SERVER_TIME },
+				guest.token
+			)
+	},
+
+	{
 		name: 'приватність — рядок, а не обʼєкт',
 		allowed: false,
 		run: () => write(`users/${guest.uid}/privacy`, 'x'.repeat(64), guest.token)
@@ -1030,6 +1089,47 @@ const CASES = [
 				host.token
 			)
 	},
+	{
+		name: 'профіль без псевдоніма',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Лідер', country: 'ua', at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'профіль із задовгим імʼям',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'x'.repeat(49), handle: 'leader', country: 'ua', at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'профіль із кодом країни не з двох літер',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Лідер', handle: 'leader', country: 'uaa', at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'профіль з аватаркою без двокрапки',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Лідер', handle: 'leader', avatar: 'bad', at: SERVER_TIME },
+				host.token
+			)
+	},
+
 	{
 		name: 'профіль із клієнтським часом',
 		allowed: false,
@@ -1203,10 +1303,22 @@ const CASES = [
 		run: () => write(`users/${host.uid}/followers/${guest.uid}`, { at: SERVER_TIME }, guest.token)
 	},
 	{
+		name: 'підписник без часу',
+		allowed: false,
+		run: () => write(`users/${host.uid}/followers/${guest.uid}`, true, guest.token)
+	},
+
+	{
 		name: 'гість пише свою підписку',
 		allowed: true,
 		run: () => write(`users/${guest.uid}/following/${host.uid}`, { at: SERVER_TIME }, guest.token)
 	},
+	{
+		name: 'підписка без часу',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/following/${host.uid}`, true, guest.token)
+	},
+
 	{
 		name: 'підписка з клієнтським часом',
 		allowed: false,
@@ -1265,12 +1377,30 @@ const CASES = [
 		}
 	},
 	{
+		// Знімати чужу підписку може лише той, на кого підписано, — не будь-хто.
+		name: 'третій знімає чужу підписку на іншого',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/following/${host.uid}`, null, stranger.token)
+	},
+	{
 		// «Прибери мене зі своїх підписок»: без цього дозволу відписати наполегливого
 		// підписника було б нічим. Та сама пара прав, що в сусідньому `Slovko`.
 		name: 'той, на кого підписані, знімає чужу підписку на себе',
 		allowed: true,
 		run: () => write(`users/${guest.uid}/following/${host.uid}`, null, host.token)
 	},
+	{
+		name: 'третій прибирає чужого підписника',
+		allowed: false,
+		run: () => write(`users/${host.uid}/followers/${guest.uid}`, null, stranger.token)
+	},
+	{
+		// Пара до «знімає чужу підписку на себе»: дзеркало в себе власник теж прибирає сам.
+		name: 'власник прибирає свого підписника',
+		allowed: true,
+		run: () => write(`users/${host.uid}/followers/${guest.uid}`, null, host.token)
+	},
+
 	/*
 	 * ДАНІ ГРИ: рахунок і рекорди. Половина випадків тут — про те, що вони
 	 * ПРИВАТНІ, і це не формальність: рахунок — єдине, що людина набирала сама, і
@@ -1286,6 +1416,57 @@ const CASES = [
 				guest.token
 			)
 	},
+	{
+		name: 'рахунок гри понад стелю',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/play`,
+				{ score: 100000001, games: { population: { best: 12, plays: 3 } }, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рекорд гри відʼємний',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/play`,
+				{ score: 42, games: { population: { best: -1, plays: 3 } }, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рекорд гри понад стелю',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/play`,
+				{ score: 42, games: { population: { best: 100000001, plays: 3 } }, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'кількість партій відʼємна',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/play`,
+				{ score: 42, games: { population: { best: 12, plays: -1 } }, at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'кількість партій понад стелю',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${guest.uid}/play`,
+				{ score: 42, games: { population: { best: 12, plays: 100000001 } }, at: SERVER_TIME },
+				guest.token
+			)
+	},
+
 	{
 		name: 'власник читає свої дані гри',
 		allowed: true,
@@ -1542,6 +1723,22 @@ const CASES = [
 		run: () =>
 			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), hostAvatar: 'startea' }, host.token)
 	},
+	{
+		name: 'у переліку нуль гравців',
+		allowed: false,
+		run: () => write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), players: 0 }, host.token)
+	},
+	{
+		name: 'задовга аватарка господаря в переліку',
+		allowed: false,
+		run: () =>
+			write(
+				`lobby/pairs/${LIST}`,
+				{ ...lobbyEntry(host.uid), hostAvatar: 'aaaaaaaaaaaaa:bbbbbbbbbbbb' },
+				host.token
+			)
+	},
+
 	{
 		// Аватарку господар міняє в лобі (рішення автора 2026-09-26), і запис переліку
 		// наздоганяє ОДНИМ полем — тим самим шляхом, що лічильник гравців
@@ -2022,12 +2219,15 @@ const CASES = [
 		run: () => write(`lobby/pairs/${LIST}`, { hostUid: host.uid }, host.token)
 	},
 	{
-		// Кімната переліку більше не потрібна: знести цілком, разом із записом.
+		// Кімната переліку більше не потрібна: знести цілком, разом із записом. Спершу
+		// кімнату: тоді запис знімає той, хто його написав, хоч кімнати вже немає, — так
+		// буває, коли вкладку закрили раніше, ніж спрацював `onDisconnect` (мутаційний
+		// прогін: доти цієї гілки не тримав жоден випадок).
 		name: 'господар зносить кімнату переліку й знімає запис',
 		allowed: true,
 		run: async () => {
-			const unlisted = await write(`lobby/pairs/${LIST}`, null, host.token);
-			return unlisted === 200 ? write(`rooms/${LIST}`, null, host.token) : unlisted;
+			const closed = await write(`rooms/${LIST}`, null, host.token);
+			return closed === 200 ? write(`lobby/pairs/${LIST}`, null, host.token) : closed;
 		}
 	},
 	{
@@ -2072,6 +2272,11 @@ const CASES = [
 		name: 'присутність із часом із майбутнього',
 		allowed: false,
 		run: () => write(`presence/${CODE}/${guest.uid}`, { at: FUTURE() }, guest.token)
+	},
+	{
+		name: 'наведення на картку з відʼємним номером',
+		allowed: false,
+		run: () => write(`presence/${CODE}/${guest.uid}`, { at: SERVER_TIME, hover: -1 }, guest.token)
 	},
 
 	{
@@ -2582,14 +2787,14 @@ const CASES = [
 	 * бере»: вікторина пускає в журнал і того, кого немає в складі.
 	 */
 	{
-		// Випадки нижче чекають на стороннього, який НЕ учасник.
+		// Випадки нижче чекають на стороннього, який НЕ учасник. Спершу рядок складу,
+		// тоді присутність: так її прибирає `onDisconnect` вигнаного — той, кого вже немає
+		// в складі (мутаційний прогін: гілки «прибрати себе можна завжди» не тримав ніхто).
 		name: 'сторонній іде з кімнати',
 		allowed: true,
 		run: async () => {
-			const gone = await write(`presence/${CODE}/${stranger.uid}`, null, stranger.token);
-			return gone === 200
-				? write(`rooms/${CODE}/members/${stranger.uid}`, null, stranger.token)
-				: gone;
+			const gone = await write(`rooms/${CODE}/members/${stranger.uid}`, null, stranger.token);
+			return gone === 200 ? write(`presence/${CODE}/${stranger.uid}`, null, stranger.token) : gone;
 		}
 	},
 	{
@@ -2868,6 +3073,17 @@ const CASES = [
 			return write(`rooms/${BOUNDS}/info`, rest, host.token);
 		}
 	},
+	{
+		name: 'кімната із задовгою назвою гри',
+		allowed: false,
+		run: () =>
+			write(`rooms/${BOUNDS}/info`, { ...info(host.uid), gameId: 'x'.repeat(33) }, host.token)
+	},
+	{
+		name: 'кімната з версією правил рядком',
+		allowed: false,
+		run: () => write(`rooms/${BOUNDS}/info`, { ...info(host.uid), rulesVersion: '2' }, host.token)
+	},
 
 	{
 		name: 'прапорець гри — не нуль і не одиниця',
@@ -2990,6 +3206,13 @@ const CASES = [
 				guest.token
 			)
 	},
+	{
+		// Набір ігор вікторини міняють у лобі й після перехоплення: гілку «лобі» тримає саме він.
+		name: 'новий господар у лобі міняє налаштування, хоч у журналі вже є lead',
+		allowed: true,
+		run: () => write(`rooms/${LEAD}/info/config`, { pairs: 6, cols: 4 }, guest.token)
+	},
+
 	/*
 	 * ПРИЧИНИ ВІДМОВИ ПЕРЕХОПЛЕННЯ — ПООДИНЦІ (аудит 2026-09-26). Доти кожен
 	 * негативний випадок перехоплення падав одразу з двох-трьох причин, і прибрати
@@ -3218,7 +3441,9 @@ const CASES = [
 		run: () => write(`rooms/${LEAD}/info/config`, { pairs: 6, cols: 4 }, guest.token)
 	},
 	{
-		// Рівно тим записом, яким його робить `rtdbRoom.restart`.
+		// Рівно тим записом, яким його робить `rtdbRoom.restart`, — з розкладкою, яку
+		// вибирає старт (`startConfig`): після партії налаштування тримає гілка
+		// «разом зі стертим журналом», і саме її тут видно.
 		name: 'реванш після партії стирає журнал і вказівник',
 		allowed: true,
 		run: () =>
@@ -3226,6 +3451,7 @@ const CASES = [
 				`rooms/${LEAD}`,
 				{
 					'info/seed': 3,
+					'info/config': { pairs: 6, cols: 4 },
 					'info/status': 'playing',
 					'info/startedAt': SERVER_TIME,
 					'info/countdownAt': null,
@@ -3617,6 +3843,41 @@ const CASES = [
 			return write('find/squat', null, host.token);
 		}
 	},
+	{
+		// Прибрати застарілий — можна; ПЕРЕПИСАТИ на себе, не маючи ключа в реєстрі, —
+		// ні: інакше пошук за чужим колишнім псевдонімом вів би до того, хто його
+		// перехопив (мутаційний прогін: доти цієї межі не тримав жоден випадок).
+		name: 'сторонній переписує застарілий запис пошуку на себе',
+		allowed: false,
+		run: async () => {
+			await seed('find/squat', 'uid-ghost-squat');
+			return write('find/squat', stranger.uid, stranger.token);
+		}
+	},
+	{
+		// Дві ознаки «застарілий» — поодинці. Тут профіль перейменовано, а реєстр ще
+		// називає колишнього власника: тримає рівно перша.
+		name: 'застарілий запис пошуку за перейменованим профілем прибирає будь-хто',
+		allowed: true,
+		run: async () => {
+			await seed('find/stale_profile', 'uid-ghost-a');
+			await seed('handles/stale_profile', 'uid-ghost-a');
+			await seed('users/uid-ghost-a/profile', { name: 'Привид', handle: 'renamed_a', at: 1 });
+			return write('find/stale_profile', null, host.token);
+		}
+	},
+	{
+		// А тут профіль іще називає ключ, але реєстр віддано іншому: тримає рівно друга.
+		name: 'застарілий запис пошуку за зміненим реєстром прибирає будь-хто',
+		allowed: true,
+		run: async () => {
+			await seed('find/stale_owner', 'uid-ghost-b');
+			await seed('handles/stale_owner', 'uid-ghost-c');
+			await seed('users/uid-ghost-b/profile', { name: 'Привид', handle: 'stale_owner', at: 1 });
+			return write('find/stale_owner', null, host.token);
+		}
+	},
+
 	{
 		name: 'живий запис пошуку чужою рукою не прибрати',
 		allowed: false,
