@@ -29,6 +29,17 @@ export const AWAY_GRACE_MS = 15000;
 export const AWAY_GRACE_FLOOR_MS = 3000;
 
 /**
+ * СКІЛЬКИ ЛЮДИНИ МАЄ НЕ БУТИ, ЩОБ ПАРТІЯ СТАЛА ЇЇ ЧЕКАТИ (аудит 2026-09-26).
+ *
+ * Перехід із Wi-Fi на мобільний звʼязок — це секунда без присутності: домовленість
+ * старого сокета прибирає вузол, нове зʼєднання ставить його знову
+ * (`net/presence.ts`). Доти кожен такий провал відкривав у ВСІХ вікно «Чекаємо»
+ * на весь екран, а раунд подовжувався надбавкою після чекання. Паузи це не
+ * стосується: її ставлять навмисно, і тримає вона одразу.
+ */
+export const AWAY_HOLD_DELAY_MS = 2000;
+
+/**
  * Скільки СЕКУНД ще чекаємо. Нуль — пільговий час вичерпано.
  *
  * ПІЛЬГА НАКОПИЧУВАЛЬНА: `spent` — це те, що гравець уже витратив за партію, і
@@ -223,12 +234,15 @@ export function waitView(
 		match.players.filter((player) => match.present.includes(player.uid)).length
 	);
 	const paused = match.pausedBy;
+	// Хто зник щойно, для чекання ще не відсутній (`AWAY_HOLD_DELAY_MS`).
+	const missing = match.away.filter(
+		(member) => now - (since[member.uid] ?? now) >= AWAY_HOLD_DELAY_MS
+	);
 
 	return {
 		// До першого раунду чекати нема на що: доти відсутній із лобі відкривав вікно
 		// ще до першого питання (аудит 2026-09-25).
-		hold:
-			match.round >= 0 && shouldHoldRound(match.away, match.answered, match.goOn, present, paused),
+		hold: match.round >= 0 && shouldHoldRound(missing, match.answered, match.goOn, present, paused),
 		needed: votesNeeded(present),
 		left:
 			paused === null

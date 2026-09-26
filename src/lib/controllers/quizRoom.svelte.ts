@@ -141,8 +141,22 @@ export class QuizRoom {
 		let announcing = false;
 		/** Раунд, який я вперше побачив, коли й чи був він тоді вже простроченим. */
 		let look = { round: -2, at: 0, late: false };
+		/**
+		 * Мить, коли чекання скінчилося; `Infinity` — воно триває.
+		 *
+		 * ПІСЛЯ ЧЕКАННЯ — ДАТИ ДОЇХАТИ ЧУЖИМ ЗАПИСАМ ПРО НЬОГО (аудит 2026-09-26). Облік
+		 * чекання в кожного свій, від миті, коли ВІН його побачив: ведучий, що
+		 * перезавантажився посеред чужої паузи, рахує її від перезавантаження. Доти
+		 * він оголошував наступний раунд на тому самому такті, на якому паузу знято, —
+		 * раніше, ніж доїжджали записи тих, хто простояв її всю, — і решта губила
+		 * залишок раунду, обіцяний паузою. Той самий випадок — з чеканням на
+		 * зниклого.
+		 */
+		let heldTill = -Infinity;
 		$effect(() => {
 			const match = host.match;
+			if (this.wait.hold) heldTill = Infinity;
+			else if (heldTill === Infinity) heldTill = host.clock;
 			const leads = host.me !== '' && match?.leader === host.me;
 			if (!match || !leads || match.status !== 'playing' || match.over || announcing) return;
 			const due = match.round >= 0 && match.nextDue(host.clock);
@@ -153,7 +167,8 @@ export class QuizRoom {
 			if (next === null) return;
 			// ПАРТІЯ ЧЕКАЄ — і між раундами теж. Доти наступний раунд оголошувався під
 			// вікном «Чекаємо» на весь екран і йшов без жодного продовження (аудит 2026-09-25).
-			if (this.wait.hold) return;
+			// Чекання щойно скінчилося — ще `LATE_ANNOUNCE_MS` (див. `heldTill`).
+			if (host.clock < heldTill + LATE_ANNOUNCE_MS) return;
 			if (look.late && host.clock - look.at < LATE_ANNOUNCE_MS) return;
 			announcing = true;
 			void match.startRound(next).finally(() => (announcing = false));

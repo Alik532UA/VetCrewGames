@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	AWAY_GRACE_FLOOR_MS,
 	AWAY_GRACE_MS,
+	AWAY_HOLD_DELAY_MS,
 	awaySecondsLeft,
 	awayStamps,
 	goOnDecided,
@@ -158,11 +159,23 @@ describe('стан чекання одним викликом', () => {
 	});
 
 	it('збирає паузу, межу голосів і відлік', () => {
-		const view = waitView(source(), { a: NOW }, NOW, 'b');
+		const view = waitView(source(), { a: NOW - AWAY_HOLD_DELAY_MS }, NOW, 'b');
 		expect(view.hold).toBe(true);
 		expect(view.needed).toBe(2);
-		expect(view.left).toBe(AWAY_GRACE_MS / 1000);
+		expect(view.left).toBe((AWAY_GRACE_MS - AWAY_HOLD_DELAY_MS) / 1000);
 		expect(view.pausedBy).toBeNull();
+	});
+
+	/**
+	 * СЕКУНДНИЙ ПРОВАЛ ПРИСУТНОСТІ ВІКНА НЕ ВІДКРИВАЄ (аудит 2026-09-26): перехід із
+	 * Wi-Fi на мобільний звʼязок доти показував усім «Чекаємо» на весь екран.
+	 *
+	 * Зворотний експеримент: рахувати відсутніх без затримки — червоніє.
+	 */
+	it('щойно зниклий партії ще не тримає, а за дві секунди — тримає', () => {
+		const since = { a: NOW };
+		expect(waitView(source(), since, NOW + AWAY_HOLD_DELAY_MS - 1, 'b').hold).toBe(false);
+		expect(waitView(source(), since, NOW + AWAY_HOLD_DELAY_MS, 'b').hold).toBe(true);
 	});
 
 	/**
@@ -171,7 +184,7 @@ describe('стан чекання одним викликом', () => {
 	 * відкидала — по шістнадцять разів у кожного гравця.
 	 */
 	it('до першого раунду партія не стоїть', () => {
-		expect(waitView(source({ round: -1 }), { a: NOW }, NOW, 'b').hold).toBe(false);
+		expect(waitView(source({ round: -1 }), { a: 0 }, NOW, 'b').hold).toBe(false);
 	});
 
 	it('досить голосів — партія не стоїть', () => {

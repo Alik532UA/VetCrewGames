@@ -24,6 +24,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 
 const { QuizMatch } = await import('./quizMatch.svelte');
 const { QuizRoom, QUIZ_MIN_PLAYERS, LATE_ANNOUNCE_MS } = await import('./quizRoom.svelte');
+const { AWAY_HOLD_DELAY_MS } = await import('$lib/utils/awayWait');
 const { QUIZ_RULES_VERSION } = await import('$lib/config/roomRules');
 const { logService } = await import('$lib/services/logService.svelte');
 
@@ -201,7 +202,8 @@ describe('реакції вікторини', () => {
 		const quiz = new QuizRoom(() => 0.5);
 		const now = room.tick(0);
 		quiz.game.onPresence?.(lead, [HOST], now);
-		const seat = host(lead, HOST, now);
+		// Зник не щойно, а вже досить давно, щоб партія стала його чекати.
+		const seat = host(lead, HOST, now + AWAY_HOLD_DELAY_MS);
 		cleanup = $effect.root(() => quiz.attach(seat));
 		flushSync();
 		expect(quiz.wait.hold, 'перевірка жива: гість не відповів і зник').toBe(true);
@@ -245,6 +247,63 @@ describe('реакції вікторини', () => {
 		off();
 	});
 
+	/**
+	 * ВЕДУЧИЙ ПЕРЕЗАВАНТАЖИВСЯ ПОСЕРЕД ЧУЖОЇ ПАУЗИ (аудит 2026-09-26). Його облік
+	 * паузи — від перезавантаження, а не від її початку, тож раунд для нього
+	 * «прострочився» ще до зняття паузи. Доти він оголошував наступний раунд на тому
+	 * самому такті, на якому паузу знято, раніше, ніж доїжджав запис того, хто
+	 * простояв її всю, — і решта губила залишок раунду, обіцяний паузою.
+	 *
+	 * Зворотний експеримент: повернути `if (this.wait.hold) return;` без чекання
+	 * після зняття — червоніє.
+	 */
+	it('ведучий, що перезавантажився посеред паузи, після зняття чекає чужих записів', async () => {
+		const room = new LocalRoom(info(), members());
+		const guest = new QuizMatch(GUEST, room.transport());
+		const stopGuest = guest.listen();
+		const first = new QuizMatch(HOST, room.transport());
+		const stopFirst = first.listen();
+		await first.startRound(0);
+		stopFirst();
+		// Гість став на паузу на першій секунді раунду й простояв хвилину з половиною.
+		const pausedAt = room.tick(1_000);
+		await guest.pause();
+		guest.setHold(true, pausedAt);
+		const reloadAt = room.tick(60_000);
+
+		// Ведучий «перезавантажився»: нова партія й нові реакції, посеред паузи.
+		const lead = new QuizMatch(HOST, room.transport());
+		const off = lead.listen();
+		const quiz = new QuizRoom(() => 0.5);
+		quiz.game.onPresence?.(lead, [HOST, GUEST], reloadAt);
+		const seat = host(lead, HOST, reloadAt);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+		expect(quiz.wait.hold, 'перевірка жива: партія стоїть на паузі').toBe(true);
+
+		// Годинник ведучого тикає й під паузою — на мить зняття він уже свіжий.
+		const resumedAt = room.tick(30_000);
+		seat.clock = resumedAt;
+		flushSync();
+		// Гість зняв паузу.
+		await guest.resume();
+		await settle();
+		seat.clock = resumedAt + 100;
+		flushSync();
+		await settle();
+		expect(lead.round, 'наступний раунд — на такті зняття паузи').toBe(0);
+
+		// Запис того, хто простояв паузу всю, доїхав: раунд іще не скінчився.
+		guest.setHold(false, resumedAt);
+		await settle();
+		seat.clock = resumedAt + LATE_ANNOUNCE_MS;
+		flushSync();
+		await settle();
+		expect(lead.round, 'залишок раунду, обіцяний паузою, загублено').toBe(0);
+		off();
+		stopGuest();
+	});
+
 	it('відсутній, що не відповів, спиняє час', async () => {
 		const room = new LocalRoom(info(), members());
 		const lead = new QuizMatch(HOST, room.transport());
@@ -252,15 +311,16 @@ describe('реакції вікторини', () => {
 		await lead.startRound(0);
 		const quiz = new QuizRoom(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST], 1_000);
-		const seat = host(lead, HOST, 1_000);
+		const opened = 1_000 + AWAY_HOLD_DELAY_MS;
+		const seat = host(lead, HOST, opened);
 		cleanup = $effect.root(() => quiz.attach(seat));
 		flushSync();
 		expect(quiz.wait.hold, 'перевірка жива: партія чекає').toBe(true);
 
-		seat.clock = 6_000;
+		seat.clock = opened + 5_000;
 		flushSync();
 
-		expect(lead.heldMs(6_000)).toBe(5_000);
+		expect(lead.heldMs(opened + 5_000)).toBe(5_000);
 		off();
 	});
 
@@ -270,6 +330,37 @@ describe('реакції вікторини', () => {
 	 *
 	 * Зворотний експеримент: прибрати запис у журнал — червоніє.
 	 */
+	/**
+	 * ПРОВАЛ ПРИСУТНОСТІ, КОРОТШИЙ ЗА ДВІ СЕКУНДИ (аудит 2026-09-26), — не чекання:
+	 * ні вікна, ні запису в журнал, ні надбавки до раунду.
+	 *
+	 * Зворотний експеримент: рахувати відсутніх без затримки — червоніє.
+	 */
+	it('секундний провал присутності вікна не відкриває й раунду не подовжує', async () => {
+		const room = new LocalRoom(info(), members());
+		const append = vi.fn(room.transport().append);
+		const lead = new QuizMatch(HOST, { ...room.transport(), append });
+		const off = lead.listen();
+		await lead.startRound(0);
+		append.mockClear();
+		const quiz = new QuizRoom(() => 0.5);
+		quiz.game.onPresence?.(lead, [HOST], 1_000);
+		const seat = host(lead, HOST, 1_000);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+
+		seat.clock = 1_000 + AWAY_HOLD_DELAY_MS - 100;
+		flushSync();
+		expect(quiz.wait.hold, 'вікно відкрилося на провал присутності').toBe(false);
+		quiz.game.onPresence?.(lead, [HOST, GUEST], seat.clock);
+		seat.clock += 100;
+		flushSync();
+		await settle();
+
+		expect(append, 'провал присутності записано як чекання').not.toHaveBeenCalled();
+		off();
+	});
+
 	it('чекання, що почалося й скінчилося, лишає в журналі по рядку', async () => {
 		const room = new LocalRoom(info(), members());
 		const lead = new QuizMatch(HOST, room.transport());
@@ -277,12 +368,12 @@ describe('реакції вікторини', () => {
 		await lead.startRound(0);
 		const quiz = new QuizRoom(() => 0.5);
 		quiz.game.onPresence?.(lead, [HOST], 1_000);
-		const seat = host(lead, HOST, 1_000);
+		const seat = host(lead, HOST, 1_000 + AWAY_HOLD_DELAY_MS);
 		cleanup = $effect.root(() => quiz.attach(seat));
 		flushSync();
 
-		quiz.game.onPresence?.(lead, [HOST, GUEST], 2_000);
-		seat.clock = 2_000;
+		quiz.game.onPresence?.(lead, [HOST, GUEST], 2_000 + AWAY_HOLD_DELAY_MS);
+		seat.clock = 2_000 + AWAY_HOLD_DELAY_MS;
 		flushSync();
 
 		const lines = vi
