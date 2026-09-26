@@ -130,7 +130,22 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 	 */
 	const createdAt =
 		typeof snapshot.info.createdAt === 'number' ? snapshot.info.createdAt : undefined;
-	const firstLead = snapshot.moves.find(
+	/*
+	 * ПОРЯДОК — ЗА СЕРВЕРНИМ ЧАСОМ, А НЕ ЗА НОМЕРОМ (аудит 2026-09-26). Номер у
+	 * вікторині береться першою діркою журналу (`utils/journalSeq.ts`), тож хід,
+	 * записаний пізніше, буває під МЕНШИМ номером. `resume` у дірці нижче за свою
+	 * `pause` доти оброблявся першим і не знімав нічого — партія стояла на паузі
+	 * назавжди; `lead` у дірці нижче за останній раунд старого ведучого робив той
+	 * раунд «оголошеним не ведучим». Час ставить сервер, тож порядок за ним — той
+	 * самий на кожному пристрої; однакова мілісекунда — за номером.
+	 *
+	 * Хід без часу не рахується зовсім: без часу очки порахувати нічим, а вигадати
+	 * їх — це те саме, що дати клієнту право назвати свою швидкість.
+	 */
+	const ordered = snapshot.moves
+		.filter((move) => Number.isFinite(Number(move.at)))
+		.sort((a, b) => Number(a.at) - Number(b.at) || a.seq - b.seq);
+	const firstLead = ordered.find(
 		(move) =>
 			move.type === 'lead' &&
 			typeof move.payload?.from === 'string' &&
@@ -146,12 +161,8 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 	const answered: Array<{ round: number; by: string } & QuizAnswer> = [];
 	const holds: Array<{ round: number; by: string; at: number; payload: Move['payload'] }> = [];
 
-	for (const move of snapshot.moves) {
-		// Час ходу ставить СЕРВЕР. Хід без нього не рахується: без часу очки
-		// порахувати нічим, а вигадати їх — це те саме, що дати клієнту право
-		// назвати свою швидкість.
+	for (const move of ordered) {
 		const at = Number(move.at);
-		if (!Number.isFinite(at)) continue;
 		// Хід, старший за саму кімнату, — з попередньої кімнати під тим самим кодом, а
 		// не з цієї (аудит 2026-09-25): інакше чужий `lead` робив ведучим того, кого
 		// тут немає. Правило бази такий журнал уже не пропускає; це — друга лінія.

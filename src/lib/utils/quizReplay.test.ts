@@ -49,6 +49,64 @@ const snapshot = (moves: Move[], hostUid = HOST): RoomSnapshot => ({
 const LIMIT = 10_000;
 const limitOf = () => LIMIT;
 
+/** Хід із ЯВНИМ номером — щоб покласти його в дірку, нижче за вже записані. */
+const at = (
+	seqNo: number,
+	by: string,
+	type: string,
+	time: number,
+	payload: Move['payload'] = {}
+): Move => ({
+	seq: seqNo,
+	by,
+	type,
+	at: time,
+	payload
+});
+
+/**
+ * ДІРКА В ЖУРНАЛІ, ЗАПОВНЕНА ПІЗНІШЕ (аудит 2026-09-26). Номер у вікторині
+ * береться першою діркою, тож хід, записаний пізніше, буває під меншим номером;
+ * перепрогін мусить іти за серверним часом, а не за номером.
+ *
+ * Зворотний експеримент: повернути порядок за номером — червоніють обидва.
+ */
+describe('порядок перепрогону — за часом, а не за номером', () => {
+	it('зняття паузи, що лягло в дірку нижче за саму паузу, паузу знімає', () => {
+		const log = replayQuizLog(
+			snapshot([
+				at(1, HOST, 'round', 1000, { round: 0 }),
+				at(3, GUEST, 'resume', 3000, { round: 0 }),
+				at(4, GUEST, 'pause', 2000, { round: 0 })
+			])
+		);
+		expect(log.pausedBy[0], 'партія лишилася на паузі назавжди').toBeUndefined();
+		expect(log.pauseUsedAt[GUEST]).toBe(3000);
+	});
+
+	it('передача ведення в дірці нижче за останній раунд старого ведучого раунду не скасовує', () => {
+		const log = replayQuizLog(
+			snapshot([
+				at(1, HOST, 'round', 1000, { round: 0 }),
+				at(2, GUEST, 'lead', 5000, { from: HOST }),
+				at(3, HOST, 'round', 4000, { round: 1 })
+			])
+		);
+		expect(log.startedAt[1], 'раунд старого ведучого скасовано заднім числом').toBe(4000);
+		expect(log.leader).toBe(GUEST);
+	});
+
+	it('однакова мілісекунда — за номером', () => {
+		const log = replayQuizLog(
+			snapshot([
+				at(2, GUEST, 'lead', 1000, { from: HOST }),
+				at(1, HOST, 'round', 1000, { round: 0 })
+			])
+		);
+		expect(log.startedAt[0]).toBe(1000);
+	});
+});
+
 describe('хто веде партію', () => {
 	it('перевірка жива: раунд господаря рахується', () => {
 		const log = replayQuizLog(snapshot([move(HOST, 'round', 1000, { round: 0 })]));
