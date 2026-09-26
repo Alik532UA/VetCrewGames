@@ -11,6 +11,21 @@ import { GAME_ID } from '$lib/config/menu-games';
 import { maxRoundPoints, roundPoints } from '$lib/config/scoring';
 import type { RoundOutcome } from '$lib/types/game';
 
+/** Як скінчився раунд: усе влучно, частково (без зайвих), чи з помилкою. */
+export function outcomeOf(round: HabitatRound, selected: readonly string[]): RoundOutcome {
+	const hitAll = round.correct.every((option) => selected.includes(option));
+	const noExtras = selected.every((option) => round.correct.includes(option));
+	if (hitAll && noExtras) return 'correct';
+	if (noExtras) return 'partial';
+	return 'incorrect';
+}
+
+/** Перевірений раунд: питання про тварину й що гравець вибрав. */
+export interface HabitatRecord {
+	round: HabitatRound;
+	selected: string[];
+}
+
 /**
  * Стан гри «Де живем?» (концепція, гра 3).
  *
@@ -55,6 +70,11 @@ export class HabitatGameController {
 	/** Обране гравцем у поточному раунді. */
 	selected = $state<string[]>([]);
 	checked = $state(false);
+	/**
+	 * ПЕРЕВІРЕНІ РАУНДИ — знімком для перегляду (прохання автора 2026-09-26):
+	 * тварина, варіанти й що вибрав гравець.
+	 */
+	history = $state<HabitatRecord[]>([]);
 
 	#used: string[] = [];
 
@@ -90,22 +110,16 @@ export class HabitatGameController {
 	/** Кнопка перевірки має сенс лише тоді, коли щось обрано. */
 	canCheck = $derived(!this.checked && this.selected.length > 0);
 
-	outcome = $derived.by<RoundOutcome | null>(() => {
-		if (!this.checked || !this.round) return null;
-		const correct = this.round.correct;
-		const hitAll = correct.every((option) => this.selected.includes(option));
-		const noExtras = this.selected.every((option) => correct.includes(option));
-
-		if (hitAll && noExtras) return 'correct';
-		if (noExtras) return 'partial';
-		return 'incorrect';
-	});
+	outcome = $derived.by<RoundOutcome | null>(() =>
+		!this.checked || !this.round ? null : outcomeOf(this.round, this.selected)
+	);
 
 	/** Стартовий екран: вибір підрежиму запускає партію. */
 	chooseMode(mode: HabitatMode): void {
 		this.mode = mode;
 		this.roundNumber = 1;
 		this.roundResults = [];
+		this.history = [];
 		this.sessionScore = 0;
 		this.maxScore = 0;
 		this.gameOver = false;
@@ -126,6 +140,12 @@ export class HabitatGameController {
 
 		const outcome = this.outcome ?? 'incorrect';
 		this.roundResults.push(outcome);
+		if (this.round) {
+			this.history.push({
+				round: $state.snapshot(this.round) as HabitatRound,
+				selected: [...this.selected]
+			});
+		}
 
 		/*
 		 * Частковий успіх ТЕЖ коштує очок — і це головна зміна в цій грі.
@@ -171,11 +191,11 @@ export class HabitatGameController {
 		this.gameOver = false;
 		this.roundNumber = 1;
 		this.roundResults = [];
+		this.history = [];
 		this.sessionScore = 0;
 		this.maxScore = 0;
 		this.#used = [];
 	}
-
 
 	/**
 	 * Кінець партії — і рекорд гри пишеться РІВНО ТУТ, один раз.
@@ -232,3 +252,21 @@ export class HabitatGameController {
 		this.maxScore += maxRoundPoints(round.correct.length);
 	}
 }
+
+/** Те, що дошка «Де живем?» читає з гри: і з живої партії, і зі знімка. */
+export type HabitatView = Pick<
+	HabitatGameController,
+	'round' | 'selected' | 'checked' | 'canCheck' | 'outcome' | 'toggle' | 'check' | 'nextRound'
+>;
+
+/** Минулий раунд для дошки — «перевірено», і змінити вибір нічим. */
+export const habitatReview = (record: HabitatRecord): HabitatView => ({
+	round: record.round,
+	selected: record.selected,
+	checked: true,
+	canCheck: false,
+	outcome: outcomeOf(record.round, record.selected),
+	toggle: () => {},
+	check: () => {},
+	nextRound: () => {}
+});

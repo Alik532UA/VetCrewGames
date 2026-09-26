@@ -89,6 +89,20 @@ export const habitatTab: BetaTab = {
 				en: 'On a phone every option in the round must be reachable with a finger without zooming the page.'
 			},
 			coverage: 'manual'
+		},
+		{
+			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Рівень `testable`, а
+			// не `covered` (§ 3: рівень — те, що тест СПРАВДІ доводить): юніт-тест тримає
+			// знімок раунду й дошку перегляду, але що сегмент на СТОРІНЦІ відкриває саме
+			// це питання, а «назад» повертає поточне, — не доводить жоден.
+			id: 'habitat_9',
+			category: { uk: 'Перегляд питань', en: 'Reviewing questions' },
+			text: {
+				uk: 'Дайте відповідь на два питання й натисніть перший сегмент смужки вгорі. Мусить відкритися та сама тварина з вашим вибором, позначками й правильною відповіддю; змінити вибір там не можна, а «Перевірити» й «Далі» немає. Під підсумком — перелік усіх питань, і рядок відкриває своє.',
+				en: 'Answer two questions and press the first segment of the bar on top. The same animal must open with your choice, the marks and the right answer; the choice cannot be changed there, and there is no «Check» or «Next». Under the summary there is a list of every question, and a row opens its own.'
+			},
+			coverage: 'testable',
+			testid: 'round-review-*-btn'
 		}
 	]
 };

@@ -14,7 +14,7 @@ import { uk } from '$lib/i18n/translations/uk';
 const playerMock = { addScore: vi.fn(), finishGame: vi.fn() };
 vi.mock('$lib/services/playerData.svelte', () => ({ playerData: playerMock }));
 
-const { HabitatGameController } = await import('./habitatGame.svelte');
+const { HabitatGameController, habitatReview } = await import('./habitatGame.svelte');
 
 describe('дані «Де живем?»', () => {
 	const ids = new Set(animals.map((animal) => animal.id));
@@ -105,6 +105,59 @@ describe('HabitatGameController', () => {
 		game.chooseMode(mode);
 		return game;
 	};
+
+	/**
+	 * ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26): перевірений раунд
+	 * лишається знімком — тварина, варіанти й вибір гравця, — і перегляд дає той
+	 * самий підсумок.
+	 *
+	 * Зворотний експеримент: не писати історію — червоніє «знімок»; не чистити на
+	 * «Грати знову» — червоніє «нова партія».
+	 */
+	it('перевірений раунд — знімок тварини й вибору, з тим самим підсумком', () => {
+		const game = started();
+		const first = game.round!;
+		game.toggle(first.correct[0]);
+		game.check();
+		const outcome = game.outcome;
+		game.nextRound();
+		const wrong = game.round!.options.find((option) => !game.round!.correct.includes(option))!;
+		game.toggle(wrong);
+		game.check();
+
+		expect(game.history).toHaveLength(2);
+		expect(game.history[0].round.animal.id).toBe(first.animal.id);
+		expect(game.history[0].selected).toEqual([first.correct[0]]);
+		const view = habitatReview(game.history[0]);
+		expect(view.checked).toBe(true);
+		expect(view.canCheck).toBe(false);
+		expect(view.outcome).toBe(outcome);
+		expect(habitatReview(game.history[1]).outcome).toBe('incorrect');
+	});
+
+	it('у перегляді вибір не змінити', () => {
+		const game = started();
+		const round = game.round!;
+		game.toggle(round.correct[0]);
+		game.check();
+		const view = habitatReview(game.history[0]);
+		view.toggle(round.options.find((option) => option !== round.correct[0])!);
+		view.check();
+		expect(view.selected).toEqual([round.correct[0]]);
+	});
+
+	it('нова партія починає з порожньою історією — і «Грати знову», і вихід на старт', () => {
+		const game = started();
+		game.toggle(game.round!.correct[0]);
+		game.check();
+		game.chooseMode('continents');
+		expect(game.history, 'грати знову').toEqual([]);
+
+		game.toggle(game.round!.correct[0]);
+		game.check();
+		game.reset();
+		expect(game.history, 'на стартовий екран').toEqual([]);
+	});
 
 	it('до вибору підрежиму раунду немає — це стартовий екран', () => {
 		const game = new HabitatGameController();

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { t, td, formatFont } from '$lib/i18n';
-	import type { HabitatGameController } from '$lib/controllers/habitatGame.svelte';
+	import type { HabitatView } from '$lib/controllers/habitatGame.svelte';
 	import type { HabitatMode } from '$lib/config/habitat-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { revealScroll } from '$lib/utils/revealScroll';
@@ -36,7 +36,8 @@
 	 * щоб дошка не стрибала.
 	 */
 	interface Props {
-		game: HabitatGameController;
+		/** Жива партія або минулий раунд для перегляду (`habitatReview`). */
+		game: HabitatView;
 		mode: HabitatMode;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
