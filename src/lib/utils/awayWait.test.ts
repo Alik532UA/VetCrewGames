@@ -11,6 +11,7 @@ import {
 	pauseSecondsLeft,
 	shouldHoldRound,
 	votesNeeded,
+	settledPresence,
 	waitView,
 	type WaitSource
 } from './awayWait';
@@ -167,15 +168,21 @@ describe('стан чекання одним викликом', () => {
 	});
 
 	/**
-	 * СЕКУНДНИЙ ПРОВАЛ ПРИСУТНОСТІ ВІКНА НЕ ВІДКРИВАЄ (аудит 2026-09-26): перехід із
-	 * Wi-Fi на мобільний звʼязок доти показував усім «Чекаємо» на весь екран.
+	 * ЩОЙНО ЗНИКЛИЙ ДЛЯ ПАРТІЇ ЩЕ ТУТ (аудит 2026-09-26): секундний провал
+	 * присутності не відкриває вікна й не робить людину «не тією, кого чекаємо». Поправка
+	 * — в одному місці (`settledPresence`), тож і вікно, і «чи відповіли всі» бачать
+	 * ту саму присутність.
 	 *
-	 * Зворотний експеримент: рахувати відсутніх без затримки — червоніє.
+	 * Зворотний експеримент: не лишати щойно зниклого присутнім — червоніє.
 	 */
-	it('щойно зниклий партії ще не тримає, а за дві секунди — тримає', () => {
+	it('щойно зниклий лишається присутнім для партії, а за дві секунди — ні', () => {
 		const since = { a: NOW };
-		expect(waitView(source(), since, NOW + AWAY_HOLD_DELAY_MS - 1, 'b').hold).toBe(false);
-		expect(waitView(source(), since, NOW + AWAY_HOLD_DELAY_MS, 'b').hold).toBe(true);
+		expect(settledPresence(['b'], since, NOW + AWAY_HOLD_DELAY_MS - 1)).toEqual(['b', 'a']);
+		expect(settledPresence(['b'], since, NOW + AWAY_HOLD_DELAY_MS)).toEqual(['b']);
+		expect(settledPresence(['a', 'b'], since, NOW), 'той, хто тут, удруге не додається').toEqual([
+			'a',
+			'b'
+		]);
 	});
 
 	/**

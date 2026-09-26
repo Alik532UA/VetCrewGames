@@ -1,6 +1,6 @@
 import { playerData } from '$lib/services/playerData.svelte';
 import { logService } from '$lib/services/logService.svelte';
-import { awayStamps, waitView, type WaitView } from '$lib/utils/awayWait';
+import { awayStamps, settledPresence, waitView, type WaitView } from '$lib/utils/awayWait';
 import { ONLINE_GAMES, gamesToConfig, roomFitsGames } from '$lib/config/quizOnline';
 import { QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { QuizMatch } from './quizMatch.svelte';
@@ -69,6 +69,8 @@ export class QuizRoomState {
 	readonly game: RoomGame<QuizMatch>;
 
 	#host: QuizHost | null = null;
+	/** Хто на звʼязку за останньою звісткою присутності — без поправки на мить. */
+	#reported: string[] = [];
 
 	/**
 	 * `random` — звідки зерно нової кімнати: випадковість живе на сторінці, а не в
@@ -92,6 +94,7 @@ export class QuizRoomState {
 				// Нова кімната — новий відлік: позначки відсутності СТАРОЇ кімнати тут нічого не
 				// означають, а той самий гравець у новій показував би чужий час (аудит 2026-09-26).
 				this.awaySince = {};
+				this.#reported = [];
 				return new QuizMatch(me, transport, factor);
 			},
 			// Набір і в записі переліку: `rooms` перелічувати заборонено, тож фільтр списку
@@ -104,9 +107,11 @@ export class QuizRoomState {
 			fitsQuick: (room) => roomFitsGames(room.games, this.picked),
 			onPresence: (match, uids, now) => {
 				// ПРИСУТНІСТЬ ЇДЕ В МАТЧ, і саме це розморожує партію: раунд закінчується,
-				// коли відповіли ПРИСУТНІ, а не всі, хто колись зайшов.
-				match.present = uids;
+				// коли відповіли ПРИСУТНІ, а не всі, хто колись зайшов. З поправкою на мить:
+				// хто зник щойно, для партії ще тут (`settledPresence`).
+				this.#reported = [...uids];
 				this.awaySince = awayStamps(match.players, uids, this.awaySince, now);
+				match.present = settledPresence(uids, this.awaySince, now);
 			},
 			award: (match, me) => {
 				// Глядач лише дивився — бали не його (той самий запобіжник, що в «Знайди пару»).
@@ -116,7 +121,10 @@ export class QuizRoomState {
 			clockEvery: (match) => {
 				if (match.countdownAt !== null && match.status !== 'playing') return CLOCK_MS;
 				if (match.status === 'playing' && !match.over) return ROUND_CLOCK_MS;
-				return match.away.length > 0 ? ROUND_CLOCK_MS : null;
+				// Поза грою чекати нема на що: вікно «Чекаємо» живе лише в раунді. Доти тут
+				// тикало щосто мілісекунд у лобі й на підсумку, щойно чийогось рядка не було
+				// в присутності (аудит 2026-09-26).
+				return null;
 			}
 		};
 	}
@@ -187,6 +195,18 @@ export class QuizRoomState {
 		 * звіт про «вікторина зависла» не мав з чим звіритися — ні коли партія стала,
 		 * ні чи через паузу, ні скільки людей бракувало.
 		 */
+		/*
+		 * ПОПРАВКА НА МИТЬ ЗНІМАЄТЬСЯ З ГОДИННИКОМ (`settledPresence`): за
+		 * `AWAY_HOLD_DELAY_MS` той, хто зник, перестає бути присутнім для партії й без
+		 * нової звістки присутності — тоді й відкривається чекання.
+		 */
+		$effect(() => {
+			const match = host.match;
+			if (!match) return;
+			const next = settledPresence(this.#reported, this.awaySince, host.clock);
+			if (next.join() !== match.present.join()) match.present = next;
+		});
+
 		let holding = false;
 		$effect(() => {
 			const match = host.match;

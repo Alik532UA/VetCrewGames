@@ -40,6 +40,27 @@ export const AWAY_GRACE_FLOOR_MS = 3000;
 export const AWAY_HOLD_DELAY_MS = 2000;
 
 /**
+ * ПРИСУТНІСТЬ ДЛЯ ПАРТІЇ — з поправкою на мить (аудит 2026-09-26).
+ *
+ * Хто зник щойно (менше за `AWAY_HOLD_DELAY_MS`), для партії ще ТУТ — однаково
+ * для вікна «Чекаємо» й для «чи відповіли всі присутні». Доти затримка стояла
+ * лише на вікні, а «кого чекаємо з відповіддю» бачило провал одразу: ведучий за
+ * ці дві секунди оголошував наступний раунд, не дочекавшись того, хто на мить
+ * відпав, і той губив залишок раунду. Одна поправка в одному місці — і обидва
+ * питання бачать ту саму присутність.
+ */
+export function settledPresence(
+	uids: readonly string[],
+	since: Readonly<Record<string, number>>,
+	now: number
+): string[] {
+	const recent = Object.entries(since)
+		.filter(([uid, at]) => !uids.includes(uid) && now - at < AWAY_HOLD_DELAY_MS)
+		.map(([uid]) => uid);
+	return [...uids, ...recent];
+}
+
+/**
  * Скільки СЕКУНД ще чекаємо. Нуль — пільговий час вичерпано.
  *
  * ПІЛЬГА НАКОПИЧУВАЛЬНА: `spent` — це те, що гравець уже витратив за партію, і
@@ -234,15 +255,14 @@ export function waitView(
 		match.players.filter((player) => match.present.includes(player.uid)).length
 	);
 	const paused = match.pausedBy;
-	// Хто зник щойно, для чекання ще не відсутній (`AWAY_HOLD_DELAY_MS`).
-	const missing = match.away.filter(
-		(member) => now - (since[member.uid] ?? now) >= AWAY_HOLD_DELAY_MS
-	);
+	// Хто зник щойно, того в `away` ще немає: присутність для партії вже з поправкою
+	// на мить (`settledPresence`), тож тут окремої затримки не треба.
 
 	return {
 		// До першого раунду чекати нема на що: доти відсутній із лобі відкривав вікно
 		// ще до першого питання (аудит 2026-09-25).
-		hold: match.round >= 0 && shouldHoldRound(missing, match.answered, match.goOn, present, paused),
+		hold:
+			match.round >= 0 && shouldHoldRound(match.away, match.answered, match.goOn, present, paused),
 		needed: votesNeeded(present),
 		left:
 			paused === null

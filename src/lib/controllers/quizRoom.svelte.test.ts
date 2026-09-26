@@ -112,8 +112,11 @@ describe('адаптер вікторини', () => {
 
 		quiz.game.onPresence?.(match, [HOST], 5_000);
 
-		expect(match.present).toEqual([HOST]);
+		// Щойно зниклий для партії ще тут (`settledPresence`) — а мить зникнення вже записана.
+		expect(match.present).toEqual([HOST, GUEST]);
 		expect(quiz.awaySince).toEqual({ [GUEST]: 5_000 });
+		quiz.game.onPresence?.(match, [HOST], 5_000 + AWAY_HOLD_DELAY_MS);
+		expect(match.present, 'за дві секунди — вже ні').toEqual([HOST]);
 		off();
 	});
 
@@ -336,6 +339,50 @@ describe('реакції вікторини', () => {
 	 *
 	 * Зворотний експеримент: рахувати відсутніх без затримки — червоніє.
 	 */
+	/**
+	 * ЩОЙНО ЗНИКЛИЙ, ЩО ЩЕ НЕ ВІДПОВІВ, РАУНДУ НЕ ОБРИВАЄ (аудит 2026-09-26). Доти
+	 * затримка стояла лише на вікні «Чекаємо», а «чи відповіли всі присутні» бачило
+	 * провал одразу: решта вже відповіла, і ведучий за ці дві секунди оголошував
+	 * наступний раунд — той, хто на мить відпав, губив залишок свого.
+	 *
+	 * Зворотний експеримент: у `onPresence` писати голий перелік присутніх — червоніє.
+	 */
+	it('гравець, що на мить відпав, раунду не губить: партія його чекає', async () => {
+		const third: Member = { uid: 'uid-third', name: 'Третій', role: 'player', order: 3 };
+		const trio = [...members(), third];
+		const room = new LocalRoom(info({ roster: rosterOf(trio) }), trio);
+		const lead = new QuizMatch(HOST, room.transport());
+		const guest = new QuizMatch(GUEST, room.transport());
+		const stop = [lead.listen(), guest.listen()];
+		await lead.startRound(0);
+		const start = room.tick(0);
+		const quiz = new QuizRoomState(() => 0.5);
+		quiz.game.onPresence?.(lead, [HOST, GUEST, third.uid], start);
+		const seat = host(lead, HOST, start);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+
+		room.tick(1_000);
+		await lead.answer(1);
+		await guest.answer(1);
+		await settle();
+		// Третій думає — і на мить відпадає зі звʼязку.
+		const dropped = room.tick(2_000);
+		quiz.game.onPresence?.(lead, [HOST, GUEST], dropped);
+		seat.clock = dropped + 100;
+		flushSync();
+		await settle();
+
+		expect(lead.present, 'щойно зниклий для партії ще тут').toContain(third.uid);
+		expect(lead.round, 'раунд обірвано за того, хто на мить відпав').toBe(0);
+
+		seat.clock = dropped + AWAY_HOLD_DELAY_MS;
+		flushSync();
+		expect(quiz.wait.hold, 'за дві секунди — справжнє чекання').toBe(true);
+		expect(lead.round).toBe(0);
+		stop.forEach((off) => off());
+	});
+
 	it('секундний провал присутності вікна не відкриває й раунду не подовжує', async () => {
 		const room = new LocalRoom(info(), members());
 		const append = vi.fn(room.transport().append);
