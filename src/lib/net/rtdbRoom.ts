@@ -10,10 +10,12 @@ import { infoFromDb, rosterToRecord, snapshotFromDb } from './roomShape';
  * Форма даних:
  *
  * ```
- * rooms/{code}/info      { gameId, rulesVersion, seed, status, hostUid, config, createdAt, startedAt }
- * rooms/{code}/members/{uid}  { name, role, order }
+ * rooms/{code}/info           { gameId, rulesVersion, seed, status, hostUid, config, createdAt, … }
+ * rooms/{code}/members/{uid}  { name, role, order, … }
  * rooms/{code}/moves/{seq}    { seq, by, type, at, payload }
  * ```
+ * Повний перелік полів — у типах `RoomInfo` і `Member` (`net/roomTypes.ts`), а не
+ * тут: копія розходилася з ними (аудит 2026-09-25 — стояло вісім полів із шістнадцяти).
  * Індекс власних кімнат і прибирання за собою — окремо, у `net/ownRooms.ts`.
  *
  * **Склад НЕ прибирається при обриві звʼязку.** Присутність — окрема гілка й
@@ -247,6 +249,12 @@ export async function createRoom(options: NewRoom): Promise<string> {
 }
 
 /**
+ * Скільки учасників (гравців і глядачів разом) уміщає кімната. Те саме число, що
+ * `order <= 12` у правилі бази, — звіряє їх `rtdbRoom.test.ts`.
+ */
+export const ROOM_CAPACITY = 12;
+
+/**
  * Зайти в кімнату — або повернутися в неї.
  *
  * `role` без значення означає «лишити як було»: після перезавантаження сторінка
@@ -254,12 +262,6 @@ export async function createRoom(options: NewRoom): Promise<string> {
  * тобто перероздав би дошку всім. Роль міняється лише тоді, коли її справді
  * натиснули.
  */
-/**
- * Скільки учасників (гравців і глядачів разом) уміщає кімната. Те саме число, що
- * `order <= 12` у правилі бази, — звіряє їх `rtdbRoom.test.ts`.
- */
-export const ROOM_CAPACITY = 12;
-
 export async function joinRoom(
 	code: string,
 	name: string,
@@ -332,7 +334,6 @@ export async function closeRoom(code: string): Promise<void> {
 	await forgetOwnRoom(code);
 }
 
-/** Чи є така кімната і чи та сама в неї гра. */
 /**
  * СТЕЖИТИ ЗА ОДНИМ ВУЗЛОМ `info` — для сповіщення «вас чекають у грі».
  *
@@ -359,6 +360,7 @@ export async function watchRoomInfo(
 	);
 }
 
+/** Чи є така кімната і чи та сама в неї гра. */
 export async function peekRoom(code: string): Promise<RoomInfo | null> {
 	const { db } = await connect();
 	const { get, ref } = await import('firebase/database');

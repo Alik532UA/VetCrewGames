@@ -139,7 +139,7 @@ export function barLeftMs(view: QuizClockView, now: number): number {
 	return limit === null ? 0 : Math.max(0, limit - last);
 }
 
-/** Чи час господареві оголошувати наступний раунд. */
+/** Чи час ведучому оголошувати наступний раунд. */
 export function nextDue(view: QuizClockView, now: number): boolean {
 	const deadline = deadlineAt(view, now);
 	if (deadline === null) return false;
