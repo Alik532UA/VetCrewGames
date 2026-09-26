@@ -2,6 +2,7 @@ import { settings } from '$lib/services/settings.svelte';
 import { logService } from '$lib/services/logService.svelte';
 import { awardOnce } from '$lib/services/onlineAwards';
 import { COUNTDOWN_MS } from '$lib/config/roomLife';
+import { leadCandidates } from '$lib/utils/roster';
 import { toast } from './toast.svelte';
 import type { RoomMatch, RoomSession } from './roomSession.svelte';
 
@@ -164,27 +165,47 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
  * `LEAD_AFTER_MS`, якщо перший не встиг. Законність вирішує правило бази
  * (господаря справді немає в присутності), а таймер лише не дає короткому обриву
  * змінити ведучого.
+ *
+ * Кандидати — ЛИШЕ ТІ, КОГО ПРАВИЛО ПУСТИТЬ (`leadCandidates`), і після відмови —
+ * не раніше ніж за `LEAD_AFTER_MS`. Доти спроба йшла на кожному такті годинника,
+ * по три записи, без жодного рядка в журналі, а першим кандидатом у вікторині
+ * міг бути новачок, якого правило не пускає ніколи: партія стояла без ведучого,
+ * а база отримувала десяток відмов щосекунди (аудит 2026-09-25).
  */
 function watchHost<M extends RoomMatch>(session: RoomSession<M>): void {
 	let goneSince: number | null = null;
 	let taking = false;
+	/** Раніше цієї миті не пробувати: відмова бази за секунду не минає. */
+	let retryAt = 0;
+	/** Про відмову — один рядок на відсутність господаря, а не на спробу. */
+	let refused = false;
 
 	$effect(() => {
 		const clock = session.clock;
 		const match = session.match;
 		if (!match || !session.hostAway) {
 			goneSince = null;
+			retryAt = 0;
+			refused = false;
 			return;
 		}
 		goneSince ??= clock;
-		const here = match.players.filter((player) => session.online.includes(player.uid));
+		const here = leadCandidates(match.players, match.status, match.roster).filter((player) =>
+			session.online.includes(player.uid)
+		);
 		const rank = here.findIndex((player) => player.uid === session.me);
-		if (rank < 0 || taking || clock - goneSince < LEAD_AFTER_MS * (rank + 1)) return;
+		if (rank < 0 || taking || clock < retryAt) return;
+		if (clock - goneSince < LEAD_AFTER_MS * (rank + 1)) return;
 		taking = true;
+		retryAt = clock + LEAD_AFTER_MS;
 		void match
 			.takeLead()
 			.then((taken) => {
-				if (!taken) return;
+				if (!taken) {
+					if (!refused) logService.info('network', 'lead refused', { code: session.code });
+					refused = true;
+					return;
+				}
 				toast.info('pairs.youLead');
 				logService.info('network', 'lead taken', { code: session.code });
 			})

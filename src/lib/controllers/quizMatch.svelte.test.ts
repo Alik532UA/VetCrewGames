@@ -735,6 +735,70 @@ describe('приріст за раунд', () => {
 	});
 });
 
+/**
+ * СКЛАД ВІКТОРИНИ — старт і ті, хто долучився (аудит 2026-09-25, `utils/roster.ts`).
+ *
+ * Доти гравці бралися з поточних `members`: хто в лобі натиснув «Назад» (рядок
+ * лишається), ставав «відсутнім гравцем» з нульового раунду — вікно «Чекаємо: …»
+ * на весь екран у кожному раунді. А хто вийшов, зникав із табло з усіма очками.
+ *
+ * Зворотний експеримент: повернути `playersOf(this.members)` — червоніють
+ * «привид із лобі» й «хто вийшов».
+ */
+describe('склад вікторини', () => {
+	const GHOST: Member = { uid: 'uid-ghost', name: 'Привид', role: 'player', order: 3 };
+	const LATE: Member = { uid: 'uid-late', name: 'Новачок', role: 'player', order: 4 };
+
+	it('привид із лобі партію не тримає', async () => {
+		const room = new LocalRoom(info(), [...members(), GHOST]);
+		const host = new QuizMatch(HOST, room.transport());
+		const off = host.listen();
+		host.present = [HOST, GUEST];
+		await host.startRound(0);
+
+		expect(host.players.map((player) => player.uid)).toEqual([HOST, GUEST]);
+		expect(host.away).toEqual([]);
+		off();
+	});
+
+	it('хто вийшов — на таблі з очками, а чекати його нема чого', async () => {
+		const { room, host, guest, stop } = table();
+		host.present = [HOST, GUEST];
+		await host.startRound(0);
+		await guest.answer(1);
+		const earned = host.scores[GUEST];
+		expect(earned, 'перевірка жива: гість заробив').toBeGreaterThan(0);
+
+		room.setMembers(members().filter((member) => member.uid !== GUEST));
+		host.present = [HOST];
+
+		expect(host.scores[GUEST]).toBe(earned);
+		expect(host.players.find((player) => player.uid === GUEST)?.name).toBe('Гість');
+		expect(host.away).toEqual([]);
+		stop();
+	});
+
+	it('новачок посеред партії грає: його відповідь рахується, і раунд його чекає', async () => {
+		const room = new LocalRoom(info(), [...members(), LATE]);
+		const host = new QuizMatch(HOST, room.transport());
+		const late = new QuizMatch(LATE.uid, room.transport());
+		const stop = [host.listen(), late.listen()];
+		host.present = [HOST, GUEST, LATE.uid];
+		await host.startRound(0);
+		await host.answer(1);
+		await room
+			.transport()
+			.append({ seq: 90, by: GUEST, type: 'answer', payload: { round: 0, correct: 1 } });
+		expect(host.everyoneAnswered, 'новачка ще чекають').toBe(false);
+
+		await late.answer(1);
+
+		expect(host.scores[LATE.uid]).toBeGreaterThan(0);
+		expect(host.everyoneAnswered).toBe(true);
+		stop.forEach((off) => off());
+	});
+});
+
 describe('той, хто зник із кімнати', () => {
 	/**
 	 * ГОЛОВНЕ ТУТ: партія не чекає на того, кого немає.
@@ -1521,7 +1585,11 @@ describe('журнал вікторини витримує чуже й одно�
 
 	it('кожен відсутній платить свою пільгу, а пауза рахується один раз', async () => {
 		const third: Member = { uid: 'uid-third', name: 'Третій', role: 'player', order: 3 };
-		const room = new LocalRoom(info(), [...members(), third]);
+		const room = new LocalRoom(
+			// Третій грав від старту — він у складі, а не привид із лобі.
+			info({ roster: rosterOf([...members(), third]) }),
+			[...members(), third]
+		);
 		const host = new QuizMatch(HOST, room.transport());
 		const off = host.listen();
 		await host.startRound(0);

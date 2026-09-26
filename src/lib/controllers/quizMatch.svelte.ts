@@ -2,7 +2,7 @@ import type { GoneReason, Member, RoomSnapshot, RoomTransport } from '$lib/net/r
 import type { RoundStatus } from '$lib/types/game';
 import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
-import { playersOf } from '$lib/utils/roster';
+import { quizPartyOf, stayingOf, type QuizPartySource } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
 import { QuizHold, type ReleasedHold } from '$lib/utils/quizHold';
 import { takeLead } from './takeLead';
@@ -112,6 +112,8 @@ export class QuizMatch {
 	#seqs: number[] = [];
 	status = $state<'lobby' | 'playing' | 'over'>('lobby');
 	members = $state<Member[]>([]);
+	/** Заморожений склад партії (`RoomInfo.roster`); `null` — лобі або кімната старша за поле. */
+	roster = $state.raw<QuizPartySource['roster']>(null);
 	hostUid = $state('');
 	/** Зерно кімнати. Із нього виводиться програма — однакова в усіх. */
 	seed = $state(0);
@@ -195,8 +197,13 @@ export class QuizMatch {
 		);
 	}
 
+	/**
+	 * ГРАВЦІ ПАРТІЇ — склад старту й ті, хто долучився (`utils/roster.ts`,
+	 * `openPartyOf`). Долучився — отже тут або вже відповідав: відсутній, що партії
+	 * не грав, не рахується ні в таблі, ні в чеканні (аудит 2026-09-25).
+	 */
 	get players(): Member[] {
-		return playersOf(this.members);
+		return quizPartyOf(this, this.#me);
 	}
 
 	/** Я лише дивлюся: мої відповіді, пауза й голос партії не стосуються. */
@@ -257,7 +264,8 @@ export class QuizMatch {
 	 * Інакше раунд закінчувався б сам собою на порожньому списку.
 	 */
 	get awaited(): Member[] {
-		const players = this.players;
+		// Пішов назовсім — на таблі лишається, а чекати його нема чого (`stayingOf`).
+		const players = stayingOf(this.players, this.members);
 		if (this.present.length === 0) return players;
 		const here = players.filter((player) => this.present.includes(player.uid));
 		return here.length > 0 ? here : players;
@@ -271,7 +279,8 @@ export class QuizMatch {
 	 */
 	get away(): Member[] {
 		if (this.present.length === 0) return [];
-		return this.players.filter((player) => !this.present.includes(player.uid));
+		const staying = stayingOf(this.players, this.members);
+		return staying.filter((player) => !this.present.includes(player.uid));
 	}
 
 	/**
@@ -742,6 +751,7 @@ export class QuizMatch {
 
 	#apply(snapshot: RoomSnapshot): void {
 		this.members = snapshot.members;
+		this.roster = snapshot.info.roster ?? null;
 		this.status = snapshot.info.status;
 		this.hostUid = snapshot.info.hostUid;
 		if (snapshot.info.seed !== this.seed) {

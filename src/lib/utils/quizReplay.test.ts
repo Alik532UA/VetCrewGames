@@ -366,3 +366,28 @@ describe('відповідь глядача', () => {
 		expect(log.answers[0]?.[GUEST]).toBeDefined();
 	});
 });
+
+/**
+ * ХТО ВИЙШОВ, ТОЙ ПАРТІЮ ГРАВ (аудит 2026-09-25): доти його відповіді зникали
+ * разом із рядком складу, і табло дограної партії мінялося, коли люди виходили з
+ * підсумку. Склад старту рахується й без рядка.
+ *
+ * Зворотний експеримент: прибрати склад із множини гравців — червоніє.
+ */
+describe('відповідь того, хто вийшов', () => {
+	it('рахується за складом старту, хоч рядка вже немає', () => {
+		const gone = snapshot([
+			move(HOST, 'round', 1000, { round: 0 }),
+			move(GUEST, 'answer', 2000, { round: 0, correct: 1 })
+		]);
+		const log = replayQuizLog(
+			{
+				...gone,
+				info: { ...gone.info, roster: [{ uid: GUEST, name: 'Гість' }] },
+				members: members.filter((member) => member.uid !== GUEST)
+			},
+			{ limitOf }
+		);
+		expect(log.answers[0]?.[GUEST]).toBeDefined();
+	});
+});

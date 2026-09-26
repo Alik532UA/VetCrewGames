@@ -1,5 +1,12 @@
 import type { LobbyRoom } from '$lib/net/lobby';
-import type { GoneReason, Member, Role, RoomStatus, RoomTransport } from '$lib/net/roomTypes';
+import type {
+	GoneReason,
+	Member,
+	Role,
+	RoomStatus,
+	RoomTransport,
+	RosterEntry
+} from '$lib/net/roomTypes';
 
 /*
  * ТЕ, ЧИМ СЕСІЯ КІМНАТИ ГОВОРИТЬ ІЗ ГРОЮ Й СТОРІНКОЮ, — окремо від самої сесії.
@@ -14,6 +21,8 @@ export interface RoomMatch {
 	listen(): () => void;
 	readonly members: Member[];
 	readonly players: Member[];
+	/** Заморожений склад: на нього спирається правило перехоплення ведення. */
+	readonly roster: readonly RosterEntry[] | null;
 	readonly status: RoomStatus;
 	readonly hostUid: string;
 	readonly countdownAt: number | null;

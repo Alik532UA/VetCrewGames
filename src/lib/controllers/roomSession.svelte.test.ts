@@ -4,6 +4,7 @@ import { LocalRoom } from '$lib/net/localRoom';
 import { rosterOf } from '$lib/utils/roster';
 import type { RoomNet } from '$lib/net/roomNet';
 import type { Member, RoomInfo, RoomTransport } from '$lib/net/roomTypes';
+import { gamesToConfig, ONLINE_GAMES } from '$lib/config/quizOnline';
 
 /**
  * СЕСІЯ КІМНАТИ — оркестровка, яка доти не мала жодного тесту.
@@ -27,6 +28,7 @@ const { RoomSession } = await import('./roomSession.svelte');
 const { logService } = await import('$lib/services/logService.svelte');
 const { LEAD_AFTER_MS } = await import('./roomPolicies.svelte');
 const { PairsMatch } = await import('./pairsMatch.svelte');
+const { QuizMatch } = await import('./quizMatch.svelte');
 
 type Session = InstanceType<typeof RoomSession<InstanceType<typeof PairsMatch>>>;
 
@@ -62,6 +64,14 @@ const pairsGame = {
 	award,
 	listingExtras: vi.fn(() => ({})),
 	clockEvery: () => null
+};
+
+/** Та сама мініатюра, але матч — вікторина: новачок посеред партії там грає. */
+const quizGame = {
+	...pairsGame,
+	gameId: 'quiz' as const,
+	lateRole: 'player' as const,
+	createMatch: (me: string, transport: RoomTransport) => new QuizMatch(me, transport)
 };
 
 /** Мережа кімнати в памʼяті: той самий `LocalRoom`, що в тестах правил партії. */
@@ -128,12 +138,23 @@ function stubs() {
 let cleanup: (() => void) | null = null;
 
 /** Сесія з поставленими політиками — як на сторінці, лише без компонента. */
-function sessionFor(room: LocalRoom, peek: RoomInfo | null, me: string) {
+function sessionFor(
+	room: LocalRoom,
+	peek: RoomInfo | null,
+	me: string,
+	game: typeof pairsGame | typeof quizGame = pairsGame
+) {
 	const { net, setOnline, setConnected } = fakeNet(room, peek, me);
 	const { place, player, lobby } = stubs();
 	let session!: Session;
 	cleanup = $effect.root(() => {
-		session = new RoomSession(pairsGame, place, player as never, lobby as never, net) as Session;
+		session = new RoomSession(
+			game as typeof pairsGame,
+			place,
+			player as never,
+			lobby as never,
+			net
+		) as Session;
 		session.attach();
 	});
 	return { session, net, place, lobby, setOnline, setConnected };
@@ -291,8 +312,10 @@ describe('політики кімнати', () => {
 	});
 
 	it('господаря немає досить довго — ведення підхоплює перший присутній гравець', async () => {
-		const room = new LocalRoom(roomInfo({ status: 'playing' }), members());
-		const { session, setOnline } = sessionFor(room, roomInfo({ status: 'playing' }), GUEST);
+		// Посеред партії правило пускає лише склад старту — він і тут.
+		const started = roomInfo({ status: 'playing', roster: rosterOf(members()) });
+		const room = new LocalRoom(started, members());
+		const { session, setOnline } = sessionFor(room, started, GUEST);
 		session.joinCode = '42';
 		await session.enter('join');
 		await settle();
@@ -306,6 +329,78 @@ describe('політики кімнати', () => {
 		session.clock = 1_000_000 + LEAD_AFTER_MS;
 		flushSync();
 		expect(takeLead).toHaveBeenCalledTimes(1);
+	});
+
+	/**
+	 * ПІСЛЯ ВІДМОВИ — НЕ ЩОТАКТУ (аудит 2026-09-25). Відмова означає «господар на
+	 * місці» або «ведення вже взяв інший», і повтор через секунду цього не змінить;
+	 * доти база отримувала три записи на кожен такт, а журнал — нічого.
+	 *
+	 * Зворотний експеримент: прибрати `retryAt` — червоніє.
+	 */
+	it('після відмови бази наступна спроба — не раніше паузи, і рядок у журналі один', async () => {
+		const started = roomInfo({ status: 'playing', roster: rosterOf(members()) });
+		const room = new LocalRoom(started, members());
+		const { session, setOnline } = sessionFor(room, started, GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		const takeLead = vi.spyOn(session.match!, 'takeLead').mockResolvedValue(false);
+		setOnline([GUEST]);
+		session.clock = 1_000_000;
+		flushSync();
+
+		session.clock = 1_000_000 + LEAD_AFTER_MS;
+		flushSync();
+		await settle();
+		session.clock += 1_000;
+		flushSync();
+		await settle();
+		expect(takeLead, 'через секунду після відмови — ще ні').toHaveBeenCalledTimes(1);
+
+		session.clock = 1_000_000 + 2 * LEAD_AFTER_MS;
+		flushSync();
+		await settle();
+		expect(takeLead).toHaveBeenCalledTimes(2);
+		const refusals = vi
+			.mocked(logService.info)
+			.mock.calls.filter(([, message]) => message === 'lead refused');
+		expect(refusals).toHaveLength(1);
+	});
+
+	/**
+	 * НОВАЧОК ПОСЕРЕД ВІКТОРИНИ ВЕДЕННЯ НЕ ПРОБУЄ (аудит 2026-09-25). Він грає, але
+	 * правило посеред партії пускає лише склад старту: доти першим кандидатом ставав
+	 * саме той, кому база відмовляє завжди, і партія лишалася без ведучого.
+	 *
+	 * Зворотний експеримент: ранжувати за `match.players` — червоніє.
+	 */
+	it('новачок посеред вікторини ведення не пробує — правило пускає лише склад', async () => {
+		const late: Member = { uid: 'uid-late', name: 'Новачок', role: 'player', order: 3 };
+		const started = roomInfo({
+			gameId: 'quiz',
+			status: 'playing',
+			roster: rosterOf(members()),
+			config: gamesToConfig(ONLINE_GAMES.map((game) => game.id))
+		});
+		const room = new LocalRoom(started, [...members(), late]);
+		const { session, setOnline } = sessionFor(room, started, late.uid, quizGame);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		const takeLead = vi.spyOn(session.match!, 'takeLead').mockResolvedValue(true);
+		expect(
+			session.match!.players.map((player) => player.uid),
+			'перевірка жива: новачок у партії'
+		).toContain(late.uid);
+
+		setOnline([late.uid]);
+		session.clock = 1_000_000;
+		flushSync();
+		session.clock = 1_000_000 + 3 * LEAD_AFTER_MS;
+		flushSync();
+
+		expect(takeLead).not.toHaveBeenCalled();
 	});
 
 	it('кімнату знесли — «кімнату закрито» й геть із неї', async () => {

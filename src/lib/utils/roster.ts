@@ -1,4 +1,4 @@
-import type { Member, RosterEntry } from '$lib/net/roomTypes';
+import type { Member, RoomStatus, RosterEntry } from '$lib/net/roomTypes';
 
 /**
  * Гравці кімнати в порядку входу — те, з чого складається черга.
@@ -43,4 +43,81 @@ export function partyOf(
 			? { ...member, role: 'player', order }
 			: { uid: entry.uid, name: entry.name, role: 'player', order };
 	});
+}
+
+/**
+ * ГРАВЦІ ВІКТОРИНИ — склад старту й ті, хто долучився посеред партії.
+ *
+ * Доти вікторина брала гравців із поточних `members` і не читала складу зовсім,
+ * хоч сесія його писала, а правило перехоплення на нього спиралося (аудит
+ * 2026-09-25). Наслідків було три, і всі видно на екрані:
+ *
+ *  - хто в лобі натиснув «Назад» (рядок лишається) або колишній господар після
+ *    перехоплення ставав «відсутнім гравцем» з нульового раунду — вікно
+ *    «Чекаємо: …» на весь екран у кожному раунді;
+ *  - хто вийшов, зникав із табло разом з усіма своїми відповідями — і переможець
+ *    дограної партії мінявся, коли люди виходили з підсумку;
+ *  - новачок посеред партії ставав першим кандидатом на ведення, якого правило не
+ *    пускає (`leadCandidates`).
+ *
+ * Тепер: склад старту — завжди, навіть хто вийшов (імʼя зі складу). Понад нього —
+ * гравець кімнати, що ДОЛУЧИВСЯ: `joined` каже, чи він тут або вже відповідав.
+ * Відсутній, що партії не грав, у ній не рахується зовсім — ні в таблі, ні в
+ * чеканні. У лобі складу ще немає, і гравці — просто гравці кімнати.
+ */
+export function openPartyOf(
+	members: readonly Member[],
+	roster: readonly RosterEntry[] | null,
+	status: RoomStatus,
+	joined: (uid: string) => boolean
+): Member[] {
+	if (status === 'lobby' || !roster?.length) return playersOf(members);
+	const party = partyOf(members, roster);
+	const late = playersOf(members).filter(
+		(member) => !roster.some((entry) => entry.uid === member.uid) && joined(member.uid)
+	);
+	return [...party, ...late.map((member, index) => ({ ...member, order: party.length + index }))];
+}
+
+/** Що бере з матчу `quizPartyOf` — поля `QuizMatch`, без самого класу. */
+export interface QuizPartySource {
+	readonly members: readonly Member[];
+	readonly roster: readonly RosterEntry[] | null;
+	readonly status: RoomStatus;
+	readonly present: readonly string[];
+	readonly answers: Readonly<Record<number, Readonly<Record<string, unknown>>>>;
+}
+
+/** Гравці вікторини: долучився — отже він це я, він тут або вже відповідав. */
+export function quizPartyOf(source: QuizPartySource, me: string): Member[] {
+	return openPartyOf(source.members, source.roster, source.status, (uid) => {
+		if (uid === me || source.present.includes(uid)) return true;
+		return Object.values(source.answers).some((round) => round[uid] !== undefined);
+	});
+}
+
+/**
+ * Хто з партії ще В КІМНАТІ. Пішов назовсім (рядка немає) — на таблі лишається з
+ * очками, а чекати його нема чого: саме цього просив автор — «кімната дізнається,
+ * що гравець остаточно вийшов, і його не варто чекати».
+ */
+export function stayingOf(players: readonly Member[], members: readonly Member[]): Member[] {
+	return players.filter((player) => members.some((row) => row.uid === player.uid));
+}
+
+/**
+ * Хто може ПІДХОПИТИ ведення — ті самі умови, що в правилі `info/hostUid`: у лобі
+ * гравець кімнати, посеред партії — лише той, хто в замороженому складі.
+ *
+ * Доти кандидатів брали з `players`, і у вікторині першим міг стати новачок, якого
+ * правило не пускає: він пробував щотакту, база щоразу відмовляла, а партія
+ * лишалася без ведучого (аудит 2026-09-25).
+ */
+export function leadCandidates(
+	players: readonly Member[],
+	status: RoomStatus,
+	roster: readonly RosterEntry[] | null
+): Member[] {
+	if (status === 'lobby') return [...players];
+	return players.filter((player) => roster?.some((entry) => entry.uid === player.uid) ?? false);
 }

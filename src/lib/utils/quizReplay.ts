@@ -97,9 +97,16 @@ export const HELD_PER_ROUND = 4;
  * Такий хід у журналі лежить, але нічого не означає — і однаково в усіх.
  */
 export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {}): QuizLog {
-	const players = new Set(
-		snapshot.members.filter((member) => member.role === 'player').map((member) => member.uid)
-	);
+	/*
+	 * ХТО ГРАЄ — склад старту й гравці кімнати. Склад — бо хто вийшов, той партію
+	 * грав: доти його відповіді зникали разом із рядком, і табло дограної партії
+	 * мінялося, коли люди виходили з підсумку (аудит 2026-09-25). Гравці кімнати —
+	 * бо новачок посеред партії у вікторині грає з поточного раунду.
+	 */
+	const players = new Set([
+		...(snapshot.info.roster ?? []).map((entry) => entry.uid),
+		...snapshot.members.filter((member) => member.role === 'player').map((member) => member.uid)
+	]);
 
 	/*
 	 * ПЕРШИЙ ВЕДУЧИЙ — той, у кого роль забрав ПЕРШИЙ хід `lead`, а не нинішній
