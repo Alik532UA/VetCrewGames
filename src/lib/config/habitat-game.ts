@@ -193,6 +193,10 @@ export function buildHabitatRound(entry: HabitatEntry, mode: HabitatMode): Habit
 }
 
 /** Наступний запис, якого ще не показували в цій партії. */
+/** Запис за твариною — для колоди кімнати (`config/quizDeck.ts`). */
+export const habitatEntryById = (id: string): HabitatEntry | null =>
+	habitatEntries.find((entry) => entry.animalId === id) ?? null;
+
 export function getNextHabitatEntry(
 	excludeIds: readonly string[],
 	random: () => number

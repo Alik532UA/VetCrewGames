@@ -1,5 +1,5 @@
 import { randomFor } from '$lib/utils/seededRandom';
-import { getRandomAnimals, type Animal } from '$lib/config/population-game';
+import { animalsByIds, getRandomAnimals, type Animal } from '$lib/config/population-game';
 import { playerData } from '$lib/services/playerData.svelte';
 import { GAME_ID } from '$lib/config/menu-games';
 import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
@@ -98,8 +98,15 @@ export class PopulationGameController {
 	/** Зерно партії; `undefined` — соло, кожен захід інший. */
 	readonly #seed: number | undefined;
 
-	constructor(slotCount = 3, totalRounds = 10, seed?: number) {
+	/**
+	 * ТРІЙКА З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `config/quizDeck.ts`) — для розкладу раунду (онлайн раунд один).
+	 * Немає або невідоме цим даним (інша збірка) — вибір із власного зерна, як доти.
+	 */
+	readonly #pick: string | undefined;
+
+	constructor(slotCount = 3, totalRounds = 10, seed?: number, pick?: string) {
 		this.#seed = seed;
+		this.#pick = pick;
 		this.#random = randomFor(seed);
 		this.slotCount = slotCount;
 		this.totalRounds = totalRounds;
@@ -107,7 +114,9 @@ export class PopulationGameController {
 
 	/** Новий розклад карток. Викликається на старті раунду й на «Грати знову». */
 	startRound(): void {
-		const picked = getRandomAnimals(this.slotCount, this.#random);
+		const picked =
+			(this.#pick !== undefined ? animalsByIds(this.#pick.split(',')) : null) ??
+			getRandomAnimals(this.slotCount, this.#random);
 		this.sourceAnimals = picked;
 		this.initialSourceAnimals = [...picked];
 		this.slots = Array(this.slotCount).fill(null);

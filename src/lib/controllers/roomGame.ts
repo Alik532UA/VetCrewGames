@@ -51,6 +51,12 @@ export interface RoomGame<M extends RoomMatch> {
 	/** Чи вмикати відлік автостарту за такої кількості гравців. */
 	autoStartReady(players: number): boolean;
 	newRoom(): { seed: number; config: Record<string, number> };
+	/**
+	 * Зерно РЕВАНШУ, коли гра веде облік кімнати між партіями: вікторина кладе номер
+	 * партії в старші розряди зерна (`config/quizDeck.ts`), щоб питання не
+	 * повторювалися до вичерпання пулу. Немає — реванш бере нове зерно `newRoom`.
+	 */
+	rematchSeed?(match: M): number;
 	createMatch(me: string, transport: RoomTransport): M;
 	/**
 	 * Що кладе в запис переліку понад спільне (набір ігор вікторини) — З КІМНАТИ,

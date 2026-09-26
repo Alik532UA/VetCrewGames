@@ -619,3 +619,9 @@ export const animals: Animal[] = [
 export function getRandomAnimals(count: number, random: () => number): Animal[] {
 	return shuffle(animals, random).slice(0, count);
 }
+
+/** Тварини за ідентифікаторами — для колоди кімнати; бракує хоч однієї — `null`. */
+export function animalsByIds(ids: readonly string[]): Animal[] | null {
+	const found = ids.map((id) => animals.find((animal) => animal.id === id));
+	return found.every((animal) => animal !== undefined) ? (found as Animal[]) : null;
+}

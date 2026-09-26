@@ -337,6 +337,22 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-over-panel'
+		},
+		{
+			/*
+			 * БЕЗ ПОВТОРІВ ПИТАНЬ (прохання автора 2026-09-26, `config/quizDeck.ts`). Правила
+			 * колоди доводять юніт-тести на тисячі зерен; руками — справжня кімната й
+			 * «Грати знову».
+			 */
+			id: 'quizonline_26',
+			category: { uk: 'Питання', en: 'Questions' },
+			text: {
+				uk: 'Зіграйте партію з усіма шістьма іграми. Жодне питання не мусить повторитися, і та сама тварина — теж, навіть у різних іграх; раундів кожної гри — порівну (два). Натисніть «Грати знову»: у новій партії питання мусять бути інші.',
+				en: 'Play a game with all six games selected. No question may repeat, and neither may the same animal — even across different games; each game gets an equal share of rounds (two). Press “Play again”: the new game must bring different questions.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/config/quizDeck.test.ts',
+			testid: 'quiz-board-panel'
 		}
 	]
 };

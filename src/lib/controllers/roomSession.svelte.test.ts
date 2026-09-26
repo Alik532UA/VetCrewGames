@@ -676,6 +676,38 @@ describe('склад партії', () => {
 		expect(session.match?.roster?.map((entry) => entry.uid)).toEqual([HOST, GUEST]);
 	});
 
+	/**
+	 * ЗЕРНО РЕВАНШУ — від гри, коли вона веде облік кімнати (прохання автора 2026-09-26):
+	 * вікторина кладе номер партії в зерно, щоб питання не повторювалися між партіями
+	 * (`config/quizDeck.ts`). Гра без такого обліку бере нове зерно, як доти.
+	 *
+	 * Зворотний експеримент: реванш завжди з `newRoom().seed` — червоніє перший випадок.
+	 */
+	it('реванш бере зерно наступної партії від гри, якщо гра його дає', async () => {
+		const room = new LocalRoom(roomInfo({ status: 'playing', seed: 1234 }), members());
+		const game = { ...pairsGame, rematchSeed: (match: { seed: number }) => match.seed + 1000 };
+		const { session } = sessionFor(room, null, HOST, game);
+		await session.enter('create');
+		await settle();
+
+		await session.rematch();
+		await settle();
+
+		expect(session.match?.seed).toBe(2234);
+	});
+
+	it('гра без обліку кімнати — реванш із новим зерном', async () => {
+		const room = new LocalRoom(roomInfo({ status: 'playing', seed: 1234 }), members());
+		const { session } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		await session.rematch();
+		await settle();
+
+		expect(session.match?.seed).toBe(777);
+	});
+
 	it('вибулий, що вертається посеред партії, заходить гравцем', async () => {
 		const roster = [...rosterOf(members()), { uid: 'uid-back', name: 'Повернувся' }];
 		const playing = roomInfo({ status: 'playing', roster });

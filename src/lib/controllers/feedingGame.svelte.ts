@@ -1,5 +1,5 @@
 import { randomFor } from '$lib/utils/seededRandom';
-import { BIN, buildFeedingRound, correctTarget, FOODS_PER_ROUND, getNextFeedingSet, type FeedingRound, type Food, type Target } from '$lib/config/feeding-game';
+import { BIN, buildFeedingRound, correctTarget, FOODS_PER_ROUND, feedingSetById, getNextFeedingSet, type FeedingRound, type Food, type Target } from '$lib/config/feeding-game';
 import { playerData } from '$lib/services/playerData.svelte';
 import { GAME_ID } from '$lib/config/menu-games';
 import { maxSessionPoints, roundPoints } from '$lib/config/scoring';
@@ -61,9 +61,16 @@ export class FeedingGameController {
 	 */
 	#random: () => number;
 
-	constructor(totalRounds = 10, seed?: number) {
+	/**
+	 * ПИТАННЯ З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `config/quizDeck.ts`) — для першого питання партії.
+	 * Немає або невідоме цим даним (інша збірка) — вибір із власного зерна, як доти.
+	 */
+	readonly #pick: string | undefined;
+
+	constructor(totalRounds = 10, seed?: number, pick?: string) {
 		this.totalRounds = totalRounds;
 		this.#seed = seed;
+		this.#pick = pick;
 		this.#random = randomFor(seed);
 	}
 
@@ -246,7 +253,9 @@ export class FeedingGameController {
 			return;
 		}
 
-		const set = getNextFeedingSet(this.#used, this.#random);
+		const set =
+			(this.#pick !== undefined && this.#used.length === 0 ? feedingSetById(this.#pick) : null) ??
+			getNextFeedingSet(this.#used, this.#random);
 		if (!set) {
 			// Наборів менше, ніж раундів: партія завершується достроково, а не
 			// показує той самий стіл удруге.

@@ -2,6 +2,7 @@ import { randomFor } from '$lib/utils/seededRandom';
 import {
 	buildHabitatRound,
 	getNextHabitatEntry,
+	habitatEntryById,
 	type HabitatMode,
 	type HabitatRound
 } from '$lib/config/habitat-game';
@@ -70,9 +71,16 @@ export class HabitatGameController {
 	 */
 	#random: () => number;
 
-	constructor(totalRounds = 10, seed?: number) {
+	/**
+	 * ПИТАННЯ З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `config/quizDeck.ts`) — для першого питання партії.
+	 * Немає або невідоме цим даним (інша збірка) — вибір із власного зерна, як доти.
+	 */
+	readonly #pick: string | undefined;
+
+	constructor(totalRounds = 10, seed?: number, pick?: string) {
 		this.totalRounds = totalRounds;
 		this.#seed = seed;
+		this.#pick = pick;
 		this.#random = randomFor(seed);
 	}
 
@@ -193,7 +201,9 @@ export class HabitatGameController {
 			return;
 		}
 
-		const entry = getNextHabitatEntry(this.#used, this.#random);
+		const entry =
+			(this.#pick !== undefined && this.#used.length === 0 ? habitatEntryById(this.#pick) : null) ??
+			getNextHabitatEntry(this.#used, this.#random);
 		if (!entry) {
 			// Записи скінчилися раніше за раунди — партія завершується, а не
 			// повторює те саме питання.

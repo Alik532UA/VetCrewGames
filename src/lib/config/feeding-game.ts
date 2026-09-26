@@ -233,6 +233,10 @@ export function buildFeedingRound(set: FeedingSet): FeedingRound | null {
 }
 
 /** Наступний набір. Генератор — параметром: див. `getNextPuzzle` у грі 5. */
+/** Набір за ідентифікатором — для колоди кімнати (`config/quizDeck.ts`). */
+export const feedingSetById = (id: string): FeedingSet | null =>
+	feedingSets.find((set) => set.id === id) ?? null;
+
 export function getNextFeedingSet(
 	excludeIds: readonly string[],
 	random: () => number

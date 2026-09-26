@@ -1,5 +1,5 @@
 import { randomFor } from '$lib/utils/seededRandom';
-import { buildRound, getNextPuzzle, type FamilyRound } from '$lib/config/family-game';
+import { buildRound, getNextPuzzle, puzzleById, type FamilyRound } from '$lib/config/family-game';
 import type { Animal } from '$lib/config/population-game';
 import { playerData } from '$lib/services/playerData.svelte';
 import { GAME_ID } from '$lib/config/menu-games';
@@ -49,9 +49,16 @@ export class FamilyGameController {
 	 */
 	#random: () => number;
 
-	constructor(totalRounds = 10, seed?: number) {
+	/**
+	 * ПИТАННЯ З КОЛОДИ КІМНАТИ (`QuizStep.pick`, `config/quizDeck.ts`) — для першого питання партії.
+	 * Немає або невідоме цим даним (інша збірка) — вибір із власного зерна, як доти.
+	 */
+	readonly #pick: string | undefined;
+
+	constructor(totalRounds = 10, seed?: number, pick?: string) {
 		this.totalRounds = totalRounds;
 		this.#seed = seed;
+		this.#pick = pick;
 		this.#random = randomFor(seed);
 	}
 
@@ -132,7 +139,9 @@ export class FamilyGameController {
 		// Наборів менше, ніж могло б знадобитися раундів, тож коли вони
 		// вичерпуються — партія просто завершується достроково. Показувати той
 		// самий набір удруге гірше: гравець уже знає відповідь.
-		const puzzle = getNextPuzzle(this.#used, this.#random);
+		const puzzle =
+			(this.#pick !== undefined && this.#used.length === 0 ? puzzleById(this.#pick) : null) ??
+			getNextPuzzle(this.#used, this.#random);
 		if (!puzzle) {
 			this.round = null;
 			this.#finish();

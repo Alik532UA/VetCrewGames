@@ -1210,6 +1210,13 @@ export interface GameQuestion extends MythStatement {
 	animal: Animal;
 }
 
+/** Питання за ідентифікатором — для колоди кімнати (`config/quizDeck.ts`). */
+export function questionById(id: string): GameQuestion | null {
+	const chosen = myths.find((myth) => myth.id === id);
+	const animal = chosen && animals.find((a) => a.id === chosen.animalId);
+	return chosen && animal ? { ...chosen, animal } : null;
+}
+
 export function getNextQuestion(
 	excludeIds: readonly string[],
 	random: () => number

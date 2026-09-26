@@ -138,6 +138,10 @@ export function buildRound(puzzle: FamilyPuzzle, random: () => number): FamilyRo
  * лишило б тихий недетермінований шлях: спільна партія розклала б двом гравцям
  * різні раунди, і побачив би це гравець, а не тест.
  */
+/** Загадка за ідентифікатором — для колоди кімнати (`config/quizDeck.ts`). */
+export const puzzleById = (id: string): FamilyPuzzle | null =>
+	familyPuzzles.find((puzzle) => puzzle.id === id) ?? null;
+
 export function getNextPuzzle(
 	excludeIds: readonly string[],
 	random: () => number

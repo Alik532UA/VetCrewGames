@@ -1,4 +1,5 @@
 import { habitatModeOf, type QuizStep } from '$lib/config/quizOnline';
+import { POPULATION_TRIO } from '$lib/config/quizDeck';
 import { FamilyGameController } from './familyGame.svelte';
 import { FeedingGameController } from './feedingGame.svelte';
 import { HabitatGameController } from './habitatGame.svelte';
@@ -53,7 +54,7 @@ export const ROUNDS_PER_STEP = 1;
  * робила гру не простішою, а безглуздою: «розташуй від найменшої до найбільшої»
  * при одній картці не має відповіді, яку можна помилити.
  */
-export const POPULATION_SLOTS = 3;
+export const POPULATION_SLOTS = POPULATION_TRIO;
 
 export type QuizGame =
 	| { kind: 'myths'; game: MythGameController }
@@ -74,20 +75,30 @@ export function createQuizGame(step: QuizStep): QuizGame | null {
 	// ідентифікатора йде першим: обидві ведуть до того самого контролера.
 	const mode = habitatModeOf(step.game);
 	if (mode !== null) {
-		return { kind: 'habitat', game: new HabitatGameController(ROUNDS_PER_STEP, step.seed), mode };
+		return {
+			kind: 'habitat',
+			game: new HabitatGameController(ROUNDS_PER_STEP, step.seed, step.pick),
+			mode
+		};
 	}
 
 	switch (step.game) {
 		case 'myths':
-			return { kind: 'myths', game: new MythGameController(ROUNDS_PER_STEP, step.seed) };
+			return { kind: 'myths', game: new MythGameController(ROUNDS_PER_STEP, step.seed, step.pick) };
 		case 'feeding':
-			return { kind: 'feeding', game: new FeedingGameController(ROUNDS_PER_STEP, step.seed) };
+			return {
+				kind: 'feeding',
+				game: new FeedingGameController(ROUNDS_PER_STEP, step.seed, step.pick)
+			};
 		case 'family':
-			return { kind: 'family', game: new FamilyGameController(ROUNDS_PER_STEP, step.seed) };
+			return {
+				kind: 'family',
+				game: new FamilyGameController(ROUNDS_PER_STEP, step.seed, step.pick)
+			};
 		case 'population':
 			return {
 				kind: 'population',
-				game: new PopulationGameController(POPULATION_SLOTS, ROUNDS_PER_STEP, step.seed)
+				game: new PopulationGameController(POPULATION_SLOTS, ROUNDS_PER_STEP, step.seed, step.pick)
 			};
 		default:
 			return null;

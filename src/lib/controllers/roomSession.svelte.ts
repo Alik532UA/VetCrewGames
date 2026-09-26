@@ -436,7 +436,10 @@ export class RoomSession<M extends RoomMatch> {
 			return;
 		}
 		await this.hostAction((transport) =>
-			transport.restart(this.game.newRoom().seed, rosterOf(this.presentPlayers))
+			transport.restart(
+				(this.match && this.game.rematchSeed?.(this.match)) ?? this.game.newRoom().seed,
+				rosterOf(this.presentPlayers)
+			)
 		);
 	};
 	switchAutoStart = (on: boolean) => this.hostAction((transport) => transport.setAutoStart(on));

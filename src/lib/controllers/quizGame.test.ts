@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ONLINE_GAMES } from '$lib/config/quizOnline';
+import { ONLINE_GAMES, quizProgramme } from '$lib/config/quizOnline';
 
 /*
  * Налаштування підмінені, як і в решті тестів контролерів: справжній синглтон у
@@ -25,8 +25,8 @@ const { createQuizGame, startQuizGame, POPULATION_SLOTS, ROUNDS_PER_STEP } =
  */
 
 /** Що саме роздали — рядком, щоб два прогони можна було просто порівняти. */
-function dealt(gameId: string, seed: number): string {
-	const created = createQuizGame({ game: gameId, seed });
+function dealt(gameId: string, seed: number, pick?: string): string {
+	const created = createQuizGame({ game: gameId, seed, pick });
 	if (created === null) return 'null';
 	startQuizGame(created);
 
@@ -113,5 +113,25 @@ describe('гра одного раунду вікторини', () => {
 
 	it('гра з новішої збірки віддає `null`, а не падає', () => {
 		expect(createQuizGame({ game: 'game-from-the-future', seed: SEED })).toBeNull();
+	});
+});
+
+/**
+ * ПИТАННЯ З КОЛОДИ КІМНАТИ (прохання автора 2026-09-26, `config/quizDeck.ts`): крок
+ * програми тепер несе, ЯКЕ САМЕ питання, і кожна з шести ігор мусить узяти саме
+ * його — інакше колода вибирала б без повторів, а гра однаково тягнула б сама.
+ *
+ * Зворотний експеримент: не передати `step.pick` у будь-який контролер — червоніє
+ * його гра.
+ */
+describe('питання з колоди кімнати', () => {
+	it.each(IDS)('%s: крок із вибраним питанням дає саме його', (id) => {
+		const [step] = quizProgramme(SEED, [id], 1);
+		expect(step.pick, 'перевірка жива: колода вибрала питання').toBeTruthy();
+		expect(dealt(id, step.seed, step.pick)).toBe((step.pick as string).split(',').join('+'));
+	});
+
+	it.each(IDS)('%s: невідоме цим даним питання — гра вибирає сама й не падає', (id) => {
+		expect(dealt(id, SEED, 'nobody,knows,this')).toBe(dealt(id, SEED));
 	});
 });

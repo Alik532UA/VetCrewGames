@@ -54,7 +54,9 @@ export const GAMES = {
 			'src/lib/utils/quizHold.ts',
 			'src/lib/utils/awayWait.ts',
 			'src/lib/utils/roster.ts',
-			'src/lib/config/quizOnline.ts'
+			'src/lib/config/quizOnline.ts',
+			// Розклад раундів і вибір питань — колода кімнати (прохання автора 2026-09-26).
+			'src/lib/config/quizDeck.ts'
 		]
 	},
 	pairs: {
