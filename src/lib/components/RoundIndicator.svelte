@@ -41,6 +41,7 @@
 	-->
 	<div
 		class="segments-wrapper"
+		data-testid="round-indicator-container"
 		class:segments-wrapper--review={onreview !== undefined}
 		style:--rounds={total}
 	>
@@ -114,6 +115,13 @@
 	.segments-wrapper--review {
 		max-width: calc(var(--rounds, 10) * 44px + (var(--rounds, 10) - 1) * 4px);
 		align-items: center;
+		/*
+		 * Висота кнопки — З ПЕРШОГО ПИТАННЯ, а не з першої відповіді. Доти до першої
+		 * відповіді кнопок у ряду не було, і смужка мала 6px; щойно перший сегмент ставав
+		 * кнопкою (44px), дошка під нею стрибала вниз на ~38px — саме тоді, коли людина
+		 * тягнулася до «Далі».
+		 */
+		min-height: 44px;
 	}
 
 	.segment-hit {
