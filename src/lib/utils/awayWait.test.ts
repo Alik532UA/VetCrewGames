@@ -144,6 +144,7 @@ describe('стан чекання одним викликом', () => {
 	const NOW = 50_000;
 
 	const source = (over: Partial<WaitSource> = {}): WaitSource => ({
+		round: 0,
 		away: [member('a')],
 		answered: [],
 		goOn: [],
@@ -162,6 +163,15 @@ describe('стан чекання одним викликом', () => {
 		expect(view.needed).toBe(2);
 		expect(view.left).toBe(AWAY_GRACE_MS / 1000);
 		expect(view.pausedBy).toBeNull();
+	});
+
+	/**
+	 * ДО ПЕРШОГО РАУНДУ ЧЕКАТИ НЕМА НА ЩО (аудит 2026-09-25): доти відсутній із лобі
+	 * відкривав вікно ще до першого питання, а запис паузи під раундом -1 база
+	 * відкидала — по шістнадцять разів у кожного гравця.
+	 */
+	it('до першого раунду партія не стоїть', () => {
+		expect(waitView(source({ round: -1 }), { a: NOW }, NOW, 'b').hold).toBe(false);
 	});
 
 	it('досить голосів — партія не стоїть', () => {

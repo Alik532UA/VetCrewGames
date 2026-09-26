@@ -1,5 +1,14 @@
 import { RESUME_BONUS_MS } from '$lib/config/quizOnline';
 
+/** Чекання на цьому такті: у якому раунді, від якої основи, кого немає. */
+export interface HoldTick {
+	round: number;
+	base: number;
+	spentBase: Readonly<Record<string, number>>;
+	away: readonly string[];
+	pausedBy: string | null;
+}
+
 /** Що лишає по собі відпущене чекання — те, що йде в журнал. */
 export interface ReleasedHold {
 	/** Раунд, у якому чекання ПОЧАЛОСЯ: у наступному воно нічого не означає. */
@@ -65,6 +74,24 @@ export class QuizHold {
 		}
 		this.#track(now, away);
 		if (pausedBy !== null && !this.#pausers.includes(pausedBy)) this.#pausers.push(pausedBy);
+	}
+
+	/**
+	 * ОДИН ТАКТ ЧЕКАННЯ: `tick` — чекання триває (і де), `null` — його немає.
+	 * Повертає відпущене, якщо воно скінчилося на цьому такті.
+	 *
+	 * ЧЕКАННЯ НАЛЕЖИТЬ РАУНДУ. Раунд змінився, а чекання триває (усі присутні вже
+	 * відповіли, і наступний оголосили, поки зниклого немає) — старе відпускається й
+	 * відкривається нове. Доти раунд чекання запамʼятовувався на першому такті
+	 * назавжди: наступний раунд ішов без жодного продовження під вікном «Чекаємо»
+	 * на весь екран, а відпущене записувалося в раунд, який давно скінчився (аудит
+	 * 2026-09-25).
+	 */
+	follow(now: number, tick: HoldTick | null): ReleasedHold | null {
+		const moved = this.#since !== null && (tick === null || tick.round !== this.#round);
+		const released = moved ? this.release(now) : null;
+		if (tick) this.hold(now, tick.round, tick.base, tick.spentBase, tick.away, tick.pausedBy);
+		return released;
 	}
 
 	/** Відпустити. `null` — чекання не було. Надбавка — раз на чекання, а не на виклик. */

@@ -1311,6 +1311,51 @@ describe('пауза очікування', () => {
  * Зворотний експеримент (§ 1.1): прибрати `#writeHeld` — червоніє «гість бачить ту
  * саму паузу, що господар».
  */
+/**
+ * ЧЕКАННЯ ЙДЕ З ПАРТІЄЮ (аудит 2026-09-25). Раунд, що скінчився, поки зниклого
+ * немає, не мусить забирати його чекання з собою: наступний раунд теж стоїть. А
+ * поза партією чекати нема на що — запис під раундом -1 база відкинула б.
+ *
+ * Зворотні експерименти: `heldNow` лише для раунду початку — червоніє перший;
+ * прибрати умову статусу й раунду — другий.
+ */
+describe('чекання й раунди', () => {
+	it('новий раунд посеред чекання — стоїть і він, а старе записане своїм раундом', async () => {
+		const { room, host, stop } = table();
+		host.present = [HOST];
+		await host.startRound(0);
+		const t0 = room.tick(0);
+		host.setHold(true, t0);
+		await host.startRound(1);
+		const t1 = room.tick(4_000);
+
+		host.setHold(true, t1);
+		await settle();
+
+		expect(host.heldMs(t1 + 2_000), 'раунд 1 стоїть від миті зміни').toBe(2_000);
+		const held = room.moves
+			.filter((move) => move.type === 'held')
+			.map((move) => move.payload?.round);
+		expect(held).toContain(0);
+		stop();
+	});
+
+	it('у лобі чекання не відкривається й нічого не пише', async () => {
+		const room = new LocalRoom(info({ status: 'lobby', roster: undefined }), members());
+		const append = vi.fn(room.transport().append);
+		const host = new QuizMatch(HOST, { ...room.transport(), append });
+		const off = host.listen();
+		host.present = [HOST];
+
+		host.setHold(true, 1_000);
+		host.setHold(false, 5_000);
+		await settle();
+
+		expect(append).not.toHaveBeenCalled();
+		off();
+	});
+});
+
 describe('пауза однакова в усіх', () => {
 	it('гість бачить ту саму паузу, що господар', async () => {
 		const { host, guest, stop } = table();

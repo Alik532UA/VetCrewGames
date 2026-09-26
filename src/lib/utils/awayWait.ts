@@ -148,6 +148,8 @@ export function pauseSecondsLeft(pausedAt: number, spent: number, now: number): 
 
 /** Те, що вміє матч і потрібно чеканню. Інтерфейс, а не клас: тут немає мережі. */
 export interface WaitSource {
+	/** Поточний раунд; `-1` — його ще немає, і чекати нема на що. */
+	round: number;
 	away: readonly Member[];
 	answered: readonly string[];
 	goOn: readonly string[];
@@ -223,7 +225,10 @@ export function waitView(
 	const paused = match.pausedBy;
 
 	return {
-		hold: shouldHoldRound(match.away, match.answered, match.goOn, present, paused),
+		// До першого раунду чекати нема на що: доти відсутній із лобі відкривав вікно
+		// ще до першого питання (аудит 2026-09-25).
+		hold:
+			match.round >= 0 && shouldHoldRound(match.away, match.answered, match.goOn, present, paused),
 		needed: votesNeeded(present),
 		left:
 			paused === null

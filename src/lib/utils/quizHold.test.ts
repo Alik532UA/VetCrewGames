@@ -78,3 +78,40 @@ describe('одне чекання', () => {
 		expect(hold.heldNow(5_000, 0)).toBeNull();
 	});
 });
+
+/**
+ * ЧЕКАННЯ НАЛЕЖИТЬ РАУНДУ (аудит 2026-09-25): доти раунд запамʼятовувався на
+ * першому такті назавжди, і наступний раунд ішов без продовження під вікном
+ * «Чекаємо», а відпущене писалося в раунд, що давно скінчився.
+ *
+ * Зворотний експеримент: не відпускати на зміні раунду — червоніє перший.
+ */
+describe('чекання й зміна раунду', () => {
+	const tick = (round: number, away: string[] = ['x']) => ({
+		round,
+		base: 0,
+		spentBase: {},
+		away,
+		pausedBy: null
+	});
+
+	it('раунд змінився посеред чекання — старе відпущене, нове триває в новому', () => {
+		const hold = new QuizHold();
+		expect(hold.follow(1_000, tick(4))).toBeNull();
+
+		const released = hold.follow(5_000, tick(5));
+
+		expect(released?.round).toBe(4);
+		expect(released?.total).toBe(4_000 + RESUME_BONUS_MS);
+		expect(hold.heldNow(7_000, 5), 'новий раунд стоїть від миті зміни').toBe(2_000);
+		expect(hold.heldNow(7_000, 4)).toBeNull();
+	});
+
+	it('чекання скінчилося — відпущене повертається раз', () => {
+		const hold = new QuizHold();
+		hold.follow(1_000, tick(0));
+
+		expect(hold.follow(3_000, null)?.round).toBe(0);
+		expect(hold.follow(4_000, null)).toBeNull();
+	});
+});

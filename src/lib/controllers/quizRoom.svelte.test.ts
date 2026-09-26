@@ -20,7 +20,7 @@ vi.mock('$lib/services/playerData.svelte', () => ({ playerData }));
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { addScore: vi.fn(), locale: 'uk' } }));
 
 const { QuizMatch } = await import('./quizMatch.svelte');
-const { QuizRoom, QUIZ_MIN_PLAYERS } = await import('./quizRoom.svelte');
+const { QuizRoom, QUIZ_MIN_PLAYERS, LATE_ANNOUNCE_MS } = await import('./quizRoom.svelte');
 const { QUIZ_RULES_VERSION } = await import('$lib/config/roomRules');
 
 type Match = InstanceType<typeof QuizMatch>;
@@ -156,6 +156,66 @@ describe('реакції вікторини', () => {
 
 		expect(guest.round).toBe(-1);
 		expect(append).not.toHaveBeenCalled();
+		off();
+	});
+
+	/**
+	 * ПАРТІЯ ЧЕКАЄ — І МІЖ РАУНДАМИ ТЕЖ (аудит 2026-09-25). Доти раунд, у якому всі
+	 * присутні вже відповіли, кінчався, і ведучий оголошував наступний під вікном
+	 * «Чекаємо» на весь екран.
+	 *
+	 * Зворотний експеримент: прибрати умову `wait.hold` — червоніє.
+	 */
+	it('поки партія чекає, наступного раунду не оголошують', async () => {
+		const room = new LocalRoom(info(), members());
+		const lead = new QuizMatch(HOST, room.transport());
+		const off = lead.listen();
+		await lead.startRound(0);
+		await lead.answer(1);
+		const quiz = new QuizRoom(() => 0.5);
+		const now = room.tick(0);
+		quiz.game.onPresence?.(lead, [HOST], now);
+		const seat = host(lead, HOST, now);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+		expect(quiz.wait.hold, 'перевірка жива: гість не відповів і зник').toBe(true);
+
+		// Далеко за табло: без умови ведучий уже оголосив би наступний.
+		seat.clock = now + 120_000;
+		flushSync();
+		await settle();
+
+		expect(lead.round).toBe(0);
+		off();
+	});
+
+	/**
+	 * ЗАСТАВ РАУНД ПРОСТРОЧЕНИМ — ДАТИ ДОЇХАТИ ЧУЖИМ ПАУЗАМ (аудит 2026-09-25).
+	 * Ведучий, що перезавантажився, доти оголошував наступний раунд на першому ж
+	 * такті, раніше, ніж доїжджали записи паузи тих, хто стояв через нього.
+	 *
+	 * Зворотний експеримент: прибрати `LATE_ANNOUNCE_MS` — червоніє «одразу — ні».
+	 */
+	it('ведучий, що застав раунд уже простроченим, чекає, а тоді оголошує', async () => {
+		const room = new LocalRoom(info(), members());
+		const lead = new QuizMatch(HOST, room.transport());
+		const off = lead.listen();
+		await lead.startRound(0);
+		// Десять хвилин по тому: я не дивився, коли раунд скінчився.
+		const late = room.tick(0) + 600_000;
+		const quiz = new QuizRoom(() => 0.5);
+		quiz.game.onPresence?.(lead, [HOST, GUEST], late);
+		const seat = host(lead, HOST, late);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+		await settle();
+		expect(lead.round, 'одразу — ні').toBe(0);
+
+		seat.clock = late + LATE_ANNOUNCE_MS;
+		flushSync();
+		await settle();
+
+		expect(lead.round).toBe(1);
 		off();
 	});
 

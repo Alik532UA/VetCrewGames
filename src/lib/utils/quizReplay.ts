@@ -42,6 +42,20 @@ export interface QuizLog {
 	leader: string;
 }
 
+/** Журнал, якого ще немає: до першого знімка. */
+export const EMPTY_QUIZ_LOG: QuizLog = {
+	startedAt: {},
+	answers: {},
+	goOn: {},
+	held: {},
+	spentByRound: {},
+	graceSpent: {},
+	pausedBy: {},
+	pausedAt: {},
+	pauseUsedAt: {},
+	leader: ''
+};
+
 /** Що перепрогону потрібно знати, крім самого журналу. */
 export interface ReplayOptions {
 	/**

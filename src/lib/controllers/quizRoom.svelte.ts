@@ -21,6 +21,19 @@ const CLOCK_MS = 1000;
  */
 const ROUND_CLOCK_MS = 100;
 
+/**
+ * Скільки ведучий чекає, перш ніж оголосити раунд, який ЗАСТАВ уже простроченим.
+ *
+ * Прострочений з першого погляду — отже я не дивився, коли він став таким:
+ * перезавантаження, приспана вкладка, щойно підхоплене ведення. Поки мене не було,
+ * решта могла стояти на паузі через МЕНЕ, а записи паузи пишуться, коли вона
+ * скінчилася, — тобто саме тоді, коли я повернувся. Доти ведучий оголошував
+ * наступний раунд на першому ж такті, раніше, ніж ці записи доїжджали, і решта
+ * втрачала залишок раунду, який простояла за вікном «Чекаємо» (аудит 2026-09-25).
+ * Три секунди — стільки ж, скільки надбавка після чекання.
+ */
+export const LATE_ANNOUNCE_MS = 3000;
+
 /** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
 export const QUIZ_MIN_PLAYERS = 2;
 
@@ -118,13 +131,22 @@ export class QuizRoom {
 		 * не змінився. Відмову бази стримує пауза між спробами (`ANNOUNCE_RETRY_MS`).
 		 */
 		let announcing = false;
+		/** Раунд, який я вперше побачив, коли й чи був він тоді вже простроченим. */
+		let look = { round: -2, at: 0, late: false };
 		$effect(() => {
 			const match = host.match;
 			const leads = host.me !== '' && match?.leader === host.me;
 			if (!match || !leads || match.status !== 'playing' || match.over || announcing) return;
+			const due = match.round >= 0 && match.nextDue(host.clock);
+			if (look.round !== match.round) look = { round: match.round, at: host.clock, late: due };
+			else if (!due) look.late = false;
 			// Партія щойно почалася — перший раунд оголошується без чекання.
-			const next = match.round < 0 ? 0 : match.nextDue(host.clock) ? match.round + 1 : null;
+			const next = match.round < 0 ? 0 : due ? match.round + 1 : null;
 			if (next === null) return;
+			// ПАРТІЯ ЧЕКАЄ — і між раундами теж. Доти наступний раунд оголошувався під
+			// вікном «Чекаємо» на весь екран і йшов без жодного продовження (аудит 2026-09-25).
+			if (this.wait.hold) return;
+			if (look.late && host.clock - look.at < LATE_ANNOUNCE_MS) return;
 			announcing = true;
 			void match.startRound(next).finally(() => (announcing = false));
 		});

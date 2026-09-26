@@ -1,6 +1,6 @@
 import type { GoneReason, Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import type { RoundStatus } from '$lib/types/game';
-import { replayQuizLog, type QuizAnswer } from '$lib/utils/quizReplay';
+import { EMPTY_QUIZ_LOG, replayQuizLog, type QuizLog } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
 import { quizPartyOf, stayingOf, type QuizPartySource } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
@@ -166,12 +166,32 @@ export class QuizMatch {
 	 */
 	present = $state<string[]>([]);
 
+	/**
+	 * УСЕ, ЩО ПЕРЕПРОГІН ВИВІВ ІЗ ЖУРНАЛУ (`utils/quizReplay.ts`), — ОДНИМ ЗНІМКОМ.
+	 *
+	 * Доти це були десять окремих полів, і кожен знімок переписував їх десятьма
+	 * рядками: забути одне — отже лишити в ньому минулу партію. Тепер знімок один,
+	 * а поля нижче — лише читання з нього.
+	 */
+	#journal = $state.raw<QuizLog>(EMPTY_QUIZ_LOG);
+
 	/** Серверний час початку кожного раунду. Ключ — номер раунду. */
-	startedAt = $state<Record<number, number>>({});
-	/** Голоси «граємо далі» за раундами. Порожньо — ніхто не голосував. */
-	#goOnVotes = $state<Record<number, string[]>>({});
+	get startedAt(): Record<number, number> {
+		return this.#journal.startedAt;
+	}
+
 	/** Відповіді: раунд → гравець → коли й наскільки правильно. */
-	answers = $state<Record<number, Record<string, QuizAnswer>>>({});
+	get answers(): QuizLog['answers'] {
+		return this.#journal.answers;
+	}
+
+	/**
+	 * Хто веде партію — з журналу (`replayQuizLog`). Спершу господар; хід `lead`
+	 * передає роль тому, хто підхопив партію, коли господаря не стало.
+	 */
+	get leader(): string {
+		return this.#journal.leader;
+	}
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -345,8 +365,8 @@ export class QuizMatch {
 		return roundOutcomes(this.answers, this.round, this.#me);
 	}
 
-	/**
-	 * Пауза, ЗАПИСАНА В ЖУРНАЛ, за раундами. Одне число на всіх.
+	/*
+	 * Пауза, ЗАПИСАНА В ЖУРНАЛ, за раундами (`#journal.held`). Одне число на всіх.
 	 *
 	 * Доти пауза жила лише в памʼяті кожного клієнта, і саме це й був дефект, який
 	 * автор побачив: той, кого не було, паузи не бачив, тож надбавки в нього не
@@ -359,7 +379,6 @@ export class QuizMatch {
 	 * (`utils/quizReplay.ts`, `countHolds`). Доти писав лише господар — і пауза
 	 * губилася саме тоді, коли зникав ВІН (аудит 2026-09-24).
 	 */
-	#heldByRound = $state<Record<number, number>>({});
 	/** Поточне чекання — облік у `utils/quizHold.ts` (основа, проміжки, автор паузи). */
 	#hold = new QuizHold();
 	/**
@@ -374,7 +393,7 @@ export class QuizMatch {
 	 * «таймер візуально не працює і прогружає оновлений стан тільки після вибору
 	 * відповіді».
 	 *
-	 * `heldMs` порівнювала це число з журнальним `#heldByRound[round]` — тобто
+	 * `heldMs` порівнювала це число з журнальним `#journal.held[round]` — тобто
 	 * ОДНЕ на партію проти ОДНОГО НА РАУНД. Журнал тоді писав лише господар і лише свою
 	 * виміряну паузу; у гостя вона майже завжди довша, бо присутність доїжджає до
 	 * двох клієнтів у різні миті. Отже `log.held[round] >= pending` у гостя не
@@ -391,21 +410,6 @@ export class QuizMatch {
 	 * прибирання додало б місце, де можна помилитися ключем.
 	 */
 	#pending = $state<Record<number, number>>({});
-	/**
-	 * Хто веде партію — з журналу (`replayQuizLog`). Спершу господар; хід `lead`
-	 * передає роль тому, хто підхопив партію, коли господаря не стало.
-	 */
-	leader = $state('');
-	/** Скільки пільги вже витратив кожен — із журналу. */
-	#graceSpent = $state<Record<string, number>>({});
-	/** Хто поставив паузу в кожному раунді. Знята пауза — знову `undefined`. */
-	#pausedBy = $state<Record<number, string>>({});
-	/** Коли поставили — серверний час ходу. */
-	#pausedAt = $state<Record<number, number>>({});
-	/** Коли гравець останній раз ЗНІМАВ паузу — для хвилинної витримки. */
-	#pauseUsedAt = $state<Record<string, number>>({});
-	/** Витрачена пільга за раундами — із журналу; на ній нарощує свій запис чекання. */
-	#spentByRound = $state<Record<number, Record<string, number>>>({});
 
 	/**
 	 * Увімкнути або зняти паузу очікування.
@@ -415,25 +419,34 @@ export class QuizMatch {
 	 * Зняття паузи додає надбавку — один раз на кожне чекання, а не на секунду.
 	 */
 	setHold(active: boolean, now: number): void {
-		if (active) {
-			const round = this.round;
-			const away = this.away.map((member) => member.uid);
-			const spentBase = this.#spentByRound[round] ?? {};
-			this.#hold.hold(now, round, this.#settledMs(round), spentBase, away, this.pausedBy);
-			return;
-		}
+		const round = this.round;
+		// Поза партією чекати нема на що: у лобі й до першого раунду вікна немає, а
+		// запис паузи під раундом -1 база однаково відкинула б (аудит 2026-09-25).
+		const holds = active && round >= 0 && this.status === 'playing' && !this.over;
 		/*
 		 * СУКУПНО ЗА РАУНД — поверх ОСНОВИ, узятої на початку чекання
 		 * (`utils/quizHold.ts`): записи різних гравців про те саме чекання дають
-		 * близькі числа, і перепрогін бере найбільше, а не суму.
+		 * близькі числа, і перепрогін бере найбільше, а не суму. Раунд змінився посеред
+		 * чекання — старе відпускається, нове відкривається (`QuizHold.follow`).
 		 */
-		const released = this.#hold.release(now);
+		const released = this.#hold.follow(
+			now,
+			holds
+				? {
+						round,
+						base: this.#settledMs(round),
+						spentBase: this.#journal.spentByRound[round] ?? {},
+						away: this.away.map((member) => member.uid),
+						pausedBy: this.pausedBy
+					}
+				: null
+		);
 		if (!released) return;
 		// Під номером ТОГО раунду, у якому чекання й було: у наступному воно нічого
 		// не означає, і саме через це число колись переїжджало далі.
 		this.#pending = { ...this.#pending, [released.round]: released.total };
 
-		// Пише КОЖЕН ГРАВЕЦЬ (див. `#heldByRound`); запис глядача перепрогін не рахує.
+		// Пише КОЖЕН ГРАВЕЦЬ (див. докблок паузи вище); запис глядача перепрогін не рахує.
 		if (this.players.some((player) => player.uid === this.#me)) {
 			void this.#writeHeld(released);
 		}
@@ -441,7 +454,7 @@ export class QuizMatch {
 
 	/** Скільки раунд уже простояв, поки чекання немає: журнал або своє, більше. */
 	#settledMs(round: number): number {
-		return Math.max(this.#heldByRound[round] ?? 0, this.#pending[round] ?? 0);
+		return Math.max(this.#journal.held[round] ?? 0, this.#pending[round] ?? 0);
 	}
 
 	/** Скільки часу вже віддано за чекання, разом із поточною паузою. */
@@ -470,7 +483,7 @@ export class QuizMatch {
 	 * відлік вичерпано.
 	 */
 	get pausedBy(): string | null {
-		return this.#pausedBy[this.round] ?? null;
+		return this.#journal.pausedBy[this.round] ?? null;
 	}
 
 	/**
@@ -480,7 +493,7 @@ export class QuizMatch {
 	 * межу. Той самий принцип, що з початком раунду.
 	 */
 	get pausedAt(): number {
-		return this.#pausedAt[this.round] ?? 0;
+		return this.#journal.pausedAt[this.round] ?? 0;
 	}
 
 	/**
@@ -491,7 +504,8 @@ export class QuizMatch {
 	 * перетворюється на смикання, навіть коли пільги вже нуль.
 	 */
 	pauseReadyAt(uid: string): number {
-		return this.#pauseUsedAt[uid] === undefined ? 0 : this.#pauseUsedAt[uid] + PAUSE_COOLDOWN_MS;
+		const used = this.#journal.pauseUsedAt[uid];
+		return used === undefined ? 0 : used + PAUSE_COOLDOWN_MS;
 	}
 
 	/**
@@ -552,7 +566,7 @@ export class QuizMatch {
 
 	/** Скільки пільгового часу цей гравець уже витратив за партію. */
 	graceSpent(uid: string): number {
-		return this.#graceSpent[uid] ?? 0;
+		return this.#journal.graceSpent[uid] ?? 0;
 	}
 
 	/**
@@ -721,7 +735,7 @@ export class QuizMatch {
 
 	/** Хто вже проголосував «граємо далі» в ЦЬОМУ раунді. */
 	get goOn(): string[] {
-		return this.#goOnVotes[this.round] ?? [];
+		return this.#journal.goOn[this.round] ?? [];
 	}
 
 	/**
@@ -770,16 +784,7 @@ export class QuizMatch {
 
 		const log = replayQuizLog(snapshot, { limitOf: this.#log.limitOf });
 
-		this.startedAt = log.startedAt;
-		this.answers = log.answers;
-		this.#goOnVotes = log.goOn;
-		this.#heldByRound = log.held;
-		this.#graceSpent = log.graceSpent;
-		this.#spentByRound = log.spentByRound;
-		this.#pausedBy = log.pausedBy;
-		this.#pausedAt = log.pausedAt;
-		this.#pauseUsedAt = log.pauseUsedAt;
-		this.leader = log.leader;
+		this.#journal = log;
 		/*
 		 * Хід приїхав — оптимістичне число більше не потрібне.
 		 *
