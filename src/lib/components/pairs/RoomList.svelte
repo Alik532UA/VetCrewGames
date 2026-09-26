@@ -4,6 +4,7 @@
 	import { roomLife } from '$lib/config/roomLife';
 	import type { LobbyRoom } from '$lib/net/lobby';
 	import type { OwnRoom } from '$lib/net/ownRooms';
+	import { serverNow } from '$lib/net/firebase';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 
@@ -114,7 +115,8 @@
 	 * живуть. Тикати таймером заради того, щоб кнопка зникла на очах, — це
 	 * розряджений акумулятор і нічого більше.
 	 */
-	const drawnAt = Date.now();
+	// Серверним часом: `aliveAt` — серверна позначка, а годинник пристрою буває зсунутий.
+	const drawnAt = serverNow();
 
 	/*
 	 * Дві групи з одного масиву, і порядок усередині кожної НЕ міняється:

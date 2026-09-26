@@ -22,7 +22,7 @@ import type { LobbyRoom } from './lobby';
 
 vi.mock('$lib/net/firebase', async () => {
 	const { currentConnection } = await import('$lib/net/emulatorSession');
-	return { connect: currentConnection, forget: () => {} };
+	return { connect: currentConnection, forget: () => {}, serverNow: () => Date.now() };
 });
 
 let host: Connection;

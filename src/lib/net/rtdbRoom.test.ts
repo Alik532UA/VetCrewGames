@@ -43,7 +43,10 @@ const remove = vi.fn(async (node: { path: string }) => {
 	writes.push({ op: 'remove', path: node.path });
 });
 
-vi.mock('./firebase', () => ({ connect: async () => ({ uid: 'uid-host', db: {} }) }));
+vi.mock('./firebase', () => ({
+	connect: async () => ({ uid: 'uid-host', db: {} }),
+	serverNow: () => Date.now()
+}));
 vi.mock('./ownRooms', () => ({
 	forgetOwnRoom: vi.fn(async () => {}),
 	pruneOwnRooms: vi.fn(async () => {}),

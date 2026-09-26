@@ -86,7 +86,7 @@ export class AwaitedRoom {
 	 * НЕ КИДАЄ: це довідка. Її відсутність лишає екран таким, яким він був — а
 	 * виняток звідси зламав би сторінку, до якої сповіщення не має стосунку.
 	 */
-	async refresh(now = Date.now()): Promise<void> {
+	async refresh(now?: number): Promise<void> {
 		// Номер береться ДО першого `await`: усе, що зараз у дорозі, з цієї миті
 		// застаріле й писати вже не має права.
 		const epoch = ++this.#epoch;
@@ -98,10 +98,13 @@ export class AwaitedRoom {
 				return;
 			}
 
-			const [{ listOwnRooms }, { othersPresent }] = await Promise.all([
+			const [{ listOwnRooms }, { othersPresent }, { serverNow }] = await Promise.all([
 				import('$lib/net/ownRooms'),
-				import('$lib/net/presence')
+				import('$lib/net/presence'),
+				import('$lib/net/firebase')
 			]);
+			// Серверним часом: `aliveAt` — серверна позначка (`net/firebase.ts`, `serverNow`).
+			const moment = now ?? serverNow();
 
 			/*
 			 * ЧЕКАЄ ЛИШЕ ТА КІМНАТА, У ЯКІЙ ХТОСЬ Є. Свіжість (`aliveAt`) цього не
@@ -112,7 +115,7 @@ export class AwaitedRoom {
 			 * Присутність питається лише в КАНДИДАТІВ, а їх зазвичай нуль або один:
 			 * дешевий відсів іде першим.
 			 */
-			for (const room of roomsAwaitingMe(await listOwnRooms(), now)) {
+			for (const room of roomsAwaitingMe(await listOwnRooms(), moment)) {
 				if ((await othersPresent(room.code)) > 0) {
 					if (epoch !== this.#epoch) return;
 					this.room = room;

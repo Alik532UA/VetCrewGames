@@ -67,6 +67,25 @@ export interface Connection {
  */
 let pending: Promise<Connection> | null = null;
 
+/** Зсув серверного часу — з `.info/serverTimeOffset`, щойно є під’єднання. */
+let serverOffset = 0;
+/** Відписка від зсуву: знімається разом із під’єднанням (`forget`). */
+let off: (() => void) | null = null;
+
+/**
+ * СЕРВЕРНИЙ ЧАС ПОЗА КІМНАТОЮ — для всього, що звіряє серверні позначки
+ * (`aliveAt`, `createdAt`) з «зараз» (аудит 2026-09-25).
+ *
+ * У кімнаті це давно `transport.now()`, а поза нею — перелік своїх партій, смуга
+ * «вас чекають», прибирання своїх покинутих кімнат — брали годинник пристрою. На
+ * ПК, чий годинник біжить на дві хвилини вперед, смуга не зʼявлялася ніколи, а
+ * живі кімнати в списку показували кнопку «закрити покинуту». Поки під’єднання
+ * немає, зсув нульовий — тобто рівно те, що було доти.
+ */
+export function serverNow(): number {
+	return Date.now() + serverOffset;
+}
+
 export function connect(): Promise<Connection> {
 	pending ??= open().catch((error: unknown) => {
 		pending = null;
@@ -86,6 +105,15 @@ async function open(): Promise<Connection> {
 	const app = initializeApp(CONFIG);
 	const auth: Auth = authModule.getAuth(app);
 	const db = dbModule.getDatabase(app);
+	// Зсув приходить із рукостискання зʼєднання: окремого читання бази він не коштує.
+	// Службовий вузол: скасовувати його нікому, тож обробника скасування немає.
+	const { onValue, ref } = dbModule;
+	const offsetNode = ref(db, '.info/serverTimeOffset');
+	if (off) off();
+	off = onValue(offsetNode, (snapshot) => {
+		const value = Number(snapshot.val());
+		serverOffset = Number.isFinite(value) ? value : 0;
+	});
 
 	/*
 	 * СПЕРШУ ЧЕКАЄМО, ПОКИ FIREBASE ВІДНОВИТЬ СЕСІЮ, і лише тоді дивимось, хто ми.
@@ -130,4 +158,7 @@ async function open(): Promise<Connection> {
 export function forget(): void {
 	pending = null;
 	logService.sessionUid = null;
+	if (off) off();
+	off = null;
+	serverOffset = 0;
 }

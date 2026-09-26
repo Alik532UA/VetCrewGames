@@ -1,4 +1,4 @@
-import { connect } from './firebase';
+import { connect, serverNow } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import type { RoomInfo } from './roomTypes';
 import { roomLife } from '$lib/config/roomLife';
@@ -177,8 +177,8 @@ export async function pruneOwnRooms(): Promise<void> {
 			 * переїхали.
 			 */
 			const abandoned =
-				(info.status === 'over' && roomLife(info.aliveAt, Date.now()) !== 'alive') ||
-				(typeof info.createdAt === 'number' && Date.now() - info.createdAt > ROOM_TTL_MS);
+				(info.status === 'over' && roomLife(info.aliveAt, serverNow()) !== 'alive') ||
+				(typeof info.createdAt === 'number' && serverNow() - info.createdAt > ROOM_TTL_MS);
 			if (!abandoned) continue;
 
 			/*

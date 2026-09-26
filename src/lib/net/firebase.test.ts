@@ -51,7 +51,16 @@ const auth = {
 
 vi.mock('firebase/app', () => ({ initializeApp: vi.fn(() => ({ name: 'test' })) }));
 vi.mock('firebase/auth', () => ({ getAuth: vi.fn(() => auth), signInAnonymously }));
-vi.mock('firebase/database', () => ({ getDatabase: vi.fn(() => ({ ref: vi.fn() })) }));
+/** Що віддасть `.info/serverTimeOffset`: зсув серверного годинника від пристрою. */
+let offsetListener: ((snapshot: { val: () => unknown }) => void) | null = null;
+vi.mock('firebase/database', () => ({
+	getDatabase: vi.fn(() => ({})),
+	ref: vi.fn((_db: unknown, path: string) => ({ path })),
+	onValue: vi.fn((_node: unknown, listener: (snapshot: { val: () => unknown }) => void) => {
+		offsetListener = listener;
+		return () => {};
+	})
+}));
 
 const rememberSession = vi.fn();
 vi.mock('$lib/services/accountFlag', () => ({ rememberSession }));
@@ -59,7 +68,7 @@ vi.mock('$lib/services/logService.svelte', () => ({
 	logService: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 }));
 
-const { connect, forget } = await import('./firebase');
+const { connect, forget, serverNow } = await import('./firebase');
 
 describe('під’єднання до Firebase', () => {
 	beforeEach(() => {
@@ -140,6 +149,22 @@ describe('під’єднання до Firebase', () => {
 		expect(logService.sessionUid).toBe('uid-anon');
 		forget();
 		expect(logService.sessionUid).toBeNull();
+	});
+
+	/**
+	 * СЕРВЕРНИЙ ЧАС ПОЗА КІМНАТОЮ (аудит 2026-09-25): годинник пристрою, що біжить
+	 * уперед, доти ховав смугу «вас чекають» і показував живі кімнати покинутими.
+	 *
+	 * Зворотний експеримент: повернути в `serverNow` голий `Date.now()` — червоніє.
+	 */
+	it('поза кімнатою «зараз» — серверне: зі зсувом, який повідомила база', async () => {
+		await connect();
+		offsetListener?.({ val: () => -120_000 });
+
+		const skew = serverNow() - Date.now();
+
+		expect(skew).toBeGreaterThanOrEqual(-120_050);
+		expect(skew).toBeLessThanOrEqual(-119_950);
 	});
 
 	/** Два виклики — одне під’єднання: інакше в кімнаті було б два `uid`. */

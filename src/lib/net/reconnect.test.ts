@@ -40,7 +40,10 @@ let refusals = 0;
 
 const ref = (_db: unknown, path = '') => ({ path });
 
-vi.mock('./firebase', () => ({ connect: async () => ({ uid: 'uid-host', db: {} }) }));
+vi.mock('./firebase', () => ({
+	connect: async () => ({ uid: 'uid-host', db: {} }),
+	serverNow: () => Date.now()
+}));
 vi.mock('$lib/services/logService.svelte', () => ({
 	logService: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 }));

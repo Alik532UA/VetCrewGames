@@ -1,3 +1,4 @@
+import { serverNow } from '$lib/net/firebase';
 import { roomLife } from '$lib/config/roomLife';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { OwnRoom } from '$lib/net/ownRooms';
@@ -252,7 +253,8 @@ export class LobbyFeed {
 			 * Тепер кожна кімната несе серверну позначку останньої присутності, і
 			 * тиша понад п'ять хвилин прибирає рядок з очей.
 			 */
-			const now = Date.now();
+			// Серверним часом: позначка свіжості — серверна (`net/firebase.ts`, `serverNow`).
+			const now = serverNow();
 			this.own = rooms.filter(
 				(room) => room.gameId === this.#gameId && roomLife(room.aliveAt, now) !== 'dead'
 			);

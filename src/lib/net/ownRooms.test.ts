@@ -18,7 +18,10 @@ const NOW = 1_800_000_000_000;
 const tree: Record<string, unknown> = {};
 const removed: string[] = [];
 
-vi.mock('./firebase', () => ({ connect: async () => ({ uid: 'uid-host', db: {} }) }));
+vi.mock('./firebase', () => ({
+	connect: async () => ({ uid: 'uid-host', db: {} }),
+	serverNow: () => Date.now()
+}));
 vi.mock('firebase/database', () => ({
 	ref: (_db: unknown, path = '') => ({ path }),
 	get: async (node: { path: string }) => ({
