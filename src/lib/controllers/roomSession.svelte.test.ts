@@ -95,7 +95,8 @@ function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 			onChange(true);
 			return () => {};
 		}),
-		beat: vi.fn(() => () => {})
+		beat: vi.fn(() => () => {}),
+		checkRules: vi.fn(async (): Promise<'fresh' | 'stale' | 'unknown'> => 'fresh')
 	} satisfies RoomNet;
 	return {
 		net,
@@ -520,6 +521,50 @@ describe('склад партії', () => {
  * Зворотний експеримент: прибрати перевірку `autoHalted` зі `start` і з політики
  * старту — червоніє «не повторюється по колу».
  */
+/**
+ * ПРАВИЛА БАЗИ НОВІШІ ЗА СТОРІНКУ (аудит 2026-09-25). Вкладка, відкрита до
+ * викладки нових правил, посеред партії не чула нічого: тапи показувалися й
+ * мовчки відкочувалися. Тепер перша відмова, якої гра не пояснює, раз на сторінку
+ * звіряє штамп правил, і на `stale` кімната каже оновити сторінку.
+ *
+ * Зворотні експерименти: не кликати `noteDenial` з `#failed` — червоніє перший;
+ * прибрати політику `refused` — другий; прибрати `#rulesAsked` — «раз на сторінку».
+ */
+describe('правила бази новіші за сторінку', () => {
+	it('відмова дії господаря звіряє правила, і на «stale» кімната каже оновити сторінку', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		room.refuseWrites(['setStatus']);
+		const { session, net } = sessionFor(room, null, HOST);
+		net.checkRules.mockResolvedValue('stale');
+		await session.enter('create');
+		await settle();
+
+		await session.start();
+		await settle();
+		expect(net.checkRules).toHaveBeenCalledTimes(1);
+		expect(session.rulesStale).toBe(true);
+
+		await session.start();
+		await settle();
+		expect(net.checkRules, 'раз на сторінку').toHaveBeenCalledTimes(1);
+	});
+
+	it('хід, якого база не прийняла, — теж привід звірити, а свіжі правила смуги не дають', async () => {
+		const started = roomInfo({ status: 'playing', roster: rosterOf(members()) });
+		const room = new LocalRoom(started, members());
+		const { session, net } = sessionFor(room, null, HOST);
+		await session.enter('create');
+		await settle();
+
+		session.match!.refused = 1;
+		flushSync();
+		await settle();
+
+		expect(net.checkRules).toHaveBeenCalledTimes(1);
+		expect(session.rulesStale).toBe(false);
+	});
+});
+
 describe('відмова бази на автоматичному записі', () => {
 	afterEach(() => {
 		vi.useRealTimers();

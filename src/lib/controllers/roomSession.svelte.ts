@@ -42,6 +42,18 @@ export class RoomSession<M extends RoomMatch> {
 	busy = $state(false);
 	/** Звʼязок із базою. `true`, поки не доведено протилежне. */
 	connected = $state(true);
+	/**
+	 * ПРАВИЛА БАЗИ НОВІШІ ЗА СТОРІНКУ — звірено після відмови, якої гра не пояснює.
+	 *
+	 * Доти вкладка, відкрита до викладки нових правил, посеред партії не чула
+	 * нічого: у «Знайди пару» кожен тап показувався й мовчки відкочувався, дошка
+	 * виглядала замерзлою, а коментар у `deploy.yml` обіцяв «оновіть сторінку»,
+	 * якого ніде не було (аудит 2026-09-25). Тепер перша така відмова раз на
+	 * сторінку питає базу про штамп правил (`net/rulesLive.ts`), і на `stale`
+	 * смуга кімнати каже оновити сторінку.
+	 */
+	rulesStale = $state(false);
+	#rulesAsked = false;
 	/** Годинник сторінки — СЕРВЕРНИЙ час (`transport.now()`), а не час пристрою. */
 	clock = $state(Date.now());
 
@@ -394,5 +406,16 @@ export class RoomSession<M extends RoomMatch> {
 	#failed(what: string, error: unknown): void {
 		toast.error('pairs.actionFailed');
 		logService.error('network', what, { code: this.code, reason: String(error) });
+		if (/permission[_ ]denied/i.test(String(error))) this.noteDenial();
+	}
+
+	/** База відмовила без пояснення з боку гри — раз на сторінку звірити правила. */
+	noteDenial(): void {
+		if (this.#rulesAsked) return;
+		this.#rulesAsked = true;
+		void this.net.checkRules().then((state) => {
+			logService.warn('network', 'rules checked after denial', { code: this.code, state });
+			if (state === 'stale') this.rulesStale = true;
+		});
 	}
 }

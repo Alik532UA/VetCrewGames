@@ -52,6 +52,9 @@ export const ui = {
 	'pairs.roomLost': 'Der Raum ist nicht mehr erreichbar – tritt ihm erneut bei.',
 	'pairs.removed': 'Der Gastgeber hat dich aus dem Raum entfernt.',
 	'pairs.offline': 'Keine Verbindung zum Server – wir warten, bis sie zurück ist.',
+	'pairs.rulesChanged':
+		'Die Serverregeln wurden aktualisiert und diese Seite ist veraltet, deshalb gehen Züge nicht durch. Lade die Seite neu – die Partie geht an derselben Stelle weiter.',
+	'pairs.reload': 'Seite neu laden',
 	'pairs.roomOlder':
 		'Diese Partie wurde in einer älteren Version gestartet. Erstelle einen neuen Raum.',
 	'pairs.rulesMissing': 'Gemeinsames Spielen ist auf dem Server noch nicht aktiviert.',

@@ -209,6 +209,8 @@ export class QuizMatch {
 	 * читати її мені вже не дають (`lost`). `null` — кімната є.
 	 */
 	gone = $state<GoneReason | null>(null);
+	/** Скільки ходів база не прийняла (`RoomMatch.refused`). */
+	refused = $state(0);
 
 	listen(): () => void {
 		return this.#transport.watch(
@@ -696,6 +698,7 @@ export class QuizMatch {
 		}
 		// Доти такі ходи ковталися мовчки: пауза, голос, оголошення раунду просто
 		// не лягали, і ніде не було видно чому (аудит 2026-09-24).
+		this.refused += 1;
 		const code = this.#transport.code;
 		logService.warn('network', 'quiz move not written', { code, type, round: payload.round });
 		return false;

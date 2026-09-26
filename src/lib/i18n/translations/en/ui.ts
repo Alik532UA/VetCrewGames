@@ -52,6 +52,9 @@ export const ui = {
 	'pairs.roomLost': 'The room is no longer available — join it again.',
 	'pairs.removed': 'The host removed you from the room.',
 	'pairs.offline': 'No connection to the server — waiting for it to come back.',
+	'pairs.rulesChanged':
+		'The server rules have been updated and this page is out of date, so moves are not going through. Reload the page — the game continues where it left off.',
+	'pairs.reload': 'Reload page',
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',
 	'pairs.rulesMissing': 'Shared play is not enabled on the server yet.',
 	'pairs.netFailed': 'Could not join the room. Please try again.',

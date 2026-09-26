@@ -52,6 +52,9 @@ export const ui = {
 	'pairs.roomLost': 'De kamer is niet meer bereikbaar — ga er opnieuw in.',
 	'pairs.removed': 'De gastheer heeft je uit de kamer verwijderd.',
 	'pairs.offline': 'Geen verbinding met de server — we wachten tot die terug is.',
+	'pairs.rulesChanged':
+		'De serverregels zijn bijgewerkt en deze pagina is verouderd, dus zetten komen niet door. Laad de pagina opnieuw — het spel gaat verder waar het was.',
+	'pairs.reload': 'Pagina herladen',
 	'pairs.roomOlder': 'Dit spel is in een oudere versie gestart. Maak een nieuwe kamer aan.',
 	'pairs.rulesMissing': 'Samen spelen is nog niet ingeschakeld op de server.',
 	'pairs.netFailed': 'Kon niet in de ruimte komen. Probeer het opnieuw.',

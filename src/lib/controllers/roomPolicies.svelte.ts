@@ -128,6 +128,11 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 		awardOnce(session.code, match.seed, () => session.game.award(match, session.me));
 	});
 
+	// Хід, якого база не прийняла, — привід звірити правила (`RoomSession.rulesStale`).
+	$effect(() => {
+		if ((session.match?.refused ?? 0) > 0) session.noteDenial();
+	});
+
 	watchHost(session);
 	journal(session);
 

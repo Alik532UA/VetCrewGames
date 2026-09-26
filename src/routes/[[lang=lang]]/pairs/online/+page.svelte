@@ -120,7 +120,7 @@
 </script>
 
 <div class="online-page">
-	<NetLost lost={match !== null && !session.connected} />
+	<NetLost lost={match !== null && !session.connected} stale={session.rulesStale} />
 	{#if !match}
 		<OnlineGate
 			bind:name={player.value}

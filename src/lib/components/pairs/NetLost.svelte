@@ -15,8 +15,12 @@
 	 *
 	 * ЖИВА ОБЛАСТЬ ІСНУЄ ЗАВЖДИ, міняється лише текст: скрінрідер надійно оголошує
 	 * зміну вмісту наявного `role="status"`, а не появу нового елемента.
+	 *
+	 * `stale` — ПРАВИЛА БАЗИ НОВІШІ ЗА СТОРІНКУ (`RoomSession.rulesStale`): звʼязок
+	 * є, а ходи не проходять. Це важливіше за обрив і показується одразу, разом із
+	 * кнопкою: оновлена сторінка повертається в ту саму кімнату за адресою.
 	 */
-	let { lost }: { lost: boolean } = $props();
+	let { lost, stale = false }: { lost: boolean; stale?: boolean } = $props();
 
 	const DELAY_MS = 1500;
 
@@ -32,14 +36,40 @@
 	});
 </script>
 
-<p class="net-lost" class:text-panel={shown} role="status" data-testid="net-lost-text">
-	{#if shown}{@html formatFont(t('pairs.offline'))}{/if}
-</p>
+<div class="net-lost" class:text-panel={shown || stale}>
+	<p class="net-lost__text" role="status" data-testid="net-lost-text">
+		{#if stale}{@html formatFont(t('pairs.rulesChanged'))}{:else if shown}{@html formatFont(
+				t('pairs.offline')
+			)}{/if}
+	</p>
+	{#if stale}
+		<button
+			type="button"
+			class="btn-primary net-lost__reload"
+			onclick={() => location.reload()}
+			data-testid="room-reload-btn"
+		>
+			{@html formatFont(t('pairs.reload'))}
+		</button>
+	{/if}
+</div>
 
 <style>
 	.net-lost {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-sm);
+	}
+
+	.net-lost__text {
 		margin: 0;
 		font-weight: var(--font-weight-bold);
 		text-align: center;
+	}
+
+	/* Головна дія цього стану — інших на дошці однаково не буде. */
+	.net-lost__reload {
+		font-size: var(--font-size-md);
 	}
 </style>

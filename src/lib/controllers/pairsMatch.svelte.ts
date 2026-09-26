@@ -175,6 +175,8 @@ export class PairsMatch {
 	 * читати її мені вже не дають (`lost`). `null` — кімната є.
 	 */
 	gone = $state<GoneReason | null>(null);
+	/** Скільки ходів база не прийняла (`RoomMatch.refused`). */
+	refused = $state(0);
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -449,6 +451,7 @@ export class PairsMatch {
 		// журнал — правда, а не наш намір. Але не мовчки: «натиснув — і нічого» в
 		// звіті мусить мати відповідь (аудит 2026-09-24).
 		if (!(await this.#transport.append(move))) {
+			this.refused += 1;
 			logService.info('network', 'pairs move refused', {
 				code: this.#transport.code,
 				seq: move.seq,

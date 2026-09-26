@@ -31,6 +31,8 @@ export interface RoomMatch {
 	readonly seed: number;
 	readonly over: boolean;
 	readonly gone: GoneReason | null;
+	/** Скільки ходів база не прийняла: перший такий — привід звірити правила. */
+	readonly refused: number;
 	takeLead(): Promise<boolean>;
 }
 

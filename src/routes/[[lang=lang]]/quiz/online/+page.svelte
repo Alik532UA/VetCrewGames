@@ -112,7 +112,7 @@
 </script>
 
 <div class="quiz-online" class:quiz-online--playing={match !== null && match.status !== 'lobby'}>
-	<NetLost lost={match !== null && !session.connected} />
+	<NetLost lost={match !== null && !session.connected} stale={session.rulesStale} />
 	{#if !match}
 		<OnlineGate
 			bind:name={player.value}
