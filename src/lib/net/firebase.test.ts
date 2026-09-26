@@ -52,12 +52,17 @@ const auth = {
 vi.mock('firebase/app', () => ({ initializeApp: vi.fn(() => ({ name: 'test' })) }));
 vi.mock('firebase/auth', () => ({ getAuth: vi.fn(() => auth), signInAnonymously }));
 /** Що віддасть `.info/serverTimeOffset`: зсув серверного годинника від пристрою. */
-let offsetListener: ((snapshot: { val: () => unknown }) => void) | null = null;
+type OffsetSnapshot = { val: () => unknown; exists: () => boolean };
+let offsetListener: ((snapshot: OffsetSnapshot) => void) | null = null;
+/** База повідомила зсув — так, як це робить рукостискання зʼєднання. */
+const offsetIs = (value: number) => offsetListener?.({ val: () => value, exists: () => true });
 vi.mock('firebase/database', () => ({
 	getDatabase: vi.fn(() => ({})),
 	ref: vi.fn((_db: unknown, path: string) => ({ path })),
-	onValue: vi.fn((_node: unknown, listener: (snapshot: { val: () => unknown }) => void) => {
+	onValue: vi.fn((_node: unknown, listener: (snapshot: OffsetSnapshot) => void) => {
 		offsetListener = listener;
+		// До рукостискання вузла немає — як у SDK.
+		listener({ val: () => null, exists: () => false });
 		return () => {};
 	})
 }));
@@ -68,11 +73,12 @@ vi.mock('$lib/services/logService.svelte', () => ({
 	logService: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 }));
 
-const { connect, forget, serverNow } = await import('./firebase');
+const { connect, forget, serverNow, serverTime, OFFSET_WAIT_MS } = await import('./firebase');
 
 describe('під’єднання до Firebase', () => {
 	beforeEach(() => {
 		forget();
+		offsetListener = null;
 		currentUser = null;
 		restored = null;
 		signInAnonymously.mockClear();
@@ -159,12 +165,45 @@ describe('під’єднання до Firebase', () => {
 	 */
 	it('поза кімнатою «зараз» — серверне: зі зсувом, який повідомила база', async () => {
 		await connect();
-		offsetListener?.({ val: () => -120_000 });
+		offsetIs(-120_000);
 
 		const skew = serverNow() - Date.now();
 
 		expect(skew).toBeGreaterThanOrEqual(-120_050);
 		expect(skew).toBeLessThanOrEqual(-119_950);
+	});
+
+	/**
+	 * ЗСУВ ЩЕ НЕ ПРИЇХАВ (аудит 2026-09-26): одразу після входу `serverNow()` — це
+	 * годинник пристрою, і смуга «вас чекають» на вході в застосунок звірялася саме
+	 * з ним. `serverTime()` чекає справжнього зсуву — а без звʼязку не чекає вічно.
+	 *
+	 * Зворотні експерименти: не чекати зсуву — червоніє перший; порожній вузол
+	 * вважати нульовим зсувом — теж перший; прибрати межу чекання — другий.
+	 */
+	it('серверний час, якому можна вірити, — після справжнього зсуву', async () => {
+		const reading = serverTime();
+		await vi.waitFor(() => expect(offsetListener).not.toBeNull());
+		await Promise.resolve();
+		offsetIs(-120_000);
+
+		const skew = (await reading) - Date.now();
+
+		expect(skew, 'прочитано до зсуву').toBeLessThanOrEqual(-119_950);
+	});
+
+	it('без звʼязку зсуву немає — і час пристрою приходить після межі, а не ніколи', async () => {
+		vi.useFakeTimers();
+		try {
+			let read: number | null = null;
+			void serverTime().then((value) => (read = value));
+			await vi.advanceTimersByTimeAsync(OFFSET_WAIT_MS - 1);
+			expect(read, 'повірив годиннику пристрою, не дочекавшись').toBeNull();
+			await vi.advanceTimersByTimeAsync(1);
+			expect(read, 'чекає вічно').not.toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	/** Два виклики — одне під’єднання: інакше в кімнаті було б два `uid`. */

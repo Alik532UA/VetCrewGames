@@ -14,7 +14,12 @@ import { as, closeAll, peek, sameUserTwice, signedIn, type Connection } from './
  */
 vi.mock('$lib/net/firebase', async () => {
 	const { currentConnection } = await import('$lib/net/emulatorSession');
-	return { connect: currentConnection, forget: () => {}, serverNow: () => Date.now() };
+	return {
+		connect: currentConnection,
+		forget: () => {},
+		serverNow: () => Date.now(),
+		serverTime: async () => Date.now()
+	};
 });
 
 let host: Connection;

@@ -1,9 +1,13 @@
-import { serverNow } from '$lib/net/firebase';
+import { serverTime } from '$lib/net/firebase';
 import { roomLife } from '$lib/config/roomLife';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { OwnRoom } from '$lib/net/ownRooms';
+import type { RoomLife } from '$lib/config/roomLife';
 import { friendUids } from '$lib/net/follows';
 import { logService } from '$lib/services/logService.svelte';
+
+/** Своя партія в списку «продовжити» — зі станом, звіреним серверним часом у мить читання. */
+export type ResumeRoom = OwnRoom & { life: RoomLife };
 
 /**
  * ПЕРЕЛІК КІМНАТ І СВОЇ ПАРТІЇ — одне джерело для всіх спільних ігор.
@@ -63,7 +67,7 @@ export class LobbyFeed {
 	 * Окремо від `rooms` навмисно: у переліку лежить те, куди можна ЗАЙТИ, а тут —
 	 * те, куди можна ВЕРНУТИСЯ.
 	 */
-	own = $state<OwnRoom[]>([]);
+	own = $state<ResumeRoom[]>([]);
 
 	/**
 	 * `uid` моїх друзів — тих, із кимось підписка ВЗАЄМНА.
@@ -259,7 +263,11 @@ export class LobbyFeed {
 			 * Жодна з них не кидає: це довідки, і їхня відсутність лишає список
 			 * таким, яким він був до появи рядків «продовжити» й «кімнати друзів».
 			 */
-			const [rooms, friends] = await Promise.all([own.listOwnRooms(), friendUids()]);
+			const [rooms, friends, now] = await Promise.all([
+				own.listOwnRooms(),
+				friendUids(),
+				serverTime()
+			]);
 			if (dead) return;
 			/*
 			 * Гра відсіюється тут, бо індекс `myRooms` спільний для всіх ігор:
@@ -271,11 +279,16 @@ export class LobbyFeed {
 			 * Тепер кожна кімната несе серверну позначку останньої присутності, і
 			 * тиша понад п'ять хвилин прибирає рядок з очей.
 			 */
-			// Серверним часом: позначка свіжості — серверна (`net/firebase.ts`, `serverNow`).
-			const now = serverNow();
-			this.own = rooms.filter(
-				(room) => room.gameId === this.#gameId && roomLife(room.aliveAt, now) !== 'dead'
-			);
+			/*
+			 * Серверним часом, прочитаним ПІСЛЯ під’єднання (`net/firebase.ts`,
+			 * `serverTime`): позначка свіжості — серверна. І стан кожної кімнати
+			 * звіряється тут, раз, — список його лише показує. Доти список рахував його
+			 * сам, у мить монтування, тобто ще до під’єднання й годинником пристрою
+			 * (аудит 2026-09-26).
+			 */
+			this.own = rooms
+				.map((room) => ({ ...room, life: roomLife(room.aliveAt, now) }))
+				.filter((room) => room.gameId === this.#gameId && room.life !== 'dead');
 			this.friends = friends;
 		})();
 

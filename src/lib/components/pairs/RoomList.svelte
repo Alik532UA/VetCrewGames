@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
-	import { roomLife } from '$lib/config/roomLife';
 	import type { LobbyRoom } from '$lib/net/lobby';
-	import type { OwnRoom } from '$lib/net/ownRooms';
-	import { serverNow } from '$lib/net/firebase';
+	import type { ResumeRoom } from '$lib/controllers/lobbyFeed.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 
@@ -50,7 +48,7 @@
 		 * тому вернутися в свою було нічим: код жив лише в адресі й губився разом
 		 * із вкладкою.
 		 */
-		resume: OwnRoom[];
+		resume: ResumeRoom[];
 		/**
 		 * `uid` друзів — їхні кімнати стоять ОКРЕМОЮ групою зверху.
 		 *
@@ -108,17 +106,6 @@
 	}: Props = $props();
 
 	/*
-	 * Стан кімнати рахується РАЗ, коли малюється список.
-	 *
-	 * Годинник тут не потрібен: перелік своїх партій читається при відкритті
-	 * сторінки й не оновлюється сам, тож секунда в секунду ці рядки однаково не
-	 * живуть. Тикати таймером заради того, щоб кнопка зникла на очах, — це
-	 * розряджений акумулятор і нічого більше.
-	 */
-	// Серверним часом: `aliveAt` — серверна позначка, а годинник пристрою буває зсунутий.
-	const drawnAt = serverNow();
-
-	/*
 	 * Дві групи з одного масиву, і порядок усередині кожної НЕ міняється:
 	 * перелік приїжджає впорядкованим за свіжістю (`net/lobby.ts`), і
 	 * пересортувати його тут означало б дві різні відповіді на «яка кімната
@@ -157,7 +144,6 @@
 	{#if resume.length > 0}
 		<ul class="rooms__list rooms__list--resume" data-testid="pairs-resume-list">
 			{#each resume as room (room.code)}
-				{@const life = roomLife(room.aliveAt, drawnAt)}
 				<li class="rooms__item rooms__item--resume" data-testid="pairs-resume-{room.code}-item">
 					<span class="rooms__who">
 						<!--
@@ -171,7 +157,13 @@
 						</span>
 						<span class="rooms__players">{@html formatFont(t('pairs.resumeHint'))}</span>
 					</span>
-					{#if onClose && room.amHost && life === 'idle'}
+					<!--
+						Стан кімнати звірено РАЗ, коли перелік читався (`LobbyFeed.load`,
+						серверним часом). Годинник тут не потрібен: перелік своїх партій не
+						оновлюється сам, і тикати таймером заради кнопки, що зникла б на очах, —
+						розряджений акумулятор і нічого більше.
+					-->
+					{#if onClose && room.amHost && room.life === 'idle'}
 						<button
 							type="button"
 							class="rooms__close"

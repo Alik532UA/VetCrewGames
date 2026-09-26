@@ -45,7 +45,8 @@ const remove = vi.fn(async (node: { path: string }) => {
 
 vi.mock('./firebase', () => ({
 	connect: async () => ({ uid: 'uid-host', db: {} }),
-	serverNow: () => Date.now()
+	serverNow: () => Date.now(),
+	serverTime: vi.fn(async () => Date.now())
 }));
 vi.mock('./ownRooms', () => ({
 	forgetOwnRoom: vi.fn(async () => {}),
@@ -82,6 +83,7 @@ vi.mock('firebase/database', () => ({
 
 const { ROOM_CAPACITY, joinRoom, roomTransport } = await import('./rtdbRoom');
 const { get } = await import('firebase/database');
+const { serverTime } = await import('./firebase');
 
 describe('rtdbRoom: записи транспорту', () => {
 	beforeEach(() => {
@@ -252,6 +254,31 @@ describe('rtdbRoom: передача ведення й номер ходу', () 
 		});
 
 		expect(seen).toEqual([[1, 2]]);
+	});
+});
+
+/**
+ * ПЕРШИЙ ТАКТ КІМНАТИ — УЖЕ СЕРВЕРНИЙ (аудит 2026-09-26): зсув приходить із
+ * рукостискання зʼєднання, і транспорт, відданий раніше, міряв би межу чужого ходу
+ * й дедлайни раундів годинником пристрою.
+ *
+ * Зворотний експеримент: не чекати `serverTime()` у `roomTransport` — червоніє.
+ */
+describe('rtdbRoom: серверний час до першого такту', () => {
+	it('транспорт віддається, коли зсув серверного часу вже відомий', async () => {
+		let release!: () => void;
+		vi.mocked(serverTime).mockReturnValueOnce(
+			new Promise((resolve) => (release = () => resolve(0)))
+		);
+		let ready = false;
+		const pending = roomTransport('42').then(() => (ready = true));
+		// Макрозадача, а не кілька мікрозадач: динамічний імпорт SDK доїжджає не одразу.
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(ready, 'транспорт віддано до серверного часу').toBe(false);
+
+		release();
+		await pending;
+		expect(ready).toBe(true);
 	});
 });
 

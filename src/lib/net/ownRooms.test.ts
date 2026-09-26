@@ -20,7 +20,8 @@ const removed: string[] = [];
 
 vi.mock('./firebase', () => ({
 	connect: async () => ({ uid: 'uid-host', db: {} }),
-	serverNow: () => Date.now()
+	serverNow: () => Date.now(),
+	serverTime: async () => Date.now()
 }));
 vi.mock('firebase/database', () => ({
 	ref: (_db: unknown, path = '') => ({ path }),
@@ -72,6 +73,33 @@ describe('прибирання власних кімнат', () => {
 		await pruneOwnRooms();
 
 		expect(removed).toEqual([]);
+	});
+
+	/**
+	 * СТАРА, АЛЕ ЖИВА (аудит 2026-09-26): вік зносив і живу кімнату — а «зіграти в
+	 * іншу гру» прибирає свої кімнати ДО того, як оголосити переїзд, тож із кімнати,
+	 * якій понад дванадцять годин, групу викидало, не сказавши куди.
+	 *
+	 * Зворотний експеримент: повернути вік без тиші — червоніє перший.
+	 */
+	it('стару кімнату, у якій досі грають, не зносить', async () => {
+		tree['rooms/1234/info'] = room({ createdAt: NOW - 13 * 3_600_000, aliveAt: NOW - 10_000 });
+
+		await pruneOwnRooms();
+
+		expect(removed, 'живу кімнату знесено за віком').toEqual([]);
+	});
+
+	it('стару тиху кімнату зносить, навіть не скінчену', async () => {
+		tree['rooms/1234/info'] = room({
+			status: 'lobby',
+			createdAt: NOW - 13 * 3_600_000,
+			aliveAt: NOW - 30 * 60_000
+		});
+
+		await pruneOwnRooms();
+
+		expect(removed).toEqual(['rooms/1234', 'myRooms/uid-host/1234']);
 	});
 });
 

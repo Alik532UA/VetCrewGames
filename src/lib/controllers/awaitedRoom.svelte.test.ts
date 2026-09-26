@@ -65,6 +65,15 @@ vi.mock('$lib/net/ownRooms', () => ({ listOwnRooms, forgetOwnRoom }));
 vi.mock('$lib/net/presence', () => ({ othersPresent, watchOthers }));
 vi.mock('$lib/net/rtdbRoom', () => ({ watchRoomInfo }));
 vi.mock('$lib/net/leave', () => ({ leaveRoom }));
+/**
+ * Годинник пристрою на годину попереду сервера: живу кімнату він бачить мертвою. Смуга
+ * мусить звірятися з СЕРВЕРНИМ часом, прочитаним після під’єднання (`serverTime`).
+ */
+const DEVICE_AHEAD_MS = 60 * 60_000;
+vi.mock('$lib/net/firebase', () => ({
+	serverNow: () => NOW + DEVICE_AHEAD_MS,
+	serverTime: async () => NOW
+}));
 
 /**
  * Чи браузер уже мав сесію бази. Типово — так: решта випадків про кімнати, а не про
@@ -113,6 +122,23 @@ describe('AwaitedRoom', () => {
 	 * Зворотний експеримент: прибрати гейт `mayHaveRooms()` у `refresh()` — перший
 	 * випадок червоніє, бо `listOwnRooms` викликано.
 	 */
+	/**
+	 * «ЗАРАЗ» — СЕРВЕРНЕ Й ПІСЛЯ ПІД’ЄДНАННЯ (аудит 2026-09-26). Доти час брався до
+	 * під’єднання, тобто на вході в застосунок це завжди був годинник пристрою, і
+	 * з годинником, що біжить уперед, смуга над живою кімнатою не зʼявлялася.
+	 *
+	 * Зворотний експеримент: повернути `serverNow()` — червоніє.
+	 */
+	it('без переданого часу — серверний, а не годинник пристрою', async () => {
+		listOwnRooms.mockResolvedValue([own()]);
+		const awaited = new AwaitedRoom();
+
+		await awaited.refresh();
+
+		expect(awaited.room?.code, 'живу кімнату прочитано годинником пристрою').toBe('AAAAA');
+		awaited.dismiss();
+	});
+
 	describe('браузер без сесії бази', () => {
 		it('не питає базу зовсім', async () => {
 			session = false;

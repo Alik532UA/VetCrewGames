@@ -1,4 +1,4 @@
-import { connect, serverNow } from './firebase';
+import { connect, serverNow, serverTime } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
@@ -371,6 +371,9 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */
 export async function roomTransport(code: string): Promise<RoomTransport> {
 	const { db } = await connect();
+	// Транспорт віддається, коли зсув серверного часу вже відомий: інакше перші такти
+	// кімнати — межа чужого ходу, дедлайни раундів — ішли б годинником пристрою.
+	await serverTime();
 	const { onValue, ref, remove, serverTimestamp, set, update } = await import('firebase/database');
 	const room = ref(db, `rooms/${code}`);
 

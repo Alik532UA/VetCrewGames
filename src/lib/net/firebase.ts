@@ -71,6 +71,11 @@ let pending: Promise<Connection> | null = null;
 let serverOffset = 0;
 /** Відписка від зсуву: знімається разом із під’єднанням (`forget`). */
 let off: (() => void) | null = null;
+/** Справжній зсув приїхав (рукостискання зʼєднання); до того — нуль. */
+let offsetArrived: Promise<void> = Promise.resolve();
+
+/** Скільки чекати зсуву, перш ніж повірити годиннику пристрою: без звʼязку його не буде. */
+export const OFFSET_WAIT_MS = 3000;
 
 /**
  * СЕРВЕРНИЙ ЧАС ПОЗА КІМНАТОЮ — для всього, що звіряє серверні позначки
@@ -84,6 +89,27 @@ let off: (() => void) | null = null;
  */
 export function serverNow(): number {
 	return Date.now() + serverOffset;
+}
+
+/**
+ * СЕРВЕРНИЙ ЧАС, ЯКОМУ ВЖЕ МОЖНА ВІРИТИ: після під’єднання й першого справжнього
+ * зсуву — або після `OFFSET_WAIT_MS`, якщо звʼязку немає.
+ *
+ * `serverNow()` одразу після входу — ще годинник пристрою: зсув приходить із
+ * рукостискання зʼєднання, а воно буває пізніше за вхід. Доти смуга «вас чекають»
+ * на вході в застосунок і перелік своїх партій звірялися саме з ним — тобто
+ * поправка на зсунутий годинник минала рівно той випадок, для якого її писали
+ * (аудит 2026-09-26).
+ */
+export async function serverTime(): Promise<number> {
+	await connect();
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	await Promise.race([
+		offsetArrived,
+		new Promise<void>((resolve) => (timer = setTimeout(resolve, OFFSET_WAIT_MS)))
+	]);
+	clearTimeout(timer);
+	return serverNow();
 }
 
 export function connect(): Promise<Connection> {
@@ -110,9 +136,14 @@ async function open(): Promise<Connection> {
 	const { onValue, ref } = dbModule;
 	const offsetNode = ref(db, '.info/serverTimeOffset');
 	if (off) off();
+	let arrived: () => void = () => {};
+	offsetArrived = new Promise((resolve) => (arrived = resolve));
 	off = onValue(offsetNode, (snapshot) => {
+		// До рукостискання вузла немає зовсім: це «ще не знаю», а не нульовий зсув.
+		if (!snapshot.exists()) return;
 		const value = Number(snapshot.val());
 		serverOffset = Number.isFinite(value) ? value : 0;
+		arrived();
 	});
 
 	/*
@@ -161,4 +192,5 @@ export function forget(): void {
 	if (off) off();
 	off = null;
 	serverOffset = 0;
+	offsetArrived = Promise.resolve();
 }

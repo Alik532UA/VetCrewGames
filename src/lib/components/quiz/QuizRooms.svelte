@@ -3,7 +3,7 @@
 	import { formatFont } from '$lib/i18n';
 	import { ONLINE_GAMES, roomFitsGames } from '$lib/config/quizOnline';
 	import type { LobbyRoom } from '$lib/net/lobby';
-	import type { OwnRoom } from '$lib/net/ownRooms';
+	import type { ResumeRoom } from '$lib/controllers/lobbyFeed.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 	import QuizGamePicker from './QuizGamePicker.svelte';
 
@@ -42,7 +42,7 @@
 		/** Перекладач вікторини: її рядки лежать у лінивому чанку (`i18n/quiz`). */
 		text: (key: string) => string;
 		rooms: LobbyRoom[];
-		resume: OwnRoom[];
+		resume: ResumeRoom[];
 		friends: readonly string[];
 		hasMore: boolean;
 		unavailable: boolean;

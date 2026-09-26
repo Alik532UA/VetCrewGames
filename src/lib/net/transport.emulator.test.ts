@@ -31,7 +31,12 @@ import type { Member, Move, RoomInfo, RoomSnapshot, RoomTransport, RosterEntry }
  */
 vi.mock('$lib/net/firebase', async () => {
 	const { currentConnection } = await import('$lib/net/emulatorSession');
-	return { connect: currentConnection, forget: () => {}, serverNow: () => Date.now() };
+	return {
+		connect: currentConnection,
+		forget: () => {},
+		serverNow: () => Date.now(),
+		serverTime: async () => Date.now()
+	};
 });
 
 /** Перший знімок, що задовольняє умову: у базі підписка приїжджає не одразу. */

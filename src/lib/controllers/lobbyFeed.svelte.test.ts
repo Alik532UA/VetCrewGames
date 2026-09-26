@@ -63,6 +63,12 @@ vi.mock('$lib/net/lobby', () => ({ watchLobby, publishRoom, updateGames }));
 const GAME = 'quiz';
 vi.mock('$lib/net/ownRooms', () => ({ listOwnRooms }));
 vi.mock('$lib/net/follows', () => ({ friendUids }));
+/** Серверний час — на годину попереду годинника пристрою: стан кімнат звіряється ним. */
+const SERVER_AHEAD_MS = 60 * 60_000;
+vi.mock('$lib/net/firebase', () => ({
+	serverNow: () => Date.now(),
+	serverTime: async () => Date.now() + SERVER_AHEAD_MS
+}));
 
 const { LobbyFeed } = await import('./lobbyFeed.svelte');
 
@@ -220,6 +226,26 @@ describe('LobbyFeed', () => {
 
 			expect(feed.own).toHaveLength(2);
 			expect(feed.friends).toEqual(['uid-a', 'uid-b']);
+		});
+
+		/**
+		 * СТАН КІМНАТИ — СЕРВЕРНИМ ЧАСОМ, ПРОЧИТАНИМ ПІСЛЯ ПІД’ЄДНАННЯ (аудит 2026-09-26).
+		 * Доти список рахував його сам, у мить монтування, тобто годинником пристрою.
+		 *
+		 * Зворотний експеримент: звіряти з `Date.now()` замість `serverTime()` — червоніє.
+		 */
+		it('стан своєї кімнати звіряється серверним часом і їде в рядок', async () => {
+			// Пристрою — хвилина тиші («жива»), серверу — година з хвилиною («мертва»).
+			const dead = own({ code: 'DEAD', aliveAt: Date.now() - 60_000 });
+			// Серверу — три хвилини тиші: «притихла», тобто господареві можна закрити.
+			const idle = own({ code: 'IDLE', aliveAt: Date.now() + SERVER_AHEAD_MS - 180_000 });
+			listOwnRooms.mockResolvedValue([dead, idle]);
+
+			const feed = new LobbyFeed(GAME);
+			feed.load();
+			await settle();
+
+			expect(feed.own.map((room) => [room.code, room.life])).toEqual([['IDLE', 'idle']]);
 		});
 
 		/** Друзів немає або акаунта немає зовсім — той самий результат. */

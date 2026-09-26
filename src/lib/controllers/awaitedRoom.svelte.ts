@@ -99,13 +99,19 @@ export class AwaitedRoom {
 				return;
 			}
 
-			const [{ listOwnRooms }, { othersPresent }, { serverNow }] = await Promise.all([
+			const [{ listOwnRooms }, { othersPresent }, { serverTime }] = await Promise.all([
 				import('$lib/net/ownRooms'),
 				import('$lib/net/presence'),
 				import('$lib/net/firebase')
 			]);
-			// Серверним часом: `aliveAt` — серверна позначка (`net/firebase.ts`, `serverNow`).
-			const moment = now ?? serverNow();
+			const rooms = await listOwnRooms();
+			/*
+			 * Серверним часом, і ПІСЛЯ під’єднання: `aliveAt` — серверна позначка, а зсув
+			 * приходить із рукостискання (`net/firebase.ts`, `serverTime`). Доти «зараз»
+			 * бралося ДО під’єднання — на вході в застосунок це завжди був годинник
+			 * пристрою (аудит 2026-09-26).
+			 */
+			const moment = now ?? (await serverTime());
 
 			/*
 			 * ЧЕКАЄ ЛИШЕ ТА КІМНАТА, У ЯКІЙ ХТОСЬ Є. Свіжість (`aliveAt`) цього не
@@ -116,7 +122,7 @@ export class AwaitedRoom {
 			 * Присутність питається лише в КАНДИДАТІВ, а їх зазвичай нуль або один:
 			 * дешевий відсів іде першим.
 			 */
-			for (const room of roomsAwaitingMe(await listOwnRooms(), moment)) {
+			for (const room of roomsAwaitingMe(rooms, moment)) {
 				if ((await othersPresent(room.code)) > 0) {
 					if (epoch !== this.#epoch) return;
 					this.room = room;

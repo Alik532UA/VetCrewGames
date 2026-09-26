@@ -1,4 +1,4 @@
-import { connect, serverNow } from './firebase';
+import { connect, serverTime } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import type { RoomInfo } from './roomTypes';
 import { roomLife } from '$lib/config/roomLife';
@@ -138,6 +138,8 @@ export async function pruneOwnRooms(): Promise<void> {
 
 		const index = await get(ref(db, `myRooms/${uid}`));
 		if (!index.exists()) return;
+		// Серверний час, з яким звіряються серверні позначки, — один на прогін.
+		const now = await serverTime();
 
 		const codes = Object.keys(index.val() as Record<string, unknown>).slice(0, PRUNE_LIMIT);
 		let removed = 0;
@@ -163,23 +165,18 @@ export async function pruneOwnRooms(): Promise<void> {
 				continue;
 			}
 			/*
-			 * Скінчена партія — одразу; решта — за віком.
+			 * ПОКИНУТА — ЛИШЕ ТА, У ЯКІЙ УЖЕ ТИХО: скінчена чи старша за `ROOM_TTL_MS`.
 			 *
-			 * Вік рахується місцевим годинником проти СЕРВЕРНОЇ позначки, і це
-			 * свідома неточність: розбіжність годинників на дванадцять годин
-			 * неправдоподібна, а навіть якби вона була, під ніж пішла б лише ВЛАСНА
-			 * кімната того, хто саме створює наступну.
+			 * Скінчена — не одразу: відколи господар пише `over` сам, «одразу» зносило б
+			 * кімнату, з якої щойно почали іншу гру, — ще ДО того, як у неї ляже
+			 * `nextCode`, тобто решта не дізналася б, куди переїхали. Стара — так само:
+			 * доти вік зносив і живу кімнату, і «зіграти в іншу гру» з кімнати, якій
+			 * понад дванадцять годин, викидало всіх ще до оголошення переїзду (аудит
+			 * 2026-09-26). Доти тут стояв і годинник пристрою проти серверних позначок.
 			 */
-			/*
-			 * Скінчена — лише коли в ній уже тихо, а не одразу. Відколи господар пише
-			 * `over` сам, «одразу» зносило б кімнату, з якої щойно почали іншу гру,
-			 * — ще ДО того, як у неї ляже `nextCode`, тобто решта не дізналася б, куди
-			 * переїхали.
-			 */
-			const abandoned =
-				(info.status === 'over' && roomLife(info.aliveAt, serverNow()) !== 'alive') ||
-				(typeof info.createdAt === 'number' && serverNow() - info.createdAt > ROOM_TTL_MS);
-			if (!abandoned) continue;
+			const quiet = roomLife(info.aliveAt, now) !== 'alive';
+			const old = typeof info.createdAt === 'number' && now - info.createdAt > ROOM_TTL_MS;
+			if (!quiet || (info.status !== 'over' && !old)) continue;
 
 			/*
 			 * ГІСТЬ ЗНОСИТЬ ЛИШЕ СВІЙ ЗАПИС, а не кімнату.
