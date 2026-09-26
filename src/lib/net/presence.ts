@@ -89,7 +89,7 @@ export async function keepNode(
 	path: string,
 	value: () => object | null,
 	onRefused: (error: unknown) => void,
-	{ watch = true }: { watch?: boolean } = {}
+	{ watch = true, refreshMs }: { watch?: boolean; refreshMs?: number } = {}
 ): Promise<KeptNode> {
 	const { db } = await connect();
 	const { off, onDisconnect, onValue, ref, remove, set } = await import('firebase/database');
@@ -154,11 +154,27 @@ export async function keepNode(
 					logService.warn('network', 'kept node not watched', { path, reason: String(error) })
 			)
 		: null;
+	/*
+	 * ВУЗОЛ, ЯКОГО НЕ ВИДНО, — ПЕРЕПИСУВАТИ ЗА РОЗКЛАДОМ (`refreshMs`). Запис
+	 * переліку правило читати не дає, тож зникнення його не почути: домовленість
+	 * СТАРОГО сокета сервер виконує, коли помітить його смерть, — а це буває вже після
+	 * того, як нове зʼєднання запис поставило. Господар, що перейшов з Wi-Fi на
+	 * мобільний звʼязок, мовчки зникав зі списку й зі «швидкої гри» до наступного
+	 * обриву (аудит 2026-09-25).
+	 */
+	const refresh =
+		refreshMs === undefined
+			? null
+			: setInterval(() => {
+					registered = -1;
+					void register();
+				}, refreshMs);
 
 	return {
 		ready,
 		stop: () => {
 			stopped = true;
+			if (refresh !== null) clearInterval(refresh);
 			off(status, 'value', onStatus);
 			if (onNode) off(node, 'value', onNode);
 			remove(node).catch((error: unknown) =>
@@ -286,7 +302,21 @@ export async function othersPresent(code: string): Promise<number> {
 	const { uid, db } = await connect();
 	const { get, ref } = await import('firebase/database');
 	const snapshot = await get(ref(db, `presence/${code}`));
-	return Object.keys(snapshot.val() ?? {}).filter((other) => other !== uid).length;
+	return othersWaiting(snapshot.val(), uid);
+}
+
+/**
+ * СКІЛЬКИ ІНШИХ ЧЕКАЄ МЕНЕ — і нуль, якщо я там УЖЕ Є.
+ *
+ * Присутність одна на людину, а не на вкладку: друга вкладка чи інший пристрій,
+ * де партія йде, тримає мій вузол. Доти смуга «вас чекають» показувала саме цю
+ * партію, а її «піти» прибирало мій рядок складу — жива вкладка чула «вас
+ * прибрали з кімнати», а в «Знайди пару» мої черги пропускалися до кінця (аудит
+ * 2026-09-25).
+ */
+export function othersWaiting(value: unknown, me: string): number {
+	const here = Object.keys(value !== null && typeof value === 'object' ? value : {});
+	return here.includes(me) ? 0 : here.length;
 }
 
 /**
@@ -304,8 +334,7 @@ export async function watchOthers(
 	const branch = ref(db, `presence/${code}`);
 	const handler = onValue(
 		branch,
-		(snapshot) =>
-			onCount(Object.keys(snapshot.val() ?? {}).filter((other) => other !== uid).length),
+		(snapshot) => onCount(othersWaiting(snapshot.val(), uid)),
 		// Читати не дають — для смуги «вас чекають» це «чекати нікому».
 		(error) => {
 			logService.warn('network', 'others listener cancelled', { code, reason: String(error) });

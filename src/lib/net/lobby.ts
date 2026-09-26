@@ -1,3 +1,4 @@
+import { ROOM_BEAT_MS } from '$lib/config/roomLife';
 import { connect } from './firebase';
 import { keepNode } from './presence';
 import { logService } from '$lib/services/logService.svelte';
@@ -137,7 +138,10 @@ export async function publishRoom(entry: Omit<LobbyRoom, 'at'>): Promise<() => v
 				reason: reasonOf(error)
 			}),
 		// Окремий запис переліку правило читати не дає — лише обмеженим запитом гілки.
-		{ watch: false }
+		// Тому зникнення не почути, і запис переписується тим самим ритмом, що й
+		// серцебиття кімнати (`keepNode`, `refreshMs`). Заразом свіжий `at` тримає
+		// кімнату, що чекає гравців, серед двадцяти пʼяти найновіших записів.
+		{ watch: false, refreshMs: ROOM_BEAT_MS }
 	);
 	const unlist = () => {
 		kept.stop();

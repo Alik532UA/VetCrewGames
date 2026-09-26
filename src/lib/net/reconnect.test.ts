@@ -74,6 +74,7 @@ vi.mock('firebase/database', () => ({
 const { logService } = await import('$lib/services/logService.svelte');
 const { trackPresence, watchConnected } = await import('./presence');
 const { publishRoom, updatePlayers } = await import('./lobby');
+const { ROOM_BEAT_MS } = await import('$lib/config/roomLife');
 
 const MINE = 'presence/42/uid-host';
 
@@ -256,6 +257,39 @@ describe('запис у переліку кімнат після обриву', 
 		expect(ops[1]?.op).toBe('set');
 		expect(ops[1]?.path).toBe('lobby/quiz/42');
 		expect(ops[1]?.value).toMatchObject({ players: 3, at: SERVER_TIME });
+	});
+
+	/**
+	 * ЗАПИС ПЕРЕЛІКУ ПЕРЕПИСУЄТЬСЯ ЗА РОЗКЛАДОМ (аудит 2026-09-25): домовленість
+	 * старого сокета сервер виконує, коли помітить його смерть, — бува, вже після
+	 * того, як нове зʼєднання запис поставило. Читати свій запис правило не дає, тож
+	 * почути зникнення нічим, і без розкладу кімната зникала зі списку мовчки.
+	 *
+	 * Зворотний експеримент: не передати `refreshMs` із `publishRoom` — червоніє.
+	 */
+	it('запис переліку переписується тим самим ритмом, що й серцебиття кімнати', async () => {
+		vi.useFakeTimers();
+		try {
+			const published = publishRoom(entry);
+			await goOnline();
+			const unlist = await published;
+			ops.length = 0;
+
+			await vi.advanceTimersByTimeAsync(ROOM_BEAT_MS);
+			await flush();
+
+			expect(ops.filter((op) => op.op === 'set').map((op) => op.path)).toEqual(['lobby/quiz/42']);
+			unlist();
+			expect(vi.getTimerCount(), 'розклад знято разом із записом').toBe(0);
+			ops.length = 0;
+			await vi.advanceTimersByTimeAsync(ROOM_BEAT_MS);
+			expect(
+				ops.filter((op) => op.op === 'set'),
+				'знятий — не переписується'
+			).toEqual([]);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it('знятий із переліку запис після обриву не повертається', async () => {
