@@ -21,7 +21,7 @@
  * де POSIX-конструкції не працюють. Той самий висновок, що й у
  * `scripts/firebase-cli.mjs`.
  */
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -80,6 +80,39 @@ function credentials() {
 	return null;
 }
 
+/*
+ * ВИКЛАДАТИ ЛИШЕ ТЕ, ЩО В GIT, І ЛИШЕ ЗІ СВІЖИМ ШТАМПОМ (шостий аудит).
+ *
+ * Штамп у правилах — те, за чим живий зонд (`check:rules:live`) і смуга «оновіть
+ * сторінку» впізнають редакцію. Змінені правила з незміненим штампом зонд назвав би
+ * «збігається», а смуга не зʼявилася б ніколи. Незакомічені правила — редакція, якої
+ * немає ні в історії, ні в збірці сайту, тобто невідомо, з яким клієнтом вона житиме.
+ */
+function refuse(message) {
+	console.error(`\nПРАВИЛА НЕ ВИКЛАДЕНО: ${message}\n`);
+	process.exit(1);
+}
+try {
+	execFileSync(process.execPath, [join('scripts', 'rules-stamp.mjs'), '--check'], {
+		stdio: 'pipe'
+	});
+} catch {
+	refuse(
+		'штамп у правилах не збігається з їхнім вмістом. Спершу `npm run rules:stamp`, закомітити, і вже тоді викладати.'
+	);
+}
+try {
+	const dirty = execFileSync('git', ['status', '--porcelain', '--', 'database.rules.json'], {
+		encoding: 'utf8'
+	});
+	if (dirty.trim() !== '')
+		refuse('`database.rules.json` має незакомічені зміни. Викладається лише те, що в git.');
+} catch (error) {
+	if (error?.code === 'ENOENT')
+		console.warn('rules-deploy: git не знайдено — перевірку чистого дерева пропущено.');
+	else throw error;
+}
+
 const how = credentials();
 
 if (!how) {
@@ -120,4 +153,12 @@ const child = spawn(
 	[join('scripts', 'firebase-cli.mjs'), 'deploy', '--only', 'database', '--project', PROJECT],
 	{ stdio: 'inherit' }
 );
-child.on('exit', (code) => process.exit(code ?? 1));
+child.on('exit', (code) => {
+	if (code === 0) {
+		console.log(
+			'\nrules-deploy: правила викладено. Сайт мусить виїхати СЛІДОМ (CI робить це сам;' +
+				' руками — щойно зелений `check:rules:live`), інакше стара збірка живе з новими правилами.'
+		);
+	}
+	process.exit(code ?? 1);
+});

@@ -269,6 +269,30 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'room-invite-join-btn'
+		},
+		{
+			/*
+			 * ЖУРНАЛ ЛИШЕ В ПАРТІЇ (A2, аудит 2026-09-26). Правила й відмови доводять гейт
+			 * правил і контракт; руками — справжня передача ведення на двох пристроях.
+			 */
+			id: 'online_24',
+			category: { uk: 'Господар кімнати', en: 'The host' },
+			text: {
+				uk: 'Створіть кімнату «Знайди пару», зайдіть у неї з другого пристрою, а на першому закрийте вкладку й зачекайте ~20 с: другий мусить підхопити ведення. Тоді почніть партію з другого — вона мусить початися без жодного повідомлення про помилку, а дошка — бути свіжою, без відкритих карток.',
+				en: 'Create a «Find the pair» room, join it from a second device, then close the tab on the first one and wait ~20 s: the second must take over the lead. Then start the game from the second — it must start without any error message, and the board must be fresh, with no open cards.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-start-btn'
+		},
+		{
+			id: 'online_25',
+			category: { uk: 'Господар кімнати', en: 'The host' },
+			text: {
+				uk: 'Дограйте партію, у якій ведення перехопив гість, і почніть реванш із його пристрою. Реванш мусить початися на обох пристроях з новою дошкою — і без жодного повідомлення про помилку ні на тому, ні на іншому.',
+				en: 'Finish a game in which a guest took over the lead, and start the rematch from their device. The rematch must start on both devices with a new board — and with no error message on either of them.'
+			},
+			coverage: 'manual',
+			negative: true
 		}
 	]
 };
