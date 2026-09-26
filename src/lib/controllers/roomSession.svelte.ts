@@ -10,8 +10,9 @@ import type { Member, Role, RoomTransport } from '$lib/net/roomTypes';
 import type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from '$lib/utils/roomEntry';
-import { playersOf, rosterOf } from '$lib/utils/roster';
+import { playersOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
+import { hostClose, hostRematch, hostStart } from './roomHost';
 import { ReloadAdvice } from './reloadAdvice.svelte';
 
 export type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
@@ -395,65 +396,12 @@ export class RoomSession<M extends RoomMatch> {
 		}
 	}
 
-	/** Почати партію. `auto` — це відлік, а не людина: невдача зупиняє автоматику. */
-	async start(auto = false): Promise<void> {
-		const match = this.match;
-		// Партія вже йде (друга вкладка господаря встигла першою): дубль старту база
-		// відкидає цілком (A2), тож і писати його нема чого.
-		if (!match || match.status === 'playing' || (auto && this.autoHalted)) return;
-		if (!this.canStart) {
-			toast.info('pairs.needPlayers');
-			return;
-		}
-		// Склад заморожується тим самим записом, що й старт (`RoomInfo.roster`).
-		const config = this.game.startConfig?.(match.members, this.online);
-		const started = await this.hostAction((transport) =>
-			transport.setStatus('playing', rosterOf(this.presentPlayers), config)
-		);
-		if (!started) {
-			// Відмову дубля (партію почала інша вкладка) зупинкою автоматики не рахуємо.
-			if (auto && this.match?.status !== 'playing') this.autoHalted = true;
-			return;
-		}
-		// Партія, що вже йде, у переліку обіцяла б гру, а давала роль глядача. Лише
-		// ПІСЛЯ старту: доти невдалий старт ще й прибирав кімнату з переліку.
-		this.lobby.unpublish();
-	}
-
-	/** Закрити кімнату — ЯВНОЮ дією: «пішов назовсім» від «перезавантажив» не відрізнити. */
-	async close(): Promise<void> {
-		if (!this.match || !this.amHost) return;
-		// Спершу з переліку: навпаки був би рядок кімнати, якої вже немає.
-		this.lobby.unpublish();
-		await this.act('room not closed', async () => {
-			await this.net.closeRoom(this.code);
-			await this.place.exit();
-		});
-	}
-
-	// Зерно реваншу — з тієї самої дороги, що й зерно нової кімнати: випадковість
-	// живе на сторінці, а не в контролері (`quizSeed.test.ts`).
-	/**
-	 * Реванш — з тими, хто в кімнаті й на звʼязку ЗАРАЗ, і лише коли їх досить.
-	 *
-	 * Доти мінімуму тут не перевіряв ніхто: господар, від якого пішов суперник,
-	 * перезапускав партію сам із собою — «вигравав» її й отримував бали за
-	 * перемогу на кожному реванші, бо разовість нагороди тримається на зерні, а
-	 * зерно в реванша нове (аудит 2026-09-24).
-	 */
-	rematch = async () => {
-		if (!this.canStart) {
-			toast.info('pairs.needPlayers');
-			return;
-		}
-		await this.hostAction((transport) =>
-			transport.restart(
-				(this.match && this.game.rematchSeed?.(this.match)) ?? this.game.newRoom().seed,
-				rosterOf(this.presentPlayers),
-				this.game.startConfig?.(this.match?.members ?? [], this.online)
-			)
-		);
-	};
+	/** Почати партію; `auto` — це відлік, а не людина (`roomHost.ts`, `hostStart`). */
+	start = (auto = false): Promise<void> => hostStart(this, auto);
+	/** Закрити кімнату ЯВНОЮ дією (`hostClose`). */
+	close = (): Promise<void> => hostClose(this);
+	/** Реванш — з тими, хто на звʼязку зараз, і лише коли їх досить (`hostRematch`). */
+	rematch = (): Promise<void> => hostRematch(this);
 	switchAutoStart = (on: boolean) => this.hostAction((transport) => transport.setAutoStart(on));
 	/**
 	 * Прибрати учасника. СЕБЕ — ніколи: господар, що прибрав власний рядок, лишається
