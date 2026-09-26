@@ -68,11 +68,23 @@ async function busyAccount(searchable: boolean) {
 		});
 	});
 	await as(bob, () => follows.follow(alice.uid));
-	return { handle, code };
+	// Кімната Боба, куди Аліса зайшла гостем: знести її Аліса не може, а піти мусить.
+	const guestCode = await as(bob, () =>
+		rooms.createRoom({
+			gameId: 'pairs',
+			rulesVersion: 3,
+			seed: 2,
+			config: { pairs: 4, cols: 4 },
+			name: 'Боб',
+			isPrivate: true
+		})
+	);
+	await as(alice, () => rooms.joinRoom(guestCode, 'Аліса'));
+	return { handle, code, guestCode };
 }
 
 /** Що лишилося від Аліси — очима самої Аліси й очима Боба. */
-async function traces(handle: string, code: string) {
+async function traces(handle: string, code: string, guestCode: string) {
 	const mine = async (path: string) => as(alice, () => peek(alice, path));
 	return {
 		profile: await mine(`users/${alice.uid}/profile`),
@@ -85,6 +97,7 @@ async function traces(handle: string, code: string) {
 		leader: await mine(`leaders/${alice.uid}`),
 		myRooms: await mine(`myRooms/${alice.uid}`),
 		room: await mine(`rooms/${code}/info`),
+		guestRow: await as(bob, () => peek(bob, `rooms/${guestCode}/members/${alice.uid}`)),
 		inBobsFollowers: await as(bob, () => peek(bob, `users/${bob.uid}/followers/${alice.uid}`)),
 		inBobsFollowing: await as(bob, () => peek(bob, `users/${bob.uid}/following/${alice.uid}`))
 	};
@@ -101,14 +114,16 @@ const NOTHING = {
 	leader: null,
 	myRooms: null,
 	room: null,
+	guestRow: null,
 	inBobsFollowers: null,
 	inBobsFollowing: null
 };
 
 describe('видалення акаунта над емулятором', () => {
 	it('перевірка жива: сліди справді є до видалення', async () => {
-		const { handle, code } = await busyAccount(true);
-		const before = await traces(handle, code);
+		const { handle, code, guestCode } = await busyAccount(true);
+		const before = await traces(handle, code, guestCode);
+		expect(before.guestRow, 'рядок гостя в чужій кімнаті').not.toBeNull();
 		expect(before.profile).not.toBeNull();
 		expect(before.find).toBe(alice.uid);
 		expect(before.leader).not.toBeNull();
@@ -118,28 +133,28 @@ describe('видалення акаунта над емулятором', () => 
 
 	it('з увімкненим пошуком — не лишається нічого', async () => {
 		const { eraseMyData } = await import('./erase');
-		const { handle, code } = await busyAccount(true);
+		const { handle, code, guestCode } = await busyAccount(true);
 
 		await as(alice, () => eraseMyData());
 
-		expect(await traces(handle, code)).toEqual(NOTHING);
+		expect(await traces(handle, code, guestCode)).toEqual(NOTHING);
 	});
 
 	it('з вимкненим пошуком — теж, хоч запису в пошуку й немає', async () => {
 		const { eraseMyData } = await import('./erase');
-		const { handle, code } = await busyAccount(false);
+		const { handle, code, guestCode } = await busyAccount(false);
 
 		await as(alice, () => eraseMyData());
 
-		expect(await traces(handle, code)).toEqual(NOTHING);
+		expect(await traces(handle, code, guestCode)).toEqual(NOTHING);
 	});
 
 	it('повторне видалення після обриву посередині не падає', async () => {
 		const { eraseMyData } = await import('./erase');
-		const { handle, code } = await busyAccount(true);
+		const { handle, code, guestCode } = await busyAccount(true);
 		await as(alice, () => eraseMyData());
 
 		await expect(as(alice, () => eraseMyData())).resolves.toBeUndefined();
-		expect(await traces(handle, code)).toEqual(NOTHING);
+		expect(await traces(handle, code, guestCode)).toEqual(NOTHING);
 	});
 });

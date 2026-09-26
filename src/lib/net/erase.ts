@@ -1,6 +1,7 @@
 import { connect } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { readMyProfile } from './account';
+import { leaveRoom } from './leave';
 
 /**
  * ВИДАЛЕННЯ АКАУНТА: спершу прибрати дані, аж тоді знести користувача.
@@ -57,12 +58,23 @@ export async function eraseMyData(): Promise<void> {
 	 *
 	 * Кожне видалення під `catch`: кімната могла зникнути сама (`onDisconnect`
 	 * господаря в лобі), і зупиняти через це видалення акаунта безглуздо.
+	 *
+	 * ЧУЖУ КІМНАТУ (я там гість, або ведення в мене перехопили) знести не можна — але
+	 * піти з неї треба: рядок складу несе імʼя, аватар і країну, і доти він
+	 * переживав видалення акаунта (аудит 2026-09-25). `leaveRoom` — той самий вихід
+	 * назовсім, що й зі смуги «вас чекають»: посеред партії — з ходом `leave`.
 	 */
 	const index = await get(ref(db, `myRooms/${uid}`));
 	for (const code of Object.keys((index.val() ?? {}) as Record<string, unknown>)) {
-		await remove(ref(db, `rooms/${code}`)).catch((error: unknown) => {
-			logService.warn('network', 'own room not removed', { reason: String(error), code });
+		const gone = await remove(ref(db, `rooms/${code}`)).then(
+			() => true,
+			() => false
+		);
+		if (gone) continue;
+		await leaveRoom(code).catch((error: unknown) => {
+			logService.warn('network', 'room not left before erase', { reason: String(error), code });
 		});
+		await remove(ref(db, `presence/${code}/${uid}`)).catch(() => {});
 	}
 
 	/*
