@@ -32,7 +32,7 @@ vi.mock('$lib/config/population-game', async (importOriginal) => ({
 	getRandomAnimals: (count: number) => DECK.slice(0, count)
 }));
 
-const { PopulationGameController } = await import('./populationGame.svelte');
+const { PopulationGameController, populationReview } = await import('./populationGame.svelte');
 
 /** Компактний знімок дошки: `null` → `.` */
 const board = (list: (Animal | null)[]) => list.map((a) => a?.id ?? '.').join(',');
@@ -304,6 +304,65 @@ describe('PopulationGameController', () => {
 			expect(game.roundResults).toEqual(['incorrect']);
 			expect(game.sessionScore).toBe(0);
 		});
+	});
+
+	/**
+	 * ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26): перевірений раунд
+	 * лишається знімком — порядок гравця й правильний, — і перегляд дає ті самі
+	 * позначки.
+	 *
+	 * Зворотний експеримент: не писати історію — червоніє «знімок»; `startRound()`
+	 * замість `ensureRound()` у дошки — червоніє «змонтована вдруге»; не чистити на
+	 * «Грати знову» — червоніє «нова партія».
+	 */
+	it('перевірений раунд — знімок порядку гравця й правильного, з тими самими позначками', () => {
+		const game = started();
+		game.moveTo(DECK[2], 'slot', 0); // cat, 100 — на місці
+		game.moveTo(DECK[0], 'slot', 1); // ant, 300 — не тут
+		game.moveTo(DECK[1], 'slot', 2); // bee, 200 — не тут
+		game.check();
+		const marks = [...game.slotResults];
+		game.nextRound();
+
+		expect(game.history).toHaveLength(1);
+		expect(board(game.history[0].slots)).toBe('cat,ant,bee');
+		const view = populationReview(game.history[0]);
+		expect(view.checked).toBe(true);
+		expect(view.slotResults).toEqual(marks);
+		expect(view.correctOrder.map((a) => a.id)).toEqual(['cat', 'bee', 'ant']);
+	});
+
+	it('у перегляді картки не зсунути', () => {
+		const game = started();
+		game.moveTo(DECK[2], 'slot', 0);
+		game.moveTo(DECK[1], 'slot', 1);
+		game.moveTo(DECK[0], 'slot', 2);
+		game.check();
+		const view = populationReview(game.history[0]);
+
+		expect(view.select(DECK[0], { type: 'slot', index: 2 })).toBe(false);
+		view.moveTo(DECK[0], 'slot', 0);
+		view.sendToFreeSpot(DECK[0], { type: 'slot', index: 2 });
+		expect(board(view.slots)).toBe('cat,bee,ant');
+	});
+
+	it('дошка, змонтована вдруге, не роздає поточний раунд наново', () => {
+		const game = new PopulationGameController(3, 10);
+		game.ensureRound();
+		expect(board(game.sourceAnimals), 'перше монтування роздає').toBe('ant,bee,cat');
+		game.moveTo(DECK[0], 'slot', 0);
+
+		game.ensureRound();
+
+		expect(board(game.slots)).toBe('ant,.,.');
+	});
+
+	it('нова партія починає з порожньою історією', () => {
+		const game = started(3, 1);
+		game.check(true);
+		expect(game.history).toHaveLength(1);
+		game.reset();
+		expect(game.history).toEqual([]);
 	});
 
 	it('reset() повертає партію на початок', () => {

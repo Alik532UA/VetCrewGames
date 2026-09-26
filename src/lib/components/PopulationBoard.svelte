@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { t, td, formatFont, formatPopulation } from '$lib/i18n/index';
-	import type { PopulationGameController, Place } from '$lib/controllers/populationGame.svelte';
+	import type { PopulationView, Place } from '$lib/controllers/populationGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
 	import { Check, X } from 'lucide-svelte';
 	import { createCrossfade } from '$lib/utils/transitions';
@@ -49,7 +49,8 @@
 	 * щоб дошка не стрибала.
 	 */
 	interface Props {
-		game: PopulationGameController;
+		/** Жива партія або минулий раунд для перегляду (`populationReview`). */
+		game: PopulationView;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
 	}
@@ -306,7 +307,9 @@
 	 * Перший раунд роздає ДОШКА, а не сторінка: контролер приходить пропом і може
 	 * бути щойно створений — і соло, і в спільній грі. Роздати раунд у сторінці
 	 * означало б, що дошка, вставлена деінде, лишається порожньою й виглядає
-	 * зламаною.
+	 * зламаною. Роздає `ensureRound()`, а не `startRound()`: дошка знімається з
+	 * екрана на перегляд минулого питання, і повернення не мусить роздавати
+	 * поточний раунд наново.
 	 *
 	 * Слухачі дотику — на ДОКУМЕНТІ, а не на дошці: палець, що почав тягнути
 	 * картку, може вийти за її межі, і тоді `touchmove` на самій дошці більше не
@@ -314,7 +317,7 @@
 	 * при знищенні компонента, тобто разом із раундом у спільній грі.
 	 */
 	onMount(() => {
-		game.startRound();
+		game.ensureRound();
 		document.addEventListener('touchstart', handleTouchStart, { passive: false });
 		document.addEventListener('touchmove', handleTouchMove, { passive: false });
 		document.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -418,7 +421,7 @@
 						{:else}{@html formatFont(t('population.most'))}
 						{/if}
 					</span>
-					{#if !isActuallyDragging && hoverSlotIndex === i}
+					{#if !game.checked && !isActuallyDragging && hoverSlotIndex === i}
 						<MiniGhostGrid
 							animals={game.availableAnimals}
 							pickedId={game.picked?.id}

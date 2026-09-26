@@ -85,6 +85,21 @@ export const populationTab: BetaTab = {
 				en: 'On a narrow screen all of the rounds animals must be visible at once — or it must be obvious that the list scrolls.'
 			},
 			coverage: 'manual'
+		},
+		{
+			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Рівень `testable`, а
+			// не `covered` (§ 3: рівень — те, що тест СПРАВДІ доводить): юніт-тест тримає
+			// знімок раунду й дошку перегляду, але що сегмент на СТОРІНЦІ відкриває саме
+			// це питання, а «назад» повертає поточне, — не доводить жоден.
+			id: 'population_9',
+			category: { uk: 'Перегляд питань', en: 'Reviewing questions' },
+			text: {
+				uk: 'Перевірте два раунди, у третьому поставте одну картку й натисніть перший сегмент смужки вгорі. Мусять відкритися ті самі три тварини в тому порядку, у якому ви їх поставили, з чисельністю, позначками й правильним порядком; картки там не рухаються, а «Перевірити» й «Далі» немає. «До поточного питання» мусить повернути третій раунд із тією самою карткою на місці, а не роздати його наново. Під підсумком — перелік усіх питань, і рядок відкриває своє.',
+				en: 'Check two rounds, put one card in the third and press the first segment of the bar on top. The same three animals must open in the order you put them, with the numbers, the marks and the right order; the cards do not move there, and there is no «Check» or «Next». «Back to the current question» must bring back the third round with the same card in place, not deal it anew. Under the summary there is a list of every question, and a row opens its own.'
+			},
+			coverage: 'testable',
+			testid: 'round-review-*-btn',
+			negative: true
 		}
 	]
 };

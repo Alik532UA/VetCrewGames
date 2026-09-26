@@ -5,12 +5,17 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { RotateCcw } from 'lucide-svelte';
-	import { t, formatFont } from '$lib/i18n/index';
+	import { t, td, formatFont } from '$lib/i18n/index';
 	import { settings } from '$lib/services/settings.svelte';
-	import { PopulationGameController } from '$lib/controllers/populationGame.svelte';
+	import {
+		PopulationGameController,
+		populationReview
+	} from '$lib/controllers/populationGame.svelte';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import PopulationBoard from '$lib/components/PopulationBoard.svelte';
+	import ReviewPanel from '$lib/components/ReviewPanel.svelte';
+	import ReviewList from '$lib/components/ReviewList.svelte';
 
 	const lang = $derived(languageFromParam(page.params.lang));
 
@@ -21,7 +26,8 @@
 	 * контролеру не видно.
 	 */
 	const game = new PopulationGameController();
-
+	/** Котре минуле питання переглядають (від нуля); `null` — грають поточне. */
+	let viewing = $state<number | null>(null);
 
 	/** Максимум партії — у підказці, а не знаменником. Див. `GameOverCard`. */
 	const maxHint = $derived(`${t('common.maxScore')}: ${game.maxScore}`);
@@ -33,13 +39,13 @@
 	 * вони обслуговують саме його розкладку, і в спільній вікторині мусять
 	 * зникати разом із раундом.
 	 */
-	onMount(() =>
-		settings.claimHeader('population.title', () => goto(langPath(lang, 'quiz/play')))
-	);
+	onMount(() => settings.claimHeader('population.title', () => goto(langPath(lang, 'quiz/play'))));
 </script>
 
 <div class="game-page" use:fitToViewport>
-	{#if game.gameOver}
+	{#if game.gameOver && viewing !== null}
+		{@render review('review.backToResults')}
+	{:else if game.gameOver}
 		<div class="game-over-card" in:fade={{ duration: 400 }}>
 			<h2 class="game-over-title">{@html formatFont(t('common.gameOver'))}</h2>
 			<div class="game-over-score">
@@ -49,22 +55,57 @@
 					>{game.sessionScore}</span
 				>
 			</div>
-			<button class="btn-play-again" onclick={() => game.reset()} data-testid="population-play-again-btn">
+			<button
+				class="btn-play-again"
+				onclick={() => {
+					viewing = null;
+					game.reset();
+				}}
+				data-testid="population-play-again-btn"
+			>
 				<RotateCcw size={24} />
 				{@html formatFont(t('common.playAgain'))}
 			</button>
 		</div>
+		<!-- Питання партії переліком — перегляд у кінці (прохання автора 2026-09-26). -->
+		<ReviewList
+			results={game.roundResults}
+			label={(i) => (game.history[i]?.correctOrder ?? []).map((a) => td(a.nameKey)).join(' · ')}
+			onopen={(i) => (viewing = i)}
+		/>
 	{:else}
 		<div class="round-indicator-wrapper">
+			<!-- Відповідані сегменти відкривають питання свого раунду. -->
 			<RoundIndicator
 				current={game.roundNumber}
 				total={game.totalRounds}
 				results={game.roundResults}
+				onreview={(i) => (viewing = i)}
+				{viewing}
 			/>
 		</div>
 
-		<PopulationBoard {game} />
+		{#if viewing === null}
+			<PopulationBoard {game} />
+		{:else}
+			{@render review('review.back')}
+		{/if}
 	{/if}
+
+	<!-- Перегляд — та сама дошка «перевірено», без «Далі» (`populationReview`). -->
+	{#snippet review(backKey: 'review.back' | 'review.backToResults')}
+		{@const record = game.history[viewing ?? 0]}
+		{#if record}
+			<ReviewPanel
+				index={viewing ?? 0}
+				total={game.totalRounds}
+				{backKey}
+				onback={() => (viewing = null)}
+			>
+				<PopulationBoard game={populationReview(record)} hideNext />
+			</ReviewPanel>
+		{/if}
+	{/snippet}
 </div>
 
 <style>

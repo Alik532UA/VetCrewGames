@@ -25,6 +25,20 @@ import type { RoundOutcome } from '$lib/types/game';
 /** Звідки взяли картку: з ряду-джерела чи з комірки на дошці. */
 export type Place = { type: 'source'; index: number } | { type: 'slot'; index: number };
 
+/**
+ * Котрі комірки влучили. Порівнюється ЧИСЕЛЬНІСТЬ, а не `id`: дві тварини з
+ * однаковою популяцією дають однаково правильний порядок, і карати за вибір «не
+ * тієї» з них було б неправильно. Порожня комірка — не збіг (`undefined`).
+ */
+export const slotResultsOf = (slots: readonly (Animal | null)[], correctOrder: readonly Animal[]) =>
+	slots.map((animal, i) => animal?.population === correctOrder[i]?.population);
+
+/** Перевірений раунд: порядок, який склав гравець, і правильний. */
+export interface PopulationRecord {
+	slots: (Animal | null)[];
+	correctOrder: Animal[];
+}
+
 export class PopulationGameController {
 	readonly slotCount: number;
 	readonly totalRounds: number;
@@ -42,6 +56,11 @@ export class PopulationGameController {
 	initialSourceAnimals = $state<(Animal | null)[]>([]);
 	correctOrder = $state<Animal[]>([]);
 	checked = $state(false);
+	/**
+	 * ПЕРЕВІРЕНІ РАУНДИ — знімком для перегляду (прохання автора 2026-09-26):
+	 * порядок гравця й правильний. Доти від минулого раунду лишалося «правильно / ні».
+	 */
+	history = $state<PopulationRecord[]>([]);
 
 	/** Вибрана картка й місце, звідки її взяли. Спільне для миші, дотику й кліку. */
 	picked = $state<Animal | null>(null);
@@ -55,15 +74,9 @@ export class PopulationGameController {
 
 	allSlotsFilled = $derived(this.slots.every((slot) => slot !== null));
 
-	/**
-	 * Порівнюється ЧИСЕЛЬНІСТЬ, а не `id`: дві тварини з однаковою популяцією
-	 * дають однаково правильний порядок, і карати за вибір «не тієї» з них
-	 * було б неправильно.
-	 */
+	/** Котрі комірки влучили — лише після перевірки (`slotResultsOf`). */
 	slotResults = $derived.by(() =>
-		this.checked
-			? this.slots.map((animal, i) => animal?.population === this.correctOrder[i]?.population)
-			: ([] as boolean[])
+		this.checked ? slotResultsOf(this.slots, this.correctOrder) : ([] as boolean[])
 	);
 
 	availableAnimals = $derived(
@@ -123,6 +136,19 @@ export class PopulationGameController {
 		this.checked = false;
 		this.correctOrder = [...picked].sort((a, b) => a.population - b.population);
 		this.clearSelection();
+	}
+
+	/**
+	 * Роздати ПЕРШИЙ раунд, якщо його ще не роздано, — те, що кличе дошка в `onMount`.
+	 *
+	 * Не `startRound()`: дошка монтується не раз на партію. Перегляд минулого
+	 * питання (прохання автора 2026-09-26) знімає живу дошку з екрана, і на
+	 * поверненні `startRound()` роздав би поточний раунд наново — інші тварини й
+	 * порожні комірки замість складеного. Так само «Грати знову»: `reset()` уже
+	 * роздає, і дошка роздавала вдруге.
+	 */
+	ensureRound(): void {
+		if (this.slots.length === 0) this.startRound();
 	}
 
 	clearSelection(): void {
@@ -263,6 +289,10 @@ export class PopulationGameController {
 		if (correctCount === this.slotCount) outcome = 'correct';
 		else if (correctCount > 0) outcome = 'partial';
 		this.roundResults.push(outcome);
+		this.history.push({
+			slots: $state.snapshot(this.slots) as (Animal | null)[],
+			correctOrder: $state.snapshot(this.correctOrder) as Animal[]
+		});
 
 		if (correctCount > 0) {
 			// По очку за слот, надбавка за повний ряд (config/scoring.ts).
@@ -304,8 +334,59 @@ export class PopulationGameController {
 		this.#random = randomFor(this.#seed);
 		this.roundNumber = 1;
 		this.roundResults = [];
+		this.history = [];
 		this.sessionScore = 0;
 		this.gameOver = false;
 		this.startRound();
 	}
+}
+
+/** Те, що дошка «Хто численніший?» читає з гри: і з живої партії, і зі знімка. */
+export type PopulationView = Pick<
+	PopulationGameController,
+	| 'slots'
+	| 'sourceAnimals'
+	| 'checked'
+	| 'slotResults'
+	| 'correctOrder'
+	| 'availableAnimals'
+	| 'allSlotsFilled'
+	| 'picked'
+	| 'pickedFrom'
+	| 'isSwapping'
+	| 'select'
+	| 'dropOnSlot'
+	| 'dropOnSource'
+	| 'sendToFreeSpot'
+	| 'moveTo'
+	| 'check'
+	| 'nextRound'
+	| 'clearSelection'
+	| 'ensureRound'
+>;
+
+/** Минулий раунд для дошки — «перевірено», з чисельністю й фактами, і нічого не зсунути. */
+export function populationReview(record: PopulationRecord): PopulationView {
+	const { slots, correctOrder } = record;
+	return {
+		slots,
+		sourceAnimals: [],
+		checked: true,
+		slotResults: slotResultsOf(slots, correctOrder),
+		correctOrder,
+		availableAnimals: [],
+		allSlotsFilled: slots.every((slot) => slot !== null),
+		picked: null,
+		pickedFrom: null,
+		isSwapping: false,
+		select: () => false,
+		dropOnSlot: () => false,
+		dropOnSource: () => false,
+		sendToFreeSpot: () => {},
+		moveTo: () => {},
+		check: () => {},
+		nextRound: () => {},
+		clearSelection: () => {},
+		ensureRound: () => {}
+	};
 }
