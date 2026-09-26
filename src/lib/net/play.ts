@@ -148,16 +148,15 @@ export async function writePlay(data: PlayData): Promise<boolean> {
 export async function watchPlay(onData: (data: PlayData | null) => void): Promise<() => void> {
 	try {
 		const { uid, db } = await connect();
-		const { off, onValue, ref } = await import('firebase/database');
-		const node = ref(db, `users/${uid}/play`);
-		const listener = onValue(
-			node,
+		const { onValue, ref } = await import('firebase/database');
+		// Відписка — те, що повернув `onValue`: `off()` знімає лише той самий колбек.
+		return onValue(
+			ref(db, `users/${uid}/play`),
 			(snapshot) => onData(snapshot.exists() ? sanitize(snapshot.val()) : null),
 			// Скасовану підписку називаємо: інакше рахунок тихо перестає доїжджати з
 			// іншого пристрою, і ніде не видно чому (аудит 2026-09-24).
 			(error) => logService.warn('network', 'play listener cancelled', { reason: String(error) })
 		);
-		return () => off(node, 'value', listener);
 	} catch (error) {
 		logService.warn('network', 'play data not watched', { reason: String(error) });
 		return () => {};

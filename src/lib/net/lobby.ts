@@ -314,7 +314,7 @@ export interface LobbyWatcher {
 
 export async function watchLobby(gameId: string, watcher: LobbyWatcher): Promise<() => void> {
 	const { db } = await connect();
-	const { limitToLast, off, onValue, orderByChild, query, ref } = await import('firebase/database');
+	const { limitToLast, onValue, orderByChild, query, ref } = await import('firebase/database');
 	/*
 	 * ЗАПИТ, А НЕ ЧИТАННЯ ГІЛКИ, і без нього правило тепер відмовить.
 	 *
@@ -324,7 +324,7 @@ export async function watchLobby(gameId: string, watcher: LobbyWatcher): Promise
 	 */
 	const branch = query(ref(db, `lobby/${gameId}`), orderByChild('at'), limitToLast(LOBBY_FETCH));
 
-	const handler = onValue(
+	return onValue(
 		branch,
 		(snapshot) => {
 			const raw = (snapshot.val() ?? {}) as Record<string, Omit<LobbyRoom, 'code'>>;
@@ -350,8 +350,6 @@ export async function watchLobby(gameId: string, watcher: LobbyWatcher): Promise
 			watcher.onUnavailable(error.message);
 		}
 	);
-
-	return () => off(branch, 'value', handler);
 }
 
 const reasonOf = (error: unknown): string =>

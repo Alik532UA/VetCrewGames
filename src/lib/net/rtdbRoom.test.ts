@@ -58,7 +58,10 @@ vi.mock('firebase/database', () => ({
 	update,
 	remove,
 	get: vi.fn(),
-	off: vi.fn(),
+	// `off` — як у SDK: знімає лише ТОЙ САМИЙ колбек, а не все за шляхом.
+	off: vi.fn((node: { path: string }, _type: string, callback: unknown) => {
+		if (watchers.get(node.path) === callback) watchers.delete(node.path);
+	}),
 	onValue: vi.fn(
 		(
 			node: { path: string },
@@ -67,7 +70,11 @@ vi.mock('firebase/database', () => ({
 		) => {
 			watchers.set(node.path, handler);
 			if (cancel) cancels.set(node.path, cancel);
-			return handler;
+			// Відписка — окрема функція, як у SDK, а не сам обробник (аудит 2026-09-26).
+			return () => {
+				if (watchers.get(node.path) === handler) watchers.delete(node.path);
+				if (cancels.get(node.path) === cancel) cancels.delete(node.path);
+			};
 		}
 	),
 	serverTimestamp: () => SERVER_TIME
@@ -265,6 +272,23 @@ describe('rtdbRoom: кімнати немає — і чому', () => {
 		cancels.get('rooms/42')?.(new Error('permission_denied'));
 
 		expect(gone.mock.calls).toEqual([['closed'], ['lost']]);
+	});
+
+	/**
+	 * ВІДПИСКА ЗНІМАЄ ПІДПИСКУ (аудит 2026-09-26). Доти `watch` віддавав
+	 * `off(room, 'value', handler)` з поверненим значенням у ролі `handler`, а SDK
+	 * знімає лише той самий колбек — тобто не знімалося нічого.
+	 *
+	 * Зворотний експеримент: повернути `off(room, 'value', handler)` — червоніє.
+	 */
+	it('після відписки кімната більше не слухається', async () => {
+		const transport = await roomTransport('42');
+		const stop = transport.watch(() => {});
+		expect(watchers.has('rooms/42'), 'перевірка жива: підписка стоїть').toBe(true);
+
+		stop();
+
+		expect(watchers.has('rooms/42'), 'кімната досі слухається').toBe(false);
 	});
 });
 

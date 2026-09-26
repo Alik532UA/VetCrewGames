@@ -108,7 +108,7 @@ export async function keepNode(
 	{ watch = true, refreshMs }: { watch?: boolean; refreshMs?: number } = {}
 ): Promise<KeptNode> {
 	const { db } = await connect();
-	const { child, off, onDisconnect, onValue, ref, remove, set } = await import('firebase/database');
+	const { child, onDisconnect, onValue, ref, remove, set } = await import('firebase/database');
 	const node = ref(db, path);
 	const status = ref(db, '.info/connected');
 
@@ -153,14 +153,15 @@ export async function keepNode(
 		if (registered !== epoch) void register();
 	};
 
-	const onStatus = onValue(status, (snapshot) => {
+	// Відписки — те, що повернув `onValue`: `off()` знімає лише той самий колбек.
+	const unStatus = onValue(status, (snapshot) => {
 		online = snapshot.val() === true;
 		if (!online) return;
 		epoch += 1;
 		refused = false;
 		void register();
 	});
-	const onNode = watch
+	const unNode = watch
 		? onValue(
 				node,
 				(snapshot) => {
@@ -200,8 +201,8 @@ export async function keepNode(
 		stop: () => {
 			stopped = true;
 			if (refresh !== null) clearInterval(refresh);
-			off(status, 'value', onStatus);
-			if (onNode) off(node, 'value', onNode);
+			unStatus();
+			unNode?.();
 			remove(node).catch((error: unknown) =>
 				logService.warn('network', 'node not removed', { path, reason: String(error) })
 			);
@@ -218,10 +219,9 @@ export async function keepNode(
  */
 export async function watchConnected(onChange: (connected: boolean) => void): Promise<() => void> {
 	const { db } = await connect();
-	const { off, onValue, ref } = await import('firebase/database');
+	const { onValue, ref } = await import('firebase/database');
 	const status = ref(db, '.info/connected');
-	const handler = onValue(status, (snapshot) => onChange(snapshot.val() === true));
-	return () => off(status, 'value', handler);
+	return onValue(status, (snapshot) => onChange(snapshot.val() === true));
 }
 
 /**
@@ -267,10 +267,9 @@ export async function watchHovers(
 	onChange: (byUid: Record<string, number>) => void
 ): Promise<() => void> {
 	const { uid, db } = await connect();
-	const { off, onValue, ref } = await import('firebase/database');
-	const branch = ref(db, `presence/${code}`);
-	const handler = onValue(
-		branch,
+	const { onValue, ref } = await import('firebase/database');
+	return onValue(
+		ref(db, `presence/${code}`),
 		(snapshot) => {
 			const out: Record<string, number> = {};
 			const all = (snapshot.val() ?? {}) as Record<string, { hover?: number }>;
@@ -285,7 +284,6 @@ export async function watchHovers(
 			onChange({});
 		}
 	);
-	return () => off(branch, 'value', handler);
 }
 
 /** Хто зараз на звʼязку. Підписка, бо це найшвидша частина стану. */
@@ -294,21 +292,19 @@ export async function watchPresence(
 	onChange: (online: string[]) => void
 ): Promise<() => void> {
 	const { db } = await connect();
-	const { off, onValue, ref } = await import('firebase/database');
-	const branch = ref(db, `presence/${code}`);
+	const { onValue, ref } = await import('firebase/database');
 	/*
 	 * Скасовану підписку НАЗИВАЄМО, а не гасимо мовчки (аудит 2026-09-24). Порожнім
 	 * списком не підміняємо: «нікого немає» в партії означає «забрати ведення» й
 	 * «чекати всіх», тобто вигадана порожнеча зрушила б гру. Лишається останнє, що
 	 * було відомо, — і запис у журналі, за яким причину видно.
 	 */
-	const handler = onValue(
-		branch,
+	return onValue(
+		ref(db, `presence/${code}`),
 		(snapshot) => onChange(Object.keys(snapshot.val() ?? {})),
 		(error) =>
 			logService.warn('network', 'presence listener cancelled', { code, reason: String(error) })
 	);
-	return () => off(branch, 'value', handler);
 }
 
 /**
@@ -355,10 +351,9 @@ export async function watchOthers(
 	onCount: (others: number) => void
 ): Promise<() => void> {
 	const { uid, db } = await connect();
-	const { off, onValue, ref } = await import('firebase/database');
-	const branch = ref(db, `presence/${code}`);
-	const handler = onValue(
-		branch,
+	const { onValue, ref } = await import('firebase/database');
+	return onValue(
+		ref(db, `presence/${code}`),
 		(snapshot) => onCount(othersWaiting(snapshot.val(), uid)),
 		// Читати не дають — для смуги «вас чекають» це «чекати нікому».
 		(error) => {
@@ -366,5 +361,4 @@ export async function watchOthers(
 			onCount(0);
 		}
 	);
-	return () => off(branch, 'value', handler);
 }

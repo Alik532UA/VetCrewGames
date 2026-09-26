@@ -1,4 +1,4 @@
-import { connect } from './firebase';
+import { connect, serverNow } from './firebase';
 import { logService } from '$lib/services/logService.svelte';
 import { forgetOwnRoom, pruneOwnRooms, rememberOwnRoom } from './ownRooms';
 import type { Member, Move, RoomInfo, RoomTransport } from './roomTypes';
@@ -371,27 +371,26 @@ export async function peekRoom(code: string): Promise<RoomInfo | null> {
 /** Транспорт кімнати — рівно те, що описує `RoomTransport`. */
 export async function roomTransport(code: string): Promise<RoomTransport> {
 	const { db } = await connect();
-	const { off, onValue, ref, remove, serverTimestamp, set, update } =
-		await import('firebase/database');
+	const { onValue, ref, remove, serverTimestamp, set, update } = await import('firebase/database');
 	const room = ref(db, `rooms/${code}`);
-
-	/*
-	 * ЗСУВ СЕРВЕРНОГО ЧАСУ — з `.info/serverTimeOffset`, тобто від самої бази.
-	 * Слухається, поки кімнату слухають (`watch`), і гасне разом із нею.
-	 */
-	let offset = 0;
-	const offsetNode = ref(db, '.info/serverTimeOffset');
 
 	return {
 		code,
-		now: () => Date.now() + offset,
+		/*
+		 * СЕРВЕРНИЙ ЧАС — той самий, що й поза кімнатою (`net/firebase.ts`). Доти
+		 * транспорт слухав `.info/serverTimeOffset` удруге, окремою підпискою, і два
+		 * годинники одного застосунку могли розійтися (аудит 2026-09-26).
+		 */
+		now: serverNow,
 
 		watch(onSnapshot, onGone) {
-			const offsetHandler = onValue(offsetNode, (snapshot) => {
-				const value = Number(snapshot.val());
-				offset = Number.isFinite(value) ? value : 0;
-			});
-			const handler = onValue(
+			/*
+			 * ВІДПИСКА — ТЕ, ЩО ПОВЕРНУВ `onValue` (аудит 2026-09-26). Тут стояло
+			 * `off(room, 'value', handler)` з поверненим значенням у ролі `handler`, а
+			 * `off` знімає лише ТОЙ САМИЙ колбек, що був переданий: не знімалося
+			 * нічого, і кожна відвідана кімната тягла свій журнал до кінця вкладки.
+			 */
+			return onValue(
 				room,
 				(snapshot) => {
 					// Кімнати більше немає — сказати про це, а не лишити гостей перед
@@ -405,10 +404,6 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 					onGone?.('lost');
 				}
 			);
-			return () => {
-				off(room, 'value', handler);
-				off(offsetNode, 'value', offsetHandler);
-			};
 		},
 
 		async takeLead(move: Move) {

@@ -29,7 +29,15 @@ interface Op {
 }
 const ops: Op[] = [];
 type Snapshot = { val: () => unknown; exists: () => boolean };
-const listeners = new Map<string, (snapshot: Snapshot) => void>();
+type Listener = (snapshot: Snapshot) => void;
+/** Підписки за шляхом — кілька на шлях, як у SDK: `.info/connected` слухають усі. */
+const listeners = new Map<string, Set<Listener>>();
+/** Подати знімок усім підпискам шляху — так, як це робить SDK. */
+const emit = (path: string, snapshot: Snapshot) => {
+	for (const listener of [...(listeners.get(path) ?? [])]) listener(snapshot);
+};
+/** Скільки підписок на шляху досі живі. */
+const live = (path: string) => listeners.get(path)?.size ?? 0;
 
 /** Запис, що «висить»: база ще не відповіла. */
 let hang: Promise<void> | null = null;
@@ -67,11 +75,21 @@ vi.mock('firebase/database', () => ({
 			if (hangDisconnect) await hangDisconnect;
 		}
 	}),
-	onValue: (node: { path: string }, handler: (snapshot: Snapshot) => void) => {
-		listeners.set(node.path, handler);
-		return handler;
+	/*
+	 * ВІДПИСКА — ТЕ, ЩО ПОВЕРНУВ `onValue`, і знімає вона САМЕ цю підписку (аудит
+	 * 2026-09-26). Доти підставка повертала сам обробник, а `off` знімав усе за
+	 * шляхом, — і продакшн-код `off(ref, 'value', відписка)`, який у справжньому
+	 * SDK не знімав нічого, тут виглядав робочим. `off` — як у SDK: лише за тим
+	 * самим колбеком.
+	 */
+	onValue: (node: { path: string }, handler: Listener) => {
+		const set = listeners.get(node.path) ?? new Set<Listener>();
+		set.add(handler);
+		listeners.set(node.path, set);
+		return () => void listeners.get(node.path)?.delete(handler);
 	},
-	off: vi.fn((node: { path: string }) => listeners.delete(node.path)),
+	off: (node: { path: string }, _type: string, callback: Listener) =>
+		void listeners.get(node.path)?.delete(callback),
 	serverTimestamp: () => SERVER_TIME
 }));
 
@@ -84,10 +102,10 @@ const MINE = 'presence/42/uid-host';
 
 /** Firebase повідомляє про стан звʼязку. */
 const connection = (online: boolean) =>
-	listeners.get('.info/connected')?.({ val: () => online, exists: () => true });
+	emit('.info/connected', { val: () => online, exists: () => true });
 
 /** Вузол зник на сервері: друга вкладка закрилась, і її `onDisconnect` прибрав спільний. */
-const vanish = (path: string) => listeners.get(path)?.({ val: () => null, exists: () => false });
+const vanish = (path: string) => emit(path, { val: () => null, exists: () => false });
 
 /** Дочекатися запису, запущеного з обробника: у ньому кілька `await`. */
 const flush = async () => {
@@ -96,7 +114,7 @@ const flush = async () => {
 
 /** Дочекатися, поки підписка на стан звʼязку встане, і сказати «на звʼязку». */
 const goOnline = async () => {
-	await vi.waitFor(() => expect(listeners.has('.info/connected')).toBe(true));
+	await vi.waitFor(() => expect(live('.info/connected')).toBeGreaterThan(0));
 	connection(true);
 	await flush();
 };
@@ -241,7 +259,7 @@ describe('присутність після обриву', () => {
 		try {
 			const stop = await trackPresence('42');
 			await goOnline();
-			listeners.get(MINE)?.({ val: () => ({ at: 1 }), exists: () => true });
+			emit(MINE, { val: () => ({ at: 1 }), exists: () => true });
 			ops.length = 0;
 
 			await vi.advanceTimersByTimeAsync(ROOM_BEAT_MS);
@@ -280,6 +298,34 @@ describe('присутність після обриву', () => {
 		connection(true);
 		connection(false);
 		expect(seen).toEqual([true, false]);
+	});
+
+	/**
+	 * ПІСЛЯ ВИХОДУ НЕ ЛИШАЄТЬСЯ ЖОДНОЇ ПІДПИСКИ (аудит 2026-09-26). Доти `stop()`
+	 * кликав `off` із тим, що повернув `onValue`, і не знімав нічого: кожен вхід у
+	 * кімнату додавав слухача стану звʼязку й свого вузла, і жоден не зникав.
+	 *
+	 * Зворотний експеримент: повернути `off(status, 'value', onStatus)` у `keepNode`
+	 * — червоніє перший; `off(status, 'value', handler)` у `watchConnected` — другий.
+	 */
+	it('вихід знімає обидві підписки присутності', async () => {
+		const stop = await trackPresence('42');
+		await goOnline();
+		expect(live('.info/connected'), 'перевірка жива: підписки стоять').toBe(1);
+		expect(live(MINE), 'перевірка жива: свій вузол слухається').toBe(1);
+
+		stop();
+
+		expect(live('.info/connected'), 'стан звʼязку досі слухається').toBe(0);
+		expect(live(MINE), 'свій вузол досі слухається').toBe(0);
+	});
+
+	it('відписка від стану звʼязку знімає саме її', async () => {
+		const seen: boolean[] = [];
+		const stop = await watchConnected((online) => seen.push(online));
+		stop();
+		connection(true);
+		expect(seen, 'після відписки подія дійшла').toEqual([]);
 	});
 });
 
@@ -348,6 +394,7 @@ describe('запис у переліку кімнат після обриву', 
 		await goOnline();
 		const unlist = await published;
 		unlist();
+		expect(live('.info/connected'), 'зняття лишило підписку на стан звʼязку').toBe(0);
 		ops.length = 0;
 
 		connection(false);

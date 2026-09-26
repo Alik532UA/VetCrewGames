@@ -413,17 +413,45 @@ describe('хмарна база', () => {
 		expect(bad, `initializeApp у тілі модуля:\n${bad.join('\n')}`).toEqual([]);
 	});
 
-	it('кожна підписка на базу віддає відписку (§ 9.1)', () => {
-		// Слухач, чия відписка не повертається, переживає перехід між сторінками:
-		// кожен вхід у кімнату додає ще один, і жоден не знімається.
-		const net = walk('src/lib/net').filter((f) => f.endsWith('.ts'));
-		const listeners = net.filter((file) => /\bonValue\s*\(/.test(readFileSync(file, 'utf8')));
-		expect(listeners.length, 'підписок не знайдено — перевірка мертва').toBeGreaterThan(0);
-		const leaking = listeners.filter((file) => {
-			const text = readFileSync(file, 'utf8');
-			return !/\boff\s*\(|return\s*\(\)\s*=>/.test(text);
-		});
-		expect(leaking, `підписка без відписки:\n${leaking.join('\n')}`).toEqual([]);
+	/**
+	 * КОЖНА ПІДПИСКА ВІДДАЄ ВІДПИСКУ — ТУ, ЩО ПОВЕРНУВ `onValue` (§ 9.1, аудит 2026-09-26).
+	 *
+	 * Слухач, чия відписка не знімає його, переживає перехід між сторінками: кожен
+	 * вхід у кімнату додає ще один. Доти ця перевірка задовольнялася словом `off(` у
+	 * файлі — і саме `off` був дефектом: `off(ref, 'value', callback)` знімає лише ТОЙ
+	 * САМИЙ колбек, а код передавав туди те, що повернув `onValue`. Не знімалося
+	 * нічого, у семи підписках з восьми.
+	 *
+	 * Тепер `off` із SDK у мережевому шарі не береться взагалі, а результат кожного
+	 * `onValue` кудись іде: повертається, присвоюється чи передається далі. Виклик
+	 * на початку інструкції — відписка, викинута на місці.
+	 *
+	 * Зворотні експерименти: повернути `off` у будь-який модуль — червоніє перша
+	 * перевірка; викинути результат `onValue` — друга.
+	 */
+	it('кожна підписка на базу віддає відписку — ту, що повернув `onValue` (§ 9.1)', () => {
+		const net = walk('src/lib/net').filter((f) => f.endsWith('.ts') && !f.includes('.test.'));
+		const code = (file: string) =>
+			readFileSync(file, 'utf8')
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.replace(/^\s*\/\/.*$/gm, '');
+		const listeners = net.filter((file) => /\bonValue\s*\(/.test(code(file)));
+		expect(listeners.length, 'підписок не знайдено — перевірка мертва').toBeGreaterThan(3);
+
+		const sdkOff =
+			/\{[^}]*\boff\b[^}]*\}\s*=\s*(?:await\s+import\(\s*'firebase\/database'\s*\)|\w+Module\b)|import\s*\{[^}]*\boff\b[^}]*\}\s*from\s*'firebase\/database'|\.off\s*\(/;
+		const withOff = net.filter((file) => sdkOff.test(code(file)));
+		expect(withOff, `\`off\` із SDK не знімає відписки:\n${withOff.join('\n')}`).toEqual([]);
+
+		const dropped: string[] = [];
+		for (const file of listeners) {
+			const text = code(file);
+			for (const match of text.matchAll(/\bonValue\s*\(/g)) {
+				const before = text.slice(0, match.index).trimEnd();
+				if (before === '' || /[;{}]$|\bvoid$|\bawait$/.test(before)) dropped.push(file);
+			}
+		}
+		expect(dropped, `результат \`onValue\` викинуто:\n${dropped.join('\n')}`).toEqual([]);
 	});
 
 	/**
