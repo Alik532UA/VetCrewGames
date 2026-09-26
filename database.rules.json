@@ -44,7 +44,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '4019d42dc216'" }
+      "$v": { ".read": "auth != null && $v === 'c6b29486000b'" }
     },
 
     "rooms": {
@@ -124,12 +124,15 @@
              * Роль `player` у складі кожен пише собі сам, тож доти господарем міг стати
              * будь-хто, хто знає код і дочекався, поки господаря немає в присутності.
              * Тепер посеред партії — лише той, хто в ЗАМОРОЖЕНОМУ складі (`roster`
-             * мапою за uid), у лобі — гравець кімнати. І `hostUid` міняється лише разом
+             * мапою за uid), у лобі й ПІСЛЯ ПАРТІЇ — гравець кімнати. Після партії доти
+             * теж лише склад (шостий аудит, S1): вікторина, у якій лишився тільки той,
+             * хто долучився посеред партії, не мала кому почати реванш — склад старту
+             * розійшовся, а нового не буде без ведучого. І `hostUid` міняється лише разом
              * із ходом `lead`, на який указує `leadSeq` у тому самому записі: без ходу
              * вікторина вела б відлік ведучих від нового господаря з нульового ходу й
              * губила б усі раунди, оголошені до передачі.
              */
-            ".write": "auth != null && newData.val() === auth.uid && (root.child('rooms').child($code).child('info/status').val() === 'lobby' ? root.child('rooms').child($code).child('members').child(auth.uid).child('role').val() === 'player' : root.child('rooms').child($code).child('info/roster').child(auth.uid).exists()) && root.child('presence').child($code).child(auth.uid).exists() && !root.child('presence').child($code).child(data.val()).exists()",
+            ".write": "auth != null && newData.val() === auth.uid && (root.child('rooms').child($code).child('info/status').val() === 'playing' ? root.child('rooms').child($code).child('info/roster').child(auth.uid).exists() : root.child('rooms').child($code).child('members').child(auth.uid).child('role').val() === 'player') && root.child('presence').child($code).child(auth.uid).exists() && !root.child('presence').child($code).child(data.val()).exists()",
             /*
              * «НОВИЙ ХІД lead, ЯКИЙ НАПИСАВ НОВИЙ ГОСПОДАР» — ЛИШЕ ТУТ (шостий аудит): доти
              * та сама умова стояла ще й у `.write`, і прибрати будь-яку одну з двох копій

@@ -57,6 +57,9 @@ export const ui = {
 	'pairs.newBuild':
 		'A new version of the game is out. Reload the page — if you were in a room, you will be back in it.',
 	'pairs.reload': 'Reload page',
+	'pairs.noLead':
+		'The host is gone, and nobody here can take over the lead. You can leave the room or create a new one.',
+	'pairs.leaveRoom': 'Leave the room',
 	'pairs.playNext': 'Play in the next game',
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',
 	'pairs.rulesMissing': 'Shared play is not enabled on the server yet.',

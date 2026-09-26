@@ -225,6 +225,24 @@ const lobbyEntry = (hostUid) => ({
  * Кожен рядок — що саме перевіряємо і чого чекаємо.
  * Порядок має значення: пізніші випадки спираються на стан, створений раніше.
  */
+/** Пізній гравець вікторини бере ведення в `guest` — після партії (шостий аудит, S1). */
+const quizLead = () =>
+	patch(
+		`rooms/${QUIZ}`,
+		{
+			'info/hostUid': stranger.uid,
+			'info/leadSeq': '000003',
+			'moves/000003': {
+				seq: 3,
+				by: stranger.uid,
+				type: 'lead',
+				at: SERVER_TIME,
+				payload: { from: guest.uid }
+			}
+		},
+		stranger.token
+	);
+
 const CASES = [
 	// --- застосунок мусить це вміти ---
 	{
@@ -2398,27 +2416,13 @@ const CASES = [
 				stranger.token
 			)
 	},
-	{
-		// Роль `player` він написав собі сам — але в заморожений склад не потрапив.
-		name: 'посеред партії ведення бере той, кого немає в складі',
-		allowed: false,
-		run: () =>
-			patch(
-				`rooms/${CODE}`,
-				{
-					'info/hostUid': stranger.uid,
-					'info/leadSeq': '000009',
-					'moves/000009': {
-						seq: 9,
-						by: stranger.uid,
-						type: 'lead',
-						at: SERVER_TIME,
-						payload: { from: host.uid }
-					}
-				},
-				stranger.token
-			)
-	},
+	/*
+	 * «Посеред партії ведення бере той, кого немає в складі» тут БУВ окремим випадком — і
+	 * падав з ДВОХ причин: хід `lead` посеред «Знайди пару» відкидає ще й правило ходів
+	 * (випадок вище), тож умову складу в `info/hostUid` він не доводив (шостий аудит,
+	 * зворотний експеримент S1). Її поодинці тримає «пізній гравець вікторини ведення не
+	 * бере»: вікторина пускає в журнал і того, кого немає в складі.
+	 */
 	{
 		// Випадки нижче чекають на стороннього, який НЕ учасник.
 		name: 'сторонній іде з кімнати',
@@ -3196,34 +3200,42 @@ const CASES = [
 		allowed: true,
 		run: () => write(`rooms/${QUIZ}/info/status`, 'over', guest.token)
 	},
+	/*
+	 * ПІСЛЯ ПАРТІЇ ВЕДЕ ГРАВЕЦЬ КІМНАТИ (шостий аудит, S1), як і в лобі: склад старту
+	 * розійшовся після фіналу, і доти реваншу не було кому почати. Кожна відмова —
+	 * рівно з однієї причини.
+	 */
 	{
-		// Скінчена партія — та сама гілка складу, що й та, що йде: реванш буде з ним.
-		name: 'після вікторини ведення не бере той, кого немає в складі',
-		allowed: false,
-		run: async () => {
-			const gone = await write(`presence/${QUIZ}/${guest.uid}`, null, guest.token);
-			if (gone !== 200) return gone;
-			return patch(
-				`rooms/${QUIZ}`,
-				{
-					'info/hostUid': stranger.uid,
-					'info/leadSeq': '000003',
-					'moves/000003': {
-						seq: 3,
-						by: stranger.uid,
-						type: 'lead',
-						at: SERVER_TIME,
-						payload: { from: guest.uid }
-					}
-				},
-				stranger.token
-			);
-		}
+		name: 'ведучий вікторини йде зі звʼязку',
+		allowed: true,
+		run: () => write(`presence/${QUIZ}/${guest.uid}`, null, guest.token)
 	},
 	{
-		name: 'ведучий зносить кімнату вікторини',
+		name: 'пізній гравець стає глядачем після партії',
 		allowed: true,
-		run: () => write(`rooms/${QUIZ}`, null, guest.token)
+		run: () => write(`rooms/${QUIZ}/members/${stranger.uid}/role`, 'spectator', stranger.token)
+	},
+	{
+		// Господаря немає, глядач на звʼязку, хід правильний — відмова рівно через роль.
+		name: 'після вікторини ведення не бере глядач',
+		allowed: false,
+		run: () => quizLead()
+	},
+	{
+		name: 'пізній гравець знову гравець',
+		allowed: true,
+		run: () => write(`rooms/${QUIZ}/members/${stranger.uid}/role`, 'player', stranger.token)
+	},
+	{
+		// Його немає в складі, але партія вже не йде: веде гравець кімнати.
+		name: 'після вікторини ведення бере гравець кімнати, якого немає в складі',
+		allowed: true,
+		run: () => quizLead()
+	},
+	{
+		name: 'новий ведучий зносить кімнату вікторини',
+		allowed: true,
+		run: () => write(`rooms/${QUIZ}`, null, stranger.token)
 	},
 
 	/*

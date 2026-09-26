@@ -58,6 +58,12 @@ export class RoomSession<M extends RoomMatch> {
 	readonly reload = new ReloadAdvice(() => this.net.checkRules());
 	/** Годинник сторінки — СЕРВЕРНИЙ час (`transport.now()`), а не час пристрою. */
 	clock = $state(Date.now());
+	/**
+	 * ВЕСТИ КІМНАТУ НІКОМУ: господаря немає досить довго, а з присутніх ведення правило
+	 * не віддасть нікому (шостий аудит, S1). Ставить політика (`roomPolicies`), смуга
+	 * кімнати пропонує вийти чи створити нову (`freshRoom`).
+	 */
+	stranded = $state(false);
 
 	#stops: Array<() => void> = [];
 	#transport: RoomTransport | null = null;
@@ -281,35 +287,13 @@ export class RoomSession<M extends RoomMatch> {
 	}
 
 	/**
-	 * Відкрита кімната — у перелік. Невдача не скасовує входу: кімната працює й так.
-	 *
-	 * Кличе політика (`roomPolicies`), а не вхід: так кімната повертається в перелік
-	 * і після перезавантаження господаря, і в нового господаря після перехоплення.
-	 * Той самий код удруге перелік не пише (`LobbyFeed.publish`), а невдача не
-	 * повторюється сама — лише коли знову зміниться кімната.
+	 * НОВА КІМНАТА ЗАМІСТЬ ТІЄЇ, ЯКУ НІКОМУ ВЕСТИ (`stranded`): вийти з неї й створити
+	 * свою з тим самим підписом. Рядок у старій лишається — це «назад», як і вихід.
 	 */
-	async publishListing(): Promise<void> {
-		const who =
-			this.match?.members.find((member) => member.uid === this.me)?.name ??
-			this.player.forEntry(this.lobby.takenNames);
-		try {
-			await this.lobby.publish({
-				code: this.code,
-				hostUid: this.me,
-				hostName: who,
-				hostCountry: this.player.country,
-				hostAvatar: roomAvatarOf(this),
-				rulesVersion: this.game.rulesVersion,
-				// Не одиниця: господар, що повернувся, чи новий після перехоплення
-				// оголошує кімнату, де вже сидять люди, а лічильник наздоганяє лише
-				// ЗМІНУ присутності (`roomPolicies`).
-				players: Math.max(1, this.presentPlayers.length),
-				since: this.match?.createdAt ?? undefined,
-				...(this.match ? this.game.listingExtras?.(this.match) : {})
-			});
-		} catch (error) {
-			logService.warn('network', 'room not published', { code: this.code, reason: String(error) });
-		}
+	async freshRoom(): Promise<void> {
+		this.exitToGate();
+		await this.place.exit();
+		await this.enter('create');
 	}
 
 	/** Швидка гра: найстаріша вільна кімната, а якщо такої немає — своя відкрита. */

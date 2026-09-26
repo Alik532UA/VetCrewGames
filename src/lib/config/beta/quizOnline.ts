@@ -353,6 +353,30 @@ export const quizOnlineTab: BetaTab = {
 			coverage: 'covered',
 			test: 'src/lib/config/quizDeck.test.ts',
 			testid: 'quiz-board-panel'
+		},
+		{
+			/*
+			 * ВЕСТИ НІКОМУ Й ВЕДЕННЯ ПІСЛЯ ПАРТІЇ (шостий аудит, S1). Правило доводять гейт
+			 * правил і контракт, смугу — юніт-тести сесії й `NetLost`; руками — три пристрої.
+			 */
+			id: 'quizonline_27',
+			category: { uk: 'Кімната', en: 'The room' },
+			text: {
+				uk: 'Двома пристроями почніть вікторину, третім зайдіть у неї посеред партії гравцем, а тоді на двох перших закрийте вкладки. За ~20 с на третьому мусить зʼявитися смуга «Господаря немає, а підхопити ведення нікому…» з кнопками «Створити кімнату» й «Вийти з кімнати»; «Створити кімнату» мусить відкрити нове лобі, де ви господар.',
+				en: 'Start a quiz on two devices, join it mid-game as a player on a third, then close the tabs on the first two. Within ~20 s the third must show a strip «The host is gone, and nobody here can take over the lead…» with «Create a room» and «Leave the room» buttons; «Create a room» must open a new lobby where you are the host.'
+			},
+			coverage: 'manual',
+			testid: 'room-no-lead-new-btn'
+		},
+		{
+			id: 'quizonline_28',
+			category: { uk: 'Кімната', en: 'The room' },
+			text: {
+				uk: 'Двома пристроями почніть вікторину, третім і четвертим зайдіть посеред партії гравцями й дограйте. Після фіналу закрийте вкладки на двох перших: приблизно за хвилину третій мусить почути «тепер партію ведете ви» й зуміти почати реванш із четвертим. Смуги «підхопити ведення нікому» при цьому бути не мусить.',
+				en: 'Start a quiz on two devices, join it mid-game as players on a third and a fourth, and play to the end. After the final close the tabs on the first two: in about a minute the third must hear «you are leading the game now» and be able to start a rematch with the fourth. The «nobody here can take over the lead» strip must not appear.'
+			},
+			coverage: 'manual',
+			negative: true
 		}
 	]
 };

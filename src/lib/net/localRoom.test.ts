@@ -128,6 +128,23 @@ describe('передача ведення — як правило info/hostUid',
 		room.setPresent([GUEST]);
 		expect(await room.transport().takeLead(lead(GUEST))).toBe(true);
 	});
+
+	/**
+	 * ПІСЛЯ ПАРТІЇ — ЯК У ЛОБІ (шостий аудит, S1): склад старту міг розійтися після
+	 * фіналу, і тоді реванш не було б кому почати. Глядач — і далі ні.
+	 */
+	it('після партії — гравець кімнати, навіть якого немає в складі', async () => {
+		const late = { uid: 'uid-late', name: 'Пізній', role: 'player' as const, order: 4 };
+		const room = new LocalRoom({ ...info, status: 'over' }, [...members, late]);
+		room.setPresent([late.uid]);
+		expect(await room.transport().takeLead(lead(late.uid))).toBe(true);
+	});
+
+	it('після партії глядач — ні', async () => {
+		const room = new LocalRoom({ ...info, status: 'over' }, members);
+		room.setPresent([WATCHER]);
+		expect(await room.transport().takeLead(lead(WATCHER))).toBe(false);
+	});
 });
 
 /**

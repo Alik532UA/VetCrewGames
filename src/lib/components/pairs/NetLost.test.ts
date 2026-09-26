@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { fireEvent, render } from '@testing-library/svelte';
 
 // Справжній синглтон налаштувань питає `window.matchMedia`, якого в jsdom немає.
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { locale: 'uk', font: 'default' } }));
@@ -39,6 +39,45 @@ describe('смуга кімнати', () => {
 	it('звичайний стан — ні тексту, ні кнопки', () => {
 		const view = render(NetLost, { props: { lost: false } });
 		expect(view.queryByTestId('room-reload-btn')).toBeNull();
+		expect(view.queryByTestId('room-no-lead-new-btn')).toBeNull();
 		expect(view.getByTestId('net-lost-text').textContent?.trim()).toBe('');
+	});
+
+	/**
+	 * ВЕСТИ НІКОМУ (шостий аудит, S1): пояснення й дві дороги — нова кімната й вихід.
+	 * Доти такий стан не пояснювало нічого: раунди стояли, екран застигав.
+	 *
+	 * Зворотний експеримент: прибрати гілку `noLead` — червоніє.
+	 */
+	it('вести нікому — пояснення й дві дороги, і кожна кличе свою дію', async () => {
+		const onLeave = vi.fn();
+		const onNewRoom = vi.fn();
+		const view = render(NetLost, {
+			props: { lost: false, stranded: true, onLeave, onNewRoom }
+		});
+		expect(view.getByTestId('net-lost-text').textContent?.trim()).not.toBe('');
+		await fireEvent.click(view.getByTestId('room-no-lead-new-btn'));
+		await fireEvent.click(view.getByTestId('room-no-lead-leave-btn'));
+		expect(onNewRoom).toHaveBeenCalledTimes(1);
+		expect(onLeave).toHaveBeenCalledTimes(1);
+	});
+
+	it('обрив важливіший: без звʼязку — його текст і жодної кнопки «вести нікому»', async () => {
+		vi.useFakeTimers();
+		try {
+			const view = render(NetLost, { props: { lost: true, stranded: true } });
+			expect(view.queryByTestId('room-no-lead-new-btn'), 'обрив ще не видно — видно «нікому»').not.toBeNull();
+			await vi.advanceTimersByTimeAsync(1500);
+			expect(view.queryByTestId('room-no-lead-new-btn')).toBeNull();
+			expect(view.getByTestId('net-lost-text').textContent).toContain('звʼязку');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('застаріла сторінка важливіша: під нею смуги «вести нікому» немає', () => {
+		const view = render(NetLost, { props: { lost: false, reload: 'rules', stranded: true } });
+		expect(view.queryByTestId('room-no-lead-new-btn')).toBeNull();
+		expect(view.queryByTestId('room-reload-btn')).not.toBeNull();
 	});
 });

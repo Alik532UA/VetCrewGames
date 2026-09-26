@@ -22,8 +22,25 @@
 	 * в кімнату з цієї вкладки не вийде). Це важливіше за обрив і показується
 	 * одразу, разом із кнопкою: оновлена сторінка повертається в ту саму кімнату за
 	 * адресою.
+	 *
+	 * `stranded` — ВЕСТИ КІМНАТУ НІКОМУ (`RoomSession.stranded`, шостий аудит, S1):
+	 * господаря немає, а з присутніх ведення не візьме ніхто. Дві дороги — нова кімната
+	 * й вихід; найслабше з трьох повідомлень, бо обрив і застаріла сторінка пояснюють
+	 * те саме «ніхто не веде» точніше.
 	 */
-	let { lost, reload = null }: { lost: boolean; reload?: ReloadReason | null } = $props();
+	let {
+		lost,
+		reload = null,
+		stranded = false,
+		onLeave,
+		onNewRoom
+	}: {
+		lost: boolean;
+		reload?: ReloadReason | null;
+		stranded?: boolean;
+		onLeave?: () => void;
+		onNewRoom?: () => void;
+	} = $props();
 
 	const DELAY_MS = 1500;
 
@@ -37,17 +54,26 @@
 		const timer = setTimeout(() => (shown = true), DELAY_MS);
 		return () => clearTimeout(timer);
 	});
+
+	/**
+	 * ЩО САМЕ КАЖЕ СМУГА — один стан, і порядок у ньому один: застаріла сторінка, тоді
+	 * обрив, тоді «вести нікому». Доти текст і кнопки мали кожен свій ланцюжок умов, і
+	 * пріоритет між ними тримався збігом (шостий аудит).
+	 */
+	const banner = $derived(reload ?? (shown ? 'offline' : stranded ? 'noLead' : null));
 </script>
 
-<div class="net-lost" class:text-panel={shown || reload !== null}>
+<div class="net-lost" class:text-panel={banner !== null}>
 	<p class="net-lost__text" role="status" data-testid="net-lost-text">
-		{#if reload === 'rules'}{@html formatFont(
+		{#if banner === 'rules'}{@html formatFont(
 				t('pairs.rulesChanged')
-			)}{:else if reload === 'build'}{@html formatFont(
+			)}{:else if banner === 'build'}{@html formatFont(
 				t('pairs.newBuild')
-			)}{:else if shown}{@html formatFont(t('pairs.offline'))}{/if}
+			)}{:else if banner === 'offline'}{@html formatFont(
+				t('pairs.offline')
+			)}{:else if banner === 'noLead'}{@html formatFont(t('pairs.noLead'))}{/if}
 	</p>
-	{#if reload !== null}
+	{#if banner === 'rules' || banner === 'build'}
 		<button
 			type="button"
 			class="btn-primary net-lost__reload"
@@ -56,6 +82,25 @@
 		>
 			{@html formatFont(t('pairs.reload'))}
 		</button>
+	{:else if banner === 'noLead'}
+		<div class="net-lost__actions">
+			<button
+				type="button"
+				class="btn-primary"
+				onclick={onNewRoom}
+				data-testid="room-no-lead-new-btn"
+			>
+				{@html formatFont(t('pairs.createRoom'))}
+			</button>
+			<button
+				type="button"
+				class="net-lost__leave"
+				onclick={onLeave}
+				data-testid="room-no-lead-leave-btn"
+			>
+				{@html formatFont(t('pairs.leaveRoom'))}
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -76,5 +121,23 @@
 	/* Головна дія цього стану — інших на дошці однаково не буде. */
 	.net-lost__reload {
 		font-size: var(--font-size-md);
+	}
+
+	.net-lost__actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-sm);
+	}
+
+	/* Друга дорога — тихіша за першу: той самий вигляд, що в «іншої гри» над підсумком. */
+	.net-lost__leave {
+		min-height: 44px;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		background: var(--color-bg-card);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
 	}
 </style>

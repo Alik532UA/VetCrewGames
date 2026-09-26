@@ -57,6 +57,9 @@ export const ui = {
 	'pairs.newBuild':
 		'Eine neue Version des Spiels ist da. Lade die Seite neu – warst du in einem Raum, kommst du wieder hinein.',
 	'pairs.reload': 'Seite neu laden',
+	'pairs.noLead':
+		'Der Gastgeber ist weg, und niemand hier kann die Leitung übernehmen. Du kannst den Raum verlassen oder einen neuen erstellen.',
+	'pairs.leaveRoom': 'Raum verlassen',
 	'pairs.playNext': 'In der nächsten Partie mitspielen',
 	'pairs.roomOlder':
 		'Diese Partie wurde in einer älteren Version gestartet. Erstelle einen neuen Raum.',

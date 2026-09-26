@@ -114,6 +114,9 @@
 	<NetLost
 		lost={match !== null && !session.connected}
 		reload={session.reload.reason ?? (updated.current ? 'build' : null)}
+		stranded={match !== null && session.stranded}
+		onLeave={() => void session.place.exit()}
+		onNewRoom={() => void session.freshRoom()}
 	/>
 	{#if !match && invite.open}
 		<!-- Вас запросили: посилання чи QR-код, і вас ще немає в складі (`RoomInvite`). -->

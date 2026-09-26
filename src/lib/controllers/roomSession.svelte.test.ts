@@ -561,6 +561,103 @@ describe('політики кімнати', () => {
 	});
 
 	/**
+	 * ПІСЛЯ ПАРТІЇ ВЕДЕ ГРАВЕЦЬ КІМНАТИ (шостий аудит, S1): склад старту розійшовся після
+	 * фіналу, а новачок, що долучився посеред партії, лишився. Доти правило пускало й
+	 * після партії лише склад — і реваншу не було кому почати.
+	 *
+	 * Зворотний експеримент: повернути в `leadCandidates` склад для `over` — червоніє.
+	 */
+	it('після вікторини ведення підхоплює новачок, коли склад старту пішов', async () => {
+		const late: Member = { uid: 'uid-late', name: 'Новачок', role: 'player', order: 3 };
+		const over = roomInfo({
+			gameId: 'quiz',
+			status: 'over',
+			roster: rosterOf(members()),
+			config: gamesToConfig(ONLINE_GAMES.map((game) => game.id))
+		});
+		const room = new LocalRoom(over, [...members(), late]);
+		const { session, setOnline } = sessionFor(room, over, late.uid, quizGame);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		const takeLead = vi.spyOn(session.match!, 'takeLead').mockResolvedValue(true);
+
+		setOnline([late.uid]);
+		session.clock = 1_000_000;
+		flushSync();
+		session.clock = 1_000_000 + OVER_LEAD_AFTER_MS;
+		flushSync();
+
+		expect(takeLead).toHaveBeenCalledTimes(1);
+		expect(session.stranded, 'є кому вести — смуги немає').toBe(false);
+	});
+
+	/**
+	 * ВЕСТИ НІКОМУ (шостий аудит, S1): вікторину почали двоє, новачок долучився посеред
+	 * партії, двоє перших пішли. Ведення правило йому не віддасть — сесія каже про це
+	 * смугою й ОДНИМ рядком у журналі, а щойно повернувся гравець складу, смуги немає.
+	 *
+	 * Зворотний експеримент: прибрати `strand` із `watchHost` — червоніє.
+	 */
+	it('вести нікому — смуга й один рядок у журналі, а повернувся гравець складу — смуги немає', async () => {
+		const late: Member = { uid: 'uid-late', name: 'Новачок', role: 'player', order: 3 };
+		const started = roomInfo({
+			gameId: 'quiz',
+			status: 'playing',
+			roster: rosterOf(members()),
+			config: gamesToConfig(ONLINE_GAMES.map((game) => game.id))
+		});
+		const room = new LocalRoom(started, [...members(), late]);
+		const { session, setOnline, setConnected } = sessionFor(room, started, late.uid, quizGame);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		setOnline([late.uid]);
+		session.clock = 1_000_000;
+		flushSync();
+		expect(session.stranded, 'щойно зник — ще рано').toBe(false);
+
+		session.clock = 1_000_000 + LEAD_AFTER_MS;
+		flushSync();
+		expect(session.stranded).toBe(true);
+		session.clock += 5_000;
+		flushSync();
+		const told = vi
+			.mocked(logService.warn)
+			.mock.calls.filter(([, message]) => message === 'nobody can lead');
+		expect(told).toHaveLength(1);
+
+		// Без звʼязку присутність застаріла: хто «тут», сказати нічим — і смуги немає.
+		setConnected(false);
+		flushSync();
+		expect(session.stranded, 'без звʼязку').toBe(false);
+		setConnected(true);
+		flushSync();
+		expect(session.stranded).toBe(true);
+
+		setOnline([late.uid, GUEST]);
+		flushSync();
+		expect(session.stranded, 'гравець складу тут — ведення підхопить він').toBe(false);
+	});
+
+	it('нова кімната замість тієї, яку нікому вести: вийти й створити свою', async () => {
+		const started = roomInfo({ status: 'playing', roster: rosterOf(members()) });
+		const room = new LocalRoom(started, members());
+		const { session, net, place } = sessionFor(room, started, GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+
+		await session.freshRoom();
+		await settle();
+
+		expect(place.exit).toHaveBeenCalled();
+		expect(net.createRoom).toHaveBeenCalledTimes(1);
+		expect(session.code).toBe('42');
+	});
+
+	/**
 	 * ДОГРАНА ПАРТІЯ — ТЕРПІННЯ ДОВШЕ (аудит 2026-09-25): господар, що пішов
 	 * створювати кімнату іншої гри, за двадцять секунд втрачав ведення.
 	 *

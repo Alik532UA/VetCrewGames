@@ -91,16 +91,29 @@ describe('гравці вікторини', () => {
 describe('хто може підхопити ведення', () => {
 	it('у лобі — будь-який гравець кімнати', () => {
 		const players = [...started, row(LATE, 'Новачок', 3)];
-		expect(uids(leadCandidates(players, 'lobby', null))).toEqual([HOST, GUEST, LATE]);
+		expect(uids(leadCandidates(players, players, 'lobby', null))).toEqual([HOST, GUEST, LATE]);
 	});
 
 	it('посеред партії — лише склад: новачка правило не пустить', () => {
 		const players = [...started, row(LATE, 'Новачок', 3)];
-		expect(uids(leadCandidates(players, 'playing', roster))).toEqual([HOST, GUEST]);
-		expect(uids(leadCandidates(players, 'over', roster))).toEqual([HOST, GUEST]);
+		expect(uids(leadCandidates(players, players, 'playing', roster))).toEqual([HOST, GUEST]);
+	});
+
+	/**
+	 * ПІСЛЯ ПАРТІЇ — ГРАВЕЦЬ КІМНАТИ ЗА СВОЇМ РЯДКОМ (шостий аудит, S1): і новачок, що
+	 * долучився посеред партії, а той, хто між партіями став глядачем, — ні, хоч у партії
+	 * він і далі гравець. Доти після партії рахувався лише склад, і вікторина, де
+	 * лишився тільки новачок, не мала кому почати реванш.
+	 *
+	 * Зворотний експеримент: повернути склад для `over` — червоніє.
+	 */
+	it('після партії — гравці кімнати за своїм рядком, а не склад', () => {
+		const party = [...started, row(LATE, 'Новачок', 3)];
+		const rows = [row(HOST, 'Лідер', 1), { ...row(GUEST, 'Гість', 2), role: 'spectator' as const }, row(LATE, 'Новачок', 3)];
+		expect(uids(leadCandidates(party, rows, 'over', roster))).toEqual([HOST, LATE]);
 	});
 
 	it('партія без складу (кімната старша за поле) — кандидатів немає', () => {
-		expect(leadCandidates(started, 'playing', null)).toEqual([]);
+		expect(leadCandidates(started, started, 'playing', null)).toEqual([]);
 	});
 });

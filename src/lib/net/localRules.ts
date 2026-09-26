@@ -105,9 +105,9 @@ export const configAllowed = (state: RoomState): boolean =>
 	state.info.status === 'lobby' || state.moves.length === 0;
 
 /**
- * Правило `info/hostUid` разом із ходом `lead`: автор — гравець (у лобі) чи зі
- * складу (посеред партії), він на звʼязку, господаря на звʼязку немає, у `from` —
- * саме господар, номер вільний.
+ * Правило `info/hostUid` разом із ходом `lead`: автор — зі складу посеред партії,
+ * а в лобі й після неї — гравець кімнати (шостий аудит, S1); він на звʼязку,
+ * господаря на звʼязку немає, у `from` — саме господар, номер вільний.
  */
 export function leadAllowed(state: RoomState, move: Move, caller?: string): boolean {
 	const { info, members, moves, present } = state;
@@ -117,9 +117,9 @@ export function leadAllowed(state: RoomState, move: Move, caller?: string): bool
 	// (`moves/$seq`), тож і дзеркало не мʼякше за неї (шостий аудит).
 	if (!author || !validPayload(move.payload)) return false;
 	const inParty =
-		info.status === 'lobby'
-			? author?.role === 'player'
-			: (info.roster ?? []).some((entry) => entry.uid === move.by);
+		info.status === 'playing'
+			? (info.roster ?? []).some((entry) => entry.uid === move.by)
+			: author.role === 'player';
 	const hostAway = present !== null && !present.has(info.hostUid);
 	const authorHere = present !== null && present.has(move.by);
 	if (!inParty || !hostAway || !authorHere) return false;

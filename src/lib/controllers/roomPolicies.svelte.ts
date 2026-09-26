@@ -70,7 +70,7 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 		const match = session.match;
 		if (!match || !session.amHost || match.status !== 'lobby' || !match.listed) return;
 		// Поза стеженням: склад і присутність, з яких складається запис, політику не будять.
-		untrack(() => void session.publishListing());
+		untrack(() => void publishListing(session));
 	});
 
 	/*
@@ -221,15 +221,18 @@ function watchHost<M extends RoomMatch>(session: RoomSession<M>): void {
 			goneSince = null;
 			retryAt = 0;
 			refused = false;
+			strand(session, false);
 			return;
 		}
 		goneSince ??= clock;
-		const here = leadCandidates(match.players, match.status, match.roster).filter((player) =>
-			session.online.includes(player.uid)
+		const here = leadCandidates(match.players, match.members, match.status, match.roster).filter(
+			(player) => session.online.includes(player.uid)
 		);
+		const patience = match.over ? OVER_LEAD_AFTER_MS : LEAD_AFTER_MS;
+		// З присутніх правило не пустить нікого — сказати про це, а не стояти мовчки.
+		strand(session, here.length === 0 && session.connected && clock - goneSince >= patience);
 		const rank = here.findIndex((player) => player.uid === session.me);
 		if (rank < 0 || taking || clock < retryAt) return;
-		const patience = match.over ? OVER_LEAD_AFTER_MS : LEAD_AFTER_MS;
 		if (clock - goneSince < patience * (rank + 1)) return;
 		taking = true;
 		retryAt = clock + patience;
@@ -249,6 +252,60 @@ function watchHost<M extends RoomMatch>(session: RoomSession<M>): void {
 			)
 			.finally(() => (taking = false));
 	});
+}
+
+/**
+ * ВЕСТИ КІМНАТУ НІКОМУ (шостий аудит, S1): господаря немає досить довго, а з тих, хто
+ * тут, ведення правило не віддасть нікому — скажімо, вікторину почали двоє, третій
+ * долучився посеред партії, а тоді двоє перших пішли. Раунди більше не оголошуються,
+ * і доти екран застигав без жодного пояснення, а в журналі не було ні рядка.
+ *
+ * Рядок у журнал — коли стан НАСТАЄ, а не на кожен такт годинника.
+ */
+function strand<M extends RoomMatch>(session: RoomSession<M>, stranded: boolean): void {
+	if (untrack(() => session.stranded) === stranded) return;
+	session.stranded = stranded;
+	if (!stranded) return;
+	logService.warn('network', 'nobody can lead', {
+		code: session.code,
+		status: session.match?.status ?? ''
+	});
+}
+
+/**
+ * Відкрита кімната — у перелік. Невдача не скасовує входу: кімната працює й так.
+ *
+ * Кличе політика вище, а не вхід: так кімната повертається в перелік і після
+ * перезавантаження господаря, і в нового господаря після перехоплення. Той самий
+ * код удруге перелік не пише (`LobbyFeed.publish`), а невдача не повторюється
+ * сама — лише коли знову зміниться кімната. Доти це був метод сесії, хоч кликала
+ * його лише ця політика.
+ */
+async function publishListing<M extends RoomMatch>(session: RoomSession<M>): Promise<void> {
+	const who =
+		session.match?.members.find((member) => member.uid === session.me)?.name ??
+		session.player.forEntry(session.lobby.takenNames);
+	try {
+		await session.lobby.publish({
+			code: session.code,
+			hostUid: session.me,
+			hostName: who,
+			hostCountry: session.player.country,
+			hostAvatar: roomAvatarOf(session),
+			rulesVersion: session.game.rulesVersion,
+			// Не одиниця: господар, що повернувся, чи новий після перехоплення
+			// оголошує кімнату, де вже сидять люди, а лічильник наздоганяє лише
+			// ЗМІНУ присутності (ефект лічильника в `attachRoomPolicies`).
+			players: Math.max(1, session.presentPlayers.length),
+			since: session.match?.createdAt ?? undefined,
+			...(session.match ? session.game.listingExtras?.(session.match) : {})
+		});
+	} catch (error) {
+		logService.warn('network', 'room not published', {
+			code: session.code,
+			reason: String(error)
+		});
+	}
 }
 
 /**

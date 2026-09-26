@@ -80,7 +80,7 @@ interface Table {
 	/** Хто на звʼязку: решта — ні. */
 	present(uids: readonly string[]): Promise<void>;
 	/** Знести кімнату від імені того, хто в ній господар. */
-	close(by?: 'host' | 'guest'): Promise<void>;
+	close(by?: 'host' | 'guest' | 'stranger'): Promise<void>;
 }
 
 interface World {
@@ -179,7 +179,8 @@ const emulator: World = {
 					else await remove(node);
 				}
 			},
-			close: (by = 'host') => as(by === 'host' ? host : guest, () => net.closeRoom(code))
+			close: (by = 'host') =>
+				as(by === 'host' ? host : by === 'guest' ? guest : stranger, () => net.closeRoom(code))
 		};
 	}
 };
@@ -419,6 +420,43 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		expect(await table.stranger.transport.takeLead(lead(table.stranger)), 'пізній').toBe(false);
 		expect(await table.guest.transport.takeLead(lead(table.guest)), 'зі складу').toBe(true);
 		await table.close('guest');
+	});
+
+	/**
+	 * ПІСЛЯ ПАРТІЇ ВЕДЕ ГРАВЕЦЬ КІМНАТИ (шостий аудит, S1): склад старту розійшовся після
+	 * фіналу — ведення бере той, хто долучився посеред партії; глядач — і далі ні.
+	 */
+	it('після вікторини ведення бере пізній гравець, коли склад старту пішов', async () => {
+		const table = await world.table({ strangerPlays: true, gameId: 'quiz' });
+		await started(table);
+		await table.host.transport.setStatus('over');
+		await table.present([table.stranger.uid]);
+		const lead: Move = {
+			seq: 1,
+			by: table.stranger.uid,
+			type: 'lead',
+			payload: { from: table.host.uid }
+		};
+
+		expect(await table.stranger.transport.takeLead(lead)).toBe(true);
+		await table.until((s) => s.info.hostUid === table.stranger.uid);
+		await table.close('stranger');
+	});
+
+	it('після партії ведення не бере глядач', async () => {
+		const table = await world.table({ spectator: true });
+		await started(table);
+		await table.host.transport.setStatus('over');
+		await table.present([table.stranger.uid]);
+		const lead: Move = {
+			seq: 1,
+			by: table.stranger.uid,
+			type: 'lead',
+			payload: { from: table.host.uid }
+		};
+
+		expect(await table.stranger.transport.takeLead(lead)).toBe(false);
+		await table.close();
 	});
 
 	/**
