@@ -21,6 +21,7 @@ export const ui = {
 	// nur das Ziel von „Spielen“ unterscheidet sich.
 	'menu.play': 'Spielen',
 	'menu.playOnline': 'Online spielen',
+	'online.searchFailed': 'Die Spielsuche ist fehlgeschlagen – versuche es noch einmal.',
 
 	// Gemeinsame Runde von Finde ein Paar: Lobby, Rolle, Zug.
 	'pairs.won': 'Gewonnen',

@@ -3,6 +3,7 @@ import { PAIRS_DRAW_POINTS, PAIRS_WIN_POINTS } from '$lib/config/scoring';
 import { isCompactScreen, roomLayoutFor } from '$lib/config/memory-game';
 import { PAIRS_RULES_VERSION } from '$lib/config/roomRules';
 import { PairsMatch, PEEK_MS } from './pairsMatch.svelte';
+import { PAIRS_PLAYERS, newPairsRoom } from './newRoom';
 import type { RoomGame } from './roomGame';
 
 /**
@@ -23,11 +24,8 @@ const CLOCK_MS = 1000;
  */
 const TURN_CLOCK_MS = 100;
 
-/**
- * Двоє — це сама гра, а не налаштування: дошка ділиться між двома чергами, і
- * автостарт — рівно на двох. Не з правил бази: там стеля 12 на всі ігри.
- */
-export const PAIRS_PLAYERS = 2;
+/** Скільки гравців у партії — з `newRoom.ts`, де його бачить і хаб без адаптера. */
+export { PAIRS_PLAYERS };
 
 /** Що адаптерові треба від підсвітки наведення (`HoverBeam`). */
 export interface PairsBeam {
@@ -56,12 +54,7 @@ export function pairsGame(
 		quickSeats: PAIRS_PLAYERS,
 		lateRole: 'spectator',
 		autoStartReady: (players) => players === PAIRS_PLAYERS,
-		newRoom: () => {
-			// Розкладка належить КІМНАТІ, а не екрану того, хто створив: сітка, різна
-			// на двох пристроях, дала б різні дошки з того самого зерна.
-			const { pairs, cols } = layout();
-			return { seed: Math.floor(random() * 2 ** 31), config: { pairs, cols } };
-		},
+		newRoom: () => newPairsRoom(random, layout),
 		createMatch: (me, transport) => new PairsMatch(me, transport),
 		compact: isCompactScreen,
 		/*

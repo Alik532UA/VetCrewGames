@@ -21,6 +21,7 @@ export const ui = {
 	// waar „Spelen” heen leidt verschilt.
 	'menu.play': 'Spelen',
 	'menu.playOnline': 'Online spelen',
+	'online.searchFailed': 'Het zoeken naar een spel is mislukt — probeer het opnieuw.',
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
 	'pairs.won': 'Gewonnen',

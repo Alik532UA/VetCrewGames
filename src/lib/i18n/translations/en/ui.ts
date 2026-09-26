@@ -21,6 +21,7 @@ export const ui = {
 	// where "Play" leads differs.
 	'menu.play': 'Play',
 	'menu.playOnline': 'Play online',
+	'online.searchFailed': 'The game search failed — please try again.',
 
 	// Shared game of Find a Pair: lobby, role, turn.
 	'pairs.won': 'Winner',

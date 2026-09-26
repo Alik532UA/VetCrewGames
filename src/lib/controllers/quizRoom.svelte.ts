@@ -5,6 +5,7 @@ import { ONLINE_GAMES, gamesToConfig, roomFitsGames } from '$lib/config/quizOnli
 import { nextGameSeed } from '$lib/utils/quizDeck';
 import { QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { QuizMatch } from './quizMatch.svelte';
+import { QUIZ_MIN_PLAYERS, newQuizRoom } from './newRoom';
 import type { RoomGame } from './roomGame';
 
 /**
@@ -36,8 +37,8 @@ const ROUND_CLOCK_MS = 100;
  */
 export const LATE_ANNOUNCE_MS = 3000;
 
-/** Двоє — мінімум, щоб змагатися. Більше вікторина витримує без змін. */
-export const QUIZ_MIN_PLAYERS = 2;
+/** Мінімум гравців — з `newRoom.ts`, де його бачить і хаб без адаптера. */
+export { QUIZ_MIN_PLAYERS };
 
 /** Що реакціям треба від сесії кімнати. */
 export interface QuizHost {
@@ -87,10 +88,7 @@ export class QuizRoomState {
 			lateRole: 'player',
 			autoStartReady: (players) => players >= QUIZ_MIN_PLAYERS,
 			// НАБІР ІГОР ЇДЕ В `config` — конверт уже дозволяє `Record<string, number>`.
-			newRoom: () => ({
-				seed: Math.floor(random() * 2 ** 31),
-				config: gamesToConfig(this.picked)
-			}),
+			newRoom: () => newQuizRoom(random, this.picked),
 			// Реванш — наступна партія ТІЄЇ САМОЇ колоди: питання кімнати не повторюються,
 			// доки не поставлено всі (`utils/quizDeck.ts`, прохання автора 2026-09-26).
 			rematchSeed: (match) => nextGameSeed(match.seed),
