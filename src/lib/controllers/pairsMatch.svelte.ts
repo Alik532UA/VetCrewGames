@@ -221,6 +221,16 @@ export class PairsMatch {
 	 * в реальному часі.
 	 */
 	#shownAt: number | null = null;
+	/**
+	 * Скільки ходів ЦЯ дошка вже показала до перепрогону: їхні пари свій час
+	 * відбули, і тримати їх удруге не можна (аудит 2026-09-26). Власний `peek`
+	 * приїжджає двічі — з оцінкою SDK і з серверним часом, — і другий приїзд
+	 * перепрогонює журнал. Доти перепрогін ставив `#shownAt` на «зараз» і тримав
+	 * уже закриту невдалу пару ще 1,2 с: картки розкривалися знову, черга
+	 * верталася до того, хто пару закрив, а його тап у цю мить ішов у журнал
+	 * дублем на зайнятий номер.
+	 */
+	#shown = 0;
 	#retry: (() => void) | null = null;
 	/** Підписи застосованих ходів: `[seq - 1]` — хід номер `seq`. Див. `#rewritten`. */
 	#appliedSigs: string[] = [];
@@ -485,18 +495,22 @@ export class PairsMatch {
 		});
 
 		const change = deal === this.#dealt ? this.#rewritten(snapshot) : null;
+		// Спільний початок журналу ця дошка вже показала — див. `#shown`.
+		const kept = change?.kept ?? 0;
 		if (deal !== this.#dealt) {
 			this.#deal(snapshot);
-		} else if (change === 'moves') {
+		} else if (change?.kind === 'moves') {
 			// Застосоване переписано (відлуння, яке база відкинула) — роздаємо заново.
 			// У журнал: так видно, що «дошка сіпнулась» — це відкат, а не збій.
 			const code = this.#transport.code;
 			logService.info('network', 'pairs board re-dealt', { code, applied: this.applied });
 			this.#deal(snapshot);
-		} else if (change === 'time') {
+			this.#shown = kept;
+		} else if (change?.kind === 'time') {
 			// Сервер уточнив час — законність черги й стояння рахується від нього, тож
 			// прокручуємо заново. Мовчки: це звичайна дорога кожного власного ходу.
 			this.#deal(snapshot);
+			this.#shown = kept;
 		}
 
 		this.#last = snapshot;
@@ -510,7 +524,8 @@ export class PairsMatch {
 			// Пара мусить побути на екрані — див. `#shownAt`. Разом із перегортанням
 			// чекають і всі наступні ходи: інакше картка наступного гравця
 			// зʼявилася б раніше, ніж я побачив попередню пару.
-			if (move.type === 'peek' && this.#holdPeek(move.seq === head)) break;
+			if (move.type === 'peek' && this.#holdPeek(move.seq === head && move.seq > this.#shown))
+				break;
 			const changed = this.#play(move);
 			if (changed) this.#skipLeft();
 			this.applied = move.seq;
@@ -549,8 +564,9 @@ export class PairsMatch {
 	 * зник або сервер поставив інший час — означає «роздати й прокрутити заново»: тим
 	 * самим шляхом, яким входить пізній учасник, тобто вже перевіреним. Але це дві
 	 * РІЗНІ події: `'moves'` — відкат, `'time'` — сервер уточнив оцінку SDK.
+	 * `kept` — скільки ходів на початку журналу лишилися тими самими ходами.
 	 */
-	#rewritten(snapshot: RoomSnapshot): 'moves' | 'time' | null {
+	#rewritten(snapshot: RoomSnapshot): { kind: 'moves' | 'time'; kept: number } | null {
 		if (this.applied === 0) return null;
 		// Масив за номером, а не `Map`: це тимчасова таблиця на один знімок, а не стан.
 		const bySeq: Array<Move | undefined> = [];
@@ -558,10 +574,12 @@ export class PairsMatch {
 		let retimed = false;
 		for (let seq = 1; seq <= this.applied; seq += 1) {
 			const move = bySeq[seq];
-			if (move === undefined || signature(move) !== this.#appliedSigs[seq - 1]) return 'moves';
+			if (move === undefined || signature(move) !== this.#appliedSigs[seq - 1]) {
+				return { kind: 'moves', kept: seq - 1 };
+			}
 			retimed ||= move.at !== this.#appliedAt[seq - 1];
 		}
-		return retimed ? 'time' : null;
+		return retimed ? { kind: 'time', kept: this.applied } : null;
 	}
 
 	/**
@@ -621,6 +639,7 @@ export class PairsMatch {
 		this.#appliedAt = [];
 		// Нова роздача — нової пари на екрані ще не було.
 		this.#shownAt = null;
+		this.#shown = 0;
 		this.#retry?.();
 		this.#retry = null;
 		/*

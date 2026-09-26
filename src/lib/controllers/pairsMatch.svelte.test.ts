@@ -1143,6 +1143,43 @@ describe('відлуння, яке база відкинула', () => {
 		info.mockRestore();
 	});
 
+	/**
+	 * ЗАКРИТА ПАРА НЕ РОЗКРИВАЄТЬСЯ ЗНОВУ (аудит 2026-09-26). Власний `peek` приїжджає
+	 * двічі, і другий приїзд — із серверним часом — перепрогонює журнал. Доти
+	 * перепрогін тримав уже закриту невдалу пару ще `PEEK_MS`: картки розкривалися,
+	 * черга верталася до того, хто пару закрив, а його тап ішов дублем у журнал.
+	 *
+	 * Зворотний експеримент: тримати `peek` і тоді, коли він уже був застосований,
+	 * — червоніє.
+	 */
+	it('сервер уточнив час мого `peek` — закрита пара лишається закритою, черга в суперника', () => {
+		const mine = scripted();
+		const paced = fakeClock();
+		const host = new PairsMatch(HOST, mine.transport, paced.clock);
+		host.listen();
+		mine.push(snapshotWith([]));
+		const [a, b] = findMismatch(host);
+		const flips: Move[] = [
+			{ seq: 1, by: HOST, type: 'flip', at: START + 1_000, payload: { index: a } },
+			{ seq: 2, by: HOST, type: 'flip', at: START + 1_010, payload: { index: b } }
+		];
+		const peek = (at: number): Move => ({ seq: 3, by: HOST, type: 'peek', at });
+
+		mine.push(snapshotWith(flips));
+		expect(host.game.awaitingPeek, 'перевірка жива: невдала пара відкрита').toBe(true);
+		paced.tick(PEEK_MS);
+		// Відлуння мого `peek` — з часом, який SDK оцінив сам.
+		mine.push(snapshotWith([...flips, peek(START + 2_300)]));
+		expect(host.actor?.id, 'перевірка жива: пару закрито, черга в гостя').toBe(GUEST);
+
+		// Той самий `peek` — уже із серверним часом.
+		mine.push(snapshotWith([...flips, peek(START + 2_340)]));
+
+		expect(host.game.awaitingPeek, 'закрита пара розкрилася знову').toBe(false);
+		expect(host.actor?.id, 'черга повернулася до того, хто пару закрив').toBe(GUEST);
+		expect(host.applied).toBe(3);
+	});
+
 	it('справжній відкат — у журналі рівно раз', () => {
 		const mine = scripted();
 		const host = new PairsMatch(HOST, mine.transport);
