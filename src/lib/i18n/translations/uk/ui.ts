@@ -83,6 +83,7 @@ export const ui = {
 	'pairs.resumeHint': 'Партія вже йде, і ви в ній.',
 	'pairs.resumeOne': 'Вернутися',
 	'pairs.otherName': 'Інше імʼя',
+	'pairs.avatarChange': 'Змінити аватарку',
 	'pairs.nickname': 'Нікнейм',
 	'pairs.country': 'Прапор',
 	/*

@@ -1,13 +1,16 @@
 import { randomCrewName } from '$lib/config/crewNames';
-import { AVATAR_KEY, DEFAULT_AVATAR, isAvatar } from '$lib/config/avatars';
+import { DEFAULT_AVATAR, isAvatar } from '$lib/config/avatars';
 import { NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
 import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 import { storage } from '$lib/services/storage';
 import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
 import { profileName, pushName } from '$lib/services/nameSync';
+import { playerAvatar } from '$lib/services/playerAvatar.svelte';
+import { pushAvatar } from '$lib/services/avatarSync';
 
 /**
- * ХТО Я В КІМНАТІ: підпис і прапор.
+ * ХТО Я В КІМНАТІ: підпис, прапор і аватар (останній — лише гетер над спільним
+ * `playerAvatar`, див. `avatar`).
  *
  * ## Чому імʼя й прапор разом
  *
@@ -79,30 +82,40 @@ export class PlayerIdentity {
 	 */
 	country = $state('');
 
-	/**
-	 * Аватар у кімнаті — рядок `значок:колір`.
-	 *
-	 * ВИБИРАЄТЬСЯ НЕ ТУТ, і це межа, а не недогляд: редактор аватара живе у формі
-	 * профілю на `/account/`, бо його підписи («Кіт», «Синій» — двадцять чотири
-	 * рядки) лежать у ЛИНИВОМУ чанку `i18n/account`. Перенести їх у головний
-	 * словник не можна: він статично імпортується кореневим layout і стоїть рівно
-	 * на межі бюджету (заміряно `npm run check:build`: 110 КБ gzip зі стелі 110).
-	 *
-	 * Тому тут аватар лише ЧИТАЄТЬСЯ зі сховища — так само, як прапор, і в тому ж
-	 * місці. Хто аватара не вибирав, іде в кімнату з типовим.
-	 *
-	 * `null` від `storage.get` і невідоме значення дають те саме: типовий аватар.
-	 * Різниця «не питали / вибрали ніякий» тут, на відміну від прапора, не
-	 * потрібна — «без аватара» не буває, порожня плитка читалася б як дефект.
-	 */
-	avatar = $state(DEFAULT_AVATAR);
-
 	readonly #random: () => number;
 
 	constructor(random: () => number) {
 		this.#random = random;
-		const saved = storage.get(AVATAR_KEY);
-		if (isAvatar(saved)) this.avatar = saved;
+	}
+
+	/**
+	 * Аватар — рядок `значок:колір`, і ДЖЕРЕЛО В НЬОГО ОДНЕ: `playerAvatar`.
+	 *
+	 * Доти контролер читав сховище сам, у конструкторі, — тобто третьою копією
+	 * поруч із шапкою й профілем, і вибір, зроблений після відкриття сторінки, сюди
+	 * не доходив. Тепер вибір є й тут, у формі входу (прохання автора 2026-09-26), і
+	 * дві копії розійшлися б на першому ж натиску: плитка в полі одна, а в кімнату
+	 * їхала б інша. Тому тут лише ГЕТЕР над спільним станом.
+	 *
+	 * Порожньо (нічого не вибирали) і типовий дають ту саму плитку: «без аватара» не
+	 * буває, порожнє місце читалося б як дефект. Підписи вибору («Кіт», «Синій»)
+	 * лежать у лінивому чанку `i18n/account`, і форма входу довантажує його, лише
+	 * коли вибір відкривають (`AvatarChooser`).
+	 */
+	get avatar(): string {
+		return playerAvatar.value || DEFAULT_AVATAR;
+	}
+
+	/**
+	 * Вибрали аватар у формі входу — і для цього пристрою, і для профілю.
+	 *
+	 * Спільний стан пишеться одразу (шапка й плитка в полі міняються разом), профіль
+	 * — у фоні й лише коли він є (`pushAvatar`): вибір не мусить чекати на мережу.
+	 */
+	chooseAvatar(next: string): void {
+		if (!isAvatar(next)) return;
+		playerAvatar.set(next);
+		void pushAvatar(next);
 	}
 
 	/** Перекладач над уже завантаженим словником. */
@@ -244,6 +257,6 @@ export class PlayerIdentity {
 	 * поле в `members/$uid` пишеться на КОЖЕН вхід у кімнату.
 	 */
 	forRoom(): string | undefined {
-		return this.avatar === DEFAULT_AVATAR ? undefined : this.avatar;
+		return playerAvatar.forRoom();
 	}
 }

@@ -73,6 +73,7 @@ export const ui = {
 	'pairs.resumeHint': 'The game is still running, and you are in it.',
 	'pairs.resumeOne': 'Return',
 	'pairs.otherName': 'Another name',
+	'pairs.avatarChange': 'Change avatar',
 	'pairs.nickname': 'Nickname',
 	'pairs.country': 'Flag',
 	/* Name for the `xr` code — ISO has no such entity, see `OWN_COUNTRY_NAMES`. */

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Dices, Zap } from 'lucide-svelte';
+	import { Zap } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import InputTools from '$lib/components/ui/InputTools.svelte';
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
-	import CountryPicker from '$lib/components/ui/CountryPicker.svelte';
+	import IdentityRow from './IdentityRow.svelte';
 
 	/**
 	 * Вхід у спільну партію.
@@ -39,6 +39,12 @@
 		isPrivate: boolean;
 		/** Прапор гравця. Порожній рядок — без прапора. Двобічне. */
 		country: string;
+		/**
+		 * Аватарка гравця; порожньо — не вибирав. Не двобічна: вибір зберігає
+		 * власник (`PlayerIdentity.chooseAvatar` — спільний стан і профіль).
+		 */
+		avatar: string;
+		onAvatar: (avatar: string) => void;
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
 		/**
@@ -71,6 +77,8 @@
 		joinCode = $bindable(),
 		isPrivate = $bindable(),
 		country = $bindable(),
+		avatar,
+		onAvatar,
 		busy,
 		onRandomName,
 		onCreate,
@@ -94,7 +102,6 @@
 	const CODE_MIN = 2;
 	const CODE_MAX = 5;
 
-	let nameInput = $state<HTMLInputElement | null>(null);
 	let codeInput = $state<HTMLInputElement | null>(null);
 
 	/**
@@ -153,82 +160,7 @@
 
 		<!-- ── 2. Хто я ─────────────────────────────────────────────────────────── -->
 		<section class="gate__panel gate__panel--name">
-			<label class="gate__label" for="pairs-name">
-				<span>{@html formatFont(t('pairs.yourName'))}</span>
-			</label>
-			<!--
-			КНОПКИ — ЧАСТИНА ПОЛЯ, а не сусіди праворуч від нього.
-
-			Рамку й тло малює ОБГОРТКА, а не сам `input`, тож кнопки стоять усередині
-			тієї самої рамки — саме той вигляд, що в `teatralo4ka`, на який показав
-			автор. Там це зроблено накладанням (`position: absolute` плюс
-			зарезервований `padding-right`), бо рамку там малює саме поле; тут обгортку
-			пишемо ми, і ряд flex дає те саме без жодного магічного відступу — кнопки
-			з'являються й зникають, а поле просто перетікає.
-
-			`:focus-within` на обгортці ОБОВʼЯЗКОВИЙ: рамка більше не на полі, тож без
-			цього рядка фокус клавіатурою став би невидимим.
-		-->
-			<div class="gate__row">
-				<!--
-				ПРАПОР — ПЕРЕД НІКОМ, а не окремим рядком.
-				
-				Окремий рядок із підписом «Прапор» читався як ще одне налаштування
-				кімнати, хоч це частина того самого підпису гравця: прапор і імʼя — одна
-				річ, яку бачать інші. Тепер вони й стоять як одна.
-			-->
-				<CountryPicker bind:value={country} scope="pairs-country" compact />
-				<div class="gate__field has-input-tools">
-					<input
-						id="pairs-name"
-						type="text"
-						bind:this={nameInput}
-						bind:value={name}
-						maxlength="48"
-						placeholder={t('pairs.nickname')}
-						data-testid="pairs-name-input"
-					/>
-					<InputTools
-						bind:value={name}
-						input={nameInput}
-						tools={['paste', 'clear']}
-						scope="pairs-name"
-						fieldLabel={t('pairs.yourName')}
-					/>
-				</div>
-				<!--
-				КУБИК — ПОЗА ПОЛЕМ, праворуч від нього, і це вибір автора.
-
-				Я був поставив його всередину заодно з «вставити» й «очистити», бо одна
-				кнопка зовні поруч із двома всередині здалася недоробленою. Автор
-				повернув назовні, і в цьому є своя логіка: «вставити» й «очистити» діють
-				на ТЕКСТ, який уже в полі, а кубик пише туди НОВЕ значення. Різна природа
-				— різне місце.
-
-				44px, а не 32: поза полем місце є, а власний стандарт сенсорної цілі
-				(ACCESSIBILITY-v8 § 8) виняток вимагає лише там, де його нема куди
-				подіти.
-
-				Імʼя й далі підставляється саме, тож вигадувати його не мусять; кубик
-				існує для того, кому підставлене не сподобалося, і віддає ГАРАНТОВАНО
-				інше — інакше один кидок із вісімдесяти шести виглядав би як зламана
-				кнопка.
-
-				ЗАЙНЯТІ ІМЕНА ТЕЖ ВИКЛЮЧАЮТЬСЯ, але вирішує це сторінка: перелік тих,
-				хто вже онлайн, приходить із мережі. Кидок, що віддав уже видане імʼя,
-				технічно правильний і практично шкідливий — два однакових рядки в
-				списку роблять неможливим вибір «до кого зайти».
-			-->
-				<button
-					type="button"
-					class="gate__dice"
-					onclick={onRandomName}
-					aria-label={t('pairs.otherName')}
-					data-testid="pairs-name-random-btn"
-				>
-					<Dices size={18} aria-hidden="true" />
-				</button>
-			</div>
+			<IdentityRow bind:name bind:country {avatar} {onAvatar} {onRandomName} />
 
 			<!--
 			ПРАПОР — У ТОМУ САМОМУ БЛОЦІ, що імʼя.
@@ -295,7 +227,7 @@
 			стало б «7») і на частині браузерів приймає `e` та знак мінус. Код — це
 			рядок цифр, а не число, і саме тому `type` лишається `text`.
 		-->
-			<div class="gate__field has-input-tools">
+			<div class="field-shell has-input-tools">
 				<input
 					id="pairs-code"
 					type="text"
@@ -489,79 +421,6 @@
 	.gate__label {
 		font-size: var(--font-size-sm);
 		color: var(--color-text-on-panel);
-	}
-
-	/* Поле й кубик поруч: розтягується поле, кубик лишається свого розміру. */
-	.gate__row {
-		display: flex;
-		align-items: center;
-		gap: var(--space-xs);
-	}
-
-	.gate__row .gate__field {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.gate__dice {
-		width: 44px;
-		height: 44px;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 92%);
-		color: var(--color-text);
-		cursor: pointer;
-		padding: 0;
-	}
-
-	@media (hover: hover) {
-		.gate__dice:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 82%);
-		}
-	}
-
-	/*
-	 * ОБГОРТКА ПОЛЯ несе рамку, тло й фокус; сам `input` — прозорий і без рамки.
-	 *
-	 * Саме це й робить кнопки частиною поля: вони стоять у тому самому ряду, у
-	 * межах тієї самої рамки.
-	 */
-	.gate__field {
-		display: flex;
-		align-items: center;
-		gap: 2px;
-		/* 4px праворуч — щоб кнопки не торкалися рамки зсередини. */
-		padding-right: 4px;
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-	}
-
-	/* Фокус видно на ОБГОРТЦІ: рамки на полі більше немає. */
-	.gate__field:focus-within {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 1px;
-	}
-
-	.gate__field input {
-		flex: 1;
-		/* `min-width: 0` — щоб поле стискалося замість розпирати ряд кнопками. */
-		min-width: 0;
-		min-height: 44px;
-		padding: 0 var(--space-sm);
-		border: none;
-		background: none;
-		color: var(--color-text);
-		font: inherit;
-	}
-
-	/* Рамку тепер малює обгортка, і друга рамка від фокусу поля була б подвійною. */
-	.gate__field input:focus {
-		outline: none;
 	}
 
 	/*

@@ -74,6 +74,7 @@ export const ui = {
 	'pairs.resumeHint': 'Die Partie läuft noch, und Sie sind dabei.',
 	'pairs.resumeOne': 'Zurück',
 	'pairs.otherName': 'Anderer Name',
+	'pairs.avatarChange': 'Avatar ändern',
 	'pairs.nickname': 'Spitzname',
 	'pairs.country': 'Flagge',
 	/* Name für den Code `xr` — ISO kennt diese Einheit nicht, siehe `OWN_COUNTRY_NAMES`. */

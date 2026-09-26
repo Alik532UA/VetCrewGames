@@ -63,9 +63,14 @@
 		onchange: (avatar: string) => void;
 		/** Поки триває запис, вибір не приймає натисків: другий дав би дві дії. */
 		disabled?: boolean;
+		/**
+		 * Велика плитка згори. У формі входу її немає: там вибір розгортається під
+		 * плиткою-кнопкою, яка й так показує поточну аватарку (`AvatarChooser`).
+		 */
+		preview?: boolean;
 	}
 
-	let { value, text, scope, onchange, disabled = false }: Props = $props();
+	let { value, text, scope, onchange, disabled = false, preview = true }: Props = $props();
 
 	/*
 	 * Розібраний аватар, а не два окремих стани.
@@ -79,9 +84,11 @@
 </script>
 
 <div class="pick">
-	<div class="pick__preview">
-		<Avatar avatar={formatAvatar(look.icon, look.color)} size={72} showDefault />
-	</div>
+	{#if preview}
+		<div class="pick__preview">
+			<Avatar avatar={formatAvatar(look.icon, look.color)} size={72} showDefault />
+		</div>
+	{/if}
 
 	<fieldset class="pick__group">
 		<legend class="pick__legend">{@html formatFont(text('account.avatarColors'))}</legend>

@@ -216,6 +216,20 @@ export const onlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'pairs-deck-container'
+		},
+		{
+			/*
+			 * АВАТАРКА У ФОРМІ ВХОДУ (прохання автора 2026-09-26). Відкриття, підписи й пару
+			 * тримає юніт-тест `AvatarChooser`; руками — що вибір доходить до шапки й кімнати.
+			 */
+			id: 'online_20',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'На сторінці переліку кімнат натисніть плитку між прапором та іменем і виберіть інший колір і значок. Плитка в шапці мусить змінитися одразу, а в лобі нової кімнати біля вашого імені мусить стояти саме вона. Тут можна вибрати будь-яку пару: кімнати ще немає, тож і зайнятих немає.',
+				en: 'On the room list page press the tile between the flag and the name and pick another colour and icon. The tile in the header must change at once, and in the lobby of a new room exactly that tile must stand next to your name. Any pair can be picked here: there is no room yet, so nothing is taken.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-avatar-toggle-btn'
 		}
 	]
 };

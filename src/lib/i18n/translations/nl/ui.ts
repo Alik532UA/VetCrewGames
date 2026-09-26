@@ -73,6 +73,7 @@ export const ui = {
 	'pairs.resumeHint': 'Het spel loopt nog en jij zit erin.',
 	'pairs.resumeOne': 'Terug',
 	'pairs.otherName': 'Andere naam',
+	'pairs.avatarChange': 'Avatar wijzigen',
 	'pairs.nickname': 'Bijnaam',
 	'pairs.country': 'Vlag',
 	/* Naam voor code `xr` — ISO kent deze entiteit niet, zie `OWN_COUNTRY_NAMES`. */

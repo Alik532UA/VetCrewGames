@@ -133,6 +133,8 @@
 			bind:isPrivate={session.isPrivate}
 			busy={session.busy}
 			bind:country={player.country}
+			avatar={player.avatar}
+			onAvatar={(avatar) => player.chooseAvatar(avatar)}
 			onRandomName={() => player.reroll(takenNames)}
 			onCreate={() => session.enter('create')}
 			onJoin={() => session.enter('join')}

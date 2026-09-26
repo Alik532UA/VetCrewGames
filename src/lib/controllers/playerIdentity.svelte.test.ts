@@ -28,7 +28,8 @@ const storageMock = {
 	set: vi.fn<(key: string, value: string) => boolean>((key, value) => {
 		store.set(key, value);
 		return true;
-	})
+	}),
+	remove: vi.fn<(key: string) => void>((key) => void store.delete(key))
 };
 
 const detectCountry = vi.fn<() => Promise<string | null>>(async () => null);
@@ -49,7 +50,12 @@ const profileName = vi.fn<() => Promise<string>>(async () => '');
 const pushName = vi.fn<(name: string) => Promise<void>>(async () => {});
 vi.mock('$lib/services/nameSync', () => ({ profileName, pushName }));
 
+/** Аватарка в профіль — теж мережа, і теж підставна: тут перевіряється лише, що її кличуть. */
+const pushAvatar = vi.fn<(avatar: string) => Promise<void>>(async () => {});
+vi.mock('$lib/services/avatarSync', () => ({ pushAvatar }));
+
 const { PlayerIdentity } = await import('./playerIdentity.svelte');
+const { playerAvatar } = await import('$lib/services/playerAvatar.svelte');
 
 /** Кидок за списком: перевірка стверджує «перше», «друге», а не «щось». */
 const rolls = (...values: number[]) => {
@@ -68,25 +74,42 @@ describe('PlayerIdentity', () => {
 		detectCountry.mockReset().mockResolvedValue(null);
 		profileName.mockReset().mockResolvedValue('');
 		pushName.mockReset().mockResolvedValue(undefined);
+		pushAvatar.mockReset().mockResolvedValue(undefined);
+		playerAvatar.set('');
 	});
 
-	describe('аватар читається у конструкторі', () => {
-		it('без збереженого — типовий', () => {
+	describe('аватар — зі спільного `playerAvatar`', () => {
+		it('нічого не вибрано — типова плитка, а не порожнє місце', () => {
 			expect(new PlayerIdentity(first).avatar).toBe(DEFAULT_AVATAR);
-		});
-
-		it('збережений підхоплюється', () => {
-			store.set(AVATAR_KEY, 'cat:blue');
-			expect(new PlayerIdentity(first).avatar).toBe('cat:blue');
 		});
 
 		/**
-		 * Невідоме значення дає типовий, а не порожню плитку: «без аватара» не
-		 * буває — порожнє місце в списку читалося б як дефект показу.
+		 * Доти контролер читав сховище сам, у конструкторі, і вибір, зроблений після
+		 * відкриття сторінки (у профілі, у шапці), сюди не доходив. Зворотний
+		 * експеримент: повернути поле, прочитане в конструкторі, — червоніє цей тест.
 		 */
-		it('зіпсоване значення дає типовий, а не порожнє', () => {
-			store.set(AVATAR_KEY, 'НЕ АВАТАР');
-			expect(new PlayerIdentity(first).avatar).toBe(DEFAULT_AVATAR);
+		it('вибір, зроблений деінде, видно одразу — без нового контролера', () => {
+			const me = new PlayerIdentity(first);
+			playerAvatar.set('cat:blue');
+			expect(me.avatar).toBe('cat:blue');
+			expect(me.forRoom()).toBe('cat:blue');
+		});
+
+		it('вибір у формі входу пише і спільний стан, і профіль', () => {
+			const me = new PlayerIdentity(first);
+			me.chooseAvatar('fish:pink');
+
+			expect(playerAvatar.value).toBe('fish:pink');
+			expect(store.get(AVATAR_KEY), 'наступний захід').toBe('fish:pink');
+			expect(pushAvatar).toHaveBeenCalledWith('fish:pink');
+		});
+
+		it('невідоме значення не приймається ні там, ні там', () => {
+			const me = new PlayerIdentity(first);
+			me.chooseAvatar('dragon:gold');
+
+			expect(me.avatar).toBe(DEFAULT_AVATAR);
+			expect(pushAvatar).not.toHaveBeenCalled();
 		});
 	});
 
@@ -359,8 +382,13 @@ describe('PlayerIdentity', () => {
 		});
 
 		it('вибраний аватар їде рядком', () => {
-			store.set(AVATAR_KEY, 'turtle:violet');
+			playerAvatar.set('turtle:violet');
 			expect(new PlayerIdentity(first).forRoom()).toBe('turtle:violet');
+		});
+
+		it('вибраний ТИПОВИЙ теж не їде', () => {
+			playerAvatar.set(DEFAULT_AVATAR);
+			expect(new PlayerIdentity(first).forRoom()).toBeUndefined();
 		});
 	});
 });

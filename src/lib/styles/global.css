@@ -993,6 +993,49 @@ img {
  * `ui/InputTools.svelte`, а scoped-стилі Svelte туди не дістають. Полю-обгортці
  * треба дати клас `has-input-tools`.
  */
+/*
+ * ОБГОРТКА ПОЛЯ З КНОПКАМИ — несе рамку, тло й фокус; сам `input` прозорий і без
+ * рамки. Саме це й робить кнопки «вставити» й «очистити» частиною поля: вони
+ * стоять у тому самому ряду, у межах тієї самої рамки.
+ *
+ * Глобально, бо обгортку ділять двоє: поле імені (`pairs/IdentityRow`) і поле коду
+ * кімнати (`pairs/OnlineGate`). Доти вона жила стилем форми входу, а коли імʼя
+ * переїхало в окремий компонент, скопійована вона розійшлася б на першій правці.
+ */
+.field-shell {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	/* 4px праворуч — щоб кнопки не торкалися рамки зсередини. */
+	padding-right: 4px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-bg-card);
+}
+
+/* Фокус видно на ОБГОРТЦІ: рамки на полі більше немає. */
+.field-shell:focus-within {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 1px;
+}
+
+.field-shell input {
+	flex: 1;
+	/* `min-width: 0` — щоб поле стискалося замість розпирати ряд кнопками. */
+	min-width: 0;
+	min-height: 44px;
+	padding: 0 var(--space-sm);
+	border: none;
+	background: none;
+	color: var(--color-text);
+	font: inherit;
+}
+
+/* Рамку малює обгортка, і друга рамка від фокусу поля була б подвійною. */
+.field-shell input:focus {
+	outline: none;
+}
+
 .tools__btn {
 	opacity: 0.3;
 	/*
