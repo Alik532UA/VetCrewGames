@@ -36,13 +36,16 @@ export interface PeekClock {
 }
 
 /**
- * Усе, що робить хід ходом: хто, що, коли й чим. Номер — це позиція в журналі.
+ * Що робить хід ходом: хто, що й чим. Номер — це позиція в журналі.
  *
- * Час входить сюди навмисно: від `at` рахується межа очікування, і хід із
- * наближеним часом відлуння — не той самий хід, що з серверним.
+ * ЧАСУ ТУТ НЕМАЄ, і це не спрощення. Власний хід приїжджає двічі: спершу з часом,
+ * який SDK оцінив сам, тоді із серверним. Коли час входив у підпис, КОЖЕН
+ * власний хід виглядав як відкат і писав у журнал «board re-dealt» — справжній
+ * відкат тонув у шумі й витісняв з останніх ста рядків «звʼязок зник» і «зміну
+ * господаря» (аудит 2026-09-25). Час звіряється окремо (`#rewritten`).
  */
 const signature = (move: Move): string =>
-	`${move.by}|${move.type}|${move.at ?? ''}|${JSON.stringify(move.payload ?? null)}`;
+	`${move.by}|${move.type}|${JSON.stringify(move.payload ?? null)}`;
 
 const REAL_CLOCK: PeekClock = {
 	now: () => Date.now(),
@@ -217,6 +220,8 @@ export class PairsMatch {
 	#retry: (() => void) | null = null;
 	/** Підписи застосованих ходів: `[seq - 1]` — хід номер `seq`. Див. `#rewritten`. */
 	#appliedSigs: string[] = [];
+	/** Серверний час застосованих ходів — тим самим індексом. */
+	#appliedAt: Array<number | undefined> = [];
 	#last: RoomSnapshot | null = null;
 	readonly #clock: PeekClock;
 
@@ -444,7 +449,11 @@ export class PairsMatch {
 		// журнал — правда, а не наш намір. Але не мовчки: «натиснув — і нічого» в
 		// звіті мусить мати відповідь (аудит 2026-09-24).
 		if (!(await this.#transport.append(move))) {
-			logService.info('network', 'pairs move refused', { seq: move.seq, type });
+			logService.info('network', 'pairs move refused', {
+				code: this.#transport.code,
+				seq: move.seq,
+				type
+			});
 		}
 	}
 
@@ -475,12 +484,18 @@ export class PairsMatch {
 			players: this.players.map((player) => player.uid)
 		});
 
+		const change = deal === this.#dealt ? this.#rewritten(snapshot) : null;
 		if (deal !== this.#dealt) {
 			this.#deal(snapshot);
-		} else if (this.#rewritten(snapshot)) {
+		} else if (change === 'moves') {
 			// Застосоване переписано (відлуння, яке база відкинула) — роздаємо заново.
 			// У журнал: так видно, що «дошка сіпнулась» — це відкат, а не збій.
-			logService.info('network', 'pairs board re-dealt', { applied: this.applied });
+			const code = this.#transport.code;
+			logService.info('network', 'pairs board re-dealt', { code, applied: this.applied });
+			this.#deal(snapshot);
+		} else if (change === 'time') {
+			// Сервер уточнив час — законність черги й стояння рахується від нього, тож
+			// прокручуємо заново. Мовчки: це звичайна дорога кожного власного ходу.
 			this.#deal(snapshot);
 		}
 
@@ -500,6 +515,7 @@ export class PairsMatch {
 			if (changed) this.#skipLeft();
 			this.applied = move.seq;
 			this.#appliedSigs[move.seq - 1] = signature(move);
+			this.#appliedAt[move.seq - 1] = move.at;
 			/*
 			 * Відлік черги зсуває лише хід, який СПРАВДІ щось змінив.
 			 *
@@ -531,18 +547,21 @@ export class PairsMatch {
 	 *
 	 * Тому застосоване звіряється ПІДПИСОМ. Будь-яка розбіжність — хід змінився,
 	 * зник або сервер поставив інший час — означає «роздати й прокрутити заново»: тим
-	 * самим шляхом, яким входить пізній учасник, тобто вже перевіреним.
+	 * самим шляхом, яким входить пізній учасник, тобто вже перевіреним. Але це дві
+	 * РІЗНІ події: `'moves'` — відкат, `'time'` — сервер уточнив оцінку SDK.
 	 */
-	#rewritten(snapshot: RoomSnapshot): boolean {
-		if (this.applied === 0) return false;
+	#rewritten(snapshot: RoomSnapshot): 'moves' | 'time' | null {
+		if (this.applied === 0) return null;
 		// Масив за номером, а не `Map`: це тимчасова таблиця на один знімок, а не стан.
 		const bySeq: Array<Move | undefined> = [];
 		for (const move of snapshot.moves) if (move.seq <= this.applied) bySeq[move.seq] = move;
+		let retimed = false;
 		for (let seq = 1; seq <= this.applied; seq += 1) {
 			const move = bySeq[seq];
-			if (move === undefined || signature(move) !== this.#appliedSigs[seq - 1]) return true;
+			if (move === undefined || signature(move) !== this.#appliedSigs[seq - 1]) return 'moves';
+			retimed ||= move.at !== this.#appliedAt[seq - 1];
 		}
-		return false;
+		return retimed ? 'time' : null;
 	}
 
 	/**
@@ -599,6 +618,7 @@ export class PairsMatch {
 		});
 		this.applied = 0;
 		this.#appliedSigs = [];
+		this.#appliedAt = [];
 		// Нова роздача — нової пари на екрані ще не було.
 		this.#shownAt = null;
 		this.#retry?.();

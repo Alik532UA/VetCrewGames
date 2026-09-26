@@ -380,6 +380,7 @@ export async function roomTransport(code: string): Promise<RoomTransport> {
 	const offsetNode = ref(db, '.info/serverTimeOffset');
 
 	return {
+		code,
 		now: () => Date.now() + offset,
 
 		watch(onSnapshot, onGone) {

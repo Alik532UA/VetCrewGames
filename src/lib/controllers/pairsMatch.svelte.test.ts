@@ -12,6 +12,7 @@ vi.mock('$lib/services/settings.svelte', () => ({ settings: { addScore } }));
 
 const { PairsMatch, PEEK_MS } = await import('./pairsMatch.svelte');
 const { TURN_LIMIT_MS } = await import('./turnLimit');
+const { logService } = await import('$lib/services/logService.svelte');
 
 /**
  * Спільна партія «Знайди пару» — на двох учасниках в одному процесі.
@@ -1101,6 +1102,58 @@ describe('відлуння, яке база відкинула', () => {
 		expect(host.actor?.id, 'черга мусить бути в гостя — він її забрав').toBe(GUEST);
 		expect(board(host), 'відлуння мусить зникнути з дошки').not.toBe(echoed);
 		expect(board(host), 'дошка — як у того, хто відлуння не бачив').toBe(board(truth));
+	});
+
+	/** Скільки разів у журнал пішов рядок про відкат. */
+	const reDealt = (spy: { mock: { calls: unknown[][] } }) =>
+		spy.mock.calls.filter((call) => call[1] === 'pairs board re-dealt').length;
+
+	/**
+	 * ВЛАСНИЙ ХІД ПРИЇЖДЖАЄ ДВІЧІ: спершу з часом, який SDK оцінив сам, тоді із
+	 * серверним (аудит 2026-09-25). Доти час входив у підпис ходу, і кожен власний
+	 * хід писав у журнал «board re-dealt» — справжній відкат тонув у шумі.
+	 *
+	 * Зворотний експеримент: повернути `at` у підпис — червоніє.
+	 */
+	it('сервер уточнив час власного ходу — не відкат: у журнал не йде, черга від серверного', () => {
+		const mine = scripted();
+		const host = new PairsMatch(HOST, mine.transport);
+		host.listen();
+		mine.push(snapshotWith([]));
+		const [first] = findPair(host);
+		const flip = (at: number): Move => ({
+			seq: 1,
+			by: HOST,
+			type: 'flip',
+			at,
+			payload: { index: first }
+		});
+		const info = vi.spyOn(logService, 'info');
+
+		mine.push(snapshotWith([flip(START + 1_000)]));
+		mine.push(snapshotWith([flip(START + 1_040)]));
+
+		expect(reDealt(info)).toBe(0);
+		expect(host.applied).toBe(1);
+		expect(host.turnSince, 'черга — від серверного часу').toBe(START + 1_040);
+		info.mockRestore();
+	});
+
+	it('справжній відкат — у журналі рівно раз', () => {
+		const mine = scripted();
+		const host = new PairsMatch(HOST, mine.transport);
+		host.listen();
+		mine.push(snapshotWith([]));
+		const [first] = findPair(host);
+		const info = vi.spyOn(logService, 'info');
+
+		mine.push(
+			snapshotWith([{ seq: 1, by: HOST, type: 'flip', at: START + 1, payload: { index: first } }])
+		);
+		mine.push(snapshotWith([{ seq: 1, by: GUEST, type: 'yield', at: START + 2 }]));
+
+		expect(reDealt(info)).toBe(1);
+		info.mockRestore();
 	});
 
 	it('власний хід, що пройшов, дошки не перероздає і не розводить', async () => {

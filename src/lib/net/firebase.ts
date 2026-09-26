@@ -58,11 +58,21 @@ export interface Connection {
  * Два виклики поспіль (лобі й дошка) не мусять означати двох входів: перший
  * створює проміс, другий чекає на той самий. Синхронний прапорець «уже
  * підключаємось» тут не допоміг би — між перевіркою й записом лежить `await`.
+ *
+ * НЕВДАЛИЙ ВХІД НЕ ЗАПАМʼЯТОВУЄТЬСЯ. Доти відхилений проміс лишався тут назавжди:
+ * `signInAnonymously`, що раз упав на хиткій мережі, робив кожне «створити»,
+ * «увійти» й «швидку гру» миттєвою помилкою аж до перезавантаження сторінки, а
+ * перелік кімнат — «недоступним» (аудит 2026-09-25). Повторний `initializeApp` з
+ * тими самими налаштуваннями віддає той самий застосунок, тож нова спроба чиста.
  */
 let pending: Promise<Connection> | null = null;
 
 export function connect(): Promise<Connection> {
-	pending ??= open();
+	pending ??= open().catch((error: unknown) => {
+		pending = null;
+		logService.warn('network', 'sign-in failed', { reason: String(error) });
+		throw error;
+	});
 	return pending;
 }
 

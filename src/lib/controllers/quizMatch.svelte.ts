@@ -696,7 +696,8 @@ export class QuizMatch {
 		}
 		// Доти такі ходи ковталися мовчки: пауза, голос, оголошення раунду просто
 		// не лягали, і ніде не було видно чому (аудит 2026-09-24).
-		logService.warn('network', 'quiz move not written', { type, round: payload.round });
+		const code = this.#transport.code;
+		logService.warn('network', 'quiz move not written', { code, type, round: payload.round });
 		return false;
 	}
 

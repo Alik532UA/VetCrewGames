@@ -55,6 +55,9 @@ vi.mock('firebase/database', () => ({ getDatabase: vi.fn(() => ({ ref: vi.fn() }
 
 const rememberSession = vi.fn();
 vi.mock('$lib/services/accountFlag', () => ({ rememberSession }));
+vi.mock('$lib/services/logService.svelte', () => ({
+	logService: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+}));
 
 const { connect, forget } = await import('./firebase');
 
@@ -133,5 +136,22 @@ describe('під’єднання до Firebase', () => {
 
 		expect(first.uid).toBe(second.uid);
 		expect(signInAnonymously).toHaveBeenCalledTimes(1);
+	});
+
+	/**
+	 * НЕВДАЛИЙ ВХІД НЕ ЗАПАМʼЯТОВУЄТЬСЯ (аудит 2026-09-25): доти один збій
+	 * `signInAnonymously` на хиткій мережі робив кожну дію з кімнатою миттєвою
+	 * помилкою до перезавантаження сторінки.
+	 *
+	 * Зворотний експеримент: прибрати `pending = null` у `catch` — червоніє.
+	 */
+	it('вхід, що впав, наступний виклик пробує знову', async () => {
+		signInAnonymously.mockRejectedValueOnce(new Error('auth/network-request-failed'));
+
+		await expect(connect()).rejects.toThrow('network-request-failed');
+		const { uid } = await connect();
+
+		expect(uid).toBe('uid-anon');
+		expect(signInAnonymously).toHaveBeenCalledTimes(2);
 	});
 });
