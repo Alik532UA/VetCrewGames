@@ -51,4 +51,27 @@ describe('особа й вхід', () => {
 		expect(await peek(guest, `users/${guest.uid}/profile/handle`)).toBe(handle);
 		expect(await peek(guest, `handles/${handle}`)).toBe(guest.uid);
 	});
+
+	/**
+	 * ЗМІНА ПСЕВДОНІМА над справжнім SDK (аудит 2026-09-25): новий займається тим
+	 * самим записом, що й профіль, а старий звільняється — і з реєстру, і з пошуку.
+	 * Саме тут жила знахідка про застарілі записи пошуку: лишений старий запис
+	 * тримав псевдонім за людиною, яка вже пішла далі.
+	 */
+	it('новий псевдонім займається, старий звільняється з реєстру й пошуку', async () => {
+		const account = await import('./account');
+		const before = await as(guest, () => account.readMyProfile());
+		expect(before?.handle, 'перевірка жива: профіль із псевдонімом є').toBeTruthy();
+		const next = `id2_${Date.now() % 1_000_000_000}`;
+
+		await as(guest, () =>
+			account.saveProfile({ name: 'Гість', handle: next }, before!.handle, true)
+		);
+
+		expect(await peek(guest, `users/${guest.uid}/profile/handle`)).toBe(next);
+		expect(await peek(guest, `handles/${next}`)).toBe(guest.uid);
+		expect(await peek(guest, `find/${next}`)).toBe(guest.uid);
+		expect(await peek(guest, `handles/${before!.handle}`), 'старий у реєстрі').toBeNull();
+		expect(await peek(guest, `find/${before!.handle}`), 'старий у пошуку').toBeNull();
+	});
 });
