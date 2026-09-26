@@ -47,6 +47,17 @@ describe('повідомлення на невдалий вхід', () => {
 		expect(entryErrorKey('room-full')).toBe('pairs.roomFull');
 	});
 
+	/**
+	 * «КОД ЗАЙНЯТИЙ» ПІСЛЯ ВІДМОВ ПРАВИЛ — ЦЕ ВІДМОВА ПРАВИЛ (шостий аудит, R1): доти
+	 * людина чула «спробуйте ще раз», хоч повтор не допомагав. Справжній зайнятий код
+	 * (без причини) — і далі «спробуйте ще раз».
+	 */
+	it('причина під обгорткою: відмова правил — оновити сторінку', () => {
+		const denied = new Error('PERMISSION_DENIED: Permission denied');
+		expect(entryErrorKey('room-code-taken', denied)).toBe('pairs.rulesStale');
+		expect(entryErrorKey('room-code-taken')).toBe('pairs.netFailed');
+	});
+
 	// Шматка збірки на сервері вже немає: доти це було «спробуйте ще раз» без кінця.
 	it('нова збірка на сервері — «оновіть сторінку», а не «спробуйте ще раз»', () => {
 		expect(

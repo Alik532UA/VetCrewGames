@@ -687,6 +687,31 @@ describe('політики кімнати', () => {
 	});
 
 	/**
+	 * «КОД ЗАЙНЯТИЙ» ПІСЛЯ ВІДМОВ ПРАВИЛ (шостий аудит, R1): база відмовляла на кожному
+	 * коді — отже, розійшлися редакції, і людині треба оновити сторінку, правила —
+	 * звірити, а журналу — знати справжню причину. Доти було «спробуйте ще раз».
+	 *
+	 * Зворотний експеримент: не розгортати `cause` — червоніє.
+	 */
+	it('створення, що вичерпало коди на відмовах правил, каже оновити сторінку й звіряє правила', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net } = sessionFor(room, null, HOST);
+		net.createRoom.mockRejectedValueOnce(
+			new Error('room-code-taken', { cause: new Error('PERMISSION_DENIED: Permission denied') })
+		);
+
+		await session.enter('create');
+		await settle();
+
+		expect(toast.error).toHaveBeenCalledWith('pairs.rulesStale');
+		expect(net.checkRules).toHaveBeenCalled();
+		const logged = vi
+			.mocked(logService.error)
+			.mock.calls.find(([, message]) => message === 'room entry failed');
+		expect(logged?.[2]).toMatchObject({ cause: expect.stringContaining('PERMISSION_DENIED') });
+	});
+
+	/**
 	 * НЕВДАЛИЙ ВХІД НЕ ЛИШАЄ ПІВКІМНАТИ (аудит 2026-09-25): підписка, пауза
 	 * локального рахунку, код і адреса знімаються, а людина чує, що не вийшло.
 	 *

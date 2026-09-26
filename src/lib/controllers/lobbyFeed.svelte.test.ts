@@ -65,9 +65,10 @@ vi.mock('$lib/net/ownRooms', () => ({ listOwnRooms }));
 vi.mock('$lib/net/follows', () => ({ friendUids }));
 /** Серверний час — на годину попереду годинника пристрою: стан кімнат звіряється ним. */
 const SERVER_AHEAD_MS = 60 * 60_000;
+const serverTime = vi.fn<() => Promise<number>>();
 vi.mock('$lib/net/firebase', () => ({
 	serverNow: () => Date.now(),
-	serverTime: async () => Date.now() + SERVER_AHEAD_MS
+	serverTime: () => serverTime()
 }));
 
 const { LobbyFeed } = await import('./lobbyFeed.svelte');
@@ -80,6 +81,7 @@ describe('LobbyFeed', () => {
 		watchLobby.mockReset().mockResolvedValue(() => {});
 		listOwnRooms.mockReset().mockResolvedValue([]);
 		friendUids.mockReset().mockResolvedValue([]);
+		serverTime.mockReset().mockImplementation(async () => Date.now() + SERVER_AHEAD_MS);
 		unlist.mockReset();
 		publishRoom.mockReset().mockResolvedValue(unlist);
 		updateGames.mockReset().mockResolvedValue(undefined);
@@ -257,6 +259,26 @@ describe('LobbyFeed', () => {
 			await settle();
 
 			expect(feed.friends).toEqual([]);
+			expect(feed.own).toEqual([]);
+		});
+
+		/**
+		 * ДОВІДКА, ЩО ВПАЛА, НЕ СТАЄ «НЕОБРОБЛЕНОЮ ВІДМОВОЮ» (шостий аудит, R2): без мережі
+		 * кидає `serverTime()`, після викладки — сам імпорт. Помилка йде тому, хто впізнає
+		 * застарілу збірку, а список лишається таким, яким був.
+		 *
+		 * Зворотний експеримент: прибрати `catch` у `load` — червоніє.
+		 */
+		it('помилка довідки йде в обробник, а список лишається порожнім', async () => {
+			const offline = new Error('connect failed');
+			serverTime.mockRejectedValueOnce(offline);
+			const stale = vi.fn(() => false);
+
+			const feed = new LobbyFeed(GAME);
+			feed.load(stale);
+			await settle();
+
+			expect(stale).toHaveBeenCalledWith(offline);
 			expect(feed.own).toEqual([]);
 		});
 

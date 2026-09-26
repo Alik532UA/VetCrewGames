@@ -48,7 +48,10 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	$effect(() =>
 		session.match ? undefined : session.lobby.watch((names) => session.player.settle(names))
 	);
-	$effect(() => (session.match ? undefined : session.lobby.load()));
+	// Невдала довідка — або застаріла збірка (смуга «оновіть»), або рядок у журналі.
+	$effect(() =>
+		session.match ? undefined : session.lobby.load((error) => session.reload.noteFailure(error))
+	);
 
 	// Годинник цокає, поки на нього дивляться — і поки господаря немає.
 	$effect(() => {

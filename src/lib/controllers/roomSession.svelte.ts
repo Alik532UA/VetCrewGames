@@ -185,15 +185,22 @@ export class RoomSession<M extends RoomMatch> {
 			if (!stale()) await this.#open(code, stale);
 		} catch (error) {
 			const reason = error instanceof Error ? error.message : String(error);
+			// Причина — під обгорткою: «код зайнятий» після відмов правил — це відмова правил
+			// (шостий аудит, R1). Доти вона не доходила ні до звірки правил, ні до журналу.
+			const cause = error instanceof Error ? error.cause : undefined;
 			// Шматка збірки немає — смуга з кнопкою «оновити», а не «спробуйте ще раз».
 			this.reload.noteFailure(error);
-			toast.error(entryErrorKey(reason));
+			if (isDenied(error) || (cause !== undefined && isDenied(cause))) {
+				this.reload.noteDenial(code || this.joinCode);
+			}
+			toast.error(entryErrorKey(reason, cause));
 			// З кодом: доти звіт казав «не вдалося зайти», а в яку кімнату — ні.
 			logService.error('network', 'room entry failed', {
 				game: this.game.gameId,
 				action,
 				code: code || this.joinCode,
-				reason
+				reason,
+				...(cause === undefined ? {} : { cause: String(cause) })
 			});
 		} finally {
 			// Застарілий вхід кнопок не відпускає: ними вже володіє наступний (`dispose`).

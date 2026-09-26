@@ -56,10 +56,15 @@ export type EntryError =
 	| 'pairs.newBuild'
 	| 'pairs.netFailed';
 
-export function entryErrorKey(reason: string): EntryError {
+/**
+ * @param cause причина під обгорткою (`Error.cause`): «код зайнятий» після того, як
+ *   база відмовляла на кожному коді, — це відмова правил, а не зайнятий код, і
+ *   лікує її оновлення сторінки, а не повтор (шостий аудит, R1).
+ */
+export function entryErrorKey(reason: string, cause?: unknown): EntryError {
 	if (reason === 'rules-missing') return 'pairs.rulesMissing';
 	if (reason === 'room-full') return 'pairs.roomFull';
-	if (isDenied(reason)) return 'pairs.rulesStale';
+	if (isDenied(reason) || (cause !== undefined && isDenied(cause))) return 'pairs.rulesStale';
 	// Шматка збірки на сервері вже немає: повтор не допоможе, допоможе оновлення
 	// сторінки (аудит 2026-09-26 — доти це було «спробуйте ще раз» без кінця).
 	if (chunkMissing(reason)) return 'pairs.newBuild';
