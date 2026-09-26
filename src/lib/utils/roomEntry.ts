@@ -99,6 +99,14 @@ export function newcomerRole(
  * @param seats скільки гравців уже досить, щоб кімната перестала бути «вільною»
  * @param fits власний фільтр гри (набір ігор у вікторині)
  */
+/**
+ * ВІДКОЛИ КІМНАТА В ПЕРЕЛІКУ — мить її створення, а для записів без неї — мить
+ * останнього оновлення (аудит 2026-09-26). Одна міра й для порядку списку, й для
+ * «швидкої гри»: доти обидва брали `at`, який переписується щоудару серцебиття.
+ */
+export const listedSince = (room: Pick<LobbyRoom, 'since' | 'at'>): number =>
+	room.since ?? room.at ?? 0;
+
 export function quickPick(
 	rooms: readonly LobbyRoom[],
 	game: { gameId: string; rulesVersion: number },
@@ -113,6 +121,6 @@ export function quickPick(
 				room.players < seats &&
 				fits(room)
 		)
-		.sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
+		.sort((a, b) => listedSince(a) - listedSince(b));
 	return free[0] ?? null;
 }

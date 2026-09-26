@@ -136,6 +136,12 @@ async function seed(path, value) {
 	if (res.status !== 200) throw new Error(`seed ${path}: ${res.status}`);
 }
 
+/** Значення вузла (а не лише статус) — щоб узяти серверну мітку, яку поставила база. */
+async function valueAt(path, token) {
+	const auth = token ? `&auth=${token}` : '';
+	return (await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}${auth}`)).json();
+}
+
 async function read(path, token) {
 	const auth = token ? `&auth=${token}` : '';
 	return (await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}${auth}`)).status;
@@ -1300,6 +1306,30 @@ const CASES = [
 		name: 'господар публікує СВОЮ кімнату в переліку',
 		allowed: true,
 		run: () => write(`lobby/pairs/${LIST}`, lobbyEntry(host.uid), host.token)
+	},
+	/*
+	 * МІТКА СТВОРЕННЯ В ПЕРЕЛІКУ — рівно `createdAt` кімнати (аудит 2026-09-26): за
+	 * нею «швидка гра» бере найстаршу, тож вигадана означала б «забирати всіх собі».
+	 */
+	{
+		name: 'запис переліку з міткою створення кімнати',
+		allowed: true,
+		run: async () => {
+			const since = await valueAt(`rooms/${LIST}/info/createdAt`, host.token);
+			return write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), since }, host.token);
+		}
+	},
+	{
+		name: 'мітка створення в переліку — не та, що в кімнаті',
+		allowed: false,
+		run: async () => {
+			const since = await valueAt(`rooms/${LIST}/info/createdAt`, host.token);
+			return write(
+				`lobby/pairs/${LIST}`,
+				{ ...lobbyEntry(host.uid), since: since - 1 },
+				host.token
+			);
+		}
 	},
 	/*
 	 * ПЕРЕЛІК — ЛИШЕ ДЛЯ КІМНАТИ В ЛОБІ, ПУБЛІЧНОЇ, І ПІД ІМʼЯМ ІЗ СКЛАДУ (аудит

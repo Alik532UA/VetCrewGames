@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { as, closeAll, signedIn, type Connection } from './emulatorSession';
+import { as, closeAll, peek, signedIn, type Connection } from './emulatorSession';
 import type { LobbyRoom } from './lobby';
 
 /**
@@ -80,6 +80,8 @@ describe('перелік публічних кімнат над справжні
 		const view = await watch();
 		const mine = listed(view.rooms, code);
 
+		// Мітка створення — з самої кімнати: правило звіряє її з `createdAt`.
+		const since = (await peek(host, `rooms/${code}/info/createdAt`)) as number;
 		// Реєстрація `onDisconnect` і запис — те, що падало в продакшні.
 		const unlist = await as(host, () =>
 			lobby.publishRoom({
@@ -88,10 +90,12 @@ describe('перелік публічних кімнат над справжні
 				hostName: 'Господар',
 				gameId: 'pairs',
 				rulesVersion: 3,
-				players: 1
+				players: 1,
+				since
 			})
 		);
 		await becomes(mine, (room) => room !== null, 'інший бачить кімнату в переліку');
+		expect(mine()?.since, 'мітка створення доїхала до переліку').toBe(since);
 
 		await as(host, () => lobby.updatePlayers('pairs', code, 2));
 		await becomes(mine, (room) => room?.players === 2, 'лічильник наздогнав');

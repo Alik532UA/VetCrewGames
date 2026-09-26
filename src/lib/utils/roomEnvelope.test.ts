@@ -32,20 +32,29 @@ describe('спільні поля кімнати', () => {
 			countdownAt: null,
 			autoStart: false,
 			listed: false,
-			nextCode: null
+			nextCode: null,
+			createdAt: null
 		});
 	});
 
 	it('присутні — як є', () => {
 		const envelope = envelopeOf(
-			snapshot({ countdownAt: 5, autoStart: true, listed: true, nextCode: '42', status: 'over' })
+			snapshot({
+				countdownAt: 5,
+				autoStart: true,
+				listed: true,
+				nextCode: '42',
+				status: 'over',
+				createdAt: 7
+			})
 		);
 		expect(envelope).toMatchObject({
 			countdownAt: 5,
 			autoStart: true,
 			listed: true,
 			nextCode: '42',
-			status: 'over'
+			status: 'over',
+			createdAt: 7
 		});
 	});
 });

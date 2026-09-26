@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'd71a1fd6fbc8'" }
+      "$v": { ".read": "auth != null && $v === 'b61bde9dc49f'" }
     },
 
     "rooms": {
@@ -1068,8 +1068,13 @@
         "games": {
           "$key": { ".validate": "newData.isNumber() && $key.matches(/^(pairs|cols|pace_round|pace_reveal|game_(myths|feeding|habitat-continents|habitat-biomes|family|population))$/)" }
         },
-        // Серверний час: за ним список упорядковується й за ним видно застояле.
-        // Клієнтське число означало б «моя кімната завжди найновіша».
+        // МИТЬ СТВОРЕННЯ КІМНАТИ — рівно її `createdAt` (аудит 2026-09-26): за нею
+        // список упорядковується, а «швидка гра» бере ту, що чекає найдовше. Поле
+        // необовʼязкове (запис старшої збірки), але вигадати його не можна: інакше
+        // «моя кімната найстарша» стало б способом забирати всіх зі «швидкої гри».
+        "since": { ".validate": "newData.isNumber() && newData.val() === root.child('rooms').child($code).child('info/createdAt').val()" },
+        // Серверний час ОСТАННЬОГО запису: за ним база відбирає найсвіжіші й за ним
+        // видно застояле. Клієнтське число означало б «моя кімната завжди свіжа».
         "at": { ".validate": "newData.isNumber() && newData.val() <= now && newData.val() > now - 5000" },
         "$other": { ".validate": false }
       }

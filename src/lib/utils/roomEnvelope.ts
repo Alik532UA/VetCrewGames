@@ -23,6 +23,8 @@ export interface RoomEnvelope {
 	listed: boolean;
 	/** Код кімнати, у яку гра переїхала; `null` — нікуди. */
 	nextCode: string | null;
+	/** Коли кімнату створено (серверний час); `null` — кімната старша за поле. */
+	createdAt: number | null;
 }
 
 /** Розклад знімка на спільні поля. Відсутнє поле — його значення «за замовчуванням». */
@@ -36,6 +38,7 @@ export function envelopeOf(snapshot: RoomSnapshot): RoomEnvelope {
 		countdownAt: info.countdownAt ?? null,
 		autoStart: info.autoStart === true,
 		listed: info.listed === true,
-		nextCode: info.nextCode ?? null
+		nextCode: info.nextCode ?? null,
+		createdAt: info.createdAt ?? null
 	};
 }

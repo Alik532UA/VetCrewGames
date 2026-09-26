@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from './roomEntry';
+import { entryErrorKey, entryRefusal, listedSince, newcomerRole, quickPick } from './roomEntry';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { RoomInfo } from '$lib/net/roomTypes';
 
@@ -72,6 +72,23 @@ describe('роль того, кого в кімнаті ще немає', () => 
 });
 
 describe('кімната для швидкої гри', () => {
+	/**
+	 * НАЙСТАРША — ЗА МИТТЮ СТВОРЕННЯ, а не за останнім оновленням (аудит 2026-09-26):
+	 * `at` переписується щоудару серцебиття, і за ним «швидка гра» брала кімнату, яку
+	 * найдовше не оновлювали.
+	 *
+	 * Зворотний експеримент: сортувати за `at` — червоніє.
+	 */
+	it('найстарша за створенням, хоч її запис оновлено щойно', () => {
+		const rooms = [listed('old', { since: 100, at: 900 }), listed('new', { since: 500, at: 600 })];
+		expect(quickPick(rooms, game, 2)?.code).toBe('old');
+	});
+
+	it('запис без мітки створення міряється останнім оновленням', () => {
+		expect(listedSince({ at: 300 })).toBe(300);
+		expect(listedSince({ since: 100, at: 300 })).toBe(100);
+	});
+
 	it('найстарша з вільних, а не найновіша', () => {
 		const rooms = [
 			listed('new', { at: 300 }),

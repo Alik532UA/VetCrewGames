@@ -156,6 +156,8 @@ export class PairsMatch implements RoomEnvelope {
 	 * скінчилася.
 	 */
 	nextCode = $state<string | null>(null);
+	/** Коли кімнату створено — з неї мітка запису в переліку (`RoomEnvelope`). */
+	createdAt = $state<number | null>(null);
 
 	/**
 	 * Хто завершив партію, не дограючи. `null` — партія йде або дограна до кінця.

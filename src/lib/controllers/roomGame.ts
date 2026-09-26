@@ -28,6 +28,8 @@ export interface RoomMatch {
 	readonly countdownAt: number | null;
 	readonly autoStart: boolean;
 	readonly listed: boolean;
+	/** Коли кімнату створено; `null` — кімната старша за поле. */
+	readonly createdAt: number | null;
 	readonly seed: number;
 	readonly over: boolean;
 	readonly gone: GoneReason | null;

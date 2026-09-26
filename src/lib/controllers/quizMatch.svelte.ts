@@ -142,6 +142,8 @@ export class QuizMatch implements RoomEnvelope {
 	 * скінчилася.
 	 */
 	nextCode = $state<string | null>(null);
+	/** Коли кімнату створено — з неї мітка запису в переліку (`RoomEnvelope`). */
+	createdAt = $state<number | null>(null);
 	countdownAt = $state<number | null>(null);
 	/** Які ігри вибрані в кімнаті. Порожньо — ще не приїхав знімок. */
 	games = $state<string[]>([]);

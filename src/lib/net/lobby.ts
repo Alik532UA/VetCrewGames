@@ -1,3 +1,4 @@
+import { listedSince } from '$lib/utils/roomEntry';
 import { ROOM_BEAT_MS } from '$lib/config/roomLife';
 import { connect } from './firebase';
 import { keepNode } from './presence';
@@ -94,7 +95,20 @@ export interface LobbyRoom {
 	 * запис вікторини, зроблений до цієї зміни, його не писав.
 	 */
 	games?: Record<string, number>;
-	/** Серверний час публікації. За ним список упорядковується. */
+	/**
+	 * МИТЬ СТВОРЕННЯ КІМНАТИ — її `createdAt`, і правило бази це звіряє (аудит
+	 * 2026-09-26). Від оновлення до оновлення запису не міняється, тож за нею список
+	 * упорядковується, а «швидка гра» бере кімнату, що справді чекає найдовше.
+	 * Відсутнє — запис старшої збірки або кімната старша за поле.
+	 */
+	since?: number;
+	/**
+	 * Серверний час ОСТАННЬОГО запису — запис переписується щоудару серцебиття
+	 * (`keepNode`, `refreshMs`). За ним база відбирає найсвіжіші записи (правило
+	 * вимагає `orderByChild('at')`), але НЕ впорядковується список: доти «швидка
+	 * гра» за ним брала кімнату, яку найдовше не оновлювали, а список
+	 * переставлявся щопівхвилини.
+	 */
 	at: number;
 }
 
@@ -184,6 +198,8 @@ function recordOf(entry: Omit<LobbyRoom, 'at'>, at: object): Record<string, unkn
 		gameId: entry.gameId,
 		rulesVersion: entry.rulesVersion,
 		players: entry.players,
+		// Мітка створення — лише коли кімната її має (та сама причина, що вище).
+		...(entry.since !== undefined ? { since: entry.since } : {}),
 		// Та сама умовна вставка й із тієї самої причини: `undefined` усередині
 		// `set()` Firebase КИДАЄ, а гра без наборів (`pairs`) його не передає.
 		...(entry.games ? { games: entry.games } : {}),
@@ -335,7 +351,7 @@ export async function watchLobby(gameId: string, watcher: LobbyWatcher): Promise
 				 * клієнт бачить своє власне значення. Нуль ставить такий запис у кінець,
 				 * а не викидає його зі списку.
 				 */
-				.sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
+				.sort((a, b) => listedSince(b) - listedSince(a));
 			// Приїхало більше, ніж показуємо, — отже щось лишилося за межею запиту.
 			watcher.onRooms(all.slice(0, LOBBY_LIMIT), all.length > LOBBY_LIMIT);
 		},

@@ -303,6 +303,7 @@ export class RoomSession<M extends RoomMatch> {
 				// оголошує кімнату, де вже сидять люди, а лічильник наздоганяє лише
 				// ЗМІНУ присутності (`roomPolicies`).
 				players: Math.max(1, this.presentPlayers.length),
+				since: this.match?.createdAt ?? undefined,
 				...(this.match ? this.game.listingExtras?.(this.match) : {})
 			});
 		} catch (error) {

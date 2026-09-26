@@ -994,6 +994,23 @@ describe('публічна кімната в переліку', () => {
 		);
 	});
 
+	/**
+	 * МІТКА СТВОРЕННЯ — З КІМНАТИ (аудит 2026-09-26): за нею список упорядковується, а
+	 * «швидка гра» бере найстаршу; `at` запису переписується щоудару серцебиття.
+	 *
+	 * Зворотний експеримент: не передавати `since` у запис — червоніє.
+	 */
+	it('запис переліку несе мить створення кімнати', async () => {
+		const room = new LocalRoom(roomInfo({ listed: true, createdAt: 1234 }), members());
+		const { session, lobby } = sessionFor(room, roomInfo({ listed: true }), HOST);
+		session.joinCode = '42';
+
+		await session.enter('join');
+		await settle();
+
+		expect(lobby.publish).toHaveBeenCalledWith(expect.objectContaining({ since: 1234 }));
+	});
+
 	it('новий господар після перехоплення оголошує її сам', async () => {
 		const room = new LocalRoom(roomInfo({ listed: true }), members());
 		const { session, lobby } = sessionFor(room, roomInfo({ listed: true }), GUEST);
