@@ -1,11 +1,13 @@
+import { envelopeOf } from '$lib/utils/roomEnvelope';
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
 import type {
 	GoneReason,
 	Member,
 	Move,
-	RosterEntry,
 	RoomSnapshot,
-	RoomTransport
+	RoomStatus,
+	RoomTransport,
+	RosterEntry
 } from '$lib/net/roomTypes';
 import { partyOf } from '$lib/utils/roster';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
@@ -84,7 +86,7 @@ export class PairsMatch {
 	/** Скільки ходів журналу вже застосовано до дошки. */
 	applied = $state(0);
 	/** Стан кімнати: доки не `playing`, дошки немає. */
-	status = $state<'lobby' | 'playing' | 'over'>('lobby');
+	status = $state<RoomStatus>('lobby');
 	/**
 	 * Зерно кімнати. Змінюється на «зіграти ще», тобто це і є «яка це партія».
 	 *
@@ -462,14 +464,8 @@ export class PairsMatch {
 	}
 
 	#apply(snapshot: RoomSnapshot): void {
-		this.members = snapshot.members;
-		this.roster = snapshot.info.roster ?? null;
-		this.status = snapshot.info.status;
-		this.hostUid = snapshot.info.hostUid;
-		this.countdownAt = snapshot.info.countdownAt ?? null;
-		this.autoStart = snapshot.info.autoStart === true;
-		this.listed = snapshot.info.listed === true;
-		this.nextCode = snapshot.info.nextCode ?? null;
+		// Спільні поля кімнати — одним розкладом на обидві гри (`utils/roomEnvelope.ts`).
+		Object.assign(this, envelopeOf(snapshot));
 
 		/*
 		 * Опис партії — рядок, і порівнюється він цілком.

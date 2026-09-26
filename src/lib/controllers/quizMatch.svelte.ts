@@ -1,4 +1,11 @@
-import type { GoneReason, Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
+import { envelopeOf } from '$lib/utils/roomEnvelope';
+import type {
+	GoneReason,
+	Member,
+	RoomSnapshot,
+	RoomStatus,
+	RoomTransport
+} from '$lib/net/roomTypes';
 import type { RoundStatus } from '$lib/types/game';
 import { EMPTY_QUIZ_LOG, replayQuizLog, type QuizLog } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
@@ -110,7 +117,7 @@ export class QuizMatch {
 	 * відповіді лежать за (раунд, гравець).
 	 */
 	#seqs: number[] = [];
-	status = $state<'lobby' | 'playing' | 'over'>('lobby');
+	status = $state<RoomStatus>('lobby');
 	members = $state<Member[]>([]);
 	/** Заморожений склад партії (`RoomInfo.roster`); `null` — лобі або кімната старша за поле. */
 	roster = $state.raw<QuizPartySource['roster']>(null);
@@ -775,10 +782,8 @@ export class QuizMatch {
 	}
 
 	#apply(snapshot: RoomSnapshot): void {
-		this.members = snapshot.members;
-		this.roster = snapshot.info.roster ?? null;
-		this.status = snapshot.info.status;
-		this.hostUid = snapshot.info.hostUid;
+		// Спільні поля кімнати — одним розкладом на обидві гри (`utils/roomEnvelope.ts`).
+		Object.assign(this, envelopeOf(snapshot));
 		if (snapshot.info.seed !== this.seed) {
 			// Нова партія (реванш): власна незакомічена пауза минулої їй не належить —
 			// інакше той самий номер раунду отримував би чужу надбавку часу.
@@ -786,10 +791,6 @@ export class QuizMatch {
 			this.#hold.reset();
 		}
 		this.seed = snapshot.info.seed;
-		this.autoStart = snapshot.info.autoStart === true;
-		this.listed = snapshot.info.listed === true;
-		this.nextCode = snapshot.info.nextCode ?? null;
-		this.countdownAt = snapshot.info.countdownAt ?? null;
 		this.games = configToGames(snapshot.info.config);
 		this.pace = paceOf(snapshot.info.config);
 
