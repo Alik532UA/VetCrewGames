@@ -1,15 +1,10 @@
-import { envelopeOf, type RoomEnvelope } from '$lib/utils/roomEnvelope';
-import type {
-	GoneReason,
-	Member,
-	RoomSnapshot,
-	RoomStatus,
-	RoomTransport
-} from '$lib/net/roomTypes';
+import { envelopeOf } from '$lib/utils/roomEnvelope';
+import { RoomEnvelopeState } from './roomEnvelopeState.svelte';
+import type { Member, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import type { RoundStatus } from '$lib/types/game';
 import { EMPTY_QUIZ_LOG, replayQuizLog, type QuizLog } from '$lib/utils/quizReplay';
 import { freeSeq } from '$lib/utils/journalSeq';
-import { quizPartyOf, stayingOf, type QuizPartySource } from '$lib/utils/roster';
+import { quizPartyOf, stayingOf } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
 import { QuizHold, type ReleasedHold } from '$lib/utils/quizHold';
 import { takeLead } from './takeLead';
@@ -99,7 +94,7 @@ export const ANNOUNCE_RETRY_MS = 5000;
  * Половина, яку підробляли легше за все — множник за швидкість, — тепер закрита,
  * і це головна різниця з попередньою моделью, де в журнал їхало саме число очок.
  */
-export class QuizMatch implements RoomEnvelope {
+export class QuizMatch extends RoomEnvelopeState {
 	/**
 	 * Скільки ходів журналу приїхало. Не `$state`: на екрані його не показує ніщо, а
 	 * тести читають синхронно (аудит 2026-09-26 — доти реактивне поле без читачів).
@@ -120,33 +115,6 @@ export class QuizMatch implements RoomEnvelope {
 	 * відповіді лежать за (раунд, гравець).
 	 */
 	#seqs: number[] = [];
-	status = $state<RoomStatus>('lobby');
-	members = $state<Member[]>([]);
-	/** Кого замінено через повтор аватарки: uid → показана пара (`RoomEnvelope`). */
-	avatarSwaps = $state<Record<string, string>>({});
-	/** Заморожений склад партії (`RoomInfo.roster`); `null` — лобі або кімната старша за поле. */
-	roster = $state.raw<QuizPartySource['roster']>(null);
-	hostUid = $state('');
-	/** Зерно кімнати. Із нього виводиться програма — однакова в усіх. */
-	seed = $state(0);
-	autoStart = $state(false);
-	/** Кімната публічна (`RoomInfo.listed`). */
-	listed = $state(false);
-	/**
-	 * КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА. `null` — нікуди.
-	 *
-	 * Прохання автора: після фіналу можна зіграти не лише в ту саму гру, а й в
-	 * іншу — «господар створює кімнату іншої гри, а решті в старій кімнаті
-	 * зʼявляється кнопка „перейти“ з її кодом».
-	 *
-	 * Кімната й далі знає одну гру: це не зміна гри тут, а вказівник на нову. Тому
-	 * поле живе в `info`, а не в журналі ходів — воно не про партію, яка вже
-	 * скінчилася.
-	 */
-	nextCode = $state<string | null>(null);
-	/** Коли кімнату створено — з неї мітка запису в переліку (`RoomEnvelope`). */
-	createdAt = $state<number | null>(null);
-	countdownAt = $state<number | null>(null);
 	/** Які ігри вибрані в кімнаті. Порожньо — ще не приїхав знімок. */
 	games = $state<string[]>([]);
 	/**
@@ -214,18 +182,11 @@ export class QuizMatch implements RoomEnvelope {
 	readonly #factor: number;
 
 	constructor(me: string, transport: RoomTransport, factor = 1) {
+		super();
 		this.#me = me;
 		this.#transport = transport;
 		this.#factor = factor;
 	}
-
-	/**
-	 * Кімнати більше немає: господар її закрив або прибрав збирач (`closed`), або
-	 * читати її мені вже не дають (`lost`). `null` — кімната є.
-	 */
-	gone = $state<GoneReason | null>(null);
-	/** Скільки ходів база не прийняла (`RoomMatch.refused`). */
-	refused = $state(0);
 
 	listen(): () => void {
 		return this.#transport.watch(

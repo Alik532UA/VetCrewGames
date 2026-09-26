@@ -1,12 +1,6 @@
 import type { LobbyRoom } from '$lib/net/lobby';
-import type {
-	GoneReason,
-	Member,
-	Role,
-	RoomStatus,
-	RoomTransport,
-	RosterEntry
-} from '$lib/net/roomTypes';
+import type { GoneReason, Member, Role, RoomTransport } from '$lib/net/roomTypes';
+import type { RoomEnvelope } from '$lib/utils/roomEnvelope';
 
 /*
  * ТЕ, ЧИМ СЕСІЯ КІМНАТИ ГОВОРИТЬ ІЗ ГРОЮ Й СТОРІНКОЮ, — окремо від самої сесії.
@@ -16,22 +10,16 @@ import type {
  * їх із `roomSession.svelte.ts`: там вони перевидані.
  */
 
-/** Що сесії треба знати про матч — спільне для «Знайди пару» й вікторини. */
-export interface RoomMatch {
+/**
+ * Що сесії треба знати про матч — спільне для «Знайди пару» й вікторини.
+ *
+ * Поля кімнати — з КОНВЕРТА (`RoomEnvelope`), а не переліком тут: доти вони стояли
+ * третьою копією поруч з обома матчами, і нове поле кімнати мусило не забутися в
+ * кожній (шостий аудит). Обидва матчі тепер успадковують `RoomEnvelopeState`.
+ */
+export interface RoomMatch extends Readonly<RoomEnvelope> {
 	listen(): () => void;
-	readonly members: Member[];
-	/** Кого замінено через повтор аватарки: uid → показана пара (`utils/roomAvatars`). */
-	readonly avatarSwaps: Record<string, string>;
 	readonly players: Member[];
-	/** Заморожений склад: на нього спирається правило перехоплення ведення. */
-	readonly roster: readonly RosterEntry[] | null;
-	readonly status: RoomStatus;
-	readonly hostUid: string;
-	readonly countdownAt: number | null;
-	readonly autoStart: boolean;
-	readonly listed: boolean;
-	/** Коли кімнату створено; `null` — кімната старша за поле. */
-	readonly createdAt: number | null;
 	readonly seed: number;
 	readonly over: boolean;
 	readonly gone: GoneReason | null;

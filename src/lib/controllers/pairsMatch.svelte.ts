@@ -1,14 +1,7 @@
-import { envelopeOf, type RoomEnvelope } from '$lib/utils/roomEnvelope';
+import { envelopeOf } from '$lib/utils/roomEnvelope';
+import { RoomEnvelopeState } from './roomEnvelopeState.svelte';
 import { MemoryGameController, type MemoryPlayer } from './memoryGame.svelte';
-import type {
-	GoneReason,
-	Member,
-	Move,
-	RoomSnapshot,
-	RoomStatus,
-	RoomTransport,
-	RosterEntry
-} from '$lib/net/roomTypes';
+import type { Member, Move, RoomSnapshot, RoomTransport } from '$lib/net/roomTypes';
 import { partyOf } from '$lib/utils/roster';
 import { roomLayoutOf } from '$lib/config/memory-game';
 import { isStallActionLegal, TURN_LIMIT_MS, yieldReadyAt, type TurnState } from './turnLimit';
@@ -81,25 +74,11 @@ const REAL_CLOCK: PeekClock = {
  * учасник, який спробує зіграти позачергово, не зламає партію: його хід просто
  * нічого не означає, і всі бачать це однаково.
  */
-export class PairsMatch implements RoomEnvelope {
+export class PairsMatch extends RoomEnvelopeState {
 	readonly game = new MemoryGameController();
 
 	/** Скільки ходів журналу вже застосовано до дошки. */
 	applied = $state(0);
-	/** Стан кімнати: доки не `playing`, дошки немає. */
-	status = $state<RoomStatus>('lobby');
-	/**
-	 * Зерно кімнати. Змінюється на «зіграти ще», тобто це і є «яка це партія».
-	 *
-	 * Публічне саме тому: нарахування балів за партію мусить статися один раз на
-	 * партію, і зерно — єдиний ключ, за яким їх можна відрізнити.
-	 */
-	seed = $state(0);
-	members = $state<Member[]>([]);
-	/** Кого замінено через повтор аватарки: uid → показана пара (`RoomEnvelope`). */
-	avatarSwaps = $state<Record<string, string>>({});
-	/** Заморожений склад партії (`RoomInfo.roster`); `null` — кімната старша за поле. */
-	roster = $state<RosterEntry[] | null>(null);
 	/**
 	 * Хто пішов НАЗОВСІМ — із журналу (хід `leave`). Їхні черги пропускаються.
 	 *
@@ -108,15 +87,6 @@ export class PairsMatch implements RoomEnvelope {
 	 * ручне «забрати хід» (аудит 2026-09-24).
 	 */
 	left = $state<string[]>([]);
-	/**
-	 * Хто господар — з КІМНАТИ, а не з порядку у списку.
-	 *
-	 * Саме для цього поле й існує в `info`. Спершу сторінка рахувала господаря як
-	 * «перший у складі» — і кнопка «Почати» зникала в нього, щойно заходив хтось із
-	 * «меншим» `uid`: база віддає склад за алфавітом ключів, а не за входом.
-	 * Знайдено живим прогоном із трьома учасниками.
-	 */
-	hostUid = $state('');
 
 	/**
 	 * Серверний час, від якого йде відлік поточної черги.
@@ -127,40 +97,6 @@ export class PairsMatch implements RoomEnvelope {
 	 * почалася або кімнату створила збірка, старша за це поле.
 	 */
 	turnSince = $state<number | null>(null);
-
-	/**
-	 * Серверний час початку відліку до автоматичного старту; `null` — відліку
-	 * немає.
-	 *
-	 * Контролер його лише ПЕРЕДАЄ далі: рішення «пора починати» належить
-	 * господареві, а правила партії про відлік не знають нічого.
-	 */
-	countdownAt = $state<number | null>(null);
-
-	/**
-	 * Режим початку партії: сама чи за підтвердженням.
-	 *
-	 * Відсутнє поле = виключено. Так поводяться кімнати старших збірок — і це
-	 * безпечніший бік: партія, що почалася сама там, де цього не просили,
-	 * гірша за партію, яку треба почати кнопкою.
-	 */
-	autoStart = $state(false);
-	/** Кімната публічна (`RoomInfo.listed`). */
-	listed = $state(false);
-	/**
-	 * КОД КІМНАТИ, У ЯКУ ГРА ПЕРЕЇХАЛА. `null` — нікуди.
-	 *
-	 * Прохання автора: після фіналу можна зіграти не лише в ту саму гру, а й в
-	 * іншу — «господар створює кімнату іншої гри, а решті в старій кімнаті
-	 * зʼявляється кнопка „перейти“ з її кодом».
-	 *
-	 * Кімната й далі знає одну гру: це не зміна гри тут, а вказівник на нову. Тому
-	 * поле живе в `info`, а не в журналі ходів — воно не про партію, яка вже
-	 * скінчилася.
-	 */
-	nextCode = $state<string | null>(null);
-	/** Коли кімнату створено — з неї мітка запису в переліку (`RoomEnvelope`). */
-	createdAt = $state<number | null>(null);
 
 	/**
 	 * Хто завершив партію, не дограючи. `null` — партія йде або дограна до кінця.
@@ -176,14 +112,6 @@ export class PairsMatch implements RoomEnvelope {
 	 * причину завершення, а не просто скінчену партію.
 	 */
 	endedBy = $state<string | null>(null);
-
-	/**
-	 * Кімнати більше немає: господар її закрив або прибрав збирач (`closed`), або
-	 * читати її мені вже не дають (`lost`). `null` — кімната є.
-	 */
-	gone = $state<GoneReason | null>(null);
-	/** Скільки ходів база не прийняла (`RoomMatch.refused`). */
-	refused = $state(0);
 
 	readonly #me: string;
 	readonly #transport: RoomTransport;
@@ -245,6 +173,7 @@ export class PairsMatch implements RoomEnvelope {
 	readonly #clock: PeekClock;
 
 	constructor(me: string, transport: RoomTransport, clock: PeekClock = REAL_CLOCK) {
+		super();
 		this.#me = me;
 		this.#transport = transport;
 		this.#clock = clock;
