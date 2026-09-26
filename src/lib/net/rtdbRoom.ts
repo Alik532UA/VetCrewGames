@@ -169,7 +169,8 @@ export async function createRoom(options: NewRoom): Promise<string> {
 			}
 			if (taken) continue;
 
-			const info: RoomInfo & { createdAt: object } = {
+			// Позначка — серверна: у записі це ще не число, а заявка сервера на час.
+			const info: Omit<RoomInfo, 'createdAt'> & { createdAt: object } = {
 				gameId: options.gameId,
 				rulesVersion: options.rulesVersion,
 				seed: options.seed,

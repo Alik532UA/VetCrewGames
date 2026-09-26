@@ -128,8 +128,13 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 	 * раунди, оголошені до передачі, перестали б рахуватися — тобто минуле
 	 * змінилося б заднім числом.
 	 */
+	const createdAt =
+		typeof snapshot.info.createdAt === 'number' ? snapshot.info.createdAt : undefined;
 	const firstLead = snapshot.moves.find(
-		(move) => move.type === 'lead' && typeof move.payload?.from === 'string'
+		(move) =>
+			move.type === 'lead' &&
+			typeof move.payload?.from === 'string' &&
+			(createdAt === undefined || Number(move.at) >= createdAt)
 	);
 	let leader = firstLead ? String(firstLead.payload?.from) : snapshot.info.hostUid;
 
@@ -147,6 +152,10 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		// назвати свою швидкість.
 		const at = Number(move.at);
 		if (!Number.isFinite(at)) continue;
+		// Хід, старший за саму кімнату, — з попередньої кімнати під тим самим кодом, а
+		// не з цієї (аудит 2026-09-25): інакше чужий `lead` робив ведучим того, кого
+		// тут немає. Правило бази такий журнал уже не пропускає; це — друга лінія.
+		if (createdAt !== undefined && at < createdAt) continue;
 
 		if (move.type === 'lead') {
 			leader = move.by;

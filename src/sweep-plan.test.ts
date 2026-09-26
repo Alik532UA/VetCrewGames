@@ -66,16 +66,23 @@ describe('прибиральник', () => {
 		expect(plan.paths).toEqual(['presence/43/ghost']);
 	});
 
-	it('кімнату без позначки часу не чіпає — датувати її нічим', () => {
+	/**
+	 * НЕДАТОВАНА КІМНАТА ЗНОСИТЬСЯ ПЕРШОЮ (аудит 2026-09-25): жива такою не буває, а
+	 * доти коди, забиті `info` без позначки чи складом без `info`, лишалися зайнятими
+	 * назавжди.
+	 *
+	 * Зворотний експеримент: повернути `continue` без запису в мертві — червоніє.
+	 */
+	it('кімнату без позначки часу й без `info` зносить — жива такою не буває', () => {
 		const plan = planSweep({
-			rooms: { '42': { info: {} } },
+			rooms: { '42': { info: {} }, '43': { members: { x: {} }, moves: {} } },
 			lobby: { quiz: { '42': {} } },
 			presence: null,
 			myRooms: null,
 			now: NOW
 		});
-		expect(plan.undatable).toBe(1);
-		expect(plan.paths).toEqual([]);
+		expect(plan.undatable).toBe(2);
+		expect(plan.paths).toEqual(['rooms/42', 'rooms/43', 'lobby/quiz/42']);
 	});
 
 	it('понад межу прогону — найтихіші першими, решта зі своїм переліком чекає', () => {

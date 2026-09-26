@@ -101,6 +101,22 @@ async function readQuery(path, params, token) {
  * @param {string} path
  * @param {string | null} token
  */
+/**
+ * ЗАПИС В ОБХІД ПРАВИЛ — лише щоб ПІДГОТУВАТИ стан, якого правила вже не дають
+ * створити: залишки попередньої кімнати під кодом (склад чи журнал без `info`).
+ * Такі залишки лишилися від старих редакцій правил, і захист від них мусить бути
+ * перевірений, хоч сьогоднішніми правилами їх не зробити. Сам випадок після цього
+ * — звичайний запис із токеном. Емулятор пускає власника з `Bearer owner`.
+ */
+async function seed(path, value) {
+	const res = await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}`, {
+		method: value === null ? 'DELETE' : 'PUT',
+		headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+		body: value === null ? undefined : JSON.stringify(value)
+	});
+	if (res.status !== 200) throw new Error(`seed ${path}: ${res.status}`);
+}
+
 async function read(path, token) {
 	const auth = token ? `&auth=${token}` : '';
 	return (await fetch(`http://${DB_HOST}/${path}.json?ns=${NS}${auth}`)).status;
@@ -130,7 +146,10 @@ const info = (hostUid) => ({
 	seed: 12345,
 	status: 'lobby',
 	hostUid,
-	config: { pairs: 8, cols: 4 }
+	config: { pairs: 8, cols: 4 },
+	// Без неї кімнату тепер не створити (аудит 2026-09-25); `SERVER_TIME` — нижче,
+	// але шаблон кличеться вже після нього.
+	createdAt: SERVER_TIME
 });
 const member = { name: 'Тест', role: 'player', order: 2 };
 
@@ -296,6 +315,12 @@ const CASES = [
 		name: 'позначка життя від НЕАВТОРИЗОВАНОГО',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/info/aliveAt`, SERVER_TIME, null)
+	},
+	{
+		// Вхід є, членства немає: відмова — саме через членство (аудит 2026-09-25).
+		name: 'позначка життя від того, хто не в кімнаті',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/aliveAt`, SERVER_TIME, stranger.token)
 	},
 	{
 		// `at` серверний, як і в `net/presence.ts`. Клієнтське число тут доти
@@ -629,6 +654,24 @@ const CASES = [
 			)
 	},
 	{
+		// Рівно той рядок, що гість пише собі сам, — чужою рукою: відмова лише через
+		// `$uid === auth.uid`. Випадок вище відмовляв ще й через імʼя, псевдонім і
+		// рахунок (аудит 2026-09-25).
+		name: 'ЧУЖИЙ рядок таблиці з правдивими даними власника',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'ua', at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'ЧУЖИЙ рядок таблиці прибирають',
+		allowed: false,
+		run: () => write(`leaders/${guest.uid}`, null, host.token)
+	},
+	{
 		name: 'у рядку таблиці поле, якого схема не знає',
 		allowed: false,
 		run: () =>
@@ -931,11 +974,14 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/play/games/population/rank`, 1, guest.token)
 	},
 	{
-		// Ключ гри — малі латинські, цифри й дефіс. Кирилиця й крапка тут означали б
-		// вузол, якого код не назве ніколи, тобто сміття, що не прибирається.
+		// Ключ гри — малі латинські, цифри й дефіс. Інший ключ означав би вузол, якого
+		// код не назве ніколи, тобто сміття, що не прибирається. Ключ — ДОПУСТИМИЙ для
+		// самої бази (великі літери): доти тут стояло `Гра.1`, а крапку REST відкидає
+		// сам, відповіддю 400, ще до правил — і взірець не перевірявся зовсім (аудит
+		// 2026-09-25).
 		name: 'ключ гри не за взірцем',
 		allowed: false,
-		run: () => write(`users/${guest.uid}/play/games/Гра.1`, { best: 1, plays: 1 }, guest.token)
+		run: () => write(`users/${guest.uid}/play/games/Gra1`, { best: 1, plays: 1 }, guest.token)
 	},
 	{
 		name: 'перелічити всіх користувачів',
@@ -1117,15 +1163,53 @@ const CASES = [
 		}
 	},
 	{
-		name: 'господар зносить лише info, склад лишається',
-		allowed: true,
+		/*
+		 * `info` ОКРЕМО ВІД КІМНАТИ НЕ СТИРАЄТЬСЯ (аудит 2026-09-25). Доти тут було
+		 * «дозволено» — і саме так робилися «зомбі»-коди: склад чи журнал без `info`,
+		 * яких не датує й не зносить ніхто, а нова кімната успадковує. Знести кімнату
+		 * господар і далі може цілком — див. «господар зносить кімнату».
+		 */
+		name: 'господар зносить лише info, лишаючи склад',
+		allowed: false,
 		run: () => write('rooms/90419/info', null, host.token)
 	},
 	{
-		// Інакше новий господар успадкував би чужий склад.
+		// Інакше новий господар успадкував би чужий склад. Сам залишок — від старої
+		// редакції правил, тож готується записом власника.
 		name: 'нова кімната поверх чужого складу',
 		allowed: false,
-		run: () => write('rooms/90419/info', info(stranger.uid), stranger.token)
+		run: async () => {
+			await seed('rooms/90419/info', null);
+			return write('rooms/90419/info', info(stranger.uid), stranger.token);
+		}
+	},
+	{
+		/*
+		 * НОВА КІМНАТА ПОВЕРХ ЛИШЕНОГО ЖУРНАЛУ (аудит 2026-09-25): доти створення
+		 * дивилося лише на склад, і чужий хід `lead` робив ведучим вікторини того,
+		 * кого в кімнаті немає, — партія стояла на раунді -1 назавжди.
+		 */
+		name: 'нова кімната поверх лишеного журналу',
+		allowed: false,
+		run: async () => {
+			await seed('rooms/90420/moves/000001', {
+				seq: 1,
+				by: host.uid,
+				type: 'lead',
+				at: 1,
+				payload: { from: host.uid }
+			});
+			const status = await write('rooms/90420/info', info(stranger.uid), stranger.token);
+			await seed('rooms/90420', null);
+			return status;
+		}
+	},
+	{
+		// Без позначки створення кімнату не датує й не зносить ніхто (аудит 2026-09-25).
+		name: 'нова кімната без createdAt',
+		allowed: false,
+		run: () =>
+			write('rooms/90422/info', { ...info(stranger.uid), createdAt: undefined }, stranger.token)
 	},
 	{
 		name: 'господар прибирає свій рядок із покинутого коду',
@@ -1237,6 +1321,13 @@ const CASES = [
 		run: () => write('rooms/BBBBB/info', info(host.uid), guest.token)
 	},
 	{
+		// Код правильної форми й вільний: відмова — рівно через «господарем назвав не
+		// себе». Випадок вище відмовляв ще й через форму коду (аудит 2026-09-25).
+		name: 'створити кімнату з правильним кодом, назвавши господарем ІНШОГО',
+		allowed: false,
+		run: () => write('rooms/98765/info', info(host.uid), guest.token)
+	},
+	{
 		name: 'status поза переліком',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/info/status`, 'winner', host.token)
@@ -1329,11 +1420,13 @@ const CASES = [
 		run: () => readQuery('lobby/pairs', 'orderBy=%22at%22&limitToLast=500', guest.token)
 	},
 	{
-		// Межа названа разом із порядком: без `orderBy` індекс не діє, і база
-		// однаково віддала б гілку цілком.
-		name: 'перелік кімнат читають з межею, але без orderBy',
+		// Межа названа разом із порядком за `at`: з іншим порядком індекс не діє. Запит
+		// ЗАКОННИЙ для самої бази (порядок за ключем): доти тут стояв `limitToLast` без
+		// `orderBy`, а його REST відкидає сам, відповіддю 400, — і умова правила на
+		// порядок не перевірялася зовсім (аудит 2026-09-25).
+		name: 'перелік кімнат читають з межею, але в іншому порядку',
 		allowed: false,
-		run: () => readQuery('lobby/pairs', 'limitToLast=10', guest.token)
+		run: () => readQuery('lobby/pairs', 'orderBy=%22%24key%22&limitToLast=10', guest.token)
 	},
 	{
 		// Головне обмеження цієї гілки: публічною кімнату робить ЇЇ господар, а не
@@ -1563,6 +1656,13 @@ const CASES = [
 	 * `startedAt` тут з 2026-09-23: без нього перший хід реваншу був простроченим
 	 * уже на старті, бо межа очікування рахувалася від першої партії.
 	 */
+	{
+		// Лише стерти журнал, без решти реваншу: відмова — рівно право господаря на
+		// `moves`. Випадок нижче відмовляв ще й через `info/*` (аудит 2026-09-25).
+		name: 'гість стирає журнал',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves`, null, guest.token)
+	},
 	{
 		name: 'гість сам починає реванш',
 		allowed: false,
@@ -2066,16 +2166,26 @@ const CASES = [
 const problems = [];
 let positives = 0;
 
+/*
+ * ВІДМОВА — ЦЕ 401, А НЕ «БУДЬ-ЩО, КРІМ 200» (аудит 2026-09-25).
+ *
+ * Доти негативний випадок зеленів на будь-якій відповіді, крім 200, — зокрема на
+ * 400, яким REST відкидає незаконний ключ чи запит ще ДО правил. Два випадки так і
+ * жили: вони перевіряли синтаксис REST, а не правило, заради якого написані. Тепер
+ * відмова правил — рівно 401; будь-що інше — поломка самого випадку.
+ */
+const DENIED = 401;
+
 for (const { name, allowed, run } of CASES) {
 	if (allowed) positives++;
 	const status = await run();
 	const isAllowed = status === 200;
+	const fits = allowed ? isAllowed : status === DENIED;
 	const verdict = isAllowed ? 'ДОЗВОЛЕНО' : `ЗАБОРОНЕНО(${status})`;
-	console.log(`  ${isAllowed === allowed ? '✓' : '✗'} ${verdict.padEnd(18)} ${name}`);
-	if (isAllowed !== allowed) {
-		problems.push(
-			`${name}: очікувалося ${allowed ? 'дозволено' : 'заборонено'}, отримано ${verdict}`
-		);
+	console.log(`  ${fits ? '✓' : '✗'} ${verdict.padEnd(18)} ${name}`);
+	if (!fits) {
+		const expected = allowed ? 'дозволено' : `відмову правил (${DENIED})`;
+		problems.push(`${name}: очікувалося ${expected}, отримано ${verdict}`);
 	}
 }
 

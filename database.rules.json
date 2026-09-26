@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === '0beda2de050a'" }
+      "$v": { ".read": "auth != null && $v === 'fa74de0fd755'" }
     },
 
     "rooms": {
@@ -73,9 +73,20 @@
           // Створити — лише на коді правильної форми й лише там, де від попередньої
           // кімнати не лишилося складу: інакше новий господар успадкував би чужих
           // «гравців», підкинутих під порожній код (аудит 2026-09-24).
-          ".write": "auth != null && (data.exists() ? data.child('hostUid').val() === auth.uid : (newData.child('hostUid').val() === auth.uid && $code.matches(/^[0-9]{2,5}$/) && !data.parent().child('members').exists()))",
+          //
+          // І ЖУРНАЛУ ТЕЖ, а `info` окремо від кімнати НЕ СТИРАЄТЬСЯ (аудит 2026-09-25).
+          // Доти господар міг лишити під кодом журнал, стерти склад і `info` — і нова
+          // кімната на цьому коді успадковувала чужий хід `lead`: вікторина вважала
+          // ведучим того, кого в кімнаті немає, і стояла на раунді -1 назавжди. Та сама
+          // дорога давала «зомбі»-коди без `info`, яких не бачить навіть прибиральник, —
+          // тобто вичерпати всі публічні коди можна було за хвилину. Знести кімнату
+          // господар і далі може цілком (правило вище), а не по частинах.
+          ".write": "auth != null && (data.exists() ? data.child('hostUid').val() === auth.uid && newData.exists() : (newData.child('hostUid').val() === auth.uid && $code.matches(/^[0-9]{2,5}$/) && !data.parent().child('members').exists() && !data.parent().child('moves').exists()))",
           // Склад партії можна прибрати лише разом із журналом — див. `roster` нижче.
-          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid']) && (!data.child('roster').exists() || newData.child('roster').exists() || !newData.parent().child('moves').exists())",
+          // Створена кімната — з `createdAt` (аудит 2026-09-25): кімнату без позначки
+          // часу доти не датував і не зносив ніхто, тож коди, забиті такими, лишалися
+          // зайнятими назавжди.
+          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid']) && (data.exists() || newData.child('createdAt').exists()) && (!data.child('roster').exists() || newData.child('roster').exists() || !newData.parent().child('moves').exists())",
           "status": {
             ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'over')"
           },

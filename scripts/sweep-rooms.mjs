@@ -99,7 +99,7 @@ try {
 
 	const report = [
 		`кімнат ${plan.total}, покинутих ${plan.doomed.length + plan.left} ` +
-			`(тиша понад ${SWEEP_SILENCE_MS / 3600000} год), без позначки часу ${plan.undatable}`,
+			`(тиша понад ${SWEEP_SILENCE_MS / 3600000} год), з них без позначки часу ${plan.undatable}`,
 		`зносимо: кімнат ${plan.doomed.length} із межі ${SWEEP_LIMIT}, ` +
 			`разом із переліком, присутністю й індексами — ${plan.paths.length} шляхів`
 	];
@@ -122,7 +122,10 @@ try {
 			firebase(['database:update', '/', patch, '--force']);
 		}
 		for (const { code, silence } of plan.doomed) {
-			console.log(`  знесено ${code} — тиша ${Math.round(silence / 3600000)} год`);
+			const age = Number.isFinite(silence)
+				? `тиша ${Math.round(silence / 3600000)} год`
+				: 'без позначки часу';
+			console.log(`  знесено ${code} — ${age}`);
 		}
 	}
 
