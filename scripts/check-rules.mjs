@@ -204,6 +204,14 @@ const member = { name: 'Тест', role: 'player', order: 2 };
  * прогін заразом доводить, що ходу з підробленим часом не існує.
  */
 const SERVER_TIME = { '.sv': 'timestamp' };
+
+/**
+ * Час НА ГОДИНУ ВПЕРЕД — для випадків «позначка з майбутнього». Правила пускають лише
+ * `now - 5 с < t <= now`, а випадки з давнім часом тримали тільки нижню межу: верхньої
+ * `<= now` не тримав жоден — її знайшов мутаційний прогін (`scripts/rules-mutants.mjs`).
+ * Годинник той самий, що в емулятора: машина одна.
+ */
+const FUTURE = () => Date.now() + 60 * 60_000;
 const move = (by, seq) => ({ seq, by, type: 'flip', at: SERVER_TIME, payload: { index: 3 } });
 
 /**
@@ -296,6 +304,12 @@ const CASES = [
 		allowed: false,
 		run: () => write(`rooms/${CODE}/info/startedAt`, 1000, host.token)
 	},
+	{
+		name: 'позначка початку партії з майбутнього',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/startedAt`, FUTURE(), host.token)
+	},
+
 	{
 		name: 'господар перемикає режим початку партії',
 		allowed: true,
@@ -513,6 +527,12 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/aliveAt`, 1000, host.token)
 	},
 	{
+		name: 'позначка життя з майбутнього',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/aliveAt`, FUTURE(), host.token)
+	},
+
+	{
 		// Не учасник не має права тримати кімнату живою — інакше будь-хто, знаючи
 		// код, продовжував би чужу кімнату вічно.
 		name: 'позначка життя від НЕАВТОРИЗОВАНОГО',
@@ -584,6 +604,12 @@ const CASES = [
 		allowed: false,
 		run: () => write(`myRooms/${guest.uid}/${CODE}`, { at: 1000 }, guest.token)
 	},
+	{
+		name: 'свій індекс кімнат із часом із майбутнього',
+		allowed: false,
+		run: () => write(`myRooms/${guest.uid}/${CODE}`, { at: FUTURE() }, guest.token)
+	},
+
 	{
 		name: 'гість читає свій індекс кімнат',
 		allowed: true,
@@ -827,6 +853,12 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/play`, { score: 500, at: 1000 }, guest.token)
 	},
 	{
+		name: 'рахунок гри з часом із майбутнього',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play`, { score: 500, at: FUTURE() }, guest.token)
+	},
+
+	{
 		name: 'рядок таблиці при вимкненому показі',
 		allowed: false,
 		run: () =>
@@ -867,6 +899,17 @@ const CASES = [
 				guest.token
 			)
 	},
+	{
+		name: 'рядок таблиці з часом із майбутнього',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, at: FUTURE() },
+				guest.token
+			)
+	},
+
 	{
 		name: 'рядок таблиці з ЧУЖИМ псевдонімом',
 		allowed: false,
@@ -997,6 +1040,17 @@ const CASES = [
 				host.token
 			)
 	},
+	{
+		name: 'профіль із часом із майбутнього',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Лідер', handle: 'leader', country: 'ua', at: FUTURE() },
+				host.token
+			)
+	},
+
 	{
 		name: 'профіль читає інший гравець',
 		allowed: true,
@@ -1159,10 +1213,22 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/following/${host.uid}`, { at: 1000 }, guest.token)
 	},
 	{
+		name: 'підписка з часом із майбутнього',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/following/${host.uid}`, { at: FUTURE() }, guest.token)
+	},
+
+	{
 		name: 'підписник із клієнтським часом',
 		allowed: false,
 		run: () => write(`users/${host.uid}/followers/${guest.uid}`, { at: 1000 }, guest.token)
 	},
+	{
+		name: 'підписник із часом із майбутнього',
+		allowed: false,
+		run: () => write(`users/${host.uid}/followers/${guest.uid}`, { at: FUTURE() }, guest.token)
+	},
+
 	{
 		/*
 		 * ЧУЖУ ПІДПИСКУ НЕ СТВОРИТИ, і це не дрібниця: без цього правила будь-хто
@@ -1626,6 +1692,13 @@ const CASES = [
 		run: () => write('rooms/90423/info', { ...info(stranger.uid), createdAt: 1000 }, stranger.token)
 	},
 	{
+		name: 'нова кімната з createdAt із майбутнього',
+		allowed: false,
+		run: () =>
+			write('rooms/90423/info', { ...info(stranger.uid), createdAt: FUTURE() }, stranger.token)
+	},
+
+	{
 		name: 'нова кімната без createdAt',
 		allowed: false,
 		run: () =>
@@ -1687,6 +1760,17 @@ const CASES = [
 			)
 	},
 	{
+		name: 'хід із часом із майбутнього',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000010`,
+				{ seq: 10, by: guest.uid, type: 'flip', at: FUTURE(), payload: { index: 1 } },
+				guest.token
+			)
+	},
+
+	{
 		name: 'хід зовсім без часу',
 		allowed: false,
 		run: () =>
@@ -1743,6 +1827,12 @@ const CASES = [
 		allowed: false,
 		run: () => write(`rooms/${CODE}/info/countdownAt`, 1000, host.token)
 	},
+	{
+		name: 'відлік із часом із майбутнього',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/countdownAt`, FUTURE(), host.token)
+	},
+
 	{
 		name: 'створити кімнату, назвавши господарем ІНШОГО',
 		allowed: false,
@@ -1921,6 +2011,12 @@ const CASES = [
 		run: () => write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), at: 1000 }, host.token)
 	},
 	{
+		name: 'запис у переліку з часом із майбутнього',
+		allowed: false,
+		run: () => write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), at: FUTURE() }, host.token)
+	},
+
+	{
 		name: 'запис у переліку без обовʼязкових полів',
 		allowed: false,
 		run: () => write(`lobby/pairs/${LIST}`, { hostUid: host.uid }, host.token)
@@ -1973,6 +2069,12 @@ const CASES = [
 		run: () => write(`presence/${CODE}/${guest.uid}`, { at: 1 }, guest.token)
 	},
 	{
+		name: 'присутність із часом із майбутнього',
+		allowed: false,
+		run: () => write(`presence/${CODE}/${guest.uid}`, { at: FUTURE() }, guest.token)
+	},
+
+	{
 		/*
 		 * ПІДСВІТКА ЧУЖОГО НАВЕДЕННЯ — нове поле присутності.
 		 *
@@ -2014,6 +2116,12 @@ const CASES = [
 		allowed: true,
 		run: () => write(`rooms/${CODE}/info/nextCode`, 'ab', host.token)
 	},
+	{
+		name: 'господар оголошує переїзд порожнім кодом',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/nextCode`, '', host.token)
+	},
+
 	{
 		// Право те саме, що на решту `info`: гість переїзду не оголошує, інакше він
 		// відводив би групу в кімнату, якої господар не створював.
@@ -2304,10 +2412,53 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/moves/12`, move(guest.uid, 12), guest.token)
 	},
 	{
+		// Ключ `12` відкидала ще й межа `< '010000'`; три нулі — лише формат (мутаційний прогін).
+		name: 'хід під ключем із трьох цифр',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves/000`, move(guest.uid, 12), guest.token)
+	},
+
+	{
 		name: 'хід із номером понад шість цифр',
 		allowed: false,
 		run: () => write(`rooms/${CODE}/moves/000002`, move(guest.uid, 1e20), guest.token)
 	},
+	{
+		name: 'хід із нульовим номером',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/moves/000002`, move(guest.uid, 0), guest.token)
+	},
+	{
+		name: 'хід із задовгим типом',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{ ...move(guest.uid, 2), type: 'x'.repeat(17) },
+				guest.token
+			)
+	},
+	{
+		name: 'перегортання картки з відʼємним номером',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{ ...move(guest.uid, 2), payload: { index: -1 } },
+				guest.token
+			)
+	},
+	{
+		name: 'хід із задовгим полем from',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${CODE}/moves/000002`,
+				{ ...move(guest.uid, 2), payload: { from: 'x'.repeat(33) } },
+				guest.token
+			)
+	},
+
 	{
 		name: 'хід lead без передачі ведення',
 		allowed: false,
@@ -2394,6 +2545,13 @@ const CASES = [
 				: joined;
 		}
 	},
+	{
+		// Тринадцятий: кімната вміщає дванадцять (`ROOM_CAPACITY`), і тримає це `order`.
+		name: 'тринадцятий учасник кімнати',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/members/${anon.uid}`, { ...member, order: 13 }, anon.token)
+	},
+
 	{
 		// `net/leave.ts` читає свій рядок складу, щоб знати, чи потрібен хід `leave`:
 		// черги є лише в тих, хто в складі.
@@ -2672,6 +2830,46 @@ const CASES = [
 			)
 	},
 	{
+		name: 'кімната з колонок понад межу',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 8, cols: 15 } },
+				host.token
+			)
+	},
+	{
+		name: 'кімната з однієї пари',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 1, cols: 4 } },
+				host.token
+			)
+	},
+	{
+		name: 'рівень швидкості нижче шкали',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${BOUNDS}/info`,
+				{ ...info(host.uid), config: { pairs: 8, cols: 4, pace_round: -1 } },
+				host.token
+			)
+	},
+	{
+		// Поле без власного правила не перевіряється зовсім — обовʼязковість тримає `info`.
+		name: 'кімната без зерна',
+		allowed: false,
+		run: () => {
+			const { seed: _seed, ...rest } = info(host.uid);
+			return write(`rooms/${BOUNDS}/info`, rest, host.token);
+		}
+	},
+
+	{
 		name: 'прапорець гри — не нуль і не одиниця',
 		allowed: false,
 		run: () =>
@@ -2701,7 +2899,16 @@ const CASES = [
 				{
 					...info(host.uid),
 					seed: 2199023255551,
-					config: { pairs: 14, cols: 14, game_myths: 1, pace_round: 9 }
+					// Нуль — теж межа: вимкнена гра й найповільніший рівень (мутаційний прогін:
+					// доти жоден законний запис не мав значення поза 1…14).
+					config: {
+						pairs: 14,
+						cols: 14,
+						game_myths: 1,
+						game_feeding: 0,
+						pace_round: 9,
+						pace_reveal: 0
+					}
 				},
 				host.token
 			)
@@ -2972,6 +3179,12 @@ const CASES = [
 		run: () => write(`rooms/${LEAD}/info/leadSeq`, '000002', guest.token)
 	},
 	{
+		name: 'господар пише вказівник не з шести цифр',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/leadSeq`, '2', guest.token)
+	},
+
+	{
 		// Названий у `from` — не господар; без перевірки типу він оголосив би переїзд.
 		name: 'переїзд під вказівником на хід, що не lead',
 		allowed: false,
@@ -3103,6 +3316,39 @@ const CASES = [
 			)
 	},
 	{
+		name: 'склад старту з відʼємним місцем',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/status': 'playing',
+					'info/roster': {
+						[host.uid]: { name: 'Господар', seat: -1 },
+						[guest.uid]: { name: 'Тест', seat: 1 }
+					}
+				},
+				host.token
+			)
+	},
+	{
+		name: 'склад старту без місця',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/status': 'playing',
+					'info/roster': {
+						[host.uid]: { name: 'Господар' },
+						[guest.uid]: { name: 'Тест', seat: 1 }
+					}
+				},
+				host.token
+			)
+	},
+
+	{
 		name: 'вікторина стартує зі складом господаря й гостя',
 		allowed: true,
 		run: () =>
@@ -3150,6 +3396,105 @@ const CASES = [
 				stranger.token
 			)
 	},
+	{
+		// Склад у вікторини відкритий, тож стороннього тут зупиняє рівно членство. Доти цієї
+		// умови не тримав жоден випадок: у «Знайди пару» її дублює склад (мутаційний прогін).
+		name: 'не учасник дописує відповідь посеред вікторини',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000009`,
+				{
+					seq: 9,
+					by: anon.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: 0, correct: 1 }
+				},
+				anon.token
+			)
+	},
+	{
+		name: 'відповідь із раундом понад межу',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000009`,
+				{
+					seq: 9,
+					by: stranger.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: 10000, correct: 1 }
+				},
+				stranger.token
+			)
+	},
+	{
+		name: 'відповідь із відʼємною часткою',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000009`,
+				{
+					seq: 9,
+					by: stranger.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: 0, correct: -1 }
+				},
+				stranger.token
+			)
+	},
+	{
+		name: 'відповідь із відʼємним часом',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000009`,
+				{
+					seq: 9,
+					by: stranger.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: 0, correct: 1, ms: -1 }
+				},
+				stranger.token
+			)
+	},
+	{
+		name: 'пауза з відʼємним витраченим часом',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000009`,
+				{
+					seq: 9,
+					by: stranger.uid,
+					type: 'pause',
+					at: SERVER_TIME,
+					payload: { round: 0, spent: -1 }
+				},
+				stranger.token
+			)
+	},
+	{
+		name: 'пауза довша за добу',
+		allowed: false,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000009`,
+				{
+					seq: 9,
+					by: stranger.uid,
+					type: 'pause',
+					at: SERVER_TIME,
+					payload: { round: 0, spent: 86400001 }
+				},
+				stranger.token
+			)
+	},
+
 	{
 		// Господаря на звʼязку немає, пізній гравець на звʼязку й хід правильний —
 		// відмова рівно через склад: посеред партії веде лише той, хто в ньому.
