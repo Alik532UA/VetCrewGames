@@ -45,7 +45,7 @@
      * Руками не правити: `npm run rules:stamp`.
      */
     "__rulesVersion": {
-      "$v": { ".read": "auth != null && $v === 'e96c9341fffc'" }
+      "$v": { ".read": "auth != null && $v === 'd81090fab1eb'" }
     },
 
     "rooms": {
@@ -87,7 +87,11 @@
           // Створена кімната — з `createdAt` (аудит 2026-09-25): кімнату без позначки
           // часу доти не датував і не зносив ніхто, тож коди, забиті такими, лишалися
           // зайнятими назавжди.
-          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid']) && (data.exists() || newData.child('createdAt').exists()) && (!data.child('roster').exists() || newData.child('roster').exists() || !newData.parent().child('moves').exists())",
+          // МІТКА СТВОРЕННЯ Й НАЛАШТУВАННЯ НЕ ЗНИКАЮТЬ (аудит 2026-09-26, шостий): `.validate`
+          // на видалення не діє, тож незмінність `createdAt` і межі `config` обходилися
+          // стиранням — кімната без мітки не старіла для прибиральника, а стерті й записані
+          // заново налаштування перероздавали дошку посеред партії.
+          ".validate": "newData.hasChildren(['gameId', 'rulesVersion', 'seed', 'status', 'hostUid']) && (data.exists() || newData.child('createdAt').exists()) && (!data.child('createdAt').exists() || newData.child('createdAt').exists()) && (!data.child('config').exists() || newData.child('config').exists()) && (!data.child('roster').exists() || newData.child('roster').exists() || !newData.parent().child('moves').exists())",
           // ПОЧАТИ ПАРТІЮ — ЛИШЕ З ПОРОЖНІМ ЖУРНАЛОМ ПІСЛЯ ЗАПИСУ (аудит 2026-09-26, A2).
           // Доти старт лишав журнал лобі, і все, що в ньому лежало, перепрогін
           // рахував першими ходами партії. Старт і реванш тепер стирають журнал тим

@@ -2893,6 +2893,17 @@ const CASES = [
 		run: () => write(`rooms/${LEAD}/info/createdAt`, SERVER_TIME, guest.token)
 	},
 	{
+		// `.validate` на видалення не діє — тримає `info`, а не сама мітка.
+		name: 'мітку створення стерто',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/createdAt`, null, guest.token)
+	},
+	{
+		name: 'налаштування стерто посеред партії',
+		allowed: false,
+		run: () => write(`rooms/${LEAD}/info/config`, null, guest.token)
+	},
+	{
 		// Господар пише `info` правом батька, тож умову несе `.validate` `hostUid`.
 		name: 'господар передає ведення без ходу lead',
 		allowed: false,
