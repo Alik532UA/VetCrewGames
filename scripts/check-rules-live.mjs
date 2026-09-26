@@ -71,6 +71,28 @@ async function signInAnonymously() {
 	return (await res.json()).idToken;
 }
 
+/**
+ * ПРИБРАТИ ЗА СОБОЮ АНОНІМА (аудит 2026-09-26). Кожна спроба зонда — новий анонімний
+ * обліковий запис Firebase, і доти вони лишалися назавжди: по одному-чотири на
+ * викладку. Запис видаляє себе сам, власним токеном; невдача прибирання зонда не
+ * валить — вона лише лишає одного аноніма, як і доти.
+ */
+async function forgetAccount(token) {
+	try {
+		const res = await fetch(
+			`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${apiKey}`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ idToken: token })
+			}
+		);
+		if (!res.ok) console.log(`  анонім зонда не прибраний: ${res.status}`);
+	} catch (error) {
+		console.log(`  анонім зонда не прибраний: ${String(error)}`);
+	}
+}
+
 async function probe(path, token) {
 	const res = await fetch(`${databaseURL}/${path}.json?auth=${token}`);
 	return res.status;
@@ -96,8 +118,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let last = null;
 for (const [attempt, pause] of PAUSES_MS.entries()) {
 	await sleep(pause);
+	let token = null;
 	try {
-		const token = await signInAnonymously();
+		token = await signInAnonymously();
 		const mine = await probe(`__rulesVersion/${stamp}`, token);
 		/*
 		 * КАНАРКА НА САМ ЗОНД, і без неї він майже нічого не вартий.
@@ -112,6 +135,8 @@ for (const [attempt, pause] of PAUSES_MS.entries()) {
 		if (bogus === 200 || mine === 200) break;
 	} catch (error) {
 		last = { error };
+	} finally {
+		if (token) await forgetAccount(token);
 	}
 	console.log(
 		`  спроба ${attempt + 1} з ${PAUSES_MS.length}: ${last.error ?? `штамп → ${last.mine}`}`
