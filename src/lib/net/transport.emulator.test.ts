@@ -87,15 +87,24 @@ interface World {
 	/**
 	 * Нова кімната в лобі: господар і гість — гравці; `spectator` — сторонній
 	 * заходить глядачем, `strangerPlays` — гравцем (але в склад старту не йде).
+	 * `gameId` — яка гра: у вікторини склад відкритий в один бік (`utils/roster.ts`).
 	 */
-	table(options?: { spectator?: boolean; strangerPlays?: boolean }): Promise<Table>;
+	table(options?: TableOptions): Promise<Table>;
+}
+
+interface TableOptions {
+	spectator?: boolean;
+	strangerPlays?: boolean;
+	gameId?: 'pairs' | 'quiz';
 }
 
 const CONFIG = { pairs: 4, cols: 4 };
+/** Налаштування кімнати для гри: у вікторини — набір ігор. */
+const configOf = (gameId: 'pairs' | 'quiz') => (gameId === 'quiz' ? { game_myths: 1 } : CONFIG);
 
 const local: World = {
 	name: 'LocalRoom',
-	async table({ spectator = false, strangerPlays = false } = {}) {
+	async table({ spectator = false, strangerPlays = false, gameId = 'pairs' } = {}) {
 		const [HOST, GUEST, STRANGER] = ['uid-host', 'uid-guest', 'uid-stranger'];
 		const members: Member[] = [
 			{ uid: HOST, name: 'Господар', role: 'player', order: 1 },
@@ -108,12 +117,12 @@ const local: World = {
 				: [])
 		];
 		const info: RoomInfo = {
-			gameId: 'pairs',
+			gameId,
 			rulesVersion: 3,
 			seed: 1,
 			status: 'lobby',
 			hostUid: HOST,
-			config: CONFIG
+			config: configOf(gameId)
 		};
 		const room = new LocalRoom(info, members);
 		const seat = (uid: string): Seat => ({ uid, transport: room.transport() });
@@ -133,16 +142,16 @@ let people: { host: Connection; guest: Connection; stranger: Connection } | null
 
 const emulator: World = {
 	name: 'rtdbRoom + емулятор',
-	async table({ spectator = false, strangerPlays = false } = {}) {
+	async table({ spectator = false, strangerPlays = false, gameId = 'pairs' } = {}) {
 		if (!people) throw new Error('контракт: учасники емулятора не ввійшли');
 		const { host, guest, stranger } = people;
 		const net = await import('./rtdbRoom');
 		const code = await as(host, () =>
 			net.createRoom({
-				gameId: 'pairs',
+				gameId,
 				rulesVersion: 3,
 				seed: 1,
-				config: CONFIG,
+				config: configOf(gameId),
 				name: 'Господар',
 				isPrivate: true
 			})
@@ -349,6 +358,36 @@ describe.each([local, emulator])('контракт транспорту: $name',
 		};
 		expect(await table.stranger.transport.takeLead(lead)).toBe(false);
 		await table.close();
+	});
+
+	/**
+	 * ВІКТОРИНА ПОСЕРЕД ПАРТІЇ (аудит 2026-09-26): склад у неї відкритий в один бік —
+	 * пізній гравець дописує ходи, але ведення не бере; гравець складу — бере. Доти
+	 * контракт знав лише «Знайди пару», і виняток вікторини в правилі ходів не
+	 * перевірявся ні тут, ні в гейті.
+	 */
+	it('посеред вікторини хід пише й пізній гравець, якого немає в складі', async () => {
+		const table = await world.table({ strangerPlays: true, gameId: 'quiz' });
+		await table.host.transport.setStatus('playing', rosterOf(table));
+
+		expect(await table.stranger.transport.append(flip(table.stranger.uid, 1))).toBe(true);
+		await table.close();
+	});
+
+	it('посеред вікторини пізній гравець ведення не бере, а гравець складу — бере', async () => {
+		const table = await world.table({ strangerPlays: true, gameId: 'quiz' });
+		await table.host.transport.setStatus('playing', rosterOf(table));
+		await table.present([table.guest.uid, table.stranger.uid]);
+		const lead = (who: Seat): Move => ({
+			seq: 1,
+			by: who.uid,
+			type: 'lead',
+			payload: { from: table.host.uid }
+		});
+
+		expect(await table.stranger.transport.takeLead(lead(table.stranger)), 'пізній').toBe(false);
+		expect(await table.guest.transport.takeLead(lead(table.guest)), 'зі складу').toBe(true);
+		await table.close('guest');
 	});
 
 	it('господар прибирає учасника — рядок зникає цілком', async () => {

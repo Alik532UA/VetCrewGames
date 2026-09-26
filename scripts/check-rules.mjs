@@ -168,6 +168,12 @@ const CODE = '90417';
 const LIST = '90430';
 /** Кімната в лобі для перехоплення ведення (гілка лобі правила `info/hostUid`). */
 const LEAD = '90431';
+/**
+ * Кімната ВІКТОРИНИ (аудит 2026-09-26): доти в гейті не було жодної, тож виняток
+ * вікторини в правилі ходів («посеред партії пише й пізній гравець») і гілка
+ * складу в правилі перехоплення посеред партії не перевірялися нічим.
+ */
+const QUIZ = '90432';
 const info = (hostUid) => ({
 	gameId: 'pairs',
 	rulesVersion: 2,
@@ -241,6 +247,13 @@ const CASES = [
 				{ 'info/status': 'playing', 'info/roster': { [guest.uid]: { name: 'Тест', seat: 0 } } },
 				host.token
 			)
+	},
+	{
+		// Вказівник на хід `lead` пише лише той, хто в НОВОМУ стані господар (аудит
+		// 2026-09-26 — окремого випадку в цієї гілки не було).
+		name: 'гість сам ставить вказівник на хід lead',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/info/leadSeq`, '000001', guest.token)
 	},
 	{
 		name: 'господар ставить серверну позначку початку партії',
@@ -488,6 +501,12 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/members/${guest.uid}`, member, guest.token)
 	},
 	{
+		name: 'рядок складу з роллю, якої немає',
+		allowed: false,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, role: 'admin' }, guest.token)
+	},
+	{
 		name: 'господар веде індекс СВОїх кімнат',
 		allowed: true,
 		run: () => write(`myRooms/${host.uid}/${CODE}`, { at: SERVER_TIME }, host.token)
@@ -520,6 +539,11 @@ const CASES = [
 		name: 'гість веде індекс СВОїх кімнат',
 		allowed: true,
 		run: () => write(`myRooms/${guest.uid}/${CODE}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'свій індекс кімнат із клієнтським часом',
+		allowed: false,
+		run: () => write(`myRooms/${guest.uid}/${CODE}`, { at: 1000 }, guest.token)
 	},
 	{
 		name: 'гість читає свій індекс кімнат',
@@ -744,6 +768,11 @@ const CASES = [
 		run: () => write(`users/${guest.uid}/play`, { score: 500, at: SERVER_TIME }, guest.token)
 	},
 	{
+		name: 'рахунок гри з клієнтським часом',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/play`, { score: 500, at: 1000 }, guest.token)
+	},
+	{
 		name: 'рядок таблиці при вимкненому показі',
 		allowed: false,
 		run: () =>
@@ -766,6 +795,16 @@ const CASES = [
 			write(
 				`leaders/${guest.uid}`,
 				{ name: 'Гість', handle: 'guest_one', score: 120, country: 'ua', at: SERVER_TIME },
+				guest.token
+			)
+	},
+	{
+		name: 'рядок таблиці з клієнтським часом',
+		allowed: false,
+		run: () =>
+			write(
+				`leaders/${guest.uid}`,
+				{ name: 'Гість', handle: 'guest_one', score: 120, at: 1000 },
 				guest.token
 			)
 	},
@@ -886,6 +925,16 @@ const CASES = [
 			write(
 				`users/${host.uid}/profile`,
 				{ name: 'Лідер', handle: 'leader', country: 'ua', at: SERVER_TIME },
+				host.token
+			)
+	},
+	{
+		name: 'профіль із клієнтським часом',
+		allowed: false,
+		run: () =>
+			write(
+				`users/${host.uid}/profile`,
+				{ name: 'Лідер', handle: 'leader', country: 'ua', at: 1000 },
 				host.token
 			)
 	},
@@ -1044,6 +1093,16 @@ const CASES = [
 		name: 'гість пише свою підписку',
 		allowed: true,
 		run: () => write(`users/${guest.uid}/following/${host.uid}`, { at: SERVER_TIME }, guest.token)
+	},
+	{
+		name: 'підписка з клієнтським часом',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/following/${host.uid}`, { at: 1000 }, guest.token)
+	},
+	{
+		name: 'підписник із клієнтським часом',
+		allowed: false,
+		run: () => write(`users/${host.uid}/followers/${guest.uid}`, { at: 1000 }, guest.token)
 	},
 	{
 		/*
@@ -1303,6 +1362,16 @@ const CASES = [
 		name: 'господар оновлює кількість гравців у переліку',
 		allowed: true,
 		run: () => write(`lobby/pairs/${LIST}/players`, 2, host.token)
+	},
+	{
+		name: 'кількість гравців у переліку понад стелю складу',
+		allowed: false,
+		run: () => write(`lobby/pairs/${LIST}/players`, 13, host.token)
+	},
+	{
+		name: 'прапор господаря в переліку — не код країни',
+		allowed: false,
+		run: () => write(`lobby/pairs/${LIST}/hostCountry`, 'UKR', host.token)
 	},
 	{
 		// Аватар господаря в переліку. Дозвіл доводить, що поле НАЗВАНЕ: без
@@ -1679,7 +1748,27 @@ const CASES = [
 		// хтось інший. Без цього будь-хто відкривав би чужий код усьому світові.
 		name: 'ЧУЖУ кімнату оголошують публічною',
 		allowed: false,
-		run: () => write(`lobby/pairs/${LIST}`, lobbyEntry(guest.uid), guest.token)
+		// Гість — у складі кімнати під тим самим імʼям, що й запис: відмова рівно через
+		// те, що кімната не його (доти ще й через імʼя, якого в складі не було).
+		run: async () => {
+			const seated = await write(
+				`rooms/${LIST}/members/${guest.uid}`,
+				{ ...member, name: lobbyEntry(guest.uid).hostName, order: 4 },
+				guest.token
+			);
+			if (seated !== 200) return seated;
+			const status = await write(`lobby/pairs/${LIST}`, lobbyEntry(guest.uid), guest.token);
+			await write(`rooms/${LIST}/members/${guest.uid}`, null, guest.token);
+			return status;
+		}
+	},
+	{
+		// Господар кімнати, але запис — на чужий `uid`: без цієї умови прибирати запис
+		// міг би той, кого господар у ньому назвав.
+		name: 'господар оголошує свою кімнату на чужий uid',
+		allowed: false,
+		run: () =>
+			write(`lobby/pairs/${LIST}`, { ...lobbyEntry(host.uid), hostUid: guest.uid }, host.token)
 	},
 	{
 		// Запис, що не відповідає жодній кімнаті, — це привид у списку.
@@ -1747,7 +1836,9 @@ const CASES = [
 		// перевірялася зовсім: свій вузол можна було набити чим завгодно.
 		name: 'присутність без обовʼязкових полів',
 		allowed: false,
-		run: () => write(`presence/${CODE}/${guest.uid}`, { online: true }, guest.token)
+		// Відоме поле без обовʼязкового `at`: причина рівно одна (доти `online` ще й
+		// відкидав `$other`).
+		run: () => write(`presence/${CODE}/${guest.uid}`, { hover: 3 }, guest.token)
 	},
 	{
 		name: 'присутність із ПІДРОБЛЕНИМ часом',
@@ -1870,11 +1961,7 @@ const CASES = [
 		allowed: false,
 		run: () => write(`rooms/${CODE}/chat/msg1`, { text: 'привіт' }, host.token)
 	},
-	{
-		name: 'нечислове значення в config',
-		allowed: false,
-		run: () => write(`rooms/${CODE}/info/config/mode`, 'hard', host.token)
-	},
+
 	{
 		name: 'ЧУЖИЙ індекс кімнат — читання',
 		allowed: false,
@@ -2264,7 +2351,9 @@ const CASES = [
 		run: () => write(`rooms/${CODE}/info/nextCode`, 'abcdefghij', host.token)
 	},
 	{
-		name: 'колишній господар, якого немає на звʼязку, забирає ведення назад',
+		// СКЛАДЕНИЙ випадок: колишній господар і поза складом, і без звʼязку, а новий —
+		// на звʼязку. Кожна з трьох причин окремо — у кімнатах LEAD і QUIZ нижче.
+		name: 'колишній господар поза складом і без звʼязку ведення назад не забирає',
 		allowed: false,
 		run: () =>
 			patch(
@@ -2459,10 +2548,253 @@ const CASES = [
 				guest.token
 			)
 	},
+	/*
+	 * ПРИЧИНИ ВІДМОВИ ПЕРЕХОПЛЕННЯ — ПООДИНЦІ (аудит 2026-09-26). Доти кожен
+	 * негативний випадок перехоплення падав одразу з двох-трьох причин, і прибрати
+	 * будь-яку одну умову з правила гейт не помітив би.
+	 */
+	{
+		name: 'колишній господар вертається на звʼязок у лобі',
+		allowed: true,
+		run: () => write(`presence/${LEAD}/${host.uid}`, { at: SERVER_TIME }, host.token)
+	},
+	{
+		name: 'у лобі ведення не взяти, поки господар на звʼязку',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/hostUid': host.uid,
+					'info/leadSeq': '000003',
+					'moves/000003': {
+						seq: 3,
+						by: host.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: guest.uid }
+					}
+				},
+				host.token
+			)
+	},
+	{
+		name: 'обидва йдуть зі звʼязку',
+		allowed: true,
+		run: async () => {
+			const first = await write(`presence/${LEAD}/${host.uid}`, null, host.token);
+			return first === 200 ? write(`presence/${LEAD}/${guest.uid}`, null, guest.token) : first;
+		}
+	},
+	{
+		name: 'у лобі ведення не взяти без власного звʼязку',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${LEAD}`,
+				{
+					'info/hostUid': host.uid,
+					'info/leadSeq': '000003',
+					'moves/000003': {
+						seq: 3,
+						by: host.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: guest.uid }
+					}
+				},
+				host.token
+			)
+	},
 	{
 		name: 'новий господар зносить кімнату перехоплення',
 		allowed: true,
 		run: () => write(`rooms/${LEAD}`, null, guest.token)
+	},
+
+	/*
+	 * ВІКТОРИНА (аудит 2026-09-26): пізній гравець посеред партії дописує ходи, але
+	 * ведення не бере — ні в грі, ні після неї; гравець складу — бере. І межі
+	 * налаштувань — поки кімната в лобі, щоб відмова мала рівно одну причину.
+	 */
+	{
+		name: 'кімната вікторини в лобі: господар і гість',
+		allowed: true,
+		run: async () => {
+			const steps = [
+				() =>
+					write(
+						`rooms/${QUIZ}/info`,
+						{ ...info(host.uid), gameId: 'quiz', config: { game_myths: 1 } },
+						host.token
+					),
+				() =>
+					write(
+						`rooms/${QUIZ}/members/${host.uid}`,
+						{ ...member, name: 'Господар', order: 1 },
+						host.token
+					),
+				() => write(`rooms/${QUIZ}/members/${guest.uid}`, member, guest.token)
+			];
+			for (const step of steps) {
+				const status = await step();
+				if (status !== 200) return status;
+			}
+			return 200;
+		}
+	},
+	{
+		name: 'нечислове значення в налаштуваннях',
+		allowed: false,
+		run: () => write(`rooms/${QUIZ}/info/config/game_feeding`, 'так', host.token)
+	},
+	{
+		name: 'невідомий ключ у налаштуваннях',
+		allowed: false,
+		run: () => write(`rooms/${QUIZ}/info/config/mode`, 5, host.token)
+	},
+	{
+		name: 'склад старту з місцем поза столом',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/status': 'playing',
+					'info/roster': {
+						[host.uid]: { name: 'Господар', seat: 12 },
+						[guest.uid]: { name: 'Тест', seat: 1 }
+					}
+				},
+				host.token
+			)
+	},
+	{
+		name: 'вікторина стартує зі складом господаря й гостя',
+		allowed: true,
+		run: () =>
+			patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/status': 'playing',
+					'info/roster': {
+						[host.uid]: { name: 'Господар', seat: 0 },
+						[guest.uid]: { name: 'Тест', seat: 1 }
+					}
+				},
+				host.token
+			)
+	},
+	{
+		name: 'пізній гравець заходить у вікторину, що йде, і він на звʼязку',
+		allowed: true,
+		run: async () => {
+			const seated = await write(
+				`rooms/${QUIZ}/members/${stranger.uid}`,
+				{ ...member, name: 'Пізній', order: 3 },
+				stranger.token
+			);
+			return seated === 200
+				? write(`presence/${QUIZ}/${stranger.uid}`, { at: SERVER_TIME }, stranger.token)
+				: seated;
+		}
+	},
+	{
+		// Виняток вікторини в правилі ходів: склад у неї відкритий в один бік
+		// (`utils/roster.ts`), і пізній гравець відповідає з поточного раунду.
+		name: 'пізній гравець дописує відповідь посеред вікторини',
+		allowed: true,
+		run: () =>
+			write(
+				`rooms/${QUIZ}/moves/000001`,
+				{
+					seq: 1,
+					by: stranger.uid,
+					type: 'answer',
+					at: SERVER_TIME,
+					payload: { round: 0, correct: 1 }
+				},
+				stranger.token
+			)
+	},
+	{
+		// Господаря на звʼязку немає, пізній гравець на звʼязку й хід правильний —
+		// відмова рівно через склад: посеред партії веде лише той, хто в ньому.
+		name: 'пізній гравець вікторини ведення не бере',
+		allowed: false,
+		run: () =>
+			patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/hostUid': stranger.uid,
+					'info/leadSeq': '000002',
+					'moves/000002': {
+						seq: 2,
+						by: stranger.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				stranger.token
+			)
+	},
+	{
+		name: 'гравець складу вікторини підхоплює ведення',
+		allowed: true,
+		run: async () => {
+			const here = await write(`presence/${QUIZ}/${guest.uid}`, { at: SERVER_TIME }, guest.token);
+			if (here !== 200) return here;
+			return patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/hostUid': guest.uid,
+					'info/leadSeq': '000002',
+					'moves/000002': {
+						seq: 2,
+						by: guest.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: host.uid }
+					}
+				},
+				guest.token
+			);
+		}
+	},
+	{
+		name: 'новий ведучий завершує вікторину',
+		allowed: true,
+		run: () => write(`rooms/${QUIZ}/info/status`, 'over', guest.token)
+	},
+	{
+		// Скінчена партія — та сама гілка складу, що й та, що йде: реванш буде з ним.
+		name: 'після вікторини ведення не бере той, кого немає в складі',
+		allowed: false,
+		run: async () => {
+			const gone = await write(`presence/${QUIZ}/${guest.uid}`, null, guest.token);
+			if (gone !== 200) return gone;
+			return patch(
+				`rooms/${QUIZ}`,
+				{
+					'info/hostUid': stranger.uid,
+					'info/leadSeq': '000003',
+					'moves/000003': {
+						seq: 3,
+						by: stranger.uid,
+						type: 'lead',
+						at: SERVER_TIME,
+						payload: { from: guest.uid }
+					}
+				},
+				stranger.token
+			);
+		}
+	},
+	{
+		name: 'ведучий зносить кімнату вікторини',
+		allowed: true,
+		run: () => write(`rooms/${QUIZ}`, null, guest.token)
 	},
 
 	/*
@@ -2573,6 +2905,46 @@ const CASES = [
 		name: 'анонім вмикає перемикачі приватності',
 		allowed: false,
 		run: () => write(`users/${anon.uid}/privacy`, { search: true }, anon.token)
+	},
+	/*
+	 * ПО ОДНОМУ ПОЛЮ — ТЕ САМЕ (аудит 2026-09-26). Вимога «не анонім» стоїть у
+	 * `.validate` БАТЬКІВСЬКОГО вузла, а запис лягає в дитину: випадки вище писали
+	 * вузли цілком і цієї дороги не перевіряли. Батьківський вузол підготовлено
+	 * записом власника, тож злите значення має всі обовʼязкові поля — і відмова
+	 * лишається рівно через вхід.
+	 */
+	{
+		name: 'анонім міняє в профілі лише імʼя',
+		allowed: false,
+		run: () => write(`users/${anon.uid}/profile/name`, 'Інше Імʼя', anon.token)
+	},
+	{
+		name: 'анонім вмикає один перемикач приватності',
+		allowed: false,
+		run: () => write(`users/${anon.uid}/privacy/search`, true, anon.token)
+	},
+	{
+		name: 'анонім пише лише час своєї підписки',
+		allowed: false,
+		run: () => write(`users/${anon.uid}/following/${guest.uid}/at`, SERVER_TIME, anon.token)
+	},
+	{
+		name: 'анонім пише лише час у чужих підписниках',
+		allowed: false,
+		run: () => write(`users/${guest.uid}/followers/${anon.uid}/at`, SERVER_TIME, anon.token)
+	},
+	{
+		name: 'анонім міняє в таблиці лише рахунок',
+		allowed: false,
+		run: async () => {
+			await seed(`leaders/${anon.uid}`, {
+				name: 'Анонім',
+				handle: 'anonh',
+				score: 60,
+				at: 1
+			});
+			return write(`leaders/${anon.uid}/score`, 100, anon.token);
+		}
 	},
 	{
 		// Прибрати своє — завжди: умова стоїть на створенні й зміні, а не на видаленні.
