@@ -55,6 +55,7 @@ export const ui = {
 	'pairs.rulesChanged':
 		'The server rules have been updated and this page is out of date, so moves are not going through. Reload the page — the game continues where it left off.',
 	'pairs.reload': 'Reload page',
+	'pairs.playNext': 'Play in the next game',
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',
 	'pairs.rulesMissing': 'Shared play is not enabled on the server yet.',
 	'pairs.netFailed': 'Could not join the room. Please try again.',

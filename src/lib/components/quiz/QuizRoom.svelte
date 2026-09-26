@@ -69,6 +69,8 @@
 		onanswer: (correct: number) => void;
 		onRematch: () => void;
 		onClose: () => void;
+		/** Я дивився — і хочу грати наступну. `undefined` — я вже гравець. */
+		onPlayNext?: () => void;
 		/** Адреси переїзду в другу гру. Будує їх сторінка, бо це навігація. */
 		cross: CrossGameLinks;
 		/** Прибрати зниклого. Лише лідер — тобто в гостя цього немає зовсім. */
@@ -90,6 +92,7 @@
 		onanswer,
 		onRematch,
 		onClose,
+		onPlayNext,
 		onkick,
 		cross
 	}: Props = $props();
@@ -128,6 +131,11 @@
 				</button>
 			</div>
 		{:else}
+			{#if onPlayNext}
+				<button type="button" class="chip" onclick={onPlayNext} data-testid="quiz-play-next-btn">
+					{@html formatFont(t('pairs.playNext'))}
+				</button>
+			{/if}
 			<p class="over__wait" data-testid="quiz-waiting-host-text">
 				{@html formatFont(t('pairs.waitingHost'))}
 			</p>

@@ -184,7 +184,11 @@ export class RoomSession<M extends RoomMatch> {
 		 */
 		const me = await this.net.me();
 		const inRoster = room?.roster?.some((entry) => entry.uid === me) ?? false;
-		const newcomer = room?.status === 'lobby' || inRoster ? 'player' : this.game.lateRole;
+		// Дограна партія — те саме, що лобі: наступна буде реваншем, і той, хто прийшов
+		// грати, мусить у ньому бути. Доти він заходив глядачем назавжди, а реваншу
+		// бракувало гравців — кімната ставала глухим кутом (аудит 2026-09-25).
+		const between = room?.status === 'lobby' || room?.status === 'over';
+		const newcomer = between || inRoster ? 'player' : this.game.lateRole;
 		await this.net.joinRoom(
 			this.code,
 			who,
@@ -416,8 +420,9 @@ export class RoomSession<M extends RoomMatch> {
 		return this.hostAction((transport) => transport.removeMember(uid));
 	};
 
+	/** Змінити свою роль — у лобі й між партіями (перед реваншем), але не посеред гри. */
 	async setRole(role: Role): Promise<void> {
-		if (!this.match || this.match.status !== 'lobby') return;
+		if (!this.match || this.match.status === 'playing') return;
 		try {
 			await this.net.joinRoom(
 				this.code,

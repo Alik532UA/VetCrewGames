@@ -255,6 +255,45 @@ describe('вхід у кімнату', () => {
 		);
 	});
 
+	/**
+	 * ДОГРАНА ПАРТІЯ — ТЕ САМЕ, ЩО ЛОБІ (аудит 2026-09-25): наступна буде реваншем.
+	 * Доти той, хто прийшов після першої партії, заходив глядачем назавжди, і
+	 * реваншу бракувало гравців — кімната «Знайди пару» ставала глухим кутом.
+	 *
+	 * Зворотні експерименти: пускати в `over` у ролі гри — червоніє перший; не
+	 * дозволяти ролі в `over` — другий.
+	 */
+	it('у дограну партію новачок заходить гравцем — реванш буде з ним', async () => {
+		const over = roomInfo({ status: 'over', roster: rosterOf(members()) });
+		const room = new LocalRoom(over, members());
+		const { session, net } = sessionFor(room, over, 'uid-late');
+		session.joinCode = '42';
+
+		await session.enter('join');
+
+		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', undefined, '', undefined, 'player');
+	});
+
+	it('між партіями глядач може стати гравцем, а посеред партії — ні', async () => {
+		const eye: Member = { uid: 'uid-eye', name: 'Око', role: 'spectator', order: 3 };
+		const over = roomInfo({ status: 'over', roster: rosterOf(members()) });
+		const room = new LocalRoom(over, [...members(), eye]);
+		const { session, net } = sessionFor(room, over, eye.uid);
+		session.joinCode = '42';
+		await session.enter('join');
+		await settle();
+		net.joinRoom.mockClear();
+
+		await session.setRole('player');
+		expect(net.joinRoom).toHaveBeenCalledWith('42', 'Гравець', 'player', '', undefined, 'player');
+
+		net.joinRoom.mockClear();
+		await room.transport().setStatus('playing', rosterOf(members()));
+		await settle();
+		await session.setRole('player');
+		expect(net.joinRoom, 'посеред партії роль не міняється').not.toHaveBeenCalled();
+	});
+
 	it('помилка правил — порада про правила, а не «спробуйте ще раз»', async () => {
 		const room = new LocalRoom(roomInfo(), members());
 		const { session, net } = sessionFor(room, null, HOST);

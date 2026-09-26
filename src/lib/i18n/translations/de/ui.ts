@@ -55,6 +55,7 @@ export const ui = {
 	'pairs.rulesChanged':
 		'Die Serverregeln wurden aktualisiert und diese Seite ist veraltet, deshalb gehen Züge nicht durch. Lade die Seite neu – die Partie geht an derselben Stelle weiter.',
 	'pairs.reload': 'Seite neu laden',
+	'pairs.playNext': 'In der nächsten Partie mitspielen',
 	'pairs.roomOlder':
 		'Diese Partie wurde in einer älteren Version gestartet. Erstelle einen neuen Raum.',
 	'pairs.rulesMissing': 'Gemeinsames Spielen ist auf dem Server noch nicht aktiviert.',

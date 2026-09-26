@@ -97,6 +97,22 @@ describe('екран підсумку «Знайди пару»', () => {
 		expect(view.queryByTestId('pairs-close-btn'), 'закрити кімнату нічим').not.toBeNull();
 	});
 
+	/**
+	 * ГЛЯДАЧ ДОГРАНОЇ ПАРТІЇ — у НАСТУПНУ (аудит 2026-09-25): доти він лишався
+	 * глядачем назавжди, бо роль мінялася лише в лобі, а в лобі кімната не вертається.
+	 *
+	 * Зворотний експеримент: прибрати кнопку — червоніє.
+	 */
+	it('глядач дограної партії може піти в наступну гравцем', async () => {
+		const host = await finished();
+		const onPlayNext = vi.fn();
+		const view = render(OnlineRoom, {
+			props: { match: host, me: 'uid-eye', online: [HOST, GUEST], cross, onPlayNext }
+		});
+		view.getByTestId('pairs-play-next-btn').click();
+		expect(onPlayNext).toHaveBeenCalled();
+	});
+
 	it('гість — чекає господаря, кнопок господаря немає', async () => {
 		const host = await finished();
 		const view = render(OnlineRoom, {

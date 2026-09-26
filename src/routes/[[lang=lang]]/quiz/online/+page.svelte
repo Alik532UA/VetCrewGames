@@ -187,6 +187,7 @@
 			onanswer={answer}
 			onRematch={session.rematch}
 			onClose={() => session.close()}
+			onPlayNext={session.myRole === 'spectator' ? () => session.setRole('player') : undefined}
 			onkick={session.kick}
 		/>
 	{/if}

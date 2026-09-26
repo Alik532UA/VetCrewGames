@@ -26,6 +26,11 @@
 		/** Закрити кімнату назовсім. Так само лише господар. */
 		onClose?: () => void;
 		/**
+		 * Я дивився — і хочу грати наступну. `undefined` — я вже гравець. Без цього
+		 * глядач дограної партії лишався глядачем назавжди (аудит 2026-09-25).
+		 */
+		onPlayNext?: () => void;
+		/**
 		 * Забрати чергу в того, хто зник. `undefined` — ще не час або не мені.
 		 *
 		 * Кнопка з'являється лише коли межа очікування вийшла: доки суперник на
@@ -72,6 +77,7 @@
 		online,
 		onRematch,
 		onClose,
+		onPlayNext,
 		onYield,
 		onEnd,
 		turnLeftMs = null,
@@ -219,6 +225,11 @@
 				себе й не мав чим закрити кімнату. Тепер господар без пари чує, чого бракує,
 				а закрити може завжди; гість, як і доти, чекає господаря.
 			-->
+			{#if onPlayNext}
+				<button type="button" class="chip" onclick={onPlayNext} data-testid="pairs-play-next-btn">
+					{@html formatFont(t('pairs.playNext'))}
+				</button>
+			{/if}
 			{#if onRematch}
 				<button
 					type="button"

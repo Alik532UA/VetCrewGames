@@ -55,6 +55,7 @@ export const ui = {
 	'pairs.rulesChanged':
 		'De serverregels zijn bijgewerkt en deze pagina is verouderd, dus zetten komen niet door. Laad de pagina opnieuw — het spel gaat verder waar het was.',
 	'pairs.reload': 'Pagina herladen',
+	'pairs.playNext': 'Meespelen in het volgende spel',
 	'pairs.roomOlder': 'Dit spel is in een oudere versie gestart. Maak een nieuwe kamer aan.',
 	'pairs.rulesMissing': 'Samen spelen is nog niet ingeschakeld op de server.',
 	'pairs.netFailed': 'Kon niet in de ruimte komen. Probeer het opnieuw.',
