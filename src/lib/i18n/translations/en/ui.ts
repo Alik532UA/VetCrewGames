@@ -62,6 +62,8 @@ export const ui = {
 	'online.createLead': 'For everyone or friends only',
 	'online.joinLead': 'With the code you were sent',
 	'online.codeFull': 'Enter the full room code.',
+	'online.keypad': 'Room code digits',
+	'online.keyErase': 'Erase the last digit',
 
 	// Shared game of Find a Pair: lobby, role, turn.
 	'pairs.won': 'Winner',

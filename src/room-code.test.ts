@@ -36,7 +36,12 @@ const number = (source: string, name: string): number => {
 describe('код кімнати', () => {
 	const net = read('src/lib/net/rtdbRoom.ts');
 	const gate = read('src/lib/controllers/onlineHub.svelte.ts');
-	const field = read('src/lib/components/online/JoinWindow.svelte');
+	// Без коментарів: докблок поля сам називає `inputmode="none"`, і перевірка по сирому
+	// тексту проходила б і тоді, коли атрибута в розмітці вже немає (так і сталося на
+	// зворотному експерименті).
+	const field = read('src/lib/components/online/JoinWindow.svelte')
+		.replace(/<!--[\s\S]*?-->/g, '')
+		.replace(/\/\*[\s\S]*?\*\//g, '');
 
 	const publicLength = number(net, 'PUBLIC_CODE_LENGTH');
 	const publicMax = number(net, 'PUBLIC_CODE_MAX');
@@ -86,9 +91,14 @@ describe('код кімнати', () => {
 	 * `autocapitalize="characters"` у полі лишився б від літерного коду й на
 	 * телефоні перемикав би клавіатуру у верхній регістр там, де потрібні цифри.
 	 * Це не помилка коду, а зламана клавіатура — саме той різновид, який не падає.
+	 *
+	 * Системної клавіатури в поля тепер немає зовсім (`inputmode="none"`): цифри дає
+	 * власна, під полем (прохання автора 2026-09-27). Тож «на цифри» означає, що вона
+	 * є, а літерна клавіатура не вилазить ніколи.
 	 */
 	it('поле налаштоване на цифри, а не на літери', () => {
-		expect(field).toContain('inputmode="numeric"');
+		expect(field).toContain('inputmode="none"');
+		expect(field, 'власної цифрової клавіатури немає').toContain('data-testid="online-key-0-btn"');
 		expect(field, 'autocapitalize лишився від літерного коду').not.toContain('autocapitalize');
 		expect(net, 'алфавіт коду — самі цифри').toContain("const DIGITS = '0123456789'");
 	});

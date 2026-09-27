@@ -63,6 +63,8 @@ export const ui = {
 	'online.createLead': 'Voor iedereen of alleen voor vrienden',
 	'online.joinLead': 'Met de code die je hebt gekregen',
 	'online.codeFull': 'Voer de volledige kamercode in.',
+	'online.keypad': 'Cijfers van de kamercode',
+	'online.keyErase': 'Laatste cijfer wissen',
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
 	'pairs.won': 'Gewonnen',

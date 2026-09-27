@@ -127,6 +127,22 @@ export const hubTab: BetaTab = {
 			test: 'tests/hub-windows.spec.ts',
 			testid: 'online-*-open-btn',
 			negative: true
+		},
+		{
+			/*
+			 * ВЛАСНА ЦИФРОВА КЛАВІАТУРА (прохання автора 2026-09-27). Мишу на компʼютері
+			 * перевіряє `tests/hub-windows.spec.ts`; те, що системна клавіатура телефона
+			 * справді не вилазить, у настільному браузері не побачити — лише на телефоні.
+			 */
+			id: 'hub_11',
+			category: { uk: 'Підключитися', en: 'Joining' },
+			text: {
+				uk: 'На телефоні натисніть «Підключитися» й торкніться поля коду. Системна клавіатура НЕ мусить зʼявитися; цифри мусять набиратися клавішами вікна, а клавіша зі стрілкою — прибирати останню.',
+				en: 'On a phone press «Join» and tap the code field. The system keyboard must NOT appear; digits must be typed with the window keys, and the arrow key must remove the last one.'
+			},
+			coverage: 'manual',
+			testid: 'online-key-*-btn',
+			negative: true
 		}
 	]
 };

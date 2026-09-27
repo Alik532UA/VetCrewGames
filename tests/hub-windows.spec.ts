@@ -85,6 +85,33 @@ test('join: фокус — одразу в поле коду, а «Назад» 
 	expect(await focused(page)).toBe('BUTTON|online-join-open-btn|');
 });
 
+/**
+ * ВЛАСНА ЦИФРОВА КЛАВІАТУРА (прохання автора 2026-09-27): мишею на компʼютері, без системної
+ * клавіатури на телефоні. Клік мишею фокуса з поля не забирає — інакше той, хто клацає й
+ * друкує впереміш, мусив би щоразу вертатися в поле.
+ *
+ * Зворотний експеримент (прогнано): прибрати `keepFocus` із клавіш — червоніє «фокус
+ * лишається в полі».
+ */
+test('join: мишею по клавіатурі вікна набирається код, і фокус лишається в полі', async ({
+	page
+}) => {
+	await press(page, 'online-join-open-btn');
+	const input = page.getByTestId('online-code-input');
+	await expect(input, 'системна клавіатура на телефоні не вилазить').toHaveAttribute(
+		'inputmode',
+		'none'
+	);
+	for (const key of ['4', '2', '7']) await page.getByTestId(`online-key-${key}-btn`).click();
+	await page.getByTestId('online-key-erase-btn').click();
+	await expect(input).toHaveValue('42');
+	expect(await focused(page), 'фокус лишається в полі').toBe(
+		'INPUT|online-code-input|online-join-panel'
+	);
+	await page.keyboard.type('5');
+	await expect(input, 'фізична клавіатура працює й далі').toHaveValue('425');
+});
+
 test('створення: крок усередині вікна теж переносить фокус', async ({ page }) => {
 	await press(page, 'online-create-open-btn');
 	await press(page, 'online-create-quiz-btn');
