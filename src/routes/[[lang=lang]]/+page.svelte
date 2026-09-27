@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { CodeXml, Gamepad2, Stethoscope, Users } from 'lucide-svelte';
+	import { asset } from '$app/paths';
+	import { CodeXml, Gamepad2, Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -64,7 +65,11 @@
 		{
 			key: 'menu.link.vetcrew' as const,
 			href: 'https://sites.google.com/view/vetcrew',
-			icon: Stethoscope
+			/*
+			 * ЛОГОТИП, а не значок (прохання автора 2026-09-27): посилання веде на сайт самої
+			 * команди, і впізнають його за її знаком. Файл — з `adoptananimal`, зменшений до 96px.
+			 */
+			logo: '/images/logo/vetcrew.webp'
 		},
 		{
 			key: 'menu.link.order' as const,
@@ -113,7 +118,11 @@
 	<div class="menu-links">
 		{#each links as link (link.key)}
 			<a href={link.href} class="menu-btn menu-btn--link" target="_blank" rel="noopener noreferrer">
-				<link.icon class="menu-link__icon" />
+				{#if link.logo}
+					<img class="menu-link__logo" src={asset(link.logo)} alt="" width="96" height="98" />
+				{:else if link.icon}
+					<link.icon class="menu-link__icon" />
+				{/if}
 				<span>{@html formatFont(t(link.key))}</span>
 			</a>
 		{/each}

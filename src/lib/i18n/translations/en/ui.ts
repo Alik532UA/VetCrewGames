@@ -147,7 +147,7 @@ export const ui = {
 	'menu.game.mythbusters': 'Fact or Myth?',
 	'menu.game.family': 'Who is from another family?',
 	'menu.link.vetcrew': 'Vet Crew',
-	'menu.link.order': 'Order a game or website',
+	'menu.link.order': 'Order a game, app or website',
 
 	// Common
 	'common.skipLink': 'Skip to main content',

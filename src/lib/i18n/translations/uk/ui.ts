@@ -164,7 +164,7 @@ export const ui = {
 	'menu.game.mythbusters': 'Правда чи міф?',
 	'menu.game.family': 'Хто з іншої родини?',
 	'menu.link.vetcrew': 'Vet Crew',
-	'menu.link.order': 'Замовити гру чи сайт',
+	'menu.link.order': 'Замовити гру, застосунок чи сайт',
 
 	// Common
 	'common.skipLink': 'Перейти до основного вмісту',

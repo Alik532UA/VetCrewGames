@@ -150,7 +150,7 @@ export const ui = {
 	'menu.game.mythbusters': 'Fakt oder Mythos?',
 	'menu.game.family': 'Wer gehört zu einer anderen Familie?',
 	'menu.link.vetcrew': 'Vet Crew',
-	'menu.link.order': 'Spiel oder Website bestellen',
+	'menu.link.order': 'Spiel, App oder Website bestellen',
 
 	// Allgemein
 	'common.skipLink': 'Zum Hauptinhalt springen',

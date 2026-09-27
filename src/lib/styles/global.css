@@ -353,6 +353,8 @@ body::after {
  */
 :root {
 	--color-avatar-ink: #ffffff;
+	/* Підкладка логотипа Vet Crew у головному меню (`.menu-link__logo`): біла в усіх темах. */
+	--color-logo-chip: #ffffff;
 	--color-avatar-red: #b3261e;
 	--color-avatar-orange: #8a4b00;
 	--color-avatar-green: #1f6b34;
@@ -1155,6 +1157,20 @@ img {
 	flex-shrink: 0;
 	width: calc(var(--fill-u) * 1.25);
 	height: calc(var(--fill-u) * 1.25);
+}
+
+/*
+ * ЛОГОТИП VET CREW — знак організації, а не значок, і тому на БІЛІЙ підкладці. Без неї
+ * зелена лапа зливалася з зеленою пігулкою посилання у двох темах із чотирьох, а
+ * помаранчевий напис — з помаранчевою (заміряно на знімку чотирьох тем, 2026-09-27).
+ */
+.menu-link__logo {
+	flex-shrink: 0;
+	width: calc(var(--fill-u) * 1.5);
+	height: auto;
+	padding: calc(var(--fill-u) * 0.125);
+	border-radius: var(--radius-sm);
+	background: var(--color-logo-chip);
 }
 
 /*

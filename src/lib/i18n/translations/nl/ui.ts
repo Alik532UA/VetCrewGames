@@ -148,7 +148,7 @@ export const ui = {
 	'menu.game.mythbusters': 'Feit of mythe?',
 	'menu.game.family': 'Wie hoort bij een andere familie?',
 	'menu.link.vetcrew': 'Vet Crew',
-	'menu.link.order': 'Een spel of website bestellen',
+	'menu.link.order': 'Een spel, app of website bestellen',
 
 	// Algemeen
 	'common.skipLink': 'Naar de hoofdinhoud',

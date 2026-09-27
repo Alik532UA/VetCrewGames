@@ -178,8 +178,9 @@ test.describe('кнопка меню — не коробка з дрібним �
 							let x1 = -Infinity;
 							let y1 = -Infinity;
 							const boxes: DOMRect[] = [];
-							for (const svg of button.querySelectorAll('svg'))
-								boxes.push(svg.getBoundingClientRect());
+							// Значок або логотип (`img`) плюс підпис — усе, чим кнопка каже, що вона таке.
+							for (const mark of button.querySelectorAll('svg, img'))
+								boxes.push(mark.getBoundingClientRect());
 							const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
 							for (let node = walker.nextNode(); node; node = walker.nextNode()) {
 								if (!node.textContent?.trim()) continue;
