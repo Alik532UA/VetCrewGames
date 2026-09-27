@@ -41,7 +41,7 @@ import { reduceMotion, settlePage } from './support/settle';
  * без справжньої розкладки не існує.
  */
 
-const PAGE = '/VetCrewGames/pairs/online/';
+const PAGE = '/VetCrewGames/online/';
 const SCOPE = 'pairs-country';
 
 /**

@@ -4,9 +4,9 @@
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
 	import { page, updated } from '$app/state';
+	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { toast } from '$lib/controllers/toast.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
@@ -17,12 +17,11 @@
 	import { QuizRoomState } from '$lib/controllers/quizRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import { DEV_TIME_FACTOR, gamesToConfig } from '$lib/config/quizOnline';
-	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
+	import CreateWindow from '$lib/components/online/CreateWindow.svelte';
 	import NetLost from '$lib/components/pairs/NetLost.svelte';
-	import QuizRooms from '$lib/components/quiz/QuizRooms.svelte';
 	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
-	import { crossGameLinks } from '$lib/utils/crossGame';
+	import { crossGameLinks, onlineRoutes } from '$lib/utils/crossGame';
 	import type { PageData } from './$types';
 
 	/** Дані маршруту: словник цієї сторінки, завантажений у `+page.ts`. */
@@ -52,10 +51,15 @@
 	 * (аудит 2026-09-24).
 	 */
 	const quiz = new QuizRoomState(Math.random, dev ? DEV_TIME_FACTOR : 1);
-	const place = roomPlace(() => page.url, goto, browser);
+	const place = roomPlace(
+		() => page.url,
+		goto,
+		browser,
+		onlineRoutes(() => lang)
+	);
 
 	const player = new PlayerIdentity(Math.random);
-	// Перелік читається з гілки СВОЄЇ гри: кімнати «Знайди пару» тут не з'являються.
+	// Стрічка переліку — щоб господар оголосив свою кімнату в гілці СВОЄЇ гри; читає перелік хаб.
 	const lobby = new LobbyFeed(quiz.game.gameId);
 	const session = new RoomSession(quiz.game, place, player, lobby);
 	/** Посилання чи QR-код новачка — спершу коротке вікно, а не мовчазний вхід. */
@@ -89,12 +93,12 @@
 	onMount(() => {
 		/*
 		 * «НАЗАД» РОБИТЬ ОДИН КРОК: у кімнаті — зняти `?room` (адреса тут джерело
-		 * правди, і сесія сама розбере кімнату), на формі входу — у розділ.
+		 * правди, і сесія сама розбере кімнату, а двері поведуть на хаб), без кімнати — на хаб.
 		 */
 		const release = settings.claimHeader(
 			'menu.quiz',
 			() =>
-				void goto(session.code === '' ? langPath(lang, 'quiz') : withoutRoom(page.url), {
+				void goto(session.code === '' ? langPath(lang, 'online') : withoutRoom(page.url), {
 					noScroll: true,
 					keepFocus: true
 				})
@@ -134,46 +138,20 @@
 			onJoin={() => invite.accept()}
 			onBack={() => invite.decline()}
 		/>
-	{:else if !match}
-		<OnlineGate
-			bind:name={player.value}
-			bind:joinCode={session.joinCode}
-			bind:isPrivate={session.isPrivate}
-			bind:country={player.country}
-			avatar={player.avatar}
-			onAvatar={(avatar) => player.chooseAvatar(avatar)}
+	{:else if !match && session.place.choosing()}
+		<!-- Група переїжджає в цю гру (`?from`): лише «хто зможе зайти» — окремим вікном. -->
+		<CreateWindow
+			game="quiz"
 			busy={session.busy}
-			onRandomName={() => player.reroll(takenNames)}
-			onCreate={() => session.enter('create')}
-			onJoin={() => session.enter('join')}
-			onQuickGame={() => session.quickGame()}
-		>
-			{#snippet roomList()}
-				<!--
-					НАБІР ІГОР ТУТ — ФІЛЬТР, а не панель налаштувань: «у що я хочу грати»
-					сіє чужі кімнати й задає свою. Правити набір — у лобі кімнати.
-				-->
-				<QuizRooms
-					{text}
-					rooms={lobby.rooms}
-					resume={lobby.own}
-					friends={lobby.friends}
-					hasMore={lobby.hasMore}
-					unavailable={lobby.unavailable}
-					busy={session.busy}
-					picked={quiz.picked}
-					onPick={(games) => (quiz.picked = games)}
-					onClose={(dead) =>
-						void lobby.close(dead).then((done) => {
-							if (!done) toast.error('pairs.actionFailed');
-						})}
-					onEnter={(chosen) => {
-						session.joinCode = chosen;
-						void session.enter('join');
-					}}
-				/>
-			{/snippet}
-		</OnlineGate>
+			onChoose={(isPrivate) => {
+				session.isPrivate = isPrivate;
+				void session.enter('create');
+			}}
+			onBack={() => void session.place.hub()}
+		/>
+	{:else if !match}
+		<!-- Двері без кімнати: створюємо ту, яку попросили, або йдемо на хаб (`roomPolicies`). -->
+		<p class="online-door" role="status">{@html formatFont(t('online.opening'))}</p>
 	{:else if match.status === 'lobby'}
 		<!--
 			Лобі вікторини — спільне лобі ПЛЮС набір ігор і швидкість кімнати.
@@ -239,11 +217,10 @@
 		 * підпис і кнопка «Далі» посередині пустки. Автор надіслав знімок саме
 		 * цього — «розтягнутий та поломаний інтерфейс».
 		 *
-		 * 1120px — під ТРИ СТОВПЦІ, і стовпці тут на обох екранах до партії.
-		 * `OnlineGate` на широкому місці розкладається в три (лівий: код і «хто
-		 * може зайти», середина: швидка гра й імʼя, правий: кімнати), лобі кімнати
-		 * — теж (запросити, хто тут і старт, налаштування гри). Обидва стають
-		 * трьома стовпцями з 64rem, тобто самі просять близько 1100.
+		 * 1120px — під ТРИ СТОВПЦІ лобі кімнати (запросити, хто тут і старт,
+		 * налаштування гри): вони стають трьома стовпцями з 64rem, тобто самі просять
+		 * близько 1100. Ту саму міру має й хаб «Грати онлайн» (`routes/…/online`), куди
+		 * переїхала форма входу.
 		 *
 		 * Тут стояло 900px, а 1120 мала лише форма входу. Скарга автора була та
 		 * сама двічі — «в один стовпчик, а праворуч і ліворуч купа вільного місця»:
@@ -274,5 +251,14 @@
 	 */
 	.quiz-online--playing {
 		max-width: var(--measure-habitat-wide);
+	}
+
+	/* Рядок стану дверей стоїть просто на фотографії тла — тому на власній панелі. */
+	.online-door {
+		margin: 0;
+		padding: var(--space-sm) var(--space-md);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-panel);
+		color: var(--color-text-on-panel);
 	}
 </style>

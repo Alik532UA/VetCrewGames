@@ -5,8 +5,18 @@ import type { RoomPlace } from './roomGame';
 /** Крок в історії — `goto` із `$app/navigation`, переданий сторінкою. */
 export type Navigate = (
 	url: URL,
-	options: { noScroll: boolean; keepFocus: boolean }
+	options: { noScroll: boolean; keepFocus: boolean; replaceState?: boolean }
 ) => Promise<void>;
+
+/**
+ * КУДИ ВЕДУТЬ ДВЕРІ — шляхи з мовою сторінки (`langPath`), бо лише сторінка її знає.
+ *
+ * `game` — сторінка онлайн-гри за `gameId` кімнати; `null` — такої гри немає.
+ */
+export interface PlaceRoutes {
+	hub(): string;
+	game(gameId: string): string | null;
+}
 
 /**
  * АДРЕСА СТОРІНКИ КІМНАТИ — одна на обидві гри.
@@ -22,16 +32,52 @@ export type Navigate = (
  *
  * `browser` — бо на пререндері адреси з `?room` немає, а `page.url.searchParams`
  * під час пререндеру КИДАЄ (локальна пастка в AGENTS.md).
+ *
+ * Двері без наміру (`hub`), нова кімната замість тієї, яку нікому вести (`recreate`), і
+ * кімната іншої гри (`elsewhere`) — ЗАМІНОЮ запису в історії: «назад» не мусить вертати на
+ * адресу, з якої сторінка саме пішла сама.
  */
-export function roomPlace(url: () => URL, navigate: Navigate, browser: boolean): RoomPlace {
+export function roomPlace(
+	url: () => URL,
+	navigate: Navigate,
+	browser: boolean,
+	routes: PlaceRoutes
+): RoomPlace {
 	const step = { noScroll: true, keepFocus: true };
+	const replace = { ...step, replaceState: true };
+	const param = (name: string) => (browser ? url().searchParams.get(name) : null);
 	return {
-		urlRoom: () => (browser ? (url().searchParams.get('room') ?? '') : ''),
-		moved: () => browser && url().searchParams.get('move') === '1',
+		urlRoom: () => param('room') ?? '',
+		moved: () => param('move') === '1',
 		remember: async (code) => {
-			if (browser) await navigate(withRoom(url(), code), step);
+			if (!browser) return;
+			// Адреса з наміром (`?create`, `?from`) свою справу зробила — ЗАМІНОЮ: «назад» із
+			// кімнати не мусить вертати на неї, бо двері створили б ще одну кімнату.
+			const intent = url().searchParams.has('create') || url().searchParams.has('from');
+			await navigate(withRoom(url(), code), intent ? replace : step);
 		},
 		exit: () => navigate(withoutRoom(url()), step),
-		announce: (code) => announceFrom(url(), code)
+		announce: (code) => announceFrom(url(), code),
+		creating: () => {
+			const wanted = param('create');
+			return wanted === 'friends' ? true : wanted === 'everyone' ? false : null;
+		},
+		choosing: () => param('from') !== null && param('create') === null,
+		hub: () => navigate(new URL(routes.hub(), url()), replace),
+		recreate: (isPrivate) => {
+			const next = withoutRoom(url());
+			next.searchParams.set('create', isPrivate ? 'friends' : 'everyone');
+			return navigate(next, replace);
+		},
+		elsewhere: (gameId, code) => {
+			const path = routes.game(gameId);
+			if (path === null) return false;
+			const next = new URL(path, url());
+			next.searchParams.set('room', code);
+			// Людина вже вирішила зайти — вікна «вас запросили» на тій сторінці їй не треба.
+			next.searchParams.set('move', '1');
+			void navigate(next, replace);
+			return true;
+		}
 	};
 }

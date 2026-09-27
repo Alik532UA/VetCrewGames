@@ -101,12 +101,12 @@ test.describe('переїзд фокуса', () => {
 		 * після гідрації, коли `langPath()` перерахує її з `base`. Тобто локатор
 		 * міряв не наявність посилання, а те, чи встигла гідрація.
 		 */
-		const link = page.getByTestId('menu-quiz-link');
-		await expect(link, 'посилання на «Вікторину» не знайдено — меню змінилося').toHaveCount(1);
+		const link = page.getByTestId('menu-play-link');
+		await expect(link, 'посилання на «Грати» не знайдено — меню змінилося').toHaveCount(1);
 		await link.focus();
 		await link.click();
 
-		await expect(page).toHaveURL(/\/VetCrewGames\/quiz\/$/);
+		await expect(page).toHaveURL(/\/VetCrewGames\/play\/$/);
 		await expect
 			.poll(() => page.evaluate(() => document.activeElement?.id ?? ''), {
 				message:

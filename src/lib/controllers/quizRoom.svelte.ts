@@ -1,7 +1,7 @@
 import { playerData } from '$lib/services/playerData.svelte';
 import { logService } from '$lib/services/logService.svelte';
 import { awayStamps, settledPresence, waitView, type WaitView } from '$lib/utils/awayWait';
-import { ONLINE_GAMES, gamesToConfig, roomFitsGames } from '$lib/config/quizOnline';
+import { gamesToConfig } from '$lib/config/quizOnline';
 import { nextGameSeed } from '$lib/utils/quizDeck';
 import { QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { QuizMatch } from './quizMatch.svelte';
@@ -55,11 +55,6 @@ export interface QuizHost {
  * за псевдонімом (аудит 2026-09-26).
  */
 export class QuizRoomState {
-	/**
-	 * Які ігри вибрано для НОВОЇ кімнати. Типово всі: людина, яка створює кімнату
-	 * не думаючи про набір, мусить отримати повну вікторину, а не порожню.
-	 */
-	picked = $state<string[]>(ONLINE_GAMES.map((game) => game.id));
 	/** Коли гравця не стало онлайн. Ключ — `uid`; звідси відлік у вікні очікування. */
 	awaySince = $state<Record<string, number>>({});
 
@@ -84,11 +79,12 @@ export class QuizRoomState {
 			gameId: 'quiz',
 			rulesVersion: QUIZ_RULES_VERSION,
 			minPlayers: QUIZ_MIN_PLAYERS,
-			quickSeats: QUIZ_MIN_PLAYERS,
 			lateRole: 'player',
 			autoStartReady: (players) => players >= QUIZ_MIN_PLAYERS,
 			// НАБІР ІГОР ЇДЕ В `config` — конверт уже дозволяє `Record<string, number>`.
-			newRoom: () => newQuizRoom(random, this.picked),
+			// Нова кімната — з усіма шістьма іграми: набір правиться в лобі, фільтра на вході
+			// більше немає (рішення автора 2026-09-26, 5-A).
+			newRoom: () => newQuizRoom(random),
 			// Реванш — наступна партія ТІЄЇ САМОЇ колоди: питання кімнати не повторюються,
 			// доки не поставлено всі (`utils/quizDeck.ts`, прохання автора 2026-09-26).
 			rematchSeed: (match) => nextGameSeed(match.seed),
@@ -105,8 +101,6 @@ export class QuizRoomState {
 			// перезавантажився, оголошував кімнату з усіма шістьма іграми, а після
 			// перехоплення — з фільтром нового господаря (аудит 2026-09-25).
 			listingExtras: (match) => ({ games: gamesToConfig(match.games) }),
-			// «Швидка гра» без фільтра кидала б у кімнату з іграми, які людина щойно зняла.
-			fitsQuick: (room) => roomFitsGames(room.games, this.picked),
 			onPresence: (match, uids, now) => {
 				// ПРИСУТНІСТЬ ЇДЕ В МАТЧ, і саме це розморожує партію: раунд закінчується,
 				// коли відповіли ПРИСУТНІ, а не всі, хто колись зайшов. З поправкою на мить:

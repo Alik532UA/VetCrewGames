@@ -31,6 +31,22 @@ import type { TranslationKey } from '$lib/i18n/translations/uk';
 /** Дві онлайн-ігри проєкту. Третьої немає, і це видно з типу. */
 export type OnlineGame = 'pairs' | 'quiz';
 
+/** Чи це одна з онлайн-ігор проєкту — `gameId` кімнати приходить із бази рядком. */
+export const isOnlineGame = (id: string): id is OnlineGame => id === 'pairs' || id === 'quiz';
+
+/** Сторінка онлайн-гри — КЛЮЧ таблиці маршрутів: шлях із мовою й `base` складає `langPath`. */
+export const onlineRoute = (game: OnlineGame): 'pairs/online' | 'quiz/online' => `${game}/online`;
+
+/**
+ * Куди ведуть двері сторінки гри (`controllers/roomPlace.ts`, `PlaceRoutes`): на хаб і на
+ * сторінку гри за `gameId` кімнати. Однаково для обох ігор — тому тут, а не на сторінках.
+ * Мова — ГЕТЕРОМ: сторінка міняє її без перемонтування, і шлях мусить іти за нею.
+ */
+export const onlineRoutes = (lang: () => Language) => ({
+	hub: () => langPath(lang(), 'online'),
+	game: (gameId: string) => (isOnlineGame(gameId) ? langPath(lang(), onlineRoute(gameId)) : null)
+});
+
 /** Куди веде «зіграти в іншу»: кожна гра вказує на другу. */
 const OTHER: Record<OnlineGame, OnlineGame> = { pairs: 'quiz', quiz: 'pairs' };
 

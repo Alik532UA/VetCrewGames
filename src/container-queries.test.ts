@@ -61,8 +61,8 @@ const SIZE_QUERY = /@media[^{]*\((min|max)-(width|height)\s*:/g;
  * наполовину, мусить бути видним як наполовину переведений.
  *
  * Погашений рядок прибирається зі списку — його стереже третя перевірка. Перший
- * такий уже є: `pairs/OnlineGate` переведено на `@container`, і саме тому його
- * тут немає.
+ * такий уже є: форму входу (`pairs/OnlineGate`, тепер хаб `online/OnlineHub`) переведено
+ * на `@container`, і саме тому її тут немає.
  */
 const MEDIA_DEBT: Record<string, number> = {
 	'src/lib/components/FeedingBoard.svelte': 2,

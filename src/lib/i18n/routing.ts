@@ -81,6 +81,16 @@ export const LANGUAGE_ROUTES = {
 	 * вкладкою.
 	 */
 	account: '/[[lang=lang]]/account',
+	/**
+	 * «ГРАТИ» І «ГРАТИ ОНЛАЙН» — два пункти головного меню (рішення автора 2026-09-26).
+	 *
+	 * Доти головне меню вело в розділи ігор («Вікторина», «Знайди пару»), і в кожному
+	 * були ті самі два пункти. Тепер навпаки: спершу — як грати, потім — у що. «Грати» —
+	 * соло-ігри обох розділів; «Грати онлайн» — хаб: автоматичний пошук, створити
+	 * кімнату, підключитися за кодом і перелік кімнат обох ігор.
+	 */
+	play: '/[[lang=lang]]/play',
+	online: '/[[lang=lang]]/online',
 	quiz: '/[[lang=lang]]/quiz',
 	'quiz/play': '/[[lang=lang]]/quiz/play',
 	/**
@@ -133,8 +143,13 @@ export type RouteRest = keyof typeof LANGUAGE_ROUTES;
  *
  * Політика адрес живе в ОДНОМУ модулі (AGENTS.md), тож і цей перелік тут, а не
  * в layout: canonical, hreflang і sitemap читають його разом.
+ *
+ * `quiz` і `pairs` — СТАРІ АДРЕСИ РОЗДІЛІВ (з 2026-09-26): головне меню веде тепер у
+ * «Грати» й «Грати онлайн», а ці сторінки лише переадресовують у «Грати». Прибрати їх
+ * означало б зламати посилання, які вже могли комусь піти; індексувати — дати пошуковику
+ * дві адреси того самого меню.
  */
-export const HIDDEN_ROUTES: readonly RouteRest[] = ['beta-test-checklists'];
+export const HIDDEN_ROUTES: readonly RouteRest[] = ['beta-test-checklists', 'quiz', 'pairs'];
 
 /** Чи ця сторінка поза індексом. `null` (невідомий маршрут) — ні. */
 export const isHiddenRoute = (rest: RouteRest | null): boolean =>

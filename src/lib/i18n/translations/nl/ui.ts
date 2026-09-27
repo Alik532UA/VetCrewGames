@@ -22,6 +22,25 @@ export const ui = {
 	'menu.play': 'Spelen',
 	'menu.playOnline': 'Online spelen',
 	'online.searchFailed': 'Het zoeken naar een spel is mislukt — probeer het opnieuw.',
+	'online.searchBusy':
+		'Zolang het automatisch zoeken loopt, kan er niets anders — annuleer eerst het zoeken.',
+	'online.search': 'Automatisch zoeken',
+	'online.searchGames': 'Wat we spelen',
+	'online.searchLast': 'Minstens één spel moet aan blijven',
+	'online.searchHint':
+		'We zoeken een tegenstander in een van de gekozen spellen — en als er niemand is, wachten we tot er iemand komt.',
+	'online.searching': 'Een speler zoeken…',
+	'online.waiting':
+		'Wachten op een speler. Zodra iemand een van de gekozen spellen zoekt, zitten jullie in dezelfde kamer.',
+	'online.found': 'Speler gevonden — verbinden…',
+	'online.searchCancel': 'Annuleren',
+	'online.createTitle': 'Nieuwe kamer:',
+	'online.everyoneHint': 'De kamer verschijnt in de lijst, en iedereen kan meedoen.',
+	'online.friendsHint':
+		'De kamer staat niet in de lijst: meedoen kan alleen met de code die je stuurt.',
+	'online.back': 'Terug',
+	'online.join': 'Meedoen',
+	'online.opening': 'De kamer wordt geopend…',
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
 	'pairs.won': 'Gewonnen',
@@ -34,7 +53,6 @@ export const ui = {
 	'pairs.actionFailed': 'De server heeft deze actie geweigerd.',
 	'pairs.youLead': 'De gastheer is vertrokken — jij leidt nu het spel.',
 	'pairs.createRoom': 'Ruimte maken',
-	'pairs.joinRoom': 'Meedoen met code',
 	'pairs.roomCode': 'Ruimtecode',
 	'pairs.qrHint': 'Richt een camera erop om mee te doen',
 	'pairs.qrLabel': 'QR-code voor deze kamer',
@@ -97,17 +115,12 @@ export const ui = {
 	'pairs.visibility': 'Wie mag meedoen',
 	'pairs.friendsOnly': 'Alleen vrienden',
 	'pairs.everyone': 'Voor iedereen',
-	'pairs.visibilityHint':
-		'Alleen vrienden — de kamer staat niet in de lijst; je komt er alleen met de code die je doorgeeft. Voor iedereen — de kamer verschijnt in ieders lijst.',
 	'pairs.rooms': 'Kamers',
 	'pairs.noRooms': 'Nog geen open kamers',
 	'pairs.noRoomsHint': 'Maak er een — hij komt hier bij iedereen die deze pagina open heeft.',
 	'pairs.players': 'Spelers',
 	'pairs.enter': 'Meedoen',
-	'pairs.quickGame': 'Snel spel',
-	'pairs.quickGameHint': 'We stappen in een vrije kamer, of maken een nieuwe open kamer.',
 	'pairs.shownNewest': 'Nieuwste weergegeven — er zijn meer',
-	'pairs.roomsFiltered': 'Verborgen door de filter',
 	'pairs.startingIn': 'Start over',
 	'pairs.seconds': 's',
 	'pairs.roomsUnavailable':
@@ -115,7 +128,6 @@ export const ui = {
 
 	// Teamnamen: bijvoeglijk naamwoord + dier. HELE zinnen; bij het-woorden zonder
 	// lidwoord blijft het adjectief onverbogen — zie `config/crewNames.ts`.
-	'menu.comingSoon': 'Nog in ontwikkeling',
 	'menu.game.population': 'Wie komt vaker voor?',
 	'menu.game.habitat': 'Waar wonen ze?',
 	'menu.game.mythbusters': 'Feit of mythe?',

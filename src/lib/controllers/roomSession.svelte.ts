@@ -9,7 +9,7 @@ import type { PlayerIdentity } from './playerIdentity.svelte';
 import type { Member, Role, RoomTransport } from '$lib/net/roomTypes';
 import type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
-import { entryErrorKey, entryRefusal, newcomerRole, quickPick } from '$lib/utils/roomEntry';
+import { entryErrorKey, entryRefusal, newcomerRole } from '$lib/utils/roomEntry';
 import { playersOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 import { hostClose, hostRematch, hostStart } from './roomHost';
@@ -158,8 +158,13 @@ export class RoomSession<M extends RoomMatch> {
 	 */
 	#entry = 0;
 
-	/** Зайти в кімнату або створити її. `quick` — дорога «швидкої гри» (автостарт). */
-	async enter(action: 'create' | 'join', quick = false): Promise<void> {
+	/**
+	 * Зайти в кімнату або створити її. Створена тут кімната — завжди «руками»: без
+	 * автостарту, публічність — `isPrivate`. Кімнату з автостартом під збіг автоматичного
+	 * пошуку створює хаб (`controllers/autoSearch.svelte.ts`), а «швидкої гри» на сторінці
+	 * гри більше немає (рішення автора 2026-09-26).
+	 */
+	async enter(action: 'create' | 'join'): Promise<void> {
 		if (this.busy) return;
 		this.busy = true;
 		const entry = this.#entry;
@@ -179,8 +184,8 @@ export class RoomSession<M extends RoomMatch> {
 					name: who,
 					country: this.player.country,
 					avatar: this.player.forRoom(),
-					autoStart: quick,
-					isPrivate: quick ? false : this.isPrivate,
+					autoStart: false,
+					isPrivate: this.isPrivate,
 					compact: this.game.compact?.()
 				});
 				if (stale()) return;
@@ -212,10 +217,21 @@ export class RoomSession<M extends RoomMatch> {
 				reason,
 				...(cause === undefined ? {} : { cause: String(cause) })
 			});
+			if (action === 'join' && !stale()) this.#leaveDoor();
 		} finally {
 			// Застарілий вхід кнопок не відпускає: ними вже володіє наступний (`dispose`).
 			if (!stale()) this.busy = false;
 		}
+	}
+
+	/**
+	 * НЕ ЗАЙШЛИ ЗА КОДОМ — ГЕТЬ З АДРЕСИ КІМНАТИ, і двері поведуть на хаб. Доти тут лишалася
+	 * форма входу з тим самим кодом; тепер форми на сторінці гри немає (хаб «Грати онлайн»),
+	 * і без цього кроку людина стояла б на «Відкриваємо кімнату…», якої не буде. Тост про
+	 * причину вже сказано; невдалий `#open` адресу знімає сам — удруге не треба.
+	 */
+	#leaveDoor(): void {
+		if (this.place.urlRoom() !== '') void this.place.exit();
 	}
 
 	/** Зайти за кодом. `null` — не пустили (людина вже почула чому) або вхід застарів. */
@@ -223,9 +239,15 @@ export class RoomSession<M extends RoomMatch> {
 		const wanted = this.joinCode.replace(/\D/g, '');
 		const room = await this.net.peekRoom(wanted);
 		if (stale()) return null;
+		// Кімната іншої гри — на її сторінку з тим самим кодом (`RoomPlace.elsewhere`), а не
+		// глухий кут «ця кімната для іншої гри» (скарга автора 2026-09-26).
+		if (room && room.gameId !== this.game.gameId && this.place.elsewhere(room.gameId, wanted)) {
+			return null;
+		}
 		const refusal = entryRefusal(room, this.game);
 		if (refusal) {
 			toast.error(refusal);
+			this.#leaveDoor();
 			return null;
 		}
 		this.code = wanted;
@@ -312,21 +334,13 @@ export class RoomSession<M extends RoomMatch> {
 	/**
 	 * НОВА КІМНАТА ЗАМІСТЬ ТІЄЇ, ЯКУ НІКОМУ ВЕСТИ (`stranded`): вийти з неї й створити
 	 * свою з тим самим підписом. Рядок у старій лишається — це «назад», як і вихід.
+	 * Через АДРЕСУ (`?create`), а не викликом: сторінка без кімнати в адресі — лише двері
+	 * (`RoomPlace.creating`), і прямий виклик між «кімнати вже немає» й «нова ще не
+	 * почалася» бачив би двері без наміру й ішов на хаб.
 	 */
 	async freshRoom(): Promise<void> {
 		this.exitToGate();
-		await this.place.exit();
-		await this.enter('create');
-	}
-
-	/** Швидка гра: найстаріша вільна кімната, а якщо такої немає — своя відкрита. */
-	async quickGame(): Promise<void> {
-		if (this.busy) return;
-		const fits = this.game.fitsQuick ?? (() => true);
-		const free = quickPick(this.lobby.rooms, this.game, this.game.quickSeats, fits);
-		if (free) this.joinCode = free.code;
-		else this.isPrivate = false;
-		await this.enter(free ? 'join' : 'create', !free);
+		await this.place.recreate(this.isPrivate);
 	}
 
 	/**

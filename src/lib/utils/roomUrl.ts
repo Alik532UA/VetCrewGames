@@ -28,6 +28,9 @@ export function withRoom(url: URL, code: string): URL {
 	next.searchParams.delete('from');
 	// `?move` теж відслужив: він потрібен лише до входу (`RoomInvite.check`).
 	next.searchParams.delete('move');
+	// І `?create` (намір із хабу, `RoomPlace.creating`): кімнату створено, а лишений у
+	// адресі він після «назад» створив би ще одну.
+	next.searchParams.delete('create');
 	return next;
 }
 

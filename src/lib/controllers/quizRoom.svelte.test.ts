@@ -76,13 +76,13 @@ describe('адаптер вікторини', () => {
 		expect(quiz.game.lateRole).toBe('player');
 	});
 
-	it('нова кімната й «швидка гра» — з вибраного набору ігор', () => {
+	/**
+	 * НОВА КІМНАТА — З УСІМА ШІСТЬМА ІГРАМИ (рішення автора 2026-09-26, 5-A): набір
+	 * правиться лише в лобі кімнати, фільтра на вході більше немає.
+	 */
+	it('нова кімната — з усіма іграми', () => {
 		const quiz = new QuizRoomState(() => 0.5);
-		const only = [ONLINE_GAMES[0].id];
-		quiz.picked = only;
-
-		expect(quiz.game.newRoom().config).toEqual(gamesToConfig(only));
-		expect(quiz.game.fitsQuick?.({ games: gamesToConfig(only) } as never)).toBe(true);
+		expect(quiz.game.newRoom().config).toEqual(gamesToConfig(ONLINE_GAMES.map((game) => game.id)));
 	});
 
 	/**
@@ -99,11 +99,11 @@ describe('адаптер вікторини', () => {
 	});
 
 	/**
-	 * ЗАПИС ПЕРЕЛІКУ — З НАБОРУ КІМНАТИ, а не з фільтра на формі входу (аудит
-	 * 2026-09-25): перелік переоголошує й господар після перезавантаження, і новий
-	 * господар після перехоплення — у обох фільтр інший, ніж у кімнаті.
+	 * ЗАПИС ПЕРЕЛІКУ — З НАБОРУ КІМНАТИ (аудит 2026-09-25): перелік переоголошує й
+	 * господар після перезавантаження, і новий господар після перехоплення. Доти він брав
+	 * фільтр форми входу; тепер фільтра немає, а набір господар править у лобі.
 	 *
-	 * Зворотний експеримент: повернути `this.picked` — червоніє.
+	 * Зворотний експеримент: оголошувати набір нової кімнати (усі шість) — червоніє.
 	 */
 	it('запис переліку несе набір кімнати, а не фільтр', () => {
 		const quiz = new QuizRoomState(() => 0.5);
@@ -111,7 +111,6 @@ describe('адаптер вікторини', () => {
 		const room = new LocalRoom(info({ config: gamesToConfig(inRoom) }), members());
 		const match = new QuizMatch(HOST, room.transport());
 		const off = match.listen();
-		quiz.picked = [ONLINE_GAMES[0].id];
 
 		expect(quiz.game.listingExtras?.(match)).toEqual({ games: gamesToConfig(inRoom) });
 		off();

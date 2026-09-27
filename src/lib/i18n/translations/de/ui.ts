@@ -22,6 +22,25 @@ export const ui = {
 	'menu.play': 'Spielen',
 	'menu.playOnline': 'Online spielen',
 	'online.searchFailed': 'Die Spielsuche ist fehlgeschlagen – versuche es noch einmal.',
+	'online.searchBusy':
+		'Während die automatische Suche läuft, geht sonst nichts – brich die Suche zuerst ab.',
+	'online.search': 'Automatische Suche',
+	'online.searchGames': 'Was wir spielen',
+	'online.searchLast': 'Mindestens ein Spiel muss eingeschaltet bleiben',
+	'online.searchHint':
+		'Wir finden einen Gegner in einem der gewählten Spiele – und wenn gerade niemand da ist, warten wir, bis jemand kommt.',
+	'online.searching': 'Suche nach einem Spieler…',
+	'online.waiting':
+		'Warten auf einen Spieler. Sobald jemand eines der gewählten Spiele sucht, landet ihr im selben Raum.',
+	'online.found': 'Spieler gefunden – verbinde…',
+	'online.searchCancel': 'Abbrechen',
+	'online.createTitle': 'Neuer Raum:',
+	'online.everyoneHint': 'Der Raum erscheint in der Liste, und jeder kann beitreten.',
+	'online.friendsHint':
+		'Der Raum steht nicht in der Liste: Beitreten kann man nur mit dem Code, den du schickst.',
+	'online.back': 'Zurück',
+	'online.join': 'Beitreten',
+	'online.opening': 'Raum wird geöffnet…',
 
 	// Gemeinsame Runde von Finde ein Paar: Lobby, Rolle, Zug.
 	'pairs.won': 'Gewonnen',
@@ -34,7 +53,6 @@ export const ui = {
 	'pairs.actionFailed': 'Der Server hat diese Aktion abgelehnt.',
 	'pairs.youLead': 'Der Gastgeber ist gegangen – jetzt leitest du die Partie.',
 	'pairs.createRoom': 'Raum erstellen',
-	'pairs.joinRoom': 'Mit Code beitreten',
 	'pairs.roomCode': 'Raumcode',
 	'pairs.qrHint': 'Kamera darauf richten, um beizutreten',
 	'pairs.qrLabel': 'QR-Code für diesen Raum',
@@ -99,17 +117,12 @@ export const ui = {
 	'pairs.visibility': 'Wer darf beitreten',
 	'pairs.friendsOnly': 'Nur Freunde',
 	'pairs.everyone': 'Für alle',
-	'pairs.visibilityHint':
-		'Nur Freunde — der Raum steht nicht in der Liste, hinein kommt man nur mit dem Code, den du weitergibst. Für alle — der Raum erscheint in jeder Liste.',
 	'pairs.rooms': 'Räume',
 	'pairs.noRooms': 'Noch keine offenen Räume',
 	'pairs.noRoomsHint': 'Erstelle einen — er erscheint hier bei allen, die diese Seite offen haben.',
 	'pairs.players': 'Spieler',
 	'pairs.enter': 'Beitreten',
-	'pairs.quickGame': 'Schnelles Spiel',
-	'pairs.quickGameHint': 'Wir treten einem freien Raum bei oder erstellen einen neuen offenen.',
 	'pairs.shownNewest': 'Neueste angezeigt — es gibt weitere',
-	'pairs.roomsFiltered': 'Vom Filter ausgeblendet',
 	'pairs.startingIn': 'Start in',
 	'pairs.seconds': 's',
 	'pairs.roomsUnavailable':
@@ -117,7 +130,6 @@ export const ui = {
 
 	// Team-Namen: Adjektiv + Tier. GANZE Phrasen; starke Deklination ohne Artikel
 	// (m -er, f -e, n -es) — siehe `config/crewNames.ts`.
-	'menu.comingSoon': 'Noch in Arbeit',
 	'menu.game.population': 'Wer ist häufiger?',
 	'menu.game.habitat': 'Wo leben sie?',
 	'menu.game.mythbusters': 'Fakt oder Mythos?',

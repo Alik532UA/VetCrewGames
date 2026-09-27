@@ -76,6 +76,18 @@ describe('план автоматичного пошуку', () => {
 		});
 	});
 
+	/**
+	 * Кімната чекає ВІД МИТІ СТВОРЕННЯ, а не від останнього оновлення запису: `at`
+	 * переписується щоудару серцебиття (аудит 2026-09-26, тоді ще про «швидку гру»).
+	 */
+	it('кімната чекає від створення, хоч її запис оновлено щойно', () => {
+		const rooms = [
+			room({ code: 'old', since: 100, at: 900 }),
+			room({ code: 'new', since: 500, at: 600 })
+		];
+		expect(planSeek(input({ rooms }))).toMatchObject({ code: 'old' });
+	});
+
 	it('гра для запису — з перетину; обидві — навмання', () => {
 		const onlyQuiz = [seek('s', 10, { quiz: 5 })];
 		expect(planSeek(input({ seeks: onlyQuiz, random: () => 0 }))).toMatchObject({

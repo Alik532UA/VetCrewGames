@@ -47,10 +47,10 @@ const OG_LOCALES = new Map([
 const EXPECTED_PAGES = [
 	['index.html', 'uk'],
 	['account/index.html', 'uk'],
-	['quiz/index.html', 'uk'],
+	['play/index.html', 'uk'],
+	['online/index.html', 'uk'],
 	['quiz/play/index.html', 'uk'],
 	['quiz/online/index.html', 'uk'],
-	['pairs/index.html', 'uk'],
 	['pairs/online/index.html', 'uk'],
 	['reserve/index.html', 'uk'],
 	['reserve/forest/index.html', 'uk'],
@@ -67,10 +67,10 @@ const EXPECTED_PAGES = [
 	['game-memory/index.html', 'uk'],
 	['en/index.html', 'en'],
 	['en/account/index.html', 'en'],
-	['en/quiz/index.html', 'en'],
+	['en/play/index.html', 'en'],
+	['en/online/index.html', 'en'],
 	['en/quiz/play/index.html', 'en'],
 	['en/quiz/online/index.html', 'en'],
-	['en/pairs/index.html', 'en'],
 	['en/pairs/online/index.html', 'en'],
 	['en/reserve/index.html', 'en'],
 	['en/reserve/forest/index.html', 'en'],
@@ -87,10 +87,10 @@ const EXPECTED_PAGES = [
 	['en/game-memory/index.html', 'en'],
 	['de/index.html', 'de'],
 	['de/account/index.html', 'de'],
-	['de/quiz/index.html', 'de'],
+	['de/play/index.html', 'de'],
+	['de/online/index.html', 'de'],
 	['de/quiz/play/index.html', 'de'],
 	['de/quiz/online/index.html', 'de'],
-	['de/pairs/index.html', 'de'],
 	['de/pairs/online/index.html', 'de'],
 	['de/reserve/index.html', 'de'],
 	['de/reserve/forest/index.html', 'de'],
@@ -107,10 +107,10 @@ const EXPECTED_PAGES = [
 	['de/game-memory/index.html', 'de'],
 	['nl/index.html', 'nl'],
 	['nl/account/index.html', 'nl'],
-	['nl/quiz/index.html', 'nl'],
+	['nl/play/index.html', 'nl'],
+	['nl/online/index.html', 'nl'],
 	['nl/quiz/play/index.html', 'nl'],
 	['nl/quiz/online/index.html', 'nl'],
-	['nl/pairs/index.html', 'nl'],
 	['nl/pairs/online/index.html', 'nl'],
 	['nl/reserve/index.html', 'nl'],
 	['nl/reserve/forest/index.html', 'nl'],
@@ -143,7 +143,20 @@ const HIDDEN_PAGES = [
 	'beta-test-checklists/index.html',
 	'en/beta-test-checklists/index.html',
 	'de/beta-test-checklists/index.html',
-	'nl/beta-test-checklists/index.html'
+	'nl/beta-test-checklists/index.html',
+	/*
+	 * Старі адреси розділів «Вікторина» й «Знайди пару» — лише переадресація в «Грати»
+	 * (рішення автора 2026-09-26). Існувати мусять (на них могли піти посилання), а в
+	 * індексі стояти — ні: дві адреси того самого меню.
+	 */
+	'quiz/index.html',
+	'en/quiz/index.html',
+	'de/quiz/index.html',
+	'nl/quiz/index.html',
+	'pairs/index.html',
+	'en/pairs/index.html',
+	'de/pairs/index.html',
+	'nl/pairs/index.html'
 ];
 
 /**

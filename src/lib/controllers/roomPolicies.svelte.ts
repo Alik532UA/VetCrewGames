@@ -43,15 +43,38 @@ export function attachRoomPolicies<M extends RoomMatch>(session: RoomSession<M>)
 	// Словник імен довантажується, тож стежимо за мовою.
 	$effect(() => void session.player.load(settings.locale, session.lobby.takenNames));
 
-	// Перелік і свої партії — лише поки видно форму входу: під час партії підписка
-	// слухала б чужі кімнати й платила трафіком за кожну чужу зміну.
-	$effect(() =>
-		session.match ? undefined : session.lobby.watch((names) => session.player.settle(names))
-	);
-	// Невдала довідка — або застаріла збірка (смуга «оновіть»), або рядок у журналі.
-	$effect(() =>
-		session.match ? undefined : session.lobby.load((error) => session.reload.noteFailure(error))
-	);
+	/*
+	 * СТОРІНКА ГРИ БЕЗ КІМНАТИ В АДРЕСІ — ЛИШЕ ДВЕРІ (хаб «Грати онлайн», рішення автора
+	 * 2026-09-26). Перелік кімнат, свої партії й форма входу переїхали на хаб, тож і
+	 * підписок на перелік тут більше немає. Намір із хабу (`?create`) — створити кімнату;
+	 * переїзд групи (`?from`) — сторінка сама питає, хто зможе зайти; решта — на хаб.
+	 *
+	 * Спроба створити — ОДНА на намір, доки не зайшли в кімнату (`tried`): невдала лишає
+	 * адресу тією самою, і без памʼяті кожне відпускання кнопок пробувало б знову. Після
+	 * невдачі — на хаб, де тост уже каже, що сталося. Вхід у кімнату памʼять скидає: «нова
+	 * кімната замість тієї, яку нікому вести» веде на ту саму адресу `?create`. А на саму
+	 * адресу з наміром «назад» уже не веде: вхід її заміняє (`RoomPlace.remember`).
+	 */
+	let tried = '';
+	$effect(() => {
+		if (session.match) {
+			tried = '';
+			return;
+		}
+		if (session.busy || session.place.urlRoom() !== '') return;
+		const create = session.place.creating();
+		const at = `${create}`;
+		if (create !== null && tried !== at) {
+			tried = at;
+			untrack(() => {
+				session.isPrivate = create;
+				void session.enter('create');
+			});
+			return;
+		}
+		if (create === null && session.place.choosing()) return;
+		untrack(() => void session.place.hub());
+	});
 
 	// Годинник цокає, поки на нього дивляться — і поки господаря немає.
 	$effect(() => {

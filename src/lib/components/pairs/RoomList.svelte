@@ -5,9 +5,12 @@
 	import type { ResumeRoom } from '$lib/controllers/lobbyFeed.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 	/**
-	 * Перелік відкритих кімнат — четвертий блок форми входу.
+	 * Перелік відкритих кімнат — пʼятий блок хабу «Грати онлайн», ОБИДВІ ГРИ РАЗОМ, і в
+	 * кожному рядку — чия це гра (рішення автора 2026-09-26, 6-A). Доти перелік був на
+	 * сторінці кожної гри окремо, і кімнати другої гри з неї видно не було.
 	 *
 	 * ## Навіщо
 	 *
@@ -67,22 +70,10 @@
 		hasMore: boolean;
 		/** Перелік не читається (правила не викладені). Показуємо чому, а не порожнечу. */
 		unavailable: boolean;
-		/**
-		 * СКІЛЬКИ КІМНАТ ВІДСІЯВ ФІЛЬТР — щоб про них сказати, а не змовчати.
-		 *
-		 * Сам фільтр цей компонент не знає й знати не мусить: він спільний із
-		 * «Знайди пару», де наборів ігор немає зовсім (`components/quiz/QuizRooms`
-		 * сіє список і передає сюди число). Але СКАЗАТИ про відсіяне мусить саме
-		 * той, хто малює порожнечу: інакше звужений фільтр дає «Відкритих кімнат
-		 * поки немає» — напис, який не бреше про факт і веде до хибного висновку.
-		 *
-		 * Нуль — фільтра немає або він нічого не приховав. Це й типове значення,
-		 * тобто «Знайди пару» лишається такою, як була.
-		 */
-		hidden?: number;
 		/** Поки триває вхід, кнопки не приймають повторних натискань. */
 		busy: boolean;
-		onEnter: (code: string) => void;
+		/** Зайти — з грою рядка: у кімнату веде сторінка САМЕ її гри. */
+		onEnter: (code: string, gameId: string) => void;
 		/**
 		 * Закрити свою кімнату, у якій уже нікого немає. `undefined` — кнопки немає.
 		 *
@@ -90,20 +81,10 @@
 		 * хвилин тиші): доти людина пам'ятає, що це за партія. Далі рядок зникає сам,
 		 * і питати вже нема про що.
 		 */
-		onClose?: (code: string) => void;
+		onClose?: (code: string, gameId: string) => void;
 	}
 
-	let {
-		rooms,
-		resume,
-		friends,
-		hasMore,
-		unavailable,
-		busy,
-		hidden = 0,
-		onEnter,
-		onClose
-	}: Props = $props();
+	let { rooms, resume, friends, hasMore, unavailable, busy, onEnter, onClose }: Props = $props();
 
 	/*
 	 * Дві групи з одного масиву, і порядок усередині кожної НЕ міняється:
@@ -111,6 +92,12 @@
 	 * пересортувати його тут означало б дві різні відповіді на «яка кімната
 	 * найновіша» на одному екрані.
 	 */
+	/** Чия гра — підписом у рядку; невідома гра (новіша збірка) лишається без підпису. */
+	const GAME_NAME: Record<string, TranslationKey> = {
+		quiz: 'menu.quiz',
+		pairs: 'menu.game.memory'
+	};
+
 	const friendly = $derived(rooms.filter((room) => friends.includes(room.hostUid)));
 	const others = $derived(rooms.filter((room) => !friends.includes(room.hostUid)));
 
@@ -127,11 +114,11 @@
 	<h2 class="rooms__title">{@html formatFont(t('pairs.rooms'))}</h2>
 
 	<!--
-		ШВИДКОЇ ГРИ ТУТ БІЛЬШЕ НЕМА — вона переїхала на самий верх форми входу й
-		лишилася без панелі (`OnlineGate`). Причина в тому, що вона не є одним із
+		ШВИДКОЇ ГРИ ТУТ БІЛЬШЕ НЕМА — її місце заступив «Автоматичний пошук», перший
+		блок хабу (`online/SearchBlock`). Причина в тому, що він не є одним із
 		рівноправних варіантів: вона робить те саме, що всі блоки разом, тільки без
-		вибору. Усередині панелі зі списком вона читалася б як «спосіб зайти в
-		кімнату зі списку», хоч вона й кімнату створить, коли списку немає.
+		вибору. Усередині панелі зі списком він читався б як «спосіб зайти в
+		кімнату зі списку», хоч він і чекатиме, коли списку немає.
 	-->
 	<!--
 		ЗАКРІПЛЕНІ ЗВЕРХУ — і поза `{#if unavailable}`.
@@ -142,9 +129,9 @@
 		найпотрібніший: список порожній, а гра йде.
 	-->
 	{#if resume.length > 0}
-		<ul class="rooms__list rooms__list--resume" data-testid="pairs-resume-list">
+		<ul class="rooms__list rooms__list--resume" data-testid="online-resume-list">
 			{#each resume as room (room.code)}
-				<li class="rooms__item rooms__item--resume" data-testid="pairs-resume-{room.code}-item">
+				<li class="rooms__item rooms__item--resume" data-testid="online-resume-{room.code}-item">
 					<span class="rooms__who">
 						<!--
 							КОД У САМОМУ РЯДКУ, а не лише в локаторі: три партії підряд
@@ -155,7 +142,12 @@
 							{@html formatFont(t('pairs.resume'))}
 							<span class="rooms__code">#{room.code}</span>
 						</span>
-						<span class="rooms__players">{@html formatFont(t('pairs.resumeHint'))}</span>
+						<span class="rooms__players">
+							{#if GAME_NAME[room.gameId]}
+								<span class="rooms__game">{@html formatFont(t(GAME_NAME[room.gameId]))}</span>
+							{/if}
+							{@html formatFont(t('pairs.resumeHint'))}
+						</span>
 					</span>
 					<!--
 						Стан кімнати звірено РАЗ, коли перелік читався (`LobbyFeed.load`,
@@ -167,9 +159,9 @@
 						<button
 							type="button"
 							class="rooms__close"
-							onclick={() => onClose(room.code)}
+							onclick={() => onClose(room.code, room.gameId)}
 							aria-label="{t('pairs.closeRoom')}: {room.code}"
-							data-testid="pairs-resume-{room.code}-close-btn"
+							data-testid="online-resume-{room.code}-close-btn"
 						>
 							{@html formatFont(t('pairs.closeRoom'))}
 						</button>
@@ -177,10 +169,10 @@
 					<button
 						type="button"
 						class="rooms__enter rooms__enter--resume"
-						onclick={() => onEnter(room.code)}
+						onclick={() => onEnter(room.code, room.gameId)}
 						aria-disabled={busy}
 						aria-label="{t('pairs.resume')}: {room.code}"
-						data-testid="pairs-resume-{room.code}-btn"
+						data-testid="online-resume-{room.code}-btn"
 					>
 						{@html formatFont(t('pairs.resumeOne'))}
 					</button>
@@ -190,25 +182,14 @@
 	{/if}
 
 	{#if unavailable}
-		<p class="rooms__hint" data-testid="pairs-rooms-unavailable-hint">
+		<p class="rooms__hint" data-testid="online-rooms-unavailable-hint">
 			{@html formatFont(t('pairs.roomsUnavailable'))}
 		</p>
 	{:else if rooms.length === 0}
-		<!--
-			ПОРОЖНЬО ЧЕРЕЗ ФІЛЬТР — це інше повідомлення, ніж «кімнат немає».
-			Перше має що робити (розширити фільтр), друге — ні, і плутати їх означало
-			б радити створити кімнату тому, хто щойно сам відсіяв двадцять.
-		-->
-		{#if hidden > 0}
-			<p class="rooms__empty" data-testid="pairs-rooms-filtered-hint">
-				{@html formatFont(t('pairs.roomsFiltered'))}: {hidden}
-			</p>
-		{:else}
-			<p class="rooms__empty" data-testid="pairs-rooms-empty-hint">
-				{@html formatFont(t('pairs.noRooms'))}
-			</p>
-			<p class="rooms__hint">{@html formatFont(t('pairs.noRoomsHint'))}</p>
-		{/if}
+		<p class="rooms__empty" data-testid="online-rooms-empty-hint">
+			{@html formatFont(t('pairs.noRooms'))}
+		</p>
+		<p class="rooms__hint">{@html formatFont(t('pairs.noRoomsHint'))}</p>
 	{:else}
 		<!--
 			ДВІ ГРУПИ, а не інший порядок в одному списку.
@@ -225,9 +206,9 @@
 		-->
 		{#if friendly.length > 0}
 			<h3 class="rooms__group">{@html formatFont(t('pairs.friendsRooms'))}</h3>
-			<ul class="rooms__list" data-testid="pairs-friend-rooms-list">
+			<ul class="rooms__list" data-testid="online-friend-rooms-list">
 				{#each friendly as room (room.code)}
-					<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
+					<li class="rooms__item" data-testid="online-room-{room.code}-item">
 						<span class="rooms__who">
 							<span class="rooms__host">
 								<Flag code={room.hostCountry} />
@@ -235,6 +216,11 @@
 								{room.hostName}
 							</span>
 							<span class="rooms__players">
+								{#if GAME_NAME[room.gameId]}
+									<span class="rooms__game" data-testid="online-room-{room.code}-game-text">
+										{@html formatFont(t(GAME_NAME[room.gameId]))}
+									</span>
+								{/if}
 								<Users size={14} aria-hidden="true" />
 								{@html formatFont(t('pairs.players'))}: {room.players}
 							</span>
@@ -242,10 +228,10 @@
 						<button
 							type="button"
 							class="rooms__enter"
-							onclick={() => onEnter(room.code)}
+							onclick={() => onEnter(room.code, room.gameId)}
 							aria-disabled={busy}
 							aria-label="{t('pairs.enter')}: {room.hostName}"
-							data-testid="pairs-room-{room.code}-btn"
+							data-testid="online-room-{room.code}-btn"
 						>
 							{@html formatFont(t('pairs.enter'))}
 						</button>
@@ -255,9 +241,9 @@
 		{/if}
 
 		{#if others.length > 0}
-			<ul class="rooms__list" data-testid="pairs-rooms-list">
+			<ul class="rooms__list" data-testid="online-rooms-list">
 				{#each others as room (room.code)}
-					<li class="rooms__item" data-testid="pairs-room-{room.code}-item">
+					<li class="rooms__item" data-testid="online-room-{room.code}-item">
 						<span class="rooms__who">
 							<span class="rooms__host">
 								<Flag code={room.hostCountry} />
@@ -265,6 +251,11 @@
 								{room.hostName}
 							</span>
 							<span class="rooms__players">
+								{#if GAME_NAME[room.gameId]}
+									<span class="rooms__game" data-testid="online-room-{room.code}-game-text">
+										{@html formatFont(t(GAME_NAME[room.gameId]))}
+									</span>
+								{/if}
 								<Users size={14} aria-hidden="true" />
 								{@html formatFont(t('pairs.players'))}: {room.players}
 							</span>
@@ -272,10 +263,10 @@
 						<button
 							type="button"
 							class="rooms__enter"
-							onclick={() => onEnter(room.code)}
+							onclick={() => onEnter(room.code, room.gameId)}
 							aria-disabled={busy}
 							aria-label="{t('pairs.enter')}: {room.hostName}"
-							data-testid="pairs-room-{room.code}-btn"
+							data-testid="online-room-{room.code}-btn"
 						>
 							{@html formatFont(t('pairs.enter'))}
 						</button>
@@ -285,15 +276,8 @@
 		{/if}
 
 		{#if hasMore}
-			<p class="rooms__hint" data-testid="pairs-rooms-trimmed-hint">
+			<p class="rooms__hint" data-testid="online-rooms-trimmed-hint">
 				{@html formatFont(t('pairs.shownNewest'))}: {rooms.length}
-			</p>
-		{/if}
-		<!-- Фільтр приховав частину — але не все: список не порожній, тож це рядок
-		     під ним, а не замість нього. -->
-		{#if hidden > 0}
-			<p class="rooms__hint" data-testid="pairs-rooms-hidden-hint">
-				{@html formatFont(t('pairs.roomsFiltered'))}: {hidden}
 			</p>
 		{/if}
 	{/if}
@@ -352,7 +336,7 @@
 	 *
 	 * `opacity` на тексті цієї панелі опускає пару під 4.5:1, і жодне значення
 	 * прозорості її не рятує: заміряно `tests/contrast-runtime.spec.ts`. Те саме
-	 * міркування записане в `OnlineGate` і в `reserve/BiomePicker`.
+	 * міркування записане в `online/SearchBlock` і в `reserve/BiomePicker`.
 	 */
 	.rooms__hint {
 		margin: 0;
@@ -422,6 +406,13 @@
 		gap: 4px;
 		font-size: var(--font-size-xs);
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* Підпис гри — тим самим кеглем, що кількість гравців, але жирніше: за ним вибирають. */
+	.rooms__game {
+		font-weight: var(--font-weight-bold);
+		/* «Знайди пару» — одна назва: у вузькому стовпці вона не мусить ламатися по слову. */
+		white-space: nowrap;
 	}
 
 	.rooms__enter {

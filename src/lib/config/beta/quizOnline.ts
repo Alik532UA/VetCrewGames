@@ -173,8 +173,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_13',
 			category: { uk: 'Набір ігор', en: 'The set of games' },
 			text: {
-				uk: 'Відкрийте «Фільтр ігор» над списком кімнат. У переліку мусить бути ШІСТЬ ігор, серед них дві про те, де живуть тварини — про континенти й про природні зони.',
-				en: 'Open “Game filter” above the room list. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
+				uk: 'У лобі кімнати подивіться на «Ігри в кімнаті». У переліку мусить бути ШІСТЬ ігор, серед них дві про те, де живуть тварини — про континенти й про природні зони.',
+				en: 'In the room lobby look at “Games in the room”. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
 			},
 			coverage: 'manual',
 			/*
@@ -219,16 +219,6 @@ export const quizOnlineTab: BetaTab = {
 			negative: true,
 			coverage: 'manual',
 			testid: 'quiz-pause-btn'
-		},
-		{
-			id: 'quizonline_17',
-			category: { uk: 'Набір ігор', en: 'The set of games' },
-			text: {
-				uk: 'Зніміть у фільтрі всі ігри, крім однієї, і подивіться на список кімнат. Кімнати з іншими іграми мусять зникнути, а рядок під списком — сказати, скільки їх приховано.',
-				en: 'In the filter leave a single game and look at the room list. Rooms with other games must disappear, and a line under the list must say how many are hidden.'
-			},
-			coverage: 'manual',
-			testid: 'quiz-games-filter-toggle'
 		},
 		{
 			id: 'quizonline_18',

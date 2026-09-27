@@ -22,6 +22,24 @@ export const ui = {
 	'menu.play': 'Play',
 	'menu.playOnline': 'Play online',
 	'online.searchFailed': 'The game search failed — please try again.',
+	'online.searchBusy':
+		'While the automatic search runs, nothing else is available — cancel the search first.',
+	'online.search': 'Automatic search',
+	'online.searchGames': 'What we play',
+	'online.searchLast': 'At least one game has to stay on',
+	'online.searchHint':
+		'We will find an opponent in one of the chosen games — and if nobody is around, we will wait until someone comes.',
+	'online.searching': 'Looking for a player…',
+	'online.waiting':
+		'Waiting for a player. As soon as someone looks for one of the chosen games, you will be in the same room.',
+	'online.found': 'Found a player — connecting…',
+	'online.searchCancel': 'Cancel',
+	'online.createTitle': 'New room:',
+	'online.everyoneHint': 'The room shows up in the list, and anyone can join.',
+	'online.friendsHint': 'The room is not listed: people join only with the code you send them.',
+	'online.back': 'Back',
+	'online.join': 'Join',
+	'online.opening': 'Opening the room…',
 
 	// Shared game of Find a Pair: lobby, role, turn.
 	'pairs.won': 'Winner',
@@ -34,7 +52,6 @@ export const ui = {
 	'pairs.actionFailed': 'The server refused this action.',
 	'pairs.youLead': 'The host left — you are leading the game now.',
 	'pairs.createRoom': 'Create a room',
-	'pairs.joinRoom': 'Join with a code',
 	'pairs.roomCode': 'Room code',
 	'pairs.qrHint': 'Point a camera to join',
 	'pairs.qrLabel': 'QR code for this room',
@@ -98,24 +115,18 @@ export const ui = {
 	'pairs.visibility': 'Who can join',
 	'pairs.friendsOnly': 'Friends only',
 	'pairs.everyone': 'Everyone',
-	'pairs.visibilityHint':
-		'Friends only — the room stays out of the list and can be joined only with the code you send. Everyone — the room shows up in everybody’s list.',
 	'pairs.rooms': 'Rooms',
 	'pairs.noRooms': 'No open rooms yet',
 	'pairs.noRoomsHint': 'Create one — it will show up here for everyone who has this page open.',
 	'pairs.players': 'Players',
 	'pairs.enter': 'Enter',
-	'pairs.quickGame': 'Quick game',
-	'pairs.quickGameHint': 'We will join a free room, or create a new open one if there is none.',
 	'pairs.shownNewest': 'Showing the newest — there are more',
-	'pairs.roomsFiltered': 'Hidden by the filter',
 	'pairs.startingIn': 'Starting in',
 	'pairs.seconds': 's',
 	'pairs.roomsUnavailable':
 		'The room list is unavailable. Joining by code and creating a room still work.',
 
 	// Crew names: adjective + animal. WHOLE phrases — see `config/crewNames.ts`.
-	'menu.comingSoon': 'Still in the works',
 	'menu.game.population': 'Who is more?',
 	'menu.game.habitat': 'Where do they live?',
 	'menu.game.mythbusters': 'Fact or Myth?',

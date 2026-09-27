@@ -99,11 +99,10 @@
 	onMount(() => {
 		game.start(newParty());
 		/*
-		 * «Назад» веде в РОЗДІЛ, а не в головне меню. Після того, як ігри переїхали
-		 * під «Вікторину» й «Знайди пару», типовий крок на головну змушував би
-		 * спускатися двома рівнями заново.
+		 * «Назад» веде в «ГРАТИ», звідки сюди й прийшли, а не в головне меню: типовий крок
+		 * на головну змушував би спускатися знову (доти так само вів у розділ «Знайди пару»).
 		 */
-		const releaseHeader = settings.claimHeader('memory.title', () => goto(langPath(lang, 'pairs')));
+		const releaseHeader = settings.claimHeader('memory.title', () => goto(langPath(lang, 'play')));
 
 		window.addEventListener('resize', offerRelayout);
 		return () => {

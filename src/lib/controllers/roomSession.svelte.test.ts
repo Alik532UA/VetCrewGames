@@ -61,7 +61,6 @@ const pairsGame = {
 	gameId: 'pairs' as const,
 	rulesVersion: 2,
 	minPlayers: 2,
-	quickSeats: 2,
 	lateRole: 'spectator' as const,
 	autoStartReady: (players: number) => players === 2,
 	newRoom: () => ({ seed: 777, config: { pairs: 4, cols: 4 } }),
@@ -112,18 +111,36 @@ function fakeNet(room: LocalRoom, peek: RoomInfo | null, me: string) {
 	};
 }
 
-function stubs() {
-	let url = '';
+/**
+ * Адреса сторінки в памʼяті: `?room`, намір із хабу (`?create`) і переїзд (`?from`). Двері
+ * без наміру ведуть на хаб (`hub`), нова кімната — `recreate` (`?create` замість `?room`).
+ */
+function stubs({
+	create = null,
+	from = false,
+	room = ''
+}: { create?: boolean | null; from?: boolean; room?: string } = {}) {
+	let url = room;
+	let creating = create;
 	const place = {
 		urlRoom: () => url,
 		moved: () => false,
 		remember: vi.fn(async (code: string) => {
 			url = code;
+			creating = null;
 		}),
 		exit: vi.fn(async () => {
 			url = '';
 		}),
-		announce: vi.fn(async () => {})
+		announce: vi.fn(async () => {}),
+		creating: () => creating,
+		choosing: () => from && creating === null,
+		hub: vi.fn(async () => {}),
+		recreate: vi.fn(async (isPrivate: boolean) => {
+			url = '';
+			creating = isPrivate;
+		}),
+		elsewhere: vi.fn((gameId: string) => gameId === 'quiz')
 	};
 	const player = {
 		load: vi.fn(async () => {}),
@@ -153,10 +170,11 @@ function sessionFor(
 	room: LocalRoom,
 	peek: RoomInfo | null,
 	me: string,
-	game: typeof pairsGame | typeof quizGame = pairsGame
+	game: typeof pairsGame | typeof quizGame = pairsGame,
+	door: Parameters<typeof stubs>[0] = {}
 ) {
 	const { net, setOnline, setConnected } = fakeNet(room, peek, me);
-	const { place, player, lobby } = stubs();
+	const { place, player, lobby } = stubs(door);
 	let session!: Session;
 	cleanup = $effect.root(() => {
 		session = new RoomSession(
@@ -225,9 +243,9 @@ describe('вхід у кімнату', () => {
 		expect(net.beat.mock.calls[0]?.[0]).toBe(await net.roomTransport.mock.results[0].value);
 	});
 
-	it('кімнати немає — не заходимо й кажемо чому', async () => {
+	it('кімнати немає — не заходимо, кажемо чому й ідемо з адреси кімнати на хаб', async () => {
 		const room = new LocalRoom(roomInfo(), members());
-		const { session, net } = sessionFor(room, null, GUEST);
+		const { session, net, place } = sessionFor(room, null, GUEST, pairsGame, { room: '42' });
 		session.joinCode = '42';
 
 		await session.enter('join');
@@ -235,6 +253,17 @@ describe('вхід у кімнату', () => {
 		expect(toast.error).toHaveBeenCalledWith('pairs.noRoom');
 		expect(net.joinRoom).not.toHaveBeenCalled();
 		expect(session.match).toBeNull();
+		expect(place.exit, 'форми входу тут немає — двері ведуть на хаб').toHaveBeenCalledTimes(1);
+	});
+
+	it('невдалий вхід за кодом теж веде з адреси кімнати — один раз', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net, place } = sessionFor(room, roomInfo(), GUEST, pairsGame, { room: '42' });
+		net.joinRoom.mockRejectedValue(new Error('room-full'));
+		session.joinCode = '42';
+		await session.enter('join');
+		expect(toast.error).toHaveBeenLastCalledWith('pairs.roomFull');
+		expect(place.exit).toHaveBeenCalledTimes(1);
 	});
 
 	it('версії за напрямком: кімната старша — «створіть нову», новіша — «оновіть сторінку»', async () => {
@@ -698,12 +727,69 @@ describe('політики кімнати', () => {
 		await session.enter('join');
 		await settle();
 
+		const toHub = place.hub.mock.calls.length;
 		await session.freshRoom();
 		await settle();
 
-		expect(place.exit).toHaveBeenCalled();
+		// Через адресу (`?create`), а не прямим викликом: двері створюють кімнату самі.
+		expect(place.recreate).toHaveBeenCalledWith(false);
 		expect(net.createRoom).toHaveBeenCalledTimes(1);
+		expect(place.hub.mock.calls.length, 'двері з наміром на хаб не ведуть').toBe(toHub);
 		expect(session.code).toBe('42');
+	});
+
+	/**
+	 * СТОРІНКА ГРИ БЕЗ КІМНАТИ — ДВЕРІ (хаб «Грати онлайн», рішення автора 2026-09-26).
+	 *
+	 * Зворотний експеримент: прибрати спробу «одна на адресу» — невдале створення
+	 * пробувало б знову на кожному відпусканні кнопок.
+	 */
+	it('двері: намір із хабу створює кімнату «руками», без наміру — на хаб', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { net, place, session } = sessionFor(room, null, HOST, pairsGame, { create: true });
+		await settle();
+		expect(net.createRoom).toHaveBeenCalledTimes(1);
+		const [options] = net.createRoom.mock.calls[0] as unknown as [
+			{ isPrivate: boolean; autoStart: boolean }
+		];
+		expect(options.isPrivate, '«лише друзі» з хабу').toBe(true);
+		expect(options.autoStart, 'кімната «руками» стартує, коли скаже господар').toBe(false);
+		expect(place.hub).not.toHaveBeenCalled();
+		session.dispose();
+
+		const bare = sessionFor(new LocalRoom(roomInfo(), members()), null, HOST);
+		await settle();
+		expect(bare.place.hub).toHaveBeenCalled();
+		expect(bare.net.createRoom).not.toHaveBeenCalled();
+	});
+
+	it('двері: переїзд групи питає публічність сам, а невдале створення веде на хаб', async () => {
+		const moving = sessionFor(new LocalRoom(roomInfo(), members()), null, HOST, pairsGame, {
+			from: true
+		});
+		await settle();
+		expect(moving.place.hub, 'вікно «хто зможе зайти» — на цій сторінці').not.toHaveBeenCalled();
+		moving.session.dispose();
+
+		const failing = sessionFor(new LocalRoom(roomInfo(), members()), null, HOST, pairsGame, {
+			create: false
+		});
+		failing.net.createRoom.mockRejectedValue(new Error('offline'));
+		await settle();
+		await settle();
+		expect(failing.net.createRoom, 'одна спроба на адресу').toHaveBeenCalledTimes(1);
+		expect(failing.place.hub).toHaveBeenCalled();
+	});
+
+	it('код кімнати ІНШОЇ гри — на її сторінку, а не «ця кімната для іншої гри»', async () => {
+		const quizRoom = roomInfo({ gameId: 'quiz' });
+		const room = new LocalRoom(quizRoom, members());
+		const { session, net, place } = sessionFor(room, quizRoom, GUEST);
+		session.joinCode = '42';
+		await session.enter('join');
+		expect(place.elsewhere).toHaveBeenCalledWith('quiz', '42');
+		expect(net.joinRoom).not.toHaveBeenCalled();
+		expect(session.match).toBeNull();
 	});
 
 	/**

@@ -12,7 +12,8 @@ export const commonTab: BetaTab = {
 	title: { uk: 'Спільне для сайту', en: 'Site-wide' },
 	// Меню — теж адреси, і теж мають бути перевірені. Вони тут, а не в іграх, бо
 	// зламане меню — це одна поломка, а не шість.
-	routes: ['', 'quiz', 'quiz/play', 'pairs', 'game-habitat', 'reserve'],
+	// `quiz` і `pairs` — старі адреси розділів, що тепер переадресовують у «Грати».
+	routes: ['', 'play', 'quiz', 'quiz/play', 'pairs', 'game-habitat', 'reserve'],
 	checks: [
 		{
 			id: 'common_1',
@@ -153,8 +154,8 @@ export const commonTab: BetaTab = {
 			id: 'common_11',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Відкрийте «Вікторина» → «Грати» і натисніть «Випадкова гра» пʼять разів. Щоразу мусить відкриватися ГРА — жодного разу меню чи сторінка вибору режиму.',
-				en: 'Open «Quiz» → «Play» and press «Random game» five times. Each time a GAME must open — never a menu or a mode-choice screen.'
+				uk: 'Відкрийте «Грати» → «Вікторина» і натисніть «Випадкова гра» пʼять разів. Щоразу мусить відкриватися ГРА — жодного разу меню чи сторінка вибору режиму.',
+				en: 'Open «Play» → «Quiz» and press «Random game» five times. Each time a GAME must open — never a menu or a mode-choice screen.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/services/randomGame.test.ts',
@@ -165,12 +166,12 @@ export const commonTab: BetaTab = {
 			id: 'common_26',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'На головній мусить бути ДВА розділи — «Вікторина» й «Знайди пару» — і жодного окремого пункту гри. «Заповідник» у зібраному сайті поки не показується: він ще будується.',
-				en: 'The home screen must show TWO sections — «Quiz» and «Find a pair» — and no separate game entries. «Reserve» is not shown on the built site yet: it is still being built.'
+				uk: 'На головній мусить бути ДВА пункти — «Грати» й «Грати онлайн» — і жодного окремого пункту гри. «Заповідник» у зібраному сайті поки не показується: він ще будується.',
+				en: 'The home screen must show TWO entries — «Play» and «Play online» — and no separate game entries. «Reserve» is not shown on the built site yet: it is still being built.'
 			},
 			negative: true,
 			coverage: 'manual',
-			testid: 'menu-quiz-link'
+			testid: 'menu-play-link'
 		},
 		{
 			id: 'common_12',
@@ -386,6 +387,17 @@ export const commonTab: BetaTab = {
 				en: 'Turn on “Do Not Track” in the browser (Chrome: Settings → Privacy; Firefox: “Send websites a Do Not Track signal”), open the site and check the Network tab for the word “google”. There must be NO analytics requests. Turn the setting off, reload — the requests must appear.'
 			},
 			coverage: 'manual',
+			negative: true
+		},
+		{
+			id: 'common_30',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Відкрийте стару адресу розділу гри — з закладок чи давнього повідомлення. Мусить відкритися «Грати», а стрілка «назад» браузера не мусить вертати на стару адресу.',
+				en: 'Open an old address of a game section — from bookmarks or an old message. «Play» must open, and the browser back arrow must not return to the old address.'
+			},
+			coverage: 'manual',
+			testid: 'moved-play-link',
 			negative: true
 		}
 	]

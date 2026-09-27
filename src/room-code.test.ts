@@ -8,9 +8,11 @@ import { makeCode } from '$lib/net/rtdbRoom';
  * ## Чому це окремий інваріант
  *
  * Довжина коду живе у ДВОХ файлах, і не з недогляду: генератор — у мережевому
- * шарі (`net/rtdbRoom.ts`), а межі поля введення — у формі
- * (`components/pairs/OnlineGate.svelte`), яка про мережу навмисно не знає нічого.
- * Тобто числа мусять збігатися, а спільного джерела в них бути не може.
+ * шарі (`net/rtdbRoom.ts`), а межі поля введення — у хабі «Грати онлайн»
+ * (`controllers/onlineHub.svelte.ts`; саме поле — `components/online/OnlineHub.svelte`).
+ * Взяти числа з генератора хаб не може дешево: `rtdbRoom` вантажиться окремим шматком
+ * лише тоді, коли потрібна мережа, а статичний імпорт притягнув би його в сторінку хабу.
+ * Тобто числа мусять збігатися, а спільного джерела в них немає.
  *
  * Розходження тут дає найгірший різновид дефекту: код згенеровано правильно, у
  * буфері він правильний, а кнопка «зайти» лишається сірою — або, навпаки, поле
@@ -33,7 +35,8 @@ const number = (source: string, name: string): number => {
 
 describe('код кімнати', () => {
 	const net = read('src/lib/net/rtdbRoom.ts');
-	const gate = read('src/lib/components/pairs/OnlineGate.svelte');
+	const gate = read('src/lib/controllers/onlineHub.svelte.ts');
+	const field = read('src/lib/components/online/OnlineHub.svelte');
 
 	const publicLength = number(net, 'PUBLIC_CODE_LENGTH');
 	const publicMax = number(net, 'PUBLIC_CODE_MAX');
@@ -85,8 +88,8 @@ describe('код кімнати', () => {
 	 * Це не помилка коду, а зламана клавіатура — саме той різновид, який не падає.
 	 */
 	it('поле налаштоване на цифри, а не на літери', () => {
-		expect(gate).toContain('inputmode="numeric"');
-		expect(gate, 'autocapitalize лишився від літерного коду').not.toContain('autocapitalize');
+		expect(field).toContain('inputmode="numeric"');
+		expect(field, 'autocapitalize лишився від літерного коду').not.toContain('autocapitalize');
 		expect(net, 'алфавіт коду — самі цифри').toContain("const DIGITS = '0123456789'");
 	});
 

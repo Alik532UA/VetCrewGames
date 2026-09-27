@@ -51,7 +51,6 @@ export function pairsGame(
 		gameId: 'pairs',
 		rulesVersion: PAIRS_RULES_VERSION,
 		minPlayers: PAIRS_PLAYERS,
-		quickSeats: PAIRS_PLAYERS,
 		lateRole: 'spectator',
 		autoStartReady: (players) => players === PAIRS_PLAYERS,
 		newRoom: () => newPairsRoom(random, layout),

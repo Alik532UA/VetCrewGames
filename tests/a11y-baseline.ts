@@ -90,11 +90,10 @@ export const A11Y_KNOWN: Record<string, readonly string[]> = {
 	 * людини на телефоні.
 	 */
 	'game-population': ['nested-interactive', 'target-size'],
-	quiz: [],
 	reserve: [],
-	pairs: [],
-	'pairs/online': [],
-	'quiz/online': [],
+	play: [],
+	'quiz/play': [],
+	online: [],
 	account: [],
 	'beta-test-checklists': []
 };
@@ -111,11 +110,10 @@ export const A11Y_BASELINE: Record<string, number> = {
 	'game-mythbusters': 0,
 	// Три картки-джерела × два правила (`nested-interactive` і `target-size`).
 	'game-population': 6,
-	quiz: 0,
 	reserve: 0,
-	pairs: 0,
-	'pairs/online': 0,
-	'quiz/online': 0,
+	play: 0,
+	'quiz/play': 0,
+	online: 0,
 	account: 0,
 	'beta-test-checklists': 0
 };

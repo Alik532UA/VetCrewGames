@@ -134,6 +134,13 @@ const CLAIMS: { claim: RegExp; what: string; evidence: () => boolean }[] = [
 /** Адреси-посилання у файлі, як їх бачить модель. */
 const urls = [...text.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map((m) => m[1]);
 
+/** Хвіст адреси без сайту й мови: `…/VetCrewGames/en/quiz/play/` → `quiz/play`. */
+const restOf = (url: string): string =>
+	new URL(url).pathname
+		.replace(/^\/VetCrewGames\//, '')
+		.replace(/^(?:en|de|nl)\//, '')
+		.replace(/\/$/, '');
+
 describe(`твердження ${LLMS} проти коду (SEO-v9 § 7.1, PIT-DOC-FACTS)`, () => {
 	it('перевірка жива: файл, джерела й адреси знайдено', () => {
 		expect(text.length, `${LLMS} порожній або не знайдений`).toBeGreaterThan(500);
@@ -170,10 +177,10 @@ describe(`твердження ${LLMS} проти коду (SEO-v9 § 7.1, PIT-D
 		/*
 		 * Збіг за ХВОСТОМ адреси, а не за мовою: файл англійською, тож у ньому
 		 * стоять `/en/…`, а перелік маршрутів мовою не переймається. Кінцевий
-		 * слеш обов'язковий (`trailingSlash: 'always'`), і саме він відрізняє
-		 * `game-habitat/` від `game-habitat/biomes/`.
+		 * слеш обов'язковий (`trailingSlash: 'always'`). Хвіст — ЦІЛИЙ (`restOf`): доти тут
+		 * стояв суфікс, і новий `/play/` «описувала» адреса `/quiz/play/` (2026-09-26).
 		 */
-		const missing = indexed.filter((rest) => !urls.some((url) => url.endsWith(`/${rest}/`)));
+		const missing = indexed.filter((rest) => !urls.some((url) => restOf(url) === rest));
 		expect(missing, `маршрути є на сайті й не описані для моделей: ${missing.join(', ')}`).toEqual(
 			[]
 		);
@@ -182,7 +189,7 @@ describe(`твердження ${LLMS} проти коду (SEO-v9 § 7.1, PIT-D
 	it('прихованого маршруту в llms.txt немає', () => {
 		// Службова сторінка має `noindex` і немає в sitemap; перелік для моделей —
 		// те саме рішення, а не третій окремий вибір (BETA-CHECKLIST § 4.1).
-		const leaked = HIDDEN_ROUTES.filter((rest) => urls.some((url) => url.endsWith(`/${rest}/`)));
+		const leaked = HIDDEN_ROUTES.filter((rest) => urls.some((url) => restOf(url) === rest));
 		expect(leaked, `прихована сторінка в llms.txt: ${leaked.join(', ')}`).toEqual([]);
 	});
 

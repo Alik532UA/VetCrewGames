@@ -12,7 +12,6 @@ import {
 	gamesToConfig,
 	quizProgramme,
 	distinctProgramme,
-	roomFitsGames,
 	DEFAULT_PACE,
 	DEFAULT_ROOM_PACE,
 	FAST_POINTS,
@@ -126,39 +125,6 @@ describe('набір ігор у кімнаті', () => {
 	 */
 	it('кімната без жодного прапорця дає всі ігри', () => {
 		expect(configToGames({})).toEqual(ONLINE_GAMES.map((game) => game.id));
-	});
-
-	/**
-	 * ФІЛЬТР СПИСКУ: набір кімнати мусить УКЛАДАТИСЯ у вибране.
-	 *
-	 * Не перетин, і різниця тут не теоретична. Перетин («хоч одна спільна») пускав
-	 * би в список кімнату з усіма шістьма іграми за будь-якого фільтра: вибравши
-	 * одні «Міфи», людина потрапила б у партію, де пʼять раундів із шести — те, що
-	 * вона щойно зняла. Тобто фільтр працював би, а результат був би той самий.
-	 *
-	 * Зворотний експеримент (§ 1.1): замінити `every` на `some` у `roomFitsGames` —
-	 * червоніє перший же випадок.
-	 */
-	it('фільтр пускає кімнату, набір якої вкладається у вибране', () => {
-		const [first, second] = ONLINE_GAMES;
-		const roomTwo = gamesToConfig([first.id, second.id]);
-
-		expect(roomFitsGames(roomTwo, [first.id]), 'зайва гра — не показуємо').toBe(false);
-		expect(roomFitsGames(roomTwo, [first.id, second.id])).toBe(true);
-		expect(roomFitsGames(gamesToConfig([first.id]), [first.id, second.id])).toBe(true);
-	});
-
-	/**
-	 * Кімната, яка НАБОРУ НЕ ОГОЛОСИЛА, читається як «будь-які ігри».
-	 *
-	 * Такі є в базі: запис переліку, зроблений до появи поля. Показувати їх при
-	 * звуженому фільтрі означало б обіцяти те, чого ніхто не обіцяв, — тож вони
-	 * видні, поки вибрані всі, і ховаються разом із першим звуженням.
-	 */
-	it('кімната без оголошеного набору видна лише за повного вибору', () => {
-		const all = ONLINE_GAMES.map((game) => game.id);
-		expect(roomFitsGames(undefined, all)).toBe(true);
-		expect(roomFitsGames(undefined, [ONLINE_GAMES[0].id])).toBe(false);
 	});
 });
 

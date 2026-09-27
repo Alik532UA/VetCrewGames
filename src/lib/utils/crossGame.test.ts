@@ -110,8 +110,9 @@ describe('обвʼязка переїзду', () => {
 			'src/routes/[[lang=lang]]/pairs/online/+page.svelte',
 			'src/routes/[[lang=lang]]/quiz/online/+page.svelte'
 		]) {
-			expect(read(file), `${file}: нова кімната не каже старій про себе`).toContain(
-				'roomPlace(() => page.url, goto, browser)'
+			// Пробіли й переноси — справа форматера, а не зміст виклику.
+			expect(read(file), `${file}: нова кімната не каже старій про себе`).toMatch(
+				/roomPlace\(\s*\(\) => page\.url,\s*goto,\s*browser,\s*onlineRoutes\(\(\) => lang\)\s*\)/
 			);
 		}
 	});

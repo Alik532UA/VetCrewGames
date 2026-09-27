@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page, updated } from '$app/state';
+	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { toast } from '$lib/controllers/toast.svelte';
@@ -18,15 +19,16 @@
 	import InviteWindow from '$lib/components/pairs/InviteWindow.svelte';
 	import { attachPairsPolicies, pairsGame } from '$lib/controllers/pairsRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
-	import OnlineGate from '$lib/components/pairs/OnlineGate.svelte';
-	import RoomList from '$lib/components/pairs/RoomList.svelte';
+	import CreateWindow from '$lib/components/online/CreateWindow.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 	import NetLost from '$lib/components/pairs/NetLost.svelte';
-	import { crossGameLinks } from '$lib/utils/crossGame';
+	import { crossGameLinks, onlineRoutes } from '$lib/utils/crossGame';
 
 	/**
-	 * Спільна партія «Знайди пару»: створити кімнату або зайти за кодом.
+	 * Спільна партія «Знайди пару» — КІМНАТА. Форма входу переїхала на хаб «Грати онлайн»
+	 * (рішення автора 2026-09-26): без кімнати в адресі сторінка — лише двері (`?create`
+	 * з хабу, `?from` переїзду групи, решта — на хаб; `roomPolicies`).
 	 *
 	 * Усе між сторінкою й матчем — вхід, присутність, перелік, відлік, нагорода, дії
 	 * господаря, «назад» через адресу — живе в `RoomSession`, спільній із вікториною
@@ -48,10 +50,15 @@
 	 * там їх перевіряють тести, а маршрут тест не бере (аудит 2026-09-24).
 	 */
 	const PAIRS = pairsGame(beam, Math.random);
-	const place = roomPlace(() => page.url, goto, browser);
+	const place = roomPlace(
+		() => page.url,
+		goto,
+		browser,
+		onlineRoutes(() => lang)
+	);
 
 	const player = new PlayerIdentity(Math.random);
-	// Перелік читається з гілки СВОЄЇ гри: кімнати вікторини тут не з'являються.
+	// Стрічка переліку — щоб господар оголосив свою кімнату в гілці СВОЄЇ гри; читає перелік хаб.
 	const lobby = new LobbyFeed(PAIRS.gameId);
 	const session = new RoomSession(PAIRS, place, player, lobby);
 	/** Посилання чи QR-код новачка — спершу коротке вікно, а не мовчазний вхід. */
@@ -102,13 +109,13 @@
 
 	onMount(() => {
 		/*
-		 * «Назад» робить ОДИН крок: у кімнаті знімає `?room`, на формі входу веде в
-		 * розділ.
+		 * «Назад» робить ОДИН крок: у кімнаті знімає `?room` (далі двері ведуть на хаб), без
+		 * кімнати — на хаб.
 		 */
 		const release = settings.claimHeader(
 			'memory.title',
 			() =>
-				void goto(session.code === '' ? langPath(lang, 'pairs') : withoutRoom(page.url), {
+				void goto(session.code === '' ? langPath(lang, 'online') : withoutRoom(page.url), {
 					noScroll: true,
 					keepFocus: true
 				})
@@ -150,43 +157,20 @@
 			onJoin={() => invite.accept()}
 			onBack={() => invite.decline()}
 		/>
-	{:else if !match}
-		<OnlineGate
-			bind:name={player.value}
-			bind:joinCode={session.joinCode}
-			bind:isPrivate={session.isPrivate}
+	{:else if !match && session.place.choosing()}
+		<!-- Група переїжджає в цю гру (`?from`): лише «хто зможе зайти» — окремим вікном. -->
+		<CreateWindow
+			game="pairs"
 			busy={session.busy}
-			bind:country={player.country}
-			avatar={player.avatar}
-			onAvatar={(avatar) => player.chooseAvatar(avatar)}
-			onRandomName={() => player.reroll(takenNames)}
-			onCreate={() => session.enter('create')}
-			onJoin={() => session.enter('join')}
-			onQuickGame={() => session.quickGame()}
-		>
-			{#snippet roomList()}
-				<!--
-					Список малює СТОРІНКА, а форма лишає для нього місце сніпетом:
-					`OnlineGate` навмисно не знає про мережу, а список без мережі не існує.
-				-->
-				<RoomList
-					rooms={lobby.rooms}
-					resume={lobby.own}
-					friends={lobby.friends}
-					hasMore={lobby.hasMore}
-					unavailable={lobby.unavailable}
-					busy={session.busy}
-					onClose={(dead) =>
-						void lobby.close(dead).then((done) => {
-							if (!done) toast.error('pairs.actionFailed');
-						})}
-					onEnter={(chosen) => {
-						session.joinCode = chosen;
-						void session.enter('join');
-					}}
-				/>
-			{/snippet}
-		</OnlineGate>
+			onChoose={(isPrivate) => {
+				session.isPrivate = isPrivate;
+				void session.enter('create');
+			}}
+			onBack={() => void session.place.hub()}
+		/>
+	{:else if !match}
+		<!-- Двері без кімнати: створюємо ту, яку попросили, або йдемо на хаб (`roomPolicies`). -->
+		<p class="online-door" role="status">{@html formatFont(t('online.opening'))}</p>
 	{:else if match.status === 'lobby'}
 		<OnlineLobby
 			code={session.code}
@@ -235,5 +219,14 @@
 		gap: var(--space-md);
 		margin: 0 auto;
 		box-sizing: border-box;
+	}
+
+	/* Рядок стану дверей стоїть просто на фотографії тла — тому на власній панелі. */
+	.online-door {
+		margin: 0;
+		padding: var(--space-sm) var(--space-md);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-panel);
+		color: var(--color-text-on-panel);
 	}
 </style>

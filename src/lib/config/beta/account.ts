@@ -126,7 +126,7 @@ export const accountTab: BetaTab = {
 				en: 'With a mutual follow in place, create an open room on one device. On the other it must sit in a SEPARATE “Friends’ rooms” group above the rest.'
 			},
 			coverage: 'manual',
-			testid: 'pairs-friend-rooms-list'
+			testid: 'online-friend-rooms-list'
 		},
 		{
 			id: 'account_8',

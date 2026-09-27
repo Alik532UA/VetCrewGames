@@ -162,7 +162,7 @@ test('ряд шапки не переповнюється на 390px', async ({ 
  * міняє тему замість літери.
  */
 test('набір тексту в полі не виконує команд', async ({ page }) => {
-	await page.goto('/VetCrewGames/pairs/online/');
+	await page.goto('/VetCrewGames/online/');
 	await settlePage(page);
 
 	const field = page.getByTestId('pairs-name-input');

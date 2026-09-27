@@ -1,6 +1,7 @@
 import type { RouteRest } from '$lib/i18n/routing';
 import { commonTab } from './beta/common';
 import { memoryTab } from './beta/memory';
+import { hubTab } from './beta/hub';
 import { onlineTab } from './beta/online';
 import { quizOnlineTab } from './beta/quizOnline';
 import { accountTab } from './beta/account';
@@ -123,6 +124,7 @@ export interface BetaTab {
  */
 export const BETA_TABS: readonly BetaTab[] = [
 	commonTab,
+	hubTab,
 	onlineTab,
 	quizOnlineTab,
 	accountTab,

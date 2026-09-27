@@ -22,6 +22,23 @@ export const ui = {
 	'menu.play': 'Грати',
 	'menu.playOnline': 'Грати онлайн',
 	'online.searchFailed': 'Пошук гри не вдався — спробуйте ще раз.',
+	'online.searchBusy': 'Поки йде автоматичний пошук, інше недоступне — спершу скасуйте пошук.',
+	'online.search': 'Автоматичний пошук',
+	'online.searchGames': 'У що граємо',
+	'online.searchLast': 'Хоч одна гра мусить лишитися ввімкненою',
+	'online.searchHint':
+		'Знайдемо суперника в одній із вибраних ігор, а якщо нікого немає — почекаємо, поки хтось прийде.',
+	'online.searching': 'Шукаємо гравця…',
+	'online.waiting':
+		'Чекаємо на гравця. Щойно хтось шукатиме гру з вибраних, ви опинитеся в одній кімнаті.',
+	'online.found': 'Знайшли гравця — зʼєднуємо…',
+	'online.searchCancel': 'Скасувати',
+	'online.createTitle': 'Нова кімната:',
+	'online.everyoneHint': 'Кімната зʼявиться в переліку, і зайти зможе будь-хто.',
+	'online.friendsHint': 'Кімнати не буде в переліку: зайти можна лише за кодом, який ви надішлете.',
+	'online.back': 'Назад',
+	'online.join': 'Підключитися',
+	'online.opening': 'Відкриваємо кімнату…',
 
 	// Спільна партія «Знайди пару»: лобі, роль, черга.
 	'pairs.won': 'Перемога',
@@ -38,7 +55,6 @@ export const ui = {
 	'pairs.actionFailed': 'Сервер не дозволив цю дію.',
 	'pairs.youLead': 'Господар вийшов — тепер партію ведете ви.',
 	'pairs.createRoom': 'Створити кімнату',
-	'pairs.joinRoom': 'Зайти за кодом',
 	'pairs.roomCode': 'Код кімнати',
 	'pairs.qrHint': 'Наведіть камеру, щоб зайти',
 	'pairs.qrLabel': 'QR-код на цю кімнату',
@@ -111,17 +127,12 @@ export const ui = {
 	'pairs.visibility': 'Хто може зайти',
 	'pairs.friendsOnly': 'Лише друзі',
 	'pairs.everyone': 'Для всіх',
-	'pairs.visibilityHint':
-		'Лише друзі — кімнати немає в списку, зайти можна тільки за кодом, який ви комусь надішлете. Для всіх — кімната зʼявиться в списку в кожного.',
 	'pairs.rooms': 'Кімнати',
 	'pairs.noRooms': 'Відкритих кімнат поки немає',
 	'pairs.noRoomsHint': 'Створіть свою — і вона зʼявиться тут у кожного, хто відкрив цю сторінку.',
 	'pairs.players': 'Гравців',
 	'pairs.enter': 'Зайти',
-	'pairs.quickGame': 'Швидка гра',
-	'pairs.quickGameHint': 'Зайдемо у вільну кімнату, а якщо таких немає — створимо нову, відкриту.',
 	'pairs.shownNewest': 'Показано найновіші — є ще',
-	'pairs.roomsFiltered': 'Фільтр приховав кімнат',
 	'pairs.startingIn': 'Починаємо за',
 	'pairs.seconds': 'с',
 	'pairs.roomsUnavailable':
@@ -131,7 +142,6 @@ export const ui = {
 	// Імена для спільної партії: прикметник + тварина. Тварини — ті самі слова,
 	// що на картках (`animals.ts`). Фрази ЦІЛІ, бо узгодження роду різне в трьох
 	// мовах із чотирьох — див. `config/crewNames.ts`.
-	'menu.comingSoon': 'Ще в розробці',
 	'menu.game.population': 'Кого більше?',
 	'menu.game.habitat': 'Де живем?',
 	'menu.game.mythbusters': 'Правда чи міф?',

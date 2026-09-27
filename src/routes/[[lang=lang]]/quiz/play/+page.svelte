@@ -21,9 +21,9 @@
 	// типову (I18N-v8 § 3.1).
 	const lang = $derived(languageFromParam(page.params.lang));
 
-	// «Назад» веде в розділ, а не на головну: інакше пропускається рівень, з
-	// якого сюди й прийшли.
-	onMount(() => settings.claimHeader('menu.quiz', () => goto(langPath(lang, 'quiz'))));
+	// «Назад» веде в «Грати», а не на головну: інакше пропускається рівень, з якого
+	// сюди й прийшли (доти — розділ «Вікторина», до меню «Грати» / «Грати онлайн»).
+	onMount(() => settings.claimHeader('menu.quiz', () => goto(langPath(lang, 'play'))));
 </script>
 
 <div class="menu-page">

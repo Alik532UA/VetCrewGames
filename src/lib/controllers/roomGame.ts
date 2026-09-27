@@ -1,4 +1,3 @@
-import type { LobbyRoom } from '$lib/net/lobby';
 import type { GoneReason, Member, Role, RoomTransport } from '$lib/net/roomTypes';
 import type { RoomEnvelope } from '$lib/utils/roomEnvelope';
 
@@ -34,8 +33,6 @@ export interface RoomGame<M extends RoomMatch> {
 	readonly rulesVersion: number;
 	/** Скільки гравців потрібно, щоб почати. */
 	readonly minPlayers: number;
-	/** Кімната «вільна» для швидкої гри, поки гравців менше. */
-	readonly quickSeats: number;
 	/** Роль новачка в УЖЕ розпочатій партії. */
 	readonly lateRole: Role;
 	/** Чи вмикати відлік автостарту за такої кількості гравців. */
@@ -66,7 +63,6 @@ export interface RoomGame<M extends RoomMatch> {
 	 * хто перехопив ведення (аудит 2026-09-25).
 	 */
 	listingExtras?(match: M): { games?: Record<string, number> };
-	fitsQuick?(room: LobbyRoom): boolean;
 	/** Присутність приїхала — що з нею робить гра. */
 	onPresence?(match: M, online: string[], now: number): void;
 	/** Додаткові підписки на час кімнати (підсвітка наведення в парах). */
@@ -92,4 +88,25 @@ export interface RoomPlace {
 	exit(): Promise<void>;
 	/** Сказати СТАРІЙ кімнаті, куди переїхала гра (`?from` в адресі). */
 	announce(code: string): Promise<void>;
+	/**
+	 * СТОРІНКА ГРИ БЕЗ КІМНАТИ — ЛИШЕ ДВЕРІ (хаб «Грати онлайн», рішення автора 2026-09-26).
+	 * Форми входу тут більше немає: кімнату створюють і шукають на хабі, а сюди приходять
+	 * уже з наміром. `?create=friends|everyone` — створити кімнату (`true` — лише друзі);
+	 * `null` — такого наміру в адресі немає.
+	 */
+	creating(): boolean | null;
+	/**
+	 * `?from` без `?create`: господар переїжджає з групою в цю гру (`utils/crossGame`), і
+	 * сторінка питає лише, хто зможе зайти в нову кімнату.
+	 */
+	choosing(): boolean;
+	/** На хаб — замість адреси, де лишилися двері без наміру. */
+	hub(): Promise<void>;
+	/** Створити нову кімнату тут же (`?create`) — кімнату, яку нікому вести, замінити. */
+	recreate(isPrivate: boolean): Promise<void>;
+	/**
+	 * Кімната з адреси — ІНШОЇ гри: піти на її сторінку з тим самим кодом, а не казати
+	 * «ця кімната для іншої гри». `false` — гри такої не знаємо, і тоді відмова лишається.
+	 */
+	elsewhere(gameId: string, code: string): boolean;
 }

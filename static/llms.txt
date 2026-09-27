@@ -17,10 +17,10 @@
 - [Where do they live? — Continents](https://alik532ua.github.io/VetCrewGames/en/game-habitat/continents/): which continents the species lives on in the wild.
 - [Where do they live? — Biomes](https://alik532ua.github.io/VetCrewGames/en/game-habitat/biomes/): which environment you can meet the species in.
 - [Find a pair](https://alik532ua.github.io/VetCrewGames/en/game-memory/): memory game on animal cards, played alone.
-- [Quiz](https://alik532ua.github.io/VetCrewGames/en/quiz/): entry point for the quiz — solo round or a shared room.
+- [Play](https://alik532ua.github.io/VetCrewGames/en/play/): pick a solo game — the quiz games or the memory game.
+- [Play online](https://alik532ua.github.io/VetCrewGames/en/online/): hub of the shared games — automatic search for an opponent in the chosen games, a new room for everyone or for friends only, joining a room by its code, and the open rooms of both games in one list.
 - [Quiz — solo round](https://alik532ua.github.io/VetCrewGames/en/quiz/play/): questions drawn from the games above, one player.
-- [Quiz — shared room](https://alik532ua.github.io/VetCrewGames/en/quiz/online/): several players answer the same questions in one room, joined by a spoken room code.
-- [Find a pair — shared](https://alik532ua.github.io/VetCrewGames/en/pairs/): list of open rooms and quick play for the two-player card game.
+- [Quiz — shared room](https://alik532ua.github.io/VetCrewGames/en/quiz/online/): several players answer the same questions in one room; people get there from the Play online hub.
 - [Find a pair — shared room](https://alik532ua.github.io/VetCrewGames/en/pairs/online/): the room itself; the board is a move log, so both players always see the same state.
 - [Reserve](https://alik532ua.github.io/VetCrewGames/en/reserve/): pick a biome and run a wildlife reserve — budget, enclosures, staff, disease and poachers over simulated days.
 - [Reserve — Temperate forest](https://alik532ua.github.io/VetCrewGames/en/reserve/forest/): a separate ongoing game in the temperate forest.
