@@ -68,6 +68,16 @@
 						{@html formatFont(t(message.action.labelKey))}
 					</button>
 				{/if}
+				<!--
+					Звіт і контакти — ЛІНИВИМ шматком (`ToastReport`): кореневий layout на межі
+					бюджету, а потрібні вони лише в тості про збій. Не завантажився — лишаються
+					текст причини й дія тоста, і цього досить, щоб знати, що робити.
+				-->
+				{#if message.report}
+					{#await import('./ToastReport.svelte') then { default: ToastReport }}
+						<ToastReport onEngage={() => toast.pin(message.id)} />
+					{/await}
+				{/if}
 			</div>
 
 			<button
@@ -83,14 +93,17 @@
 			<!--
 				Смужка бере тривалість із того самого числа, що й таймер: два
 				джерела розходяться, і візуально тост «доживає» не тоді, коли
-				зникає насправді.
+				зникає насправді. Закріплений тост (`toast.pin`) не зникає сам —
+				і смужки, що обіцяла б протилежне, у нього немає.
 			-->
-			<div
-				class="toast__progress"
-				style="animation-duration: {message.duration}ms"
-				data-testid="toast-progress-bar"
-				aria-hidden="true"
-			></div>
+			{#if !message.pinned}
+				<div
+					class="toast__progress"
+					style="animation-duration: {message.duration}ms"
+					data-testid="toast-progress-bar"
+					aria-hidden="true"
+				></div>
+			{/if}
 		</div>
 	{/each}
 </div>

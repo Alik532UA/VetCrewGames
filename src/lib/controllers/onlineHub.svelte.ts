@@ -1,5 +1,4 @@
 import { settings } from '$lib/services/settings.svelte';
-import { logService } from '$lib/services/logService.svelte';
 import { isCompactScreen } from '$lib/config/memory-game';
 import { PAIRS_RULES_VERSION, QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { listedSince } from '$lib/utils/roomEntry';
@@ -7,6 +6,7 @@ import { isOnlineGame, type OnlineGame } from '$lib/utils/crossGame';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
 import { liveSeekNet, type SeekNet } from '$lib/net/seek';
 import { AutoSearch } from './autoSearch.svelte';
+import { diagnose, logFailure, type ProblemProbe } from './diagnose';
 import { newPairsRoom, newQuizRoom } from './newRoom';
 import { toast } from './toast.svelte';
 import type { LobbyFeed, ResumeRoom } from './lobbyFeed.svelte';
@@ -70,23 +70,39 @@ export class OnlineHubState {
 	creating = $state<OnlineGame | null>(null);
 	readonly search: AutoSearch;
 
+	/**
+	 * @param probe звідки факти для причини збою (`controllers/diagnose.ts`): сторінка дає
+	 *   `liveProbe(updated.check)`, тест — свої.
+	 */
 	constructor(
 		readonly player: PlayerIdentity,
 		readonly feeds: Record<OnlineGame, LobbyFeed>,
 		readonly routes: HubRoutes,
 		readonly random: () => number,
+		readonly probe: ProblemProbe,
 		readonly net: HubNet = liveHubNet,
 		seek: SeekNet = liveSeekNet
 	) {
 		this.search = new AutoSearch({
 			seek,
-			me: () => this.net.me(),
+			/*
+			 * ПІДПИС — ПЕРШИМ КРОКОМ ПОШУКУ, а не перед ним: так його збій іде тією самою
+			 * дорогою, що й решта (крок `sign-in`, тост із причиною). Доти `startSearch`
+			 * підписував до `start()`, і відсутній шматок словника імен ставав
+			 * необробленою відмовою промісу, а кнопка не казала нічого.
+			 */
+			me: async () => {
+				await this.#sign();
+				return this.net.me();
+			},
 			rooms: () => this.rooms,
 			createRoom: (gameId) => this.#seekRoom(gameId),
 			closeRoom: (code) => this.net.closeRoom(code),
 			watchOthers: (code, onCount) => this.net.watchOthers(code, onCount),
 			go: (gameId, code) => this.routes.room(gameId, code),
-			random
+			random,
+			online: () => probe.online(),
+			diagnose: (error) => diagnose(error, probe)
 		});
 	}
 
@@ -135,10 +151,20 @@ export class OnlineHubState {
 		this.search.cancel();
 	}
 
-	/** «Підключитися» — гру каже кімната: код без вибору гри. */
+	/**
+	 * «Підключитися» — гру каже кімната: код без вибору гри.
+	 *
+	 * Збій — тостом із причиною, як і в пошуку (прохання автора 2026-09-27): доти тут
+	 * стояло «Не вдалося зайти в кімнату. Спробуйте ще раз» і на відмову правил, і на
+	 * дефект коду, де жоден повтор не допоможе. «Такої кімнати немає» й «це кімната іншої
+	 * гри» лишаються звичайними тостами: це відповідь бази, а не збій.
+	 */
 	async join(): Promise<void> {
 		const code = this.joinCode.replace(/\D/g, '');
 		if (this.busy || this.#searching() || code.length < CODE_MIN) return;
+		toast.dismissProblems();
+		// Без мережі читання кімнати не падає, а висить — кажемо одразу.
+		if (!this.probe.online()) return toast.problem('offline');
 		this.busy = true;
 		try {
 			const room = await this.net.peekRoom(code);
@@ -146,8 +172,9 @@ export class OnlineHubState {
 			if (!isOnlineGame(room.gameId)) return toast.error('quiz.otherGame');
 			await this.enter(code, room.gameId);
 		} catch (error) {
-			toast.error('pairs.netFailed');
-			logService.error('network', 'hub join failed', { code, reason: String(error) });
+			const diagnosis = await diagnose(error, this.probe);
+			logFailure('hub join failed', error, diagnosis, { code });
+			toast.problem(diagnosis.problem);
 		} finally {
 			this.busy = false;
 		}
@@ -173,10 +200,11 @@ export class OnlineHubState {
 		this.routes.create(gameId, isPrivate);
 	}
 
-	/** Автоматичний пошук — підписом, що стоїть у полі зараз: у пошуку він уже не міняється. */
+	/**
+	 * Автоматичний пошук — підписом, що стоїть у полі зараз: у пошуку він уже не міняється.
+	 * Підпис — перший крок самого пошуку (`me` у конструкторі).
+	 */
 	async startSearch(): Promise<void> {
-		if (this.search.phase !== 'idle') return;
-		await this.#sign();
 		await this.search.start();
 	}
 

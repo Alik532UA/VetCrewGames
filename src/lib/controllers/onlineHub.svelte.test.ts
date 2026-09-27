@@ -3,6 +3,7 @@ import { PAIRS_RULES_VERSION, QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { LocalSeekBoard } from '$lib/net/localSeek';
 import { toast } from './toast.svelte';
 import { OnlineHubState, type HubNet, type HubRoutes } from './onlineHub.svelte';
+import type { ProblemProbe } from './diagnose';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { RoomInfo } from '$lib/net/roomTypes';
 
@@ -79,18 +80,33 @@ function setup({ quiz = feed(), pairs = feed(), peek = null as RoomInfo | null }
 		watchOthers: vi.fn(async () => () => {})
 	};
 	const board = new LocalSeekBoard();
+	// Факти для причини збою — випадок автора: локальна збірка, у базі інша редакція правил.
+	const probe: ProblemProbe = {
+		online: vi.fn(() => true),
+		rules: vi.fn(async () => 'stale' as const),
+		newBuild: vi.fn(async () => false),
+		deployed: () => false
+	};
 	const hub = new OnlineHubState(
 		player as never,
 		{ quiz: quiz as never, pairs: pairs as never },
 		routes,
 		() => 0,
+		probe,
 		net,
 		board.as('me')
 	);
-	return { hub, player, routes, net, signed };
+	return { hub, player, routes, net, signed, probe };
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+	// Тости — спільний синглтон: причина з одного випадку не мусить доїхати в наступний.
+	toast.dismissProblems();
+	vi.restoreAllMocks();
+});
+
+/** Причини, про які зараз кажуть тости. */
+const shown = () => toast.messages.filter((message) => message.problem).map((m) => m.problem);
 
 describe('хаб «Грати онлайн»', () => {
 	it('гру каже кімната: код веде на сторінку її гри', async () => {
@@ -100,7 +116,7 @@ describe('хаб «Грати онлайн»', () => {
 		expect(routes.room).toHaveBeenCalledWith('quiz', '42');
 	});
 
-	it('кімнати немає чи гра невідома — кажемо про це, нікуди не йдемо', async () => {
+	it('кімнати немає чи гра невідома — кажемо про це тостом, нікуди не йдемо', async () => {
 		const error = vi.spyOn(toast, 'error');
 		const missing = setup({ peek: null });
 		missing.hub.joinCode = '42';
@@ -113,6 +129,52 @@ describe('хаб «Грати онлайн»', () => {
 		expect(error).toHaveBeenCalledWith('quiz.otherGame');
 		expect(missing.routes.room).not.toHaveBeenCalled();
 		expect(unknown.routes.room).not.toHaveBeenCalled();
+	});
+
+	/**
+	 * ЗБІЙ ПІДКЛЮЧЕННЯ НАЗИВАЄ ПРИЧИНУ (прохання автора 2026-09-27) — тим самим тостом,
+	 * що й пошук. Доти тут був тост «Не вдалося зайти в кімнату. Спробуйте ще раз» і на
+	 * відмову правил, де повтор не допоможе ніколи.
+	 *
+	 * Зворотний експеримент: повернути тост `pairs.netFailed` замість `toast.problem` — червоніє.
+	 */
+	it('підключення не вдалося — тост із причиною, а не «спробуйте ще раз»', async () => {
+		const { hub, net, routes } = setup();
+		const error = vi.spyOn(toast, 'error');
+		vi.mocked(net.peekRoom).mockRejectedValue(new Error('PERMISSION_DENIED: Permission denied'));
+		hub.joinCode = '42';
+		await hub.join();
+		expect(shown()).toEqual(['rules']);
+		expect(hub.busy).toBe(false);
+		expect(error).not.toHaveBeenCalled();
+		expect(routes.room).not.toHaveBeenCalled();
+	});
+
+	it('без мережі — «немає звʼязку» одразу: читання кімнати висіло б, а не падало', async () => {
+		const { hub, net, probe } = setup({ peek: info('quiz') });
+		vi.mocked(probe.online).mockReturnValue(false);
+		hub.joinCode = '42';
+		await hub.join();
+		expect(shown()).toEqual(['offline']);
+		expect(net.peekRoom).not.toHaveBeenCalled();
+		vi.mocked(probe.online).mockReturnValue(true);
+		await hub.join();
+		expect(shown(), 'наступна спроба прибирає стару причину').toEqual([]);
+	});
+
+	/**
+	 * Підпис — перший крок пошуку: його збій іде тією самою дорогою, що й решта. Доти
+	 * `startSearch` підписував ДО пошуку, і відсутній шматок словника імен ставав
+	 * необробленою відмовою промісу, а кнопка не казала нічого.
+	 */
+	it('підпис не вдався — це збій пошуку з причиною, а не необроблена відмова', async () => {
+		const { hub, player } = setup();
+		player.load.mockRejectedValueOnce(
+			new TypeError('Failed to fetch dynamically imported module: /_app/names.js')
+		);
+		await hub.startSearch();
+		expect(hub.search.phase).toBe('idle');
+		expect(shown()).toEqual(['reload']);
 	});
 
 	it('підпис гравця — у сховище ДО переходу, і в кімнату, і в створення', async () => {

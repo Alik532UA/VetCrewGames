@@ -100,3 +100,75 @@ describe('тост', () => {
 		expect(onAction, 'дія не має спрацьовувати сама').not.toHaveBeenCalled();
 	});
 });
+
+/**
+ * ТОСТ ПРО ПРИЧИНУ ЗБОЮ (прохання автора 2026-09-27): той самий тост, що й решта, — лише
+ * текст, дії й час від причини. Доти збій пошуку був сім секунд «спробуйте ще раз».
+ *
+ * Зворотні експерименти (прогнано): не замінювати попередній тост про збій — червоніє
+ * «новий збій замінює старий»; відновлювати таймер закріпленого — «закріплений не
+ * зникає»; пропонувати звіт на обрив — «що пропонує кожна причина».
+ */
+describe('тост про збій', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		for (const message of [...toast.messages]) toast.remove(message.id);
+	});
+
+	afterEach(() => vi.useRealTimers());
+
+	it('що пропонує кожна причина: оновлення — старій сторінці, звіт — тому, чого не виправиш сам', () => {
+		const offer = (problem: Parameters<typeof toast.problem>[0]) => {
+			toast.problem(problem);
+			const [message] = toast.messages;
+			return {
+				type: message.type,
+				key: message.messageKey,
+				reload: message.action?.labelKey === 'pairs.reload',
+				report: message.report ?? false
+			};
+		};
+		expect(offer('offline')).toEqual({
+			type: 'warn',
+			key: 'problem.offline',
+			reload: false,
+			report: false
+		});
+		expect(offer('reload')).toMatchObject({ reload: true, report: false });
+		expect(offer('mismatch')).toMatchObject({ reload: true, report: true });
+		expect(offer('rules')).toMatchObject({ key: 'problem.rules', reload: false, report: true });
+		expect(offer('code')).toEqual({
+			type: 'error',
+			key: 'problem.code',
+			reload: false,
+			report: true
+		});
+	});
+
+	it('новий збій замінює старий, а звичайних тостів не чіпає', () => {
+		toast.info('common.close', 5000);
+		toast.problem('rules');
+		toast.problem('code');
+		expect(toast.messages.map((message) => message.problem)).toEqual([undefined, 'code']);
+		toast.dismissProblems();
+		expect(toast.messages).toHaveLength(1);
+	});
+
+	it('зникає сам за PROBLEM_MS; закріплений — не зникає, хоч би що робила миша', async () => {
+		const { PROBLEM_MS } = await import('./toast.svelte');
+		toast.problem('rules');
+		vi.advanceTimersByTime(PROBLEM_MS);
+		expect(toast.messages, 'незакріплений зник у свій час').toHaveLength(0);
+
+		toast.problem('code');
+		const { id } = toast.messages[0];
+		toast.pause(id);
+		toast.pin(id);
+		toast.resume(id);
+		vi.advanceTimersByTime(PROBLEM_MS * 4);
+		expect(toast.messages).toHaveLength(1);
+		expect(toast.messages[0].pinned).toBe(true);
+		toast.remove(id);
+		expect(toast.messages, 'хрестик закриває й закріплений').toHaveLength(0);
+	});
+});

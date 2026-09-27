@@ -7,8 +7,7 @@
 	import { debugMode } from '$lib/services/debugMode.svelte';
 	import { devPanel } from '$lib/services/devPanel.svelte';
 	import { createKeySequence } from '$lib/services/keySequence';
-	import { buildLogReport } from '$lib/services/logReport';
-	import { RULES_VERSION } from '$lib/net/rulesVersion';
+	import { copyLogReport } from '$lib/services/reportCopy';
 	import { logService } from '$lib/services/logService.svelte';
 	import { hardReset, RESET_PRESSES_DEV, RESET_PRESSES_PROD } from '$lib/services/resetService';
 	import { settings } from '$lib/services/settings.svelte';
@@ -130,41 +129,28 @@
 		resetSequence.reset();
 	});
 
-	/** Складання самого тексту живе в `logReport.ts` — там його перевіряє тест. */
+	/**
+	 * Звіт і буфер — `services/reportCopy.ts` (ним же знімає звіт панель збою), формат
+	 * тексту — `logReport.ts`, де його перевіряє тест.
+	 */
 	async function copyReport() {
-		const report = buildLogReport(logService.getLogs(), {
-			version: logService.appVersion,
-			url: window.location.href,
-			userAgent: navigator.userAgent,
-			online: navigator.onLine,
-			takenAt: new Date().toISOString(),
-			uid: logService.sessionUid,
-			rules: RULES_VERSION
-		});
-
-		try {
-			await navigator.clipboard.writeText(report);
+		const report = await copyLogReport();
+		if (report === null) {
 			copied = true;
 			copyTimer = setTimeout(() => {
 				copied = false;
 			}, 1500);
-		} catch (err) {
-			/*
-			 * ВІДМОВА БУФЕРА НЕ ЗʼїДАЄ ЗВІТ (BETA-CHECKLIST-v8, `BETA-REPORT-FALLBACK`).
-			 *
-			 * Доти тут стояв самий лише `warn` у журнал — тобто натиск не робив НІЧОГО
-			 * видимого, і людина, яка мала надіслати звіт, лишалася без нього. Причин
-			 * відмови дві, і жодна не рідкісна: `navigator.clipboard` не існує поза
-			 * захищеним контекстом (http на телефоні в локальній мережі), а в частині
-			 * браузерів запис вимагає жесту, який до `await` уже «згорів».
-			 *
-			 * Тому текст показується поруч — у полі, з якого його можна виділити
-			 * рукою. Це не «краще, ніж нічого»: рівно так звіт і потрапляє в
-			 * повідомлення тестувальника.
-			 */
-			logService.warn('ui', 'Failed to copy logs', { reason: String(err) });
-			manual = report;
+			return;
 		}
+		/*
+		 * ВІДМОВА БУФЕРА НЕ ЗʼїДАЄ ЗВІТ (BETA-CHECKLIST-v8, `BETA-REPORT-FALLBACK`).
+		 *
+		 * Доти тут стояв самий лише `warn` у журнал — тобто натиск не робив НІЧОГО
+		 * видимого, і людина, яка мала надіслати звіт, лишалася без нього. Тому текст
+		 * показується поруч — у полі, з якого його можна виділити рукою. Це не «краще,
+		 * ніж нічого»: рівно так звіт і потрапляє в повідомлення тестувальника.
+		 */
+		manual = report;
 	}
 
 	/** Правий клік — службове меню заповідника. У проді не робить нічого. */

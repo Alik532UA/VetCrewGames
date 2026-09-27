@@ -21,7 +21,22 @@ export const ui = {
 	// nur das Ziel von „Spielen“ unterscheidet sich.
 	'menu.play': 'Spielen',
 	'menu.playOnline': 'Online spielen',
-	'online.searchFailed': 'Die Spielsuche ist fehlgeschlagen – versuche es noch einmal.',
+	'problem.offline':
+		'Keine Verbindung zum Spielserver. Prüfe dein Internet und versuche es noch einmal.',
+	'problem.reload':
+		'Eine neue Version des Spiels ist erschienen, und diese Seite ist noch die alte. Lade die Seite neu, dann klappt alles.',
+	'problem.mismatch':
+		'Die Serverregeln sind schon neuer als diese Seite: Das Spiel wird gerade aktualisiert. Lade die Seite in ein paar Minuten neu, und klappt es dann immer noch nicht, schreib dem Entwickler.',
+	'problem.rules':
+		'Die neuen Datenbankregeln sind noch nicht in Firebase veröffentlicht: Diese Version des Spiels erwartet andere Regeln als die, die jetzt auf dem Server gelten. Ein neuer Versuch hilft nicht — zuerst müssen die Regeln veröffentlicht werden.',
+	'problem.code':
+		'Das ist ein Fehler im Code des Spiels — ein neuer Versuch behebt ihn nicht. Bitte wende dich an den Entwickler: Kopiere den Bericht und schick ihn in deiner Nachricht mit.',
+	'problem.copyReport': 'Bericht kopieren',
+	'problem.copied': 'Bericht kopiert',
+	'problem.contact': 'Entwickler kontaktieren',
+	'problem.contactHint':
+		'Schreib über einen Messenger deiner Wahl und füge dort den kopierten Bericht ein.',
+	'problem.writeVia': 'Dem Entwickler schreiben über',
 	'online.searchBusy':
 		'Während die automatische Suche läuft, geht sonst nichts – brich die Suche zuerst ab.',
 	'online.search': 'Automatische Suche',

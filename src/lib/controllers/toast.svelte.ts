@@ -1,4 +1,5 @@
 import type { TranslationKey } from '$lib/i18n/translations/uk';
+import type { NetProblem } from '$lib/utils/netProblem';
 
 /**
  * Тимчасові сповіщення (NOTIFICATIONS-v8 § 2).
@@ -33,6 +34,15 @@ export interface ToastMessage {
 	action?: ToastAction;
 	/** Скільки живе. Те саме число йде і в таймер, і в анімацію смужки. */
 	duration: number;
+	/**
+	 * Тост про причину збою (`problem()`): за цим полем новий збій ЗАМІНЮЄ старий, а
+	 * новий натиск «шукати» чи «підключитися» прибирає його зовсім.
+	 */
+	problem?: NetProblem;
+	/** Під текстом — «Скопіювати звіт» і «Звʼязатися з розробником» (`ToastReport`). */
+	report?: boolean;
+	/** Людина взялася за дії тоста — сам він більше не зникає (`pin`), і смужки немає. */
+	pinned?: boolean;
 }
 
 interface TimerInfo {
@@ -47,6 +57,8 @@ interface TimerInfo {
 	 * відновлювати таймер (§ 2.1).
 	 */
 	holds: number;
+	/** Закріплений (`pin`): жодне відведення миші вже не відновлює таймера. */
+	pinned: boolean;
 }
 
 /**
@@ -88,6 +100,33 @@ export const WORLD_EVENT_MS = 30_000;
  */
 export const REJECT_MS = 5000;
 
+/**
+ * ТОСТ ПРО ЗБІЙ — ПʼЯТНАДЦЯТЬ СЕКУНД, а не сім (прохання автора 2026-09-27).
+ *
+ * Доти збій пошуку був сім секунд «спробуйте ще раз». Тепер текст — два-три речення з
+ * причиною, а під ним дії (оновити, скопіювати звіт, написати розробнику), і семи секунд
+ * не вистачає, щоб і прочитати, і вирішити. Пауза на наведенні й фокусі лишається, а
+ * щойно людина взялася за дію, тост закріплюється (`pin`) — інакше він зник би, поки
+ * вона вставляє звіт у месенджер.
+ */
+export const PROBLEM_MS = 15_000;
+
+/**
+ * ЩО СКАЗАТИ Й ЩО ЗАПРОПОНУВАТИ на кожну причину (`utils/netProblem.ts`). Оновлення —
+ * лише старій сторінці; звіт і розробник — лише тому, чого людина сама не виправить.
+ * «Немає звʼязку» — без дій: повтор і є ліки, а кнопка, що впала, стоїть на місці.
+ */
+const PROBLEM: Record<
+	NetProblem,
+	{ key: TranslationKey; type: ToastType; reload: boolean; report: boolean }
+> = {
+	offline: { key: 'problem.offline', type: 'warn', reload: false, report: false },
+	reload: { key: 'problem.reload', type: 'warn', reload: true, report: false },
+	mismatch: { key: 'problem.mismatch', type: 'warn', reload: true, report: true },
+	rules: { key: 'problem.rules', type: 'warn', reload: false, report: true },
+	code: { key: 'problem.code', type: 'error', reload: false, report: true }
+};
+
 class ToastState {
 	messages = $state<ToastMessage[]>([]);
 	#nextId = 0;
@@ -99,14 +138,70 @@ class ToastState {
 		info.timerId = setTimeout(() => this.remove(info.id), remaining);
 	}
 
-	add(type: ToastType, messageKey: TranslationKey, duration: number, action?: ToastAction) {
+	/** Поставити тост і завести його таймер. Спільне для всіх способів показати тост. */
+	#push(message: Omit<ToastMessage, 'id'>): void {
 		const id = this.#nextId++;
-		this.messages.push({ id, type, messageKey, action, duration });
+		this.messages.push({ id, ...message });
 		if (this.messages.length > MAX_TOASTS) this.remove(this.messages[0].id);
 
-		const info: TimerInfo = { id, timerId: null, startTime: 0, elapsed: 0, duration, holds: 0 };
+		const { duration } = message;
+		const info: TimerInfo = {
+			id,
+			timerId: null,
+			startTime: 0,
+			elapsed: 0,
+			duration,
+			holds: 0,
+			pinned: false
+		};
 		this.#timers.set(id, info);
 		this.#arm(info);
+	}
+
+	add(type: ToastType, messageKey: TranslationKey, duration: number, action?: ToastAction) {
+		this.#push({ type, messageKey, action, duration });
+	}
+
+	/**
+	 * ТОСТ ПРО ПРИЧИНУ ЗБОЮ (прохання автора 2026-09-27): «правила ще не викладені»,
+	 * «сторінка стара», «проблема в коді» — замість «спробуйте ще раз» на все. Той самий
+	 * тост, що й решта, лише текст, дії й час — від причини. Попередній такий тост
+	 * замінюється: дві причини одного збою поруч лише плутали б.
+	 */
+	problem(problem: NetProblem): void {
+		this.dismissProblems();
+		const advice = PROBLEM[problem];
+		this.#push({
+			type: advice.type,
+			messageKey: advice.key,
+			duration: PROBLEM_MS,
+			problem,
+			report: advice.report,
+			action: advice.reload
+				? { labelKey: 'pairs.reload', onAction: () => location.reload() }
+				: undefined
+		});
+	}
+
+	/** Прибрати тости про збій: людина пробує знову, і стара причина вже нічого не каже. */
+	dismissProblems(): void {
+		for (const message of this.messages.filter((one) => one.problem !== undefined)) {
+			this.remove(message.id);
+		}
+	}
+
+	/**
+	 * Закріпити тост: людина взялася за його дії (скопіювала звіт, розгорнула контакти),
+	 * і зникнути посеред цього він не має права. Закрити — хрестиком.
+	 */
+	pin(id: number): void {
+		const info = this.#timers.get(id);
+		if (!info) return;
+		if (info.timerId) clearTimeout(info.timerId);
+		info.timerId = null;
+		info.pinned = true;
+		const message = this.messages.find((one) => one.id === id);
+		if (message) message.pinned = true;
 	}
 
 	/**
@@ -125,13 +220,7 @@ class ToastState {
 	 * ключів.
 	 */
 	say(type: ToastType, message: string, duration = 4000) {
-		const id = this.#nextId++;
-		this.messages.push({ id, type, message, duration });
-		if (this.messages.length > MAX_TOASTS) this.remove(this.messages[0].id);
-
-		const info: TimerInfo = { id, timerId: null, startTime: 0, elapsed: 0, duration, holds: 0 };
-		this.#timers.set(id, info);
-		this.#arm(info);
+		this.#push({ type, message, duration });
 	}
 
 	// Тривалості за ERROR-HANDLING: info 3s, warn 5s, error 7s; success 4s.
@@ -167,7 +256,7 @@ class ToastState {
 		const info = this.#timers.get(id);
 		if (!info) return;
 		if (info.holds > 0) info.holds -= 1;
-		if (info.holds > 0 || info.timerId !== null) return;
+		if (info.holds > 0 || info.timerId !== null || info.pinned) return;
 		this.#arm(info);
 	}
 

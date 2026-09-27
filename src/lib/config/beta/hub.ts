@@ -60,6 +60,18 @@ export const hubTab: BetaTab = {
 			negative: true
 		},
 		{
+			// Прохання автора 2026-09-27: збій пошуку називає причину, а не «спробуйте ще раз».
+			id: 'hub_8',
+			category: { uk: 'Автоматичний пошук', en: 'Automatic search' },
+			text: {
+				uk: 'Вимкніть на пристрої інтернет (режим польоту) і натисніть «Автоматичний пошук». Мусить одразу зʼявитися сповіщення «Немає звʼязку з сервером гри…» — а НЕ «Шукаємо гравця…» без кінця й не «спробуйте ще раз» без причини.',
+				en: 'Turn the internet off on the device (flight mode) and press «Automatic search». The notification «There is no connection to the game server…» must appear at once — NOT an endless «Looking for a player…» and not a reasonless «try again».'
+			},
+			coverage: 'manual',
+			testid: 'toast-body-text',
+			negative: true
+		},
+		{
 			id: 'hub_5',
 			category: { uk: 'Створити кімнату', en: 'Creating a room' },
 			text: {

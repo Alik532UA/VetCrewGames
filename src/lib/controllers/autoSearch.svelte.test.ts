@@ -80,7 +80,16 @@ function world() {
 				here.set(code, new Set([...(here.get(code) ?? []), uid]));
 				for (const listener of watchers.get(code) ?? []) listener(uid);
 			},
-			random: () => 0
+			random: () => 0,
+			online: () => true,
+			// Типовий діагноз — випадок автора: локальна збірка, правила ще не викладені.
+			diagnose: vi.fn(async () => ({
+				problem: 'rules' as const,
+				rules: 'stale' as const,
+				newBuild: false,
+				deployed: false,
+				online: true
+			}))
 		};
 		return { uid, search: new AutoSearch(deps), went };
 	}
@@ -103,6 +112,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	// Тости — спільний синглтон: причина з одного випадку не мусить доїхати в наступний.
+	toast.dismissProblems();
 	vi.useRealTimers();
 	vi.restoreAllMocks();
 });
@@ -291,14 +302,72 @@ describe('автоматичний пошук', () => {
 		b.search.cancel();
 	});
 
-	it('пошук не вдався — тост і назад у спокій', async () => {
+	/**
+	 * ПРИЧИНА, А НЕ «СПРОБУЙТЕ ЩЕ РАЗ» (прохання автора 2026-09-27). Доти тут був тост
+	 * `online.searchFailed` на будь-який збій; автор натиснув чотири рази, і нічого не
+	 * змінилося, бо правила ще не були викладені.
+	 *
+	 * Зворотний експеримент: повернути `toast.error('online.searchFailed')` замість
+	 * `toast.problem` — червоніє.
+	 */
+	it('пошук не вдався — назад у спокій, і тост каже причину, а не «ще раз»', async () => {
 		const w = world();
 		const a = w.person('a');
 		const error = vi.spyOn(toast, 'error');
-		vi.spyOn(a.search.deps.seek, 'list').mockRejectedValue(new Error('PERMISSION_DENIED'));
+		const problem = vi.spyOn(toast, 'problem');
+		const denied = new Error('PERMISSION_DENIED');
+		vi.spyOn(a.search.deps.seek, 'list').mockRejectedValue(denied);
 		await a.search.start();
 		expect(a.search.phase).toBe('idle');
-		expect(error).toHaveBeenCalledWith('online.searchFailed');
+		expect(problem).toHaveBeenCalledWith('rules');
+		expect(a.search.deps.diagnose).toHaveBeenCalledWith(denied);
+		expect(error).not.toHaveBeenCalled();
+	});
+
+	it('новий пошук прибирає стару причину; без мережі — «немає звʼязку» одразу, без кроків', async () => {
+		const w = world();
+		const a = w.person('a');
+		const shown = () => toast.messages.filter((message) => message.problem).map((m) => m.problem);
+		vi.spyOn(a.search.deps.seek, 'list').mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+		await a.search.start();
+		expect(shown()).toEqual(['rules']);
+		void a.search.start();
+		expect(shown(), 'стара причина зникає з першим натиском').toEqual([]);
+		await settle();
+		expect(a.search.phase).toBe('waiting');
+		a.search.cancel();
+
+		const offline = w.person('b');
+		vi.spyOn(offline.search.deps, 'online').mockReturnValue(false);
+		const list = vi.spyOn(offline.search.deps.seek, 'list');
+		await offline.search.start();
+		expect(shown()).toEqual(['offline']);
+		expect(offline.search.phase).toBe('idle');
+		expect(list, 'без мережі запит повис би — його не робимо').not.toHaveBeenCalled();
+	});
+
+	/**
+	 * Скасували, поки зʼясовували причину, — тоста немає: людина вже пішла далі.
+	 *
+	 * Зворотний експеримент: не звіряти номер пошуку після діагнозу — червоніє.
+	 */
+	it('скасування посеред діагнозу — без тоста', async () => {
+		const w = world();
+		const a = w.person('a');
+		const problem = vi.spyOn(toast, 'problem');
+		let answer: (value: Awaited<ReturnType<typeof a.search.deps.diagnose>>) => void = () => {};
+		vi.mocked(a.search.deps.diagnose).mockImplementationOnce(
+			() => new Promise((resolve) => (answer = resolve))
+		);
+		vi.spyOn(a.search.deps.seek, 'list').mockRejectedValue(new Error('PERMISSION_DENIED'));
+		void a.search.start();
+		await settle();
+		expect(a.search.phase, 'поки діагноз іде — «шукаємо»').toBe('searching');
+		a.search.cancel();
+		answer({ problem: 'code', rules: 'fresh', newBuild: false, deployed: false, online: true });
+		await settle();
+		expect(a.search.phase).toBe('idle');
+		expect(problem).not.toHaveBeenCalled();
 	});
 
 	/**
@@ -311,7 +380,8 @@ describe('автоматичний пошук', () => {
 	it('збій у журналі — з кроком, іграми й тим, чи стояв мій запис', async () => {
 		const w = world();
 		const listFails = w.person('a');
-		const logged = vi.spyOn(logService, 'error');
+		// Правила не викладені — це попередження, а не помилка коду (`logFailure`).
+		const logged = vi.spyOn(logService, 'warn');
 		vi.spyOn(listFails.search.deps.seek, 'list').mockRejectedValue(new Error('PERMISSION_DENIED'));
 		await listFails.search.start();
 		expect(logged).toHaveBeenLastCalledWith(

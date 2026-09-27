@@ -1,6 +1,7 @@
 import { PAIRS_RULES_VERSION, QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { logService } from '$lib/services/logService.svelte';
 import { planSeek, type GameVersions, type SeekStep } from '$lib/utils/seekPlan';
+import { logFailure, type Diagnosis } from './diagnose';
 import { PAIRS_PLAYERS, QUIZ_MIN_PLAYERS } from './newRoom';
 import { toast } from './toast.svelte';
 import type { LobbyRoom } from '$lib/net/lobby';
@@ -74,6 +75,13 @@ export interface SearchDeps {
 	/** Піти в кімнату: сторінка гри з `?room`. */
 	go(gameId: OnlineGame, code: string): void;
 	random: () => number;
+	/**
+	 * Чи є мережа взагалі (`navigator.onLine`). Без неї пошук не падає, а висить: `get()`
+	 * бази не відмовляє, а чекає звʼязку, — тож «немає звʼязку» кажемо ДО першого кроку.
+	 */
+	online(): boolean;
+	/** Назвати причину збою (`controllers/diagnose.ts`). Не кидає. */
+	diagnose(error: unknown): Promise<Diagnosis>;
 }
 
 const VERSIONS: Record<OnlineGame, number> = {
@@ -114,6 +122,13 @@ export class AutoSearch {
 
 	async start(): Promise<void> {
 		if (this.phase !== 'idle') return;
+		// Нова спроба — стара причина вже нічого не каже.
+		toast.dismissProblems();
+		if (!this.deps.online()) {
+			toast.problem('offline');
+			logService.warn('network', 'auto search offline', { games: [...this.games] });
+			return;
+		}
 		const run = ++this.#run;
 		const stale = () => run !== this.#run;
 		const wanted: GameVersions = Object.fromEntries(
@@ -160,16 +175,28 @@ export class AutoSearch {
 			}
 		} catch (error) {
 			if (stale()) return;
-			const waiting = this.#handle !== null;
-			this.#abandon();
-			toast.error('online.searchFailed');
-			logService.error('network', 'auto search failed', {
-				step: this.#step,
-				games: [...this.games],
-				waiting,
-				reason: String(error)
-			});
+			await this.#fail(error);
 		}
+	}
+
+	/**
+	 * ПОШУК УПАВ — прибрати за собою одразу, а причину назвати, щойно її зʼясовано
+	 * (прохання автора 2026-09-27). Доти тут був тост «Пошук гри не вдався — спробуйте ще
+	 * раз» на будь-яку причину; тепер тост каже саму причину (`toast.problem`).
+	 *
+	 * Поки йде діагноз (звірка правил і опитування версії, до `PROBE_WAIT_MS`), фаза лишається
+	 * «шукаємо»: кнопка «Скасувати» працює, а натиск «шукати» вдруге не почне другого пошуку
+	 * поверх першого. Скасували посеред діагнозу — тоста не буде: людина вже пішла далі.
+	 */
+	async #fail(error: unknown): Promise<void> {
+		const context = { step: this.#step, games: [...this.games], waiting: this.#handle !== null };
+		this.#release();
+		const run = this.#run;
+		const diagnosis = await this.deps.diagnose(error);
+		logFailure('auto search failed', error, diagnosis, context);
+		if (run !== this.#run) return;
+		this.phase = 'idle';
+		toast.problem(diagnosis.problem);
 	}
 
 	/** Перестати шукати: запис знімається, кімната під збіг (якщо партнер ще не прийшов) закривається. */
@@ -183,13 +210,18 @@ export class AutoSearch {
 	}
 
 	#abandon(): void {
+		this.#release();
+		this.phase = 'idle';
+	}
+
+	/** Зупинити все, що пошук тримає: запис, чекання, кімнату під збіг. Фазу не чіпає. */
+	#release(): void {
 		this.#run += 1;
 		this.#handle?.stop();
 		this.#handle = null;
 		this.#wake?.();
 		if (this.#room !== null) void this.#close(this.#room);
 		this.#room = null;
-		this.phase = 'idle';
 	}
 
 	/**

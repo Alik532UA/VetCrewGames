@@ -33,6 +33,8 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const badge = readFileSync(BADGE, 'utf8');
 const layout = readFileSync(LAYOUT, 'utf8');
+/** Звіт і буфер переїхали сюди (2026-09-27): ним же знімає звіт панель збою хабу. */
+const copier = readFileSync('src/lib/services/reportCopy.ts', 'utf8');
 const sources = walk('src').filter((f) => /\.(ts|svelte)$/.test(f));
 
 describe('службове табло', () => {
@@ -141,16 +143,18 @@ describe('службове табло', () => {
 		 * може: чи кличе його табло й чи віддає йому обидва рядки, без яких
 		 * половина звітів нічого не пояснює (DEBUGGING-v8 § 2.3).
 		 */
-		expect(badge, 'звіт складає `logReport`').toMatch(/buildLogReport\(logService\.getLogs\(\)/);
-		expect(badge, 'VERSION передана').toMatch(/version: logService\.appVersion/);
-		expect(badge, 'ONLINE переданий').toMatch(/online: navigator\.onLine/);
+		expect(badge, 'табло знімає звіт спільним модулем').toMatch(/await copyLogReport\(\)/);
+		expect(copier, 'звіт складає `logReport`').toMatch(/buildLogReport\(logService\.getLogs\(\)/);
+		expect(copier, 'VERSION передана').toMatch(/version: logService\.appVersion/);
+		expect(copier, 'ONLINE переданий').toMatch(/online: navigator\.onLine/);
 	});
 
 	it('5б. відмова буфера НЕ зʼїдає звіт: текст лишається на екрані', () => {
 		/*
 		 * Реверсний експеримент (AI-AGENT-PITFALLS-v8 § 1.1): прибрано `manual =
 		 * report` з гілки `catch` — впав перший `expect`; прибрано саме поле з
-		 * розмітки — впав другий.
+		 * розмітки — впав другий. Після переїзду буфера в `reportCopy.ts` (2026-09-27)
+		 * першим стоїть `return report` у його `catch`, а `manual = report` — другим.
 		 *
 		 * Чому це взагалі пункт, а не дрібниця. `navigator.clipboard` немає поза
 		 * захищеним контекстом, тобто на телефоні, відкритому по http у локальній
@@ -159,8 +163,11 @@ describe('службове табло', () => {
 		 * кнопку «скопіювати звіт», не бачить нічого й іде без звіту
 		 * (BETA-CHECKLIST-v8, `BETA-REPORT-FALLBACK`).
 		 */
-		const failure = badge.slice(badge.indexOf('} catch (err)'));
-		expect(failure, 'звіт мусить лягти у стан, а не лише в журнал').toMatch(/manual = report/);
+		const failure = copier.slice(copier.indexOf('} catch (error)'));
+		expect(failure, 'відмова буфера віддає сам звіт, а не лише пише в журнал').toMatch(
+			/return report/
+		);
+		expect(badge, 'і звіт лягає у стан табло').toMatch(/manual = report/);
 		expect(badge, 'і показатися полем, з якого його можна виділити').toMatch(
 			/data-testid="app-report-fallback-input"/
 		);

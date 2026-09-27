@@ -21,7 +21,22 @@ export const ui = {
 	// waar „Spelen” heen leidt verschilt.
 	'menu.play': 'Spelen',
 	'menu.playOnline': 'Online spelen',
-	'online.searchFailed': 'Het zoeken naar een spel is mislukt — probeer het opnieuw.',
+	'problem.offline':
+		'Er is geen verbinding met de gameserver. Controleer je internet en probeer het opnieuw.',
+	'problem.reload':
+		'Er is een nieuwe versie van het spel, en deze pagina is nog de oude. Laad de pagina opnieuw, dan werkt alles.',
+	'problem.mismatch':
+		'De serverregels zijn al nieuwer dan deze pagina: het spel wordt nu bijgewerkt. Laad de pagina over een paar minuten opnieuw, en werkt het dan nog steeds niet, stuur de ontwikkelaar een bericht.',
+	'problem.rules':
+		'De nieuwe databaseregels zijn nog niet in Firebase gepubliceerd: deze versie van het spel verwacht andere regels dan de server nu gebruikt. Opnieuw proberen helpt niet — eerst moeten de regels gepubliceerd worden.',
+	'problem.code':
+		'Dit is een probleem in de code van het spel — opnieuw proberen lost het niet op. Neem contact op met de ontwikkelaar: kopieer het rapport en stuur het mee in je bericht.',
+	'problem.copyReport': 'Rapport kopiëren',
+	'problem.copied': 'Rapport gekopieerd',
+	'problem.contact': 'Contact met de ontwikkelaar',
+	'problem.contactHint':
+		'Schrijf via de messenger die jou het beste uitkomt en plak daar het gekopieerde rapport.',
+	'problem.writeVia': 'De ontwikkelaar schrijven via',
 	'online.searchBusy':
 		'Zolang het automatisch zoeken loopt, kan er niets anders — annuleer eerst het zoeken.',
 	'online.search': 'Automatisch zoeken',

@@ -21,7 +21,22 @@ export const ui = {
 	// where "Play" leads differs.
 	'menu.play': 'Play',
 	'menu.playOnline': 'Play online',
-	'online.searchFailed': 'The game search failed — please try again.',
+	'problem.offline':
+		'There is no connection to the game server. Check your internet and try again.',
+	'problem.reload':
+		'A new version of the game is out, and this page is the old one. Reload the page and everything will work.',
+	'problem.mismatch':
+		'The server rules are already newer than this page: the game is being updated right now. Reload the page in a few minutes, and if it still does not work, message the developer.',
+	'problem.rules':
+		'The new database rules are not published to Firebase yet: this version of the game expects different rules from the ones the server runs now. Trying again will not help — the rules have to be deployed first.',
+	'problem.code':
+		'This is a problem in the game code — trying again will not fix it. Please contact the developer: copy the report and send it in your message.',
+	'problem.copyReport': 'Copy the report',
+	'problem.copied': 'Report copied',
+	'problem.contact': 'Contact the developer',
+	'problem.contactHint':
+		'Write in whichever messenger suits you and paste the copied report there.',
+	'problem.writeVia': 'Message the developer on',
 	'online.searchBusy':
 		'While the automatic search runs, nothing else is available — cancel the search first.',
 	'online.search': 'Automatic search',
