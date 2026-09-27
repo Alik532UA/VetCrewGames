@@ -47,6 +47,19 @@ export const CLAIM_RETRY_MS = 1000;
  */
 export type SearchPhase = 'idle' | 'searching' | 'waiting' | 'found';
 
+/**
+ * КРОК, НА ЯКОМУ ПОШУК УПАВ, — для журналу (прохання автора 2026-09-27). Кожен крок —
+ * інше правило бази, і «Permission denied» без кроку не каже, котре з них відмовило:
+ *
+ *  • `sign-in`     — вхід (анонімний) і підпис гравця;
+ *  • `list`        — запит записів `seek` (правило пускає лише обмежений запит за `at`);
+ *  • `open`        — свій запис `seek/{uid}`;
+ *  • `withdraw`    — зняти свій запис транзакцією, перш ніж забирати чужий;
+ *  • `create-room` — кімната під збіг, `rooms/{code}`;
+ *  • `claim`       — вписати кімнату в чужий запис, `seek/{uid}/match`.
+ */
+export type SearchStep = 'sign-in' | 'list' | 'open' | 'withdraw' | 'create-room' | 'claim';
+
 /** Усе, що пошуку треба від мережі й сторінки, — щоб тест підставив своє. */
 export interface SearchDeps {
 	seek: SeekNet;
@@ -86,6 +99,8 @@ export class AutoSearch {
 	 * `Set`: реактивність тут не потрібна, а `Set` у рунічному файлі проєкт забороняє.
 	 */
 	#passed: string[] = [];
+	/** Що пошук робить цієї миті — щоб збій назвав крок (`SearchStep`). */
+	#step: SearchStep = 'sign-in';
 
 	constructor(readonly deps: SearchDeps) {}
 
@@ -106,7 +121,9 @@ export class AutoSearch {
 		);
 		this.phase = 'searching';
 		this.#passed = [];
+		logService.info('network', 'auto search started', { games: [...this.games] });
 		try {
+			this.#step = 'sign-in';
 			const me = await this.deps.me();
 			while (!stale()) {
 				const seeks = await this.#seeks(stale);
@@ -132,6 +149,7 @@ export class AutoSearch {
 				if (this.#handle) {
 					const handle = this.#handle;
 					this.#handle = null;
+					this.#step = 'withdraw';
 					const match = await handle.withdraw();
 					if (stale()) return;
 					if (match) return this.#arrive(match.gameId, match.code);
@@ -142,15 +160,25 @@ export class AutoSearch {
 			}
 		} catch (error) {
 			if (stale()) return;
+			const waiting = this.#handle !== null;
 			this.#abandon();
 			toast.error('online.searchFailed');
-			logService.error('network', 'auto search failed', { reason: String(error) });
+			logService.error('network', 'auto search failed', {
+				step: this.#step,
+				games: [...this.games],
+				waiting,
+				reason: String(error)
+			});
 		}
 	}
 
 	/** Перестати шукати: запис знімається, кімната під збіг (якщо партнер ще не прийшов) закривається. */
 	cancel(): void {
 		if (this.phase === 'idle') return;
+		// Після збігу скасовувати вже нічого — сторінка просто йде в кімнату (`dispose`).
+		if (this.phase !== 'found' || this.#room !== null) {
+			logService.info('network', 'auto search cancelled', { phase: this.phase });
+		}
 		this.#abandon();
 	}
 
@@ -169,6 +197,7 @@ export class AutoSearch {
 	 * зупиняє — `null`, і на наступному кроці спробуємо знову: запис живий і без нього.
 	 */
 	async #seeks(stale: () => boolean): Promise<Seek[] | null> {
+		this.#step = 'list';
 		try {
 			return await this.deps.seek.list();
 		} catch (error) {
@@ -181,6 +210,7 @@ export class AutoSearch {
 	/** Поставити свій запис (якщо його ще немає) і почекати до наступного кроку. `false` — застаріло. */
 	async #wait(run: number, wanted: GameVersions): Promise<boolean> {
 		if (!this.#handle) {
+			this.#step = 'open';
 			const handle = await this.deps.seek.open(wanted, (match) => this.#matched(run, match));
 			if (run !== this.#run) {
 				handle.stop();
@@ -205,14 +235,17 @@ export class AutoSearch {
 		this.#handle = null;
 		this.#wake?.();
 		this.phase = 'found';
+		logService.info('network', 'auto search found', { gameId, code });
 		this.deps.go(gameId, code);
 	}
 
 	/** Створити кімнату під чужий запис і вписати її туди; не вийшло — кімнату закрити й шукати далі. */
 	async #claim(run: number, uid: string, gameId: OnlineGame): Promise<void> {
+		this.#step = 'create-room';
 		const code = await this.deps.createRoom(gameId);
 		if (run !== this.#run) return void this.#close(code);
 		this.#room = code;
+		this.#step = 'claim';
 		const claimed = await this.deps.seek.claim(uid, { code, gameId });
 		if (run !== this.#run) return;
 		if (claimed) {

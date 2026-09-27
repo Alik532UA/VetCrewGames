@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAIRS_RULES_VERSION, QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { LocalSeekBoard, type SeekRoom } from '$lib/net/localSeek';
+import { logService } from '$lib/services/logService.svelte';
 import { toast } from './toast.svelte';
 import {
 	AutoSearch,
@@ -298,5 +299,34 @@ describe('автоматичний пошук', () => {
 		await a.search.start();
 		expect(a.search.phase).toBe('idle');
 		expect(error).toHaveBeenCalledWith('online.searchFailed');
+	});
+
+	/**
+	 * ЖУРНАЛ НАЗИВАЄ КРОК (прохання автора 2026-09-27): «Permission denied» без кроку не
+	 * каже, котре з правил відмовило, — запит записів, свій запис чи кімната під збіг.
+	 *
+	 * Зворотний експеримент: не ставити крок `open` перед власним записом — червоніє
+	 * другий випадок (у журналі лишається `list`).
+	 */
+	it('збій у журналі — з кроком, іграми й тим, чи стояв мій запис', async () => {
+		const w = world();
+		const listFails = w.person('a');
+		const logged = vi.spyOn(logService, 'error');
+		vi.spyOn(listFails.search.deps.seek, 'list').mockRejectedValue(new Error('PERMISSION_DENIED'));
+		await listFails.search.start();
+		expect(logged).toHaveBeenLastCalledWith(
+			'network',
+			'auto search failed',
+			expect.objectContaining({ step: 'list', games: ['quiz', 'pairs'], waiting: false })
+		);
+
+		const openFails = w.person('b');
+		vi.spyOn(openFails.search.deps.seek, 'open').mockRejectedValue(new Error('PERMISSION_DENIED'));
+		await openFails.search.start();
+		expect(logged).toHaveBeenLastCalledWith(
+			'network',
+			'auto search failed',
+			expect.objectContaining({ step: 'open' })
+		);
 	});
 });

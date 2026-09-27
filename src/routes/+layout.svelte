@@ -17,6 +17,7 @@
 	import { page, updated } from '$app/state';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { trackPageView } from '$lib/services/analytics';
+	import { trackClicks } from '$lib/services/clickTrail';
 	import { webVitals } from '$lib/controllers/webVitals.svelte';
 	import { fly } from 'svelte/transition';
 	import {
@@ -170,8 +171,14 @@
 	// Fires on the initial load too, so this covers the first view and each
 	// client-side move between the games. trackPageView initialises analytics
 	// itself, so there is no ordering to get wrong against onMount.
-	afterNavigate(({ from, type }) => {
+	afterNavigate(({ from, to, type }) => {
 		trackPageView();
+		/*
+		 * ПЕРЕХІД — У ЖУРНАЛ (прохання автора 2026-09-27): звіт із табло має адресу лише
+		 * ТІЄЇ сторінки, де його скопіювали, і не каже, звідки людина туди прийшла. Шлях без
+		 * параметрів — у них бувають коди кімнат, а для розбору збою досить сторінки.
+		 */
+		logService.info('app', 'navigate', { to: to?.url?.pathname ?? null, type });
 		// Кімната, у якій на мене чекають, з'являється саме тоді, коли я пішов зі
 		// сторінки онлайну — решта переходів індексу не чіпає.
 		//
@@ -312,8 +319,11 @@
 		};
 		window.addEventListener('unhandledrejection', onRejection);
 		window.addEventListener('error', onError);
+		// Слід натисків — щоб звіт казав, ПІСЛЯ ЯКОЇ кнопки сталася помилка (`clickTrail.ts`).
+		const stopClicks = trackClicks();
 		return () => {
 			stopThemeSync();
+			stopClicks();
 			window.removeEventListener('unhandledrejection', onRejection);
 			window.removeEventListener('error', onError);
 		};
