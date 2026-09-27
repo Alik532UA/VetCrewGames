@@ -97,6 +97,13 @@ const LISTENER_RE = /addEventListener\s*\(|\.observe\s*\(|setInterval\s*\(/;
 const CLEANUP_RE =
 	/removeEventListener\s*\(|\.disconnect\s*\(|\.unobserve\s*\(|clearInterval\s*\(|once:\s*true|signal:\s*/;
 
+/**
+ * Service worker — не сторінка: його слухачі `install`/`activate`/`fetch` і є сам воркер,
+ * живуть рівно стільки, скільки він, і SPA-навігацій, на яких вони накопичувалися б, у
+ * ньому немає. Знімати їх нема коли — зняття означало б воркер, що не відповідає.
+ */
+const WORKER_GLOBAL_SCOPE = ['src/service-worker.ts'];
+
 // ─── § 3.2.1 Підключена підписка ────────────────────────────────────────────
 
 /** Сервісний шар: те, що САМЕ реалізує підписки, а не споживає їх. */
@@ -239,7 +246,9 @@ describe('SVELTE-CORE: інваріанти по джерелах (§ 8)', () =>
 	});
 
 	describe('§ 2.2.2 парне зняття слухача (SC-LISTENER-CLEANUP)', () => {
-		const withListener = sources.filter((f) => LISTENER_RE.test(codeOf(f)));
+		const withListener = sources.filter(
+			(f) => LISTENER_RE.test(codeOf(f)) && !WORKER_GLOBAL_SCOPE.includes(f)
+		);
 
 		it('перевірка жива: файли зі слухачами знайдено', () => {
 			expect(withListener.length, 'жодного addEventListener/observe/setInterval').toBeGreaterThan(

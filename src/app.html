@@ -34,6 +34,9 @@
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="VetCrewGames" />
+		<!-- PWA: маніфест і значок початкового екрана iPhone; пояснення — у lib/pwa/. -->
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
 		<!--
 			Тут стояли два `preconnect` і блокуюча таблиця стилів зі стороннього
 			CDN шрифтів — заради шести літер, яких немає в `inglobal`. Обидва

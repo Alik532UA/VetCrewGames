@@ -119,7 +119,7 @@ CI викладає **правила, потім сайт** (`rules_deploy` → 
 | `clipboard-tools` | `є`                                                                                                                                                         | вживання `<InputTools>` у `src/`                      |
 | `rtdb-indexes`    | `at, score`                                                                                                                                                 | `orderByChild(…)` у `src/lib/net/`                    |
 | `light-dark`      | `застосовується`                                                                                                                                            | `light-dark(` у `src/lib/styles/themes/`              |
-| `e2e-specs`       | `a11y, a11y-overlays, auth-form, beta-checklist, card-label, console, content-fill, contrast-runtime, country-menu, focus-move, hub-windows, icon-hydration, memory-fit, reflow, round-indicator, shortcuts, testid, touch-targets` | `*.spec.ts` у `tests/`                                |
+| `e2e-specs`       | `a11y, a11y-overlays, auth-form, beta-checklist, card-label, console, content-fill, contrast-runtime, country-menu, focus-move, hub-windows, icon-hydration, memory-fit, pwa, reflow, round-indicator, shortcuts, testid, touch-targets` | `*.spec.ts` у `tests/`                                |
 | `oversized-files` | `src/lib/components/PopulationBoard.svelte`                                                                                                                 | ключі `OVERSIZED_ALLOWLIST` у `src/structure.test.ts` |
 
 <!-- FACTS:END -->
@@ -139,6 +139,11 @@ CI викладає **правила, потім сайт** (`rules_deploy` → 
 | as5.odesa.ua    | `as5.odesa.ua_`    |
 | MindStep        | `mindstep_`        |
 | Slovko          | `slovko_`          |
+
+Кеші service worker — під тим самим префіксом: `vetcrewgames_sw_<версія>`
+(`lib/pwa/cache.ts`), `scope` воркера — `/VetCrewGames/`. Активація нової збірки
+стирає лише свої старі кеші; чужі (`slovko-*` тощо) не чіпає — це тримає
+`src/lib/pwa/cache.test.ts`.
 
 ## Прийняті рішення
 
@@ -487,9 +492,10 @@ email». Тости є, отже файл застосовний, і полов�
 | Кеші Cache API                   | лише імена, що починаються з `vetcrewgames_`                        |
 | Реєстрації service worker        | лише ті, чий `scope` лежить усередині `base`                        |
 
-**Останні два рядки сьогодні не роблять нічого — і написані заздалегідь
-навмисно.** PWA тут немає (ні `vite-plugin-pwa`, ні `service-worker.js`), але
-`caches.keys()` і `getRegistrations()` віддають дані **всього origin**, тобто
+**Останні два рядки написані заздалегідь — до появи PWA, і з 2026-09-27 вони
+робочі:** воркер (`src/service-worker.ts`, `lib/pwa/`) кладе кеші
+`vetcrewgames_sw_<версія>` і реєструється зі `scope` `/VetCrewGames/`. Писали їх
+наперед тому, що `caches.keys()` і `getRegistrations()` віддають дані **всього origin**, тобто
 разом із сусідніми проєктами на `alik532ua.github.io`. Дописувати фільтр у
 поспіху, коли PWA вже приїхала, — це рівно той спосіб, яким скидання
 перетворюється на «стерти все, що є на домені». У сусідів це вже сталося:

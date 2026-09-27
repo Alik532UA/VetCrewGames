@@ -282,6 +282,45 @@ export const commonTab: BetaTab = {
 			negative: true
 		},
 		{
+			/*
+			 * PWA (прохання автора 2026-09-27): маніфест і значки — `src/pwa.test.ts`; руками —
+			 * справжнє встановлення, якого браузер у тесті не робить.
+			 */
+			id: 'common_32',
+			category: { uk: 'Застосунок на телефоні', en: 'App on the phone' },
+			text: {
+				uk: 'Встановіть сайт як застосунок: на iPhone — «Поділитися → На початковий екран», на Android — меню Chrome → «Установити застосунок». На початковому екрані мусить стояти мавпочка на світлому тлі, а не знімок сторінки, з назвою «VetCrewGames», і застосунок мусить відкритися без адресного рядка.',
+				en: 'Install the site as an app: on an iPhone — «Share → Add to Home Screen», on Android — Chrome menu → «Install app». The Home Screen must show the monkey on a light tile, not a screenshot of the page, named «VetCrewGames», and the app must open without an address bar.'
+			},
+			coverage: 'manual'
+		},
+		{
+			/*
+			 * «Щоб при оновленні не треба було перевстановлювати» — сама скарга автора.
+			 * Логіку повернення тримає `lib/pwa/register.test.ts`, а те, що воркер бере
+			 * керування одразу, — `src/pwa.test.ts`; руками — справжній деплой на телефоні.
+			 */
+			id: 'common_33',
+			category: { uk: 'Застосунок на телефоні', en: 'App on the phone' },
+			text: {
+				uk: 'У встановленому застосунку запамʼятайте номер версії на сторінці бета-чекліста й поверніться на головну. Коли вийде нова версія, відкрийте застосунок знову, НЕ перевстановлюючи: головна мусить за кілька секунд перезавантажитися сама, а номер версії на сторінці бета-чекліста — стати новим. Посеред гри партія НЕ мусить обриватися: нова версія приїжджає з першим переходом на іншу сторінку.',
+				en: 'In the installed app note the version number on the beta checklist page and go back to the home page. When a new version is out, open the app again WITHOUT reinstalling: the home page must reload by itself within a few seconds, and the version number on the beta checklist page must be the new one. In the middle of a game the game must NOT be cut short: the new version arrives with the first move to another page.'
+			},
+			coverage: 'manual',
+			testid: 'beta-version-text'
+		},
+		{
+			id: 'common_34',
+			category: { uk: 'Застосунок на телефоні', en: 'App on the phone' },
+			text: {
+				uk: 'Відкрийте застосунок з інтернетом і зайдіть у «Грати». Тоді вимкніть інтернет і відкрийте застосунок знову: головна й «Грати» мусять відкритися, а сторінка, де ви ще не були, мусить привести на головну, а не на порожній екран браузера.',
+				en: 'Open the app while online and go to «Play». Then turn the internet off and open the app again: the home page and «Play» must open, and a page you have not visited yet must lead to the home page rather than an empty browser screen.'
+			},
+			coverage: 'covered',
+			test: 'tests/pwa.spec.ts',
+			negative: true
+		},
+		{
 			id: 'common_17',
 			category: { uk: 'Теми', en: 'Themes' },
 			text: {

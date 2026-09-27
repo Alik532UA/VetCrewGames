@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import { dev } from '$app/environment';
+import { page, updated } from '$app/state';
 import { logService } from '$lib/services/logService.svelte';
 import { hasAccount } from '$lib/services/accountFlag';
 import { chunkMissing, reloadOnce } from '$lib/utils/staleBuild';
@@ -36,6 +37,24 @@ if (hasAccount()) {
 		.then(({ startPlaySync }) => startPlaySync())
 		.catch((error: unknown) => {
 			logService.warn('network', 'score sync not started', { reason: String(error) });
+		});
+}
+
+/**
+ * PWA: service worker і оновлення при поверненні в застосунок (`lib/pwa/register.ts`).
+ *
+ * Тут, а не в кореневому layout, з тієї самої причини, що й синхронізація вище: бюджет коду
+ * layout (22 КБ gzip) вичерпаний, а entry має запас. Лише в зібраному сайті — у dev воркер
+ * кешував би модулі, які Vite міняє на ходу. `updated` і `page` передаються звідси, бо
+ * `$app/state` у `src/lib/` ламає тести.
+ */
+if (!dev) {
+	void import('$lib/pwa/register')
+		.then(({ startPwa }) =>
+			startPwa({ checkUpdate: () => updated.check(), routeId: () => page.route.id })
+		)
+		.catch((error: unknown) => {
+			logService.warn('app', 'pwa not started', { reason: String(error) });
 		});
 }
 

@@ -15,10 +15,11 @@ import { HIDDEN_ROUTES, LANGUAGE_ROUTES } from '$lib/i18n/routing';
  * проєкт не виконує. Станом до цієї перевірки у файлі стояло:
  *
  *   «Offline Capability: Playable offline via Progressive Web App (PWA)
- *    caching» — PWA в проєкті немає ЖОДНОЇ: ні `vite-plugin-pwa`, ні
- *    `service-worker.ts`, ні манифеста, ні `<link rel="manifest">`. Це записано
+ *    caching» — PWA в проєкті тоді не було ЖОДНОЇ: ні `vite-plugin-pwa`, ні
+ *    `service-worker.ts`, ні манифеста, ні `<link rel="manifest">`. Це було записано
  *    і в `services/resetService.ts` («PWA тут ще немає»), тобто документ
- *    суперечив коду, який сам же й посилався на його відсутність;
+ *    суперечив коду, який сам же й посилався на його відсутність. (З 2026-09-27
+ *    PWA є — `src/service-worker.ts`, `lib/pwa/`, — і ознака нижче це бачить);
  *
  *   «customizable themes, and sound settings» — звуку немає теж, і це записано
  *   в канонічній мапі клавіш (`services/keyboard.ts`: «M — ПРОПУЩЕНО, звуку в
@@ -154,7 +155,7 @@ describe(`твердження ${LLMS} проти коду (SEO-v9 § 7.1, PIT-D
 		/*
 		 * Таблиця з самих лише виконаних обіцянок доводила б рівно нічого: вона
 		 * була б зеленою і при зламаному `evidence`. Тут навмисно поруч стоять
-		 * PWA і звук (яких немає) із таблицею лідерів і JSON-LD (які є).
+		 * звук і досягнення (яких немає) із таблицею лідерів, JSON-LD і PWA (які є).
 		 */
 		const met = CLAIMS.filter((c) => c.evidence());
 		expect(met.length, 'жодна ознака не виконана — `evidence` шукає не те').toBeGreaterThan(0);

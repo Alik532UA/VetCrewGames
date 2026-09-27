@@ -291,12 +291,17 @@ const REFERENCE_SOURCES = [
  * стандарт вимагає саме там. `llms.txt`, як і `robots.txt`, визначений
  * стандартом рівно за адресою `/llms.txt` — підпапка зробила б його
  * недосяжним. Медіафайлу в корені місце в `images/`, `svg/` або `fonts/`.
+ *
+ * `manifest.webmanifest` — у корені з тієї ж причини, що й стандарт: його `start_url`,
+ * `scope` і `id` відносні (`./`) і рахуються від адреси САМОГО маніфесту. У корені `./` —
+ * це `base` і на Pages, і локально; у підпапці вони показували б на неї (`src/pwa.test.ts`).
  */
 const ROOT_ALLOWED = [
 	/^favicon\.[a-z0-9]+$/i,
 	/^robots\.txt$/,
 	/^llms\.txt$/,
-	/^app-version\.json$/
+	/^app-version\.json$/,
+	/^manifest\.webmanifest$/
 ];
 
 /** Борг сиріт: число, яке може лише СПАДАТИ. Заміряно цією ж перевіркою. */

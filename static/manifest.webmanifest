@@ -1,0 +1,24 @@
+{
+	"id": "./",
+	"name": "VetCrewGames",
+	"short_name": "VetCrewGames",
+	"description": "Безкоштовні ігри про тварин: що вони їдять, де живуть, скільки їх лишилося, і які міфи про них неправдиві.",
+	"lang": "uk",
+	"dir": "ltr",
+	"start_url": "./",
+	"scope": "./",
+	"display": "standalone",
+	"background_color": "#1a1a1a",
+	"theme_color": "#2a3d1d",
+	"categories": ["education", "games", "kids"],
+	"icons": [
+		{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+		{ "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+		{
+			"src": "icons/icon-maskable-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
+}

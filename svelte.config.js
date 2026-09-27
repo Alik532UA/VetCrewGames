@@ -249,6 +249,15 @@ const config = {
 		 */
 		version: {
 			pollInterval: 300_000
+		},
+		/*
+		 * Service worker (`src/service-worker.ts`) реєструється ВРУЧНУ — `lib/pwa/register.ts`
+		 * з `hooks.client.ts`. Автоматична реєстрація SvelteKit працює й у dev (там воркер
+		 * кешував би модулі, які Vite міняє на ходу), не ставить `updateViaCache: 'none'` і не
+		 * перевіряє оновлення, коли застосунок повертається з фону.
+		 */
+		serviceWorker: {
+			register: false
 		}
 	}
 };
