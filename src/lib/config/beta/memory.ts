@@ -24,7 +24,7 @@ export const memoryTab: BetaTab = {
 			id: 'memory_2',
 			category: { uk: 'Дошка', en: 'The board' },
 			text: {
-				uk: 'Дограйте партію й натисніть «Грати ще» на екрані підсумку. Розкладка мусить бути інша, а не та сама.',
+				uk: 'Дограйте партію й натисніть «Грати знову» на екрані підсумку. Розкладка мусить бути інша, а не та сама.',
 				en: 'Finish a game and press «Play again» on the summary screen. The layout must be a different one, not the same again.'
 			},
 			coverage: 'manual',
@@ -56,7 +56,8 @@ export const memoryTab: BetaTab = {
 				uk: 'Не чекаючи, поки закриються дві різні картки, натисніть третю. У соло-партії третя мусить одразу відкритися — грати швидко ніщо не мусить заважати.',
 				en: 'Without waiting for two different cards to close, click a third one. In a solo game the third must open right away — nothing should get in the way of playing fast.'
 			},
-			coverage: 'testable',
+			coverage: 'covered',
+			test: 'src/lib/controllers/memoryGame.svelte.test.ts',
 			testid: 'memory-card-btn-*'
 		},
 		{
@@ -85,8 +86,8 @@ export const memoryTab: BetaTab = {
 			id: 'memory_8',
 			category: { uk: 'Кінець партії', en: 'The end' },
 			text: {
-				uk: 'Дограйте до кінця. У підсумку мусить бути видно, скільки пар знайдено з усіх, і це число мусить дорівнювати кількості пар на дошці.',
-				en: 'Play to the end. The summary must show how many pairs were found out of the total, and that number must equal the pairs on the board.'
+				uk: 'Дограйте до кінця. У підсумку мусить бути видно, скільки пар знайдено, і це число мусить дорівнювати кількості пар на дошці.',
+				en: 'Play to the end. The summary must show how many pairs were found, and that number must equal the pairs on the board.'
 			},
 			coverage: 'manual'
 		}

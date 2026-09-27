@@ -27,10 +27,11 @@ export const onlineTab: BetaTab = {
 			id: 'online_2',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {
-				uk: 'Скопіюйте адресу з кодом кімнати й відкрийте її на другому пристрої. Кімната мусить відкритися без введення коду руками.',
-				en: 'Copy the address that carries the room code and open it on the second device. The room must open without typing the code by hand.'
+				uk: 'Скопіюйте адресу з кодом кімнати й відкрийте її на другому пристрої. Мусить зʼявитися «Вас запросили в кімнату»; натисніть «Зайти» — і кімната мусить відкритися без введення коду руками.',
+				en: 'Copy the address that carries the room code and open it on the second device. «You are invited to room» with the code must appear; press «Join» — and the room must open without typing the code by hand.'
 			},
-			coverage: 'manual'
+			coverage: 'manual',
+			testid: 'room-invite-join-btn'
 		},
 		{
 			id: 'online_3',
@@ -82,7 +83,7 @@ export const onlineTab: BetaTab = {
 			category: { uk: 'Глядач', en: 'Spectator' },
 			text: {
 				uk: 'Зайдіть у кімнату глядачем із третього пристрою. Дошку й чужі ходи мусить бути видно, але від ваших кліків жодна картка не відкривається.',
-				en: 'Join the room as a spectator from a third device. The board and the others players moves must be visible, but no card opens from your clicks.'
+				en: 'Join the room as a spectator from a third device. The board and the other players’ moves must be visible, but no card opens from your clicks.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/pairsMatch.svelte.test.ts',
@@ -102,8 +103,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_9',
 			category: { uk: 'Господар кімнати', en: 'The host' },
 			text: {
-				uk: 'Кнопки «Зіграти ще» й «Закрити кімнату» мусять бути лише в того, хто створив кімнату. У другого гравця їх не мусить бути видно.',
-				en: 'The «Play again» and «Close room» buttons must belong only to whoever created the room. The other player must not see them at all.'
+				uk: 'Кнопки «Зіграти ще» й «Закрити кімнату» мусять бути лише в господаря кімнати — спершу це той, хто її створив, але ведення може перейти до іншого. У другого гравця їх не мусить бути видно.',
+				en: 'The «Play again» and «Close the room» buttons must belong only to the room’s host — at first whoever created it, but the lead can pass to someone else. The other player must not see them at all.'
 			},
 			coverage: 'manual',
 			negative: true
@@ -122,7 +123,7 @@ export const onlineTab: BetaTab = {
 			category: { uk: 'Господар кімнати', en: 'The host' },
 			text: {
 				uk: 'Господар натискає «Закрити кімнату». Обидва мусять вийти з партії, а спроба зайти за тим самим кодом — сказати, що кімнати немає.',
-				en: 'The host presses «Close room». Both must leave the game, and trying the same code again must say the room is gone.'
+				en: 'The host presses «Close the room». Both must leave the game, and trying the same code again must say the room is gone.'
 			},
 			coverage: 'manual'
 		},
@@ -159,8 +160,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_15',
 			category: { uk: 'Коли щось не так', en: 'When something breaks' },
 			text: {
-				uk: 'Утрьох: посеред партії третій виходить назовсім (смуга «Вас чекають» → «Вийти»). У двох інших дошка не мусить перероздатися, зібрані пари мусять лишитися на місці, а вибулий — у табло зі своїм імʼям. Коли дійде його черга, через півтори хвилини її можна забрати.',
-				en: 'With three players: in the middle of a game the third one leaves for good (the “You are awaited” bar → “Leave”). The other two must not get a re-dealt board, the collected pairs must stay, and the one who left must stay on the scoreboard under their name. When their turn comes, it can be taken after a minute and a half.'
+				uk: 'Утрьох: посеред партії третій іде зі сторінки гри на головну й у смузі «Вас чекають у грі» тисне «Вийти з кімнати». У двох інших дошка не мусить перероздатися, зібрані пари мусять лишитися на місці, вибулий — у табло зі своїм імʼям, а його черга мусить пропускатися одразу.',
+				en: 'With three players: in the middle of a game the third one goes from the game page to the home page and presses “Leave the room” in the “You are expected in the game” bar. The other two must not get a re-dealt board, the collected pairs must stay, the one who left must stay on the scoreboard under their name, and their turn must be skipped at once.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/pairsMatch.svelte.test.ts',
@@ -170,8 +171,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_16',
 			category: { uk: 'Коли щось не так', en: 'When something breaks' },
 			text: {
-				uk: 'Той, хто вийшов посеред партії, заходить у ту саму кімнату за кодом ще раз. Він мусить повернутися ГРАВЦЕМ на своє місце в черзі, а не глядачем.',
-				en: 'The one who left in the middle of a game joins the same room with the code again. They must come back as a PLAYER in their own place in the turn order, not as a spectator.'
+				uk: 'Той, хто посеред партії закрив вкладку (не тиснучи «Вийти з кімнати»), заходить у ту саму кімнату за кодом ще раз. Він мусить повернутися ГРАВЦЕМ на своє місце в черзі, а не глядачем.',
+				en: 'The one who closed the tab in the middle of a game (without pressing “Leave the room”) joins the same room with the code again. They must come back as a PLAYER in their own place in the turn order, not as a spectator.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/roomSession.svelte.test.ts'
@@ -180,8 +181,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_17',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {
-				uk: 'Автоматичний пошук: коли вас звело й іде відлік до старту, другий гравець закриває вкладку. Відлік мусить зупинитися, а партія — не початися з тим, кого вже немає. Після реваншу, від якого суперник пішов, господар мусить почути «потрібен ще гравець», а не почати гру сам із собою.',
-				en: 'Automatic search: once you are matched and the countdown runs, the second player closes the tab. The countdown must stop, and the game must not start with someone who is gone. On a rematch after the opponent left, the host must hear “one more player needed” instead of starting a game alone.'
+				uk: 'Автоматичний пошук: коли вас звело й іде відлік до старту, другий гравець закриває вкладку. Відлік мусить зупинитися, а партія — не початися з тим, кого вже немає. Після реваншу, від якого суперник пішов, господар мусить побачити «Потрібні щонайменше двоє гравців.», а не почати гру сам із собою.',
+				en: 'Automatic search: once you are matched and the countdown runs, the second player closes the tab. The countdown must stop, and the game must not start with someone who is gone. On a rematch after the opponent left, the host must see “At least two players are needed.” instead of starting a game alone.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/roomSession.svelte.test.ts',
@@ -196,8 +197,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_18',
 			category: { uk: 'Коли щось не так', en: 'When something breaks' },
 			text: {
-				uk: 'Партія на трьох: один гравець іде зі сторінки гри на головну й у смузі «Вас чекають у грі» натискає «Вийти назовсім». У решти його черга мусить більше НЕ приходити: хід одразу переходить до наступного, без півтори хвилини чекання й без «Забрати хід».',
-				en: 'A game of three: one player goes from the game page to the main page and presses “Leave for good” in the “You are awaited” bar. The others must NOT get that player turn any more: the move passes to the next one at once, with no ninety-second wait and no “Take the turn”.'
+				uk: 'Партія на трьох: один гравець іде зі сторінки гри на головну й у смузі «Вас чекають у грі» натискає «Вийти з кімнати». У решти його черга мусить більше НЕ приходити: хід одразу переходить до наступного, без півтори хвилини чекання й без «Забрати хід».',
+				en: 'A game of three: one player goes from the game page to the main page and presses “Leave the room” in the “You are expected in the game” bar. The others must NOT get that player’s turn any more: the move passes to the next one at once, with no ninety-second wait and no “Take the turn”.'
 			},
 			coverage: 'manual',
 			testid: 'awaited-room-leave-btn'
@@ -240,8 +241,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_30',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {
-				uk: 'Виберіть у формі входу аватарку й перезавантажте сторінку переліку кімнат. Плитка мусить показувати цілий значок, який ви вибрали, — без кружечків чи ліній від іншого значка. Повторіть із трьома різними значками.',
-				en: 'Pick an avatar in the entry form and reload the room list page. The tile must show the whole icon you picked — with no circles or lines from another icon. Repeat with three different icons.'
+				uk: 'На сторінці «Грати онлайн» виберіть аватарку й перезавантажте сторінку. Плитка мусить показувати цілий значок, який ви вибрали, — без кружечків чи ліній від іншого значка. Повторіть із трьома різними значками.',
+				en: 'On the «Play online» page pick an avatar and reload the page. The tile must show the whole icon you picked — with no circles or lines from another icon. Repeat with three different icons.'
 			},
 			coverage: 'covered',
 			test: 'tests/icon-hydration.spec.ts',
@@ -256,8 +257,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_21',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {
-				uk: 'Удвох на двох пристроях виберіть у формі входу ОДНАКОВУ аватарку — той самий значок і колір — і зайдіть в одну кімнату. Хто зайшов другим, мусить отримати іншу плитку й коротке пояснення; у того, хто зайшов першим, аватарка лишається своя. На обох екранах біля кожного імені мусить стояти та сама плитка, що й на іншому.',
-				en: 'Two people on two devices pick the SAME avatar in the entry form — the same icon and colour — and enter one room. Whoever entered second must get another tile and a short explanation; the one who entered first keeps their own. On both screens every name must have the same tile as on the other screen.'
+				uk: 'Удвох на двох пристроях виберіть на сторінці «Грати онлайн» ОДНАКОВУ аватарку — той самий значок і колір — і зайдіть в одну кімнату. Хто зайшов другим, мусить отримати іншу плитку й коротке пояснення; у того, хто зайшов першим, аватарка лишається своя. На обох екранах біля кожного імені мусить стояти та сама плитка, що й на іншому.',
+				en: 'Two people on two devices pick the SAME avatar on the «Play online» page — the same icon and colour — and enter one room. Whoever entered second must get another tile and a short explanation; the one who entered first keeps their own. On both screens every name must have the same tile as on the other screen.'
 			},
 			coverage: 'manual',
 			testid: 'pairs-member-*-item'
@@ -312,8 +313,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_22',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {
-				uk: 'У лобі натисніть плитку біля «Ваша аватарка» під складом. Пари, які вже тримають інші, мусять бути приглушені й не натискатися, а скрінрідер мусить називати, чия це пара. Вибір вільної мусить одразу змінити плитку біля вашого імені — і на екрані іншого гравця теж.',
-				en: 'In the lobby press the tile next to «Your avatar» under the list. Pairs other people already hold must be dimmed and not pressable, and a screen reader must say whose pair it is. Picking a free one must change the tile next to your name at once — on the other player’s screen too.'
+				uk: 'У лобі натисніть плитку біля «Ваша аватарка» під складом. Кольори й значки, які вже тримають інші, мусять бути приглушені й не натискатися, а скрінрідер мусить називати, хто їх тримає. Вибір вільної мусить одразу змінити плитку біля вашого імені — і на екрані іншого гравця теж.',
+				en: 'In the lobby press the tile next to «Your avatar» under the list. Colours and icons other people already hold must be dimmed and not pressable, and a screen reader must say who holds them. Picking a free one must change the tile next to your name at once — on the other player’s screen too.'
 			},
 			coverage: 'manual',
 			testid: 'lobby-avatar-toggle-btn',
@@ -342,7 +343,7 @@ export const onlineTab: BetaTab = {
 			category: { uk: 'Господар кімнати', en: 'The host' },
 			text: {
 				uk: 'Створіть кімнату «Знайди пару», зайдіть у неї з другого пристрою, а на першому закрийте вкладку й зачекайте ~20 с: другий мусить підхопити ведення. Тоді почніть партію з другого — вона мусить початися без жодного повідомлення про помилку, а дошка — бути свіжою, без відкритих карток.',
-				en: 'Create a «Find the pair» room, join it from a second device, then close the tab on the first one and wait ~20 s: the second must take over the lead. Then start the game from the second — it must start without any error message, and the board must be fresh, with no open cards.'
+				en: 'Create a «Find a pair» room, join it from a second device, then close the tab on the first one and wait ~20 s: the second must take over the lead. Then start the game from the second — it must start without any error message, and the board must be fresh, with no open cards.'
 			},
 			coverage: 'manual',
 			testid: 'pairs-start-btn'

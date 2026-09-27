@@ -50,8 +50,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_2',
 			category: { uk: 'Одна програма на всіх', en: 'One programme for everyone' },
 			text: {
-				uk: 'Вимкніть одну гру в наборі перед створенням кімнати. У партії мусять попадатися лише ввімкнені ігри.',
-				en: 'Turn one game off in the set before creating the room. Only the games left on may come up during the match.'
+				uk: 'У лобі кімнати вимкніть одну гру в «Ігри в кімнаті». У партії мусять попадатися лише ввімкнені ігри.',
+				en: 'In the room lobby turn one game off in «Games in this room». Only the games left on may come up during the match.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-board-panel'
@@ -88,8 +88,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_5',
 			category: { uk: 'Табло', en: 'Scoreboard' },
 			text: {
-				uk: 'Відповідайте, поки суперник не відповідає. Дошка мусить зникнути й змінитися рядком «Відповідь прийнято» — далі ви не йдете, доки не відповіли всі або не вийшов час.',
-				en: 'Answer while the opponent does not. The board must disappear and give way to an “answer accepted” line — you do not move on until everyone answers or the time runs out.'
+				uk: 'Відповідайте, поки суперник не відповідає. Дошка з вашою відповіддю мусить лишитися, а замість кнопки «Далі» — зʼявитися рядок «Чекаємо на решту.»; далі ви не йдете, доки не відповіли всі або не вийшов час.',
+				en: 'Answer while the opponent does not. The board with your answer must stay, and the line “Waiting for the others.” must take the place of the “Next” button; you do not move on until everyone answers or the time runs out.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-answered-text'
@@ -98,8 +98,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_6',
 			category: { uk: 'Кімната', en: 'The room' },
 			text: {
-				uk: 'Спробуйте зайти в кімнату «Знайди пару» за її кодом із вікторини. Мусить бути відмова «ця кімната для іншої гри», а не порожній екран.',
-				en: 'Try joining a Memory room by its code from the quiz. It must refuse with “that room is for a different game”, not show an empty screen.'
+				uk: 'Відкрийте адресу кімнати вікторини, підставивши після «room=» код кімнати «Знайди пару». Мусить відкритися «Знайди пару» з цією кімнатою, а не порожній екран чи відмова; «назад» не мусить вертати на адресу вікторини.',
+				en: 'Open a quiz room address with the code of a «Find a pair» room after «room=». «Find a pair» must open with that room — not an empty screen or a refusal; Back must not return to the quiz address.'
 			},
 			coverage: 'manual'
 		},
@@ -107,8 +107,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_7',
 			category: { uk: 'Кімната', en: 'The room' },
 			text: {
-				uk: 'Поверніться назад із партії кнопкою браузера. Мусить відкритися форма входу з переліком кімнат, а не меню «Вікторина».',
-				en: 'Go back from the match with the browser button. The entry form with the room list must open, not the Quiz menu.'
+				uk: 'Поверніться назад із партії кнопкою браузера. Мусить відкритися сторінка «Грати онлайн» з переліком кімнат, а не меню «Вікторина».',
+				en: 'Go back from the match with the browser button. The «Play online» page with the room list must open, not the Quiz menu.'
 			},
 			coverage: 'manual'
 		},
@@ -174,7 +174,7 @@ export const quizOnlineTab: BetaTab = {
 			category: { uk: 'Набір ігор', en: 'The set of games' },
 			text: {
 				uk: 'У лобі кімнати подивіться на «Ігри в кімнаті». У переліку мусить бути ШІСТЬ ігор, серед них дві про те, де живуть тварини — про континенти й про природні зони.',
-				en: 'In the room lobby look at “Games in the room”. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
+				en: 'In the room lobby look at “Games in this room”. The list must have SIX games, two of them about where animals live — one about continents and one about biomes.'
 			},
 			coverage: 'manual',
 			/*
@@ -189,8 +189,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_14',
 			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
 			text: {
-				uk: 'Під час раунду закрийте вкладку другого гравця. У першого мусить з’явитися вікно ПО ЦЕНТРУ, яке перекриває гру, а смуга часу мусить СТАТИ. За 15 секунд відкриється кнопка «Продовжити без нього» — вікно саме НЕ зникає. Натисніть її: партія піде далі, і до часу додасться три секунди.',
-				en: 'During a round, close the second player’s tab. The first player must get a window IN THE CENTRE that covers the game, and the time bar must STOP. After 15 seconds the “Continue without them” button unlocks — the window does NOT close on its own. Press it: the game goes on and three seconds are added.'
+				uk: 'Під час раунду закрийте вкладку другого гравця. У першого мусить з’явитися вікно ПО ЦЕНТРУ, яке перекриває гру, а смуга часу мусить СТАТИ. За 15 секунд відкриється кнопка «Грати далі» — вікно саме НЕ зникає. Натисніть її: партія піде далі, і до часу додасться три секунди.',
+				en: 'During a round, close the second player’s tab. The first player must get a window IN THE CENTRE that covers the game, and the time bar must STOP. After 15 seconds the “Play on” button unlocks — the window does NOT close on its own. Press it: the game goes on and three seconds are added.'
 			},
 			coverage: 'manual',
 			/*
@@ -203,8 +203,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_15',
 			category: { uk: 'Пауза', en: 'Pause' },
 			text: {
-				uk: 'Під час раунду натисніть «Пауза». Смуга часу мусить СТАТИ в обох, і обидва мусять побачити, ХТО поставив паузу. У того, хто ставив, кнопка «Продовжити» є одразу; у другого «грати далі» відкривається лише після відліку.',
-				en: 'During a round press “Pause”. The time bar must STOP for both, and both must see WHO paused. Whoever paused has “Resume” at once; the other gets “go on” only after the countdown.'
+				uk: 'Під час раунду натисніть «Пауза». Смуга часу мусить СТАТИ в обох, і обидва мусять побачити, ХТО поставив паузу. У того, хто ставив, кнопка «Продовжити» є одразу; у другого «Грати далі» відкривається лише після відліку.',
+				en: 'During a round press “Pause”. The time bar must STOP for both, and both must see WHO paused. Whoever paused has “Resume” at once; the other gets “Play on” only after the countdown.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-pause-btn'
@@ -224,8 +224,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_18',
 			category: { uk: 'Набір ігор', en: 'The set of games' },
 			text: {
-				uk: 'Уже в кімнаті, до початку партії, змініть набір ігор. Другий гравець мусить побачити зміну в себе; сам він набір змінити НЕ мусить — правити його може лише той, хто кімнату створив.',
-				en: 'Already in the room, before the game starts, change the set of games. The other player must see the change; they must NOT be able to change the set themselves — only whoever created the room can.'
+				uk: 'Уже в кімнаті, до початку партії, змініть набір ігор. Другий гравець мусить побачити зміну в себе; сам він набір змінити НЕ мусить — правити його може лише господар (спершу — той, хто кімнату створив).',
+				en: 'Already in the room, before the game starts, change the set of games. The other player must see the change; they must NOT be able to change the set themselves — only the host can (at first whoever created the room).'
 			},
 			negative: true,
 			coverage: 'manual',
@@ -257,8 +257,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_30',
 			category: { uk: 'Раунд', en: 'The round' },
 			text: {
-				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. Приблизно за хвилину (межа «Повільно» цієї гри) у того, хто відповів, мусить зʼявитися вікно «Ще не вибрали відповідь:» з імʼям другого й кнопкою «Грати далі». Натиск — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
-				en: 'In “No limit”, answer on one device and do nothing on the other. After about a minute (this game’s “Slow” limit) the one who answered must see a “Have not chosen an answer yet:” window with the other player’s name and a “Keep playing” button. Pressing it must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
+				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. За 18–50 секунд, залежно від гри (межа «Повільно» цієї гри), у того, хто відповів, мусить зʼявитися вікно «Ще не вибрали відповідь:» з імʼям другого й кнопкою «Грати далі». Натиск — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
+				en: 'In “No limit”, answer on one device and do nothing on the other. After 18–50 seconds, depending on the game (its “Slow” limit), the one who answered must see a “Have not chosen an answer yet:” window with the other player’s name and a “Play on” button. Pressing it must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-away-panel'
@@ -273,7 +273,7 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_20',
 			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
 			text: {
-				uk: 'Посеред раунду вимкніть мережу на пристрої господаря й зачекайте пʼятнадцять секунд. У нього мусить бути смуга «немає звʼязку» — і НЕ мусить бути ні вікна «Чекаємо: <його імʼя>», ні кнопки «прибрати» навпроти себе. Другий гравець тим часом бачить, що чекають господаря.',
+				uk: 'Посеред раунду вимкніть мережу на пристрої господаря й зачекайте пʼятнадцять секунд. У нього мусить бути смуга «немає звʼязку» — і НЕ мусить бути ні вікна «Чекаємо: <його імʼя>», ні кнопки «Виключити» навпроти себе. Другий гравець тим часом бачить, що чекають господаря.',
 				en: 'In the middle of a round turn off the network on the host device and wait fifteen seconds. The host must get the “no connection” bar — and must NOT get a “Waiting: <their own name>” window or a “remove” button next to themselves. Meanwhile the other player sees that the host is being waited for.'
 			},
 			negative: true,
@@ -284,8 +284,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_21',
 			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
 			text: {
-				uk: 'Посеред раунду вимкніть мережу в гостя. Коли в господаря скінчиться відлік, натисніть «Прибрати» навпроти гостя, а тоді поверніть гостеві мережу. Гість мусить побачити «Господар прибрав вас із кімнати» й опинитися на формі входу, а не на дошці, де кожна відповідь падає з «Сервер не дозволив цю дію».',
-				en: 'In the middle of a round turn off the guest network. When the host countdown runs out, press “Remove” next to the guest, then give the guest the network back. The guest must see “The host removed you from the room” and land on the entry form, not on a board where every answer fails with “The server did not allow this action”.'
+				uk: 'Посеред раунду вимкніть мережу в гостя. Коли в господаря скінчиться відлік, натисніть «Виключити» навпроти гостя, а тоді поверніть гостеві мережу. Гість мусить побачити «Господар прибрав вас із кімнати» й опинитися на сторінці «Грати онлайн», а не на дошці, де кожна відповідь падає з «Сервер не дозволив цю дію».',
+				en: 'In the middle of a round turn off the guest’s network. When the host’s countdown runs out, press “Remove” next to the guest, then give the guest the network back. The guest must see “The host removed you from the room” and land on the «Play online» page, not on a board where every answer fails with “The server refused this action.”'
 			},
 			coverage: 'manual',
 			testid: 'quiz-away-*-btn'
@@ -300,7 +300,7 @@ export const quizOnlineTab: BetaTab = {
 			category: { uk: 'Зниклий гравець', en: 'A player who vanished' },
 			text: {
 				uk: 'Посеред раунду перезавантажте сторінку господаря. У гостя смуга часу мусить стати, поки господаря немає, і піти далі, коли він повернеться. Відповідайте гостем уже ПІСЛЯ того, як минула б звичайна межа часу: відповідь мусить зарахуватися з очками, а табло цього раунду — показатися обом.',
-				en: 'In the middle of a round reload the host page. On the guest side the time bar must stop while the host is gone and move on when the host is back. Answer as the guest AFTER the usual time limit would have passed: the answer must count with points, and this round scoreboard must show for both.'
+				en: 'In the middle of a round reload the host’s page. On the guest side the time bar must stop while the host is gone and move on when the host is back. Answer as the guest AFTER the usual time limit would have passed: the answer must count with points, and this round’s scoreboard must show for both.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-round-progress'
@@ -338,7 +338,7 @@ export const quizOnlineTab: BetaTab = {
 			category: { uk: 'Фінал', en: 'The final' },
 			text: {
 				uk: 'Дограйте партію до кінця. Після останнього раунду мусить одразу зʼявитися ВЕЛИКЕ табло «Гру завершено!» з «+балами» останнього раунду й місцями — без проміжного «Наступний раунд» і без маленької панелі після нього. Кнопки «Грати знову» й «Закрити кімнату» за кілька секунд мусять ожити; у гостя під табло — «Чекаємо, доки лідер почне нову партію.»',
-				en: 'Play the game to the end. Right after the last round a BIG “Game over!” scoreboard must appear with the last round’s “+points” and the places — with no “Next round” step and no small panel after it. The “Play again” and “Close room” buttons must come alive within a few seconds; a guest sees “Waiting for the host to start a new game.” under the scoreboard.'
+				en: 'Play the game to the end. Right after the last round a BIG “Game over!” scoreboard must appear with the last round’s “+points” and the places — with no “Next round” step and no small panel after it. The “Play again” and “Close the room” buttons must come alive within a few seconds; a guest sees “Waiting for the host to start a new game.” under the scoreboard.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-over-panel'
@@ -392,7 +392,7 @@ export const quizOnlineTab: BetaTab = {
 			category: { uk: 'Фінал', en: 'The final' },
 			text: {
 				uk: 'Дограйте вікторину удвох, а тоді на пристрої гостя закрийте вкладку. У господаря замість «Грати знову» мусить стояти «Потрібні щонайменше двоє гравців.», а «Закрити кімнату» — лишитися.',
-				en: 'Play a quiz to the end with two players, then close the tab on the guest device. Instead of «Play again» the host must see «At least two players are needed.», and «Close room» must stay.'
+				en: 'Play a quiz to the end with two players, then close the tab on the guest device. Instead of «Play again» the host must see «At least two players are needed.», and «Close the room» must stay.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/components/quiz/QuizRoom.final.test.ts',

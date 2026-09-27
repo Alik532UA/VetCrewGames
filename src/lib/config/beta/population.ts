@@ -3,7 +3,7 @@ import type { BetaTab } from '../betaChecks';
 /** «Скільки нас?» — тварин треба поставити в порядку чисельності. */
 export const populationTab: BetaTab = {
 	id: 'population',
-	title: { uk: 'Скільки нас?', en: 'How many of us?' },
+	title: { uk: 'Кого більше?', en: 'Who is more?' },
 	routes: ['game-population'],
 	checks: [
 		{
@@ -61,7 +61,7 @@ export const populationTab: BetaTab = {
 			category: { uk: 'Числа', en: 'The numbers' },
 			text: {
 				uk: 'Натисніть «Перевірити» й придивіться до чисел чисельності — до перевірки їх не показують. Велике число мусить бути округлене зі словом — «~1,2 млн», «~500 тис» — і слово мусить бути мовою сторінки, а не злитим рядком цифр.',
-				en: 'Press «Check» and look at the population figures — they are not shown before that. A large number must be rounded with a word — «~1.2 M», «~500 K» — and that word must be in the pages language, not one long run of digits.'
+				en: 'Press «Check» and look at the population figures — they are not shown before that. A large number must be rounded with a word — «~1.2 million», «~500 thousand» — and that word must be in the pages language, not one long run of digits.'
 			},
 			coverage: 'testable',
 			testid: 'population-check-btn'

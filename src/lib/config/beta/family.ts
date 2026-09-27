@@ -3,15 +3,15 @@ import type { BetaTab } from '../betaChecks';
 /** «Хто наша родина» — вибрати родича названої тварини й прочитати чому. */
 export const familyTab: BetaTab = {
 	id: 'family',
-	title: { uk: 'Хто наша родина', en: 'Who are our relatives' },
+	title: { uk: 'Хто з іншої родини?', en: 'Who is from another family?' },
 	routes: ['game-family'],
 	checks: [
 		{
 			id: 'family_1',
 			category: { uk: 'Питання', en: 'The question' },
 			text: {
-				uk: 'Питання мусить називати тварину, а кнопки — можливих родичів. З екрана мусить бути зрозуміло, що саме від вас хочуть.',
-				en: 'The question must name an animal and the buttons must offer possible relatives. The screen must make it clear what is being asked.'
+				uk: 'Над чотирма тваринами мусить стояти завдання знайти ту, що з іншої біологічної групи. З екрана мусить бути зрозуміло, що саме від вас хочуть.',
+				en: 'Above four animals the task must say to find the one from another biological group. The screen must make it clear what is being asked.'
 			},
 			coverage: 'manual',
 			testid: 'family-prompt-text'
@@ -42,8 +42,8 @@ export const familyTab: BetaTab = {
 			id: 'family_4',
 			category: { uk: 'Пояснення', en: 'Explanations' },
 			text: {
-				uk: 'Пояснення мусить говорити саме про тих двох тварин, які на екрані, — а не про якихось інших.',
-				en: 'The explanation must be about the two animals actually on screen — not about some others.'
+				uk: 'Пояснення мусить говорити саме про тих тварин, які на екрані, — а не про якихось інших.',
+				en: 'The explanation must be about the animals actually on screen — not about some others.'
 			},
 			coverage: 'manual',
 			testid: 'family-explanation-text'
@@ -62,11 +62,11 @@ export const familyTab: BetaTab = {
 			id: 'family_6',
 			category: { uk: 'Раунди', en: 'Rounds' },
 			text: {
-				uk: 'Пройдіть десять раундів. Та сама тварина в питанні не мусить трапитися двічі за партію.',
-				en: 'Play ten rounds. The same animal must not appear in the question twice in one game.'
+				uk: 'Пройдіть десять раундів. Той самий набір із чотирьох тварин не мусить трапитися двічі за партію.',
+				en: 'Play ten rounds. The same set of four animals must not come up twice in one game.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/controllers/quizSeed.test.ts',
+			test: 'src/lib/controllers/familyGame.svelte.test.ts',
 			negative: true
 		},
 		{
@@ -83,8 +83,8 @@ export const familyTab: BetaTab = {
 			id: 'family_8',
 			category: { uk: 'Кінець партії', en: 'The end' },
 			text: {
-				uk: 'Наприкінці мусить бути видно, скільки правильних відповідей з десяти, і спосіб почати знову.',
-				en: 'At the end it must show how many of the ten answers were right, and a way to start again.'
+				uk: 'Наприкінці мусить бути видно рахунок — по 3 очки за кожну правильну відповідь — і спосіб почати знову.',
+				en: 'At the end it must show the score — 3 points per right answer — and a way to start again.'
 			},
 			coverage: 'manual'
 		},

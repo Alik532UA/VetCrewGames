@@ -127,3 +127,44 @@ test('після повного завантаження кожен значок
 
 	expect(broken, 'значки, змішані з пререндереними під час гідрації').toEqual([]);
 });
+
+/**
+ * Решта тем і ще два значки аватарки — на одній сторінці, де видно обидва.
+ *
+ * Обхід усіх сторінок вище йде для одного стану, а суміш залежить від ПАРИ «що в
+ * пререндері — що в клієнта»: у кожного значка своя форма вузлів, і збіг тегів в одній парі
+ * нічого не каже про іншу. Разом з обходом це три теми з чотирьох (темна — сама пререндер) і
+ * три різні аватарки — те, що обіцяють пункти чекліста common_31 і online_30.
+ */
+const MORE = [
+	{ theme: 'winter', avatar: 'cat:teal', themeIcon: 'snowflake', avatarIcon: 'cat' },
+	{ theme: 'orange-purple', avatar: 'fish:red', themeIcon: 'leaf', avatarIcon: 'fish' }
+];
+
+for (const state of MORE) {
+	test(`тема ${state.theme} і аватарка ${state.avatar}: значки цілі після завантаження`, async ({
+		page
+	}) => {
+		await page.addInitScript(
+			([theme, avatar]) => {
+				window.localStorage.setItem('vetcrewgames_theme', theme);
+				window.localStorage.setItem('vetcrewgames_pairs.avatar', avatar);
+			},
+			[state.theme, state.avatar] as const
+		);
+		await reduceMotion(page);
+		await page.goto('/VetCrewGames/online/');
+		await settlePage(page);
+
+		const drawn = await drawnIcons(page);
+		const shown = (where: string) =>
+			drawn.find((icon) => icon.visible && icon.where === where)?.name;
+		expect(shown('header-theme-btn')).toBe(state.themeIcon);
+		expect(shown('pairs-avatar-toggle-btn')).toBe(state.avatarIcon);
+		const broken = drawn.flatMap((icon) => {
+			const problem = difference(icon);
+			return problem ? [`${icon.where} lucide-${icon.name}: ${problem}`] : [];
+		});
+		expect(broken, 'значки, змішані з пререндереними під час гідрації').toEqual([]);
+	});
+}

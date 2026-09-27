@@ -88,7 +88,7 @@ export const hubTab: BetaTab = {
 			category: { uk: 'Підключитися', en: 'Joining' },
 			text: {
 				uk: 'Натисніть «Підключитися», введіть код кімнати «Знайди пару» й натисніть «Підключитися» у вікні. Мусить відкритися саме «Знайди пару» — без вибору гри й без напису «Ця кімната для іншої гри».',
-				en: 'Press «Join», enter the code of a «Find a pair» room and press «Join» in the window. «Find a pair» itself must open — with no game choice and no «This room is for another game».'
+				en: 'Press «Join», enter the code of a «Find a pair» room and press «Join» in the window. «Find a pair» itself must open — with no game choice and no «That room is for a different game.»'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/onlineHub.svelte.test.ts',
@@ -137,8 +137,8 @@ export const hubTab: BetaTab = {
 			id: 'hub_11',
 			category: { uk: 'Підключитися', en: 'Joining' },
 			text: {
-				uk: 'На телефоні натисніть «Підключитися» й торкніться поля коду. Системна клавіатура НЕ мусить зʼявитися; цифри мусять набиратися клавішами вікна, а клавіша зі стрілкою — прибирати останню.',
-				en: 'On a phone press «Join» and tap the code field. The system keyboard must NOT appear; digits must be typed with the window keys, and the arrow key must remove the last one.'
+				uk: 'На телефоні натисніть «Підключитися» й торкніться поля коду. Системна клавіатура НЕ мусить зʼявитися; цифри мусять набиратися клавішами вікна, а клавіша стирання — прибирати останню.',
+				en: 'On a phone press «Join» and tap the code field. The system keyboard must NOT appear; digits must be typed with the window keys, and the erase key must remove the last one.'
 			},
 			coverage: 'manual',
 			testid: 'online-key-*-btn',

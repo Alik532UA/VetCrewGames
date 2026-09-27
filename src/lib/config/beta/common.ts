@@ -83,8 +83,8 @@ export const commonTab: BetaTab = {
 			id: 'common_25',
 			category: { uk: 'Акаунт', en: 'Account' },
 			text: {
-				uk: 'Натисніть іконку людини в шапці — між прапором мови й кнопкою повного екрана. Мусить відкритися сторінка акаунта тією ж мовою, що й поточна сторінка.',
-				en: 'Press the person icon in the header — between the language flag and the fullscreen button. The account page must open in the same language as the current page.'
+				uk: 'Натисніть свою аватарку в шапці — між прапором мови й кнопкою повного екрана. Мусить відкритися сторінка акаунта тією ж мовою, що й поточна сторінка.',
+				en: 'Press your avatar tile in the header — between the language flag and the fullscreen button. The account page must open in the same language as the current page.'
 			},
 			coverage: 'manual',
 			testid: 'header-account-link'
@@ -236,8 +236,8 @@ export const commonTab: BetaTab = {
 			id: 'common_18',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Із будь-якої гри натисніть назву сайту в шапці. Мусить відкритися головна тією самою мовою, якою ви грали.',
-				en: 'From inside any game press the site name in the header. The home page must open in the same language you were playing in.'
+				uk: 'Із будь-якої гри натисніть значок будиночка в шапці. Мусить відкритися головна тією самою мовою, якою ви грали.',
+				en: 'From inside any game press the house icon in the header. The home page must open in the same language you were playing in.'
 			},
 			coverage: 'manual',
 			testid: 'header-home-link'
@@ -256,8 +256,8 @@ export const commonTab: BetaTab = {
 			id: 'common_16',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Розгорніть на весь екран і подивіться на фон. Фотографія теми мусить лишитися на місці; фон НЕ мусить стати суцільним кольором. Перевірте в кожній із чотирьох тем — на «Зимовій» і «Помаранчево-фіолетовій» фотографія інша, ніж на решті.',
-				en: 'Go full screen and look at the background. The theme photograph must stay in place; the background must NOT turn into a solid colour. Check in each of the four themes — «Winter» and «Orange-purple» use a different photograph from the other two.'
+				uk: 'Розгорніть на весь екран і подивіться на фон. Фотографія теми мусить лишитися на місці; фон НЕ мусить стати суцільним кольором. Перевірте в кожній із чотирьох тем — у кожної своя фотографія.',
+				en: 'Go full screen and look at the background. The theme photograph must stay in place; the background must NOT turn into a solid colour. Check in each of the four themes — each has its own photograph.'
 			},
 			coverage: 'manual',
 			testid: 'header-fullscreen-btn',
@@ -360,8 +360,8 @@ export const commonTab: BetaTab = {
 			id: 'common_20',
 			category: { uk: 'Доступність', en: 'Accessibility' },
 			text: {
-				uk: 'Відкрийте будь-яке модальне вікно й пройдіть Tab-ом п’ять-шість кроків. Фокус мусить лишатися ВСЕРЕДИНІ вікна й не виходити на сторінку під ним; Escape мусить закривати вікно й повертати фокус на кнопку, якою його відкрили.',
-				en: 'Open any modal and walk five or six Tab steps. Focus must stay INSIDE the dialog and never reach the page behind it; Escape must close it and return focus to the button that opened it.'
+				uk: 'У заповіднику дочекайтеся вікна «Потрібен лікар» (хвора тварина без ветеринара) і пройдіть Tab-ом п’ять-шість кроків. Фокус мусить лишатися ВСЕРЕДИНІ вікна й не виходити на гру під ним, а після вибору — повернутися на гру.',
+				en: 'In the reserve wait for the «A vet is needed» window (a sick animal with no vet) and walk five or six Tab steps. Focus must stay INSIDE the window and never reach the game behind it, and go back to the game after the choice.'
 			},
 			coverage: 'manual'
 		},
@@ -369,8 +369,8 @@ export const commonTab: BetaTab = {
 			id: 'common_21',
 			category: { uk: 'Доступність', en: 'Accessibility' },
 			text: {
-				uk: 'Увімкніть екранний читач (Windows: Ctrl+Win+Enter) і пройдіть шапку. Кожна кнопка мусить називатися тим, що вона робить — «Тема», «Мова», «На весь екран». Назви виду «кнопка», «зображення» або сам символ іконки означають дефект.',
-				en: 'Turn on a screen reader (Windows: Ctrl+Win+Enter) and go through the header. Each button must be announced by what it does — «Theme», «Language», «Full screen». Announcements like «button», «image» or the icon character itself mean a defect.'
+				uk: 'Увімкніть екранний читач (Windows: Ctrl+Win+Enter) і пройдіть шапку. Кожна кнопка мусить називатися тим, що вона робить — «Змінити тему», «Змінити мову», «На весь екран». Назви виду «кнопка», «зображення» або сам символ іконки означають дефект.',
+				en: 'Turn on a screen reader (Windows: Ctrl+Win+Enter) and go through the header. Each button must be announced by what it does — «Change theme», «Change language», «Enter fullscreen». Announcements like «button», «image» or the icon character itself mean a defect.'
 			},
 			coverage: 'manual'
 		},
@@ -397,8 +397,8 @@ export const commonTab: BetaTab = {
 			id: 'common_24',
 			category: { uk: 'Теми', en: 'Themes' },
 			text: {
-				uk: 'У кожній із чотирьох тем відкрийте список тем і список мов у шапці. Обраний пункт мусить бути видно як обраний (суцільна пляма акценту), пункт під курсором — як інший, а підпис на обох мусить читатися. Кольори не мусять виглядати брудними чи «болотними».',
-				en: 'In each of the four themes open the theme list and the language list in the header. The selected item must look selected (a solid accent fill), the hovered one must look different, and the label on both must stay readable. The colours must not look muddy.'
+				uk: 'У кожній із чотирьох тем відкрийте список тем і список мов у шапці. Обраний пункт мусить бути видно як обраний (у списку мов — суцільна пляма акценту, у списку тем — суцільна рамка кольору самої теми), пункт під курсором — як інший, а підпис на обох мусить читатися. Кольори не мусять виглядати брудними чи «болотними».',
+				en: 'In each of the four themes open the theme list and the language list in the header. The selected item must look selected (in the language list a solid accent fill, in the theme list a solid ring in the theme’s own colour), the hovered one must look different, and the label on both must stay readable. The colours must not look muddy.'
 			},
 			/*
 			 * ВІДКРИТЕ МЕНЮ — ЗА ЛЮДИНОЮ, і це названо межею методу, а не забуто.

@@ -3,7 +3,7 @@ import type { BetaTab } from '../betaChecks';
 /** «Що їмо?» — корм треба розкласти тваринам і натиснути «Погодувати». */
 export const feedingTab: BetaTab = {
 	id: 'feeding',
-	title: { uk: 'Що їмо?', en: 'What do we eat?' },
+	title: { uk: 'Що їмо?', en: 'What do they eat?' },
 	routes: ['game-feeding'],
 	checks: [
 		{
@@ -62,8 +62,8 @@ export const feedingTab: BetaTab = {
 			id: 'feeding_6',
 			category: { uk: 'Рахунок', en: 'Score' },
 			text: {
-				uk: 'Порахуйте продукти в раунді. Рахунок за раунд не мусить перевищувати їхньої кількості.',
-				en: 'Count the items of food in the round. The score for that round must not exceed how many there were.'
+				uk: 'Порахуйте продукти в раунді. За раунд — по очку за кожну правильно віддану страву й ще одне за раунд без жодної помилки; більше — ні.',
+				en: 'Count the items of food in the round. A round gives one point per correctly placed item plus one more for a round without a single mistake — never more.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/feedingGame.svelte.test.ts',
@@ -82,11 +82,11 @@ export const feedingTab: BetaTab = {
 			id: 'feeding_8',
 			category: { uk: 'Раунди', en: 'Rounds' },
 			text: {
-				uk: 'Пройдіть партію до кінця. Тварини й набори корму мусять змінюватися щораунду, а наприкінці мусить бути видно підсумок.',
-				en: 'Play a game to the end. The animals and the sets of food must change every round, and a summary must appear at the end.'
+				uk: 'Пройдіть партію до кінця. Тварини й набори корму мусять змінюватися щораунду й не повторюватися за партію.',
+				en: 'Play a game to the end. The animals and the sets of food must change every round and not repeat within a game.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/controllers/quizSeed.test.ts'
+			test: 'src/lib/controllers/feedingGame.svelte.test.ts'
 		},
 		{
 			// ПЕРЕГЛЯД МИНУЛИХ ПИТАНЬ (прохання автора 2026-09-26). Рівень `testable`, а
@@ -96,7 +96,7 @@ export const feedingTab: BetaTab = {
 			id: 'feeding_9',
 			category: { uk: 'Перегляд питань', en: 'Reviewing questions' },
 			text: {
-				uk: 'Нагодуйте два раунди й натисніть перший сегмент смужки вгорі. Мусить відкритися той самий стіл: ті самі тварини й страви там, куди ви їх поклали, із присудами; перекласти страву там не можна, а «Годувати» немає. Під підсумком — перелік усіх питань.',
+				uk: 'Нагодуйте два раунди й натисніть перший сегмент смужки вгорі. Мусить відкритися той самий стіл: ті самі тварини й страви там, куди ви їх поклали, із присудами; перекласти страву там не можна, а «Погодувати» немає. Під підсумком — перелік усіх питань.',
 				en: 'Feed two rounds and press the first segment of the bar on top. The same table must open: the same animals and the food where you put it, with the verdicts; no food can be moved there and there is no «Feed». Under the summary there is a list of every question.'
 			},
 			coverage: 'testable',

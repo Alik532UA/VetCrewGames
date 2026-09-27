@@ -6,14 +6,14 @@ import type { BetaTab } from '../betaChecks';
  */
 export const habitatTab: BetaTab = {
 	id: 'habitat',
-	title: { uk: 'Де живемо?', en: 'Where do we live?' },
+	title: { uk: 'Де живем?', en: 'Where do they live?' },
 	routes: ['game-habitat/continents', 'game-habitat/biomes'],
 	checks: [
 		{
 			id: 'habitat_1',
 			category: { uk: 'Вибір режиму', en: 'Choosing a mode' },
 			text: {
-				uk: 'Виберіть «Континенти», тоді «Біоми». Адреса мусить змінюватися, і посиланням на конкретний режим мусить бути можливо поділитися.',
+				uk: 'Виберіть «Континенти», тоді «Природні зони». Адреса мусить змінюватися, і посиланням на конкретний режим мусить бути можливо поділитися.',
 				en: 'Pick «Continents», then «Biomes». The address must change, and it must be possible to share a link to a particular mode.'
 			},
 			coverage: 'covered',
@@ -32,8 +32,8 @@ export const habitatTab: BetaTab = {
 			id: 'habitat_3',
 			category: { uk: 'Відповідь', en: 'Answering' },
 			text: {
-				uk: 'Виберіть кілька варіантів одночасно. Позначити більше одного мусить бути можливо, і зарахувати мусить лише повний правильний набір.',
-				en: 'Select several options at once. Marking more than one must be possible, and only the complete correct set may count.'
+				uk: 'Виберіть кілька варіантів одночасно. Позначити більше одного мусить бути можливо. Правильно — лише повний набір без зайвих; неповний зараховується частково, по очку за кожне влучання; зайвий варіант робить відповідь неправильною й забирає одне влучання.',
+				en: 'Select several options at once. Marking more than one must be possible. Only the full set with nothing extra is correct; an incomplete one counts as partial, a point per hit; an extra option makes the answer wrong and cancels one hit.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/habitatGame.svelte.test.ts'
@@ -78,7 +78,7 @@ export const habitatTab: BetaTab = {
 				en: 'Play ten rounds. The same animal must not come up twice in one game.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/controllers/quizSeed.test.ts',
+			test: 'src/lib/controllers/habitatGame.svelte.test.ts',
 			negative: true
 		},
 		{

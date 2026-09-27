@@ -3,7 +3,7 @@ import type { BetaTab } from '../betaChecks';
 /** «Міф чи правда» — твердження про тварин і дві кнопки. */
 export const mythTab: BetaTab = {
 	id: 'myth',
-	title: { uk: 'Міф чи правда', en: 'Myth or truth' },
+	title: { uk: 'Правда чи міф?', en: 'Fact or Myth?' },
 	routes: ['game-mythbusters'],
 	checks: [
 		{
@@ -41,8 +41,8 @@ export const mythTab: BetaTab = {
 			id: 'myth_4',
 			category: { uk: 'Відповідь', en: 'Answering' },
 			text: {
-				uk: 'Порахуйте свої правильні відповіді за партію. Рахунок наприкінці мусить дорівнювати саме цьому числу.',
-				en: 'Count your correct answers over the game. The final score must equal exactly that number.'
+				uk: 'Порахуйте свої правильні відповіді за партію. Рахунок наприкінці мусить дорівнювати цьому числу, помноженому на 3: кожна правильна відповідь дає 3 очки.',
+				en: 'Count your correct answers over the game. The final score must equal that number times 3: each correct answer gives 3 points.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/mythGame.svelte.test.ts'
@@ -75,7 +75,7 @@ export const mythTab: BetaTab = {
 				en: 'Play ten rounds. The same statement must not come up twice in one game.'
 			},
 			coverage: 'covered',
-			test: 'src/lib/controllers/quizSeed.test.ts',
+			test: 'src/lib/controllers/mythGame.svelte.test.ts',
 			negative: true
 		},
 		{

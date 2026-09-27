@@ -308,7 +308,7 @@
 		</p>
 		<button
 			type="button"
-			class="action"
+			class="action btn-secondary"
 			onclick={checkRules}
 			aria-disabled={rulesState === 'checking'}
 			data-testid="beta-rules-check-btn"
@@ -318,7 +318,12 @@
 	</section>
 
 	<div class="actions">
-		<button type="button" class="action" onclick={copyReport} data-testid="beta-report-btn">
+		<button
+			type="button"
+			class="action btn-secondary"
+			onclick={copyReport}
+			data-testid="beta-report-btn"
+		>
 			{#if copied}
 				<Check class="action-icon" />
 				{@html formatFont(t('beta.copied'))}
@@ -335,7 +340,9 @@
 		-->
 		<button
 			type="button"
-			class="action action--danger"
+			class="action"
+			class:btn-secondary={!betaProgress.clearArmed}
+			class:btn-accent={betaProgress.clearArmed}
 			class:action--armed={betaProgress.clearArmed}
 			onclick={() => betaProgress.requestClear()}
 			data-testid="beta-clear-btn"
@@ -530,39 +537,29 @@
 		padding-top: 6px;
 	}
 
+	/*
+	 * Дії сторінки — кнопками (`.btn-secondary` у global.css), а не рамками на панелі: та
+	 * сама мова «кнопка ≠ панель», що в усьому застосунку (прохання автора 2026-09-27).
+	 */
 	.action {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		min-height: 44px;
 		padding: 0 14px;
-		border: 2px solid var(--color-border);
 		border-radius: 6px;
-		background-color: var(--color-bg-surface);
-		color: var(--color-text);
 		font: inherit;
-		cursor: pointer;
-	}
-
-	.action:hover {
-		border-color: var(--color-accent);
 	}
 
 	/*
-	 * Зведена кнопка стирання (§ 6.3). Стан НЕ лише кольором: рамка червона,
-	 * напис напівжирний, і сам текст кнопки міняється на питання — три
+	 * Зведена кнопка стирання (§ 6.3). Стан НЕ лише кольором: тло стає акцентним
+	 * (`.btn-accent`), напис напівжирний, і сам текст кнопки міняється на питання — три
 	 * незалежні ознаки, тож зміну видно й тому, хто кольори не розрізняє
-	 * (ACCESSIBILITY-v9).
+	 * (ACCESSIBILITY-v9). Доти тут був червоний `#ef4444` на світлому тлі — 3,3:1 у
+	 * зимовій темі, тобто нижче межі для тексту.
 	 */
 	.action--armed {
-		border-color: #ef4444;
-		color: #ef4444;
 		font-weight: 700;
-	}
-
-	.action--danger:hover {
-		border-color: #ef4444;
-		color: #ef4444;
 	}
 
 	.action :global(.action-icon) {

@@ -26,11 +26,10 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_2',
 			category: { uk: 'Початок партії', en: 'Starting out' },
 			text: {
-				uk: 'Відкрийте дві різні ділянки, скажімо ліс і савану. Це дві окремі партії: гроші й тварини однієї не мусять зʼявлятися в другій.',
-				en: 'Open two different sites, say the forest and the savanna. These are two separate games: money and animals from one must not show up in the other.'
+				uk: 'Відкрийте дві різні ділянки, скажімо ліс і савану. Гроші, «Користь планеті» й репутація спільні для всього фонду, а тварини, вольєри й персонал — у кожної ділянки свої: тварини лісу не мусять зʼявитися в савані.',
+				en: 'Open two different sites, say the forest and the savanna. Money, «Good for the planet» and reputation are shared by the whole fund, while animals, enclosures and staff belong to each site: forest animals must not show up in the savanna.'
 			},
-			coverage: 'covered',
-			test: 'src/lib/reserve/save.test.ts',
+			coverage: 'manual',
 			negative: true
 		},
 		{
@@ -46,8 +45,8 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_4',
 			category: { uk: 'Тварини й вольєри', en: 'Animals and enclosures' },
 			text: {
-				uk: 'Порівняйте, скільки місця у вольєрі займають слон, орел і мишка. Різниця мусить бути помітна на око, і жодна тварина не мусить губитися точкою у своєму вольєрі.',
-				en: 'Compare how much of an enclosure an elephant, an eagle and a mouse take up. The difference must be visible to the eye, and no animal may shrink to a dot inside its own enclosure.'
+				uk: 'Порівняйте, скільки місця у вольєрі займають слон, орел і їжак. Різниця мусить бути помітна на око, і жодна тварина не мусить губитися точкою у своєму вольєрі.',
+				en: 'Compare how much of an enclosure an elephant, an eagle and a hedgehog take up. The difference must be visible to the eye, and no animal may shrink to a dot inside its own enclosure.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/components/reserve/anatomy.test.ts'
@@ -129,8 +128,8 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_12',
 			category: { uk: 'Збереження', en: 'Saving' },
 			text: {
-				uk: 'Натисніть «Почати все заново», тоді перезавантажте сторінку. Гроші мусять бути початковими, а вольєри порожніми — стара партія не мусить повернутися.',
-				en: 'Press «Start over», then reload the page. The money must be back to its starting amount and the enclosures empty — the old game must not come back.'
+				uk: 'Двічі натисніть «Почати всі заново» (перший натиск лише питає «Точно стерти всі заповідники?»), тоді перезавантажте сторінку. Гроші мусять бути початковими, а вольєри порожніми — стара партія не мусить повернутися.',
+				en: 'Press «Start them all over» twice (the first press only asks «Really erase every reserve?»), then reload the page. The money must be back to its starting amount and the enclosures empty — the old game must not come back.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/reserve.svelte.test.ts',
@@ -161,8 +160,8 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_15',
 			category: { uk: 'Сповіщення подій', en: 'Event notifications' },
 			text: {
-				uk: 'Візьміть врятовану тварину без ветеринара й пустіть час на ×5. Коли здоровʼя дійде нуля, ЗВЕРХУ ЛІВОРУЧ мусить прийти сповіщення «Тварина померла від хвороби» — тварина не має зникати молча. Найміть ветеринара до іншої: коли вилікується, мусить прийти «Тварина одужала».',
-				en: 'Take a rescued animal without a vet and run time at ×5. When health reaches zero a notification «An animal died of illness» must appear TOP LEFT — the animal must not vanish silently. Hire a vet for another one: when it recovers, «An animal has recovered» must appear.'
+				uk: 'Візьміть врятовану тварину без ветеринара й пустіть час на ×5. Коли здоровʼя дійде нуля, ЗВЕРХУ ПРАВОРУЧ мусить прийти сповіщення «Тварина померла від хвороби» — тварина не має зникати молча. Найміть ветеринара до іншої: коли вилікується, мусить прийти «Тварина одужала».',
+				en: 'Take a rescued animal without a vet and run time at ×5. When health reaches zero a notification «An animal died of illness» must appear TOP RIGHT — the animal must not vanish silently. Hire a vet for another one: when it recovers, «An animal has recovered» must appear.'
 			},
 			coverage: 'manual',
 			testid: 'reserve-card-health'
