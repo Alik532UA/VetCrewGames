@@ -42,7 +42,8 @@
 		 * імпорту не буде (`i18n/reserve/index.ts`).
 		 */
 		void loadReserveText(settings.locale);
-		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, '')));
+		// «Назад» — у «Грати», звідки сюди й приходять (2026-09-27), як у решти ігор.
+		const release = settings.claimHeader('reserve.title', () => goto(langPath(lang, 'play')));
 		game.start();
 
 		/*

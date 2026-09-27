@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { CircleQuestionMark, LayoutGrid } from 'lucide-svelte';
+	import { dev } from '$app/environment';
+	import { CircleQuestionMark, LayoutGrid, TreePine } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -37,5 +38,26 @@
 			<LayoutGrid class="menu-tile__icon" />
 			<span>{@html formatFont(t('menu.game.memory'))}</span>
 		</a>
+
+		<!--
+			ЗАПОВІДНИК — ТУТ, а не в головному меню (прохання автора 2026-09-27: «кнопка
+			„Заповідник“ — в меню сторінки play»). Це теж спосіб грати самому, тож його місце —
+			поруч із вікториною й «Знайди пару».
+
+			І ЛИШЕ В РОБОТІ, як і доти: він ще будується, а кнопка, за якою недороблена гра,
+			псує враження від готових. Умова стоїть на самому пункті, а не навколо меню: решта
+			однакова, і дві копії тих самих посилань розійшлися б на першій правці. Останнім
+			він стоїть навмисно — у продакшні його просто немає, і крок анімації не губиться.
+		-->
+		{#if dev}
+			<a
+				href={langPath(lang, 'reserve')}
+				class="menu-btn menu-btn--game menu-tile anim-stagger-3"
+				data-testid="play-reserve-link"
+			>
+				<TreePine class="menu-tile__icon" />
+				<span>{@html formatFont(t('menu.reserve'))}</span>
+			</a>
+		{/if}
 	</nav>
 </div>

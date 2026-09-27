@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { dev } from '$app/environment';
-	import { CodeXml, Gamepad2, Stethoscope, TreePine, Users } from 'lucide-svelte';
+	import { CodeXml, Gamepad2, Stethoscope, Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -29,12 +28,12 @@
 	 * Тримати два різні меню означало тримати два різні застосунки: те, що автор
 	 * перевіряє руками, і те, що бачать люди.
 	 *
-	 * ## Різниця, яка лишилася, — ОДИН пункт
+	 * ## Різниці більше немає
 	 *
-	 * «Заповідник» ще будується, і кнопка, за якою недороблена гра, псує враження
-	 * від готових. Тому він лишається лише в роботі — рівно доти, доки не буде
-	 * готовий: прибрати `{#if dev}` тоді буде однією правкою, і меню зійдуться
-	 * повністю.
+	 * Останнім пунктом, якого не було в збірці для людей, був «Заповідник». Він
+	 * переїхав у «Грати» (прохання автора 2026-09-27: «кнопка „Заповідник“ — в меню
+	 * сторінки play»), тож головне меню тепер однакове в роботі й у продакшні
+	 * дослівно. Умова «лише в роботі» поїхала разом із ним — див. `play/+page.svelte`.
 	 *
 	 * Адреси при цьому НЕ змінюються й не змінювалися: розділи лишаються за своїми
 	 * URL і в продакшні. Прибирати маршрути означало б ламати посилання, які вже
@@ -82,34 +81,9 @@
 		(`.menu-tiles` у global.css), тож на великому екрані плитка більша, а не порожніша.
 	-->
 	<nav class="menu-tiles">
-		<!--
-			ЗАПОВІДНИК — ЛИШЕ В РОБОТІ, і це остання різниця між двома меню.
-
-			Він ще будується, а кнопка, за якою недороблена гра, псує враження від
-			готових. Умова стоїть на самому пункті, а не навколо всього меню: решта
-			однакова, і тримати дві копії тих самих двох посилань означало б, що
-			наступна правка дійде лише до однієї.
-
-			`anim-stagger-1` лишається за ним і в продакшні: перший крок анімації там
-			просто нікого не показує, тобто меню зʼявляється на вісімдесят мілісекунд
-			пізніше. Прив'язати затримку до порядку означало б обчислювати клас, а
-			разом із ним і `data-testid` — тобто прибрати локатори з очей статичних
-			перевірок (`src/testid-conventions.test.ts` збирає їх із розмітки).
-		-->
-		{#if dev}
-			<a
-				href={langPath(lang, 'reserve')}
-				class="menu-btn menu-btn--game menu-tile anim-stagger-1"
-				data-testid="menu-reserve-link"
-			>
-				<TreePine class="menu-tile__icon" />
-				<span>{@html formatFont(t('menu.reserve'))}</span>
-			</a>
-		{/if}
-
 		<a
 			href={langPath(lang, 'play')}
-			class="menu-btn menu-btn--game menu-tile anim-stagger-2"
+			class="menu-btn menu-btn--game menu-tile anim-stagger-1"
 			data-testid="menu-play-link"
 		>
 			<Gamepad2 class="menu-tile__icon" />
@@ -118,7 +92,7 @@
 
 		<a
 			href={langPath(lang, 'online')}
-			class="menu-btn menu-btn--game menu-tile anim-stagger-3"
+			class="menu-btn menu-btn--game menu-tile anim-stagger-2"
 			data-testid="menu-online-link"
 		>
 			<Users class="menu-tile__icon" />
