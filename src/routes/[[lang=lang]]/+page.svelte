@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
-	import { CodeXml, Gamepad2, Users } from 'lucide-svelte';
+	import { CodeXml, Gamepad2 } from 'lucide-svelte';
+	import UserRoundGroupIcon from '$lib/components/ui/UserRoundGroupIcon.svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -100,7 +101,7 @@
 			class="menu-btn menu-btn--game menu-tile anim-stagger-2"
 			data-testid="menu-online-link"
 		>
-			<Users class="menu-tile__icon" />
+			<UserRoundGroupIcon class="menu-tile__icon" />
 			<span>{@html formatFont(t('menu.playOnline'))}</span>
 		</a>
 
