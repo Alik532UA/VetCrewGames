@@ -98,6 +98,7 @@
 
 	quiz.attach(session);
 	const wait = $derived(quiz.wait);
+	const idle = $derived(quiz.idle);
 
 	onMount(() => {
 		/*
@@ -219,6 +220,8 @@
 			onResume={() => void session.act('quiz resume not written', () => match?.resume())}
 			goOn={match.goOn}
 			onGoOn={() => void session.act('quiz vote not written', () => match?.voteGoOn())}
+			{idle}
+			onNoWait={() => void session.act('quiz nowait not written', () => match?.voteNoWait())}
 			onanswer={answer}
 			onRematch={session.canRematch ? session.rematch : undefined}
 			onClose={() => session.close()}

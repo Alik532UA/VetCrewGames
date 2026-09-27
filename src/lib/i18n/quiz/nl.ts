@@ -28,6 +28,7 @@ export const quiz: Record<string, string> = {
 	'quiz.answered': 'Wachten op de rest.',
 	'quiz.watching': 'Je kijkt mee — antwoorden van toeschouwers tellen niet.',
 	'quiz.awayWait': 'Wachten:',
+	'quiz.idleWait': 'Hebben nog geen antwoord gekozen:',
 	'quiz.pauseBy': 'Pauze door:',
 	'quiz.paceRound': 'Rondetijd',
 	'quiz.paceReveal': 'Tijd voor het antwoord',

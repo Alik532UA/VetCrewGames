@@ -421,6 +421,39 @@ describe('раунд без межі часу', () => {
 		expect(answerPoints(0, 0, hidden, 2 / 3)).toBe(Math.round((2 / 3) * FAST_POINTS));
 	});
 
+	/*
+	 * ХТО НА ЗВʼЯЗКУ, АЛЕ ДУМАЄ ДОВШЕ ЗА ПРИХОВАНУ МЕЖУ (рішення автора 2026-09-27, 5-B):
+	 * решта може не чекати, і раунд іде на табло. Доти такий раунд стояв вічно.
+	 */
+	it('хто думає довше за приховану межу — решта може не чекати, і раунд іде на табло', async () => {
+		const { room, host, stop } = free();
+		host.present = [HOST, GUEST];
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(roundLimitMs(host.programme[0].game, ROUND_PACE.slow) + 1);
+
+		expect(host.everyoneAnswered, 'раунд чекає того, хто думає, — як і має').toBe(false);
+		await host.voteNoWait();
+		expect(host.noWait).toEqual([HOST]);
+		expect(host.everyoneAnswered, 'рішення не чекати не спрацювало').toBe(true);
+		const last = host.answers[0][HOST].at;
+		expect(host.phase(last + HOUR)).toBe('reveal');
+		stop();
+	});
+
+	it('голос до прихованої межі нічого не вирішує', async () => {
+		const { room, host, stop } = free();
+		host.present = [HOST, GUEST];
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(roundLimitMs(host.programme[0].game, ROUND_PACE.slow) / 2);
+
+		await host.voteNoWait();
+		expect(host.noWait).toEqual([]);
+		expect(host.everyoneAnswered).toBe(false);
+		stop();
+	});
+
 	it('того, кого немає онлайн, раунд без межі не чекає', async () => {
 		// Інакше «поки кожен не відповість» означало б «поки не повернеться той, хто
 		// закрив вкладку», тобто, можливо, ніколи.

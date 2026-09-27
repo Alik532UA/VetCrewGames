@@ -66,6 +66,8 @@ export const GAMES = {
 			'src/lib/utils/quizScore.ts',
 			'src/lib/utils/quizHold.ts',
 			'src/lib/utils/awayWait.ts',
+			// Кого чекає раунд «Не обмежений» після прихованої межі (`nowait`).
+			'src/lib/utils/idleWait.ts',
 			'src/lib/config/quizOnline.ts',
 			// Розклад раундів і вибір питань — колода кімнати (прохання автора 2026-09-26).
 			'src/lib/utils/quizDeck.ts',

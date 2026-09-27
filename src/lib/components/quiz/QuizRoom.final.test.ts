@@ -94,6 +94,8 @@ const view = (
 			wait: calm,
 			goOn: [],
 			onGoOn: vi.fn(),
+			idle: { show: false, idle: [], voted: 0, needed: 1, iVoted: false },
+			onNoWait: vi.fn(),
 			onPause: vi.fn(),
 			onResume: vi.fn(),
 			onanswer: vi.fn(),

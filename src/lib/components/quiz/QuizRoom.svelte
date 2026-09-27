@@ -5,6 +5,7 @@
 	import type { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { Pause } from 'lucide-svelte';
 	import type { WaitView } from '$lib/utils/awayWait';
+	import type { IdleView } from '$lib/utils/idleWait';
 	import QuizScores from './QuizScores.svelte';
 	import QuizAway from './QuizAway.svelte';
 	import QuizRound from './QuizRound.svelte';
@@ -63,6 +64,10 @@
 		goOn: string[];
 		/** Мій голос «граємо далі». */
 		onGoOn: () => void;
+		/** Хто ще думає після прихованої межі «Не обмежений» (`utils/idleWait`). */
+		idle: IdleView;
+		/** Мій голос не чекати тих, хто думає. */
+		onNoWait: () => void;
 		/** Поставити паузу. */
 		onPause: () => void;
 		/** Зняти свою паузу. Кнопки не буде, поки пауза не моя (`wait.canResume`). */
@@ -89,6 +94,8 @@
 		wait,
 		goOn,
 		onGoOn,
+		idle,
+		onNoWait,
 		onPause,
 		onResume,
 		onanswer,
@@ -130,6 +137,23 @@
 		pausedBy={wait.pausedBy}
 		onResume={wait.canResume ? onResume : undefined}
 		onkick={amHost ? onkick : undefined}
+	/>
+	<!--
+		ХТО ЩЕ ДУМАЄ — те саме вікно, лише з іншим питанням (рішення автора 2026-09-27, 5-B):
+		«Не обмежений» чекає всіх, і після прихованої межі той, хто вже відповів, бачить, кого
+		чекають, і може не чекати далі. Вікно зниклих, коли воно є, важливіше: воно зупиняє
+		партію, тож поверх нього це питання не ставиться.
+	-->
+	<QuizAway
+		{text}
+		idle
+		away={idle.idle}
+		secondsLeft={0}
+		waiting={idle.show && !wait.hold}
+		voted={idle.voted}
+		needed={idle.needed}
+		iVoted={idle.iVoted}
+		onGoOn={onNoWait}
 	/>
 {/if}
 

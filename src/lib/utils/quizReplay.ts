@@ -21,6 +21,11 @@ export interface QuizLog {
 	answers: Record<number, Record<string, QuizAnswer>>;
 	/** Голоси «грати далі» за раундами. */
 	goOn: Record<number, string[]>;
+	/**
+	 * Голоси НЕ ЧЕКАТИ тих, хто ще думає, за раундами (`idleWait.ts`): лише від того, хто
+	 * вже відповів, і лише після прихованої межі.
+	 */
+	noWait: Record<number, string[]>;
 	/** Скільки стояв кожен раунд — найбільше з того, що записали гравці. */
 	held: Record<number, number>;
 	/**
@@ -52,6 +57,7 @@ export const EMPTY_QUIZ_LOG: QuizLog = {
 	startedAt: {},
 	answers: {},
 	goOn: {},
+	noWait: {},
 	held: {},
 	spentByRound: {},
 	graceSpent: {},
@@ -68,6 +74,11 @@ export interface ReplayOptions {
 	 * відповідей не перевіряється); `NO_LIMIT` — раунд без межі.
 	 */
 	limitOf?: (round: number) => number | undefined;
+	/**
+	 * Коли вже можна не чекати тих, хто думає: межа РАХУНКУ раунду, мс (`scoreLimitFor`).
+	 * `undefined` — невідомо, і голоси `nowait` не рахуються зовсім.
+	 */
+	patienceOf?: (round: number) => number | undefined;
 }
 
 /**
@@ -167,6 +178,7 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 	const pausers: Record<number, Set<string>> = {};
 	const answered: Array<{ round: number; by: string } & QuizAnswer> = [];
 	const holds: Array<{ round: number; by: string; at: number; payload: Move['payload'] }> = [];
+	const noWaitVotes: Array<{ round: number; by: string; at: number }> = [];
 
 	for (const move of ordered) {
 		const at = Number(move.at);
@@ -238,6 +250,13 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 			continue;
 		}
 
+		if (move.type === 'nowait') {
+			// Перевіряє другий прохід: чи автор уже відповів і чи минула межа — обидва
+			// факти залежать від ходів, що можуть лежати в журналі пізніше.
+			if (players.has(move.by)) noWaitVotes.push({ round, by: move.by, at });
+			continue;
+		}
+
 		if (move.type !== 'answer') continue;
 		// Відповідають ГРАВЦІ: глядач партію не грає, і його відповідь доти давала йому
 		// очки, а на кінці — бали за вікторину, у якій він лише дивився (аудит 2026-09-24).
@@ -289,10 +308,32 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		}
 	}
 
+	/*
+	 * «НЕ ЧЕКАТИ ТОГО, ХТО ДУМАЄ» — третім проходом, бо голос чесний лише від того, хто
+	 * вже відповів, і лише після прихованої межі. Хід, дописаний руками раніше, інакше
+	 * забирав би в людини час на роздуми одразу після власної відповіді.
+	 *
+	 * Межу відсувають паузи й «Чекаємо», записані ДО голосу, — як і всі межі раунду, і
+	 * так само, як вікно в `idleWait.ts`: під паузою дошка закрита, і думати нема коли.
+	 * Пізніші не рахуються: інакше чекання після голосу скасовувало б уже чесний голос.
+	 */
+	const noWait: Record<number, string[]> = {};
+	for (const vote of noWaitVotes) {
+		const start = startedAt[vote.round];
+		const patience = options.patienceOf?.(vote.round);
+		if (start === undefined || patience === undefined) continue;
+		if (vote.at < start + patience + heldUntil(timeline[vote.round], vote.at)) continue;
+		const mine = answers[vote.round]?.[vote.by];
+		if (mine === undefined || mine.at > vote.at) continue;
+		const forRound = (noWait[vote.round] ??= []);
+		if (!forRound.includes(vote.by)) forRound.push(vote.by);
+	}
+
 	return {
 		startedAt,
 		answers,
 		goOn,
+		noWait,
 		held,
 		spentByRound,
 		graceSpent,
@@ -381,6 +422,16 @@ interface HoldPoint {
 	ms: number;
 	uid: string | undefined;
 	spent: number;
+}
+
+/** Наскільки чекання, записані до миті `at`, відсунули межі раунду (те саме число, що `held`). */
+function heldUntil(points: readonly HoldPoint[] | undefined, at: number): number {
+	let total = 0;
+	for (const point of points ?? []) {
+		if (point.at > at) break;
+		total = Math.max(total, point.ms);
+	}
+	return total;
 }
 
 /**

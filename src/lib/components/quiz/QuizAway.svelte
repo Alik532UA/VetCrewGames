@@ -98,6 +98,12 @@
 		 * вона там стоїть.
 		 */
 		onkick?: (uid: string) => void;
+		/**
+		 * ВІКНО «ЩЕ НЕ ВИБРАЛИ ВІДПОВІДЬ» замість «Чекаємо» (`utils/idleWait`): ті, кого
+		 * перелічено, на звʼязку, але думають довше за приховану межу «Не обмежений». Відліку
+		 * немає — межа вже минула, — тож «Грати далі» одразу, а прибирати тут нікого.
+		 */
+		idle?: boolean;
 	}
 
 	let {
@@ -111,7 +117,8 @@
 		onGoOn,
 		onkick,
 		pausedBy = null,
-		onResume
+		onResume,
+		idle = false
 	}: Props = $props();
 
 	/** Кого показує рядок: автора паузи або тих, кого немає. */
@@ -143,7 +150,9 @@
 		-->
 		<section class="away text-panel fill fill-window" role="status" data-testid="quiz-away-panel">
 			<p class="away__label">
-				{@html formatFont(text(pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait'))}
+				{@html formatFont(
+					text(idle ? 'quiz.idleWait' : pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait')
+				)}
 			</p>
 
 			<ul class="away__people">
@@ -205,7 +214,7 @@
 					<b class="away__count" data-testid="quiz-away-goon-count">{voted}/{needed}</b>
 				</button>
 
-				{#if onkick && !pausedBy}
+				{#if onkick && !pausedBy && !idle}
 					<!-- Лідер може прибрати зниклого назовсім — це інша дія, ніж «грати далі». -->
 					<div class="away__kicks">
 						{#each away as member (member.uid)}

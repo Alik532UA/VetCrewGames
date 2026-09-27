@@ -250,6 +250,21 @@ export const quizOnlineTab: BetaTab = {
 		},
 		{
 			/*
+			 * ХТО ДУМАЄ ДОВШЕ ЗА ПРИХОВАНУ МЕЖУ (рішення автора 2026-09-27, 5-B). Правила —
+			 * `idleWait.test.ts` і перепрогін, а те, що вікно справді зʼявляється в того, хто
+			 * відповів, і не зʼявляється в того, хто думає, — лише на двох пристроях.
+			 */
+			id: 'quizonline_30',
+			category: { uk: 'Раунд', en: 'The round' },
+			text: {
+				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. Приблизно за хвилину (межа «Повільно» цієї гри) у того, хто відповів, мусить зʼявитися вікно «Ще не вибрали відповідь:» з імʼям другого й кнопкою «Грати далі». Натиск — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
+				en: 'In “No limit”, answer on one device and do nothing on the other. After about a minute (this game’s “Slow” limit) the one who answered must see a “Have not chosen an answer yet:” window with the other player’s name and a “Keep playing” button. Pressing it must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-away-panel'
+		},
+		{
+			/*
 			 * СЕБЕ ЗНИКЛИМ НЕ ПОКАЗУЄ (аудит 2026-09-24). Правило перевіряє контролер
 			 * (`QuizMatch.awayOthers`), а екран — джерело (`awaySelf.test.ts`), але саму
 			 * причину — те, що SDK без мережі прибирає мене з присутності в мене ж, — у

@@ -6,6 +6,7 @@ import { EMPTY_QUIZ_LOG, replayQuizLog, type QuizLog } from '$lib/utils/quizRepl
 import { freeSeq } from '$lib/utils/journalSeq';
 import { quizPartyOf, stayingOf } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
+import { awaitedOf } from '$lib/utils/idleWait';
 import { QuizHold, type ReleasedHold } from '$lib/utils/quizHold';
 import { takeLead } from './takeLead';
 import { logService } from '$lib/services/logService.svelte';
@@ -234,6 +235,12 @@ export class QuizMatch extends RoomEnvelopeState {
 		return step === null ? 0 : roundLimitFor(step.game, this.pace, this.#factor);
 	}
 
+	/** Межа РАХУНКУ поточного раунду (`scoreLimitFor`): у «Не обмежений» — прихована. */
+	get scoreLimitMs(): number {
+		const step = this.step;
+		return step === null ? 0 : scoreLimitFor(step.game, this.pace, this.#factor);
+	}
+
 	/** Хто вже відповів у поточному раунді. Саме ФАКТ, без правильності. */
 	get answered(): string[] {
 		return Object.keys(this.answers[this.round] ?? {});
@@ -258,11 +265,10 @@ export class QuizMatch extends RoomEnvelopeState {
 	 * Інакше раунд закінчувався б сам собою на порожньому списку.
 	 */
 	get awaited(): Member[] {
-		// Пішов назовсім — на таблі лишається, а чекати його нема чого (`stayingOf`).
+		// Пішов назовсім — на таблі лишається, а чекати його нема чого (`stayingOf`). Хто
+		// думає після прихованої межі, того не чекають, коли так вирішили (`idleWait.ts`).
 		const players = stayingOf(this.players, this.members);
-		if (this.present.length === 0) return players;
-		const here = players.filter((player) => this.present.includes(player.uid));
-		return here.length > 0 ? here : players;
+		return awaitedOf(players, this.present, this.answered, this.noWait);
 	}
 
 	/**
@@ -740,6 +746,17 @@ export class QuizMatch extends RoomEnvelopeState {
 		return this.#journal.goOn[this.round] ?? [];
 	}
 
+	/** Не чекати тих, хто ще думає, — голос того, хто вже відповів (`idleWait.ts`). */
+	async voteNoWait(): Promise<void> {
+		if (this.round < 0 || this.noWait.includes(this.#me)) return;
+		await this.#must('nowait', { round: this.round });
+	}
+
+	/** Хто вже проголосував не чекати тих, хто думає, у ЦЬОМУ раунді. */
+	get noWait(): string[] {
+		return this.#journal.noWait[this.round] ?? [];
+	}
+
 	/**
 	 * ПІДХОПИТИ ПАРТІЮ, коли господаря немає (`controllers/takeLead.ts`). Умову
 	 * «його немає» перевіряє правило бази, тож тут лише спроба.
@@ -778,7 +795,10 @@ export class QuizMatch extends RoomEnvelopeState {
 		this.games = configToGames(snapshot.info.config);
 		this.pace = paceOf(snapshot.info.config);
 
-		const log = replayQuizLog(snapshot, { limitOf: this.#roundLimitOf });
+		const log = replayQuizLog(snapshot, {
+			limitOf: this.#roundLimitOf,
+			patienceOf: this.#log.limitOf
+		});
 
 		this.#journal = log;
 		/*

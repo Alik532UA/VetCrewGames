@@ -3,7 +3,7 @@ import { flushSync } from 'svelte';
 import { LocalRoom } from '$lib/net/localRoom';
 import { rosterOf } from '$lib/utils/roster';
 import type { Member, RoomInfo } from '$lib/net/roomTypes';
-import { gamesToConfig, ONLINE_GAMES } from '$lib/config/quizOnline';
+import { gamesToConfig, ONLINE_GAMES, quizConfig } from '$lib/config/quizOnline';
 
 /**
  * ВІКТОРИНА ДЛЯ СЕСІЇ — адаптер, стан чекання й реакції, що доти жили в маршруті
@@ -440,6 +440,40 @@ describe('реакції вікторини', () => {
 			.mock.calls.filter(([, message]) => String(message).startsWith('quiz hold'))
 			.map(([, message, data]) => `${message}:${(data as { code: string }).code}`);
 		expect(lines).toEqual(['quiz hold opened:42', 'quiz hold released:42']);
+		off();
+	});
+});
+
+/**
+ * ВІКНО «ЩЕ НЕ ВИБРАЛИ ВІДПОВІДЬ» — З МАТЧУ Й ГОДИННИКА СЕСІЇ (рішення автора 2026-09-27,
+ * 5-B). Правила вікна — `idleWait.test.ts`; тут те, що межу рахує матч поточного раунду:
+ * від його початку, з прихованою межею гри.
+ *
+ * Зворотний експеримент: не додавати `scoreLimitMs` до початку раунду — червоніє «до межі
+ * вікна немає».
+ */
+describe('хто думає у «Не обмежений»', () => {
+	it('після прихованої межі той, хто відповів, бачить того, хто думає', async () => {
+		const games = ONLINE_GAMES.map((game) => game.id);
+		const config = quizConfig(games, { round: 'unlimited', reveal: 'normal' });
+		const room = new LocalRoom(info({ config }), members());
+		const lead = new QuizMatch(HOST, room.transport());
+		const off = lead.listen();
+		await lead.startRound(0);
+		await lead.answer(1);
+		await settle();
+		const start = lead.startedAt[0];
+		const quiz = new QuizRoomState(() => 0.5);
+		quiz.game.onPresence?.(lead, [HOST, GUEST], start);
+		const seat = host(lead, HOST, start + lead.scoreLimitMs - 1);
+		cleanup = $effect.root(() => quiz.attach(seat));
+		flushSync();
+		expect(quiz.idle.show, 'до межі вікна немає').toBe(false);
+
+		seat.clock = start + lead.scoreLimitMs;
+		flushSync();
+		expect(quiz.idle.show).toBe(true);
+		expect(quiz.idle.idle.map((player) => player.uid)).toEqual([GUEST]);
 		off();
 	});
 });

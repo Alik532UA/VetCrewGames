@@ -577,3 +577,92 @@ describe('пауза не рахується в швидкість', () => {
 		expect(scores[HOST]).toBeLessThan(FAST_POINTS);
 	});
 });
+
+/**
+ * «НЕ ЧЕКАТИ ТОГО, ХТО ДУМАЄ» (`nowait`, рішення автора 2026-09-27, 5-B): голос чесний лише
+ * від того, хто вже відповів, і лише після прихованої межі.
+ *
+ * Зворотні експерименти: прибрати перевірку межі — червоніє «до межі не рахується»;
+ * прибрати перевірку власної відповіді — червоніє «від того, хто ще не відповів»; не
+ * відсувати межу чеканням — червоніє «межу відсуває чекання»; рахувати й чекання після
+ * голосу — червоніє «чекання після голосу».
+ */
+describe('голос не чекати тих, хто думає', () => {
+	const PATIENCE = 5000;
+	const patienceOf = () => PATIENCE;
+	const start = move(HOST, 'round', 1000, { round: 0 });
+	const hostAnswer = move(HOST, 'answer', 2000, { round: 0, correct: 1 });
+
+	it('перевірка жива: після межі від того, хто відповів, — рахується', () => {
+		const log = replayQuizLog(
+			snapshot([start, hostAnswer, move(HOST, 'nowait', 7000, { round: 0 })]),
+			{ patienceOf }
+		);
+		expect(log.noWait[0]).toEqual([HOST]);
+	});
+
+	it('до межі не рахується: інакше забирав би в людини час одразу після власної відповіді', () => {
+		const log = replayQuizLog(
+			snapshot([start, hostAnswer, move(HOST, 'nowait', 5500, { round: 0 })]),
+			{ patienceOf }
+		);
+		expect(log.noWait[0]).toBeUndefined();
+	});
+
+	it('від того, хто ще не відповів, не рахується: питання саме про нього', () => {
+		const log = replayQuizLog(
+			snapshot([start, hostAnswer, move(GUEST, 'nowait', 7000, { round: 0 })]),
+			{ patienceOf }
+		);
+		expect(log.noWait[0]).toBeUndefined();
+	});
+
+	it('межу відсуває чекання, записане до голосу: під паузою не думають', () => {
+		const held = move(GUEST, 'held', 3000, { round: 0, ms: 4000 });
+		const early = replayQuizLog(
+			snapshot([start, hostAnswer, held, move(HOST, 'nowait', 7000, { round: 0 })]),
+			{ patienceOf }
+		);
+		expect(early.noWait[0], 'межа без чекання — 6000, з ним — 10 000').toBeUndefined();
+		const late = replayQuizLog(
+			snapshot([start, hostAnswer, held, move(HOST, 'nowait', 10_000, { round: 0 })]),
+			{ patienceOf }
+		);
+		expect(late.noWait[0]).toEqual([HOST]);
+	});
+
+	it('чекання після голосу вже чесного голосу не скасовує', () => {
+		const log = replayQuizLog(
+			snapshot([
+				start,
+				hostAnswer,
+				move(HOST, 'nowait', 7000, { round: 0 }),
+				move(GUEST, 'held', 9000, { round: 0, ms: 4000 })
+			]),
+			{ patienceOf }
+		);
+		expect(log.noWait[0]).toEqual([HOST]);
+	});
+
+	it('без відомої межі не рахується зовсім', () => {
+		const log = replayQuizLog(
+			snapshot([start, hostAnswer, move(HOST, 'nowait', 7000, { round: 0 })])
+		);
+		expect(log.noWait[0]).toBeUndefined();
+	});
+
+	it('один гравець — один голос; глядач не голосує', () => {
+		const log = replayQuizLog(
+			snapshot([
+				start,
+				hostAnswer,
+				move(WATCHER, 'answer', 2100, { round: 0, correct: 1 }),
+				move(HOST, 'nowait', 7000, { round: 0 }),
+				move(HOST, 'nowait', 7100, { round: 0 }),
+				move(WATCHER, 'nowait', 7200, { round: 0 })
+			]),
+			{ patienceOf }
+		);
+		expect(log.noWait[0]).toEqual([HOST]);
+	});
+});

@@ -1,6 +1,7 @@
 import { playerData } from '$lib/services/playerData.svelte';
 import { logService } from '$lib/services/logService.svelte';
 import { awayStamps, settledPresence, waitView, type WaitView } from '$lib/utils/awayWait';
+import { idleView, type IdleView } from '$lib/utils/idleWait';
 import { gamesToConfig } from '$lib/config/quizOnline';
 import { nextGameSeed } from '$lib/utils/quizDeck';
 import { QUIZ_RULES_VERSION } from '$lib/config/roomRules';
@@ -132,6 +133,30 @@ export class QuizRoomState {
 	get wait(): WaitView {
 		const host = this.#host;
 		return waitView(host?.match ?? null, this.awaySince, host?.clock ?? 0, host?.me ?? '');
+	}
+
+	/**
+	 * Хто ще думає після прихованої межі — для того, хто вже відповів (`idleWait.ts`).
+	 * Мить межі — тут, а не в матчі: там немає місця (межа розміру), а тут усе під рукою.
+	 */
+	get idle(): IdleView {
+		const host = this.#host;
+		const match = host?.match;
+		if (!host || !match) return idleView(null, 0, '');
+		const start = match.startedAt[match.round];
+		return idleView(
+			{
+				round: match.round,
+				unlimited: match.pace.round === 'unlimited',
+				patienceAt:
+					start === undefined ? Infinity : start + match.scoreLimitMs + match.heldMs(host.clock),
+				awaited: match.awaited,
+				answered: match.answered,
+				noWait: match.noWait
+			},
+			host.clock,
+			host.me
+		);
 	}
 
 	/**
