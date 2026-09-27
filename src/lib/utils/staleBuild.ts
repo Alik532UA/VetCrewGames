@@ -18,10 +18,15 @@ import { sessionStore } from '$lib/services/storage';
  *
  * Текст помилки в різних браузерах різний, тому перевіряються всі три відомі
  * формулювання: Chromium, Firefox і Safari кажуть про це своїми словами.
+ *
+ * І ЧЕТВЕРТЕ — СТИЛІ (2026-09-27): зниклий CSS-шматок Vite відкидає власним «Unable to
+ * preload CSS for …» (`__vitePreload`, подія `vite:preloadError`), і браузер тут ні до
+ * чого. Доти цей випадок не впізнавався зовсім: лінивий шматок зі своїм стилем по деплою
+ * падав повз і повне завантаження, і пораду «оновіть сторінку».
  */
 export const chunkMissing = (error: unknown): boolean => {
 	const text = error instanceof Error ? error.message : String(error);
-	return /dynamically imported module|Importing a module script failed|error loading dynamically imported/i.test(
+	return /dynamically imported module|Importing a module script failed|error loading dynamically imported|Unable to preload CSS/i.test(
 		text
 	);
 };
@@ -38,12 +43,37 @@ export const chunkMissing = (error: unknown): boolean => {
 const RELOAD_KEY = 'staleReload';
 
 /**
+ * ПОВНЕ ЗАВАНТАЖЕННЯ СВІЖОЇ СТОРІНКИ, а не тієї, що лежить у кеші браузера (2026-09-27).
+ *
+ * GitHub Pages віддає HTML із `Cache-Control: max-age=600`: десять хвилин браузер бере
+ * сторінку зі свого кешу, не питаючи сервер, — а звичайне завантаження адреси
+ * (`location.href`) саме так і робить, на відміну від «Оновити». Тобто одразу після деплою
+ * сторінка, відкрита менш як десять хвилин тому, приїжджала з кешу й показувала на
+ * частини застосунку, яких на сервері вже немає: повне завантаження, покликане врятувати,
+ * вантажило ту саму стару сторінку, а захист від циклу не давав другої спроби — людина
+ * бачила екран помилки.
+ *
+ * `fetch(…, { cache: 'reload' })` бере сторінку з мережі й ПЕРЕЗАПИСУЄ нею запис кешу, тож
+ * завантаження слідом — уже свіже. Ціна — один запит сторінки, і лише на новій версії.
+ *
+ * НЕ КИДАЄ: без мережі перевірка не вдасться, а завантаження однаково варто спробувати.
+ */
+export async function freshLoad(href: string): Promise<void> {
+	try {
+		await fetch(href, { cache: 'reload', credentials: 'same-origin' });
+	} catch {
+		/* офлайн чи обрив — вантажимо як є */
+	}
+	window.location.href = href;
+}
+
+/**
  * Повне завантаження адреси — РАЗ на адресу за сесію вкладки. `false` — ця адреса
  * вже пробувала, і друге завантаження нічого б не виправило.
  */
 export function reloadOnce(href: string): boolean {
 	if (sessionStore.get(RELOAD_KEY) === href) return false;
 	sessionStore.set(RELOAD_KEY, href);
-	window.location.href = href;
+	void freshLoad(href);
 	return true;
 }

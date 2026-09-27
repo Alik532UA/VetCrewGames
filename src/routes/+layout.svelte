@@ -16,6 +16,7 @@
 	import { ogLocale } from '$lib/i18n/languages';
 	import { page, updated } from '$app/state';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
+	import { freshLoad } from '$lib/utils/staleBuild';
 	import { trackPageView } from '$lib/services/analytics';
 	import { trackClicks } from '$lib/services/clickTrail';
 	import { webVitals } from '$lib/controllers/webVitals.svelte';
@@ -161,11 +162,16 @@
 	 * Запасний шар — у `hooks.client.ts`: він ловить те, що прослизнуло між двома
 	 * опитуваннями. Обидва потрібні, і жоден не покриває другого: цей прибирає
 	 * помилку ДО появи, той рятує, коли вона вже сталася.
+	 *
+	 * Маршрутизатор СКАСОВУЄТЬСЯ, а сторінка береться свіжою (`freshLoad`): його перелік
+	 * частин застарів, тож він лише впав би посеред переходу, а сторінка з кешу браузера
+	 * (Pages тримає HTML десять хвилин) показувала б на ті самі зниклі частини.
 	 */
 	beforeNavigate((navigation) => {
 		if (!updated.current || navigation.willUnload || !navigation.to?.url) return;
 		logService.info('app', 'new build — full navigation', { to: navigation.to.url.pathname });
-		window.location.href = navigation.to.url.href;
+		navigation.cancel();
+		void freshLoad(navigation.to.url.href);
 	});
 
 	// Fires on the initial load too, so this covers the first view and each
