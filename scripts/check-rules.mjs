@@ -2136,6 +2136,40 @@ const CASES = [
 			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, compact: 'yes' }, guest.token)
 	},
 	{
+		// АКАУНТ (рішення автора 2026-09-27, 10-A): пріоритет аватарки в кімнаті. Гість
+		// гейту — привʼязаний акаунт (пошта), тож позначку йому база приймає.
+		name: 'позначка акаунта в своєму рядку — від акаунта',
+		allowed: true,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, account: true }, guest.token)
+	},
+	{
+		// Головне: анонім пріоритету собі не дописує — звіряється сам вхід.
+		name: 'позначка акаунта від аноніма',
+		allowed: false,
+		run: () => write(`rooms/${CODE}/members/${anon.uid}`, { ...member, account: true }, anon.token)
+	},
+	{
+		// Контроль до попереднього: той самий рядок того самого аноніма, лише без
+		// пріоритету, — приймається, тож відмову вище дає саме позначка.
+		name: 'анонім з позначкою «не акаунт»',
+		allowed: true,
+		// І одразу прибрати рядок: анонім у складі головної кімнати змінив би відповідь
+		// пізніших випадків, де він — сторонній.
+		run: async () => {
+			const path = `rooms/${CODE}/members/${anon.uid}`;
+			const status = await write(path, { ...member, account: false }, anon.token);
+			await write(path, null, anon.token);
+			return status;
+		}
+	},
+	{
+		name: 'позначка акаунта — не булеве',
+		allowed: false,
+		run: () =>
+			write(`rooms/${CODE}/members/${guest.uid}`, { ...member, account: 'yes' }, guest.token)
+	},
+	{
 		name: 'імʼя довше за 48 символів',
 		allowed: false,
 		run: () =>

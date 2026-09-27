@@ -136,7 +136,7 @@ export interface NewRoom {
  * рідкісного збігу двох кодів.
  */
 export async function createRoom(options: NewRoom): Promise<string> {
-	const { uid, db } = await connect();
+	const { uid, db, auth } = await connect();
 	const { get, ref, set, serverTimestamp } = await import('firebase/database');
 	const random = options.random ?? Math.random;
 
@@ -237,7 +237,9 @@ export async function createRoom(options: NewRoom): Promise<string> {
 				// порожній рядок не пройшов би `.validate` (рівно дві літери).
 				...(options.country ? { country: options.country } : {}),
 				...(options.avatar ? { avatar: options.avatar } : {}),
-				...(options.compact ? { compact: true } : {})
+				...(options.compact ? { compact: true } : {}),
+				// Акаунт (`Member.account`): лише хто ввійшов не анонімно — інакше поля немає.
+				...(auth.currentUser?.isAnonymous === false ? { account: true } : {})
 			});
 
 			// Запис в індекс — ПІСЛЯ кімнати, і він не кидає: див. `ownRooms.ts`.
@@ -269,7 +271,7 @@ export const ROOM_CAPACITY = 12;
  */
 export async function joinRoom(code: string, entry: RoomEntry): Promise<void> {
 	const { name, role, country, avatar, newcomer = 'player', compact } = entry;
-	const { uid, db } = await connect();
+	const { uid, db, auth } = await connect();
 	const { get, ref, set } = await import('firebase/database');
 
 	const snapshot = await get(ref(db, `rooms/${code}/members`));
@@ -305,7 +307,9 @@ export async function joinRoom(code: string, entry: RoomEntry): Promise<void> {
 		...(avatar ? { avatar } : {}),
 		// Малий екран — теж підпис пристрою, і теж переписується на кожному вході:
 		// за ним старт «Знайди пару» вибирає спільну сітку (`Member.compact`).
-		...(compact ? { compact: true } : {})
+		...(compact ? { compact: true } : {}),
+		// Акаунт — теж на кожному вході: людина могла ввійти чи вийти між заходами.
+		...(auth.currentUser?.isAnonymous === false ? { account: true } : {})
 	});
 
 	/*

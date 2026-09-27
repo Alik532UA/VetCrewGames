@@ -18,9 +18,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 
 let flagged = true;
-const readProfile = vi.fn<(uid: string) => Promise<{ name: string } | null>>(async () => ({
-	name: 'Уважний Олень'
-}));
+const readProfile = vi.fn<(uid: string) => Promise<{ name: string; avatar?: string } | null>>(
+	async () => ({ name: 'Уважний Олень' })
+);
 const saveName = vi.fn<(name: string) => Promise<void>>(async () => {});
 const refreshProfile = vi.fn<() => Promise<void>>(async () => {});
 
@@ -149,5 +149,22 @@ describe('синхронізація імені', () => {
 
 			await expect(pushName('Швидкий Леопард')).resolves.toBeUndefined();
 		});
+	});
+
+	/** Аватарка з профілю — тим самим читанням, що й імʼя (11-A): другого запиту немає. */
+	it('аватарка з профілю — тим самим читанням', async () => {
+		readProfile.mockResolvedValue({ name: 'Уважний Олень', avatar: 'panda:navy' });
+		const { profileAvatar, profileName } = await fresh();
+
+		expect(await profileName()).toBe('Уважний Олень');
+		expect(await profileAvatar()).toBe('panda:navy');
+		expect(readProfile).toHaveBeenCalledTimes(1);
+	});
+
+	it('без профілю аватарки з нього немає', async () => {
+		readProfile.mockResolvedValue(null);
+		const { profileAvatar } = await fresh();
+
+		expect(await profileAvatar()).toBe('');
 	});
 });

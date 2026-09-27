@@ -43,8 +43,11 @@ const remove = vi.fn(async (node: { path: string }) => {
 	writes.push({ op: 'remove', path: node.path });
 });
 
+/** Хто ввійшов: `null` — ще нікого, `isAnonymous` — анонім чи акаунт (`Member.account`). */
+const auth = vi.hoisted(() => ({ currentUser: null as { isAnonymous: boolean } | null }));
+
 vi.mock('./firebase', () => ({
-	connect: async () => ({ uid: 'uid-host', db: {} }),
+	connect: async () => ({ uid: 'uid-host', db: {}, auth }),
 	serverNow: () => Date.now(),
 	serverTime: vi.fn(async () => Date.now())
 }));
@@ -368,6 +371,29 @@ describe('rtdbRoom: повна кімната', () => {
 		expect(withMe, 'перевірка жива: кімната понад межу').toBeGreaterThan(ROOM_CAPACITY);
 
 		await expect(joinRoom('42', { name: 'Господар' })).resolves.toBeUndefined();
+	});
+
+	/**
+	 * ПОЗНАЧКА АКАУНТА (рішення автора 2026-09-27, 10-A): лише від того, хто ввійшов не
+	 * анонімно, — і в аноніма поля немає зовсім, а не `false`: рядок лишається тим самим.
+	 *
+	 * Зворотний експеримент: писати позначку завжди — червоніє другий рядок.
+	 */
+	it('акаунт пише позначку в рядок складу, анонім — ні', async () => {
+		vi.mocked(get).mockResolvedValue({ val: () => ({}) } as never);
+		const mine = () =>
+			writes.filter((write) => write.path === 'rooms/42/members/uid-host').at(-1)?.value;
+		try {
+			auth.currentUser = { isAnonymous: false };
+			await joinRoom('42', { name: 'Акаунт' });
+			expect(mine()).toMatchObject({ account: true });
+
+			auth.currentUser = { isAnonymous: true };
+			await joinRoom('42', { name: 'Анонім' });
+			expect(mine()).not.toHaveProperty('account');
+		} finally {
+			auth.currentUser = null;
+		}
 	});
 
 	it('місткість — те саме число, що межа `order` у правилі бази', () => {

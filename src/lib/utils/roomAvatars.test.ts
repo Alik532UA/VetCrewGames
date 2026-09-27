@@ -5,12 +5,15 @@ import type { Member } from '$lib/net/roomTypes';
 import { ROOM_AVATARS, takenAvatars, uniqueAvatars } from './roomAvatars';
 
 /**
- * ОДНА ПАРА «ЗНАЧОК + КОЛІР» НА КІМНАТУ (рішення автора 2026-09-26): перший лишає
- * свою, новачок отримує вільну — однакову в усіх учасників.
+ * У КІМНАТІ НЕ ПОВТОРЮЄТЬСЯ НІ ЗНАЧОК, НІ КОЛІР (рішення автора 2026-09-26 і 2026-09-27):
+ * акаунт лишає свою завжди, далі перший за входом, новачок отримує вільну — однакову в
+ * усіх учасників; лише в лобі.
  *
- * Зворотний експеримент: власник за порядком масиву, а не за `order`, — червоніє
+ * Зворотні експерименти: власник за порядком масиву, а не за `order`, — червоніє
  * «перший за входом»; заміна з `Math.random` — червоніє «однаково в усіх»; заміна
- * без виключення зайнятих — червоніє «вільна».
+ * без виключення зайнятих — червоніє «вільна»; порівнювати лише пари — червоніє «той
+ * самий колір»; не пропускати акаунти — червоніє «акаунт лишає свою»; не зважати на
+ * `frozen` — червоніє «посеред партії».
  */
 
 const member = (uid: string, order: number, avatar?: string): Member => ({
@@ -93,14 +96,80 @@ describe('аватарки в складі кімнати', () => {
 		const members = [member('a', 1, 'star:red'), member('b', 2, shown)];
 
 		expect(Object.keys(uniqueAvatars(members, 7).swaps)).toEqual(['b']);
-		expect([...takenAvatars(members, 'b').keys()]).toEqual([shown]);
+		expect(takenAvatars(members, 'b').has(shown)).toBe(true);
 	});
 
-	it('зайняте для вибору — чуже, з іменем власника; своє не зайняте', () => {
+	it('той самий колір з іншим значком — теж повтор, і той самий значок з іншим кольором', () => {
+		const members = [
+			member('a', 1, 'cat:blue'),
+			member('b', 2, 'dog:blue'),
+			member('c', 3, 'cat:red')
+		];
+		const { members: shown, swaps } = uniqueAvatars(members, 7);
+
+		expect(Object.keys(swaps).sort()).toEqual(['b', 'c']);
+		const icons = shown.map((m) => m.avatar?.split(':')[0]);
+		const colors = shown.map((m) => m.avatar?.split(':')[1]);
+		expect(new Set(icons).size, icons.join(', ')).toBe(3);
+		expect(new Set(colors).size, colors.join(', ')).toBe(3);
+	});
+
+	/** Акаунт — профільна аватарка, та сама на кожному пристрої: її не міняють (10-A). */
+	it('акаунт лишає свою — навіть коли зайшов пізніше; повтор між акаунтами дозволено', () => {
+		const members = [
+			member('anon', 1, 'cat:blue'),
+			{ ...member('acc1', 2, 'cat:red'), account: true },
+			{ ...member('acc2', 3, 'cat:red'), account: true }
+		];
+		const { swaps } = uniqueAvatars(members, 7);
+
+		expect(Object.keys(swaps)).toEqual(['anon']);
+	});
+
+	/** «Посеред партії ніколи» (9-A): плитка на табло не міняється від того, що хтось зайшов. */
+	it('посеред партії не міняється нічого', () => {
+		const members = [member('a', 1, 'cat:blue'), member('b', 2, 'cat:blue')];
+
+		expect(uniqueAvatars(members, 7, true)).toEqual({ members, swaps: {} });
+	});
+
+	/**
+	 * ЗАПАСНІ ЩАБЛІ. У справжній кімнаті (12 місць, 12 кольорів) вільний колір є завжди:
+	 * одинадцять інших тримають щонайбільше одинадцять. Тож тут тринадцять — більше, ніж
+	 * вміщає кімната, — і саме на такий випадок щаблі й існують: спершу вільний значок.
+	 */
+	it('коли кольори скінчилися — вільний значок, а не повтор пари', () => {
+		const accounts = [
+			'red',
+			'orange',
+			'brown',
+			'olive',
+			'green',
+			'teal',
+			'blue',
+			'navy',
+			'violet',
+			'magenta',
+			'pink'
+		].map((color, at) => ({ ...member(`acc${at}`, at + 1, `cat:${color}`), account: true }));
+		const members = [...accounts, member('last', 12, 'cat:slate'), member('extra', 13, 'dog:red')];
+		const { swaps } = uniqueAvatars(members, 7);
+		const iconOf = (avatar: string) => avatar.split(':')[0];
+
+		expect(iconOf(swaps.last), 'кота вже тримають — інший значок').not.toBe('cat');
+		expect(swaps.last, 'сірий ще вільний — узято й значок, і колір').toMatch(/:slate$/);
+		expect([iconOf(swaps.extra)], 'кольори скінчилися — хоч значок вільний').not.toContain('cat');
+		expect(iconOf(swaps.extra)).not.toBe(iconOf(swaps.last));
+	});
+
+	it('зайняте для вибору — чужий значок і чужий колір, з іменем власника; своє — ні', () => {
 		const members = [member('a', 1, 'cat:blue'), member('b', 2, 'dog:red')];
 		const taken = takenAvatars(members, 'a');
 
-		expect([...taken]).toEqual([['dog:red', 'імʼя b']]);
+		expect(taken.get('dog:blue'), 'значок b').toBe('імʼя b');
+		expect(taken.get('cat:red'), 'колір b').toBe('імʼя b');
+		expect(taken.has('cat:blue'), 'своє').toBe(false);
+		expect(taken.size, '12 кольорів пса й 18 червоних значків, пес червоний — один').toBe(29);
 	});
 
 	it('пар вистачає з запасом: 216 проти 12 місць кімнати', () => {

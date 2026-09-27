@@ -65,7 +65,11 @@ describe('вікно «вас запросили»', () => {
 		expect(invite.open).toBe(true);
 		expect(invite.code).toBe('42');
 		expect(session.resume).not.toHaveBeenCalled();
-		expect([...invite.taken]).toEqual([['cat:blue', 'імʼя uid-host']]);
+		// Зайняте — усе з котом і все синє (значок і колір не повторюються, 2026-09-27).
+		expect(invite.taken.get('cat:blue')).toBe('імʼя uid-host');
+		expect(invite.taken.get('dog:blue')).toBe('імʼя uid-host');
+		expect(invite.taken.get('cat:red')).toBe('імʼя uid-host');
+		expect(invite.taken.has('dog:red'), 'інший значок іншого кольору вільний').toBe(false);
 	});
 
 	it('хто вже в складі — заходить сам, як і доти', async () => {

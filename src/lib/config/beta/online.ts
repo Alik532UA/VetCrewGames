@@ -263,6 +263,35 @@ export const onlineTab: BetaTab = {
 			testid: 'pairs-member-*-item'
 		},
 		{
+			/*
+			 * БЕЗ ПОВТОРІВ ЗНАЧКА Й КОЛЬОРУ, АКАУНТ — ПЕРШИЙ (рішення автора 2026-09-27, 9-A і
+			 * 10-A). Правило доводять `utils/roomAvatars` і правила бази (`check:rules`);
+			 * руками — справжній акаунт і справжній анонім.
+			 */
+			id: 'online_28',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'На першому пристрої ввійдіть в акаунт і виберіть кота будь-якого кольору; на другому, без акаунта, виберіть кота іншого кольору. Зайдіть в одну кімнату в будь-якому порядку. Кіт мусить лишитися в того, хто з акаунтом, а в другого — інший значок і інший колір; однакових значків чи кольорів у складі НЕ мусить бути.',
+				en: 'On the first device sign in and pick a cat of any colour; on the second, without an account, pick a cat of another colour. Enter one room in any order. The cat must stay with the one who has an account, and the other must get another icon and another colour; there must be NO repeated icons or colours in the list.'
+			},
+			negative: true,
+			coverage: 'manual',
+			testid: 'pairs-member-*-item'
+		},
+		{
+			// «Посеред партії ніколи» (9-A) — доводить конверт кімнати.
+			id: 'online_29',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Зайдіть у вікторину, що вже йде, з тією самою аватаркою, що в когось зі складу. Посеред партії плитки НЕ мусять мінятися ні у вас, ні в нього.',
+				en: 'Join a quiz that is already running with the same avatar as someone in the list. Mid-game the tiles must NOT change — neither yours nor theirs.'
+			},
+			negative: true,
+			coverage: 'covered',
+			test: 'src/lib/utils/roomEnvelope.test.ts',
+			testid: 'pairs-member-*-item'
+		},
+		{
 			id: 'online_22',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {

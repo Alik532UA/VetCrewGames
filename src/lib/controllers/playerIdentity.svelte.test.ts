@@ -52,7 +52,7 @@ vi.mock('$lib/services/nameSync', () => ({ profileName, pushName }));
 
 /** Аватарка в профіль — теж мережа, і теж підставна: тут перевіряється лише, що її кличуть. */
 const pushAvatar = vi.fn<(avatar: string) => Promise<void>>(async () => {});
-vi.mock('$lib/services/avatarSync', () => ({ pushAvatar }));
+vi.mock('$lib/services/avatarSync', () => ({ pushAvatar, pullAvatar: vi.fn(async () => {}) }));
 
 const { PlayerIdentity } = await import('./playerIdentity.svelte');
 const { playerAvatar } = await import('$lib/services/playerAvatar.svelte');

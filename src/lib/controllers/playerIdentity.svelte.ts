@@ -6,7 +6,7 @@ import { storage } from '$lib/services/storage';
 import { preferredCountry, rememberCountry } from '$lib/services/countryPref';
 import { profileName, pushName } from '$lib/services/nameSync';
 import { playerAvatar } from '$lib/services/playerAvatar.svelte';
-import { pushAvatar } from '$lib/services/avatarSync';
+import { pullAvatar, pushAvatar } from '$lib/services/avatarSync';
 
 /**
  * ХТО Я В КІМНАТІ: підпис, прапор і аватар (останній — лише гетер над спільним
@@ -155,6 +155,8 @@ export class PlayerIdentity {
 		 * встигла набрати.
 		 */
 		void profileName().then((name) => this.adopt(name));
+		// Аватарка з профілю — при вході в акаунт, раз на сесію (11-A, `pullAvatar`).
+		void pullAvatar();
 
 		if (this.value !== '') return;
 		const chosen = initialName(storage.get(NAME_KEY), this.text, this.#random, taken);

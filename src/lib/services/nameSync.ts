@@ -52,6 +52,12 @@ import { logService } from './logService.svelte';
 let known: string | null = null;
 
 /**
+ * Аватарка з того самого читання профілю (`profileAvatar`): другий запит за тим самим
+ * вузлом був би зайвим. `null` — не читали або в профілі її немає.
+ */
+let knownAvatar: string | null = null;
+
+/**
  * Імʼя з профілю. Порожньо — акаунта немає, профілю немає або мережа не відповіла.
  *
  * НЕ КИДАЄ: це підпис, а не дія. Невдача означає «лишається те, що в кеші», і
@@ -68,6 +74,7 @@ export async function profileName(): Promise<string> {
 		const { uid } = await connect();
 		const profile = await account.readProfile(uid);
 		known = profile?.name ?? null;
+		knownAvatar = profile?.avatar ?? null;
 		return known ?? '';
 	} catch (error) {
 		logService.warn('network', 'profile name not read', { reason: String(error) });
@@ -123,4 +130,14 @@ export function rememberName(name: string): void {
 /** Забути кеш. Потрібно виходу з акаунта: далі імʼя належить браузеру, не акаунту. */
 export function forgetName(): void {
 	known = null;
+	knownAvatar = null;
+}
+
+/**
+ * Аватарка з профілю — тим самим читанням, що й імʼя. Порожньо — акаунта, профілю чи
+ * аватарки в ньому немає, або мережа не відповіла. НЕ КИДАЄ, як і `profileName`.
+ */
+export async function profileAvatar(): Promise<string> {
+	if ((await profileName()) === '') return '';
+	return knownAvatar ?? '';
 }

@@ -14,17 +14,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 let flagged = true;
 const profileName = vi.fn<() => Promise<string>>(async () => 'Уважний Олень');
+const profileAvatar = vi.fn<() => Promise<string>>(async () => 'cat:blue');
+const playerAvatar = {
+	value: 'grape:olive',
+	set: vi.fn((next: string) => void (playerAvatar.value = next))
+};
 const saveAvatar = vi.fn<(avatar: string) => Promise<void>>(async () => {});
 const refreshProfile = vi.fn<() => Promise<void>>(async () => {});
 const warn = vi.fn();
 
 vi.mock('./accountFlag', () => ({ hasAccount: () => flagged }));
 vi.mock('./logService.svelte', () => ({ logService: { warn, error: vi.fn() } }));
-vi.mock('./nameSync', () => ({ profileName }));
+vi.mock('./nameSync', () => ({ profileName, profileAvatar }));
+vi.mock('./playerAvatar.svelte', () => ({ playerAvatar }));
 vi.mock('$lib/net/account', () => ({ saveAvatar }));
 vi.mock('./playerSync', () => ({ refreshProfile }));
 
-const { pushAvatar } = await import('./avatarSync');
+const { forgetPulledAvatar, pullAvatar, pushAvatar } = await import('./avatarSync');
 
 describe('аватарка з форми входу — у профіль', () => {
 	beforeEach(() => {
@@ -64,5 +70,69 @@ describe('аватарка з форми входу — у профіль', () =
 		expect(warn).toHaveBeenCalledWith('network', 'profile avatar not updated', {
 			reason: 'Error: offline'
 		});
+	});
+});
+
+/**
+ * АВАТАРКА З ПРОФІЛЮ — ПРИ ВХОДІ В АКАУНТ НА БУДЬ-ЯКОМУ ПРИСТРОЇ (рішення автора
+ * 2026-09-27, 11-A).
+ *
+ * Зворотні експерименти: прибрати `pulled` — червоніє «раз на сесію»; не звіряти
+ * значення до й після читання — червоніє «свіжий вибір головніший».
+ */
+describe('аватарка з профілю — на пристрій', () => {
+	beforeEach(() => {
+		flagged = true;
+		forgetPulledAvatar();
+		playerAvatar.value = 'grape:olive';
+		playerAvatar.set.mockClear();
+		profileAvatar.mockReset().mockResolvedValue('cat:blue');
+	});
+
+	it('акаунт — профільна аватарка стає аватаркою пристрою', async () => {
+		await pullAvatar();
+
+		expect(playerAvatar.set).toHaveBeenCalledWith('cat:blue');
+	});
+
+	it('раз на сесію: повторне відкриття сторінки профілю не читає', async () => {
+		await pullAvatar();
+		await pullAvatar();
+
+		expect(profileAvatar).toHaveBeenCalledTimes(1);
+	});
+
+	it('після виходу з акаунта наступний вхід тягне знову', async () => {
+		await pullAvatar();
+		forgetPulledAvatar();
+		await pullAvatar();
+
+		expect(profileAvatar).toHaveBeenCalledTimes(2);
+	});
+
+	it('свіжий вибір головніший: поки читали, людина вибрала іншу', async () => {
+		profileAvatar.mockImplementation(async () => {
+			playerAvatar.value = 'rat:magenta';
+			return 'cat:blue';
+		});
+		await pullAvatar();
+
+		expect(playerAvatar.set).not.toHaveBeenCalled();
+		expect(playerAvatar.value).toBe('rat:magenta');
+	});
+
+	it('значок, якого більше немає, — твариною того самого кольору', async () => {
+		profileAvatar.mockResolvedValue('star:red');
+		await pullAvatar();
+
+		expect(playerAvatar.set).toHaveBeenCalledWith(expect.stringMatching(/^[a-z]+:red$/));
+		expect(playerAvatar.set).not.toHaveBeenCalledWith('star:red');
+	});
+
+	it('без акаунта в мережу не ходить', async () => {
+		flagged = false;
+		await pullAvatar();
+
+		expect(profileAvatar).not.toHaveBeenCalled();
 	});
 });

@@ -76,4 +76,25 @@ describe('спільні поля кімнати', () => {
 		expect(envelope.members[1].avatar).not.toBe('cat:blue');
 		expect(envelope.avatarSwaps).toEqual({ 'uid-guest': envelope.members[1].avatar });
 	});
+
+	/**
+	 * ЛИШЕ В ЛОБІ (рішення автора 2026-09-27, 9-A: «посеред партії ніколи»): у партії й
+	 * після неї плитка на табло не міняється від того, що хтось зайшов.
+	 *
+	 * Зворотний експеримент: не передати статус у `uniqueAvatars` — червоніє цей випадок.
+	 */
+	it('посеред партії й після неї повтор не розвʼязується — нікого не міняють', () => {
+		for (const status of ['playing', 'over'] as const) {
+			const envelope = envelopeOf({
+				...snapshot({ createdAt: 7, status }),
+				members: [
+					{ uid: 'uid-host', name: 'Господар', role: 'player', order: 1, avatar: 'cat:blue' },
+					{ uid: 'uid-guest', name: 'Гість', role: 'player', order: 2, avatar: 'cat:blue' }
+				]
+			});
+
+			expect(envelope.avatarSwaps, status).toEqual({});
+			expect(envelope.members[1].avatar, status).toBe('cat:blue');
+		}
+	});
 });

@@ -14,9 +14,9 @@ import { uniqueAvatars } from './roomAvatars';
  */
 export interface RoomEnvelope {
 	/**
-	 * Склад з УНІКАЛЬНИМИ аватарками (`uniqueAvatars`): повтор пари розвʼязано тут,
-	 * один раз на обидві гри, — тож кожен екран кімнати (лобі, табло, дошка) бачить
-	 * те саме, що й решта учасників.
+	 * Склад з УНІКАЛЬНИМИ аватарками (`uniqueAvatars`): повтор значка чи кольору
+	 * розвʼязано тут, один раз на обидві гри, — тож кожен екран кімнати (лобі, табло,
+	 * дошка) бачить те саме, що й решта учасників.
 	 */
 	members: Member[];
 	/**
@@ -42,7 +42,8 @@ export interface RoomEnvelope {
 export function envelopeOf(snapshot: RoomSnapshot): RoomEnvelope {
 	const { info } = snapshot;
 	// Сіль — мітка створення: спільна для всіх учасників і стала, поки кімната жива.
-	const avatars = uniqueAvatars(snapshot.members, info.createdAt ?? 0);
+	// Заміни — лише в лобі: посеред партії плитка не міняється (рішення автора, 9-A).
+	const avatars = uniqueAvatars(snapshot.members, info.createdAt ?? 0, info.status !== 'lobby');
 	return {
 		members: avatars.members,
 		avatarSwaps: avatars.swaps,

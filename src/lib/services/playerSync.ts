@@ -3,6 +3,7 @@ import { readMyProfile, type Profile } from '$lib/net/account';
 import { publishLeader } from '$lib/net/leaders';
 import { playerData } from './playerData.svelte';
 import { forgetName } from './nameSync';
+import { forgetPulledAvatar } from './avatarSync';
 
 /**
  * СИНХРОНІЗАЦІЯ РАХУНКУ Й РЕКОРДІВ: мережева половина `playerData`.
@@ -243,6 +244,7 @@ export function signedOut(): void {
 	forgetAccount();
 	playerData.clearLocal();
 	forgetName();
+	forgetPulledAvatar();
 }
 
 function same(a: PlayData, b: PlayData | null): boolean {

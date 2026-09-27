@@ -384,6 +384,17 @@ export const accountTab: BetaTab = {
 			testid: 'account-avatar-icon-*-radio'
 		},
 		{
+			// Профільна аватарка на будь-якому пристрої (рішення автора 2026-09-27, 11-A).
+			id: 'account_36',
+			category: { uk: 'Аватарка', en: 'Avatar' },
+			text: {
+				uk: 'Виберіть аватарку в профілі на одному пристрої. На другому, де в шапці стоїть інша (випадкова), увійдіть у той самий акаунт і відкрийте «Грати онлайн». У шапці й біля імені мусить стати аватарка з профілю.',
+				en: 'Pick an avatar in the profile on one device. On the second, where the header shows another (random) one, sign in to the same account and open «Play online». The header and the tile next to the name must switch to the profile avatar.'
+			},
+			coverage: 'manual',
+			testid: 'header-account-link'
+		},
+		{
 			id: 'account_32',
 			category: { uk: 'Імʼя в грі', en: 'Name in the game' },
 			text: {
