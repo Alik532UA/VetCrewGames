@@ -21,6 +21,7 @@
 		Worm
 	} from 'lucide-svelte';
 	import { hasAvatar, parseAvatar, type AvatarIcon } from '$lib/config/avatars';
+	import DynamicIcon from './DynamicIcon.svelte';
 
 	/**
 	 * АВАТАР ГРАВЦЯ — плитка зі значком на кольоровому тлі.
@@ -53,6 +54,12 @@
 	 * Там, де плитка мусить стояти завжди (`showDefault`: вікно «Чекаємо», вибір), а
 	 * аватарки немає, стоїть силует на сірому. Силуету в палітрі більше немає (рішення
 	 * автора 2026-09-27, 12-A), тож із чиєюсь аватаркою його не сплутати.
+	 *
+	 * ## Значок — через `DynamicIcon`, а не `<Icon />`
+	 *
+	 * Аватарка береться зі сховища, а пререндер малює силует. Прямий `<Icon />` гідрувався
+	 * поверх вузлів силуету: у пташці замість тулуба стояла його голова — коло з чужим `d`
+	 * (2026-09-27, `pairs-avatar-toggle-btn`). `DynamicIcon` після гідрації малює з нуля.
 	 */
 	interface Props {
 		/** Рядок `значок:колір`. Невідоме чи порожнє — типовий аватар. */
@@ -124,7 +131,7 @@
 
 {#if visible}
 	<span class="avatar avatar--{tone}" style:--avatar-size="{size}px" aria-hidden="true">
-		<Icon size={glyph} strokeWidth={2.25} />
+		<DynamicIcon icon={Icon} size={glyph} strokeWidth={2.25} />
 	</span>
 {/if}
 

@@ -2,6 +2,7 @@
 	import { asset } from '$app/paths';
 	import { CodeXml, Gamepad2 } from 'lucide-svelte';
 	import UserRoundGroupIcon from '$lib/components/ui/UserRoundGroupIcon.svelte';
+	import DynamicIcon from '$lib/components/ui/DynamicIcon.svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -122,7 +123,7 @@
 				{#if link.logo}
 					<img class="menu-link__logo" src={asset(link.logo)} alt="" width="96" height="98" />
 				{:else if link.icon}
-					<link.icon class="menu-link__icon" />
+					<DynamicIcon icon={link.icon} class="menu-link__icon" />
 				{/if}
 				<span>{@html formatFont(t(link.key))}</span>
 			</a>

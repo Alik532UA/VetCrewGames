@@ -121,6 +121,22 @@ export const commonTab: BetaTab = {
 			test: 'src/lib/services/settings.svelte.test.ts'
 		},
 		{
+			/*
+			 * ЗНАЧОК ПІСЛЯ ПЕРЕЗАВАНТАЖЕННЯ ЦІЛИЙ (2026-09-13 і 2026-09-27: змішувався з
+			 * пререндереним). Кожен значок кожної сторінки звіряє e2e `icon-hydration`.
+			 */
+			id: 'common_31',
+			category: { uk: 'Памʼять між заходами', en: 'Settings that persist' },
+			text: {
+				uk: 'Виберіть тему «Сонячний сад» і перезавантажте сторінку. Значок теми в шапці мусить бути цілим сонцем — колом із променями, без серпа місяця чи чужих ліній. Те саме із «Зимовою казкою» (сніжинка) і «Магічним заходом» (листок).',
+				en: 'Pick the «Green» theme and reload the page. The theme icon in the header must be a whole sun — a circle with rays, with no crescent moon or stray lines. The same with «Winter» (a snowflake) and «Vibrant» (a leaf).'
+			},
+			coverage: 'covered',
+			test: 'tests/icon-hydration.spec.ts',
+			testid: 'header-theme-btn',
+			negative: true
+		},
+		{
 			id: 'common_8',
 			category: { uk: 'Памʼять між заходами', en: 'Settings that persist' },
 			text: {

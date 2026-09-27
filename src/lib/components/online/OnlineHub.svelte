@@ -2,6 +2,7 @@
 	import { CirclePlus, LogIn, Zap } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import IdentityRow from '$lib/components/pairs/IdentityRow.svelte';
+	import DynamicIcon from '$lib/components/ui/DynamicIcon.svelte';
 	import type { HubWindowKind } from '$lib/controllers/onlineHub.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
@@ -94,7 +95,7 @@
 					data-testid="online-{road.kind}-open-btn"
 					{@attach refocus(road.kind)}
 				>
-					<road.icon size={28} aria-hidden="true" />
+					<DynamicIcon icon={road.icon} size={28} aria-hidden="true" />
 					<span class="hub__road-text">
 						<span id="online-{road.kind}-open-label" class="hub__road-label">
 							{@html formatFont(t(road.label))}

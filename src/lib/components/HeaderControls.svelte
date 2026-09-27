@@ -9,6 +9,7 @@
 	import { langPath, languageFromParam, routeRestFromId, type Language } from '$lib/i18n/routing';
 	import { THEME_OPTIONS, type Theme } from '$lib/config/themes';
 	import HeaderMenu from './HeaderMenu.svelte';
+	import DynamicIcon from './ui/DynamicIcon.svelte';
 	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
 	import { paintAvatar } from '$lib/features/headerAvatar';
 
@@ -233,32 +234,19 @@
 >
 	{#snippet trigger()}
 		<!--
-			ВСІ ЧОТИРИ ЗНАЧКИ В РОЗМІТЦІ, видимий — один. Це виправлення дефекту
-			гідрації, а не надлишок.
+			Значок ТИПУ, що залежить від теми зі сховища, — через `DynamicIcon`.
 
-			Доти тут стояв `<CurrentThemeIcon size={20} />` — компонент, ТИП якого
-			залежить від обраної теми. Сайт пререндериться, і в готовий HTML
-			потрапляє значок ТИПОВОЇ теми (`dark`, місяць). Клієнт читає зі сховища
-			`light-green` і хоче сонце — тобто тип компонента в цьому місці інший,
-			ніж у розмітці, з якої йде гідрація. Svelte лишав пререндерений вузол і
-			додавав новий поруч: два значки один на одному. Відтворення точне —
-			обрати «Світло-зелену» й ПЕРЕЗАВАНТАЖИТИ; без перезавантаження дефекту
-			немає, бо гідрації немає.
-
-			Тепер форма розмітки однакова в обох світах: чотири значки завжди, а
-			різниця лише в атрибуті `hidden`, який гідрація спокійно виправляє.
-			Ціна — три зайві `svg` у шапці; вони `aria-hidden` і `display: none`.
+			Тут уже був дефект гідрації (2026-09-13): пререндер малює значок ТИПОВОЇ
+			теми (місяць), клієнт хоче сонце, і Svelte гідрував сонце поверх вузлів
+			місяця — серп і промені без кола. Тоді це виправили точково: чотири значки
+			в розмітці й `hidden` на трьох. Той самий дефект за два тижні виліз в
+			аватарці, тож виправлено спільне місце: `DynamicIcon` після гідрації
+			перестворює значок з нуля, і пререндер у ньому не лишається.
 		-->
-		{#each THEME_OPTIONS as option (option.id)}
-			{@const OptionIcon = ICONS[option.id as Theme]}
-			<span class="theme-icon" hidden={settings.theme !== option.id}>
-				<OptionIcon size={20} />
-			</span>
-		{/each}
+		<DynamicIcon icon={ICONS[settings.theme]} size={20} />
 	{/snippet}
 	{#snippet itemVisual(item)}
-		{@const ItemIcon = ICONS[item.id as Theme]}
-		<ItemIcon size={18} aria-hidden="true" />
+		<DynamicIcon icon={ICONS[item.id as Theme]} size={18} aria-hidden="true" />
 	{/snippet}
 </HeaderMenu>
 
@@ -389,23 +377,6 @@
 		object-fit: cover;
 		border-radius: 2px;
 		box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
-	}
-
-	/*
-	 * Обгортка значка теми в тригері. `display: flex` — щоб значок лишався
-	 * центрованим, як був без обгортки.
-	 *
-	 * `[hidden]` з `!important`: типове правило браузера (`display: none`) має
-	 * нижчу вагу за це `display: flex`, і без нього сховані значки лишилися б
-	 * видимими — усі чотири поруч. Саме той випадок, який `[hidden]` програє
-	 * найчастіше.
-	 */
-	.theme-icon {
-		display: flex;
-	}
-
-	.theme-icon[hidden] {
-		display: none !important;
 	}
 
 	/*

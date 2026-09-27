@@ -2,6 +2,7 @@
 	import { Check, ChevronRight, Minus, X } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import type { RoundStatus } from '$lib/types/game';
+	import DynamicIcon from './ui/DynamicIcon.svelte';
 
 	/**
 	 * ПИТАННЯ ПАРТІЇ НА ЕКРАНІ ПІДСУМКУ (прохання автора 2026-09-26: переглянути
@@ -33,7 +34,6 @@
 	<h2 class="review-list__title">{@html formatFont(t('review.list'))}</h2>
 	<ol class="review-list__items">
 		{#each results as status, index (index)}
-			{@const Icon = ICON[status as keyof typeof ICON] ?? Minus}
 			<li>
 				<button
 					type="button"
@@ -42,7 +42,11 @@
 					data-testid="round-review-{index + 1}-item"
 				>
 					<span class="review-list__mark">
-						<Icon size={18} aria-hidden="true" />
+						<DynamicIcon
+							icon={ICON[status as keyof typeof ICON] ?? Minus}
+							size={18}
+							aria-hidden="true"
+						/>
 						<span class="visually-hidden">{t(`review.${status}` as 'review.correct')}</span>
 					</span>
 					<span class="review-list__text">{@html formatFont(`${index + 1}. ${label(index)}`)}</span>

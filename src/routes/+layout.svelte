@@ -17,6 +17,7 @@
 	import { page, updated } from '$app/state';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { freshLoad } from '$lib/utils/staleBuild';
+	import { finishHydration } from '$lib/services/hydration.svelte';
 	import { trackPageView } from '$lib/services/analytics';
 	import { trackClicks } from '$lib/services/clickTrail';
 	import { webVitals } from '$lib/controllers/webVitals.svelte';
@@ -265,6 +266,13 @@
 	$effect(() => {
 		document.documentElement.classList.toggle('has-custom-scrollbar', scrollbar.hidesNative);
 	});
+
+	/*
+	 * Гідрацію скінчено: ТУТ змонтоване вже все дерево. Значки, вибрані зі стану клієнта,
+	 * після цього перестворюються з нуля й не несуть у собі вузлів пререндера
+	 * (`ui/DynamicIcon.svelte`).
+	 */
+	onMount(finishHydration);
 
 	onMount(() => checkAwaited());
 

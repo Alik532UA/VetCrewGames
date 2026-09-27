@@ -233,6 +233,23 @@ export const onlineTab: BetaTab = {
 		},
 		{
 			/*
+			 * ПЛИТКА ПІСЛЯ ПЕРЕЗАВАНТАЖЕННЯ ЦІЛА (скарга автора 2026-09-27: «змішані
+			 * спотворені аватарки»). Причина й захист — `ui/DynamicIcon.svelte`; кожен значок
+			 * кожної сторінки звіряє e2e `icon-hydration`.
+			 */
+			id: 'online_30',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Виберіть у формі входу аватарку й перезавантажте сторінку переліку кімнат. Плитка мусить показувати цілий значок, який ви вибрали, — без кружечків чи ліній від іншого значка. Повторіть із трьома різними значками.',
+				en: 'Pick an avatar in the entry form and reload the room list page. The tile must show the whole icon you picked — with no circles or lines from another icon. Repeat with three different icons.'
+			},
+			coverage: 'covered',
+			test: 'tests/icon-hydration.spec.ts',
+			testid: 'pairs-avatar-toggle-btn',
+			negative: true
+		},
+		{
+			/*
 			 * ОДНА ПАРА НА КІМНАТУ (рішення автора 2026-09-26). Правило заміни доводять
 			 * юніт-тести (`utils/roomAvatars`, сесія над `LocalRoom`); руками — два пристрої.
 			 */

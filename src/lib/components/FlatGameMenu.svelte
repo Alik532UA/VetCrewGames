@@ -5,6 +5,7 @@
 	import { langPath, type Language } from '$lib/i18n/routing';
 	import { pickRandomRoute } from '$lib/services/randomGame';
 	import type { GameId, MenuGame } from '$lib/config/menu-games';
+	import DynamicIcon from './ui/DynamicIcon.svelte';
 
 	/**
 	 * Плоский перелік ігор: «Випадкова гра» і всі решта поспіль.
@@ -66,13 +67,12 @@
 
 <nav class="menu-list">
 	{#each games as game, index (game.key)}
-		{@const Icon = ICONS[game.id]}
 		<a
 			href={langPath(lang, game.route)}
 			class="menu-btn menu-btn--game menu-row anim-stagger-{index + 1}"
 			data-testid="menu-{game.key.split('.').pop()}-link"
 		>
-			<Icon class="menu-row__icon" />
+			<DynamicIcon icon={ICONS[game.id]} class="menu-row__icon" />
 			<span>{@html formatFont(t(game.key))}</span>
 		</a>
 	{/each}
