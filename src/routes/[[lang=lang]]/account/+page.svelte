@@ -14,7 +14,7 @@
 	import PrivacyPanel from '$lib/components/account/PrivacyPanel.svelte';
 	import LeaderBoard from '$lib/components/account/LeaderBoard.svelte';
 	import AccountSecurity from '$lib/components/account/AccountSecurity.svelte';
-	import { DEFAULT_AVATAR, formatAvatar, parseAvatar } from '$lib/config/avatars';
+	import { formatAvatar, normaliseAvatar, parseAvatar } from '$lib/config/avatars';
 	import { NAME_KEY } from '$lib/config/playerName';
 	import { defaultIdentity } from '$lib/config/accountDefaults';
 	import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
@@ -61,9 +61,9 @@
 	 * шапка. Доти воно читалося зі сховища ТУТ, окремим `parseAvatar`, і це було
 	 * третє місце, що робило те саме.
 	 *
-	 * Через `parseAvatar` однаково: сервіс віддає порожньо, поки вибору не було, а
-	 * вибір у формі мусить бути позначений — інакше перше збереження записало б у
-	 * базу порожній рядок, який правило відкине.
+	 * Через `parseAvatar` однаково: сервіс віддає порожньо без сховища, а вибір у формі
+	 * мусить бути позначений. Випадкова аватарка першого візиту стоїть тут теж, але в
+	 * профіль не їде, поки людина її не вибере (`submitProfile`, рішення автора 8-A).
 	 */
 	const saved = parseAvatar(playerAvatar.value);
 	let avatar = $state(formatAvatar(saved.icon, saved.color));
@@ -167,9 +167,11 @@
 		 * діставалася лише профілю БЕЗ імені, тобто рівно тому єдиному випадку,
 		 * коли аватара в базі ще нема.
 		 */
-		if (account.profile?.avatar) {
-			avatar = account.profile.avatar;
-			playerAvatar.set(account.profile.avatar);
+		// Значок, якого більше немає, — твариною того самого кольору (13-A, `normaliseAvatar`).
+		const fromProfile = normaliseAvatar(account.profile?.avatar);
+		if (fromProfile) {
+			avatar = fromProfile;
+			playerAvatar.set(fromProfile);
 		}
 
 		/*
@@ -264,7 +266,7 @@
 	 * невдача, і показувати її як невдачу було б брехнею.
 	 */
 	async function pickAvatar(next: string): Promise<boolean> {
-		const before = playerAvatar.value;
+		const before = playerAvatar.snapshot();
 		playerAvatar.set(next);
 		avatar = next;
 		if (!account.profile) return true;
@@ -275,11 +277,12 @@
 		 * лишався б аватар, якого в акаунті немає, і людина дізналася б про це на
 		 * іншому пристрої.
 		 *
-		 * `before` може бути порожнім — тоді вертається саме «нічого не вибирав», а
-		 * не типова плитка: у шапці це звичайний значок акаунта.
+		 * Вертається й те, чи аватарку вибирали: випадкова першого візиту, відкочена як
+		 * «вибрана», поїхала б у профіль наступним «Зберегти» (8-A).
 		 */
-		playerAvatar.set(before);
-		avatar = before === '' ? DEFAULT_AVATAR : before;
+		playerAvatar.restore(before);
+		const look = parseAvatar(before.value);
+		avatar = formatAvatar(look.icon, look.color);
 		return false;
 	}
 
@@ -305,7 +308,13 @@
 			problem = 'account.handleTaken';
 			return;
 		}
-		if (!(await account.save(name, handle, country, avatar))) return;
+		/*
+		 * ВИПАДКОВА АВАТАРКА В ПРОФІЛЬ НЕ ЇДЕ (рішення автора 2026-09-27, 8-A: «у профіль не
+		 * пишеться, поки людина не вибере сама»): поле тоді відсутнє зовсім, як і доти в
+		 * того, хто аватарки не вибирав.
+		 */
+		const chosenAvatar = playerAvatar.chosen ? avatar : '';
+		if (!(await account.save(name, handle, country, chosenAvatar))) return;
 		/*
 		 * Аватар пишеться У СХОВИЩЕ ТЕЖ, і саме тут — після вдалого запису.
 		 *
@@ -318,7 +327,7 @@
 		 * Порядок обовʼязковий: запис у сховище ПІСЛЯ бази. У зворотному невдалий
 		 * запис профілю лишав би у кімнатах аватар, якого в профілі немає.
 		 */
-		playerAvatar.set(avatar);
+		if (chosenAvatar) playerAvatar.set(chosenAvatar);
 		/*
 		 * ІМʼЯ Й ПРАПОР — ТЕЖ У СХОВИЩЕ, і це «одне імʼя», про яке просив автор.
 		 *

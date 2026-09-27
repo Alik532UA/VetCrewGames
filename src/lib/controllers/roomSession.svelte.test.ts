@@ -148,7 +148,9 @@ function stubs({
 		forRoom: vi.fn(() => undefined),
 		chooseAvatar: vi.fn(),
 		settle: vi.fn(),
-		country: ''
+		country: '',
+		// Аватарку вибирали: про заміну в кімнаті тоді кажуть (9-A).
+		avatarChosen: true
 	};
 	const lobby = {
 		takenNames: [] as string[],
@@ -1605,7 +1607,8 @@ describe('сесія зі справжніми адаптерами ігор', (
  *
  * Зворотні експерименти: прибрати політику заміни — червоніє «новачок записує»;
  * казати щоразу — червоніє «раз»; не звіряти зайняті в `chooseRoomAvatar` — червоніє
- * «зайняту не взяти»; роль переписувати глобальною парою — червоніє «роль».
+ * «зайняту не взяти»; роль переписувати глобальною парою — червоніє «роль»; казати й
+ * тому, хто аватарки не вибирав, — червоніє «заміна мовчки».
  */
 describe('аватарка в кімнаті', () => {
 	const TAKEN = 'cat:blue';
@@ -1633,6 +1636,21 @@ describe('аватарка в кімнаті', () => {
 		expect(net.joinRoom, 'сам вхід — власною парою').toHaveBeenCalledTimes(1);
 		expect(net.updateMe).toHaveBeenLastCalledWith('42', { avatar: shown });
 		expect(toast.info).toHaveBeenCalledWith('pairs.avatarReplaced', 8000);
+	});
+
+	/** Випадкову аватарку першого візиту міняють мовчки (рішення автора 2026-09-27, 9-A). */
+	it('аватарку не вибирав — заміна мовчки, але записується так само', async () => {
+		const room = new LocalRoom(roomInfo({ createdAt: 5 }), clashing());
+		const entered = sessionFor(room, roomInfo(), GUEST);
+		(entered.session.player as unknown as { avatarChosen: boolean }).avatarChosen = false;
+		entered.session.joinCode = '42';
+		await entered.session.enter('join');
+		await settle();
+
+		const shown = entered.session.match?.members.find((m) => m.uid === GUEST)?.avatar;
+		expect(shown, 'перевірка жива: заміна є').not.toBe(TAKEN);
+		expect(entered.net.updateMe).toHaveBeenLastCalledWith('42', { avatar: shown });
+		expect(toast.info).not.toHaveBeenCalledWith('pairs.avatarReplaced', 8000);
 	});
 
 	it('про ту саму заміну кажуть раз — і після перезавантаження теж', async () => {

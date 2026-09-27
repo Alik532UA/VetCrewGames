@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { loadAccountText } from '$lib/i18n/account';
-	import { DEFAULT_AVATAR } from '$lib/config/avatars';
 	import { settings } from '$lib/services/settings.svelte';
 	import Avatar from './Avatar.svelte';
 	import AvatarPicker from './AvatarPicker.svelte';
@@ -16,8 +15,8 @@
 	 *
 	 * ## Чому розгортається РЯДОК, а не спливає меню
 	 *
-	 * Двадцять дві клітинки по 44px (вісім кольорів і чотирнадцять значків) — це
-	 * два повні ряди на всю ширину панелі; спливна панель біля кнопки на телефоні
+	 * Тридцять клітинок по 44px (дванадцять кольорів і вісімнадцять значків) — це
+	 * кілька повних рядів на всю ширину панелі; спливна панель біля кнопки на телефоні
 	 * або вилізла б за край, або стала б прокручуваною в прокручуваному. Тому вибір
 	 * лягає окремим рядком ПІД рядком імені.
 	 *
@@ -49,7 +48,7 @@
 	 * профіль, у лобі — ще й рядок складу кімнати.
 	 */
 	interface Props {
-		/** Поточна аватарка; порожньо — не вибирали, і тоді видно типову плитку. */
+		/** Поточна аватарка; порожньо — лише без сховища, і тоді видно нейтральний силует. */
 		value: string;
 		/** Вибрали плитку. */
 		onpick: (avatar: string) => void;
@@ -79,7 +78,6 @@
 	});
 
 	const text = $derived((key: string) => dict?.[key] ?? '');
-	const shown = $derived(value || DEFAULT_AVATAR);
 </script>
 
 <div class="chooser">
@@ -92,12 +90,12 @@
 		onclick={() => (open = !open)}
 		data-testid="{scope}-toggle-btn"
 	>
-		<Avatar avatar={shown} size={30} showDefault />
+		<Avatar avatar={value} size={30} showDefault />
 	</button>
 	{#if open}
 		<div class="chooser__panel" id="{scope}-panel" data-testid="{scope}-panel">
 			{#if dict}
-				<AvatarPicker value={shown} {text} {scope} onchange={onpick} preview={false} {taken} />
+				<AvatarPicker {value} {text} {scope} onchange={onpick} preview={false} {taken} />
 			{/if}
 		</div>
 	{/if}

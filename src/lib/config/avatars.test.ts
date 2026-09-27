@@ -1,76 +1,106 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import {
+	AVATAR_ANIMALS,
 	AVATAR_COLORS,
 	AVATAR_ICONS,
 	AVATAR_MAX,
-	DEFAULT_AVATAR,
+	AVATAR_PLANTS,
 	formatAvatar,
+	hasAvatar,
 	isAvatar,
-	isCustomAvatar,
-	parseAvatar
+	normaliseAvatar,
+	parseAvatar,
+	randomAvatar
 } from './avatars';
 
 /**
- * АВАТАР ЯК ЗНАЧЕННЯ: що можна намалювати й що варто показувати.
+ * АВАТАР ЯК ЗНАЧЕННЯ — палітра 2026-09-27 (рішення автора 12-A, 13-A, 14-A): тринадцять
+ * тварин і пʼять рослин, дванадцять кольорів; значки, яких більше немає, читаються
+ * твариною того самого кольору.
  *
- * ## Два різні питання, і саме на цьому був дефект
- *
- * `isAvatar` відповідає «чи можна це намалювати», `isCustomAvatar` — «чи є що
- * показувати в рядку імені». Доти другого не існувало, і в списку гравців
- * онлайн-партії типова плитка стояла в КОЖНОГО, хто аватарки не вибирав: вона не
- * казала нічого й лише розсувала прапор та імʼя. Автор попросив показувати лише
- * те, що відрізняється від типового.
- *
- * ## Чому це перевіряється тут, а не в компоненті
- *
- * Правило про значення, а не про розмітку: `Avatar` лише питає його. Тест на
- * компонент вимагав би рендера, а межа тут проходить рівно по цих чотирьох
- * випадках — порожньо, зіпсовано, типовий, власний.
+ * Зворотні експерименти: вибирати тварину для старого значка з `Math.random` — червоніє
+ * «однаково на кожному пристрої»; пропустити в `normaliseAvatar` перевірку кольору —
+ * червоніє «невідомий колір не рятується»; брати в `randomAvatar` індекс без `Math.min` —
+ * червоніє «крайні кидки».
  */
-describe('аватар як значення', () => {
-	it('перевірка жива: списки не порожні, а типовий аватар із них', () => {
-		expect(AVATAR_ICONS.length).toBeGreaterThan(1);
-		expect(AVATAR_COLORS.length).toBeGreaterThan(1);
-		expect(isAvatar(DEFAULT_AVATAR), 'типовий мусить бути чинним значенням').toBe(true);
+describe('палітра', () => {
+	it('перевірка жива: вісімнадцять значків і дванадцять кольорів, без повторів', () => {
+		expect(AVATAR_ICONS).toHaveLength(18);
+		expect(AVATAR_ANIMALS).toHaveLength(13);
+		expect(AVATAR_PLANTS).toHaveLength(5);
+		expect(AVATAR_COLORS).toHaveLength(12);
+		expect(new Set(AVATAR_ICONS).size).toBe(AVATAR_ICONS.length);
+		expect(new Set(AVATAR_COLORS).size).toBe(AVATAR_COLORS.length);
 	});
 
-	it('чинним є лише відома пара «значок:колір»', () => {
-		expect(isAvatar(formatAvatar(AVATAR_ICONS[0], AVATAR_COLORS[0]))).toBe(true);
-		// Формі відповідає, а намалювати нічим: такого значка в переліку немає.
-		expect(isAvatar('dragon:gold')).toBe(false);
+	it('шести нетварин немає: людина, смайл, зірка, серце, блискавка, мішень', () => {
+		for (const gone of ['user', 'smile', 'star', 'heart', 'zap', 'target']) {
+			expect(AVATAR_ICONS as readonly string[]).not.toContain(gone);
+		}
+	});
+
+	it('чотири нові кольори на місці: коричневий, оливковий, пурпуровий, темно-синій', () => {
+		expect(AVATAR_COLORS).toEqual(expect.arrayContaining(['brown', 'olive', 'magenta', 'navy']));
+	});
+
+	it('найдовша пара вміщається в межу бази', () => {
+		const longest = Math.max(
+			...AVATAR_ICONS.flatMap((icon) => AVATAR_COLORS.map((color) => `${icon}:${color}`.length))
+		);
+		expect(longest).toBeLessThanOrEqual(AVATAR_MAX);
+	});
+});
+
+describe('аватар як значення', () => {
+	it('чинним є лише відома пара «значок:колір» із чинних списків', () => {
+		expect(isAvatar(formatAvatar('shrimp', 'navy'))).toBe(true);
+		expect(isAvatar('dragon:gold'), 'формі відповідає, а намалювати нічим').toBe(false);
+		expect(isAvatar('star:red'), 'значка більше немає').toBe(false);
 		expect(isAvatar('')).toBe(false);
 		expect(isAvatar(null)).toBe(false);
 		expect(isAvatar('a'.repeat(AVATAR_MAX + 1))).toBe(false);
 	});
 
-	/**
-	 * ГОЛОВНЕ ТУТ: типовий аватар — НЕ власний.
-	 *
-	 * Зворотний експеримент (§ 1.1): прибрати `&& value !== DEFAULT_AVATAR` із
-	 * `isCustomAvatar` — червоніє другий рядок, а в списку гравців знову
-	 * зʼявиться однакова плитка в кожного.
-	 */
-	it('власним є лише те, що відрізняється від типового', () => {
-		const mine = formatAvatar('cat', 'violet');
-		expect(isCustomAvatar(mine)).toBe(true);
-		expect(isCustomAvatar(DEFAULT_AVATAR)).toBe(false);
+	it('значок, якого більше немає, — тварина того самого кольору', () => {
+		const migrated = normaliseAvatar('star:red');
+		const [icon, color] = migrated.split(':');
+		expect(AVATAR_ANIMALS as readonly string[]).toContain(icon);
+		expect(color).toBe('red');
+		expect(hasAvatar('star:red'), 'показується, а не зникає').toBe(true);
 	});
 
-	it('порожнє й зіпсоване власним не вважається', () => {
-		expect(isCustomAvatar('')).toBe(false);
-		expect(isCustomAvatar(null)).toBe(false);
-		expect(isCustomAvatar(undefined)).toBe(false);
-		expect(isCustomAvatar('dragon:gold')).toBe(false);
+	it('однаково на кожному пристрої: той самий рядок — та сама тварина', () => {
+		for (const old of ['user:teal', 'smile:blue', 'heart:pink', 'zap:orange', 'target:slate']) {
+			expect(normaliseAvatar(old)).toBe(normaliseAvatar(old));
+			expect(isAvatar(normaliseAvatar(old)), old).toBe(true);
+		}
 	});
 
-	/**
-	 * Показ невідомого значення лишається типовим — і це НЕ суперечить правилу
-	 * вище: `parseAvatar` відповідає на питання «чим малювати, якщо вже малюємо»,
-	 * а вирішує «чи малювати» саме `isCustomAvatar`.
-	 */
-	it('невідоме значення розбирається як типовий аватар', () => {
-		expect(parseAvatar('dragon:gold')).toEqual(parseAvatar(DEFAULT_AVATAR));
-		expect(parseAvatar(null)).toEqual(parseAvatar(DEFAULT_AVATAR));
+	it('невідомий колір не рятується, а чинна пара лишається собою', () => {
+		expect(normaliseAvatar('star:gold')).toBe('');
+		expect(normaliseAvatar('dragon:red')).toBe('');
+		expect(normaliseAvatar('cat:blue')).toBe('cat:blue');
+		expect(hasAvatar('')).toBe(false);
+		expect(hasAvatar(undefined)).toBe(false);
+	});
+
+	/** Розбір — для ВИБОРУ, де щось мусить бути позначене; «чи малювати» питає `hasAvatar`. */
+	it('розбір невідомого — перший значок першого кольору, старого — його тварина', () => {
+		expect(parseAvatar('dragon:gold')).toEqual({ icon: AVATAR_ICONS[0], color: AVATAR_COLORS[0] });
+		expect(parseAvatar(null)).toEqual({ icon: AVATAR_ICONS[0], color: AVATAR_COLORS[0] });
+		expect(formatAvatar(...(Object.values(parseAvatar('star:red')) as [never, never]))).toBe(
+			normaliseAvatar('star:red')
+		);
+	});
+});
+
+describe('випадкова аватарка нового гравця (8-A)', () => {
+	it('завжди чинна — зокрема на крайніх кидках', () => {
+		expect(randomAvatar(() => 0)).toBe(formatAvatar(AVATAR_ICONS[0], AVATAR_COLORS[0]));
+		expect(randomAvatar(() => 0.999999)).toBe(
+			formatAvatar(AVATAR_ICONS[AVATAR_ICONS.length - 1], AVATAR_COLORS[AVATAR_COLORS.length - 1])
+		);
+		expect(isAvatar(randomAvatar(() => 1)), 'крайні кидки').toBe(true);
 	});
 });

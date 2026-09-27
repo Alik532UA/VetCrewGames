@@ -246,6 +246,23 @@ export const onlineTab: BetaTab = {
 			testid: 'pairs-member-*-item'
 		},
 		{
+			/*
+			 * ВИПАДКОВУ МІНЯЮТЬ МОВЧКИ (рішення автора 2026-09-27, 9-A): пояснення — лише
+			 * тому, хто аватарку вибирав. Збіг двох випадкових руками не підлаштувати, тож
+			 * доводить це сесія над `LocalRoom`.
+			 */
+			id: 'online_27',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'Зайдіть у кімнату з аватаркою, якої ви не вибирали (новий гравець), коли таку саму пару вже тримає хтось інший. Плитка мусить змінитися на вільну, але пояснення «вашу аватарку замінено» НЕ мусить зʼявитися: ви її не вибирали.',
+				en: 'Enter a room with an avatar you did not pick (a new player) while someone else already holds the same pair. The tile must change to a free one, but the «your avatar was replaced» note must NOT appear: you did not pick it.'
+			},
+			negative: true,
+			coverage: 'covered',
+			test: 'src/lib/controllers/roomSession.svelte.test.ts',
+			testid: 'pairs-member-*-item'
+		},
+		{
 			id: 'online_22',
 			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
 			text: {

@@ -354,15 +354,34 @@ export const accountTab: BetaTab = {
 			testid: 'account-avatar-icon-*-radio'
 		},
 		{
-			id: 'account_31',
+			/*
+			 * ВИПАДКОВА АВАТАРКА НОВОГО ГРАВЦЯ (рішення автора 2026-09-27, 8-A). Замість
+			 * `account_31`: «типової» плитки, про яку він питав, більше немає. Те, що аватарка
+			 * памʼятається, доводить `playerAvatar.svelte.test.ts`; руками — профіль і два
+			 * пристрої.
+			 */
+			id: 'account_34',
 			category: { uk: 'Аватарка', en: 'Avatar' },
 			text: {
-				uk: 'Лишіть аватарку типовою (людина на бірюзовому) і зайдіть у спільну партію. Між прапором та іменем у переліку гравців плитки бути НЕ мусить — вона зʼявляється лише тоді, коли аватарка відрізняється від типової. Так само в шапці: типова аватарка лишає звичайний значок акаунта.',
-				en: 'Leave the avatar at its default (the person on teal) and join a shared game. There must be NO tile between the flag and the name in the player list — it appears only when the avatar differs from the default. Same in the header: a default avatar keeps the plain account icon.'
+				uk: 'Відкрийте сайт у приватному вікні: у шапці мусить одразу стояти аватарка — значок на кольоровому тлі, а після перезавантаження та сама. Увійдіть в акаунт, у профілі якого аватарки немає, і збережіть профіль, нічого не вибираючи. На другому пристрої в профілі аватарки НЕ мусить бути: випадкова туди не пишеться, поки ви не виберете сами.',
+				en: 'Open the site in a private window: the header must show an avatar at once — an icon on a coloured tile — and the same one after a reload. Sign in to an account whose profile has no avatar and save the profile without picking anything. On the second device the profile must NOT have an avatar: the random one is not written there until you pick one yourself.'
 			},
 			negative: true,
 			coverage: 'manual',
-			testid: 'quiz-scores-list'
+			testid: 'header-account-link'
+		},
+		{
+			// Нова палітра (рішення автора 2026-09-27, 12-A і 14-A) — склад доводять списки.
+			id: 'account_35',
+			category: { uk: 'Аватарка', en: 'Avatar' },
+			text: {
+				uk: 'Відкрийте вибір аватарки. Мусить бути 12 кольорів і 18 значків: тварини, тоді морква, банан, вишня, яблуко й виноград. Людини, смайла, зірки, серця, блискавки й мішені серед значків НЕ мусить бути.',
+				en: 'Open the avatar choice. There must be 12 colours and 18 icons: animals, then carrot, banana, cherry, apple and grapes. The person, smiley, star, heart, lightning and target must NOT be among the icons.'
+			},
+			negative: true,
+			coverage: 'covered',
+			test: 'src/lib/config/avatars.test.ts',
+			testid: 'account-avatar-icon-*-radio'
 		},
 		{
 			id: 'account_32',

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_AVATAR, isCustomAvatar } from '$lib/config/avatars';
+import { hasAvatar, normaliseAvatar } from '$lib/config/avatars';
 import type { Member } from '$lib/net/roomTypes';
 import { ROOM_AVATARS, takenAvatars, uniqueAvatars } from './roomAvatars';
 
@@ -39,7 +39,7 @@ describe('аватарки в складі кімнати', () => {
 		expect(Object.keys(out.swaps)).toEqual(['z-newcomer']);
 	});
 
-	it('заміна — вільна: не типова й не чиясь', () => {
+	it('заміна — вільна: не порожня й не чиясь', () => {
 		const members = [
 			member('a', 1, 'cat:blue'),
 			member('b', 2, 'dog:red'),
@@ -50,10 +50,7 @@ describe('аватарки в складі кімнати', () => {
 		const avatars = shown.map((m) => m.avatar);
 
 		expect(new Set(avatars).size, `повтор: ${avatars.join(', ')}`).toBe(avatars.length);
-		for (const swap of Object.values(swaps)) {
-			expect(isCustomAvatar(swap), swap).toBe(true);
-			expect(swap).not.toBe(DEFAULT_AVATAR);
-		}
+		for (const swap of Object.values(swaps)) expect(hasAvatar(swap), swap).toBe(true);
 		expect(Object.keys(swaps).sort()).toEqual(['c', 'd']);
 	});
 
@@ -80,15 +77,23 @@ describe('аватарки в складі кімнати', () => {
 		expect(uniqueAvatars(healed, 7).swaps).toEqual({});
 	});
 
-	it('типова плитка й «не вибирав» не зайняті ні в кого', () => {
-		const members = [
-			member('a', 1, DEFAULT_AVATAR),
-			member('b', 2, DEFAULT_AVATAR),
-			member('c', 3)
-		];
+	it('рядок без аватарки чи з зіпсованою не займає нічого', () => {
+		const members = [member('a', 1), member('b', 2, 'dragon:gold'), member('c', 3)];
 
 		expect(uniqueAvatars(members, 7).swaps).toEqual({});
 		expect(takenAvatars(members, 'a').size).toBe(0);
+	});
+
+	/**
+	 * Значок, якого більше немає (`star:red` зі старшої збірки), показується твариною того
+	 * самого кольору — і дві такі плитки в складі теж повтор (рішення автора 13-A).
+	 */
+	it('старий значок порівнюється тим, що показують', () => {
+		const shown = normaliseAvatar('star:red');
+		const members = [member('a', 1, 'star:red'), member('b', 2, shown)];
+
+		expect(Object.keys(uniqueAvatars(members, 7).swaps)).toEqual(['b']);
+		expect([...takenAvatars(members, 'b').keys()]).toEqual([shown]);
 	});
 
 	it('зайняте для вибору — чуже, з іменем власника; своє не зайняте', () => {
@@ -98,8 +103,8 @@ describe('аватарки в складі кімнати', () => {
 		expect([...taken]).toEqual([['dog:red', 'імʼя b']]);
 	});
 
-	it('пар вистачає з запасом: 111 проти 12 місць кімнати', () => {
-		expect(ROOM_AVATARS).toHaveLength(111);
-		expect(ROOM_AVATARS).not.toContain(DEFAULT_AVATAR);
+	it('пар вистачає з запасом: 216 проти 12 місць кімнати', () => {
+		expect(ROOM_AVATARS).toHaveLength(216);
+		expect(ROOM_AVATARS.every(hasAvatar)).toBe(true);
 	});
 });

@@ -1,21 +1,26 @@
 <script lang="ts">
 	import {
+		Apple,
+		Banana,
 		Bird,
 		Bug,
+		Carrot,
 		Cat,
+		Cherry,
 		Dog,
 		Fish,
-		Heart,
+		Grape,
+		Panda,
 		Rabbit,
-		Smile,
+		Rat,
+		Shrimp,
 		Snail,
-		Star,
-		Target,
+		Squirrel,
 		Turtle,
 		User,
-		Zap
+		Worm
 	} from 'lucide-svelte';
-	import { isCustomAvatar, parseAvatar, type AvatarIcon } from '$lib/config/avatars';
+	import { hasAvatar, parseAvatar, type AvatarIcon } from '$lib/config/avatars';
 
 	/**
 	 * АВАТАР ГРАВЦЯ — плитка зі значком на кольоровому тлі.
@@ -41,7 +46,13 @@
 	 *
 	 * `config/avatars.ts` лишається чистим від імпортів `lucide-svelte`: інакше
 	 * кожен, хто читає звідти саму лише межу довжини (а це й `net`, і правила
-	 * гейта), тягнув би в бандл чотирнадцять модулів зі значками.
+	 * гейта), тягнув би в бандл вісімнадцять модулів зі значками.
+	 *
+	 * ## Нейтральна плитка — не з палітри
+	 *
+	 * Там, де плитка мусить стояти завжди (`showDefault`: вікно «Чекаємо», вибір), а
+	 * аватарки немає, стоїть силует на сірому. Силуету в палітрі більше немає (рішення
+	 * автора 2026-09-27, 12-A), тож із чиєюсь аватаркою його не сплутати.
 	 */
 	interface Props {
 		/** Рядок `значок:колір`. Невідоме чи порожнє — типовий аватар. */
@@ -55,16 +66,15 @@
 		 */
 		size?: number;
 		/**
-		 * Малювати ТИПОВИЙ аватар теж. Типово — ні, і це головне правило цього
-		 * компонента.
+		 * Малювати плитку й тоді, коли аватарки немає, — нейтральним силуетом. Типово — ні,
+		 * і це головне правило цього компонента.
 		 *
-		 * Причина в тому, що плитка робить у рядку імені: вона каже «це той самий,
-		 * кого я бачив у лобі». Типова плитка цього не каже — вона стоїть однакова в
-		 * кожного, хто аватарки не вибирав, і лише розсуває прапор та імʼя. Автор
-		 * попросив прямо: показувати лише те, що відрізняється від типового.
+		 * Причина в тому, що плитка робить у рядку імені: вона каже «це той самий, кого я
+		 * бачив у лобі». Силует цього не каже — він стоїть однаковий у кожного, в кого
+		 * аватарки немає (запис старшої збірки), і лише розсуває прапор та імʼя.
 		 *
-		 * Вмикає це рівно один вжиток — ВИБІР аватара (`AvatarPicker`). Там типовий і
-		 * є один із варіантів, і сховати його означало б порожню клітинку в переліку.
+		 * Вмикають це ті, де плитка мусить стояти завжди: вибір аватара (`AvatarPicker`,
+		 * `AvatarChooser`) і вікно «Чекаємо» (`QuizAway`).
 		 *
 		 * Типове значення саме `false`, а не `true`: місць-списків девʼять, а вибір
 		 * один, і забути прапорець у десятому списку — це та сама помилка, яку автор
@@ -76,7 +86,6 @@
 	let { avatar, size = 22, showDefault = false }: Props = $props();
 
 	const ICONS: Record<AvatarIcon, typeof User> = {
-		user: User,
 		cat: Cat,
 		dog: Dog,
 		rabbit: Rabbit,
@@ -85,15 +94,23 @@
 		snail: Snail,
 		turtle: Turtle,
 		bug: Bug,
-		smile: Smile,
-		star: Star,
-		heart: Heart,
-		zap: Zap,
-		target: Target
+		squirrel: Squirrel,
+		rat: Rat,
+		panda: Panda,
+		worm: Worm,
+		shrimp: Shrimp,
+		carrot: Carrot,
+		banana: Banana,
+		cherry: Cherry,
+		apple: Apple,
+		grape: Grape
 	};
 
+	/** Аватарки немає: у вибір і «Чекаємо» — нейтральний силует, не з палітри. */
+	const empty = $derived(!hasAvatar(avatar));
 	const look = $derived(parseAvatar(avatar));
-	const Icon = $derived(ICONS[look.icon]);
+	const Icon = $derived(empty ? User : ICONS[look.icon]);
+	const tone = $derived(empty ? 'none' : look.color);
 	/*
 	 * Значок — дві третини плитки, щоб навколо лишалося поле: значок урівень із краєм
 	 * читається як обрізаний. `lucide-svelte` пише розмір числом в атрибутах; CSS нижче
@@ -101,12 +118,12 @@
 	 */
 	const glyph = $derived(Math.round(size * 0.66));
 
-	/** Чи є що показувати: власний аватар — або вибір, де типовий теж вибір. */
-	const visible = $derived(showDefault || isCustomAvatar(avatar));
+	/** Чи є що показувати: аватарка — або місце, де плитка мусить стояти завжди. */
+	const visible = $derived(showDefault || !empty);
 </script>
 
 {#if visible}
-	<span class="avatar avatar--{look.color}" style:--avatar-size="{size}px" aria-hidden="true">
+	<span class="avatar avatar--{tone}" style:--avatar-size="{size}px" aria-hidden="true">
 		<Icon size={glyph} strokeWidth={2.25} />
 	</span>
 {/if}
@@ -148,6 +165,16 @@
 		color: var(--color-avatar-ink);
 	}
 
+	.avatar--brown {
+		background: var(--color-avatar-brown);
+		color: var(--color-avatar-ink);
+	}
+
+	.avatar--olive {
+		background: var(--color-avatar-olive);
+		color: var(--color-avatar-ink);
+	}
+
 	.avatar--green {
 		background: var(--color-avatar-green);
 		color: var(--color-avatar-ink);
@@ -163,8 +190,18 @@
 		color: var(--color-avatar-ink);
 	}
 
+	.avatar--navy {
+		background: var(--color-avatar-navy);
+		color: var(--color-avatar-ink);
+	}
+
 	.avatar--violet {
 		background: var(--color-avatar-violet);
+		color: var(--color-avatar-ink);
+	}
+
+	.avatar--magenta {
+		background: var(--color-avatar-magenta);
 		color: var(--color-avatar-ink);
 	}
 
@@ -174,6 +211,12 @@
 	}
 
 	.avatar--slate {
+		background: var(--color-avatar-slate);
+		color: var(--color-avatar-ink);
+	}
+
+	/* Силует без аватарки — на сірому, як і був: із палітри його тепер не вибрати. */
+	.avatar--none {
 		background: var(--color-avatar-slate);
 		color: var(--color-avatar-ink);
 	}

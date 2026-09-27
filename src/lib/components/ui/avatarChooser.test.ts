@@ -11,7 +11,7 @@ import { AVATAR_COLORS, AVATAR_ICONS } from '$lib/config/avatars';
  *  • вибір ЗАКРИТИЙ, доки його не відкрили, і словник підписів (лінивий чанк) до
  *    того не вантажиться — інакше кожне відкриття форми тягло б `i18n/account`;
  *  • до приїзду словника радіокнопок немає зовсім: без підписів вони озвучувалися
- *    б як «кнопка» двадцять два рази;
+ *    б як «кнопка» тридцять разів;
  *  • натиск на плитку віддає ПАРУ (`значок:колір`), складену з поточною половиною.
  *
  * Зворотний експеримент: вантажити словник одразу — червоніє «закритий»; віддавати
@@ -75,11 +75,17 @@ describe('вибір аватарки поруч з іменем', () => {
 		expect(onpick).toHaveBeenNthCalledWith(2, 'dog:blue');
 	});
 
-	it('не вибирали нічого — видно типову плитку, а не порожнє місце', async () => {
+	it('аватарки немає зовсім — на кнопці силует, а у виборі щось позначене', async () => {
 		const { toggle } = mounted('');
+		expect(
+			toggle.querySelector('.avatar--none'),
+			'нейтральний силует, не з палітри'
+		).not.toBeNull();
 		await fireEvent.click(toggle);
-		const teal = (await screen.findByTestId('test-avatar-color-teal-radio')) as HTMLInputElement;
-		expect(teal.checked, 'типова — `user:teal`').toBe(true);
+		const first = (await screen.findByTestId(
+			`test-avatar-color-${AVATAR_COLORS[0]}-radio`
+		)) as HTMLInputElement;
+		expect(first.checked).toBe(true);
 	});
 
 	it('закриває та сама плитка, що відкрила', async () => {

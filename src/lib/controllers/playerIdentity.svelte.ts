@@ -1,5 +1,5 @@
 import { randomCrewName } from '$lib/config/crewNames';
-import { DEFAULT_AVATAR, isAvatar } from '$lib/config/avatars';
+import { isAvatar } from '$lib/config/avatars';
 import { NAME_KEY, initialName, rerollIfTaken } from '$lib/config/playerName';
 import { crewTranslate, loadCrewNames } from '$lib/i18n/crew';
 import { storage } from '$lib/services/storage';
@@ -97,13 +97,22 @@ export class PlayerIdentity {
 	 * дві копії розійшлися б на першому ж натиску: плитка в полі одна, а в кімнату
 	 * їхала б інша. Тому тут лише ГЕТЕР над спільним станом.
 	 *
-	 * Порожньо (нічого не вибирали) і типовий дають ту саму плитку: «без аватара» не
-	 * буває, порожнє місце читалося б як дефект. Підписи вибору («Кіт», «Синій»)
-	 * лежать у лінивому чанку `i18n/account`, і форма входу довантажує його, лише
-	 * коли вибір відкривають (`AvatarChooser`).
+	 * Аватарка є в кожного з першого візиту — випадкова, доки людина не вибере сама
+	 * (рішення автора 2026-09-27, 8-A). Порожньо буває лише без сховища й до гідрації;
+	 * тоді вибір показує нейтральний силует (`Avatar.showDefault`). Підписи вибору
+	 * («Кіт», «Синій») лежать у лінивому чанку `i18n/account`, і форма входу
+	 * довантажує його, лише коли вибір відкривають (`AvatarChooser`).
 	 */
 	get avatar(): string {
-		return playerAvatar.value || DEFAULT_AVATAR;
+		return playerAvatar.value;
+	}
+
+	/**
+	 * Чи вибрала людина аватарку сама. Випадкову з першого візиту в кімнаті замінюють
+	 * мовчки, а вибрану — з поясненням (рішення автора 2026-09-27, 9-A).
+	 */
+	get avatarChosen(): boolean {
+		return playerAvatar.chosen;
 	}
 
 	/**
@@ -251,10 +260,8 @@ export class PlayerIdentity {
 	}
 
 	/**
-	 * Аватар для запису в кімнату. Порожньо — поля в базі не буде зовсім.
-	 *
-	 * Типовий аватар НЕ пишеться: він і так підставляється на показі, а зайве
-	 * поле в `members/$uid` пишеться на КОЖЕН вхід у кімнату.
+	 * Аватар для запису в кімнату — будь-який, що є, випадковий теж: він розрізняє людей
+	 * у складі. Порожньо — поля в базі не буде зовсім.
 	 */
 	forRoom(): string | undefined {
 		return playerAvatar.forRoom();

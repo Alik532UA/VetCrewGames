@@ -1,10 +1,4 @@
-import {
-	AVATAR_COLORS,
-	AVATAR_ICONS,
-	DEFAULT_AVATAR,
-	formatAvatar,
-	isCustomAvatar
-} from '$lib/config/avatars';
+import { AVATAR_COLORS, AVATAR_ICONS, formatAvatar, normaliseAvatar } from '$lib/config/avatars';
 import type { Member } from '$lib/net/roomTypes';
 import { fnv1a } from './fnv';
 
@@ -30,14 +24,16 @@ import { fnv1a } from './fnv';
  * солі кімнати, а не з `Math.random`. Той, кого замінили, пише її в базу сам — і
  * запис збігається з тим, що інші вже бачать, без жодного стрибка.
  *
- * Типова плитка (`DEFAULT_AVATAR`, «не вибирав») у цьому не бере участі: її не
+ * Порівнюються аватарки, які ПОКАЗУЮТЬ (`normaliseAvatar`): значок, якого більше немає
+ * (`star:red` зі старшої збірки), показується твариною того самого кольору, і дві такі
+ * плитки в складі — той самий повтор. Рядок без аватарки не бере участі: його не
  * показують зовсім (`Avatar.showDefault`), тож і плутати нічого.
  */
 
-/** Усі пари, крім типової: заміна мусить бути ВИДИМОЮ — людина мала свою плитку. */
+/** Усі пари — заміна мусить бути ВИДИМОЮ: людина мала свою плитку. */
 export const ROOM_AVATARS: readonly string[] = AVATAR_ICONS.flatMap((icon) =>
 	AVATAR_COLORS.map((color) => formatAvatar(icon, color))
-).filter((avatar) => avatar !== DEFAULT_AVATAR);
+);
 
 export interface UniqueAvatars {
 	/** Склад із розвʼязаними аватарками — те, що показують усі екрани кімнати. */
@@ -58,10 +54,10 @@ export function uniqueAvatars(members: Member[], salt: string | number): UniqueA
 	const held = new Set<string>();
 	const clashing: Member[] = [];
 	for (const member of [...members].sort(byEntry)) {
-		const avatar = member.avatar;
-		if (!isCustomAvatar(avatar)) continue;
-		if (held.has(avatar as string)) clashing.push(member);
-		else held.add(avatar as string);
+		const avatar = normaliseAvatar(member.avatar);
+		if (avatar === '') continue;
+		if (held.has(avatar)) clashing.push(member);
+		else held.add(avatar);
 	}
 	// Без повторів — той самий масив: матч не отримує «нового» складу на кожен знімок.
 	if (clashing.length === 0) return { members, swaps: {} };
@@ -69,7 +65,7 @@ export function uniqueAvatars(members: Member[], salt: string | number): UniqueA
 	const swaps: Record<string, string> = {};
 	for (const member of clashing) {
 		const free = ROOM_AVATARS.filter((avatar) => !held.has(avatar));
-		// 111 пар на 12 місць кімнати: вільна є завжди, але межу краще назвати, ніж упасти.
+		// 216 пар на 12 місць кімнати: вільна є завжди, але межу краще назвати, ніж упасти.
 		if (free.length === 0) break;
 		// Той самий хеш у всіх учасників — отже й та сама заміна.
 		const pick = free[fnv1a(`${salt}:${member.uid}`) % free.length];
@@ -91,8 +87,9 @@ export function uniqueAvatars(members: Member[], salt: string | number): UniqueA
 export function takenAvatars(members: readonly Member[], me: string): Map<string, string> {
 	const taken = new Map<string, string>();
 	for (const member of members) {
-		if (member.uid === me || !isCustomAvatar(member.avatar)) continue;
-		taken.set(member.avatar as string, member.name);
+		const avatar = normaliseAvatar(member.avatar);
+		if (member.uid === me || avatar === '') continue;
+		taken.set(avatar, member.name);
 	}
 	return taken;
 }

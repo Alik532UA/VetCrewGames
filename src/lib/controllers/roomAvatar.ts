@@ -1,4 +1,3 @@
-import { DEFAULT_AVATAR } from '$lib/config/avatars';
 import { sessionStore } from '$lib/services/storage';
 import { takenAvatars } from '$lib/utils/roomAvatars';
 import { toast } from './toast.svelte';
@@ -63,7 +62,7 @@ export async function chooseRoomAvatar<M extends RoomMatch>(
 	if (!match || match.status === 'playing') return false;
 	if (takenAvatars(match.members, session.me).has(avatar)) return false;
 	session.player.chooseAvatar(avatar);
-	return rewrite(session, 'avatar not changed', avatar === DEFAULT_AVATAR ? undefined : avatar);
+	return rewrite(session, 'avatar not changed', avatar);
 }
 
 /** Заміна, яку ця сесія вже пише: та сама вдруге не пишеться. */
@@ -78,7 +77,9 @@ const writing = new WeakMap<object, string>();
  * заміна належить цій кімнаті, а не людині.
  *
  * Записати — щоразу (повторний вхід знову пише власну пару, і без запису повтор
- * повернувся б), а сказати — раз на кімнату й пару (`SWAP_TOLD_KEY`).
+ * повернувся б), а сказати — раз на кімнату й пару (`SWAP_TOLD_KEY`), і лише тому, хто
+ * аватарку вибирав: випадкову з першого візиту міняють мовчки (рішення автора
+ * 2026-09-27, 9-A) — людина її не вибирала, і пояснювати нема чого.
  */
 export async function takeRoomAvatar<M extends RoomMatch>(
 	session: RoomSession<M>,
@@ -91,7 +92,7 @@ export async function takeRoomAvatar<M extends RoomMatch>(
 		writing.delete(session);
 		return;
 	}
-	if (sessionStore.get(SWAP_TOLD_KEY) === key) return;
+	if (!session.player.avatarChosen || sessionStore.get(SWAP_TOLD_KEY) === key) return;
 	sessionStore.set(SWAP_TOLD_KEY, key);
 	// Довше за типові 3 с: це не «готово», а пояснення, яке треба встигнути прочитати.
 	toast.info('pairs.avatarReplaced', 8000);

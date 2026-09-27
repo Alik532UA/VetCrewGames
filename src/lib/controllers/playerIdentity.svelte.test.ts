@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AVATAR_KEY, DEFAULT_AVATAR } from '$lib/config/avatars';
+import { AVATAR_KEY } from '$lib/config/avatars';
 import { COUNTRY_KEY, NAME_KEY } from '$lib/config/playerName';
 
 /**
@@ -75,12 +75,22 @@ describe('PlayerIdentity', () => {
 		profileName.mockReset().mockResolvedValue('');
 		pushName.mockReset().mockResolvedValue(undefined);
 		pushAvatar.mockReset().mockResolvedValue(undefined);
-		playerAvatar.set('');
+		playerAvatar.restore({ value: '', chosen: false });
 	});
 
 	describe('аватар — зі спільного `playerAvatar`', () => {
-		it('нічого не вибрано — типова плитка, а не порожнє місце', () => {
-			expect(new PlayerIdentity(first).avatar).toBe(DEFAULT_AVATAR);
+		it('аватарки немає зовсім — порожньо: вибір покаже нейтральний силует', () => {
+			expect(new PlayerIdentity(first).avatar).toBe('');
+		});
+
+		/** Випадкову з першого візиту (8-A) в кімнаті міняють мовчки, вибрану — з поясненням. */
+		it('чи вибирала людина аватарку — зі спільного стану', () => {
+			const me = new PlayerIdentity(first);
+			playerAvatar.restore({ value: 'panda:olive', chosen: false });
+			expect(me.avatar).toBe('panda:olive');
+			expect(me.avatarChosen).toBe(false);
+			me.chooseAvatar('cherry:navy');
+			expect(me.avatarChosen).toBe(true);
 		});
 
 		/**
@@ -107,8 +117,9 @@ describe('PlayerIdentity', () => {
 		it('невідоме значення не приймається ні там, ні там', () => {
 			const me = new PlayerIdentity(first);
 			me.chooseAvatar('dragon:gold');
+			me.chooseAvatar('star:red');
 
-			expect(me.avatar).toBe(DEFAULT_AVATAR);
+			expect(me.avatar).toBe('');
 			expect(pushAvatar).not.toHaveBeenCalled();
 		});
 	});
@@ -373,11 +384,7 @@ describe('PlayerIdentity', () => {
 	});
 
 	describe('forRoom()', () => {
-		/**
-		 * Типовий аватар НЕ пишеться: він і так підставляється на показі, а
-		 * `members/$uid` пишеться на КОЖЕН вхід у кімнату.
-		 */
-		it('типовий аватар не їде в базу зовсім', () => {
+		it('без аватарки поля в базі немає зовсім', () => {
 			expect(new PlayerIdentity(first).forRoom()).toBeUndefined();
 		});
 
@@ -386,9 +393,10 @@ describe('PlayerIdentity', () => {
 			expect(new PlayerIdentity(first).forRoom()).toBe('turtle:violet');
 		});
 
-		it('вибраний ТИПОВИЙ теж не їде', () => {
-			playerAvatar.set(DEFAULT_AVATAR);
-			expect(new PlayerIdentity(first).forRoom()).toBeUndefined();
+		/** Випадкова теж: у складі вона розрізняє людей, як і вибрана (8-A). */
+		it('випадковий із першого візиту теж їде', () => {
+			playerAvatar.restore({ value: 'grape:brown', chosen: false });
+			expect(new PlayerIdentity(first).forRoom()).toBe('grape:brown');
 		});
 	});
 });
