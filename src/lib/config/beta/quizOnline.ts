@@ -408,6 +408,22 @@ export const quizOnlineTab: BetaTab = {
 				en: 'Play a quiz on a phone. When a round does not fit the screen, it must open at the BOTTOM — with the options and the answer button on screen. Scroll up — the page must not jerk back until the round ends. The scoreboard between rounds and the final are not pulled down: the score is on top there.'
 			},
 			coverage: 'manual'
+		},
+		{
+			/*
+			 * РОЗБІР ПІД ТАБЛОМ (прохання автора 2026-09-28: «між раундами оновлений рахунок та
+			 * нижче пояснення відповідей минулого раунду»). Покрито: `QuizRoom.reveal.test.ts`
+			 * бачить розбір кожної гри під рахунком і ту саму дошку з відповіддю гравця.
+			 */
+			id: 'quizonline_32',
+			category: { uk: 'Табло', en: 'Scoreboard' },
+			text: {
+				uk: 'Зіграйте кілька раундів різних ігор. Між раундами під рахунком мусить стояти розбір щойно зіграного питання — без картинок і варіантів: ваша відповідь (правильно чи ні) і пояснення. Не встигли відповісти — видно правильну відповідь і пояснення, але без «Неправильно». Рахунок і розбір разом уміщаються в екран телефона.',
+				en: 'Play several rounds of different games. Between rounds the breakdown of the question just played must stand under the score — without pictures or options: your answer (right or not) and the explanation. If you did not answer in time, the right answer and the explanation show, but without «Wrong». The score and the breakdown together fit a phone screen.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/components/quiz/QuizRoom.reveal.test.ts',
+			testid: 'quiz-reveal-panel'
 		}
 	]
 };

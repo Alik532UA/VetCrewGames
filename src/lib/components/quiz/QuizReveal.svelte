@@ -6,6 +6,7 @@
 	import { phaseScore, rankedByPhase } from '$lib/utils/revealOrder';
 	import { placesOf } from '$lib/utils/standings';
 	import { formatFont } from '$lib/i18n';
+	import { revealScroll } from '$lib/utils/revealScroll';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -113,6 +114,12 @@
 		note?: string;
 		/** Ідентифікатор панелі: фінал — `quiz-over-panel`, як і доти. */
 		testId?: string;
+		/**
+		 * Під табло стоїть РОЗБІР минулого раунду (`QuizBoard`, `settled`). Тоді табло не
+		 * займає 70% екрана й не центрується саме: центрується пара «рахунок — розбір», інакше
+		 * розбір виштовхувало б до низу екрана й за край.
+		 */
+		followed?: boolean;
 	}
 
 	let {
@@ -132,7 +139,8 @@
 		title,
 		actions,
 		note,
-		testId = 'quiz-reveal-panel'
+		testId = 'quiz-reveal-panel',
+		followed = false
 	}: Props = $props();
 
 	const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
@@ -233,7 +241,18 @@
 	const places = $derived(placesOf(players, phaseScore(scores, gains, moved)));
 </script>
 
-<section class="reveal text-panel" style:--reveal-unit="{unit}px" data-testid={testId}>
+<!--
+	`revealScroll` — щоб табло ПОЧИНАЛОСЯ з рахунку. Під ним тепер розбір минулого раунду
+	(`QuizBoard`, `settled`), і на невисокому екрані разом вони прокручуються: без цього
+	табло відкривалося б там, де стояла прокрутка раунду, — внизу, з рахунком за краєм.
+-->
+<section
+	class="reveal text-panel"
+	class:reveal--followed={followed}
+	style:--reveal-unit="{unit}px"
+	use:revealScroll
+	data-testid={testId}
+>
 	<!--
 		СКІЛЬКИ ЧЕКАТИ НАСТУПНИЙ РАУНД — тією самою смугою, що в раунді.
 
@@ -357,6 +376,12 @@
 		margin-block: auto;
 		padding: calc(var(--u) * 0.9) var(--u);
 		box-sizing: border-box;
+	}
+
+	/* Пара «рахунок — розбір» центрується разом: вільне місце — над табло й під розбором. */
+	.reveal--followed {
+		min-height: 0;
+		margin-block: auto 0;
 	}
 
 	.reveal__title {

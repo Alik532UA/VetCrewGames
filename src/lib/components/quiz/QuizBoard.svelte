@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { t, formatFont } from '$lib/i18n';
-	import { createQuizGame, startQuizGame } from '$lib/controllers/quizGame';
+	import {
+		createQuizGame,
+		settledFamily,
+		settledFeeding,
+		settledHabitat,
+		settledPopulation,
+		settledQuestion,
+		startQuizGame
+	} from '$lib/controllers/quizGame';
 	import { BIN } from '$lib/config/feeding-game';
 	import type { QuizStep } from '$lib/config/quizOnline';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
@@ -74,9 +82,17 @@
 		 * натискає таймер. Див. `AUTOCOMMIT_MS` нижче.
 		 */
 		timeLeftMs?: number;
+		/**
+		 * РАУНД СКІНЧИВСЯ: дошка лишається під таблом, але лише РОЗБОРОМ — питання й
+		 * пояснення, без варіантів і картинок (прохання автора 2026-09-28: «між раундами
+		 * оновлений рахунок, а нижче пояснення відповідей минулого раунду»). Той самий
+		 * екземпляр, що й у раунді, тож розбір — із власною відповіддю гравця; якщо її не
+		 * було, — із правильною (`settled*` у `controllers/quizGame.ts`).
+		 */
+		settled?: boolean;
 	}
 
-	let { text, step, onanswer, onnext, timeLeftMs }: Props = $props();
+	let { text, step, onanswer, onnext, timeLeftMs, settled = false }: Props = $props();
 
 	/**
 	 * Соло-темп чи ні. Похідне від наявності пропа, а не окремий прапорець:
@@ -325,6 +341,7 @@
 	class:board--population={created?.kind === 'population'}
 	class:board--habitat={created?.kind === 'habitat'}
 	class:board--feeding={created?.kind === 'feeding'}
+	class:board--settled={settled}
 	data-testid="quiz-board-panel"
 >
 	{#if created === null}
@@ -353,21 +370,43 @@
 		-->
 		{#each [created.game.current] as question (question.id)}
 			<MythCard
-				{question}
+				question={settled ? settledQuestion(question) : question}
 				onanswer={(truth) => created.game.answer(truth)}
 				onnext={() => created.game.nextRound()}
 				hideNext={!solo}
+				compact={settled}
 			/>
 		{/each}
 	{:else if created.kind === 'family'}
-		<FamilyBoard game={created.game} hideNext={!solo} />
+		<FamilyBoard
+			game={settled ? settledFamily(created.game) : created.game}
+			hideNext={!solo}
+			compact={settled}
+		/>
 	{:else if created.kind === 'population'}
-		<PopulationBoard game={created.game} hideNext={!solo} />
+		<PopulationBoard
+			game={settled ? settledPopulation(created.game) : created.game}
+			hideNext={!solo}
+			compact={settled}
+		/>
 	{:else if created.kind === 'habitat'}
-		<HabitatBoard game={created.game} mode={created.mode} hideNext={!solo} />
+		<HabitatBoard
+			game={settled ? settledHabitat(created.game) : created.game}
+			mode={created.mode}
+			hideNext={!solo}
+			compact={settled}
+		/>
 	{:else if created.kind === 'feeding' && created.game.round}
-		<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
-		<FeedingBoard game={created.game} {targets} hideNext={!solo} />
+		{#if !settled}
+			<p class="board__prompt text-panel">{@html formatFont(t('feeding.prompt'))}</p>
+		{/if}
+		<FeedingBoard
+			game={settled ? settledFeeding(created.game) : created.game}
+			{targets}
+			hideNext={!solo}
+			compact={settled}
+			plain={settled && !created.game.fed}
+		/>
 		<!--
 			КНОПКИ «ДАЛІ» ТУТ НЕМА, і це не пропуск.
 
@@ -380,7 +419,7 @@
 			коли всі зроблять вибір». Доти «Роздай страви» лишалася єдиною грою з такою
 			кнопкою — у решти чотирьох проп уже стояв, а тут його просто не існувало.
 		-->
-		{#if !created.game.fed}
+		{#if !created.game.fed && !settled}
 			<button
 				type="button"
 				class="btn-primary"
@@ -408,6 +447,11 @@
 	 * Число, вписане поруч, розійшлося б із соло при першій же правці, а «однаково
 	 * в обох режимах» перестало б мати спільне джерело.
 	 */
+	/* Розбір під таблом: вільне місце — під ним (пару центрує `QuizReveal`, `followed`). */
+	.board--settled {
+		margin-block-end: auto;
+	}
+
 	.board--myths {
 		max-width: var(--measure-myths);
 	}

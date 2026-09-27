@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, td } from '$lib/i18n';
+	import { t, td, formatFont } from '$lib/i18n';
 	import type { FeedingView } from '$lib/controllers/feedingGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { BIN } from '$lib/config/feeding-game';
@@ -25,9 +25,16 @@
 		targets: QuickTarget[];
 		/** Онлайн: кнопки «Далі» немає — передається далі в `FeedingTable`, де вона й живе. */
 		hideNext?: boolean;
+		/**
+		 * ЛИШЕ РОЗБІР: присуди під іменем тварини, без столу й зон — табло між раундами
+		 * спільної вікторини (`QuizBoard`, `settled`), де під рахунком мусить уміститися й це.
+		 */
+		compact?: boolean;
+		/** Розбір без оцінки: гравець не розклав нічого, і це відповідь-ключ (`answerKeyOf`). */
+		plain?: boolean;
 	}
 
-	let { game, targets, hideNext = false }: Props = $props();
+	let { game, targets, hideNext = false, compact = false, plain = false }: Props = $props();
 
 	/**
 	 * Раунд тут завжди є: дошку показують лише всередині `{#if game.round}`.
@@ -42,8 +49,35 @@
 	 */
 	const verdictsFor = (target: string) => game.verdicts.filter((v) => v.correct === target);
 
+	/**
+	 * Кому належать страви — у тому порядку, в якому їх видно на дошці: тварини, смітник.
+	 * Ключ словника, а не готовий рядок: розмітку як HTML дає лише словник (`src/security.test.ts`).
+	 */
+	const owners = $derived([
+		...round.animals.map((animal) => ({ id: animal.id, nameKey: animal.nameKey })),
+		{ id: BIN, nameKey: 'feeding.bin' }
+	]);
 </script>
 
+{#if compact}
+	<div class="settled" data-testid="feeding-settled-panel">
+		{#each owners as owner (owner.id)}
+			{@const verdicts = verdictsFor(owner.id)}
+			{#if verdicts.length > 0}
+				<section class="settled__group">
+					<h3 class="settled__owner text-panel">{@html formatFont(td(owner.nameKey))}</h3>
+					<FeedingVerdicts
+						{verdicts}
+						animals={round.animals}
+						label={td(owner.nameKey)}
+						{plain}
+						testId="feeding-settled-{owner.id}-list"
+					/>
+				</section>
+			{/if}
+		{/each}
+	</div>
+{:else}
 	<div class="board" class:board--fed={game.fed}>
 		{#if game.fed}
 			<div class="cell cell--verdict0">
@@ -131,8 +165,36 @@
 			/>
 		{/if}
 	</div>
+{/if}
 
 <style>
+	/*
+	 * Розбір на таблі: назва тварини — над своїми присудами, а групи — рядом, коли є ширина.
+	 * Одна під одною на компʼютері вони не вміщалися під рахунком: заміряно на 1280×800 —
+	 * смітник із поясненням ішов за нижній край. На телефоні колонка одна.
+	 */
+	.settled {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+		align-items: start;
+		gap: var(--space-sm);
+		width: 100%;
+	}
+
+	.settled__group {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.settled__owner {
+		align-self: flex-start;
+		margin: 0;
+		font-size: var(--font-size-md);
+		font-weight: var(--font-weight-bold);
+		color: var(--color-text);
+	}
+
 	.board {
 		display: grid;
 		grid-template-columns: minmax(92px, 1.25fr) minmax(76px, 1fr) minmax(92px, 1.25fr);

@@ -9,6 +9,7 @@
 	import { revealScroll } from '$lib/utils/revealScroll';
 	import { fitLabel } from '$lib/utils/fitLabel';
 	import MiniGhostGrid from '$lib/components/MiniGhostGrid.svelte';
+	import PopulationResults from '$lib/components/PopulationResults.svelte';
 	import { onMount } from 'svelte';
 
 	/**
@@ -50,9 +51,11 @@
 		game: PopulationView;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
+		/** Лише розбір — правильний порядок із фактами (табло вікторини, `QuizBoard`). */
+		compact?: boolean;
 	}
 
-	let { game, hideNext = false }: Props = $props();
+	let { game, hideNext = false, compact = false }: Props = $props();
 
 	/** Стабільний між сервером і клієнтом ідентифікатор для `aria-labelledby` (SVELTE-CORE-v9 § 1.7). */
 	const uid = $props.id();
@@ -330,109 +333,111 @@
 	});
 </script>
 
-<div class="sorting-panel">
-	<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
-	<div class="slots-row">
-		{#each game.slots as slotAnimal, i (i)}
-			<div
-				class="game-container"
-				class:container--filled={!!slotAnimal}
-				class:container--picked={!!slotAnimal &&
-					game.picked?.id === slotAnimal.id &&
-					!isActuallyDragging}
-				class:container--touch-over={dragOverId === `slot-${i}`}
-				data-slot-index={i}
-				ondragover={(e) => handleDragOver(e, `slot-${i}`)}
-				ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
-				onmouseenter={() => (hoverSlotIndex = i)}
-				onmouseleave={() => (hoverSlotIndex = null)}
-				ondrop={(e) => dropFromMouse(e, 'slot', i)}
-				onclick={() => handleSlotClick(i)}
-				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
-				role="button"
-				tabindex="0"
-			>
-				{#each slotAnimal ? [slotAnimal] : [] as animal (animal.id)}
-					<div
-						class="game-card"
-						class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
-						class:card--dragging-orig={isActuallyDragging &&
-							game.pickedFrom?.type === 'slot' &&
-							game.pickedFrom?.index === i}
-						draggable={!game.checked ? 'true' : 'false'}
-						data-drag-animal={animal.id}
-						data-drag-source-type="slot"
-						data-drag-source-index={i}
-						ondragstart={(e) => handleDragStart(e, animal, { type: 'slot', index: i })}
-						ondragend={handleDragEnd}
-						onclick={(e) => handleCardClick(e, animal, { type: 'slot', index: i })}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ')
-								handleCardClick(e, animal, { type: 'slot', index: i });
-						}}
-						role="button"
-						tabindex="0"
-						in:receive={{ key: animal.id }}
-						out:send={{ key: animal.id }}
-					>
-						<div class="game-card__img-container">
-							<img
-								src={animal.image}
-								alt={td(animal.nameKey)}
-								class="game-card__img"
-								draggable="false"
-								loading="lazy"
-								width="300"
-								height="400"
-							/>
-							{#if game.checked}<div class="game-card__pop-overlay">
-									{@html formatPopulation(animal.population)}
-								</div>{/if}
-						</div>
-						<span class="game-card__name">
-							<!--
-							Внутрішній елемент потрібен для ВИМІРУ.
+{#if !compact}
+	<div class="sorting-panel">
+		<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
+		<div class="slots-row">
+			{#each game.slots as slotAnimal, i (i)}
+				<div
+					class="game-container"
+					class:container--filled={!!slotAnimal}
+					class:container--picked={!!slotAnimal &&
+						game.picked?.id === slotAnimal.id &&
+						!isActuallyDragging}
+					class:container--touch-over={dragOverId === `slot-${i}`}
+					data-slot-index={i}
+					ondragover={(e) => handleDragOver(e, `slot-${i}`)}
+					ondragleave={(e) => handleDragLeave(e, `slot-${i}`)}
+					onmouseenter={() => (hoverSlotIndex = i)}
+					onmouseleave={() => (hoverSlotIndex = null)}
+					ondrop={(e) => dropFromMouse(e, 'slot', i)}
+					onclick={() => handleSlotClick(i)}
+					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSlotClick(i)}
+					role="button"
+					tabindex="0"
+				>
+					{#each slotAnimal ? [slotAnimal] : [] as animal (animal.id)}
+						<div
+							class="game-card"
+							class:card--selected={game.picked?.id === animal.id && !isActuallyDragging}
+							class:card--dragging-orig={isActuallyDragging &&
+								game.pickedFrom?.type === 'slot' &&
+								game.pickedFrom?.index === i}
+							draggable={!game.checked ? 'true' : 'false'}
+							data-drag-animal={animal.id}
+							data-drag-source-type="slot"
+							data-drag-source-index={i}
+							ondragstart={(e) => handleDragStart(e, animal, { type: 'slot', index: i })}
+							ondragend={handleDragEnd}
+							onclick={(e) => handleCardClick(e, animal, { type: 'slot', index: i })}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ')
+									handleCardClick(e, animal, { type: 'slot', index: i });
+							}}
+							role="button"
+							tabindex="0"
+							in:receive={{ key: animal.id }}
+							out:send={{ key: animal.id }}
+						>
+							<div class="game-card__img-container">
+								<img
+									src={animal.image}
+									alt={td(animal.nameKey)}
+									class="game-card__img"
+									draggable="false"
+									loading="lazy"
+									width="300"
+									height="400"
+								/>
+								{#if game.checked}<div class="game-card__pop-overlay">
+										{@html formatPopulation(animal.population)}
+									</div>{/if}
+							</div>
+							<span class="game-card__name">
+								<!--
+									Внутрішній елемент потрібен для ВИМІРУ.
 
-							Зовнішній `.game-card__name` — це flex-контейнер із центруванням,
-							і `scrollWidth` на ньому міряє анонімний flex-елемент, а не текст.
-							Внутрішній має `max-width: 100%` і `overflow: hidden`, тож у нього
-							`clientWidth` — це «скільки місця є», а `scrollWidth` — «скільки
-							треба рядку». Два однозначних числа замість одного сумнівного.
-						-->
-							<span class="game-card__name-text" use:fitLabel={td(animal.nameKey)}
-								>{@html formatFont(td(animal.nameKey))}</span
-							>
+									Зовнішній `.game-card__name` — це flex-контейнер із центруванням,
+									і `scrollWidth` на ньому міряє анонімний flex-елемент, а не текст.
+									Внутрішній має `max-width: 100%` і `overflow: hidden`, тож у нього
+									`clientWidth` — це «скільки місця є», а `scrollWidth` — «скільки
+									треба рядку». Два однозначних числа замість одного сумнівного.
+								-->
+								<span class="game-card__name-text" use:fitLabel={td(animal.nameKey)}
+									>{@html formatFont(td(animal.nameKey))}</span
+								>
+							</span>
+							{#if game.checked}<span
+									class="game-card__icon"
+									class:game-card__icon--correct={game.slotResults[i]}
+									class:game-card__icon--wrong={!game.slotResults[i]}
+									>{#if game.slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X
+											size={18}
+											strokeWidth={3}
+										/>{/if}</span
+								>{/if}
+						</div>
+					{/each}
+					{#if !slotAnimal}
+						<span class="game-container__label">
+							{#if i === 0}{@html formatFont(t('population.least'))}
+							{:else if i === 1}{@html formatFont(t('population.middle'))}
+							{:else}{@html formatFont(t('population.most'))}
+							{/if}
 						</span>
-						{#if game.checked}<span
-								class="game-card__icon"
-								class:game-card__icon--correct={game.slotResults[i]}
-								class:game-card__icon--wrong={!game.slotResults[i]}
-								>{#if game.slotResults[i]}<Check size={18} strokeWidth={3} />{:else}<X
-										size={18}
-										strokeWidth={3}
-									/>{/if}</span
-							>{/if}
-					</div>
-				{/each}
-				{#if !slotAnimal}
-					<span class="game-container__label">
-						{#if i === 0}{@html formatFont(t('population.least'))}
-						{:else if i === 1}{@html formatFont(t('population.middle'))}
-						{:else}{@html formatFont(t('population.most'))}
+						{#if !game.checked && !isActuallyDragging && hoverSlotIndex === i}
+							<MiniGhostGrid
+								animals={game.availableAnimals}
+								pickedId={game.picked?.id}
+								onpick={(animal) => game.moveTo(animal, 'slot', i)}
+							/>
 						{/if}
-					</span>
-					{#if !game.checked && !isActuallyDragging && hoverSlotIndex === i}
-						<MiniGhostGrid
-							animals={game.availableAnimals}
-							pickedId={game.picked?.id}
-							onpick={(animal) => game.moveTo(animal, 'slot', i)}
-						/>
 					{/if}
-				{/if}
-			</div>
-		{/each}
+				</div>
+			{/each}
+		</div>
 	</div>
-</div>
+{/if}
 
 {#if !game.checked}
 	<button
@@ -543,31 +548,8 @@
 	{/if}
 
 	{#if game.checked}
-		<div class="results-zone-wrapper" use:revealScroll transition:slide={{ duration: 400 }}>
-			<div class="results-zone">
-				{#each game.correctOrder as animal, i (animal.id)}
-					<div class="result-card anim-stagger-{i + 1}">
-						<div class="result-card__left">
-							<img
-								src={animal.image}
-								alt={td(animal.nameKey)}
-								class="result-card__img-small"
-								loading="lazy"
-								width="70"
-								height="93"
-							/>
-						</div>
-						<div class="result-card__right">
-							<div class="result-card__top">
-								<span class="result-card__name-bold">{@html formatFont(td(animal.nameKey))}</span
-								><span class="result-card__stat">{@html formatPopulation(animal.population)}</span>
-							</div>
-							<div class="result-card__divider"></div>
-							<p class="result-card__fact-simple">{@html formatFont(td(animal.factKey))}</p>
-						</div>
-					</div>
-				{/each}
-			</div>
+		<div class="results-zone-wrapper" use:revealScroll={!compact} transition:slide>
+			<PopulationResults order={game.correctOrder} />
 		</div>
 	{/if}
 </div>
@@ -892,72 +874,6 @@
 	.results-zone-wrapper {
 		grid-area: stack;
 		width: 100%;
-	}
-	.results-zone {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-md);
-		width: 100%;
-	}
-	.result-card {
-		background-color: color-mix(in srgb, var(--color-bg-surface), transparent 25%);
-		backdrop-filter: var(--blur-glass);
-		border-radius: var(--radius-md);
-		box-shadow: var(--shadow-card);
-		overflow: hidden;
-		animation:
-			slide-up 400ms ease both,
-			blur-in 3s ease 400ms both;
-		display: flex;
-		padding: 0;
-	}
-	.result-card__left {
-		width: 70px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.result-card__img-small {
-		width: 100%;
-		aspect-ratio: 3 / 4;
-		border-radius: 6px;
-		object-fit: cover;
-	}
-	.result-card__right {
-		flex: 1;
-		padding: 12px 16px;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-	}
-	.result-card__top {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-	}
-	.result-card__name-bold {
-		font-size: 18px;
-		font-weight: 800;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-	}
-	.result-card__stat {
-		font-size: 12px;
-		font-weight: 700;
-		color: var(--color-stat);
-	}
-	.result-card__divider {
-		height: 2px;
-		width: 30px;
-		background: var(--color-accent);
-		margin: 2px 0;
-		border-radius: 2px;
-	}
-	.result-card__fact-simple {
-		font-size: 12px;
-		margin: 0;
-		color: var(--color-text-muted);
-		font-style: italic;
 	}
 	.btn-check {
 		padding: var(--space-md) 4rem;

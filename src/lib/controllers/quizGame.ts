@@ -1,10 +1,19 @@
 import { habitatModeOf, type QuizStep } from '$lib/config/quizOnline';
 import { POPULATION_TRIO } from '$lib/utils/quizDeck';
-import { FamilyGameController } from './familyGame.svelte';
-import { FeedingGameController } from './feedingGame.svelte';
-import { HabitatGameController } from './habitatGame.svelte';
-import { MythGameController } from './mythGame.svelte';
-import { PopulationGameController } from './populationGame.svelte';
+import { FamilyGameController, familySettled, type FamilyView } from './familyGame.svelte';
+import {
+	answerKeyOf,
+	FeedingGameController,
+	feedingReview,
+	type FeedingView
+} from './feedingGame.svelte';
+import { HabitatGameController, habitatReview, type HabitatView } from './habitatGame.svelte';
+import { MythGameController, type ActiveQuestion } from './mythGame.svelte';
+import {
+	PopulationGameController,
+	populationReview,
+	type PopulationView
+} from './populationGame.svelte';
 
 /**
  * ОДНЕ МІСЦЕ, ДЕ СТВОРЮЄТЬСЯ ГРА ОДНОГО РАУНДУ ВІКТОРИНИ.
@@ -122,3 +131,36 @@ export function startQuizGame(created: QuizGame): void {
 	if (created.kind === 'population') return;
 	created.game.start();
 }
+
+/*
+ * РОЗБІР РАУНДУ, ЩО ВЖЕ СКІНЧИВСЯ — для табла між раундами (прохання автора 2026-09-28:
+ * «між раундами — оновлений рахунок, а нижче пояснення відповідей минулого раунду»).
+ *
+ * Будується з ТОГО САМОГО контролера, на якому гравець щойно грав (`QuizBoard` із
+ * `settled` лишається тим самим екземпляром), тож розбір показує його власну відповідь.
+ * Коли відповіді не було — час вийшов раніше, — розбір показує правильну: без оцінки в
+ * «Правда чи міф?», «Хто з іншої родини?» і «Де живем?», відповіддю-ключем у «Що їмо?».
+ * Дошки в цьому стані нічого не натискають: усі дії розбору — порожні.
+ */
+
+/** «Правда чи міф?»: питання «відповідане» — інакше дошка не покаже пояснення. */
+export const settledQuestion = (question: ActiveQuestion): ActiveQuestion =>
+	question.answered ? question : { ...question, answered: true, isCorrect: false };
+
+export const settledHabitat = (game: HabitatGameController): HabitatView =>
+	game.round ? habitatReview({ round: game.round, selected: game.selected }) : game;
+
+export const settledFamily = (game: FamilyGameController): FamilyView =>
+	game.round ? familySettled(game.round, game.chosen) : game;
+
+/** Не нагодував нічого — відповідь-ключ, а не «усе в смітнику» (`answerKeyOf`). */
+export const settledFeeding = (game: FeedingGameController): FeedingView =>
+	game.round
+		? feedingReview({
+				round: game.round,
+				placements: game.fed ? game.placements : answerKeyOf(game.round)
+			})
+		: game;
+
+export const settledPopulation = (game: PopulationGameController): PopulationView =>
+	populationReview({ slots: game.slots, correctOrder: game.correctOrder });

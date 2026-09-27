@@ -186,12 +186,22 @@ export type FamilyView = Pick<
 	'round' | 'chosen' | 'answered' | 'isCorrect' | 'choose' | 'nextRound'
 >;
 
-/** Минулий раунд для дошки — у стані «відповіли», і натиснути в ньому нічого. */
-export const familyReview = (record: FamilyRecord): FamilyView => ({
-	round: record.round,
-	chosen: record.chosen,
+/**
+ * Раунд, що вже СКІНЧИВСЯ, для дошки — у стані «відповіли», і натиснути в ньому нічого.
+ *
+ * `chosen: null` — відповіді не було: у спільній вікторині час вийшов раніше, ніж гравець
+ * вибрав (табло між раундами показує розбір і тоді, прохання автора 2026-09-28). Правильним
+ * такий раунд не буває.
+ */
+export const familySettled = (round: FamilyRound, chosen: Animal | null): FamilyView => ({
+	round,
+	chosen,
 	answered: true,
-	isCorrect: record.chosen.id === record.round.oddAnimal.id,
+	isCorrect: chosen?.id === round.oddAnimal.id,
 	choose: () => {},
 	nextRound: () => {}
 });
+
+/** Минулий раунд для дошки перегляду: той самий знімок, але вибір тут був завжди. */
+export const familyReview = (record: FamilyRecord): FamilyView =>
+	familySettled(record.round, record.chosen);

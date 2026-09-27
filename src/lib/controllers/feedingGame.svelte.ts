@@ -41,6 +41,19 @@ export function verdictsOf(round: FeedingRound, placements: Placements): Feeding
 	});
 }
 
+/**
+ * ВІДПОВІДЬ-КЛЮЧ: кожна страва там, де їй місце.
+ *
+ * Для табла між раундами спільної вікторини, коли гравець не нагодував нічого (прохання
+ * автора 2026-09-28: «між раундами — пояснення відповідей минулого раунду»). Порожнє
+ * розкладання тут не годиться: `verdictsOf` кладе нерозкладене в смітник, і розбір казав
+ * би «ви дали смітнику» про страву, якої гравець не чіпав.
+ */
+export function answerKeyOf(round: FeedingRound): Placements {
+	const animalIds = round.animals.map((animal) => animal.id);
+	return Object.fromEntries(round.foods.map((food) => [food.id, correctTarget(food, animalIds)]));
+}
+
 /** Нагодований раунд: набір страв і куди гравець їх поклав. */
 export interface FeedingRecord {
 	round: FeedingRound;

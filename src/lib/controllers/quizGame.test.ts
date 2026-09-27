@@ -9,8 +9,17 @@ vi.mock('$lib/services/settings.svelte', () => ({
 	settings: { addScore: vi.fn(), locale: 'uk' }
 }));
 
-const { createQuizGame, startQuizGame, POPULATION_SLOTS, ROUNDS_PER_STEP } =
-	await import('./quizGame');
+const {
+	createQuizGame,
+	startQuizGame,
+	settledFamily,
+	settledFeeding,
+	settledHabitat,
+	settledPopulation,
+	settledQuestion,
+	POPULATION_SLOTS,
+	ROUNDS_PER_STEP
+} = await import('./quizGame');
 
 /**
  * МІСЦЕ ВИКЛИКУ, А НЕ КОНТРОЛЕР.
@@ -133,5 +142,102 @@ describe('питання з колоди кімнати', () => {
 
 	it.each(IDS)('%s: невідоме цим даним питання — гра вибирає сама й не падає', (id) => {
 		expect(dealt(id, SEED, 'nobody,knows,this')).toBe(dealt(id, SEED));
+	});
+});
+
+/**
+ * РОЗБІР НА ТАБЛІ МІЖ РАУНДАМИ (прохання автора 2026-09-28: «між раундами оновлений рахунок,
+ * а нижче пояснення відповідей минулого раунду»).
+ *
+ * Два стани, і другий головний: гравець відповів — розбір показує ЙОГО відповідь; не встиг —
+ * правильну, але без оцінки й без «ви дали смітнику» про страву, якої він не чіпав.
+ */
+describe('розбір раунду, що скінчився', () => {
+	/** Перший раунд гри за зерном — той самий шлях, що в кімнаті. */
+	function started(gameId: string) {
+		const created = createQuizGame({ game: gameId, seed: SEED })!;
+		startQuizGame(created);
+		if (created.kind === 'population') created.game.startRound();
+		return created;
+	}
+
+	it('«Правда чи міф?»: без відповіді питання стає розбором, але не «правильним»', () => {
+		const created = started('myths');
+		if (created.kind !== 'myths') throw new Error('не та гра');
+		const question = created.game.current!;
+		expect(question.answered, 'перевірка жива: відповіді ще не було').toBe(false);
+
+		const settled = settledQuestion(question);
+		expect(settled.answered).toBe(true);
+		expect(settled.isCorrect).toBe(false);
+		expect(settled.selectedTrue, 'вибору не було — і розбір про нього не вигадує').toBeNull();
+	});
+
+	it('«Правда чи міф?»: відповідь гравця лишається його відповіддю', () => {
+		const created = started('myths');
+		if (created.kind !== 'myths') throw new Error('не та гра');
+		created.game.answer(created.game.current!.isTrue);
+		const settled = settledQuestion(created.game.current!);
+		expect(settled.isCorrect).toBe(true);
+		expect(settled.selectedTrue).toBe(created.game.current!.isTrue);
+	});
+
+	it('«Хто з іншої родини?»: без вибору — розбір із правильною відповіддю, не «правильно»', () => {
+		const created = started('family');
+		if (created.kind !== 'family') throw new Error('не та гра');
+		const settled = settledFamily(created.game);
+		expect(settled.answered).toBe(true);
+		expect(settled.chosen).toBeNull();
+		expect(settled.isCorrect).toBe(false);
+		expect(settled.round, 'розбір про той самий раунд').toBe(created.game.round);
+	});
+
+	it('«Де живем?»: розбір перевірений, а вибір — той, що був', () => {
+		const created = started('habitat-continents');
+		if (created.kind !== 'habitat') throw new Error('не та гра');
+		const round = created.game.round!;
+		created.game.toggle(round.correct[0]);
+
+		const settled = settledHabitat(created.game);
+		expect(settled.checked).toBe(true);
+		expect(settled.selected).toEqual([round.correct[0]]);
+		expect(settled.outcome).toBe(round.correct.length === 1 ? 'correct' : 'partial');
+	});
+
+	it('«Що їмо?»: не нагодував нічого — відповідь-ключ, а не «усе в смітнику»', () => {
+		const created = started('feeding');
+		if (created.kind !== 'feeding') throw new Error('не та гра');
+		expect(created.game.fed, 'перевірка жива: ще не годували').toBe(false);
+
+		const settled = settledFeeding(created.game);
+		expect(settled.fed).toBe(true);
+		expect(settled.verdicts.length).toBe(created.game.round!.foods.length);
+		expect(
+			settled.verdicts.every((verdict) => verdict.chosen === verdict.correct),
+			'страва без місця не мусить опинятися в смітнику'
+		).toBe(true);
+	});
+
+	it('«Що їмо?»: нагодував — розбір того, куди поклав гравець', () => {
+		const created = started('feeding');
+		if (created.kind !== 'feeding') throw new Error('не та гра');
+		const round = created.game.round!;
+		// Усе — першій тварині: частина страв там не на місці.
+		for (const food of round.foods) created.game.moveTo(food, round.animals[0].id);
+		created.game.feed();
+
+		const settled = settledFeeding(created.game);
+		expect(settled.verdicts.map((verdict) => verdict.chosen)).toEqual(
+			round.foods.map(() => round.animals[0].id)
+		);
+	});
+
+	it('«Кого більше?»: розбір перевірений і з правильним порядком', () => {
+		const created = started('population');
+		if (created.kind !== 'population') throw new Error('не та гра');
+		const settled = settledPopulation(created.game);
+		expect(settled.checked).toBe(true);
+		expect(settled.correctOrder).toEqual(created.game.correctOrder);
+		expect(settled.correctOrder.length).toBe(POPULATION_SLOTS);
 	});
 });

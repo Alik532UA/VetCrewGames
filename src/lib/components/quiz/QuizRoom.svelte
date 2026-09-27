@@ -253,72 +253,81 @@
 			</a>
 		{/snippet}
 	</QuizReveal>
-{:else if phase === 'reveal'}
-	<!--
-		ТАБЛО МІЖ РАУНДАМИ — і смуга гравців зверху на цей час ЗНИКАЄ.
-
-		Дві таблиці одночасно (смуга вгорі й панель посередині) показували б ті
-		самі числа двічі, а очі тим часом шукали б, котра з них головна. Автор
-		попросив рівно це: «панель по центру екрана на час табла, рядок зверху на
-		цей час ховається».
-	-->
-	<QuizReveal
-		{text}
-		testId="quiz-reveal-panel"
-		players={match.players}
-		scores={match.scores}
-		gains={match.roundGains}
-		away={match.awayOthers.map((player) => player.uid)}
-		rounds={outcomes}
-		roundsTotal={match.programme.length}
-		leftMs={match.revealLeftMs(clock)}
-		limitMs={match.revealMs}
-		{me}
-	/>
 {:else}
-	<!--
-		ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
+	{#if phase === 'reveal'}
+		<!--
+			ТАБЛО МІЖ РАУНДАМИ — і смуга гравців зверху на цей час ЗНИКАЄ.
 
-		Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу саме
-		тоді, коли вона потрібна на питанні. Під час раунду видно лише склад
-		гравців із позначкою «вже відповів».
-	-->
-	<!--
-		КНОПКА ПАУЗИ — ТУТ, поруч зі смугою гравців, а не в дошці.
-		
-		Смуга — це все про кімнату: хто грає, хто відповів, кого немає. Пауза
-		належить туди ж: вона про партію, а не про питання. У дошці вона стояла б
-		поруч із відповідями й читалася б як одна з них.
-
-		Поки пауза стоїть, кнопки немає: зняти її можна у вікні, яке її й показує.
-
-		У раунді БЕЗ МЕЖІ кнопки немає теж. Пауза тут — зсув дедлайну, щоб ніхто не
-		втрачав час, а дедлайну немає: раунд і так чекає кожного. Кнопка, яка
-		нічого не спиняє, але накриває всім питання вікном, була б лише способом
-		заважати.
-	-->
-	<div class="room__strip">
-		<QuizScores
+			Дві таблиці одночасно (смуга вгорі й панель посередині) показували б ті
+			самі числа двічі, а очі тим часом шукали б, котра з них головна. Автор
+			попросив рівно це: «панель по центру екрана на час табла, рядок зверху на
+			цей час ховається».
+		-->
+		<QuizReveal
+			{text}
+			testId="quiz-reveal-panel"
 			players={match.players}
-			answered={match.answered}
+			scores={match.scores}
+			gains={match.roundGains}
 			away={match.awayOthers.map((player) => player.uid)}
+			rounds={outcomes}
+			roundsTotal={match.programme.length}
+			leftMs={match.revealLeftMs(clock)}
+			limitMs={match.revealMs}
 			{me}
+			followed={match.step !== null}
 		/>
+	{:else}
+		<!--
+			ФАЗА ВИРІШУЄ, ЩО НА ЕКРАНІ, і рахунок під час раунду не показується.
 
-		{#if wait.pausedBy === null && match.pace.round !== 'unlimited' && !match.iAmSpectator}
-			<button
-				type="button"
-				class="room__pause text-panel"
-				disabled={!wait.canPause}
-				onclick={onPause}
-				data-testid="quiz-pause-btn"
-			>
-				<Pause size={16} aria-hidden="true" />
-				{@html formatFont(text('quiz.pause'))}
-			</button>
-		{/if}
-	</div>
+			Це вимога автора й вона слушна: цифри поруч із питанням тягнуть увагу саме
+			тоді, коли вона потрібна на питанні. Під час раунду видно лише склад
+			гравців із позначкою «вже відповів».
+		-->
+		<!--
+			КНОПКА ПАУЗИ — ТУТ, поруч зі смугою гравців, а не в дошці.
+		
+			Смуга — це все про кімнату: хто грає, хто відповів, кого немає. Пауза
+			належить туди ж: вона про партію, а не про питання. У дошці вона стояла б
+			поруч із відповідями й читалася б як одна з них.
 
+			Поки пауза стоїть, кнопки немає: зняти її можна у вікні, яке її й показує.
+
+			У раунді БЕЗ МЕЖІ кнопки немає теж. Пауза тут — зсув дедлайну, щоб ніхто не
+			втрачав час, а дедлайну немає: раунд і так чекає кожного. Кнопка, яка
+			нічого не спиняє, але накриває всім питання вікном, була б лише способом
+			заважати.
+		-->
+		<div class="room__strip">
+			<QuizScores
+				players={match.players}
+				answered={match.answered}
+				away={match.awayOthers.map((player) => player.uid)}
+				{me}
+			/>
+
+			{#if wait.pausedBy === null && match.pace.round !== 'unlimited' && !match.iAmSpectator}
+				<button
+					type="button"
+					class="room__pause text-panel"
+					disabled={!wait.canPause}
+					onclick={onPause}
+					data-testid="quiz-pause-btn"
+				>
+					<Pause size={16} aria-hidden="true" />
+					{@html formatFont(text('quiz.pause'))}
+				</button>
+			{/if}
+		</div>
+	{/if}
+
+	<!--
+		РАУНД І РОЗБІР ПІД ТАБЛОМ — ОДИН ЕКЗЕМПЛЯР (прохання автора 2026-09-28: «між раундами
+		оновлений рахунок, а нижче пояснення відповідей минулого раунду»). `QuizRound` стоїть
+		поза гілками фази, тож на табло переходить та сама дошка з відповіддю гравця, а не
+		нова, яка про неї не знає.
+	-->
 	<QuizRound
 		{text}
 		{phase}

@@ -41,9 +41,14 @@
 		mode: HabitatMode;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
+		/**
+		 * ЛИШЕ РОЗБІР: назва тварини й правильна відповідь, без картинки й варіантів —
+		 * табло між раундами спільної вікторини (`QuizBoard`, `settled`).
+		 */
+		compact?: boolean;
 	}
 
-	let { game, mode, hideNext = false }: Props = $props();
+	let { game, mode, hideNext = false, compact = false }: Props = $props();
 
 	/** Підпис варіанта залежить від підрежиму: континент чи природна зона. */
 	const optionKey = (option: string): TranslationKey =>
@@ -53,48 +58,50 @@
 </script>
 
 {#if game.round}
-	<div class="animal">
-		<!--
-			Головне зображення раунду, тобто LCP: `eager`, а не `lazy`
-			(PERFORMANCE-v8 § 3.1 — «типова помилка з добрих намірів»). Розмітку
-			створює вже гідрований застосунок, тож у момент вставки зображення
-			ЗАВЖДИ у видимій області, і `lazy` додавав лише перевірку перетину
-			перед запитом — на кожному раунді, а не раз. `fetchpriority` діє
-			слабше, ніж для статичного hero, але діє: за канал із ним конкурують
-			шрифт і фонове зображення теми.
-		-->
-		<img
-			src={game.round.animal.image}
-			alt={td(game.round.animal.nameKey)}
-			class="animal__image"
-			loading="eager"
-			fetchpriority="high"
-			decoding="async"
-			width="300"
-			height="400"
+	{#if !compact}
+		<div class="animal">
+			<!--
+				Головне зображення раунду, тобто LCP: `eager`, а не `lazy`
+				(PERFORMANCE-v8 § 3.1 — «типова помилка з добрих намірів»). Розмітку
+				створює вже гідрований застосунок, тож у момент вставки зображення
+				ЗАВЖДИ у видимій області, і `lazy` додавав лише перевірку перетину
+				перед запитом — на кожному раунді, а не раз. `fetchpriority` діє
+				слабше, ніж для статичного hero, але діє: за канал із ним конкурують
+				шрифт і фонове зображення теми.
+			-->
+			<img
+				src={game.round.animal.image}
+				alt={td(game.round.animal.nameKey)}
+				class="animal__image"
+				loading="eager"
+				fetchpriority="high"
+				decoding="async"
+				width="300"
+				height="400"
+			/>
+			<span class="image-caption" data-testid="habitat-animal-name-text">
+				{@html formatFont(td(game.round.animal.nameKey))}
+			</span>
+		</div>
+
+		<div class="question text-panel">
+			<p class="question__prompt">
+				{@html formatFont(
+					t(mode === 'continents' ? 'habitat.prompt.continents' : 'habitat.prompt.biomes')
+				)}
+			</p>
+			<p class="question__hint">{@html formatFont(t('habitat.hintMultiple'))}</p>
+		</div>
+
+		<HabitatOptions
+			options={game.round.options}
+			{mode}
+			selected={game.selected}
+			correct={game.round.correct}
+			checked={game.checked}
+			ontoggle={(option) => game.toggle(option)}
 		/>
-		<span class="image-caption" data-testid="habitat-animal-name-text">
-			{@html formatFont(td(game.round.animal.nameKey))}
-		</span>
-	</div>
-
-	<div class="question text-panel">
-		<p class="question__prompt">
-			{@html formatFont(
-				t(mode === 'continents' ? 'habitat.prompt.continents' : 'habitat.prompt.biomes')
-			)}
-		</p>
-		<p class="question__hint">{@html formatFont(t('habitat.hintMultiple'))}</p>
-	</div>
-
-	<HabitatOptions
-		options={game.round.options}
-		{mode}
-		selected={game.selected}
-		correct={game.round.correct}
-		checked={game.checked}
-		ontoggle={(option) => game.toggle(option)}
-	/>
+	{/if}
 
 	{#if !game.checked}
 		<button
@@ -107,21 +114,31 @@
 			{@html formatFont(t('habitat.check'))}
 		</button>
 	{:else}
-		<div class="result" use:revealScroll transition:slide={{ duration: 300 }}>
-			<div
-				class="result__header"
-				class:result__header--correct={game.outcome === 'correct'}
-				class:result__header--partial={game.outcome === 'partial'}
-				data-testid="habitat-outcome-status"
-			>
-				{#if game.outcome === 'correct'}
-					{@html formatFont(t('habitat.correct'))}
-				{:else if game.outcome === 'partial'}
-					{@html formatFont(t('habitat.partial'))}
-				{:else}
-					{@html formatFont(t('habitat.incorrect'))}
-				{/if}
-			</div>
+		<div class="result" use:revealScroll={!compact} transition:slide={{ duration: 300 }}>
+			{#if compact}
+				<p class="result__animal">{@html formatFont(td(game.round.animal.nameKey))}</p>
+			{/if}
+			<!--
+				Вибору НЕ БУЛО — у спільній вікторині час виходить і без нього. Тоді розбір
+				показує лише правильну відповідь, а не «Неправильно» за відповідь, якої ніхто не
+				давав. У соло такого стану немає: «Перевірити» без вибору не натиснеш.
+			-->
+			{#if game.selected.length > 0}
+				<div
+					class="result__header"
+					class:result__header--correct={game.outcome === 'correct'}
+					class:result__header--partial={game.outcome === 'partial'}
+					data-testid="habitat-outcome-status"
+				>
+					{#if game.outcome === 'correct'}
+						{@html formatFont(t('habitat.correct'))}
+					{:else if game.outcome === 'partial'}
+						{@html formatFont(t('habitat.partial'))}
+					{:else}
+						{@html formatFont(t('habitat.incorrect'))}
+					{/if}
+				</div>
+			{/if}
 
 			<p class="result__answer">
 				{@html formatFont(t('habitat.correctAnswerWas'))}
@@ -209,6 +226,12 @@
 		background: color-mix(in srgb, var(--color-bg-surface), transparent 15%);
 		backdrop-filter: var(--blur-glass);
 		box-shadow: var(--shadow-card);
+	}
+	.result__animal {
+		margin: 0;
+		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-bold);
+		color: var(--color-text);
 	}
 	.result__header {
 		font-size: var(--font-size-xl);

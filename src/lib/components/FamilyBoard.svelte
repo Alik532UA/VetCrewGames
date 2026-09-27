@@ -36,76 +36,90 @@
 		game: FamilyView;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
+		/**
+		 * ЛИШЕ РОЗБІР: правильна відповідь і пояснення, без карток — табло між раундами
+		 * спільної вікторини (`QuizBoard`, `settled`).
+		 */
+		compact?: boolean;
 	}
 
-	let { game, hideNext = false }: Props = $props();
+	let { game, hideNext = false, compact = false }: Props = $props();
 </script>
 
 {#if game.round}
-	<p class="prompt text-panel" data-testid="family-prompt-text">
-		{@html formatFont(t('family.prompt'))}
-	</p>
+	{#if !compact}
+		<p class="prompt text-panel" data-testid="family-prompt-text">
+			{@html formatFont(t('family.prompt'))}
+		</p>
 
-	<!--
-		ОБГОРТКА — КОНТЕЙНЕР для порогу стовпців нижче (`.cards-shell`). Власного кореня в дошки
-		немає, а сітці потрібна ширина МІСЦЯ: та сама дошка стоїть і на сторінці гри, і в кімнаті
-		вікторини.
-	-->
-	<div class="cards-shell">
-		{#key game.round.id}
-			<div class="cards-grid" in:fade={{ duration: 300 }}>
-				{#each game.round.cards as animal (animal.id)}
-					{@const isAnswer = animal.id === game.round.oddAnimal.id}
-					{@const isChosen = game.chosen?.id === animal.id}
-					<button
-						type="button"
-						class="animal-card"
-						class:animal-card--answer={game.answered && isAnswer}
-						class:animal-card--wrong={game.answered && isChosen && !isAnswer}
-						class:animal-card--dimmed={game.answered && !isAnswer && !isChosen}
-						disabled={game.answered}
-						onclick={() => game.choose(animal)}
-						data-testid="family-animal-btn-{animal.id}"
-					>
-						<div class="animal-card__image-wrap">
-							<img
-								src={animal.image}
-								alt={td(animal.nameKey)}
-								class="animal-card__image"
-								loading="lazy"
-								width="300"
-								height="400"
-							/>
-							{#if game.answered && (isAnswer || isChosen)}
-								<div class="animal-card__mark" in:fade={{ duration: 200 }}>
-									{#if isAnswer}
-										<CheckCircle2 size={28} aria-hidden="true" />
-									{:else}
-										<XCircle size={28} aria-hidden="true" />
-									{/if}
-								</div>
-							{/if}
-							<span class="image-caption">{@html formatFont(td(animal.nameKey))}</span>
-						</div>
-					</button>
-				{/each}
-			</div>
-		{/key}
-	</div>
+		<!--
+			ОБГОРТКА — КОНТЕЙНЕР для порогу стовпців нижче (`.cards-shell`). Власного кореня в дошки
+			немає, а сітці потрібна ширина МІСЦЯ: та сама дошка стоїть і на сторінці гри, і в кімнаті
+			вікторини.
+		-->
+		<div class="cards-shell">
+			{#key game.round.id}
+				<div class="cards-grid" in:fade={{ duration: 300 }}>
+					{#each game.round.cards as animal (animal.id)}
+						{@const isAnswer = animal.id === game.round.oddAnimal.id}
+						{@const isChosen = game.chosen?.id === animal.id}
+						<button
+							type="button"
+							class="animal-card"
+							class:animal-card--answer={game.answered && isAnswer}
+							class:animal-card--wrong={game.answered && isChosen && !isAnswer}
+							class:animal-card--dimmed={game.answered && !isAnswer && !isChosen}
+							disabled={game.answered}
+							onclick={() => game.choose(animal)}
+							data-testid="family-animal-btn-{animal.id}"
+						>
+							<div class="animal-card__image-wrap">
+								<img
+									src={animal.image}
+									alt={td(animal.nameKey)}
+									class="animal-card__image"
+									loading="lazy"
+									width="300"
+									height="400"
+								/>
+								{#if game.answered && (isAnswer || isChosen)}
+									<div class="animal-card__mark" in:fade={{ duration: 200 }}>
+										{#if isAnswer}
+											<CheckCircle2 size={28} aria-hidden="true" />
+										{:else}
+											<XCircle size={28} aria-hidden="true" />
+										{/if}
+									</div>
+								{/if}
+								<span class="image-caption">{@html formatFont(td(animal.nameKey))}</span>
+							</div>
+						</button>
+					{/each}
+				</div>
+			{/key}
+		</div>
+	{/if}
 
 	{#if game.answered}
-		<div class="result" use:revealScroll transition:slide={{ duration: 350 }}>
-			<div class="result__header" class:result__header--correct={game.isCorrect}>
-				{#if game.isCorrect}
-					<CheckCircle2 size={24} aria-hidden="true" />
-					<span>{@html formatFont(t('family.correct'))}</span>
-				{:else}
-					<XCircle size={24} aria-hidden="true" />
-					<span>{@html formatFont(t('family.incorrect'))}</span>
-				{/if}
-			</div>
+		<div class="result" use:revealScroll={!compact} transition:slide={{ duration: 350 }}>
+			<!--
+				Вибору НЕ БУЛО — у спільній вікторині час виходить і без нього: тоді лише
+				правильна відповідь і пояснення, без «Неправильно» за відповідь, якої не давали.
+			-->
+			{#if game.chosen !== null}
+				<div class="result__header" class:result__header--correct={game.isCorrect}>
+					{#if game.isCorrect}
+						<CheckCircle2 size={24} aria-hidden="true" />
+						<span>{@html formatFont(t('family.correct'))}</span>
+					{:else}
+						<XCircle size={24} aria-hidden="true" />
+						<span>{@html formatFont(t('family.incorrect'))}</span>
+					{/if}
+				</div>
+			{/if}
 
-			{#if !game.isCorrect}
+			<!-- Без карток відповідь видно лише з цього рядка — тож у розборі він завжди. -->
+			{#if !game.isCorrect || compact}
 				<p class="result__answer">
 					{@html formatFont(t('family.correctAnswerWas'))}
 					<strong>{@html formatFont(td(game.round.oddAnimal.nameKey))}</strong>

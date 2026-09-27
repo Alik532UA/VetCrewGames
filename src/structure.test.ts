@@ -98,8 +98,11 @@ const OVERSIZED_ALLOWLIST: Record<string, number> = {
 	 * обробників у клас дав сміття виду `this.game.this.isSwapping`, а це код
 	 * перетягування пальцем, де тиха помилка спливе не в тесті, а в людини на
 	 * телефоні.
+	 *
+	 * 790 → 704 (2026-09-28): розбір правильним порядком переїхав у `PopulationResults`,
+	 * коли знадобився ще й на таблі спільної вікторини.
 	 */
-	'src/lib/components/PopulationBoard.svelte': 790
+	'src/lib/components/PopulationBoard.svelte': 704
 	/*
 	 * `game-mythbusters/+page.svelte` СТОЯВ ТУТ на 418, і його прибрано, а не
 	 * зменшено: 520 → 438 після винесення логіки партії в

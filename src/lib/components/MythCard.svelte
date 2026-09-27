@@ -35,41 +35,55 @@
 		onnext: () => void;
 		/** Онлайн-раунд: своєї кнопки «Далі» тут немає. */
 		hideNext?: boolean;
+		/**
+		 * ЛИШЕ РОЗБІР — твердження й пояснення, без картинки: табло між раундами спільної
+		 * вікторини (`QuizBoard`, `settled`), де під рахунком мусить уміститися й це.
+		 */
+		compact?: boolean;
 	}
 
-	let { question, onanswer, onnext, hideNext = false }: Props = $props();
+	let { question, onanswer, onnext, hideNext = false, compact = false }: Props = $props();
+
+	/**
+	 * Відповідь БУЛА. У спільній вікторині час виходить і без неї — тоді розбір показує
+	 * лише пояснення (воно й починається з «Міф.» чи «Правда.»), а не «Не зовсім...» і
+	 * червону рамку за відповідь, якої ніхто не давав.
+	 */
+	const judged = $derived(question.answered && question.selectedTrue !== null);
 </script>
 
 <div
 	class="myth-card"
-	class:myth-card--correct={question.answered && question.isCorrect}
-	class:myth-card--wrong={question.answered && !question.isCorrect}
+	class:myth-card--correct={judged && question.isCorrect}
+	class:myth-card--wrong={judged && !question.isCorrect}
 	in:fly={{ y: 20, duration: 350, delay: 300 }}
 	out:flyAndSlide={{ y: -20, duration: 300 }}
 >
 	<div class="myth-card__inner-key">
-		<div class="myth-card__image-wrap">
-			<!--
-				Головне зображення екрана, тобто LCP: `eager`, а не `lazy`
-				(PERFORMANCE-v8 § 3.1 — канон називає `lazy` тут «типовою помилкою з
-				добрих намірів»). Розмітку створює вже гідрований застосунок, тож у
-				момент вставки зображення ЗАВЖДИ у видимій області — відкладати нічого.
-				Та сама причина, що в `HabitatRound.svelte`.
-			-->
-			<img
-				src={question.animal.image}
-				alt={td(question.animal.nameKey)}
-				class="myth-card__image"
-				loading="eager"
-				fetchpriority="high"
-				decoding="async"
-				width="200"
-				height="266"
-			/>
-			<div class="myth-card__animal-name image-caption">
-				{@html formatFont(td(question.animal.nameKey))}
+		{#if !compact}
+			<div class="myth-card__image-wrap">
+				<!--
+					Головне зображення екрана, тобто LCP: `eager`, а не `lazy`
+					(PERFORMANCE-v8 § 3.1 — канон називає `lazy` тут «типовою помилкою з
+					добрих намірів»). Розмітку створює вже гідрований застосунок, тож у
+					момент вставки зображення ЗАВЖДИ у видимій області — відкладати нічого.
+					Та сама причина, що в `HabitatRound.svelte`.
+				-->
+				<img
+					src={question.animal.image}
+					alt={td(question.animal.nameKey)}
+					class="myth-card__image"
+					loading="eager"
+					fetchpriority="high"
+					decoding="async"
+					width="200"
+					height="266"
+				/>
+				<div class="myth-card__animal-name image-caption">
+					{@html formatFont(td(question.animal.nameKey))}
+				</div>
 			</div>
-		</div>
+		{/if}
 
 		<div class="myth-card__content">
 			<p class="myth-card__statement">{@html formatFont(td(question.statementKey))}</p>
@@ -94,7 +108,12 @@
 						</button>
 					</div>
 				{:else}
-					<div class="myth-card__result" use:revealScroll in:slide={{ duration: 400 }} out:fade>
+					<div
+						class="myth-card__result"
+						use:revealScroll={!compact}
+						in:slide={{ duration: 400 }}
+						out:fade
+					>
 						{#if !hideNext}
 							<button
 								class="btn-next btn-secondary"
@@ -104,15 +123,17 @@
 								{@html formatFont(t('myth.next'))}
 							</button>
 						{/if}
-						<div class="result-header" class:result-header--correct={question.isCorrect}>
-							{#if question.isCorrect}
-								<CheckCircle2 size={24} />
-								<span>{@html formatFont(t('myth.correct'))}</span>
-							{:else}
-								<XCircle size={24} />
-								<span>{@html formatFont(t('myth.incorrect'))}</span>
-							{/if}
-						</div>
+						{#if judged}
+							<div class="result-header" class:result-header--correct={question.isCorrect}>
+								{#if question.isCorrect}
+									<CheckCircle2 size={24} />
+									<span>{@html formatFont(t('myth.correct'))}</span>
+								{:else}
+									<XCircle size={24} />
+									<span>{@html formatFont(t('myth.incorrect'))}</span>
+								{/if}
+							</div>
+						{/if}
 						<p class="myth-card__explanation">
 							{@html formatFont(td(question.explanationKey))}
 						</p>

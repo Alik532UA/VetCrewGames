@@ -30,10 +30,15 @@
 		 * означало б три ривки замість одного.
 		 */
 		reveal?: boolean;
+		/**
+		 * ВІДПОВІДЬ-КЛЮЧ без оцінки: гравець не розклав нічого (табло між раундами спільної
+		 * вікторини), тож галочка чи хрестик тут оцінювали б відповідь, якої не було.
+		 */
+		plain?: boolean;
 		testId: string;
 	}
 
-	let { verdicts, animals, label, reveal = false, testId }: Props = $props();
+	let { verdicts, animals, label, reveal = false, plain = false, testId }: Props = $props();
 
 	/** Підпис цілі: імʼя тварини або «Смітник». */
 	function targetName(target: Target): string {
@@ -53,22 +58,25 @@
 		{@const isHazard = verdict.correct === BIN && !!verdict.food.hazardKey}
 		<div
 			class="verdict"
-			class:verdict--correct={verdict.isCorrect}
+			class:verdict--correct={verdict.isCorrect && !plain}
+			class:verdict--plain={plain}
 			data-testid="feeding-verdict-item-{verdict.food.id}"
 		>
 			<div class="verdict__head">
-				<span class="verdict__mark">
-					{#if !verdict.isCorrect}
-						<X size={18} aria-hidden="true" />
-					{:else if isHazard}
-						<!-- Вгадав — але вгадав НЕБЕЗПЕКУ. Галочка тут гасила б саме те,
-						     заради чого гра й існує. Колір лишається зеленим: відповідь
-						     правильна, попереджає знак, а не помилку. -->
-						<AlertTriangle size={18} aria-hidden="true" />
-					{:else}
-						<Check size={18} aria-hidden="true" />
-					{/if}
-				</span>
+				{#if !plain}
+					<span class="verdict__mark">
+						{#if !verdict.isCorrect}
+							<X size={18} aria-hidden="true" />
+						{:else if isHazard}
+							<!-- Вгадав — але вгадав НЕБЕЗПЕКУ. Галочка тут гасила б саме те,
+							     заради чого гра й існує. Колір лишається зеленим: відповідь
+							     правильна, попереджає знак, а не помилку. -->
+							<AlertTriangle size={18} aria-hidden="true" />
+						{:else}
+							<Check size={18} aria-hidden="true" />
+						{/if}
+					</span>
+				{/if}
 				<strong>{@html formatFont(t(verdict.food.nameKey as TranslationKey))}</strong>
 			</div>
 
@@ -113,6 +121,10 @@
 
 	.verdict--correct {
 		border-left-color: var(--color-success);
+	}
+
+	.verdict--plain {
+		border-left-color: var(--color-accent);
 	}
 
 	.verdict__head {
