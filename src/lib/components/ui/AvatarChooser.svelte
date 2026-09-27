@@ -83,7 +83,7 @@
 <div class="chooser">
 	<button
 		type="button"
-		class="chooser__toggle"
+		class="chooser__toggle btn-secondary"
 		aria-expanded={open}
 		aria-controls="{scope}-panel"
 		aria-label={t('pairs.avatarChange')}
@@ -107,7 +107,10 @@
 		display: contents;
 	}
 
-	/* Та сама ціль, що кубик поруч (44px, ACCESSIBILITY-v8 § 8), і той самий вигляд. */
+	/*
+	 * Та сама ціль, що кубик поруч (44px, ACCESSIBILITY-v8 § 8), і той самий вигляд —
+	 * кнопки (`.btn-secondary`), а не плитки панелі.
+	 */
 	.chooser__toggle {
 		width: 44px;
 		height: 44px;
@@ -116,21 +119,16 @@
 		align-items: center;
 		justify-content: center;
 		padding: 0;
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 92%);
-		cursor: pointer;
 	}
 
-	/* Відкритий вибір видно й на кнопці: інакше незрозуміло, чим його закрити. */
+	/*
+	 * Відкритий вибір видно й на кнопці — утиснутою, як натиснута клавіша: інакше
+	 * незрозуміло, чим його закрити.
+	 */
 	.chooser__toggle[aria-expanded='true'] {
-		box-shadow: inset 0 0 0 2px var(--color-text-on-panel);
-	}
-
-	@media (hover: hover) {
-		.chooser__toggle:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 82%);
-		}
+		transform: translateY(2px);
+		box-shadow: inset 0 0 0 2px var(--color-text);
 	}
 
 	.chooser__panel {

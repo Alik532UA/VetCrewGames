@@ -86,7 +86,8 @@
 				<button
 					type="button"
 					class="hub__road"
-					class:hub__road--main={road.kind === 'search'}
+					class:btn-accent={road.kind === 'search'}
+					class:btn-secondary={road.kind !== 'search'}
 					onclick={() => onOpen(road.kind)}
 					aria-labelledby="online-{road.kind}-open-label"
 					aria-describedby="online-{road.kind}-open-lead"
@@ -169,6 +170,11 @@
 	 * Дорога — значок і два рядки: назва й що вона означає. Висота — від вмісту, а не від
 	 * екрана: доти кнопки росли коробкою, і текст займав у них десяту частину (прохання
 	 * автора 2026-09-27). Росте весь хаб одним масштабом (`fitToViewport`, сторінка).
+	 *
+	 * Вигляд — КНОПКИ, а не панелі (`.btn-accent`, `.btn-secondary` у global.css): доти
+	 * «Створити кімнату» й «Підключитися» мали тло й тінь панелей «Як вас звати?» і
+	 * «Кімнати», і дорогу від довідки відрізнити було нічим. Пошук — акцентом, як була
+	 * «Швидка гра»: найкоротший шлях у гру читається першим.
 	 */
 	.hub__road {
 		display: flex;
@@ -177,31 +183,9 @@
 		width: 100%;
 		min-height: 64px;
 		padding: var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-panel);
-		box-shadow: var(--shadow-card);
-		color: var(--color-text-on-panel);
 		font: inherit;
 		text-align: start;
-		cursor: pointer;
-	}
-
-	/* Пошук — акцентом, як була «Швидка гра»: найкоротший шлях у гру читається першим. */
-	.hub__road--main {
-		border-color: transparent;
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-	}
-
-	@media (hover: hover) {
-		.hub__road:hover {
-			border-color: var(--color-accent);
-		}
-
-		.hub__road--main:hover {
-			background: var(--color-accent-hover);
-		}
 	}
 
 	.hub__road-text {

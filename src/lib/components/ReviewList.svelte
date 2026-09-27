@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, Minus, X } from 'lucide-svelte';
+	import { Check, ChevronRight, Minus, X } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import type { RoundStatus } from '$lib/types/game';
 
@@ -11,6 +11,11 @@
 	 * Рядок — кнопка: натиск відкриває питання тією самою дошкою, що й під час гри.
 	 * Позначка стану — значком і словом для скрінрідера, а не лише кольором (WCAG
 	 * 1.4.1).
+	 *
+	 * КНОПКОЮ ЙОГО РОБИТЬ СТРІЛКА «›» І НАВЕДЕННЯ, а не тло кнопки (прохання автора
+	 * 2026-09-27: «контейнери з інформацією відрізняються від кнопок»). Тло `.btn-secondary`
+	 * тут не підходить: значки стану на ньому в світло-зеленій і зимовій темах давали
+	 * 1,1–1,4:1, тобто зникали. Стрілка — знак, що рядок відкриває питання.
 	 */
 	interface Props {
 		results: RoundStatus[];
@@ -41,6 +46,7 @@
 						<span class="visually-hidden">{t(`review.${status}` as 'review.correct')}</span>
 					</span>
 					<span class="review-list__text">{@html formatFont(`${index + 1}. ${label(index)}`)}</span>
+					<span class="review-list__go" aria-hidden="true"><ChevronRight size={18} /></span>
 				</button>
 			</li>
 		{/each}
@@ -109,5 +115,18 @@
 
 	.review-list__text {
 		min-width: 0;
+	}
+
+	/* Стрілка — у кінці рядка: рядок відкриває питання. */
+	.review-list__go {
+		display: inline-flex;
+		flex-shrink: 0;
+		margin-inline-start: auto;
+	}
+
+	@media (hover: hover) {
+		.review-list__item:hover {
+			background: color-mix(in srgb, var(--color-text), transparent 86%);
+		}
 	}
 </style>

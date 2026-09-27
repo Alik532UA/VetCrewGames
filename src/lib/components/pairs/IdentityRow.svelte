@@ -121,7 +121,7 @@
 		-->
 		<button
 			type="button"
-			class="identity__dice"
+			class="identity__dice btn-secondary"
 			onclick={onRandomName}
 			aria-label={t('pairs.otherName')}
 			data-testid="pairs-name-random-btn"
@@ -203,17 +203,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 92%);
-		color: var(--color-text);
-		cursor: pointer;
 		padding: 0;
-	}
-
-	@media (hover: hover) {
-		.identity__dice:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 82%);
-		}
 	}
 </style>

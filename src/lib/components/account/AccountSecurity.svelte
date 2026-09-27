@@ -85,7 +85,7 @@
 		/>
 		<button
 			type="button"
-			class="security__btn"
+			class="security__btn btn-secondary"
 			aria-disabled={!canChange}
 			data-testid="account-password-change-btn"
 			onclick={() => {
@@ -125,7 +125,7 @@
 		<div class="security__pair">
 			<button
 				type="button"
-				class="security__btn security__btn--danger"
+				class="security__btn btn-accent"
 				aria-disabled={!canDelete}
 				data-testid="account-delete-confirm-btn"
 				onclick={() => {
@@ -139,7 +139,7 @@
 			</button>
 			<button
 				type="button"
-				class="security__btn"
+				class="security__btn btn-secondary"
 				data-testid="account-delete-cancel-btn"
 				onclick={() => {
 					confirming = false;
@@ -152,7 +152,7 @@
 	{:else}
 		<button
 			type="button"
-			class="security__btn"
+			class="security__btn btn-secondary"
 			data-testid="account-delete-btn"
 			onclick={() => (confirming = true)}
 		>
@@ -168,7 +168,12 @@
 		Стоїть ПОЗА гілкою підтвердження видалення: людина, яка передумала видаляти,
 		не мусить втрачати єдиний спосіб вийти.
 	-->
-	<button type="button" class="security__leave" onclick={onsignout} data-testid="account-leave-btn">
+	<button
+		type="button"
+		class="security__leave btn-secondary"
+		onclick={onsignout}
+		data-testid="account-leave-btn"
+	>
 		{@html formatFont(text('account.signOut'))}
 	</button>
 </section>
@@ -189,7 +194,8 @@
 	}
 
 	/*
-	 * «Вийти з акаунта» — тиха кнопка й окремий відступ понад рештою.
+	 * «Вийти з акаунта» — другорядна кнопка (`.btn-secondary`) й окремий відступ понад
+	 * рештою.
 	 *
 	 * Відступ тут значущий: він відділяє вихід від видалення, щоб дві кнопки
 	 * поспіль не читалися як одна пара «підтвердити / скасувати».
@@ -199,13 +205,9 @@
 		min-height: 44px;
 		margin-top: var(--space-md);
 		padding: 0 var(--space-md);
-		border: 1px solid var(--account-line, var(--color-border));
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 90%);
-		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
-		cursor: pointer;
 	}
 
 	/* Підказка — кеглем, а не прозорістю: див. `PrivacyPanel`. */
@@ -232,28 +234,18 @@
 		gap: var(--space-xs);
 	}
 
+	/*
+	 * Кнопки — кнопками (`.btn-secondary`), а не напівпрозорими плитками панелі
+	 * (прохання автора 2026-09-27). Небезпечна — АКЦЕНТОМ і словом (`.btn-accent`), а не
+	 * власним червоним: пара «акцент + текст на акценті» вже підібрана в кожній темі, а те,
+	 * що дія незворотна, каже сам підпис і крок підтвердження перед ним.
+	 */
 	.security__btn {
 		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
 		min-height: var(--account-control);
 		padding: 0 var(--account-pad);
-		border: 1px solid var(--account-line, var(--color-border));
 		border-radius: var(--account-field-radius);
-		background: color-mix(in srgb, var(--color-text), transparent 90%);
-		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
-		cursor: pointer;
-	}
-
-	/*
-	 * Небезпечна кнопка — АКЦЕНТОМ і словом, а не власним червоним: пара
-	 * «акцент + текст на акценті» вже підібрана в кожній темі, а те, що дія
-	 * незворотна, каже сам підпис і крок підтвердження перед ним.
-	 */
-	.security__btn--danger {
-		border-color: var(--color-accent);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-		font-weight: var(--font-weight-bold);
 	}
 </style>

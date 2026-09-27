@@ -115,7 +115,7 @@
 			{#each DIGITS as digit (digit)}
 				<button
 					type="button"
-					class="keypad__key"
+					class="keypad__key btn-secondary"
 					onpointerdown={keepFocus}
 					onclick={() => press(digit)}
 					data-testid="online-key-{digit}-btn"
@@ -126,7 +126,7 @@
 			<span class="keypad__gap" aria-hidden="true"></span>
 			<button
 				type="button"
-				class="keypad__key"
+				class="keypad__key btn-secondary"
 				onpointerdown={keepFocus}
 				onclick={() => press('0')}
 				data-testid="online-key-0-btn"
@@ -135,7 +135,7 @@
 			</button>
 			<button
 				type="button"
-				class="keypad__key keypad__key--erase"
+				class="keypad__key btn-secondary"
 				onpointerdown={keepFocus}
 				onclick={erase}
 				aria-label={t('online.keyErase')}
@@ -193,27 +193,11 @@
 		align-items: center;
 		justify-content: center;
 		min-height: max(44px, calc(var(--fill-u) * 2.5));
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-xl);
 		font-weight: var(--font-weight-bold);
-		cursor: pointer;
 		touch-action: manipulation;
-	}
-
-	@media (hover: hover) {
-		.keypad__key:hover {
-			border-color: var(--color-accent);
-		}
-	}
-
-	/* «Стерти» — тихіше за цифри: рамка без заливки, як друга дорога вікна. */
-	.keypad__key--erase {
-		background: none;
-		color: var(--color-text-on-panel);
 	}
 
 	/* Порожня клітинка ліворуч від нуля — як на телефоні: нуль стоїть під вісімкою. */

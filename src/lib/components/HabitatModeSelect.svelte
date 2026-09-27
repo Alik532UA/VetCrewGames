@@ -28,7 +28,7 @@
 	<h2 class="mode-picker__title text-panel">{@html formatFont(t('habitat.chooseMode'))}</h2>
 
 	<a
-		class="mode-btn"
+		class="mode-btn btn-secondary"
 		href={langPath(lang, 'game-habitat/continents')}
 		data-testid="habitat-mode-continents-link"
 	>
@@ -40,7 +40,7 @@
 	</a>
 
 	<a
-		class="mode-btn"
+		class="mode-btn btn-secondary"
 		href={langPath(lang, 'game-habitat/biomes')}
 		data-testid="habitat-mode-biomes-link"
 	>
@@ -82,30 +82,17 @@
 		color: var(--color-text);
 	}
 
+	/* Режим — кнопкою (`.btn-secondary`), а не напівпрозорою панеллю з тінню (2026-09-27). */
 	.mode-btn {
 		display: flex;
 		align-items: center;
 		gap: var(--space-md);
 		width: 100%;
 		padding: var(--space-lg);
-		border: none;
 		border-radius: var(--radius-md);
-		background: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
 		text-decoration: none;
-		backdrop-filter: var(--blur-glass);
-		color: var(--color-text-on-panel);
-		box-shadow: var(--shadow-card);
 		font: inherit;
 		text-align: left;
-		cursor: pointer;
-		transition: all var(--transition-fast);
-	}
-
-	@media (hover: hover) {
-		.mode-btn:hover {
-			transform: translateY(-2px);
-			box-shadow: var(--shadow-glow-primary);
-		}
 	}
 
 	.mode-btn__text {
@@ -119,9 +106,13 @@
 		font-size: var(--font-size-lg);
 	}
 
+	/*
+	 * Пояснення приглушене КЕГЛЕМ, а не прозорістю — та сама причина, що в `RoomList`: на
+	 * тлі кнопки (`--color-bg-card`) `opacity: 0.85` давала 4,01:1 у світло-зеленій темі й
+	 * 3,71:1 у зимовій (заміряно `tests/contrast-runtime.spec.ts`).
+	 */
 	.mode-btn__text small {
 		font-size: var(--font-size-sm);
-		opacity: 0.85;
 	}
 
 </style>

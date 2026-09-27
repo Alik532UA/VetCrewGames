@@ -41,7 +41,12 @@
 		<h2 class="window__title" tabindex="-1" {@attach focus}>{@render title()}</h2>
 		{@render children()}
 		{#if onBack}
-			<button type="button" class="window__back" onclick={onBack} data-testid="{scope}-back-btn">
+			<button
+				type="button"
+				class="window__back btn-secondary"
+				onclick={onBack}
+				data-testid="{scope}-back-btn"
+			>
 				{@html formatFont(t('online.back'))}
 			</button>
 		{/if}
@@ -89,16 +94,12 @@
 		color: var(--color-text-on-panel);
 	}
 
-	/* Друга дорога — тихіша за першу: рамка без заливки; 44px — сенсорна ціль. */
+	/* «Назад» — кнопкою (`.btn-secondary`), а не голим текстом; 44px — сенсорна ціль. */
 	.window__back {
 		align-self: center;
 		min-height: 44px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: none;
-		color: var(--color-text-on-panel);
 		font: inherit;
-		cursor: pointer;
 	}
 </style>

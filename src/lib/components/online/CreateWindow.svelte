@@ -59,7 +59,7 @@
 			<p class="create__question">{@html formatFont(t('pairs.visibility'))}</p>
 			<button
 				type="button"
-				class="create__choice create__choice--main"
+				class="create__choice btn-accent"
 				onclick={() => onChoose(false)}
 				aria-disabled={busy}
 				data-testid="online-create-everyone-btn"
@@ -69,7 +69,7 @@
 			</button>
 			<button
 				type="button"
-				class="create__choice"
+				class="create__choice btn-secondary"
 				onclick={() => onChoose(true)}
 				aria-disabled={busy}
 				data-testid="online-create-friends-btn"
@@ -86,7 +86,7 @@
 			-->
 			<button
 				type="button"
-				class="create__choice create__choice--game"
+				class="create__choice create__choice--game btn-secondary"
 				onclick={() => onGame?.('quiz')}
 				data-testid="online-create-quiz-btn"
 			>
@@ -95,7 +95,7 @@
 			</button>
 			<button
 				type="button"
-				class="create__choice create__choice--game"
+				class="create__choice create__choice--game btn-secondary"
 				onclick={() => onGame?.('pairs')}
 				data-testid="online-create-pairs-btn"
 			>
@@ -114,8 +114,9 @@
 	}
 
 	/*
-	 * Вибір — кнопка з двома рядками: що це й що це означає. Друга — рамкою без заливки,
-	 * перша — акцентом. Висота — від одиниці вікна (`.fill`), дно — сенсорна ціль.
+	 * Вибір — кнопка з двома рядками: що це й що це означає. Головна — акцентом
+	 * (`.btn-accent`), решта — кнопками (`.btn-secondary`), а не плитками вікна. Висота —
+	 * від одиниці вікна (`.fill`), дно — сенсорна ціль.
 	 */
 	.create__choice {
 		display: flex;
@@ -124,19 +125,9 @@
 		gap: 2px;
 		min-height: max(56px, calc(var(--fill-u) * 3.5));
 		padding: var(--space-sm) var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
-		background: var(--color-bg-card);
-		color: var(--color-text);
 		font: inherit;
 		text-align: start;
-		cursor: pointer;
-	}
-
-	.create__choice--main {
-		border-color: transparent;
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 
 	/* Гра — значок і назва одним рядком: вибір тут один, і пояснювати його нема чого. */
@@ -144,12 +135,6 @@
 		flex-direction: row;
 		align-items: center;
 		gap: var(--space-md);
-	}
-
-	@media (hover: hover) {
-		.create__choice:hover {
-			border-color: var(--color-accent);
-		}
 	}
 
 	.create__label {

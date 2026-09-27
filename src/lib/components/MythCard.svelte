@@ -94,7 +94,11 @@
 				{:else}
 					<div class="myth-card__result" use:revealScroll in:slide={{ duration: 400 }} out:fade>
 						{#if !hideNext}
-							<button class="btn-next" onclick={() => onnext()} data-testid="mythbusters-next-btn">
+							<button
+								class="btn-next btn-secondary"
+								onclick={() => onnext()}
+								data-testid="mythbusters-next-btn"
+							>
 								{@html formatFont(t('myth.next'))}
 							</button>
 						{/if}
@@ -274,20 +278,14 @@
 		animation: blur-in 3s ease 400ms both;
 	}
 
+	/*
+	 * «Далі» — кнопкою (`.btn-secondary`). Доти тут стояло тло панелі з краєм
+	 * `--color-bg-panel-dark`, а в зимовій темі той край збігався з тлом кнопки.
+	 */
 	.btn-next {
 		padding: var(--space-md);
-		background: var(--color-bg-panel);
-		color: var(--color-text-on-panel);
 		border-radius: var(--radius-md);
-		border: none;
+		font: inherit;
 		font-weight: var(--font-weight-bold);
-		cursor: pointer;
-		transition: all var(--transition-fast);
-		box-shadow: 0 4px 0 var(--color-bg-panel-dark);
-	}
-	.btn-next:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 0 var(--color-bg-panel-dark);
-		background: var(--color-bg-card-hover);
 	}
 </style>

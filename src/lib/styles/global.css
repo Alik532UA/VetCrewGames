@@ -1072,17 +1072,24 @@ img {
 	}
 }
 
+/*
+ * ПЛИТКА МЕНЮ — КНОПКА, а не панель (прохання автора 2026-09-27; мова кнопки — у
+ * `.btn-secondary` нижче): своє тло, рамка й нижній край «клавіші». Доти плитка була
+ * напівпрозорою панеллю з тінню, тобто точно такою, як контейнери з інформацією.
+ */
 .menu-btn--game {
-	background-color: color-mix(in srgb, var(--color-bg-panel), transparent 25%);
-	backdrop-filter: var(--blur-glass);
-	color: var(--color-text-on-panel);
-	box-shadow: var(--shadow-card);
+	border: 1px solid color-mix(in srgb, var(--color-bg-card), black 25%);
+	background-color: var(--color-bg-card);
+	color: var(--color-text);
+	box-shadow: 0 4px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
 }
 
 @media (hover: hover) {
 	.menu-btn--game:hover {
-		background-color: color-mix(in srgb, var(--color-bg-card-hover), transparent 15%);
-		box-shadow: var(--shadow-glow-primary);
+		background-color: var(--color-bg-card-hover);
+		box-shadow:
+			0 6px 0 color-mix(in srgb, var(--color-bg-card), black 35%),
+			var(--shadow-glow-primary);
 		transform: translateY(-2px);
 	}
 	.menu-btn--link:hover {
@@ -1094,8 +1101,8 @@ img {
 
 .menu-btn--game:active {
 	background-color: var(--color-bg-card-hover);
-	transform: scale(0.98);
-	box-shadow: none;
+	transform: translateY(2px);
+	box-shadow: 0 2px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
 }
 
 .menu-btn--disabled {
@@ -1218,6 +1225,81 @@ img {
 .btn-primary:not(:disabled):hover {
 	transform: translateY(-2px);
 	background: var(--color-accent-hover);
+}
+
+/*
+ * КНОПКА — НЕ ПАНЕЛЬ (прохання автора 2026-09-27: «кнопки „Створити кімнату“ та
+ * „Підключитися“ виглядають так само, що й контейнери „Як вас звати?“ і „Кімнати“; ідея
+ * глобально — щоб контейнери з інформацією відрізнялися від кнопок»).
+ *
+ * ПАНЕЛЬ — тло `--color-bg-panel` і мʼяка тінь (`--shadow-card`), і більше нічого: вона
+ * не реагує на курсор і не має краю. КНОПКА — своє тло (`--color-bg-card`, у кожній темі
+ * інше, ніж у панелі), рамка й суцільний нижній край «клавіші», та сама мова, що в
+ * `.btn-primary`: наведення її піднімає, натиск утискає. Клас — лише вигляд; розкладку
+ * (відступи, розмір) кожен компонент тримає свою.
+ *
+ * Край і рамка — темніша суміш тла самої кнопки, а не токен теми: `--color-bg-panel-dark`
+ * у зимовій темі збігається з `--color-bg-card`, а `--color-border` у трьох темах — із
+ * панеллю, тож на панелі такий край чи рамка просто зникали (саме так «Назад» у вікні
+ * зимової теми був голим текстом).
+ *
+ * Текст — `--color-text`, а не `--color-text-on-panel`: на тлі кнопки перший дає
+ * щонайменше 4,67:1 у всіх чотирьох темах (на наведенні — 4,53), другий у світло-зеленій
+ * лише 4,4.
+ */
+.btn-secondary {
+	border: 1px solid color-mix(in srgb, var(--color-bg-card), black 25%);
+	background: var(--color-bg-card);
+	color: var(--color-text);
+	box-shadow: 0 4px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+	cursor: pointer;
+	transition:
+		transform var(--transition-fast),
+		box-shadow var(--transition-fast),
+		background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+	.btn-secondary:not([aria-disabled='true']):hover {
+		background: var(--color-bg-card-hover);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+	}
+}
+
+.btn-secondary:not([aria-disabled='true']):active {
+	transform: translateY(2px);
+	box-shadow: 0 2px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+}
+
+/*
+ * ГОЛОВНА ДІЯ ВЛАСНОГО ВИГЛЯДУ — акцентне тло з тим самим краєм, що в `.btn-primary`, для
+ * кнопок, яким `.btn-primary` не пасує розкладкою (дорога хабу, вибір у вікні): інакше
+ * головна дія лишалася б пласкою плиткою серед «клавіш».
+ */
+.btn-accent {
+	border: 1px solid transparent;
+	background: var(--color-accent);
+	color: var(--color-text-on-accent);
+	box-shadow: 0 4px 0 color-mix(in srgb, var(--color-accent), black 30%);
+	cursor: pointer;
+	transition:
+		transform var(--transition-fast),
+		box-shadow var(--transition-fast),
+		background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+	.btn-accent:not([aria-disabled='true']):hover {
+		background: var(--color-accent-hover);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 0 color-mix(in srgb, var(--color-accent), black 30%);
+	}
+}
+
+.btn-accent:not([aria-disabled='true']):active {
+	transform: translateY(2px);
+	box-shadow: 0 2px 0 color-mix(in srgb, var(--color-accent), black 30%);
 }
 
 .font-noto {

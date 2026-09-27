@@ -94,7 +94,7 @@
 		<p class="search__hint">{@html formatFont(t('online.searchHint'))}</p>
 		<button
 			type="button"
-			class="search__go"
+			class="search__go btn-accent"
 			onclick={start}
 			data-testid="online-search-btn"
 			{@attach refocus}
@@ -113,7 +113,7 @@
 		</p>
 		<button
 			type="button"
-			class="search__cancel"
+			class="search__cancel btn-secondary"
 			onclick={onCancel}
 			aria-describedby="online-search-status"
 			data-testid="online-search-cancel-btn"
@@ -154,20 +154,10 @@
 		min-width: min(100%, 12em);
 		min-height: max(48px, calc(var(--fill-u) * 3));
 		padding: 0 var(--space-xl);
-		border: none;
 		border-radius: var(--radius-md);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 		font: inherit;
 		font-weight: var(--font-weight-bold);
 		font-size: var(--font-size-lg);
-		cursor: pointer;
-	}
-
-	@media (hover: hover) {
-		.search__go:hover {
-			background: var(--color-accent-hover);
-		}
 	}
 
 	/* Підказки приглушені КЕГЛЕМ, а не прозорістю — та сама причина, що в `RoomList`. */
@@ -183,16 +173,12 @@
 		color: var(--color-text-on-panel);
 	}
 
-	/* Друга дорога — тихіша за першу: рамка без заливки; 44px — сенсорна ціль. */
+	/* «Скасувати» — кнопкою (`.btn-secondary`), а не голим текстом; 44px — сенсорна ціль. */
 	.search__cancel {
 		align-self: center;
 		min-height: 44px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: none;
-		color: var(--color-text-on-panel);
 		font: inherit;
-		cursor: pointer;
 	}
 </style>

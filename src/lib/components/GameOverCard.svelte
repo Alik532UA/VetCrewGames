@@ -85,7 +85,7 @@
 			<RotateCcw size={24} aria-hidden="true" />
 			{@html formatFont(t('common.playAgain'))}
 		</button>
-		<a href={langPath(lang)} class="btn-menu" data-testid="{testId}-main-menu-link">
+		<a href={langPath(lang)} class="btn-menu btn-secondary" data-testid="{testId}-main-menu-link">
 			<Home size={24} aria-hidden="true" />
 			{@html formatFont(t('common.mainMenu'))}
 		</a>
@@ -148,13 +148,10 @@
 		gap: var(--space-sm);
 		padding: var(--space-md) var(--space-xl);
 		border-radius: var(--radius-md);
-		border: none;
 		font: inherit;
 		font-weight: var(--font-weight-bold);
 		font-size: var(--font-size-lg);
-		cursor: pointer;
 		text-decoration: none;
-		transition: all var(--transition-fast);
 	}
 
 	.btn-play-again {
@@ -168,13 +165,5 @@
 		background: var(--color-accent-hover);
 	}
 
-	.btn-menu {
-		background: color-mix(in srgb, var(--color-bg-panel), transparent 80%);
-		color: var(--color-text);
-		border: 1px solid var(--color-border);
-	}
-
-	.btn-menu:hover {
-		transform: translateY(-2px);
-	}
+	/* «У меню» — кнопкою (`.btn-secondary`), а не напівпрозорою плиткою панелі. */
 </style>

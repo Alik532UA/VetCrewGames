@@ -158,7 +158,7 @@
 					{#if onClose && room.amHost && room.life === 'idle'}
 						<button
 							type="button"
-							class="rooms__close"
+							class="rooms__close btn-secondary"
 							onclick={() => onClose(room.code, room.gameId)}
 							aria-label="{t('pairs.closeRoom')}: {room.code}"
 							data-testid="online-resume-{room.code}-close-btn"
@@ -168,7 +168,7 @@
 					{/if}
 					<button
 						type="button"
-						class="rooms__enter rooms__enter--resume"
+						class="rooms__enter btn-accent"
 						onclick={() => onEnter(room.code, room.gameId)}
 						aria-disabled={busy}
 						aria-label="{t('pairs.resume')}: {room.code}"
@@ -227,7 +227,7 @@
 						</span>
 						<button
 							type="button"
-							class="rooms__enter"
+							class="rooms__enter btn-secondary"
 							onclick={() => onEnter(room.code, room.gameId)}
 							aria-disabled={busy}
 							aria-label="{t('pairs.enter')}: {room.hostName}"
@@ -262,7 +262,7 @@
 						</span>
 						<button
 							type="button"
-							class="rooms__enter"
+							class="rooms__enter btn-secondary"
 							onclick={() => onEnter(room.code, room.gameId)}
 							aria-disabled={busy}
 							aria-label="{t('pairs.enter')}: {room.hostName}"
@@ -299,13 +299,9 @@
 		flex-shrink: 0;
 		min-height: 44px;
 		padding: 0 var(--space-sm);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: none;
-		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
-		cursor: pointer;
 	}
 
 	.rooms {
@@ -370,6 +366,12 @@
 		overflow-y: auto;
 	}
 
+	/*
+	 * РЯДОК — ДОВІДКА, А НЕ КНОПКА (прохання автора 2026-09-27: «контейнери з інформацією
+	 * відрізняються від кнопок»). Доти рядок мав тло кнопок (`--color-bg-card`), і «Зайти»
+	 * на ньому зливалося з ним. Тепер рядок — лише легкий відтінок панелі, а кнопка в
+	 * ньому — `.btn-secondary` зі своїм тлом і краєм.
+	 */
 	.rooms__item {
 		display: flex;
 		align-items: center;
@@ -378,8 +380,8 @@
 		min-height: 44px;
 		padding: var(--space-xs) var(--space-sm);
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
-		color: var(--color-text);
+		background: color-mix(in srgb, var(--color-text-on-panel), transparent 92%);
+		color: var(--color-text-on-panel);
 	}
 
 	.rooms__who {
@@ -415,24 +417,15 @@
 		white-space: nowrap;
 	}
 
+	/* «Зайти» — кнопкою (`.btn-secondary`), своя ж партія — акцентом (`.btn-accent`). */
 	.rooms__enter {
 		flex-shrink: 0;
 		min-height: 36px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 90%);
-		color: var(--color-text);
 		font: inherit;
 		font-weight: var(--font-weight-bold);
 		font-size: var(--font-size-sm);
-		cursor: pointer;
-	}
-
-	@media (hover: hover) {
-		.rooms__enter:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 80%);
-		}
 	}
 
 	/*
@@ -446,27 +439,11 @@
 	}
 
 	/*
-	 * Рамка, а не інше тло.
-	 *
-	 * Тло `--color-bg-card` уже перевірене на всіх чотирьох темах разом із
-	 * `--color-text`; підмішати в нього акцент означало б завести пару, якої
-	 * гейт контрасту ще не бачив, і завести її в чотирьох темах одночасно.
-	 * Рамка виділяє рядок, не торкаючись пари «текст на тлі».
+	 * Рамка, а не інше тло: підмішати в тло рядка акцент означало б завести пару «текст
+	 * на тлі», якої гейт контрасту ще не бачив, і завести її в чотирьох темах одночасно.
+	 * Рамка виділяє рядок, не торкаючись цієї пари.
 	 */
 	.rooms__item--resume {
 		border: 2px solid var(--color-accent);
-	}
-
-	/* Дія тут головна на всій формі — тож єдина залита акцентом. */
-	.rooms__enter--resume {
-		border-color: var(--color-accent);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
-	}
-
-	@media (hover: hover) {
-		.rooms__enter--resume:hover {
-			background: color-mix(in srgb, var(--color-accent), var(--color-text) 15%);
-		}
 	}
 </style>

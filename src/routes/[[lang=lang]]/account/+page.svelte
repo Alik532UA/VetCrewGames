@@ -493,7 +493,7 @@
 							{#if account.follows(person.uid)}
 								<button
 									type="button"
-									class="account__chip"
+									class="account__chip btn-secondary"
 									onclick={() => account.remove(person.uid)}
 									data-testid="account-unfollow-{person.uid}-btn"
 								>
@@ -502,7 +502,7 @@
 							{:else}
 								<button
 									type="button"
-									class="account__chip account__chip--on"
+									class="account__chip btn-accent"
 									onclick={() => account.add(person.uid)}
 									data-testid="account-follow-{person.uid}-btn"
 								>
@@ -575,7 +575,7 @@
 						{/if}
 						<button
 							type="button"
-							class="account__chip"
+							class="account__chip btn-secondary"
 							onclick={() => account.remove(friend.profile.uid)}
 							data-testid="account-drop-{friend.profile.uid}-btn"
 						>
@@ -745,6 +745,11 @@
 		list-style: none;
 	}
 
+	/*
+	 * РЯДОК — ДОВІДКА, А НЕ КНОПКА (прохання автора 2026-09-27): легкий відтінок панелі, а
+	 * «Стежити» й «Не стежити» в ньому — кнопками (`.btn-accent`, `.btn-secondary`). Доти
+	 * рядок мав тло кнопок, і кнопка на ньому зливалася з ним.
+	 */
 	.account__row {
 		display: flex;
 		align-items: center;
@@ -752,7 +757,8 @@
 		min-height: 44px;
 		padding: var(--space-xs) var(--space-sm);
 		border-radius: var(--radius-sm);
-		background: var(--color-bg-card);
+		background: color-mix(in srgb, var(--color-text-on-panel), transparent 92%);
+		color: var(--color-text-on-panel);
 	}
 
 	.account__who {
@@ -782,18 +788,8 @@
 		flex-shrink: 0;
 		min-height: 36px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 90%);
-		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
-		cursor: pointer;
-	}
-
-	.account__chip--on {
-		border-color: var(--color-accent);
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
 	}
 </style>

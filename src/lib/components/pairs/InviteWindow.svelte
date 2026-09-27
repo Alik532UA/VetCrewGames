@@ -70,7 +70,12 @@
 	>
 		{@html formatFont(t('pairs.inviteJoin'))}
 	</button>
-	<button type="button" class="invite__back" onclick={onBack} data-testid="room-invite-back-btn">
+	<button
+		type="button"
+		class="invite__back btn-secondary"
+		onclick={onBack}
+		data-testid="room-invite-back-btn"
+	>
 		{@html formatFont(t('pairs.inviteBack'))}
 	</button>
 </section>
@@ -118,24 +123,14 @@
 	}
 
 	/*
-	 * Друга дорога — тихіша за першу: рамка без заливки. 44px — власний стандарт
-	 * сенсорної цілі (ACCESSIBILITY-v8 § 8).
+	 * «Назад» — кнопкою (`.btn-secondary`), а не рамкою, що в трьох темах збігалася з
+	 * панеллю. 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8).
 	 */
 	.invite__back {
 		align-self: center;
 		min-height: 44px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: none;
-		color: var(--color-text-on-panel);
 		font: inherit;
-		cursor: pointer;
-	}
-
-	@media (hover: hover) {
-		.invite__back:hover {
-			background: color-mix(in srgb, var(--color-text), transparent 90%);
-		}
 	}
 </style>

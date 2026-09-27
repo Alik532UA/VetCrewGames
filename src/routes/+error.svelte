@@ -34,7 +34,7 @@
 				<RotateCcw size={20} />
 				{@html formatFont(t('error.retry'))}
 			</button>
-			<a href={langPath(languageFromParam(page.params.lang))} class="btn-home">
+			<a href={langPath(languageFromParam(page.params.lang))} class="btn-home btn-secondary">
 				<Home size={20} />
 				{@html formatFont(t('error.goHome'))}
 			</a>
@@ -111,9 +111,6 @@
 		border-radius: var(--radius-md);
 		font-weight: var(--font-weight-bold);
 		text-decoration: none;
-		transition: all var(--transition-fast);
-		border: none;
-		cursor: pointer;
 	}
 
 	.btn-retry {
@@ -126,14 +123,5 @@
 		background: var(--color-accent-hover);
 	}
 
-	.btn-home {
-		background: color-mix(in srgb, var(--color-bg-panel), transparent 90%);
-		color: var(--color-text);
-		border: 1px solid var(--color-border);
-	}
-
-	.btn-home:hover {
-		background: color-mix(in srgb, var(--color-bg-panel), transparent 80%);
-		transform: translateY(-2px);
-	}
+	/* «На головну» — кнопкою (`.btn-secondary`), а не напівпрозорою плиткою. */
 </style>

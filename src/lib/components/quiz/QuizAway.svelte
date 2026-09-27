@@ -220,7 +220,7 @@
 						{#each away as member (member.uid)}
 							<button
 								type="button"
-								class="away__kick"
+								class="away__kick btn-secondary"
 								onclick={() => onkick(member.uid)}
 								data-testid="quiz-away-{member.uid}-btn"
 							>
@@ -375,20 +375,17 @@
 	}
 
 	/*
-	 * Кнопка тиха: дія незворотна, але не та, по яку тут дивляться. Гучна кнопка
-	 * поруч з іменем читалася б як пропозиція. Тиха — кольором, а не розміром: 44px —
-	 * дно сенсорної цілі (доти тут було 32px).
+	 * Кнопка другорядна (`.btn-secondary`), а не акцентна: дія незворотна, але не та, по
+	 * яку тут дивляться, — акцентна поруч з іменем читалася б як пропозиція. І все ж
+	 * кнопкою, а не плиткою панелі (прохання автора 2026-09-27). 44px — дно сенсорної цілі
+	 * (доти тут було 32px).
 	 */
 	.away__kick {
 		min-height: 44px;
 		padding: 0 var(--space-md);
-		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
-		background: color-mix(in srgb, var(--color-text), transparent 90%);
-		color: var(--color-text);
 		font: inherit;
 		font-size: var(--font-size-sm);
-		cursor: pointer;
 	}
 
 	.away__count {
