@@ -359,6 +359,18 @@ test('стрілки вбік не забирають каретку в полі
 
 	const chosen = await activeSpot(page);
 
+	// Тесту потрібна колонка ПРАВОРУЧ від активного пункту, а стартує він з поточної
+	// країни. Її фіксує `fixCountry` у фікстурах: на раннері CI зі США активною ставала
+	// країна в останній колонці, і тест падав нижче незрозумілим «386 > 388».
+	const lastColumn = await page
+		.locator(`[data-testid="${SCOPE}-menu"] [role="option"]`)
+		.evaluateAll((options) =>
+			Math.max(...options.map((option) => (option as HTMLElement).offsetLeft))
+		);
+	expect(chosen!.left, 'активний пункт уже в останній колонці — праворуч іти нікуди').toBeLessThan(
+		lastColumn - NEAR
+	);
+
 	// Каретка в кінці, стрілка ВЛІВО — рухається каретка, активний пункт стоїть.
 	await page.keyboard.press('ArrowLeft');
 	expect((await caret(page)).at).toBe(0);

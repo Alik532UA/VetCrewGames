@@ -65,6 +65,34 @@ export async function blockAnalytics(target: BrowserContext | Page) {
 }
 
 /**
+ * ПРАПОР ЗА IP — ФІКСОВАНИЙ, а не той, що каже чужа служба про машину прогону (2026-09-27).
+ *
+ * Сторінки з рядком «хто я» питають `api.country.is`, і відповідь залежить від того, ДЕ
+ * стоїть машина. На американському раннері CI прапором ставали США, а в меню країн вони
+ * лежать в останній колонці: `country-menu.spec.ts` падав на «з краю набраного стрілка
+ * вбік мусить перейти в колонку» — активною лишалася поточна країна, і праворуч від неї
+ * колонки немає. Локально (Україна, перша колонка) той самий код проходив. Прогін не мусить
+ * залежати ні від географії, ні від доступності чужої служби, тож відповідь підставляється
+ * тут — Україна, як у автора. Заголовок CORS обовʼязковий: без нього сторінка не прочитала б
+ * навіть підставлену відповідь.
+ */
+const COUNTRY_HOST = 'api.country.is';
+export const TEST_COUNTRY = 'UA';
+
+export async function fixCountry(target: BrowserContext | Page) {
+	await target.route(
+		(url) => url.hostname === COUNTRY_HOST,
+		(route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				headers: { 'access-control-allow-origin': '*' },
+				body: JSON.stringify({ ip: '192.0.2.1', country: TEST_COUNTRY })
+			})
+	);
+}
+
+/**
  * Перевизначено саме `context`, а не додано авто-фікстуру над `page`: так
  * глушилка лишається ЛІНИВОЮ. Тест, що бере лише `request`, браузера не
  * піднімає — авто-фікстура над `page` змусила б його це робити.
@@ -72,6 +100,7 @@ export async function blockAnalytics(target: BrowserContext | Page) {
 export const test = base.extend({
 	context: async ({ context }, use) => {
 		await blockAnalytics(context);
+		await fixCountry(context);
 		await use(context);
 	}
 });
