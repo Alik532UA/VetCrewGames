@@ -85,7 +85,8 @@ function setup({ quiz = feed(), pairs = feed(), peek = null as RoomInfo | null }
 		online: vi.fn(() => true),
 		rules: vi.fn(async () => 'stale' as const),
 		newBuild: vi.fn(async () => false),
-		deployed: () => false
+		deployed: () => false,
+		emulator: () => false
 	};
 	const hub = new OnlineHubState(
 		player as never,

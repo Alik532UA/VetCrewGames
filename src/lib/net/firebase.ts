@@ -2,6 +2,13 @@ import type { Auth } from 'firebase/auth';
 import type { Database } from 'firebase/database';
 import { logService } from '$lib/services/logService.svelte';
 import { rememberSession } from '$lib/services/accountFlag';
+import {
+	EMULATOR,
+	EMULATOR_COMMAND,
+	EMULATOR_HOST,
+	EMULATOR_PORTS,
+	EMULATOR_PROJECT
+} from './emulator';
 
 /**
  * Під'єднання до Firebase — ліниве, анонімне й одне на застосунок.
@@ -30,6 +37,43 @@ const CONFIG = {
 	messagingSenderId: '797702010405',
 	appId: '1:797702010405:web:38e4e9918f115b795eb1cc'
 };
+
+/**
+ * DEV — ДЕМО-ПРОЄКТ У ЛОКАЛЬНОМУ ЕМУЛЯТОРІ (`net/emulator.ts`), а не бойовий.
+ *
+ * Простір імен — `{проєкт}-default-rtdb`, і це не дрібниця: емулятор застосовує правила
+ * рівно до однієї бази — тієї, яку створює за `firebase.dev.json`. На будь-яке інше ім'я
+ * він піднімає порожню базу «дозволити все», і dev знову йшов би повз правила (заміряно в
+ * `AudioRemote`: поле, додане в коді раніше, ніж у правилах, падало лише на проді).
+ */
+const EMULATOR_CONFIG = {
+	apiKey: 'demo-key',
+	authDomain: `${EMULATOR_PROJECT}.firebaseapp.com`,
+	projectId: EMULATOR_PROJECT,
+	databaseURL: `http://${EMULATOR_HOST}:${EMULATOR_PORTS.database}?ns=${EMULATOR_PROJECT}-default-rtdb`
+};
+
+/** Скільки чекати відповіді емулятора, перш ніж сказати, що його не запущено. */
+const EMULATOR_WAIT_MS = 1500;
+
+/**
+ * ЧИ ЗАПУЩЕНО ЕМУЛЯТОР — до першого звернення до бази.
+ *
+ * Без цього незапущений емулятор не давав би помилки НІКОЛИ: `get()` бази без звʼязку не
+ * падає, а чекає, і з відновленим входом (сесія лежить в IndexedDB) пошук висів би в
+ * «Шукаємо гравця…» назавжди. `no-cors` — бо відповідь не потрібна, потрібен сам факт, що
+ * порт відповів; помилка мережі тут і є «не запущено» (`utils/netProblem.ts` → `emulator`).
+ */
+async function emulatorUp(): Promise<void> {
+	try {
+		await fetch(`http://${EMULATOR_HOST}:${EMULATOR_PORTS.database}/.json`, {
+			mode: 'no-cors',
+			signal: AbortSignal.timeout(EMULATOR_WAIT_MS)
+		});
+	} catch (error) {
+		throw new Error(`Firebase emulator is not running (${EMULATOR_COMMAND})`, { cause: error });
+	}
+}
 
 export interface Connection {
 	/**
@@ -122,15 +166,23 @@ export function connect(): Promise<Connection> {
 }
 
 async function open(): Promise<Connection> {
+	if (EMULATOR) await emulatorUp();
 	const [{ initializeApp }, authModule, dbModule] = await Promise.all([
 		import('firebase/app'),
 		import('firebase/auth'),
 		import('firebase/database')
 	]);
 
-	const app = initializeApp(CONFIG);
+	const app = initializeApp(EMULATOR ? EMULATOR_CONFIG : CONFIG);
 	const auth: Auth = authModule.getAuth(app);
+	// Під'єднатися до емулятора — ДО першого звернення: і входу, і бази (вимога SDK).
+	if (EMULATOR) {
+		authModule.connectAuthEmulator(auth, `http://${EMULATOR_HOST}:${EMULATOR_PORTS.auth}`, {
+			disableWarnings: true
+		});
+	}
 	const db = dbModule.getDatabase(app);
+	if (EMULATOR) dbModule.connectDatabaseEmulator(db, EMULATOR_HOST, EMULATOR_PORTS.database);
 	// Зсув приходить із рукостискання зʼєднання: окремого читання бази він не коштує.
 	// Службовий вузол: скасовувати його нікому, тож обробника скасування немає.
 	const { onValue, ref } = dbModule;

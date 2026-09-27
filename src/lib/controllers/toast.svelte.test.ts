@@ -143,6 +143,13 @@ describe('тост про збій', () => {
 			reload: false,
 			report: true
 		});
+		// Лише dev: емулятор не відповідає — команда в тексті, ні оновлення, ні розробника.
+		expect(offer('emulator')).toEqual({
+			type: 'warn',
+			key: 'problem.emulator',
+			reload: false,
+			report: false
+		});
 	});
 
 	it('новий збій замінює старий, а звичайних тостів не чіпає', () => {

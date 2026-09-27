@@ -23,7 +23,8 @@ const CONTEXT = {
 	online: false,
 	takenAt: '2026-08-20T01:02:03.000Z',
 	uid: 'uid-reporter',
-	rules: 'abc123def456'
+	rules: 'abc123def456',
+	database: 'live' as const
 };
 
 const ENTRY: LogEntry = {
@@ -41,14 +42,20 @@ describe('звіт про збій', () => {
 	describe('шапка', () => {
 		const header = buildLogReportHeader(CONTEXT);
 
-		it('несе ВСІ сім полів — зникнення будь-якого робить звіт нерозбірним', () => {
+		it('несе ВСІ вісім полів — зникнення будь-якого робить звіт нерозбірним', () => {
 			expect(header).toContain('DATE: 2026-08-20T01:02:03.000Z');
 			expect(header).toContain('URL: https://alik532ua.github.io/VetCrewGames/game-memory/');
 			expect(header).toContain('DEVICE: Mozilla/5.0 (Test)');
 			expect(header).toContain('VERSION: 0.6.260');
 			expect(header).toContain('ONLINE: false');
 			expect(header).toContain('RULES: abc123def456');
+			expect(header).toContain('DB: live');
 			expect(header).toContain('UID: uid-reporter');
+		});
+
+		// Dev на емуляторі (2026-09-27): звіт мусить казати, з якою базою говорила вкладка.
+		it('dev на емуляторі — `DB: emulator`', () => {
+			expect(buildLogReportHeader({ ...CONTEXT, database: 'emulator' })).toMatch(/^DB: emulator$/m);
 		});
 
 		it('без входу — `UID: none`, а не `null` чи порожнеча', () => {

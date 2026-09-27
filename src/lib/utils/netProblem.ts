@@ -28,10 +28,11 @@ import { chunkMissing } from './staleBuild';
  * локальної збірки (dev, прев'ю, телефон у локальній мережі) такої гарантії немає — там
  * «інша» майже завжди означає «ті, що в цьому дереві, ще не викладені».
  *
- * Емулятора в цьому переліку немає, і це не пропуск: застосунок до нього не ходить НІКОЛИ,
- * навіть із прапорцем (`net/emulatorSession.ts`), — лише перевірки `npm run check:rules`.
+ *  • `emulator` — dev ходить у локальний емулятор (`net/emulator.ts`), а той не відповідає
+ *                 або піднятий зі старими правилами: запустити чи перезапустити
+ *                 `npm run emulators`. Інтернет тут ні до чого — емулятор на цій машині.
  */
-export type NetProblem = 'offline' | 'reload' | 'mismatch' | 'rules' | 'code';
+export type NetProblem = 'offline' | 'reload' | 'mismatch' | 'rules' | 'code' | 'emulator';
 
 /** Що відомо про збій і довкола нього. Збирає `controllers/diagnose.ts`. */
 export interface ProblemFacts {
@@ -44,6 +45,8 @@ export interface ProblemFacts {
 	newBuild: boolean;
 	/** Збірка з Pages, а не локальна: її правила CI виклав РАНІШЕ за неї. */
 	deployed: boolean;
+	/** Dev на локальному емуляторі (`net/emulator.ts`): база — на цій машині. */
+	emulator: boolean;
 }
 
 /** Помилка й причини під нею (`Error.cause`): «код зайнятий», за яким стоїть відмова правил. */
@@ -64,6 +67,9 @@ function chain(error: unknown): unknown[] {
 const OFFLINE =
 	/network-request-failed|failed to fetch|networkerror|load failed|client is offline/i;
 
+/** Незапущений емулятор, як його називає `net/firebase.ts` (`emulatorUp`). */
+const EMULATOR_DOWN = /emulator is not running/i;
+
 const text = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /** Відмова правил — у самій помилці чи в причині під нею. */
@@ -73,9 +79,14 @@ export const deniedDeep = (error: unknown): boolean => chain(error).some(isDenie
 export function netProblem(facts: ProblemFacts): NetProblem {
 	const errors = chain(facts.error);
 	if (facts.newBuild || errors.some(chunkMissing)) return 'reload';
-	if (!facts.online || errors.some((error) => OFFLINE.test(text(error)))) return 'offline';
+	const cut = errors.some((error) => OFFLINE.test(text(error)) || EMULATOR_DOWN.test(text(error)));
+	// Емулятор на цій машині: обрив означає, що його не запущено, — інтернет тут ні до чого.
+	if (facts.emulator && cut) return 'emulator';
+	if (!facts.online || cut) return 'offline';
 	if (!deniedDeep(facts.error)) return 'code';
 	if (facts.rules === 'fresh') return 'code';
+	// Емулятор бере правила з цього ж дерева: «інша редакція» — він піднятий зі старими.
+	if (facts.emulator) return 'emulator';
 	if (facts.rules === 'stale') return facts.deployed ? 'mismatch' : 'rules';
 	// Відмова була, а звірити правила не вдалося: база щойно відповідала й замовкла.
 	return 'offline';

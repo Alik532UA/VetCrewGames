@@ -88,7 +88,8 @@ function world() {
 				rules: 'stale' as const,
 				newBuild: false,
 				deployed: false,
-				online: true
+				online: true,
+				emulator: false
 			}))
 		};
 		return { uid, search: new AutoSearch(deps), went };
@@ -364,7 +365,14 @@ describe('автоматичний пошук', () => {
 		await settle();
 		expect(a.search.phase, 'поки діагноз іде — «шукаємо»').toBe('searching');
 		a.search.cancel();
-		answer({ problem: 'code', rules: 'fresh', newBuild: false, deployed: false, online: true });
+		answer({
+			problem: 'code',
+			rules: 'fresh',
+			newBuild: false,
+			deployed: false,
+			online: true,
+			emulator: false
+		});
 		await settle();
 		expect(a.search.phase).toBe('idle');
 		expect(problem).not.toHaveBeenCalled();

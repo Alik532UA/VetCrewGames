@@ -124,7 +124,9 @@ const PROBLEM: Record<
 	reload: { key: 'problem.reload', type: 'warn', reload: true, report: false },
 	mismatch: { key: 'problem.mismatch', type: 'warn', reload: true, report: true },
 	rules: { key: 'problem.rules', type: 'warn', reload: false, report: true },
-	code: { key: 'problem.code', type: 'error', reload: false, report: true }
+	code: { key: 'problem.code', type: 'error', reload: false, report: true },
+	// Лише в dev: команда стоїть у самому тексті — її вставляють у термінал.
+	emulator: { key: 'problem.emulator', type: 'warn', reload: false, report: false }
 };
 
 class ToastState {

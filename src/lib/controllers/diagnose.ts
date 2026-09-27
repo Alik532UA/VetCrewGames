@@ -1,4 +1,5 @@
 import { SITE_ORIGIN } from '$lib/i18n/routing';
+import { EMULATOR } from '$lib/net/emulator';
 import { checkLiveRules } from '$lib/net/rulesLive';
 import { logService, type LogContext } from '$lib/services/logService.svelte';
 import {
@@ -28,6 +29,8 @@ export interface ProblemProbe {
 	newBuild(): Promise<boolean>;
 	/** Збірка з Pages, а не локальна (dev, прев'ю, телефон у локальній мережі). */
 	deployed(): boolean;
+	/** Dev на локальному емуляторі (`net/emulator.ts`). */
+	emulator(): boolean;
 }
 
 /**
@@ -36,10 +39,12 @@ export interface ProblemProbe {
  */
 export function liveProbe(newBuild: () => Promise<boolean>): ProblemProbe {
 	return {
-		online: () => navigator.onLine,
+		// Емулятор — на цій машині: без інтернету він працює так само.
+		online: () => EMULATOR || navigator.onLine,
 		rules: async () => (await checkLiveRules()).state,
 		newBuild,
-		deployed: () => location.origin === SITE_ORIGIN
+		deployed: () => location.origin === SITE_ORIGIN,
+		emulator: () => EMULATOR
 	};
 }
 
@@ -73,8 +78,9 @@ export async function diagnose(
 	]);
 	const online = probe.online();
 	const deployed = probe.deployed();
-	const problem = netProblem({ error, online, rules, newBuild, deployed });
-	return { problem, rules, newBuild, deployed, online };
+	const emulator = probe.emulator();
+	const problem = netProblem({ error, online, rules, newBuild, deployed, emulator });
+	return { problem, rules, newBuild, deployed, online, emulator };
 }
 
 /**

@@ -49,14 +49,38 @@ const auth = {
 	authStateReady
 };
 
-vi.mock('firebase/app', () => ({ initializeApp: vi.fn(() => ({ name: 'test' })) }));
-vi.mock('firebase/auth', () => ({ getAuth: vi.fn(() => auth), signInAnonymously }));
+const initializeApp = vi.fn(() => ({ name: 'test' }));
+const connectAuthEmulator = vi.fn();
+const connectDatabaseEmulator = vi.fn();
+vi.mock('firebase/app', () => ({ initializeApp }));
+vi.mock('firebase/auth', () => ({
+	getAuth: vi.fn(() => auth),
+	signInAnonymously,
+	connectAuthEmulator
+}));
+
+/**
+ * Прапорець dev-емулятора (`net/emulator.ts`). У vitest `import.meta.env.DEV` — теж `true`, тож
+ * без підміни тут ішли б в емулятор усі випадки. Типово — бойова база, як у збірці; шлях
+ * емулятора — окремими випадками нижче.
+ */
+let emulator = false;
+vi.mock('./emulator', () => ({
+	get EMULATOR() {
+		return emulator;
+	},
+	EMULATOR_PROJECT: 'demo-vet-crew-games',
+	EMULATOR_HOST: '127.0.0.1',
+	EMULATOR_PORTS: { database: 9011, auth: 9110 },
+	EMULATOR_COMMAND: 'npm run emulators'
+}));
 /** Що віддасть `.info/serverTimeOffset`: зсув серверного годинника від пристрою. */
 type OffsetSnapshot = { val: () => unknown; exists: () => boolean };
 let offsetListener: ((snapshot: OffsetSnapshot) => void) | null = null;
 /** База повідомила зсув — так, як це робить рукостискання зʼєднання. */
 const offsetIs = (value: number) => offsetListener?.({ val: () => value, exists: () => true });
 vi.mock('firebase/database', () => ({
+	connectDatabaseEmulator,
 	getDatabase: vi.fn(() => ({})),
 	ref: vi.fn((_db: unknown, path: string) => ({ path })),
 	onValue: vi.fn((_node: unknown, listener: (snapshot: OffsetSnapshot) => void) => {
@@ -84,6 +108,62 @@ describe('під’єднання до Firebase', () => {
 		signInAnonymously.mockClear();
 		authStateReady.mockClear();
 		rememberSession.mockClear();
+		initializeApp.mockClear();
+		connectAuthEmulator.mockClear();
+		connectDatabaseEmulator.mockClear();
+		emulator = false;
+		vi.unstubAllGlobals();
+	});
+
+	/**
+	 * DEV НА ЕМУЛЯТОРІ (рішення автора 2026-09-27): демо-проєкт і підʼєднання до емулятора —
+	 * ДО першого звернення до входу й до бази (вимога SDK), а незапущений емулятор — зрозумілою
+	 * помилкою ще до SDK, а не вічним очікуванням.
+	 *
+	 * Зворотні експерименти: підʼєднатися до емулятора входу ПІСЛЯ входу — червоніє перший;
+	 * прибрати перевірку `emulatorUp` — другий.
+	 */
+	it('dev на емуляторі: демо-проєкт, і підʼєднання — до входу й до бази', async () => {
+		emulator = true;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response(null))
+		);
+		await connect();
+		expect(initializeApp).toHaveBeenCalledWith(
+			expect.objectContaining({
+				projectId: 'demo-vet-crew-games',
+				databaseURL: 'http://127.0.0.1:9011?ns=demo-vet-crew-games-default-rtdb'
+			})
+		);
+		expect(connectAuthEmulator).toHaveBeenCalledWith(auth, 'http://127.0.0.1:9110', {
+			disableWarnings: true
+		});
+		expect(connectDatabaseEmulator).toHaveBeenCalledWith(expect.anything(), '127.0.0.1', 9011);
+		const order = (mock: ReturnType<typeof vi.fn>) => mock.mock.invocationCallOrder[0];
+		expect(order(connectAuthEmulator)).toBeLessThan(order(signInAnonymously));
+	});
+
+	it('емулятор не запущено — зрозуміла помилка ще до SDK, а не вічне очікування', async () => {
+		emulator = true;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => Promise.reject(new TypeError('Failed to fetch')))
+		);
+		await expect(connect()).rejects.toThrow(/emulator is not running/);
+		expect(initializeApp, 'SDK не піднімається зовсім').not.toHaveBeenCalled();
+	});
+
+	it('бойова база — без емулятора й без перевірки порту', async () => {
+		const probe = vi.fn();
+		vi.stubGlobal('fetch', probe);
+		await connect();
+		expect(connectAuthEmulator).not.toHaveBeenCalled();
+		expect(connectDatabaseEmulator).not.toHaveBeenCalled();
+		expect(probe).not.toHaveBeenCalled();
+		expect(initializeApp).toHaveBeenCalledWith(
+			expect.objectContaining({ projectId: 'vet-crew-games' })
+		);
 	});
 
 	it('перевірка жива: без сесії входимо анонімно', async () => {

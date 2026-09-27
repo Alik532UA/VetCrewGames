@@ -45,6 +45,12 @@ export interface LogReportContext {
 	 * вкладки після викладки нових правил інакше не відрізнити від справжньої поломки.
 	 */
 	rules: string;
+	/**
+	 * З якою базою говорила вкладка: `emulator` — dev на локальному емуляторі
+	 * (`net/emulator.ts`), `live` — справжня. Без цього рядка звіт із dev про «кімната
+	 * не відкривається» ні з чим не звірити: у базі на Firebase такої кімнати й не було.
+	 */
+	database: 'emulator' | 'live';
 }
 
 /** Шапка звіту: усе, чого немає в самих записах логу. */
@@ -55,6 +61,7 @@ URL: ${context.url}
 DEVICE: ${context.userAgent}
 VERSION: ${context.version}
 RULES: ${context.rules}
+DB: ${context.database}
 UID: ${context.uid ?? 'none'}
 ONLINE: ${context.online}
 ------------------------

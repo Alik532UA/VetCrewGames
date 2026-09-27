@@ -21,6 +21,7 @@ const facts = (over: Partial<ProblemFacts> = {}): ProblemFacts => ({
 	rules: 'stale',
 	newBuild: false,
 	deployed: false,
+	emulator: false,
 	...over
 });
 
@@ -59,6 +60,23 @@ describe('причина збою', () => {
 		const taken = new Error('room-code-taken', { cause: DENIED });
 		expect(deniedDeep(taken)).toBe(true);
 		expect(netProblem(facts({ error: taken }))).toBe('rules');
+	});
+
+	/**
+	 * DEV НА ЕМУЛЯТОРІ (прохання автора 2026-09-27): база — на цій машині, тож обрив означає
+	 * «емулятор не запущено», а «інша редакція правил» — «піднятий зі старими». Ні
+	 * «перевірте інтернет», ні «правила не опубліковані» тут не правда.
+	 *
+	 * Зворотний експеримент: не зважати на `emulator` — червоніє.
+	 */
+	it('dev на емуляторі: обрив і стара редакція — «запустіть емулятор»; свіжі правила — код', () => {
+		const dev = { emulator: true, rules: null };
+		const auth = new Error('Firebase: Error (auth/network-request-failed).');
+		expect(netProblem(facts({ ...dev, error: auth }))).toBe('emulator');
+		const down = new Error('Firebase emulator is not running (npm run emulators)');
+		expect(netProblem(facts({ ...dev, error: down }))).toBe('emulator');
+		expect(netProblem(facts({ emulator: true, rules: 'stale' }))).toBe('emulator');
+		expect(netProblem(facts({ emulator: true, rules: 'fresh' }))).toBe('code');
 	});
 
 	it('виняток, якого не мало бути, — код', () => {

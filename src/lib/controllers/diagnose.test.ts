@@ -18,6 +18,7 @@ function probe(over: Partial<ProblemProbe> = {}): ProblemProbe {
 		rules: vi.fn(async () => 'stale' as const),
 		newBuild: vi.fn(async () => false),
 		deployed: () => false,
+		emulator: () => false,
 		...over
 	};
 }
@@ -37,7 +38,8 @@ describe('діагноз збою', () => {
 			rules: 'stale',
 			newBuild: false,
 			deployed: false,
-			online: true
+			online: true,
+			emulator: false
 		});
 	});
 
@@ -79,7 +81,13 @@ describe('збій у журналі', () => {
 	it('лише дефект коду червоний і лише з ним стек; решта — попередження', () => {
 		const error = vi.spyOn(logService, 'error');
 		const warn = vi.spyOn(logService, 'warn');
-		const facts = { rules: 'fresh' as const, newBuild: false, deployed: true, online: true };
+		const facts = {
+			rules: 'fresh' as const,
+			newBuild: false,
+			deployed: true,
+			online: true,
+			emulator: false
+		};
 		logFailure('auto search failed', DENIED, { ...facts, problem: 'code' }, { step: 'list' });
 		expect(error).toHaveBeenCalledWith(
 			'network',

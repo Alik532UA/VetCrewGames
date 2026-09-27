@@ -48,6 +48,28 @@ const inlineScriptHash = `sha256-${createHash('sha256')
 	.update(inlineScripts[0][1].replace(/\r\n/g, '\n'))
 	.digest('base64')}`;
 
+/**
+ * DEV-ЕМУЛЯТОР FIREBASE — ЛИШЕ ПОЗА PRODUCTION-ЗБІРКОЮ (прохання автора 2026-09-27).
+ *
+ * `npm run dev` ходить у локальний емулятор (`src/lib/net/emulator.ts`), і без цих адрес
+ * політика dev відхиляла б і вхід (`http` до емулятора автентифікації), і базу (вебсокет),
+ * і довге опитування — воно тут скриптом, як і на бойовій базі (див. `script-src`). У
+ * збірку вони не потрапляють: `vite build` іде з `NODE_ENV=production`, тож масив
+ * порожній, а `check:build` перевіряє зібраний CSP і бандл на адресу емулятора.
+ *
+ * Порти — ті самі, що в `firebase.dev.json` і `net/emulator.ts`; збіг тримає
+ * `src/dev-emulator.test.ts`.
+ *
+ * Тип — через `KitConfig`: простору `Csp` SvelteKit назовні не віддає, а широкий `string[]`
+ * розширив би ЦІЛИЙ масив директиви (див. `inlineScriptHash` вище).
+ *
+ * @type {NonNullable<NonNullable<NonNullable<import('@sveltejs/kit').KitConfig['csp']>['directives']>['connect-src']>}
+ */
+const devEmulator =
+	process.env.NODE_ENV === 'production'
+		? []
+		: ['http://127.0.0.1:9011', 'ws://127.0.0.1:9011', 'http://127.0.0.1:9110'];
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
@@ -123,7 +145,9 @@ const config = {
 					inlineScriptHash,
 					'https://www.googletagmanager.com',
 					'https://apis.google.com',
-					'https://*.firebasedatabase.app'
+					'https://*.firebasedatabase.app',
+					// Довге опитування dev-емулятора — теж скриптом (`devEmulator` вище).
+					...devEmulator.filter((source) => source.startsWith('http://127.0.0.1:9011'))
 				],
 				// Вікно провайдера — це iframe із `*.firebaseapp.com`, і без цього
 				// рядка воно відкривається порожнім: скрипт уже дозволений вище, а
@@ -166,6 +190,8 @@ const config = {
 					'wss://*.firebasedatabase.app',
 					'https://*.firebasedatabase.app',
 					'https://*.googleapis.com',
+					// Dev-емулятор: вхід, база й довге опитування (`devEmulator` вище).
+					...devEmulator,
 					/*
 					 * Прапор гравця: країна за IP.
 					 *

@@ -52,9 +52,15 @@ if (args.length === 0) {
  */
 const EMULATOR_COMMAND = /^emulators:/;
 
-/** Порти з `firebase.json` — ті, що емулятор справді займе. */
+/**
+ * Порти з конфігу — ті, що емулятор справді займе. Конфіг — `--config`, якщо його дали:
+ * dev-емулятор (`npm run emulators`) живе у `firebase.dev.json` на власних портах, щоб
+ * не заважати `check:rules`, і перевірка інакше дивилася б не на ті числа.
+ */
 function emulatorPorts() {
-	const config = JSON.parse(readFileSync('firebase.json', 'utf8'));
+	const at = args.indexOf('--config');
+	const file = at >= 0 && args[at + 1] ? args[at + 1] : 'firebase.json';
+	const config = JSON.parse(readFileSync(file, 'utf8'));
 	const emulators = config.emulators ?? {};
 	return Object.entries(emulators)
 		.filter(([, value]) => value && typeof value === 'object' && value.enabled !== false)

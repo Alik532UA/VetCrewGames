@@ -174,7 +174,8 @@ function probeFor() {
 		online: () => true,
 		rules: vi.fn(async (): Promise<'fresh' | 'stale' | 'unknown'> => 'fresh'),
 		newBuild: async () => false,
-		deployed: () => false
+		deployed: () => false,
+		emulator: () => false
 	};
 }
 

@@ -31,6 +31,8 @@ export const ui = {
 		'Die neuen Datenbankregeln sind noch nicht in Firebase veröffentlicht: Diese Version des Spiels erwartet andere Regeln als die, die jetzt auf dem Server gelten. Ein neuer Versuch hilft nicht — zuerst müssen die Regeln veröffentlicht werden.',
 	'problem.code':
 		'Das ist ein Fehler im Code des Spiels — ein neuer Versuch behebt ihn nicht. Bitte wende dich an den Entwickler: Kopiere den Bericht und schick ihn in deiner Nachricht mit.',
+	'problem.emulator':
+		'Der lokale Firebase-Emulator antwortet nicht: Der Dev-Build spricht mit ihm, nicht mit der echten Datenbank. Starte im Terminal npm run emulators — und läuft er schon, starte ihn neu.',
 	'problem.copyReport': 'Bericht kopieren',
 	'problem.copied': 'Bericht kopiert',
 	'problem.contact': 'Entwickler kontaktieren',

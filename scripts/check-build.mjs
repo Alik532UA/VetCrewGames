@@ -1247,6 +1247,27 @@ const leaked = allFiles
 	.filter((f) => SECRET_NAMES.test(readFileSync(f, 'utf8')));
 if (leaked.length) fail(`схоже на секрет у бандлі: ${leaked.join(', ')}`);
 
+// --- Dev-емулятор Firebase у збірку не потрапляє (рішення автора 2026-09-27) -----
+/*
+ * `npm run dev` ходить у локальний емулятор (`src/lib/net/emulator.ts`), і прапорець там —
+ * `import.meta.env.DEV`: збірка підставляє на його місце `false`, а гілка емулятора
+ * вирізається разом із демо-проєктом. Доти застереження «прапорець лишився б увімкненим у
+ * збірці» тримало емулятор поза застосунком зовсім; тепер його тримає ця перевірка — на
+ * зібраному, а не на слові: у бандлі й HTML (там і мета-політика CSP) немає ні
+ * демо-проєкту, ні адреси dev-емулятора. Порти — з `firebase.dev.json`, щоб перевірка
+ * йшла за конфігом, а не за числом, переписаним сюди.
+ */
+{
+	const devEmulators = JSON.parse(readFileSync('firebase.dev.json', 'utf8')).emulators;
+	const ports = [devEmulators.database.port, devEmulators.auth.port].join('|');
+	const marks = new RegExp(`demo-vet-crew-games|127\\.0\\.0\\.1:(${ports})`);
+	const leakedEmulator = allFiles
+		.filter((f) => /\.(js|html)$/.test(f))
+		.filter((f) => marks.test(readFileSync(f, 'utf8')));
+	if (leakedEmulator.length)
+		fail(`у збірці лишився dev-емулятор Firebase: ${leakedEmulator.join(', ')}`);
+}
+
 // ----------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------

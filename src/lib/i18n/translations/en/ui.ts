@@ -31,6 +31,8 @@ export const ui = {
 		'The new database rules are not published to Firebase yet: this version of the game expects different rules from the ones the server runs now. Trying again will not help — the rules have to be deployed first.',
 	'problem.code':
 		'This is a problem in the game code — trying again will not fix it. Please contact the developer: copy the report and send it in your message.',
+	'problem.emulator':
+		'The local Firebase emulator is not responding: the dev build talks to it, not to the real database. Run npm run emulators in a terminal — and if it is already running, restart it.',
 	'problem.copyReport': 'Copy the report',
 	'problem.copied': 'Report copied',
 	'problem.contact': 'Contact the developer',

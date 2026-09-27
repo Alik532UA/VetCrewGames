@@ -1,3 +1,4 @@
+import { EMULATOR } from '$lib/net/emulator';
 import { RULES_VERSION } from '$lib/net/rulesVersion';
 import { buildLogReport } from './logReport';
 import { logService } from './logService.svelte';
@@ -21,7 +22,8 @@ export function liveReport(): string {
 		online: navigator.onLine,
 		takenAt: new Date().toISOString(),
 		uid: logService.sessionUid,
-		rules: RULES_VERSION
+		rules: RULES_VERSION,
+		database: EMULATOR ? 'emulator' : 'live'
 	});
 }
 
