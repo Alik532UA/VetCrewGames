@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAIRS_RULES_VERSION, QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { LocalSeekBoard } from '$lib/net/localSeek';
+import { storage } from '$lib/services/storage';
 import { toast } from './toast.svelte';
-import { OnlineHubState, type HubNet, type HubRoutes } from './onlineHub.svelte';
+import { OnlineHubState, SEARCH_GAMES_KEY, type HubNet, type HubRoutes } from './onlineHub.svelte';
 import type { ProblemProbe } from './diagnose';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { RoomInfo } from '$lib/net/roomTypes';
@@ -16,7 +17,9 @@ import type { RoomInfo } from '$lib/net/roomTypes';
  *
  * Зворотні експерименти: вести за кодом завжди в одну гру — червоніє «гру каже кімната»;
  * не зберігати підпис перед переходом — «підпис гравця — до переходу»; дозволити
- * підключатися посеред пошуку — «поки пошук іде».
+ * підключатися посеред пошуку — «поки пошук іде»; не піднімати `busy` у `create` —
+ * «другий натиск»; не писати вибір ігор у сховище — «вибір ігор памʼятається»; дати
+ * «Назад» закрити вікно пошуку, що йде, — «пошук, що йде, вікна не закриває».
  */
 
 // Сховище налаштувань читає тему системи, а в jsdom `matchMedia` немає: хабу потрібна лише мова.
@@ -100,6 +103,29 @@ function setup({ quiz = feed(), pairs = feed(), peek = null as RoomInfo | null }
 	return { hub, player, routes, net, signed, probe };
 }
 
+/**
+ * Сховище — своє на кожен випадок. Глобальний `localStorage` у Node без файлу не працює, а
+ * фасад після першої відмови вимикається назавжди (`services/storage.ts`), тож підміна —
+ * до першого звернення; і вибір ігор з одного випадку не доїде в наступний.
+ */
+function memoryStorage(): Storage {
+	const data = new Map<string, string>();
+	return {
+		get length() {
+			return data.size;
+		},
+		key: (index: number) => [...data.keys()][index] ?? null,
+		getItem: (key: string) => data.get(key) ?? null,
+		setItem: (key: string, value: string) => void data.set(key, String(value)),
+		removeItem: (key: string) => void data.delete(key),
+		clear: () => data.clear()
+	} as Storage;
+}
+
+beforeEach(() => {
+	vi.stubGlobal('localStorage', memoryStorage());
+});
+
 afterEach(() => {
 	// Тости — спільний синглтон: причина з одного випадку не мусить доїхати в наступний.
 	toast.dismissProblems();
@@ -181,17 +207,93 @@ describe('хаб «Грати онлайн»', () => {
 	it('підпис гравця — у сховище ДО переходу, і в кімнату, і в створення', async () => {
 		const { hub, signed } = setup();
 		await hub.enter('42', 'pairs');
-		hub.openCreate('quiz');
+		hub.open('create');
+		hub.chooseGame('quiz');
 		await hub.create(true);
 		expect(signed).toEqual(['signed', 'room', 'signed', 'create']);
 	});
 
-	it('«Створити» → гра → вікно; вибір у вікні веде на сторінку гри з наміром', async () => {
+	/**
+	 * «СТВОРИТИ КІМНАТУ» — ДВА ЕКРАНИ ОДНОГО ВІКНА (рішення автора 2026-09-27, 7-A): гра,
+	 * тоді «хто зможе зайти»; «Назад» із другого — до першого, а не на хаб.
+	 */
+	it('«Створити кімнату»: гра, тоді «хто зможе зайти», тоді сторінка гри з наміром', async () => {
 		const { hub, routes } = setup();
-		hub.openCreate('pairs');
-		expect(hub.creating).toBe('pairs');
+		hub.open('create');
+		expect(hub.opened).toEqual({ kind: 'create', game: null });
+		await hub.create(false);
+		expect(routes.create, 'без гри створювати нема чого').not.toHaveBeenCalled();
+
+		hub.chooseGame('pairs');
+		expect(hub.opened).toEqual({ kind: 'create', game: 'pairs' });
+		hub.back();
+		expect(hub.opened, '«Назад» із другого екрана — до вибору гри').toEqual({
+			kind: 'create',
+			game: null
+		});
+		hub.chooseGame('pairs');
 		await hub.create(false);
 		expect(routes.create).toHaveBeenCalledWith('pairs', false);
+	});
+
+	/** Доти вікно отримувало `busy={false}` завжди, і подвійний натиск вів на сторінку двічі. */
+	it('другий натиск «Для всіх» не веде вдруге', async () => {
+		const { hub, routes } = setup();
+		hub.open('create');
+		hub.chooseGame('quiz');
+		await Promise.all([hub.create(false), hub.create(false)]);
+		expect(routes.create).toHaveBeenCalledTimes(1);
+	});
+
+	it('створення не вдалося — тост із причиною, а не необроблена відмова', async () => {
+		const { hub, player, routes } = setup();
+		player.load.mockRejectedValueOnce(
+			new TypeError('Failed to fetch dynamically imported module: /_app/names.js')
+		);
+		hub.open('create');
+		hub.chooseGame('quiz');
+		await hub.create(true);
+		expect(shown()).toEqual(['reload']);
+		expect(hub.busy, 'після збою кнопки знову приймають натиск').toBe(false);
+		expect(routes.create).not.toHaveBeenCalled();
+	});
+
+	it('«Назад» закриває вікно, і фокус вертається на кнопку, що його відкрила', () => {
+		const { hub } = setup();
+		expect(hub.returnFocus, 'на першому показі фокус не забирають').toBeNull();
+		hub.open('join');
+		expect(hub.opened).toEqual({ kind: 'join' });
+		hub.back();
+		expect(hub.opened).toBeNull();
+		expect(hub.returnFocus).toBe('join');
+	});
+
+	/**
+	 * Кнопка «Підключитися» не сіріє (`aria-disabled` лише закриває натиск), тож натиск із
+	 * однією цифрою мусить сказати, чого бракує. Доти він не робив нічого.
+	 */
+	it('закороткий код — тост, а не тиша', async () => {
+		const { hub, net } = setup({ peek: info('quiz') });
+		const info_ = vi.spyOn(toast, 'info');
+		hub.joinCode = '4';
+		await hub.join();
+		expect(info_).toHaveBeenCalledWith('online.codeFull');
+		expect(net.peekRoom).not.toHaveBeenCalled();
+	});
+
+	/** Рішення автора 2026-09-27, 6-A: «вікно з вибором ігор, які запамʼятовуються». */
+	it('вибір ігор пошуку памʼятається на пристрої', () => {
+		const first = setup();
+		expect(first.hub.search.games, 'перевірка жива: типово — обидві').toEqual(['quiz', 'pairs']);
+		first.hub.toggleGame('pairs');
+		expect(setup().hub.search.games).toEqual(['quiz']);
+	});
+
+	it('зіпсований чи чужий збережений вибір — типові обидві гри', () => {
+		for (const stored of [['chess'], [], 'quiz', null]) {
+			storage.setJSON(SEARCH_GAMES_KEY, stored);
+			expect(setup().hub.search.games, JSON.stringify(stored)).toEqual(['quiz', 'pairs']);
+		}
 	});
 
 	it('перелік — обидві гри разом, найновіші вгорі; друзі без повторів', () => {
@@ -230,12 +332,32 @@ describe('хаб «Грати онлайн»', () => {
 			hub.joinCode = '42';
 			await hub.join();
 			await hub.enter('42', 'quiz');
-			hub.openCreate('quiz');
+			hub.open('create');
+			hub.open('join');
 			expect(routes.room).not.toHaveBeenCalled();
-			expect(hub.creating).toBeNull();
+			expect(hub.opened).toBeNull();
 			expect(info_, 'натиск чує пояснення, а не тишу').toHaveBeenCalledWith('online.searchBusy');
 			hub.dispose();
 			expect(hub.search.phase).toBe('idle');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('пошук, що йде, вікна не закриває: вийти з нього — лише «Скасувати»', async () => {
+		vi.useFakeTimers();
+		try {
+			const { hub } = setup();
+			hub.open('search');
+			void hub.startSearch();
+			await vi.advanceTimersByTimeAsync(0);
+			expect(hub.search.phase, 'перевірка жива: пошук іде').toBe('waiting');
+			hub.back();
+			expect(hub.opened).toEqual({ kind: 'search' });
+			hub.search.cancel();
+			hub.back();
+			expect(hub.opened).toBeNull();
+			expect(hub.returnFocus).toBe('search');
 		} finally {
 			vi.useRealTimers();
 		}

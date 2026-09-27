@@ -58,6 +58,11 @@ export const ui = {
 	'online.back': 'Terug',
 	'online.join': 'Meedoen',
 	'online.opening': 'De kamer wordt geopend…',
+	'online.searchGo': 'Zoeken',
+	'online.searchLead': 'We zoeken een tegenstander voor je',
+	'online.createLead': 'Voor iedereen of alleen voor vrienden',
+	'online.joinLead': 'Met de code die je hebt gekregen',
+	'online.codeFull': 'Voer de volledige kamercode in.',
 
 	// Samen spelen in Vind een paar: lobby, rol, zet.
 	'pairs.won': 'Gewonnen',

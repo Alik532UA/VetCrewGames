@@ -1,4 +1,5 @@
 import { settings } from '$lib/services/settings.svelte';
+import { storage } from '$lib/services/storage';
 import { isCompactScreen } from '$lib/config/memory-game';
 import { PAIRS_RULES_VERSION, QUIZ_RULES_VERSION } from '$lib/config/roomRules';
 import { listedSince } from '$lib/utils/roomEntry';
@@ -18,12 +19,15 @@ import type { LobbyRoom } from '$lib/net/lobby';
  *
  * Доти кожна гра мала власну форму входу на своїй сторінці: швидка гра, імʼя, створити,
  * зайти за кодом, перелік — і код кімнати іншої гри там давав глухий кут «ця кімната для
- * іншої гри». Тепер форма одна, а гру вирішує кімната:
+ * іншої гри». Тепер форма одна, а гру вирішує кімната. Три дороги — три кнопки, і кожна
+ * відкриває СВОЄ ВІКНО (рішення автора 2026-09-27, 6-A і 7-A), тож на хабі лишаються
+ * лише вони, «хто я» й перелік:
  *
- *  • «Автоматичний пошук» — `AutoSearch` над обома іграми, які людина ввімкнула;
- *  • «Створити» — гра, тоді окреме вікно «хто зможе зайти», тоді сторінка гри з наміром
- *    (`?create`, `RoomPlace.creating`);
- *  • «Підключитися» — код без вибору гри: гру каже сама кімната (`peekRoom`);
+ *  • «Автоматичний пошук» — вікно з іграми, які запамʼятовуються, і «Шукати»; стан і
+ *    «Скасувати» — у тому самому вікні (`AutoSearch` над обома іграми);
+ *  • «Створити кімнату» — два екрани одного вікна: гра, тоді «хто зможе зайти», тоді
+ *    сторінка гри з наміром (`?create`, `RoomPlace.creating`);
+ *  • «Підключитися» — вікно з кодом без вибору гри: гру каже сама кімната (`peekRoom`);
  *  • перелік — відкриті кімнати, свої партії й кімнати друзів обох ігор, із позначкою гри.
  *
  * У кімнату хаб не заходить сам: він лише зберігає підпис гравця (сторінка кімнати читає
@@ -62,12 +66,38 @@ const VERSIONS: Record<OnlineGame, number> = {
 export const CODE_MIN = 2;
 export const CODE_MAX = 5;
 
+/** Три дороги хабу — і три його вікна. */
+export type HubWindowKind = 'search' | 'create' | 'join';
+
+/** Відкрите вікно. У створення два екрани: `game: null` — вибір гри, далі — «хто зможе зайти». */
+export type HubWindow =
+	| { kind: 'search' }
+	| { kind: 'join' }
+	| { kind: 'create'; game: OnlineGame | null };
+
+/** Ігри автоматичного пошуку — памʼять пристрою (6-A: «вибір ігор, які запамʼятовуються»). */
+export const SEARCH_GAMES_KEY = 'online.searchGames';
+
+/** Збережений вибір ігор, якщо він чинний: лише відомі ігри, без повторів, хоч одна. */
+function rememberedGames(raw: unknown): OnlineGame[] | null {
+	if (!Array.isArray(raw)) return null;
+	const games = raw.filter(
+		(game, at): game is OnlineGame => isOnlineGame(game) && raw.indexOf(game) === at
+	);
+	return games.length > 0 ? games : null;
+}
+
 export class OnlineHubState {
 	joinCode = $state('');
-	/** Поки хаб питає кімнату за кодом, кнопки не приймають повторних натискань. */
+	/** Поки хаб питає кімнату за кодом чи йде створювати, кнопки не приймають повторів. */
 	busy = $state(false);
-	/** Гра, для якої відкрите вікно «хто зможе зайти»; `null` — вікна немає. */
-	creating = $state<OnlineGame | null>(null);
+	/** Відкрите вікно; `null` — хаб із трьома кнопками. */
+	opened = $state<HubWindow | null>(null);
+	/**
+	 * Кнопка, з якої відкрили вікно, що щойно закрилося, — фокус вертається на неї. `null`
+	 * на першому показі: тоді фокус лишається там, де його поставив браузер.
+	 */
+	returnFocus = $state<HubWindowKind | null>(null);
 	readonly search: AutoSearch;
 
 	/**
@@ -104,6 +134,8 @@ export class OnlineHubState {
 			online: () => probe.online(),
 			diagnose: (error) => diagnose(error, probe)
 		});
+		const games = rememberedGames(storage.getJSON<unknown>(SEARCH_GAMES_KEY));
+		if (games) this.search.games = games;
 	}
 
 	/** Відкриті кімнати обох ігор — найновіші вгорі, як і в переліку однієї гри. */
@@ -151,6 +183,40 @@ export class OnlineHubState {
 		this.search.cancel();
 	}
 
+	/** Відкрити вікно дороги. Поки пошук іде, відкривається лише його власне. */
+	open(kind: HubWindowKind): void {
+		if (kind !== 'search' && this.#searching()) return;
+		this.opened = kind === 'create' ? { kind, game: null } : { kind };
+	}
+
+	/** «Створити кімнату» → гра: другий екран того самого вікна. */
+	chooseGame(game: OnlineGame): void {
+		if (this.opened?.kind === 'create') this.opened = { kind: 'create', game };
+	}
+
+	/**
+	 * «Назад»: із «хто зможе зайти» — до вибору гри, звідусіль іще — на хаб. Пошук, що
+	 * йде, свого вікна не закриває: вийти з нього можна лише «Скасувати» — інакше пошук
+	 * ішов би далі за закритим вікном, а решта дорог відповідала б «спершу скасуйте».
+	 */
+	back(): void {
+		const opened = this.opened;
+		if (!opened || this.busy) return;
+		if (opened.kind === 'create' && opened.game) {
+			this.opened = { kind: 'create', game: null };
+			return;
+		}
+		if (opened.kind === 'search' && this.search.phase !== 'idle') return;
+		this.returnFocus = opened.kind;
+		this.opened = null;
+	}
+
+	/** Увімкнути чи вимкнути гру пошуку — і запамʼятати вибір на пристрої. */
+	toggleGame(game: OnlineGame): void {
+		this.search.toggle(game);
+		storage.setJSON(SEARCH_GAMES_KEY, [...this.search.games]);
+	}
+
 	/**
 	 * «Підключитися» — гру каже кімната: код без вибору гри.
 	 *
@@ -158,10 +224,14 @@ export class OnlineHubState {
 	 * стояло «Не вдалося зайти в кімнату. Спробуйте ще раз» і на відмову правил, і на
 	 * дефект коду, де жоден повтор не допоможе. «Такої кімнати немає» й «це кімната іншої
 	 * гри» лишаються звичайними тостами: це відповідь бази, а не збій.
+	 *
+	 * Закороткий код — теж тост, а не тиша: кнопка не сіріє (`aria-disabled` лише закриває
+	 * натиск), і доти натиск на неї з однією цифрою не робив нічого й не казав чому.
 	 */
 	async join(): Promise<void> {
 		const code = this.joinCode.replace(/\D/g, '');
-		if (this.busy || this.#searching() || code.length < CODE_MIN) return;
+		if (this.busy || this.#searching()) return;
+		if (code.length < CODE_MIN) return toast.info('online.codeFull');
 		toast.dismissProblems();
 		// Без мережі читання кімнати не падає, а висить — кажемо одразу.
 		if (!this.probe.online()) return toast.problem('offline');
@@ -187,17 +257,26 @@ export class OnlineHubState {
 		this.routes.room(gameId, code);
 	}
 
-	/** «Створити» → гра: відкрити вікно «хто зможе зайти». */
-	openCreate(gameId: OnlineGame): void {
-		if (!this.#searching()) this.creating = gameId;
-	}
-
-	/** Вибір у вікні — на сторінку гри з наміром. */
+	/**
+	 * Вибір «хто зможе зайти» — на сторінку гри з наміром.
+	 *
+	 * `busy` лишається піднятим і після переходу: сторінка вже йде, а другий натиск за ці
+	 * мілісекунди повів би вдруге (доти вікно отримувало `busy={false}` завжди). Збій
+	 * підпису — тостом із причиною, як і в підключенні, а не необробленою відмовою.
+	 */
 	async create(isPrivate: boolean): Promise<void> {
-		const gameId = this.creating;
-		if (!gameId) return;
-		await this.#sign();
-		this.routes.create(gameId, isPrivate);
+		const opened = this.opened;
+		if (opened?.kind !== 'create' || !opened.game || this.busy) return;
+		this.busy = true;
+		try {
+			await this.#sign();
+			this.routes.create(opened.game, isPrivate);
+		} catch (error) {
+			this.busy = false;
+			const diagnosis = await diagnose(error, this.probe);
+			logFailure('hub create failed', error, diagnosis, { gameId: opened.game });
+			toast.problem(diagnosis.problem);
+		}
 	}
 
 	/**

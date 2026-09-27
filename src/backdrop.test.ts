@@ -49,12 +49,12 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	'src/lib/components/RoundIndicator.svelte': 'лічильник раундів — усередині шапки гри',
 	'src/lib/components/FeedingVerdicts.svelte': 'кожен присуд має власну картку .verdict',
 	'src/lib/components/GameOverCard.svelte': 'уся розмітка лежить у картці .game-over-card',
-	// Перелік кімнат малюється ЛИШЕ як пʼятий блок хабу «Грати онлайн», усередині
+	// Перелік кімнат малюється ЛИШЕ в другому стовпці хабу «Грати онлайн», усередині
 	// `.hub__panel`, і фон дає вона (`--color-bg-panel`). Власний фон тут був би
 	// панеллю на панелі — двома шарами того самого кольору з видимим швом.
-	'src/lib/components/pairs/RoomList.svelte': 'пʼятий блок хабу, фон дає .hub__panel',
+	'src/lib/components/pairs/RoomList.svelte': 'перелік у стовпці хабу, фон дає .hub__panel',
 	// Рядок «хто я» (прапор, аватарка, імʼя, кубик) — вміст блоку хабу
-	// `.hub__panel--name` і вікна «вас запросили»; винесений окремим файлом, коли туди
+	// `.hub__panel` і вікна «вас запросили»; винесений окремим файлом, коли туди
 	// додалася аватарка. Підпис «Як вас звати?» свого фону не має, і саме його бачить
 	// ця перевірка.
 	'src/lib/components/pairs/IdentityRow.svelte': 'рядок «хто я», фон дає .hub__panel',
@@ -116,6 +116,12 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	// кожній з них `<MapCard>` — корінь розмітки, тож обіцянку видно з першого
 	// рядка шаблону, а не з чужого файлу.
 	'src/lib/components/reserve/AnimalCard.svelte': 'вміст картки на карті, фон дає MapCard',
+	// Три вікна доріг хабу «Грати онлайн» (2026-09-27) — ВМІСТ `OnlineWindow`, і фон дає
+	// його `.window`. У кожному `<OnlineWindow>` — корінь розмітки, тож обіцянку видно з
+	// першого рядка шаблону, як у карток на карті вище.
+	'src/lib/components/online/SearchWindow.svelte': 'вміст вікна пошуку, фон дає OnlineWindow',
+	'src/lib/components/online/CreateWindow.svelte': 'вміст вікна створення, фон дає OnlineWindow',
+	'src/lib/components/online/JoinWindow.svelte': 'вміст вікна підключення, фон дає OnlineWindow',
 	'src/lib/components/reserve/EnclosureCard.svelte': 'вміст картки на карті, фон дає MapCard'
 };
 

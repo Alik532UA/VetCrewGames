@@ -9,7 +9,7 @@ import { makeCode } from '$lib/net/rtdbRoom';
  *
  * Довжина коду живе у ДВОХ файлах, і не з недогляду: генератор — у мережевому
  * шарі (`net/rtdbRoom.ts`), а межі поля введення — у хабі «Грати онлайн»
- * (`controllers/onlineHub.svelte.ts`; саме поле — `components/online/OnlineHub.svelte`).
+ * (`controllers/onlineHub.svelte.ts`; саме поле — `components/online/JoinWindow.svelte`).
  * Взяти числа з генератора хаб не може дешево: `rtdbRoom` вантажиться окремим шматком
  * лише тоді, коли потрібна мережа, а статичний імпорт притягнув би його в сторінку хабу.
  * Тобто числа мусять збігатися, а спільного джерела в них немає.
@@ -36,7 +36,7 @@ const number = (source: string, name: string): number => {
 describe('код кімнати', () => {
 	const net = read('src/lib/net/rtdbRoom.ts');
 	const gate = read('src/lib/controllers/onlineHub.svelte.ts');
-	const field = read('src/lib/components/online/OnlineHub.svelte');
+	const field = read('src/lib/components/online/JoinWindow.svelte');
 
 	const publicLength = number(net, 'PUBLIC_CODE_LENGTH');
 	const publicMax = number(net, 'PUBLIC_CODE_MAX');

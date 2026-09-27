@@ -57,6 +57,11 @@ export const ui = {
 	'online.back': 'Back',
 	'online.join': 'Join',
 	'online.opening': 'Opening the room…',
+	'online.searchGo': 'Search',
+	'online.searchLead': 'We will find you an opponent',
+	'online.createLead': 'For everyone or friends only',
+	'online.joinLead': 'With the code you were sent',
+	'online.codeFull': 'Enter the full room code.',
 
 	// Shared game of Find a Pair: lobby, role, turn.
 	'pairs.won': 'Winner',

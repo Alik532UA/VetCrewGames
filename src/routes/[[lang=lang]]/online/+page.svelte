@@ -11,7 +11,9 @@
 	import { liveProbe } from '$lib/controllers/diagnose';
 	import { isOnlineGame, onlineRoute, type OnlineGame } from '$lib/utils/crossGame';
 	import OnlineHub from '$lib/components/online/OnlineHub.svelte';
+	import SearchWindow from '$lib/components/online/SearchWindow.svelte';
 	import CreateWindow from '$lib/components/online/CreateWindow.svelte';
+	import JoinWindow from '$lib/components/online/JoinWindow.svelte';
 	import RoomList from '$lib/components/pairs/RoomList.svelte';
 
 	/**
@@ -45,6 +47,7 @@
 	hub.attach();
 
 	const takenNames = $derived(hub.takenNames);
+	const opened = $derived(hub.opened);
 
 	onMount(() => {
 		const release = settings.claimHeader('menu.playOnline');
@@ -61,18 +64,45 @@
 	ХАБ РОСТЕ ДО ЕКРАНА ОДНИМ МАСШТАБОМ, як лобі кімнат (прохання автора 2026-09-27:
 	«масштабування не пропорційне»). Під шапкою, що росте з екраном, хаб на 16px займав
 	верхню половину екрана дрібним текстом. Лише вгору (`'grow'`): на телефоні хаб —
-	сторінка з прокруткою, а не екран гри, і стиснутий він лише дрібнішав би. Вікно «хто
-	зможе зайти» не масштабується: воно росте власною одиницею (`.fill`), і масштаб поверх
-	нього збільшив би його вдруге.
+	сторінка з прокруткою, а не екран гри, і стиснутий він лише дрібнішав би. Вікна доріг
+	не масштабуються: вони ростуть власною одиницею (`.fill`), і масштаб поверх неї
+	збільшив би їх вдруге.
+
+	Кожне вікно відкрила людина, тож фокус переїжджає в нього (`focusTitle`, `focusField`),
+	а коли вікно закривається — на кнопку, що його відкрила (`returnFocus`).
 -->
-<div class="online-hub" use:fitToViewport={!hub.creating && 'grow'}>
-	{#if hub.creating}
+<div class="online-hub" use:fitToViewport={!opened && 'grow'}>
+	{#if opened?.kind === 'search'}
+		<div class="online-hub__window">
+			<SearchWindow
+				games={hub.search.games}
+				phase={hub.search.phase}
+				onToggle={(game) => hub.toggleGame(game)}
+				onStart={() => void hub.startSearch()}
+				onCancel={() => hub.search.cancel()}
+				onBack={() => hub.back()}
+				focusTitle
+			/>
+		</div>
+	{:else if opened?.kind === 'create'}
 		<div class="online-hub__window">
 			<CreateWindow
-				game={hub.creating}
-				busy={false}
+				game={opened.game}
+				onGame={(game) => hub.chooseGame(game)}
+				busy={hub.busy}
 				onChoose={(isPrivate) => void hub.create(isPrivate)}
-				onBack={() => (hub.creating = null)}
+				onBack={() => hub.back()}
+				focusTitle
+			/>
+		</div>
+	{:else if opened?.kind === 'join'}
+		<div class="online-hub__window">
+			<JoinWindow
+				bind:joinCode={hub.joinCode}
+				busy={hub.busy}
+				onJoin={() => void hub.join()}
+				onBack={() => hub.back()}
+				focusField
 			/>
 		</div>
 	{:else}
@@ -82,15 +112,8 @@
 			avatar={player.avatar}
 			onAvatar={(avatar) => player.chooseAvatar(avatar)}
 			onRandomName={() => player.reroll(takenNames)}
-			bind:joinCode={hub.joinCode}
-			busy={hub.busy}
-			searchGames={hub.search.games}
-			searchPhase={hub.search.phase}
-			onToggleGame={(game) => hub.search.toggle(game)}
-			onSearch={() => void hub.startSearch()}
-			onCancelSearch={() => hub.search.cancel()}
-			onCreate={(game) => hub.openCreate(game)}
-			onJoin={() => void hub.join()}
+			onOpen={(kind) => hub.open(kind)}
+			returnFocus={hub.returnFocus}
 		>
 			{#snippet roomList()}
 				<RoomList
@@ -111,7 +134,7 @@
 </div>
 
 <style>
-	/* Та сама міра, що в сторінок ігор до партії: три стовпці хабу просять близько 1100px. */
+	/* Та сама міра, що в сторінок ігор до партії: два стовпці хабу вміщаються й у 1100px. */
 	.online-hub {
 		display: flex;
 		flex-direction: column;

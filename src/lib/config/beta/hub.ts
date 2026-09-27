@@ -3,9 +3,10 @@ import type { BetaTab } from '../betaChecks';
 /**
  * «Грати онлайн» — хаб обох спільних ігор (рішення автора 2026-09-26).
  *
- * Тут усе, що відбувається ДО кімнати: автоматичний пошук, створення з окремим вікном
- * «хто може зайти», підключення за кодом без вибору гри й перелік кімнат обох ігор. Самі
- * партії — у вкладках «Знайди пару разом» і «Вікторина разом».
+ * Тут усе, що відбувається ДО кімнати: три дороги — автоматичний пошук, створення (гра,
+ * тоді «хто може зайти») і підключення за кодом без вибору гри, кожна у своєму вікні
+ * (рішення автора 2026-09-27), — і перелік кімнат обох ігор. Самі партії — у вкладках
+ * «Знайди пару разом» і «Вікторина разом».
  *
  * Головне тут вимагає двох пристроїв: зустріч двох шукачів, які натиснули майже разом, —
  * це мережа й час, а тест доводить лише правила зустрічі.
@@ -19,8 +20,8 @@ export const hubTab: BetaTab = {
 			id: 'hub_1',
 			category: { uk: 'Автоматичний пошук', en: 'Automatic search' },
 			text: {
-				uk: 'На двох пристроях лишіть увімкненими обидві гри й натисніть «Автоматичний пошук» на обох майже одночасно. За кілька секунд обидва мусять опинитися в ОДНІЙ кімнаті, і партія мусить початися сама.',
-				en: 'On two devices keep both games on and press «Automatic search» on both at almost the same time. Within a few seconds both must end up in the SAME room, and the game must start by itself.'
+				uk: 'На двох пристроях відкрийте «Автоматичний пошук», лишіть увімкненими обидві гри й натисніть «Шукати» на обох майже одночасно. За кілька секунд обидва мусять опинитися в ОДНІЙ кімнаті, і партія мусить початися сама.',
+				en: 'On two devices open «Automatic search», keep both games on and press «Search» on both at almost the same time. Within a few seconds both must end up in the SAME room, and the game must start by itself.'
 			},
 			coverage: 'manual',
 			testid: 'online-search-btn'
@@ -64,8 +65,8 @@ export const hubTab: BetaTab = {
 			id: 'hub_8',
 			category: { uk: 'Автоматичний пошук', en: 'Automatic search' },
 			text: {
-				uk: 'Вимкніть на пристрої інтернет (режим польоту) і натисніть «Автоматичний пошук». Мусить одразу зʼявитися сповіщення «Немає звʼязку з сервером гри…» — а НЕ «Шукаємо гравця…» без кінця й не «спробуйте ще раз» без причини.',
-				en: 'Turn the internet off on the device (flight mode) and press «Automatic search». The notification «There is no connection to the game server…» must appear at once — NOT an endless «Looking for a player…» and not a reasonless «try again».'
+				uk: 'Вимкніть на пристрої інтернет (режим польоту), відкрийте «Автоматичний пошук» і натисніть «Шукати». Мусить одразу зʼявитися сповіщення «Немає звʼязку з сервером гри…» — а НЕ «Шукаємо гравця…» без кінця й не «спробуйте ще раз» без причини.',
+				en: 'Turn the internet off on the device (flight mode), open «Automatic search» and press «Search». The notification «There is no connection to the game server…» must appear at once — NOT an endless «Looking for a player…» and not a reasonless «try again».'
 			},
 			coverage: 'manual',
 			testid: 'toast-body-text',
@@ -75,8 +76,8 @@ export const hubTab: BetaTab = {
 			id: 'hub_5',
 			category: { uk: 'Створити кімнату', en: 'Creating a room' },
 			text: {
-				uk: 'Натисніть «Вікторина» під «Створити кімнату». Мусить відкритися окреме вікно «Хто може зайти»; виберіть «Лише друзі». На другому пристрої цієї кімнати в переліку НЕ мусить бути, а за кодом зайти мусить вийти.',
-				en: 'Press «Quiz» under «Create a room». A separate «Who can join» window must open; choose «Friends only». On the second device this room must NOT be in the list, but joining with the code must work.'
+				uk: 'Натисніть «Створити кімнату» й виберіть «Вікторина». У тому самому вікні мусить зʼявитися питання «Хто може зайти»; виберіть «Лише друзі». На другому пристрої цієї кімнати в переліку НЕ мусить бути, а за кодом зайти мусить вийти.',
+				en: 'Press «Create a room» and choose «Quiz». The same window must then ask «Who can join»; choose «Friends only». On the second device this room must NOT be in the list, but joining with the code must work.'
 			},
 			coverage: 'manual',
 			testid: 'online-create-quiz-btn',
@@ -86,8 +87,8 @@ export const hubTab: BetaTab = {
 			id: 'hub_6',
 			category: { uk: 'Підключитися', en: 'Joining' },
 			text: {
-				uk: 'Введіть код кімнати «Знайди пару» й натисніть «Підключитися». Мусить відкритися саме «Знайди пару» — без вибору гри й без напису «Ця кімната для іншої гри».',
-				en: 'Enter the code of a «Find a pair» room and press «Join». «Find a pair» itself must open — with no game choice and no «This room is for another game».'
+				uk: 'Натисніть «Підключитися», введіть код кімнати «Знайди пару» й натисніть «Підключитися» у вікні. Мусить відкритися саме «Знайди пару» — без вибору гри й без напису «Ця кімната для іншої гри».',
+				en: 'Press «Join», enter the code of a «Find a pair» room and press «Join» in the window. «Find a pair» itself must open — with no game choice and no «This room is for another game».'
 			},
 			coverage: 'covered',
 			test: 'src/lib/controllers/onlineHub.svelte.test.ts',
@@ -102,6 +103,30 @@ export const hubTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'online-room-*-game-text'
+		},
+		{
+			// Рішення автора 2026-09-27, 6-A: «вікно з вибором ігор, які запамʼятовуються».
+			id: 'hub_9',
+			category: { uk: 'Автоматичний пошук', en: 'Automatic search' },
+			text: {
+				uk: 'Відкрийте «Автоматичний пошук», вимкніть «Знайди пару», натисніть «Назад» і перезавантажте сторінку. Відкрийте пошук знову: «Знайди пару» мусить лишитися вимкненою.',
+				en: 'Open «Automatic search», switch «Find a pair» off, press «Back» and reload the page. Open the search again: «Find a pair» must still be off.'
+			},
+			coverage: 'covered',
+			test: 'tests/hub-windows.spec.ts',
+			testid: 'online-search-*-toggle'
+		},
+		{
+			id: 'hub_10',
+			category: { uk: 'Три дороги', en: 'Three ways in' },
+			text: {
+				uk: 'Відкрийте кожне з трьох вікон самою клавіатурою (Tab і Enter). Фокус мусить стати у вікні — у «Підключитися» одразу в поле коду, — а «Назад» мусить повернути його на кнопку, що відкрила вікно, а НЕ на початок сторінки.',
+				en: 'Open each of the three windows with the keyboard alone (Tab and Enter). Focus must land in the window — in «Join» right in the code field — and «Back» must return it to the button that opened the window, NOT to the start of the page.'
+			},
+			coverage: 'covered',
+			test: 'tests/hub-windows.spec.ts',
+			testid: 'online-*-open-btn',
+			negative: true
 		}
 	]
 };

@@ -58,6 +58,11 @@ export const ui = {
 	'online.back': 'Zurück',
 	'online.join': 'Beitreten',
 	'online.opening': 'Raum wird geöffnet…',
+	'online.searchGo': 'Suchen',
+	'online.searchLead': 'Wir finden einen Gegner für dich',
+	'online.createLead': 'Für alle oder nur für Freunde',
+	'online.joinLead': 'Mit dem Code, den du bekommen hast',
+	'online.codeFull': 'Gib den vollständigen Raumcode ein.',
 
 	// Gemeinsame Runde von Finde ein Paar: Lobby, Rolle, Zug.
 	'pairs.won': 'Gewonnen',

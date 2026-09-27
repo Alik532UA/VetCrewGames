@@ -44,9 +44,6 @@
 </script>
 
 <div class="identity">
-	<label class="identity__label" for="pairs-name">
-		<span>{@html formatFont(t('pairs.yourName'))}</span>
-	</label>
 	<!--
 		КНОПКИ — ЧАСТИНА ПОЛЯ, а не сусіди праворуч від нього.
 
@@ -57,8 +54,15 @@
 		пишемо ми, і ряд flex дає те саме без жодного магічного відступу — кнопки
 		з'являються й зникають, а поле просто перетікає. Сама обгортка —
 		`.field-shell` у `global.css`: та сама й у поля коду кімнати.
+
+		ПІДПИС «ЯК ВАС ЗВАТИ?» — ЕЛЕМЕНТ ТОГО САМОГО РЯДУ (прохання автора 2026-09-27:
+		«в один рядок»). У широкій панелі він стоїть перед прапором, у вузькій — займає
+		свій рядок над ним: див. `.identity__label` нижче.
 	-->
 	<div class="identity__row">
+		<label class="identity__label" for="pairs-name">
+			<span>{@html formatFont(t('pairs.yourName'))}</span>
+		</label>
 		<!--
 			ПРАПОР — ПЕРЕД НІКОМ, а не окремим рядком.
 
@@ -130,18 +134,29 @@
 <style>
 	/*
 	 * Контейнер — корінь, а не екран і не форма: ширина рядка — це ширина ПАНЕЛІ, у
-	 * якій він стоїть, а вона вузька й на широкому екрані (три стовпці форми входу).
+	 * якій він стоїть, а вона буває вузькою й на широкому екрані (стовпець хабу, вікно
+	 * «вас запросили»).
 	 */
 	.identity {
 		container: identity / inline-size;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
 	}
 
+	/*
+	 * Підпис — на свій рядок (`flex-basis: 100%`), поки панель вузька, і поруч із прапором,
+	 * щойно вона має 30rem. Межа — від поля імені: поруч із підписом, прапором, плиткою й
+	 * кубиком у 30rem йому лишається ~13rem, а вужче два слова імені вже не видно.
+	 */
 	.identity__label {
+		flex: 1 0 100%;
 		font-size: var(--font-size-sm);
 		color: var(--color-text-on-panel);
+	}
+
+	@container identity (min-width: 30rem) {
+		.identity__label {
+			flex: 0 0 auto;
+			margin-inline-end: var(--space-xs);
+		}
 	}
 
 	/*
@@ -156,7 +171,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: var(--space-xs);
+		gap: var(--space-sm) var(--space-xs);
 	}
 
 	.identity__field {

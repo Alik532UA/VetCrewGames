@@ -58,6 +58,11 @@ export const ui = {
 	'online.back': 'Назад',
 	'online.join': 'Підключитися',
 	'online.opening': 'Відкриваємо кімнату…',
+	'online.searchGo': 'Шукати',
+	'online.searchLead': 'Знайдемо суперника за вас',
+	'online.createLead': 'Для всіх або лише для друзів',
+	'online.joinLead': 'За кодом, який вам надіслали',
+	'online.codeFull': 'Введіть код кімнати повністю.',
 
 	// Спільна партія «Знайди пару»: лобі, роль, черга.
 	'pairs.won': 'Перемога',

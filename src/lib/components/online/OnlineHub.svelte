@@ -1,31 +1,30 @@
 <script lang="ts">
+	import { CirclePlus, LogIn, Zap } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
-	import InputTools from '$lib/components/ui/InputTools.svelte';
 	import IdentityRow from '$lib/components/pairs/IdentityRow.svelte';
-	import SearchBlock from './SearchBlock.svelte';
-	import { CODE_MAX, CODE_MIN } from '$lib/controllers/onlineHub.svelte';
-	import type { SearchPhase } from '$lib/controllers/autoSearch.svelte';
-	import type { OnlineGame } from '$lib/utils/crossGame';
+	import type { HubWindowKind } from '$lib/controllers/onlineHub.svelte';
+	import type { TranslationKey } from '$lib/i18n/translations/uk';
 
 	/**
-	 * ХАБ «ГРАТИ ОНЛАЙН» — вигляд (рішення автора 2026-09-26).
+	 * ХАБ «ГРАТИ ОНЛАЙН» — вигляд (рішення автора 2026-09-26; розкладка — 2026-09-27).
 	 *
 	 * Компонент нічого не знає ні про базу, ні про кімнату — він збирає поля й кличе те, що
 	 * дали; усе інше — `controllers/onlineHub.svelte.ts`. Доти на цьому місці стояла форма
 	 * входу ОДНІЄЇ гри (`OnlineGate`), і в кожної гри своя: код кімнати іншої гри там давав
 	 * глухий кут, а блоків було стільки, що автор назвав їх «можуть налякати гравця».
 	 *
-	 * ## П'ЯТЬ ОКРЕМИХ БЛОКІВ, кожен на власному тлі
+	 * ## ДВА СТОВПЦІ
 	 *
-	 *   1. Автоматичний пошук — ігри й кнопка (`SearchBlock`)
-	 *   2. Хто я             — імʼя, прапор, аватарка, спільні для всіх шляхів
-	 *   3. Створити           — гра; «хто зможе зайти» питає окреме вікно (`CreateWindow`)
-	 *   4. Підключитися       — код без вибору гри: гру каже сама кімната
-	 *   5. Кімнати            — те, що передали сніпетом (перелік обох ігор)
+	 *   1. Три дороги в гру — три кнопки, і кожна відкриває СВОЄ вікно (6-A і 7-A):
+	 *      «Автоматичний пошук» (`SearchWindow`), «Створити кімнату» (`CreateWindow`),
+	 *      «Підключитися» (`JoinWindow`). Доти пошук, створення й код стояли на хабі
+	 *      відкритими формами, і хаб читався як анкета, а не як вибір дороги.
+	 *   2. «Як вас звати?» одним рядком і «Кімнати» — те, що спільне для всіх доріг, і
+	 *      вибір із того, що вже є (перелік передали сніпетом).
 	 *
-	 * Між блоками видно сторінку, а не риску: вибори взаємно виключні, і риска всередині
-	 * одного тла читалася б як абзац, а не як інший вибір (так сказав автор про першу
-	 * редакцію форми входу).
+	 * Під кожною дорогою — рядок, що вона означає: три кнопки поруч інакше розрізнялися б
+	 * лише словом. Рядок — опис (`aria-describedby`), а не частина назви: читалка каже
+	 * «Автоматичний пошук, кнопка», а тоді пояснення.
 	 */
 	interface Props {
 		/** Імʼя гравця. Двобічне: хаб його ще й памʼятає у сховищі. */
@@ -37,18 +36,14 @@
 		onAvatar: (avatar: string) => void;
 		/** Кубик: підставити інше імʼя (словник і зайняті імена знає власник). */
 		onRandomName: () => void;
-		/** Код кімнати, який ввели руками. Двобічне. */
-		joinCode: string;
-		/** Поки хаб питає кімнату за кодом, «Підключитися» не приймає повторних натискань. */
-		busy: boolean;
-		searchGames: readonly OnlineGame[];
-		searchPhase: SearchPhase;
-		onToggleGame: (game: OnlineGame) => void;
-		onSearch: () => void;
-		onCancelSearch: () => void;
-		onCreate: (game: OnlineGame) => void;
-		onJoin: () => void;
-		/** Перелік кімнат — пʼятий блок. Малює СТОРІНКА: вона знає мережу. */
+		/** Відкрити вікно дороги. */
+		onOpen: (kind: HubWindowKind) => void;
+		/**
+		 * Дорога, чиє вікно щойно закрилося, — її кнопка бере фокус назад: доти він падав на
+		 * `body` разом із вікном. `null` на першому показі сторінки: фокус там не забирають.
+		 */
+		returnFocus?: HubWindowKind | null;
+		/** Перелік кімнат — другий стовпець. Малює СТОРІНКА: вона знає мережу. */
 		roomList?: import('svelte').Snippet;
 	}
 
@@ -58,29 +53,25 @@
 		avatar,
 		onAvatar,
 		onRandomName,
-		joinCode = $bindable(),
-		busy,
-		searchGames,
-		searchPhase,
-		onToggleGame,
-		onSearch,
-		onCancelSearch,
-		onCreate,
-		onJoin,
+		onOpen,
+		returnFocus = null,
 		roomList
 	}: Props = $props();
 
-	let codeInput = $state<HTMLInputElement | null>(null);
+	const ROADS: ReadonlyArray<{
+		kind: HubWindowKind;
+		icon: typeof Zap;
+		label: TranslationKey;
+		lead: TranslationKey;
+	}> = [
+		{ kind: 'search', icon: Zap, label: 'online.search', lead: 'online.searchLead' },
+		{ kind: 'create', icon: CirclePlus, label: 'pairs.createRoom', lead: 'online.createLead' },
+		{ kind: 'join', icon: LogIn, label: 'online.join', lead: 'online.joinLead' }
+	];
 
-	/**
-	 * Код зводиться до ЦИФР одразу, у значенні, а не лише на вигляд: вставка з мессенджера
-	 * приносить пробіли, дефіси й «код: », і кнопка, що дивиться на довжину, була б сірою на
-	 * правильному коді. Провідні нулі зберігаються: «07» — чинний двоцифровий код.
-	 */
-	const normaliseCode = (raw: string) => raw.replace(/\D/g, '').slice(0, CODE_MAX);
-
-	/** Поки пошук іде, створювати й підключатися не можна: це дві дороги в дві кімнати. */
-	const searching = $derived(searchPhase !== 'idle');
+	const refocus = (kind: HubWindowKind) => (node: HTMLElement) => {
+		if (returnFocus === kind) node.focus();
+	};
 </script>
 
 <!--
@@ -89,96 +80,43 @@
 -->
 <div class="hub-shell">
 	<div class="hub">
-		<!-- ── 1. Автоматичний пошук ─────────────────────────────────────────────── -->
-		<div class="hub__search">
-			<SearchBlock
-				games={searchGames}
-				phase={searchPhase}
-				onToggle={onToggleGame}
-				onStart={onSearch}
-				onCancel={onCancelSearch}
-			/>
+		<!-- ── 1. Три дороги ───────────────────────────────────────────────────── -->
+		<div class="hub__roads">
+			{#each ROADS as road (road.kind)}
+				<button
+					type="button"
+					class="hub__road"
+					class:hub__road--main={road.kind === 'search'}
+					onclick={() => onOpen(road.kind)}
+					aria-labelledby="online-{road.kind}-open-label"
+					aria-describedby="online-{road.kind}-open-lead"
+					data-testid="online-{road.kind}-open-btn"
+					{@attach refocus(road.kind)}
+				>
+					<road.icon size={28} aria-hidden="true" />
+					<span class="hub__road-text">
+						<span id="online-{road.kind}-open-label" class="hub__road-label">
+							{@html formatFont(t(road.label))}
+						</span>
+						<span id="online-{road.kind}-open-lead" class="hub__road-lead">
+							{@html formatFont(t(road.lead))}
+						</span>
+					</span>
+				</button>
+			{/each}
 		</div>
 
-		<!-- ── 2. Хто я ─────────────────────────────────────────────────────────── -->
-		<section class="hub__panel hub__panel--name">
-			<IdentityRow bind:name bind:country {avatar} {onAvatar} {onRandomName} />
-		</section>
-
-		<!-- ── 3. Створити ──────────────────────────────────────────────────────── -->
-		<section class="hub__panel hub__panel--create">
-			<h2 class="hub__title">{@html formatFont(t('pairs.createRoom'))}</h2>
-			<div class="hub__games">
-				<button
-					type="button"
-					class="btn-primary hub__game"
-					onclick={() => onCreate('quiz')}
-					aria-disabled={searching}
-					data-testid="online-create-quiz-btn"
-				>
-					{@html formatFont(t('menu.quiz'))}
-				</button>
-				<button
-					type="button"
-					class="btn-primary hub__game"
-					onclick={() => onCreate('pairs')}
-					aria-disabled={searching}
-					data-testid="online-create-pairs-btn"
-				>
-					{@html formatFont(t('menu.game.memory'))}
-				</button>
-			</div>
-		</section>
-
-		<!-- ── 4. Підключитися ──────────────────────────────────────────────────── -->
-		<section class="hub__panel hub__panel--join">
-			<label class="hub__label" for="online-code">
-				<span>{@html formatFont(t('pairs.roomCode'))}</span>
-			</label>
-			<!--
-				`inputmode="numeric"` — цифрова клавіатура на телефоні. Не `type="number"`: той
-				ковтає провідні нулі й приймає `e` та мінус, а код — рядок цифр, а не число.
-			-->
-			<div class="field-shell has-input-tools">
-				<input
-					id="online-code"
-					type="text"
-					bind:this={codeInput}
-					bind:value={joinCode}
-					oninput={() => (joinCode = normaliseCode(joinCode))}
-					maxlength={CODE_MAX}
-					class="hub__code"
-					inputmode="numeric"
-					pattern="[0-9]*"
-					autocomplete="off"
-					spellcheck="false"
-					data-testid="online-code-input"
-				/>
-				<InputTools
-					bind:value={joinCode}
-					input={codeInput}
-					scope="online-code"
-					fieldLabel={t('pairs.roomCode')}
-					onchange={(raw) => (joinCode = normaliseCode(raw))}
-				/>
-			</div>
-			<button
-				type="button"
-				class="btn-primary"
-				onclick={onJoin}
-				aria-disabled={busy || searching || joinCode.trim().length < CODE_MIN}
-				data-testid="online-join-btn"
-			>
-				{@html formatFont(t('online.join'))}
-			</button>
-		</section>
-
-		<!-- ── 5. Кімнати ───────────────────────────────────────────────────────── -->
-		{#if roomList}
-			<section class="hub__panel hub__panel--rooms">
-				{@render roomList()}
+		<!-- ── 2. Хто я й кімнати ──────────────────────────────────────────────── -->
+		<div class="hub__side">
+			<section class="hub__panel">
+				<IdentityRow bind:name bind:country {avatar} {onAvatar} {onRandomName} />
 			</section>
-		{/if}
+			{#if roomList}
+				<section class="hub__panel">
+					{@render roomList()}
+				</section>
+			{/if}
+		</div>
 	</div>
 </div>
 
@@ -200,47 +138,87 @@
 		flex-direction: column;
 		gap: var(--space-md);
 		width: 100%;
-		max-width: 22rem;
+		max-width: 26rem;
 		margin-inline: auto;
 	}
 
 	/*
-	 * ТРИ СТОВПЦІ НА ШИРОКОМУ — та сама розкладка, що була в форми входу: ліворуч дії
-	 * (підключитися, створити), у центрі — найкоротший шлях у гру й «хто я», праворуч —
-	 * вибір із того, що вже є. `grid-template-areas` розставляє ті самі вузли, не
-	 * торкаючись розмітки, тож вузький екран лишається в порядку розмітки. 64rem — три
-	 * стовпці по 20rem і два проміжки; `align-items: start` не тягне панелі до найвищої.
+	 * ДВА СТОВПЦІ, щойно вміщаються: ліворуч дороги, праворуч «хто я» й перелік. Правий
+	 * ширший: там імʼя одним рядком і рядки кімнат, а ліворуч — три кнопки. 48rem — два
+	 * стовпці по ~20 і 28rem, тобто «хто я» ще стоїть в один рядок (`IdentityRow`, 30rem без
+	 * поля панелі); `align-items: start` не тягне стовпці до найвищого.
 	 */
-	@container (min-width: 64rem) {
+	@container (min-width: 48rem) {
 		.hub {
 			display: grid;
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-			grid-template-areas:
-				'join search rooms'
-				'create name rooms';
+			grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 			align-items: start;
 			max-width: none;
 		}
+	}
 
-		.hub__search {
-			grid-area: search;
+	.hub__roads,
+	.hub__side {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+		min-width: 0;
+	}
+
+	/*
+	 * Дорога — значок і два рядки: назва й що вона означає. Висота — від вмісту, а не від
+	 * екрана: доти кнопки росли коробкою, і текст займав у них десяту частину (прохання
+	 * автора 2026-09-27). Росте весь хаб одним масштабом (`fitToViewport`, сторінка).
+	 */
+	.hub__road {
+		display: flex;
+		align-items: center;
+		gap: var(--space-md);
+		width: 100%;
+		min-height: 64px;
+		padding: var(--space-md);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-panel);
+		box-shadow: var(--shadow-card);
+		color: var(--color-text-on-panel);
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
+	}
+
+	/* Пошук — акцентом, як була «Швидка гра»: найкоротший шлях у гру читається першим. */
+	.hub__road--main {
+		border-color: transparent;
+		background: var(--color-accent);
+		color: var(--color-text-on-accent);
+	}
+
+	@media (hover: hover) {
+		.hub__road:hover {
+			border-color: var(--color-accent);
 		}
 
-		.hub__panel--name {
-			grid-area: name;
+		.hub__road--main:hover {
+			background: var(--color-accent-hover);
 		}
+	}
 
-		.hub__panel--create {
-			grid-area: create;
-		}
+	.hub__road-text {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
 
-		.hub__panel--join {
-			grid-area: join;
-		}
+	.hub__road-label {
+		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-bold);
+	}
 
-		.hub__panel--rooms {
-			grid-area: rooms;
-		}
+	/* Пояснення приглушене КЕГЛЕМ, а не прозорістю — та сама причина, що в `RoomList`. */
+	.hub__road-lead {
+		font-size: var(--font-size-sm);
 	}
 
 	.hub__panel {
@@ -251,35 +229,5 @@
 		border-radius: var(--radius-md);
 		background: var(--color-bg-panel);
 		box-shadow: var(--shadow-card);
-	}
-
-	.hub__title {
-		margin: 0;
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-text-on-panel);
-		text-transform: uppercase;
-	}
-
-	/* Дві гри — поруч, поки вміщаються, і одна під одною, коли ні. */
-	.hub__games {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-sm);
-	}
-
-	.hub__game {
-		flex: 1 1 8rem;
-	}
-
-	.hub__label {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-on-panel);
-	}
-
-	/* Код диктують уголос і вводять великими: так його й показуємо. */
-	.hub__code {
-		text-transform: uppercase;
-		letter-spacing: 0.25em;
 	}
 </style>
