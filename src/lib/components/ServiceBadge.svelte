@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, Copy } from 'lucide-svelte';
+	import { CheckCircle2, Copy } from 'lucide-svelte';
 	import { browser, dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { onDestroy } from 'svelte';
@@ -176,8 +176,14 @@
 	>
 		<!-- Номер версії — поза гілками: лічильник ДОДАЄТЬСЯ до нього, а не заміняє
 		     його. Інакше на dev, де помилка буває майже завжди, версії не видно. -->
+		<!--
+			«Скопійовано» — тим самим значком, що й успіх у тості (`CheckCircle2`). Окремий
+			`Check` важив у коді кореневого layout третину кілобайта, а той стояв рівно на стелі
+			(22,004 КБ при 22, `npm run check:build`, 2026-09-28): значок, який видно дві секунди
+			після копіювання звіту, — перше, що можна не везти кожному відвідувачу.
+		-->
 		{#if copied}
-			<Check class="badge-icon badge-icon--hint" />
+			<CheckCircle2 class="badge-icon badge-icon--hint" />
 		{:else if logService.errorCount > 0}
 			<span class="error-count">{logService.errorCount > 99 ? '99+' : logService.errorCount}</span>
 		{:else}
