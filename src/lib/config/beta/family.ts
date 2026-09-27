@@ -101,6 +101,23 @@ export const familyTab: BetaTab = {
 			},
 			coverage: 'testable',
 			testid: 'round-review-*-btn'
+		},
+		{
+			/*
+			 * НАЗВА НА КАРТИНЦІ (прохання автора 2026-09-28: «підпис тварини окремо внизу →
+			 * одразу на зображенні внизу в контейнері»). Покрито: `tests/card-label.spec.ts`
+			 * бачить підпис усередині картинки на справжній дошці й кожне слово кожної назви
+			 * чотирьох мов у рядку на трьох ширинах картинки.
+			 */
+			id: 'family_10',
+			category: { uk: 'Екран', en: 'Screen' },
+			text: {
+				uk: 'Назва кожної тварини мусить стояти НА її картинці внизу праворуч, у темній плашці, — а не рядком під картинкою. Нідерландською, де назви найдовші, жодне слово не рветься посередині й не виходить за картинку.',
+				en: 'Each animal name must sit ON its picture at the bottom right, in a dark box, not as a line under the picture. In Dutch, where the names are longest, no word breaks in the middle or goes past the picture.'
+			},
+			coverage: 'covered',
+			test: 'tests/card-label.spec.ts',
+			testid: 'family-animal-btn-*'
 		}
 	]
 };

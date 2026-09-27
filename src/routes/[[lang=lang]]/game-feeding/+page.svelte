@@ -165,10 +165,11 @@
 		width: 100%;
 	}
 
+	/* Рядок завдання — у півтора раза більший (прохання автора 2026-09-28: «назва та опис гри — маленький, x1.5»). */
 	.prompt {
 		margin: 0;
 		text-align: center;
-		font-size: var(--font-size-sm);
+		font-size: calc(var(--font-size-sm) * 1.5);
 		color: var(--color-text);
 	}
 

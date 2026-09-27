@@ -66,7 +66,9 @@
 				width="200"
 				height="266"
 			/>
-			<div class="myth-card__animal-name">{@html formatFont(td(question.animal.nameKey))}</div>
+			<div class="myth-card__animal-name image-caption">
+				{@html formatFont(td(question.animal.nameKey))}
+			</div>
 		</div>
 
 		<div class="myth-card__content">
@@ -164,6 +166,8 @@
 		width: min(50%, calc(36svh * 3 / 4));
 		aspect-ratio: 3 / 4;
 		position: relative;
+		/* Підпис (`.image-caption`) міряється частками цієї ширини. */
+		container-type: inline-size;
 		margin: var(--space-lg) auto 0;
 		border-radius: var(--radius-md);
 		overflow: hidden;
@@ -175,17 +179,12 @@
 		height: 100%;
 		object-fit: cover;
 	}
+	/*
+	 * Вигляд — спільний `.image-caption` (`global.css`). Кегль там 11cqi, тобто вдвічі більший
+	 * за колишні 12px на картинці 216px (прохання автора 2026-09-28: «назва тварини займає 20%
+	 * від зображення — зробити в 2 рази більшу»), і на телефоні частка та сама.
+	 */
 	.myth-card__animal-name {
-		position: absolute;
-		bottom: var(--space-sm);
-		right: var(--space-sm);
-		background: rgba(0, 0, 0, 0.6);
-		color: white;
-		padding: 2px var(--space-sm);
-		border-radius: var(--radius-sm);
-		font-size: var(--font-size-xs);
-		font-weight: var(--font-weight-bold);
-		backdrop-filter: var(--blur-glass);
 		animation: blur-in 3s ease 1s both;
 	}
 	.myth-card__content {

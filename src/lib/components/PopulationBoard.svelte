@@ -596,7 +596,8 @@
 		 */
 		color: var(--color-text-on-panel);
 		text-align: center;
-		font-size: var(--font-size-md);
+		/* У півтора раза більший (прохання автора 2026-09-28: «назва та опис гри — x1.5»). */
+		font-size: calc(var(--font-size-md) * 1.5);
 		font-weight: var(--font-weight-bold);
 	}
 	/*

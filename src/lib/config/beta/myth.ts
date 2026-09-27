@@ -100,6 +100,16 @@ export const mythTab: BetaTab = {
 			},
 			coverage: 'testable',
 			testid: 'round-review-*-btn'
+		},
+		{
+			// НАЗВА ТВАРИНИ ВДВІЧІ БІЛЬША (прохання автора 2026-09-28: «займає 20% від зображення»).
+			id: 'myth_10',
+			category: { uk: 'Екран', en: 'Screen' },
+			text: {
+				uk: 'Назва тварини на картинці мусить бути вдвічі більшою, ніж була: коротка назва («Лев», «Вовк») займає помітну частку ширини картинки, а довга переходить у два рядки цілими словами, не виходячи за картинку. На телефоні й на компʼютері частка та сама.',
+				en: 'The animal name on the picture must be twice as big as before: a short name («Lion», «Wolf») takes a visible share of the picture width, and a long one goes onto two lines by whole words without going past the picture. The share is the same on a phone and on a computer.'
+			},
+			coverage: 'manual'
 		}
 	]
 };

@@ -117,6 +117,32 @@ export const habitatTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'habitat-mode-continents-link'
+		},
+		{
+			/*
+			 * ВАРІАНТИ — ВЕЛИКИМ ТЕКСТОМ (прохання автора 2026-09-28: «текст кнопок від 30% до
+			 * 70% кнопки → від 55% до 95%»). Рівень `manual`: частку кнопки міряли руками на
+			 * семи розмірах екрана, а тест, що тримав би її, — окрема робота.
+			 */
+			id: 'habitat_11',
+			category: { uk: 'Екран', en: 'Screen' },
+			text: {
+				uk: 'Відкрийте «Континенти» й «Природні зони» на телефоні й на компʼютері. Назви на кнопках мусять бути великими: найкоротша («Азія», «Гори») сягає десь половини кнопки, найдовша — майже її краю, і жодне слово не рветься посередині. На телефоні кнопки стоять у дві колонки, на компʼютері — у два ряди, картинка завжди ліворуч від назви; усе разом із «Перевірити» вміщається в екран без прокрутки. Питання над кнопками — на всю ширину.',
+				en: 'Open «Continents» and «Biomes» on a phone and on a computer. The names on the buttons must be big: the shortest («Asia», «Ocean») reaches about half the button, the longest nearly its edge, and no word breaks in the middle. On a phone the buttons stand in two columns, on a computer in two rows, the picture always left of the name; all of it together with «Check» fits the screen without scrolling. The question above the buttons spans the full width.'
+			},
+			coverage: 'manual',
+			testid: 'habitat-option-btn-*'
+		},
+		{
+			// НАЗВА НА КАРТИНЦІ (прохання автора 2026-09-28) — так само, як у «Правда чи міф?».
+			id: 'habitat_12',
+			category: { uk: 'Екран', en: 'Screen' },
+			text: {
+				uk: 'Назва тварини мусить стояти НА її картинці внизу праворуч, у темній плашці, — а не окремим рядком під картинкою. Так само в спільній вікторині.',
+				en: 'The animal name must sit ON its picture at the bottom right, in a dark box, not as a separate line under the picture. The same in the shared quiz.'
+			},
+			coverage: 'manual',
+			testid: 'habitat-animal-name-text'
 		}
 	]
 };

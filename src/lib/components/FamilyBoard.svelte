@@ -85,8 +85,8 @@
 									{/if}
 								</div>
 							{/if}
+							<span class="image-caption">{@html formatFont(td(animal.nameKey))}</span>
 						</div>
-						<span class="animal-card__name">{@html formatFont(td(animal.nameKey))}</span>
 					</button>
 				{/each}
 			</div>
@@ -132,10 +132,11 @@
 {/if}
 
 <style>
+	/* Рядок завдання — у півтора раза більший (прохання автора 2026-09-28: «назва та опис гри — маленький, x1.5»). */
 	.prompt {
 		margin: 0;
 		text-align: center;
-		font-size: var(--font-size-md);
+		font-size: calc(var(--font-size-md) * 1.5);
 		color: var(--color-text);
 	}
 	/*
@@ -246,8 +247,15 @@
 	.animal-card--dimmed {
 		opacity: 0.45;
 	}
+	/*
+	 * Назва тварини — НА зображенні, спільним `.image-caption` (прохання автора 2026-09-28:
+	 * «підпис тварини окремо внизу → одразу на зображенні внизу в контейнері … це допоможе
+	 * заощадити місце для інших елементів, що є в онлайн-режимі»). Доти вона стояла рядком під
+	 * картинкою й додавала кожній картці ~24px висоти.
+	 */
 	.animal-card__image-wrap {
 		position: relative;
+		container-type: inline-size;
 		width: 100%;
 		aspect-ratio: 3 / 4;
 		border-radius: var(--radius-sm);
@@ -274,12 +282,6 @@
 	}
 	.animal-card--wrong .animal-card__mark {
 		color: var(--color-error);
-	}
-	.animal-card__name {
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-bold);
-		text-align: center;
-		overflow-wrap: anywhere;
 	}
 	.result {
 		width: 100%;

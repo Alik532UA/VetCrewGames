@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from './fixtures';
 
 /**
@@ -248,5 +249,108 @@ test.describe('підпис картки', () => {
 				{ timeout: 10_000 }
 			)
 			.toBe('усі повернулися');
+	});
+});
+
+/**
+ * ПІДПИС НА ЗОБРАЖЕННІ (`.image-caption`, `global.css`) — жодне слово назви не рветься.
+ *
+ * Назва тварини в «Правда чи міф?», «Де живем?» і «Хто зайвий?» лежить на самій картинці
+ * (прохання автора 2026-09-28). Кегль там у `cqi`, тобто частка ширини картинки, і 11cqi —
+ * найбільший, за якого найдовше слово з назв (нідерл. «Reuzenmiereneter») стає в рядок.
+ * Запас — кілька відсотків, тож будь-яка правка полів, кегля чи зміна назви в перекладі
+ * може тихо перевести довге слово на «Reuzenmierene / ter»: `overflow-wrap` не дасть йому
+ * вилізти за картинку, і на око це помітно лише в тій мові й на тій тварині.
+ *
+ * Тому перевіряються ВСІ слова всіх назв чотирьох мов, а не вибрані: кожне окремо в
+ * справжньому класі на трьох ширинах картинки — від найвужчої («Де живем?», 96px) до
+ * найширшої («Правда чи міф?», 216px). Слово стоїть у рядок, коли висота підпису та сама,
+ * що в однолітерного. Три ширини, а не одна: частки однакові на всіх, тож розбіжність
+ * означає, що якийсь розмір знову записали пікселями.
+ */
+const CAPTION_WIDTHS = [96, 142, 216] as const;
+
+/** Слова з назв тварин — прямо з перекладів, щоб нова назва потрапляла сюди сама. */
+function animalNameWords(): string[] {
+	const words = new Set<string>();
+	for (const lang of ['uk', 'en', 'de', 'nl']) {
+		const source = readFileSync(`src/lib/i18n/translations/${lang}/animals.ts`, 'utf8');
+		for (const [, single, double] of source.matchAll(
+			/'animal\.[a-z_]+':\s*(?:'([^']*)'|"([^"]*)")/g
+		)) {
+			for (const word of (single ?? double).split(/\s+/)) if (word) words.add(word);
+		}
+	}
+	return [...words];
+}
+
+test.describe('підпис на зображенні', () => {
+	test('кожне слово кожної назви стає в рядок на картинці будь-якої ширини', async ({ page }) => {
+		const words = animalNameWords();
+		expect(words.length, 'назв тварин не знайдено — шлях до перекладів змінився?').toBeGreaterThan(
+			100
+		);
+
+		await page.goto('/VetCrewGames/');
+		const broken = await page.evaluate(
+			async ({ words, widths }) => {
+				const host = document.createElement('div');
+				document.body.append(host);
+				const make = (width: number, text: string) => {
+					const frame = document.createElement('div');
+					frame.style.cssText = `position: relative; container-type: inline-size; width: ${width}px; height: 200px;`;
+					const caption = document.createElement('span');
+					caption.className = 'image-caption';
+					caption.textContent = text;
+					frame.append(caption);
+					host.append(frame);
+					return caption;
+				};
+				// Шрифт вантажиться на вимогу: без цього міряється запасний.
+				await document.fonts.load('700 16px Inglobal', words.join(' '));
+				await document.fonts.ready;
+
+				const out: string[] = [];
+				for (const width of widths) {
+					const oneLine = make(width, 'A').getBoundingClientRect().height;
+					for (const word of words) {
+						const height = make(width, word).getBoundingClientRect().height;
+						if (height > oneLine + 0.5) out.push(`${word} @ ${width}px`);
+					}
+				}
+				host.remove();
+				return out;
+			},
+			{ words, widths: CAPTION_WIDTHS }
+		);
+
+		expect(broken, `слова, що рвуться на картинці: ${broken.join(', ')}`).toEqual([]);
+	});
+
+	/**
+	 * На справжній дошці підпис — усередині картинки, а не під нею чи за її краєм. Дошка
+	 * «Хто зайвий?», бо вона відкривається одразу раундом, нідерландською — там найдовші назви.
+	 */
+	test('на дошці підпис лежить у межах своєї картинки', async ({ page }) => {
+		await page.goto('/VetCrewGames/nl/game-family/');
+		const cards = page.locator('[data-testid^="family-animal-btn-"]');
+		await expect(cards.first()).toBeVisible();
+		await page.evaluate(() => document.fonts?.ready);
+
+		const outside = await cards.evaluateAll((buttons) =>
+			buttons.flatMap((button) => {
+				const frame = button.querySelector('.animal-card__image-wrap')!.getBoundingClientRect();
+				const caption = button.querySelector('.image-caption');
+				if (!caption) return [`${button.dataset.testid}: підпису на картинці немає`];
+				const box = caption.getBoundingClientRect();
+				const inside =
+					box.left >= frame.left - 0.5 &&
+					box.right <= frame.right + 0.5 &&
+					box.top >= frame.top - 0.5 &&
+					box.bottom <= frame.bottom + 0.5;
+				return inside ? [] : [`${caption.textContent?.trim()}: поза картинкою`];
+			})
+		);
+		expect(outside).toEqual([]);
 	});
 });

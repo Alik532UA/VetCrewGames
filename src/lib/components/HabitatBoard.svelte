@@ -53,7 +53,7 @@
 </script>
 
 {#if game.round}
-	<div class="animal text-panel">
+	<div class="animal">
 		<!--
 			Головне зображення раунду, тобто LCP: `eager`, а не `lazy`
 			(PERFORMANCE-v8 § 3.1 — «типова помилка з добрих намірів»). Розмітку
@@ -73,7 +73,7 @@
 			width="300"
 			height="400"
 		/>
-		<span class="animal__name" data-testid="habitat-animal-name-text">
+		<span class="image-caption" data-testid="habitat-animal-name-text">
 			{@html formatFont(td(game.round.animal.nameKey))}
 		</span>
 	</div>
@@ -151,38 +151,48 @@
 {/if}
 
 <style>
+	/*
+	 * Назва тварини — НА зображенні, спільним `.image-caption` (прохання автора 2026-09-28:
+	 * «підпис тварини окремо внизу → одразу на зображенні внизу в контейнері … це допоможе
+	 * заощадити місце для інших елементів, що є в онлайн-режимі»). Доти картинка й рядок назви
+	 * під нею лежали на окремій панелі, і назва з відступами коштувала ~40px висоти.
+	 */
 	.animal {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: var(--space-xs);
-	}
-	.animal__image {
-		width: clamp(96px, 22svh, 168px);
+		position: relative;
+		container-type: inline-size;
+		/* 20svh, а не 22: на 360×640 дев'ять більших варіантів без цього не вміщалися. */
+		width: clamp(96px, 20svh, 168px);
 		aspect-ratio: 3 / 4;
-		height: auto;
-		object-fit: cover;
 		border-radius: var(--radius-md);
+		overflow: hidden;
 		border: 2px solid var(--color-bg-panel-dark);
 		box-shadow: var(--shadow-card);
 	}
-	.animal__name {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-bold);
-		color: var(--color-text);
+	.animal__image {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
+	/*
+	 * Питання — на всю ширину сторінки, як ряд варіантів під ним (прохання автора 2026-09-28:
+	 * «текст питання 70% ширини сторінки → 95%»). Доти панель брала ширину тексту.
+	 */
 	.question {
+		width: 100%;
+		box-sizing: border-box;
 		text-align: center;
 	}
+	/* Рядок завдання — у півтора раза більший (прохання автора 2026-09-28: «назва та опис гри — маленький, x1.5»). */
 	.question__prompt {
 		margin: 0;
-		font-size: var(--font-size-md);
+		font-size: calc(var(--font-size-md) * 1.5);
 		font-weight: var(--font-weight-bold);
 		color: var(--color-text);
 	}
 	.question__hint {
 		margin: 0;
-		font-size: var(--font-size-xs);
+		font-size: calc(var(--font-size-xs) * 1.5);
 		color: var(--color-text-muted);
 	}
 	.result {
@@ -235,8 +245,6 @@
 	 * робочим, а не діє.
 	 */
 	@media (min-width: 1000px) {
-		.animal,
-		.question,
 		.result {
 			max-width: 460px;
 		}

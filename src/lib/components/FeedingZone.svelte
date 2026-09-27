@@ -256,8 +256,9 @@
 		color: var(--color-text-muted);
 	}
 
+	/* Назва тварини — у півтора раза більша (прохання автора 2026-09-28: «назва тварин маленька»). */
 	.zone__label {
-		font-size: var(--font-size-xs);
+		font-size: calc(var(--font-size-xs) * 1.5);
 		font-weight: var(--font-weight-bold);
 		text-align: center;
 		color: var(--color-text);

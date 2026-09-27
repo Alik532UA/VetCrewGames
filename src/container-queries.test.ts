@@ -69,7 +69,7 @@ const MEDIA_DEBT: Record<string, number> = {
 	'src/lib/components/FeedingZone.svelte': 1,
 	'src/lib/components/GameHeader.svelte': 1,
 	'src/lib/components/HabitatBoard.svelte': 1,
-	'src/lib/components/HabitatOptions.svelte': 2,
+	'src/lib/components/HabitatOptions.svelte': 1,
 	'src/lib/components/HabitatRound.svelte': 1,
 	'src/lib/components/PopulationBoard.svelte': 1,
 	'src/lib/components/quiz/QuizBoard.svelte': 2

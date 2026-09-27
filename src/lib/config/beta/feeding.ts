@@ -101,6 +101,16 @@ export const feedingTab: BetaTab = {
 			},
 			coverage: 'testable',
 			testid: 'round-review-*-btn'
+		},
+		{
+			// НАЗВИ ТА ЗАВДАННЯ ×1.5 (прохання автора 2026-09-28: «назва тварин маленька»).
+			id: 'feeding_10',
+			category: { uk: 'Екран', en: 'Screen' },
+			text: {
+				uk: 'Назви тварин над їхніми зонами й рядок завдання вгорі мусять бути в півтора раза більшими, ніж були, і читатися з відстані витягнутої руки. Так само рядок завдання в «Хто з іншої родини?», «Де живем?», «Кого більше?» і вікторині.',
+				en: 'The animal names above their zones and the task line on top must be one and a half times bigger than before and readable at arm’s length. The same for the task line in «Who is from another family?», «Where do they live?», «Who is more?» and the quiz.'
+			},
+			coverage: 'manual'
 		}
 	]
 };
