@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { withoutRoom } from '$lib/utils/roomUrl';
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page, updated } from '$app/state';
-	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
@@ -19,6 +19,7 @@
 	import { attachPairsPolicies, pairsGame } from '$lib/controllers/pairsRoom.svelte';
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import CreateWindow from '$lib/components/online/CreateWindow.svelte';
+	import RoomDoor from '$lib/components/online/RoomDoor.svelte';
 	import OnlineLobby from '$lib/components/pairs/OnlineLobby.svelte';
 	import OnlineRoom from '$lib/components/pairs/OnlineRoom.svelte';
 	import NetLost from '$lib/components/pairs/NetLost.svelte';
@@ -135,7 +136,17 @@
 	});
 </script>
 
-<div class="online-page">
+<!--
+	ЛОБІ РОСТЕ ДО ЕКРАНА ОДНИМ МАСШТАБОМ, лише вгору, як лобі вікторини (`quiz/online`, там
+	і причина). У лобі стовпець вужчий (`online-page--lobby`): лобі без налаштувань — два
+	стовпці на 46rem, і саме від цієї ширини масштабу є куди рости. На всю ширину вікна рости
+	не було б куди, бо стовпець уже займав би весь рядок.
+-->
+<div
+	class="online-page"
+	class:online-page--lobby={match?.status === 'lobby'}
+	use:fitToViewport={match?.status === 'lobby' && 'grow'}
+>
 	<!-- Нова збірка на сервері видна й без відмови: опитування версії (`updated`) каже
 	     про неї раніше, ніж перша ж спроба зайти впаде на відсутньому шматку. Але не
 	     посеред партії (`reloadBanner`): там оновлення забрало б саму партію. -->
@@ -173,7 +184,7 @@
 		/>
 	{:else if !match}
 		<!-- Двері без кімнати: створюємо ту, яку попросили, або йдемо на хаб (`roomPolicies`). -->
-		<p class="online-door" role="status">{@html formatFont(t('online.opening'))}</p>
+		<RoomDoor />
 	{:else if match.status === 'lobby'}
 		<OnlineLobby
 			code={session.code}
@@ -224,12 +235,8 @@
 		box-sizing: border-box;
 	}
 
-	/* Рядок стану дверей стоїть просто на фотографії тла — тому на власній панелі. */
-	.online-door {
-		margin: 0;
-		padding: var(--space-sm) var(--space-md);
-		border-radius: var(--radius-md);
-		background: var(--color-bg-panel);
-		color: var(--color-text-on-panel);
+	/* Два стовпці лобі (46rem) і поля обгортки (`lobby-shell`, по 1rem). */
+	.online-page--lobby {
+		max-width: 48rem;
 	}
 </style>

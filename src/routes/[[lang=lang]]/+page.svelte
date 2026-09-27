@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { dev } from '$app/environment';
+	import { CodeXml, Gamepad2, Stethoscope, TreePine, Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -63,17 +64,24 @@
 	const links = $derived([
 		{
 			key: 'menu.link.vetcrew' as const,
-			href: 'https://sites.google.com/view/vetcrew'
+			href: 'https://sites.google.com/view/vetcrew',
+			icon: Stethoscope
 		},
 		{
 			key: 'menu.link.order' as const,
-			href: siblingUrl('digitalworkshop', lang)
+			href: siblingUrl('digitalworkshop', lang),
+			icon: CodeXml
 		}
 	]);
 </script>
 
-<div class="menu-page">
-	<nav class="menu-grid">
+<div class="menu-page fill">
+	<!--
+		ПЛИТКИ ЗІ ЗНАЧКОМ (прохання автора 2026-09-27: «частина кнопок великі, в яких текст
+		займає всього 10%»). Розмір плитки, значка й підпису — від однієї одиниці
+		(`.menu-tiles` у global.css), тож на великому екрані плитка більша, а не порожніша.
+	-->
+	<nav class="menu-tiles">
 		<!--
 			ЗАПОВІДНИК — ЛИШЕ В РОБОТІ, і це остання різниця між двома меню.
 
@@ -91,27 +99,30 @@
 		{#if dev}
 			<a
 				href={langPath(lang, 'reserve')}
-				class="menu-btn menu-btn--game anim-stagger-1"
+				class="menu-btn menu-btn--game menu-tile anim-stagger-1"
 				data-testid="menu-reserve-link"
 			>
-				{@html formatFont(t('menu.reserve'))}
+				<TreePine class="menu-tile__icon" />
+				<span>{@html formatFont(t('menu.reserve'))}</span>
 			</a>
 		{/if}
 
 		<a
 			href={langPath(lang, 'play')}
-			class="menu-btn menu-btn--game anim-stagger-2"
+			class="menu-btn menu-btn--game menu-tile anim-stagger-2"
 			data-testid="menu-play-link"
 		>
-			{@html formatFont(t('menu.play'))}
+			<Gamepad2 class="menu-tile__icon" />
+			<span>{@html formatFont(t('menu.play'))}</span>
 		</a>
 
 		<a
 			href={langPath(lang, 'online')}
-			class="menu-btn menu-btn--game anim-stagger-3"
+			class="menu-btn menu-btn--game menu-tile anim-stagger-3"
 			data-testid="menu-online-link"
 		>
-			{@html formatFont(t('menu.playOnline'))}
+			<Users class="menu-tile__icon" />
+			<span>{@html formatFont(t('menu.playOnline'))}</span>
 		</a>
 
 		<!--
@@ -128,7 +139,8 @@
 	<div class="menu-links">
 		{#each links as link (link.key)}
 			<a href={link.href} class="menu-btn menu-btn--link" target="_blank" rel="noopener noreferrer">
-				{@html formatFont(t(link.key))}
+				<link.icon class="menu-link__icon" />
+				<span>{@html formatFont(t(link.key))}</span>
 			</a>
 		{/each}
 	</div>

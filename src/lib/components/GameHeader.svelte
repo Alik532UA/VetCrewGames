@@ -59,7 +59,7 @@
 	});
 </script>
 
-<header class="game-header">
+<header class="game-header fill">
 	<div class="game-header__inner">
 		<HeaderNav {showBack} {activeTitleKey} />
 
@@ -160,7 +160,8 @@
 
 	.game-header__inner {
 		width: 100%;
-		max-width: 1200px;
+		/* 1200px на телефонній одиниці; росте разом із кнопками, щоб ряд не збивався до середини. */
+		max-width: calc(var(--fill-u) * 75);
 		display: grid;
 		/*
 		 * `minmax(0, 1fr)`, а не `1fr`: `1fr` — це `minmax(auto, 1fr)`, тобто
@@ -267,7 +268,8 @@
 
 	.global-score {
 		position: relative;
-		height: 36px;
+		/* Ті самі 2,25 одиниці, що в кнопок ряду (`.header-btn`): кільце стоїть урівень із ними. */
+		height: calc(var(--fill-u) * 2.25);
 		aspect-ratio: 1;
 		display: flex;
 		align-items: center;
@@ -314,7 +316,7 @@
 	}
 
 	.score-value {
-		font-size: 11px;
+		font-size: calc(var(--fill-u) * 0.6875);
 		font-weight: 900;
 		color: var(--color-text-on-panel);
 		z-index: 1;

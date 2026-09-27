@@ -1,6 +1,35 @@
-import { fitZoom, MIN_ZOOM, ZOOM_STEP } from './fitZoom';
+import { fitZoom, MAX_ZOOM, MIN_ZOOM, SLACK_PX, ZOOM_STEP } from './fitZoom';
 
 export { MIN_ZOOM };
+
+/**
+ * Висота вмісту сторінки без її розтягування: від верху першої видимої дитини до низу
+ * останньої, плюс верхнє й нижнє поля. Міряється при `zoom: 1`.
+ *
+ * `offsetTop`/`offsetHeight`, а не `getBoundingClientRect()`: перші бачать розкладку, другий
+ * — ще й `transform`. Панелі ігор з'являються анімацією `scale(0.95) translateY(30px)`
+ * (видно в прихованій панелі, де вона стоїть на першому кадрі: `.source-panel` з
+ * `matrix(0.95, 0, 0, 0.95, 0, 30)`), а перший вимір припадає саме на її початок. Коробки з
+ * такої анімації менші за справжні, і масштаб за ними вийшов би завеликим. Коли ж анімація
+ * доходить кінця, `ResizeObserver` мовчить (`transform` розміру не міняє), тож сторінка так
+ * і лишилася б із прокруткою.
+ *
+ * Зовнішніх полів дітей тут НЕМАЄ навмисно: вибір режиму «Де живем?» центрується
+ * `margin: auto`, і `getComputedStyle` віддає ці поля числом (201,7px на 1280×800). Із ними
+ * вільне місце рахувалося б вмістом, і сторінка не росла б зовсім.
+ */
+function contentHeight(node: HTMLElement): number {
+	let top = Infinity;
+	let bottom = -Infinity;
+	for (const child of node.children) {
+		if (!(child instanceof HTMLElement) || child.offsetHeight === 0) continue;
+		top = Math.min(top, child.offsetTop);
+		bottom = Math.max(bottom, child.offsetTop + child.offsetHeight);
+	}
+	if (top === Infinity) return node.scrollHeight;
+	const style = getComputedStyle(node);
+	return bottom - top + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+}
 
 /**
  * Дія: зменшити ВЕСЬ екран гри рівно настільки, щоб він умістився.
@@ -46,15 +75,40 @@ export { MIN_ZOOM };
  */
 const SETTLE_MS = 140;
 
-export function fitToViewport(node: HTMLElement) {
+/**
+ * Скільки ширини батька сторінці дозволено зайняти, коли вона росте: ті самі 95%, що в
+ * `width: 95%` сторінок ігор. Поля по краях лишаються полями, а не стають місцем для росту.
+ * Без цього на телефоні, де сторінка й так на всю ширину, гра росла на 4% (заміряно на
+ * 390×844: масштаб 1,04), тобто розкладалася вужчою, ніж її міряють гейти reflow.
+ */
+const WIDTH_SHARE = 0.95;
+
+/**
+ * Як масштабувати: `true` — у обидва боки (типово, так його кличуть усі сторінки ігор);
+ * `'grow'` — лише вгору; `false` — ніяк.
+ *
+ * Інші два режими потрібні сторінкам кімнат і хабу (прохання автора 2026-09-27:
+ * «масштабування не пропорційне»). Там той самий стовпець показує то щільне лобі, яке має
+ * рости до висоти екрана, то вікно чи підкладку, що вже ростуть власною одиницею (`.fill`),
+ * і масштаб поверх них збільшив би їх удруге — звідси `false`. А стискатися лобі й хабу не
+ * можна: на телефоні це сторінки з прокруткою, і стиснуте до 0,75 лобі вікторини ще й
+ * лишалося з прокруткою (заміряно на 390×844) — звідси `'grow'`. Вимкнений — це рівно
+ * `zoom` без сліду.
+ */
+export type FitMode = boolean | 'grow';
+
+export function fitToViewport(node: HTMLElement, mode: FitMode = true) {
 	if (typeof ResizeObserver === 'undefined') return;
 
 	let pending: ReturnType<typeof setTimeout> | null = null;
 	/** Масштаб, який стоїть у стилі. Саме з ним порівнюється новий. */
 	let applied = 1;
+	let on = mode !== false;
+	let floor = mode === 'grow' ? 1 : MIN_ZOOM;
 
 	function measure() {
 		pending = null;
+		if (!on) return;
 
 		/*
 		 * Міряти треба БЕЗ зуму: інакше кожен вимір бачить наслідок попереднього і
@@ -73,10 +127,25 @@ export function fitToViewport(node: HTMLElement) {
 		 * ніколи, хоч прокрутка й з'явилася б на 858 пікселів.
 		 */
 		const viewport = node.parentElement;
-		const needed = node.scrollHeight;
 		const available = viewport ? viewport.clientHeight : node.clientHeight;
+		/*
+		 * СКІЛЬКИ ПОТРІБНО — дві міри на два напрямки (ріст — прохання автора 2026-09-27).
+		 *
+		 * Не вміщається — `scrollHeight`, як і доти. А коли вміщається, `scrollHeight`
+		 * нічого не каже: сторінка розтягнута на весь екран (`flex: 1`), і її висота
+		 * дорівнює доступній, хоч би вміст займав третину. Тоді потрібне — висота САМОГО
+		 * вмісту: від верху першої дитини до низу останньої плюс поля сторінки.
+		 */
+		const overflowing = node.scrollHeight > available + SLACK_PX;
+		const needed = overflowing ? node.scrollHeight : contentHeight(node);
+		/*
+		 * Рости вшир — лише доки сторінка вміщається в батька з полями (`WIDTH_SHARE`):
+		 * інакше збільшена гра вилізла б убік.
+		 */
+		const width = node.getBoundingClientRect().width;
+		const room = viewport && width > 0 ? (viewport.clientWidth * WIDTH_SHARE) / width : 1;
 
-		const next = fitZoom(needed, available, applied);
+		const next = fitZoom(needed, available, applied, Math.min(MAX_ZOOM, room), floor);
 
 		if (next === applied) {
 			// Нічого не змінилося — і стиль лишається тим самим рядком, який був.
@@ -141,6 +210,24 @@ export function fitToViewport(node: HTMLElement) {
 	measure();
 
 	return {
+		update(next: FitMode = true) {
+			const wasOn = on;
+			on = next !== false;
+			floor = next === 'grow' ? 1 : MIN_ZOOM;
+			if (on === wasOn) {
+				if (on) schedule();
+				return;
+			}
+			if (on) {
+				// Той самий перший вимір, що при появі: без затримки й без осідання.
+				measure();
+				return;
+			}
+			if (pending) clearTimeout(pending);
+			pending = null;
+			applied = 1;
+			node.style.zoom = '';
+		},
 		destroy() {
 			if (pending) clearTimeout(pending);
 			sizes.disconnect();

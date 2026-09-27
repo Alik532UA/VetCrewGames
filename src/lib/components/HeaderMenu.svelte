@@ -214,7 +214,7 @@
 	 */
 	.menu__list {
 		position: absolute;
-		top: calc(100% + 6px);
+		top: calc(100% + var(--fill-u) * 0.375);
 		right: 0;
 		z-index: 9501;
 		display: flex;
@@ -237,9 +237,13 @@
 		 * підпис виліз би за лівий край вікна. Аж тоді спрацьовує трикрапка.
 		 */
 		width: max-content;
-		min-width: 180px;
+		/*
+		 * 180px і 6px — на телефонній одиниці; список росте разом із шапкою, з якої
+		 * випадає (прохання автора 2026-09-27: «масштабування не пропорційне»).
+		 */
+		min-width: calc(var(--fill-u) * 11.25);
 		max-width: calc(100vw - 16px);
-		padding: 6px;
+		padding: calc(var(--fill-u) * 0.375);
 		border-radius: var(--radius-md);
 		border: 1px solid var(--color-border);
 		background: var(--color-bg-surface);
@@ -250,8 +254,8 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-sm);
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
+		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8): дно, а не масштаб. */
+		min-height: max(44px, calc(var(--fill-u) * 2.75));
 		padding: 0 var(--space-sm);
 		border-radius: var(--radius-sm);
 		color: var(--color-text);
@@ -286,6 +290,13 @@
 	 * `--color-text` лишається читабельним: заміряно 10.3:1 у light-green і 9.45:1
 	 * у dark. Той самий прийом, що в `.header-btn` (`global.css`).
 	 */
+	/* Значок пункту — 18px на телефонній одиниці, як стояло в `size`. */
+	.menu__item > :global(svg) {
+		flex-shrink: 0;
+		width: calc(var(--fill-u) * 1.125);
+		height: calc(var(--fill-u) * 1.125);
+	}
+
 	.menu__item:hover {
 		background: color-mix(in srgb, var(--color-text), transparent 90%);
 	}

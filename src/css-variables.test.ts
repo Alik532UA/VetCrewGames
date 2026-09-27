@@ -81,7 +81,17 @@ const CROSS_COMPONENT: Record<string, { declaredIn: string; why: string }> = {
 		why: 'field border taken from the text colour, because --color-border equals the panel in two themes'
 	},
 	'--account-gap': { declaredIn: ACCOUNT_PAGE, why: 'gap between rows inside a panel' },
-	'--account-pad': { declaredIn: ACCOUNT_PAGE, why: 'padding of a panel and of its controls' }
+	'--account-pad': { declaredIn: ACCOUNT_PAGE, why: 'padding of a panel and of its controls' },
+	/*
+	 * The one variable here whose fallback IS the design. `Avatar` takes its size as a
+	 * number prop, and a number cannot follow the screen; an ancestor that grows with the
+	 * screen (the header, the waiting panel of the quiz) overrides the tile from outside.
+	 * Everywhere else the tile keeps the prop — that is `var(--avatar-box, var(--avatar-size))`.
+	 */
+	'--avatar-box': {
+		declaredIn: 'src/lib/components/HeaderControls.svelte',
+		why: 'avatar tile size set by an ancestor that grows with the screen; also QuizAway'
+	}
 };
 
 function walk(dir: string, keep: (name: string) => boolean, out: string[] = []): string[] {

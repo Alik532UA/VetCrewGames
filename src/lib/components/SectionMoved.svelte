@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Gamepad2 } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
@@ -22,10 +23,16 @@
 	onMount(() => void goto(langPath(lang, 'play'), { replaceState: true }));
 </script>
 
-<div class="menu-page">
-	<nav class="menu-grid">
-		<a href={langPath(lang, 'play')} class="menu-btn menu-btn--game" data-testid="moved-play-link">
-			{@html formatFont(t('menu.play'))}
+<div class="menu-page fill">
+	<nav class="menu-tiles">
+		<a
+			href={langPath(lang, 'play')}
+			class="menu-btn menu-btn--game menu-tile"
+			data-testid="moved-play-link"
+		>
+			<!-- Та сама плитка, що «Грати» в головному меню: сюди приходять саме по неї. -->
+			<Gamepad2 class="menu-tile__icon" />
+			<span>{@html formatFont(t('menu.play'))}</span>
 		</a>
 	</nav>
 </div>

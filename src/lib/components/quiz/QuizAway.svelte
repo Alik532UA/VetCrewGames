@@ -126,40 +126,47 @@
 		`role="status"` лишається — читалка мусить оголосити появу, а не вимагати дії.
 	-->
 	<div class="away-scrim" data-testid="quiz-away-backdrop">
-		<section class="away text-panel" role="status" data-testid="quiz-away-panel">
-			<!--
-				ОДИН РЯДОК ЗАМІСТЬ ЧОТИРЬОХ БЛОКІВ.
+		<!--
+			ВІКНО НА ПІВ ЕКРАНА, А НЕ ПІГУЛКА (прохання автора 2026-09-27: «чому у нас 95%
+			порожнє, а ми мілким елементом пишемо інформацію?»). Доти тут був один рядок
+			кеглем `sm` — 207×37 px на ноутбуці, 0,8% екрана, — а все довкола розмите. Тепер
+			`.fill .fill-window`: вікно бере понад 30% екрана, кегель росте з ним, а людина,
+			яку чекаємо, — велика аватарка з іменем, і відлік — число, яке видно з кімнати.
 
-				Доти тут стояли заголовок «Немає звʼязку», список зниклих, питання й
-				кнопка — чотири блоки про одне. Автор назвав це «багато шумної
-				дублюючої інформації», і має рацію: прапор з аватаркою вже кажуть, що
-				йдеться про людину, а слово «чекаємо» — що саме з нею.
+			Слів лишилося стільки ж: «Чекаємо:», хто, скільки. Доти тут стояли заголовок
+			«Немає звʼязку», список зниклих, питання й кнопка — автор назвав це «багато
+			шумної дублюючої інформації». Більшим стало те, що є, а не додалося нове.
 
-				ІМЕНА, А НЕ ЗАЙМЕННИКИ. «Чекаємо на нього» брехало щоразу, коли зникала
-				жінка: імена в проєкті випадкові з обох родів. Без прийменника —
-				«Чекаємо: Могутній Бізон» — і граматика ціла, і рід ні до чого.
-			-->
-			<p class="away__line">
-				<span class="away__label">
-					{@html formatFont(text(pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait'))}
-				</span>
-
-				{#each listed as member, index (member.uid)}
-					<span class="away__who" data-testid="quiz-away-{member.uid}-item">
-						<Flag code={member.country} />
-						<Avatar avatar={member.avatar} />
-						<span class="away__name">{member.name}</span>
-					</span>{#if index < listed.length - 1},{/if}
-				{/each}
-
-				{#if secondsLeft > 0}
-					<!--
-						Число окремим елементом: воно змінюється щосекунди, і читалка мусить
-						оголосити зміну, а не перечитувати весь рядок.
-					-->
-					<b class="away__count" data-testid="quiz-away-timer-value">{secondsLeft}</b>
-				{/if}
+			ІМЕНА, А НЕ ЗАЙМЕННИКИ. «Чекаємо на нього» брехало щоразу, коли зникала жінка:
+			імена в проєкті випадкові з обох родів. Без прийменника — «Чекаємо: Могутній
+			Бізон» — і граматика ціла, і рід ні до чого.
+		-->
+		<section class="away text-panel fill fill-window" role="status" data-testid="quiz-away-panel">
+			<p class="away__label">
+				{@html formatFont(text(pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait'))}
 			</p>
+
+			<ul class="away__people">
+				{#each listed as member (member.uid)}
+					<li class="away__who" data-testid="quiz-away-{member.uid}-item">
+						<Avatar avatar={member.avatar} size={56} showDefault />
+						<span class="away__name">
+							<Flag code={member.country} height={19} />
+							{member.name}
+						</span>
+					</li>
+				{/each}
+			</ul>
+
+			{#if secondsLeft > 0}
+				<!--
+					Число окремим елементом: воно змінюється щосекунди, і читалка мусить
+					оголосити зміну, а не перечитувати весь рядок.
+				-->
+				<b class="away__count away__count--timer" data-testid="quiz-away-timer-value">
+					{secondsLeft}
+				</b>
+			{/if}
 
 			{#if onResume}
 				<!--
@@ -230,11 +237,22 @@
 	.away-scrim {
 		position: fixed;
 		inset: 0;
-		z-index: 7000;
+		/*
+		 * НИЖЧЕ ЗА ШАПКУ (`GameHeader`, 100), а не поверх неї (прохання автора 2026-09-27).
+		 * Доти тут стояло 7000, і підкладка накривала шапку разом із «назад» і меню: той,
+		 * хто чекав, не міг ні вийти з кімнати, ні піти в головне меню — лише чекати. Тепер
+		 * шапка зверху й працює, а гра під підкладкою так само закрита. Що ця підкладка лежить
+		 * під шапкою, тримає `src/content-fill.test.ts`.
+		 */
+		z-index: 90;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: var(--space-md);
+		/*
+		 * Зверху — під шапку, щоб велике вікно не заходило під неї. Шапка росте з одиницею
+		 * (3,25 одиниці, `.fill-window` у global.css), тож і поле теж.
+		 */
+		padding: calc(var(--fill-u) * 3.25 + var(--space-md)) var(--space-md) var(--space-md);
 		box-sizing: border-box;
 		/*
 		 * Затемнення ПРОЗОРЕ: фонове фото теми мусить лишатися видимим (це стежить
@@ -245,23 +263,70 @@
 		backdrop-filter: var(--blur-glass);
 	}
 
+	/*
+	 * Розмір вікна — `.fill-window` (global.css): щонайменше 60% ширини й 52% висоти, тобто
+	 * понад 30% екрана; кегель — `.fill`. Імʼя не обрізається нічим: колись його різав
+	 * `max-width: 12ch`, і «Могутній Бізон» ставав «Могутній Бі…» — рівно те, заради чого
+	 * вікно існує. Довге імʼя переноситься, а не ховається.
+	 */
 	.away {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--space-sm);
-		width: auto;
-		/*
-		 * ШИРШЕ, НІЖ БУЛО, і без обрізання імені. Скарга автора зі знімком: вікно
-		 * вузьке, «Могутній Бізон» стає «Могутній Бі…». Різало не воно, а
-		 * `max-width: 12ch` на самому імені — обмеження, яке ховало саме те, заради
-		 * чого вікно існує. Тепер імʼя не обмежене нічим, а вікно бере до 34rem і
-		 * переносить рядок, якщо імен кілька.
-		 */
-		max-width: min(92vw, 34rem);
-		padding: var(--space-sm) var(--space-md);
-		box-sizing: border-box;
+		gap: var(--space-md);
+		padding: var(--space-lg);
+		overflow-y: auto;
 		text-align: center;
+	}
+
+	.away__label {
+		margin: 0;
+		font-size: var(--font-size-2xl);
+		font-weight: var(--font-weight-bold);
+	}
+
+	.away__people {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-lg);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/*
+	 * Аватарка й прапор ростуть з одиницею: 56 і 19 у розмітці — це телефонна одиниця, а
+	 * змінна `--avatar-box` і висота прапора в CSS перебивають їх на більшому екрані.
+	 */
+	.away__who {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-sm);
+		--avatar-box: calc(var(--fill-u) * 3.5);
+	}
+
+	.away__who :global(.flag) {
+		width: auto;
+		height: calc(var(--fill-u) * 1.2);
+	}
+
+	.away__name {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-xs);
+		font-size: var(--font-size-xl);
+		font-weight: var(--font-weight-bold);
+		overflow-wrap: anywhere;
+	}
+
+	/* Відлік — число, яке видно з іншого кінця кімнати: воно й відповідає «скільки ще». */
+	.away__count--timer {
+		font-size: calc(var(--fill-u) * 4);
+		line-height: 1;
 	}
 
 	/*
@@ -273,15 +338,15 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-xs);
-		/* 44px — власний стандарт сенсорної цілі (ACCESSIBILITY-v8 § 8). */
-		min-height: 44px;
-		padding: 0 var(--space-md);
+		/* 44px — дно сенсорної цілі (ACCESSIBILITY-v8 § 8); далі росте з кеглем вікна. */
+		min-height: max(44px, calc(var(--fill-u) * 2.75));
+		padding: 0 var(--space-lg);
 		border: 1px solid var(--color-accent);
 		border-radius: var(--radius-sm);
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
 		font: inherit;
-		font-size: var(--font-size-sm);
+		font-size: var(--font-size-lg);
 		font-weight: var(--font-weight-bold);
 		cursor: pointer;
 	}
@@ -293,27 +358,6 @@
 		cursor: default;
 	}
 
-	/* Рядок «Чекаємо: 🇺🇦👤 Імʼя — 7»: усе в одну лінію, переноситься за потреби. */
-	.away__line {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		margin: 0;
-		font-size: var(--font-size-sm);
-	}
-
-	.away__label {
-		font-weight: var(--font-weight-bold);
-	}
-
-	.away__who {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
-
 	.away__kicks {
 		display: flex;
 		flex-wrap: wrap;
@@ -321,24 +365,20 @@
 		gap: var(--space-xs);
 	}
 
-	/* Імʼя НЕ обрізається: саме воно й відповідає на питання «кого чекаємо». */
-	.away__name {
-		white-space: nowrap;
-	}
-
 	/*
 	 * Кнопка тиха: дія незворотна, але не та, по яку тут дивляться. Гучна кнопка
-	 * поруч з іменем читалася б як пропозиція.
+	 * поруч з іменем читалася б як пропозиція. Тиха — кольором, а не розміром: 44px —
+	 * дно сенсорної цілі (доти тут було 32px).
 	 */
 	.away__kick {
-		min-height: 32px;
-		padding: 0 var(--space-sm);
+		min-height: 44px;
+		padding: 0 var(--space-md);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
 		background: color-mix(in srgb, var(--color-text), transparent 90%);
 		color: var(--color-text);
 		font: inherit;
-		font-size: var(--font-size-xs);
+		font-size: var(--font-size-sm);
 		cursor: pointer;
 	}
 

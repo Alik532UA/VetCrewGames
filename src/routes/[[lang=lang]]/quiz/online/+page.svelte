@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { withoutRoom } from '$lib/utils/roomUrl';
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
 	import { page, updated } from '$app/state';
-	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
@@ -19,6 +19,7 @@
 	import { roomPlace } from '$lib/controllers/roomPlace';
 	import { DEV_TIME_FACTOR, gamesToConfig } from '$lib/config/quizOnline';
 	import CreateWindow from '$lib/components/online/CreateWindow.svelte';
+	import RoomDoor from '$lib/components/online/RoomDoor.svelte';
 	import NetLost from '$lib/components/pairs/NetLost.svelte';
 	import QuizLobby from '$lib/components/quiz/QuizLobby.svelte';
 	import QuizRoom from '$lib/components/quiz/QuizRoom.svelte';
@@ -121,7 +122,23 @@
 	});
 </script>
 
-<div class="quiz-online" class:quiz-online--playing={match !== null && match.status !== 'lobby'}>
+<!--
+	ЛОБІ РОСТЕ ДО ЕКРАНА ТИМ САМИМ МАСШТАБОМ, ЩО Й ІГРИ (прохання автора 2026-09-27:
+	«масштабування не пропорційне»). Лобі щільне: три стовпці на 1120px, і кегель, що росте
+	з екраном (`.fill`), на 1600×800 вилазив за низ, а ім'я «Рожевий Фламінго» рвалося
+	посеред слова. Один `zoom` на весь стовпець росте рівно настільки, наскільки є місце
+	вшир і ввисоту, і лишає лобі його власні пропорції й пороги стовпців.
+
+	Лише в лобі. Вікна «хто зможе зайти» й «вас запросили» та підкладка очікування в партії
+	вже ростуть власною одиницею, і масштаб поверх них збільшив би їх удруге. І лише вгору
+	(`'grow'`): на телефоні лобі — сторінка з прокруткою, і стиснуте до 0,75 воно лишалося
+	з прокруткою, тільки дрібнішою.
+-->
+<div
+	class="quiz-online"
+	class:quiz-online--playing={match !== null && match.status !== 'lobby'}
+	use:fitToViewport={match?.status === 'lobby' && 'grow'}
+>
 	<!-- Нова збірка на сервері видна й без відмови: опитування версії (`updated`) каже
 	     про неї раніше, ніж перша ж спроба зайти впаде на відсутньому шматку. Але не
 	     посеред партії (`reloadBanner`): там оновлення забрало б саму партію. -->
@@ -159,7 +176,7 @@
 		/>
 	{:else if !match}
 		<!-- Двері без кімнати: створюємо ту, яку попросили, або йдемо на хаб (`roomPolicies`). -->
-		<p class="online-door" role="status">{@html formatFont(t('online.opening'))}</p>
+		<RoomDoor />
 	{:else if match.status === 'lobby'}
 		<!--
 			Лобі вікторини — спільне лобі ПЛЮС набір ігор і швидкість кімнати.
@@ -259,14 +276,5 @@
 	 */
 	.quiz-online--playing {
 		max-width: var(--measure-habitat-wide);
-	}
-
-	/* Рядок стану дверей стоїть просто на фотографії тла — тому на власній панелі. */
-	.online-door {
-		margin: 0;
-		padding: var(--space-sm) var(--space-md);
-		border-radius: var(--radius-md);
-		background: var(--color-bg-panel);
-		color: var(--color-text-on-panel);
 	}
 </style>

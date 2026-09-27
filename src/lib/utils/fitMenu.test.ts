@@ -116,4 +116,41 @@ describe('fitMenu', () => {
 
 		expect(menu.style.top).toBe('233px');
 	});
+
+	/**
+	 * ПАНЕЛЬ РОСТЕ РАЗОМ ІЗ КНОПКОЮ (прохання автора 2026-09-27: «масштабування не
+	 * пропорційне»). У `<body>` вона не успадковує ні `zoom` сторінки, ні одиниці `.fill`,
+	 * тож бере обидва з кнопки сама. Числа підібрані точними: 24px проти кореневих 16 — це
+	 * 1,5, і `zoom` предків 1,25 — разом 1,875 без хвоста після коми.
+	 */
+	it('під збільшеною кнопкою панель має той самий масштаб, а координати — у своїх пікселях', () => {
+		document.documentElement.style.fontSize = '16px';
+		const fill = document.createElement('div');
+		fill.className = 'fill';
+		fill.style.fontSize = '24px';
+		const menu = document.createElement('div');
+		const button = anchorAt({ left: 480, bottom: 227, width: 352 });
+		Object.defineProperty(button, 'currentCSSZoom', { value: 1.25 });
+		fill.append(button, menu);
+		document.body.appendChild(fill);
+
+		const stop = fitMenu(menu, button);
+
+		expect(menu.style.getPropertyValue('zoom')).toBe('1.875');
+		// Помножене назад на 1,875 — рівно координати кнопки, на 6 власних пікселів нижче.
+		expect(menu.style.left).toBe('256px');
+		expect(menu.style.top).toBe('127.07px');
+		expect(menu.style.getPropertyValue('--menu-least')).toBe('187.73px');
+		stop();
+		document.documentElement.style.fontSize = '';
+	});
+
+	it('поза збільшеним інтерфейсом масштабу немає зовсім — навіть порожнього рядка з одиницею', () => {
+		const { menu, button } = card();
+
+		const stop = fitMenu(menu, button);
+
+		expect(menu.style.getPropertyValue('zoom')).toBe('');
+		stop();
+	});
 });

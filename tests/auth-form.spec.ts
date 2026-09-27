@@ -47,9 +47,14 @@ import { reduceMotion, settlePage } from './support/settle';
  * px — лишиться тією самою й почне різати рядки.
  *
  * Тому перевірка тримає ОБИДВІ межі й виражає намір, а не магічне число: не
- * вужче за канонні 440 і рівно `32rem` від чинного кореневого кегля.
+ * вужче за канонні 440 і рівно 32 ОДИНИЦІ сторінки.
+ *
+ * Одиниця — `--fill-u`, кегель `.account-page` (2026-09-27, прохання автора «95%
+ * порожнє»): на телефоні вона дорівнює `rem`, тобто це ті самі 32rem і 512px, а на
+ * великому екрані картка росте разом зі своїм текстом. Міряється на двох вікнах:
+ * число в px могло б збігтися з одним із них, але не з обома.
  */
-const CARD_REM = 32;
+const CARD_UNITS = 32;
 const CANON_MIN_WIDTH = 440;
 
 test.beforeEach(async ({ page }) => {
@@ -130,32 +135,38 @@ test('поля названі для менеджера паролів (§ 5)', 
 	);
 });
 
-test('ширина картки — 32rem, і не вужче за канонні 440px (§ 2)', async ({ page }) => {
-	await page.setViewportSize({ width: 1280, height: 800 });
-	await settlePage(page);
+test('ширина картки — 32 одиниці сторінки, і не вужче за канонні 440px (§ 2)', async ({ page }) => {
+	for (const viewport of [
+		{ width: 1280, height: 800 },
+		{ width: 1600, height: 800 }
+	]) {
+		await page.setViewportSize(viewport);
+		await settlePage(page);
 
-	const box = await page.getByTestId('auth-panel').boundingBox();
-	expect(box).not.toBeNull();
+		const box = await page.getByTestId('auth-panel').boundingBox();
+		expect(box).not.toBeNull();
 
-	const root = await page.evaluate(() =>
-		parseFloat(getComputedStyle(document.documentElement).fontSize)
-	);
-	const width = Math.round(box!.width);
+		const unit = await page.evaluate(() =>
+			parseFloat(getComputedStyle(document.querySelector('.account-page')!).fontSize)
+		);
+		const width = Math.round(box!.width);
 
-	expect(
-		width,
-		`картка ${width}px — канон § 2 стереже саме ВУЗЬКУ картку («типова скарга — завузький контейнер»)`
-	).toBeGreaterThanOrEqual(CANON_MIN_WIDTH);
+		expect(
+			width,
+			`картка ${width}px — канон § 2 стереже саме ВУЗЬКУ картку («типова скарга — завузький контейнер»)`
+		).toBeGreaterThanOrEqual(CANON_MIN_WIDTH);
 
-	/*
-	 * Стеля виражена в rem, а не числом: інакше перехід на px пройшов би повз
-	 * перевірку, лишивши те саме число й забравши масштабування під кегль людини.
-	 */
-	expect(
-		width,
-		`картка ${width}px при кореневому кеглі ${root}px — це не ${CARD_REM}rem. ` +
-			'Або змінили ширину, або перевели її з rem у px; друге ламає масштабування до 200%.'
-	).toBe(Math.round(CARD_REM * root));
+		/*
+		 * Стеля виражена в одиницях, а не числом: інакше перехід на px пройшов би повз
+		 * перевірку, лишивши те саме число й забравши масштабування під кегль людини.
+		 */
+		expect(
+			width,
+			`картка ${width}px при одиниці сторінки ${unit}px на ${viewport.width}×${viewport.height} — ` +
+				`це не ${CARD_UNITS} одиниці. Або змінили ширину, або перевели її в px; друге ламає ` +
+				'масштабування до 200%.'
+		).toBe(Math.round(CARD_UNITS * unit));
+	}
 });
 
 /**

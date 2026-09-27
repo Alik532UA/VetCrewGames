@@ -402,7 +402,7 @@
 	const canSave = $derived(name.trim().length > 0 && handleOk && !account.busy);
 </script>
 
-<div class="account-page">
+<div class="account-page fill">
 	{#if account.state === 'anonymous'}
 		<AuthForm
 			{text}
@@ -641,15 +641,25 @@
 		--account-line: color-mix(in srgb, var(--color-text), transparent 72%);
 		--account-gap: var(--space-sm);
 		--account-pad: var(--space-md);
-		/* 48px, а не 44: сенсорний мінімум лишається, але поле перестає бути смужкою. */
-		--account-control: 48px;
+		/*
+		 * 48px, а не 44: сенсорний мінімум лишається, але поле перестає бути смужкою. Далі —
+		 * з кеглем сторінки (`.fill`): на великому екрані 48px під 28px тексту — знову смужка.
+		 */
+		--account-control: max(48px, calc(var(--fill-u) * 2.75));
 
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		flex: 1;
 		width: 95%;
-		max-width: 32rem;
+		/*
+		 * 32 ОДИНИЦІ, а не 32rem (прохання автора 2026-09-27): доти форма входу займала на
+		 * ноутбуці 21% екрана, бо і кегель, і ширина стояли на 16px. Тепер обидва від однієї
+		 * одиниці (`.fill`): на телефоні це ті самі 32rem, тобто 512px, на 1280×800 — 714px,
+		 * і картка на великому екрані — та сама картка, лише більша. Тримає
+		 * `tests/auth-form.spec.ts` (AUTH-FORM § 2).
+		 */
+		max-width: calc(var(--fill-u) * 32);
 		padding: 3svh 0 var(--space-lg);
 		gap: var(--space-md);
 		margin: 0 auto;

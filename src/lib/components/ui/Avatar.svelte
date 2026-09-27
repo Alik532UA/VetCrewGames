@@ -46,7 +46,13 @@
 	interface Props {
 		/** Рядок `значок:колір`. Невідоме чи порожнє — типовий аватар. */
 		avatar: string | null | undefined;
-		/** Сторона плитки в пікселях. Значок займає дві третини. */
+		/**
+		 * Сторона плитки в пікселях. Значок займає дві третини.
+		 *
+		 * Той, хто малює плитку всередині блоку, що росте з екраном, перебиває її змінною
+		 * `--avatar-box` на предку (`calc(var(--fill-u) * N)`): пропом цього не зробити, бо
+		 * число в пропі не знає про екран.
+		 */
 		size?: number;
 		/**
 		 * Малювати ТИПОВИЙ аватар теж. Типово — ні, і це головне правило цього
@@ -89,10 +95,9 @@
 	const look = $derived(parseAvatar(avatar));
 	const Icon = $derived(ICONS[look.icon]);
 	/*
-	 * Значок міряється в тих самих пікселях, що плитка, а не у відсотках:
-	 * `lucide-svelte` малює `width`/`height` числом в атрибутах, тобто
-	 * відносної одиниці там не буває. Дві третини — щоб навколо лишалося поле:
-	 * значок урівень із краєм читається як обрізаний.
+	 * Значок — дві третини плитки, щоб навколо лишалося поле: значок урівень із краєм
+	 * читається як обрізаний. `lucide-svelte` пише розмір числом в атрибутах; CSS нижче
+	 * перебиває їх тією самою часткою від `--avatar-box`, коли плитку збільшив предок.
 	 */
 	const glyph = $derived(Math.round(size * 0.66));
 
@@ -101,12 +106,7 @@
 </script>
 
 {#if visible}
-	<span
-		class="avatar avatar--{look.color}"
-		style:width="{size}px"
-		style:height="{size}px"
-		aria-hidden="true"
-	>
+	<span class="avatar avatar--{look.color}" style:--avatar-size="{size}px" aria-hidden="true">
 		<Icon size={glyph} strokeWidth={2.25} />
 	</span>
 {/if}
@@ -121,6 +121,8 @@
 	 * кольором самої плитки.
 	 */
 	.avatar {
+		width: var(--avatar-box, var(--avatar-size));
+		height: var(--avatar-box, var(--avatar-size));
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -129,6 +131,11 @@
 		border: 1px solid color-mix(in srgb, var(--color-text), transparent 78%);
 		color: var(--color-avatar-ink);
 		vertical-align: text-bottom;
+	}
+
+	.avatar > :global(svg) {
+		width: calc(var(--avatar-box, var(--avatar-size)) * 0.66);
+		height: calc(var(--avatar-box, var(--avatar-size)) * 0.66);
 	}
 
 	.avatar--red {

@@ -26,7 +26,12 @@
 </script>
 
 <!-- `assertive`, бо це не інформація, а поломка того, що людина зараз робила. -->
-<div class="error-fallback" role="alert" aria-live="assertive" data-testid="render-error-message">
+<div
+	class="error-fallback fill fill-window"
+	role="alert"
+	aria-live="assertive"
+	data-testid="render-error-message"
+>
 	<h2>{@html formatFont(formatPlain(t('error.title')))}</h2>
 	<p>{@html formatFont(formatPlain(t('error.message')))}</p>
 	<div class="error-fallback__actions">
@@ -47,6 +52,10 @@
 	 * грі — намальований осінній ліс. Світлий текст на світлих кронах читався
 	 * гірше за все інше на екрані, і саме в той момент, коли людині найбільше
 	 * потрібно зрозуміти, що сталося й куди тиснути.
+	 *
+	 * Розмір — `.fill .fill-window` (global.css), а не `max-width: 600px`: поломка — саме
+	 * те, що людина мусить побачити, а не рядок посеред порожнього екрана (прохання автора
+	 * 2026-09-27).
 	 */
 	.error-fallback {
 		display: flex;
@@ -60,7 +69,6 @@
 		background: var(--color-bg-panel);
 		box-shadow: 0 8px 32px rgb(0 0 0 / 35%);
 		text-align: center;
-		max-width: 600px;
 		margin: var(--space-xl) auto;
 	}
 

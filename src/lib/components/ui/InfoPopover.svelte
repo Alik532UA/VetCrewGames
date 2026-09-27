@@ -154,8 +154,16 @@
 		display: none;
 		flex-direction: column;
 		gap: var(--space-xs);
-		width: min(22rem, 78vw);
-		max-height: min(60vh, 26rem);
+		/*
+		 * `em`, а не `rem` (2026-09-27): коробка росте з кеглем того місця, де стоїть підказка.
+		 * На сторінці акаунта кегель тепер росте з екраном (`.fill`), а коробка в `rem` лишалася
+		 * телефонною: текст у ній не вміщався, панель прокручувалася, і axe дав
+		 * `scrollable-region-focusable` (`tests/a11y-overlays.spec.ts`). Стеля висоти — 80vh, а
+		 * не 60: на 1280×720 підказці треба 488px, а 60vh давали 432. На телефоні `em` дорівнює
+		 * `rem`, а стелю задають ті самі 26em, тобто там не змінюється нічого.
+		 */
+		width: min(22em, 78vw);
+		max-height: min(80vh, 26em);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: var(--space-sm);

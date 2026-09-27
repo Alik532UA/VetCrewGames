@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fitToViewport } from '$lib/utils/fitToViewport';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page, updated } from '$app/state';
@@ -56,7 +57,15 @@
 	});
 </script>
 
-<div class="online-hub">
+<!--
+	ХАБ РОСТЕ ДО ЕКРАНА ОДНИМ МАСШТАБОМ, як лобі кімнат (прохання автора 2026-09-27:
+	«масштабування не пропорційне»). Під шапкою, що росте з екраном, хаб на 16px займав
+	верхню половину екрана дрібним текстом. Лише вгору (`'grow'`): на телефоні хаб —
+	сторінка з прокруткою, а не екран гри, і стиснутий він лише дрібнішав би. Вікно «хто
+	зможе зайти» не масштабується: воно росте власною одиницею (`.fill`), і масштаб поверх
+	нього збільшив би його вдруге.
+-->
+<div class="online-hub" use:fitToViewport={!hub.creating && 'grow'}>
 	{#if hub.creating}
 		<div class="online-hub__window">
 			<CreateWindow

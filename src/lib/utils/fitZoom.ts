@@ -25,6 +25,20 @@
 /** Далі зменшувати нема сенсу: сенсорні цілі стають меншими за палець. */
 export const MIN_ZOOM = 0.75;
 
+/**
+ * СТЕЛЯ РОСТУ (прохання автора 2026-09-27: «95% порожнє, а ми мілким елементом пишемо»).
+ *
+ * Доти масштаб ішов лише вниз: гра, що на ноутбуці займала шосту частину екрана, так і
+ * лишалася маленькою посеред лісу. Тепер той самий один коефіцієнт росте, доки вміст не
+ * заповнить висоту чи ширину.
+ *
+ * Стеля — та сама, що в одиниці решти застосунку (`--fill-u` у global.css: від 1 до
+ * 2,125 rem), бо друге прохання автора було саме про це: «масштабування не пропорційне».
+ * Зі стелею 1,6 на 1920×1080 шапка росла вдвічі, а вибір режиму «Де живем?» лише в 1,6
+ * раза й займав 20% екрана.
+ */
+export const MAX_ZOOM = 2.125;
+
 /** Крок масштабу. Дрібніше око не бачить, а цикл на дрібнішому не спиняється. */
 export const ZOOM_STEP = 0.02;
 
@@ -49,21 +63,39 @@ export const SLACK_PX = 2;
  * `current` потрібен, щоб відповісти «нічого не міняти»: функція повертає його ж,
  * коли різниця в межах мертвої зони. Саме це повернене значення й читає той, хто
  * викликав, — і не пише в стиль нічого.
+ *
+ * `max` — наскільки дозволено РОСТИ. Типово 1, тобто рівно те, що було: лише вниз. Той,
+ * хто кличе, дає більше, коли знає, що сторінці є куди рости й ушир (`fitToViewport`).
+ *
+ * `min` — наскільки дозволено СТИСКАТИСЯ. Типово дно для пальця (`MIN_ZOOM`); 1 — не
+ * стискатися зовсім: так масштабують сторінки, яким на телефоні природно прокручуватися
+ * (лобі, хаб), а не зменшуватися.
  */
-export function fitZoom(needed: number, available: number, current: number): number {
+export function fitZoom(
+	needed: number,
+	available: number,
+	current: number,
+	max = 1,
+	min = MIN_ZOOM
+): number {
 	if (needed <= 0 || available <= 0) return 1;
 
-	const raw = needed > available + SLACK_PX ? (available - SLACK_PX) / needed : 1;
+	const ceiling = Math.max(1, max);
+	let raw = needed > available + SLACK_PX ? (available - SLACK_PX) / needed : 1;
+	// Ріст — лише коли його дозволили і вміст справді нижчий за вікно.
+	if (ceiling > 1 && needed < available - SLACK_PX) {
+		raw = Math.min(ceiling, (available - SLACK_PX) / needed);
+	}
 
 	/*
 	 * Поточний масштаб лишається, поки він РОБОЧИЙ: сторінка при ньому вміщається,
-	 * і вільного місця не набралося на два кроки. Саме ця умова й глушить дрижання
-	 * — дрібне гуляння висоти жодну з її половин не перевертає.
+	 * не вищий за стелю, і вільного місця не набралося на два кроки. Саме ця умова й
+	 * глушить дрижання — дрібне гуляння висоти жодну з її частин не перевертає.
 	 */
 	const fits = needed * current <= available - SLACK_PX;
-	if (fits && raw - current < GROW_BAND) return current;
+	if (fits && current <= ceiling && raw - current < GROW_BAND) return current;
 
 	// Округлення ВНИЗ: 0.951 → 0.94, а не 0.96. Догори могло б не вміститися.
-	const stepped = Math.min(1, Math.max(MIN_ZOOM, Math.floor(raw / ZOOM_STEP) * ZOOM_STEP));
+	const stepped = Math.min(ceiling, Math.max(min, Math.floor(raw / ZOOM_STEP) * ZOOM_STEP));
 	return Number(stepped.toFixed(4));
 }

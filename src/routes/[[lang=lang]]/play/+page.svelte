@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { CircleQuestionMark, LayoutGrid } from 'lucide-svelte';
 	import { page } from '$app/state';
 	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
@@ -17,21 +18,24 @@
 	onMount(() => settings.claimHeader('menu.play'));
 </script>
 
-<div class="menu-page">
-	<nav class="menu-grid">
+<div class="menu-page fill">
+	<!-- Плитки зі значком — той самий вигляд, що в головному меню (`.menu-tiles`). -->
+	<nav class="menu-tiles">
 		<a
 			href={langPath(lang, 'quiz/play')}
-			class="menu-btn menu-btn--game anim-stagger-1"
+			class="menu-btn menu-btn--game menu-tile anim-stagger-1"
 			data-testid="play-quiz-link"
 		>
-			{@html formatFont(t('menu.quiz'))}
+			<CircleQuestionMark class="menu-tile__icon" />
+			<span>{@html formatFont(t('menu.quiz'))}</span>
 		</a>
 		<a
 			href={langPath(lang, 'game-memory')}
-			class="menu-btn menu-btn--game anim-stagger-2"
+			class="menu-btn menu-btn--game menu-tile anim-stagger-2"
 			data-testid="play-pairs-link"
 		>
-			{@html formatFont(t('menu.game.memory'))}
+			<LayoutGrid class="menu-tile__icon" />
+			<span>{@html formatFont(t('menu.game.memory'))}</span>
 		</a>
 	</nav>
 </div>

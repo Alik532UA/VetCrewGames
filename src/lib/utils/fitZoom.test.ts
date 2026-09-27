@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { fitZoom, MIN_ZOOM, SLACK_PX, ZOOM_STEP } from './fitZoom';
+import { fitZoom, GROW_BAND, MAX_ZOOM, MIN_ZOOM, SLACK_PX, ZOOM_STEP } from './fitZoom';
 
 /**
  * Арифметика проти дрижання.
@@ -78,5 +78,84 @@ describe('масштаб під вікно', () => {
 	it('нульові виміри не дають NaN', () => {
 		expect(fitZoom(0, 500, 1)).toBe(1);
 		expect(fitZoom(500, 0, 1)).toBe(1);
+	});
+});
+
+/**
+ * РІСТ (прохання автора 2026-09-27: «95% порожнє, а ми мілким елементом пишемо»).
+ *
+ * Масштаб росте лише тоді, коли той, хто кличе, дав стелю вище за одиницю: без неї все
+ * рівно як вище, тобто лише вниз. Ті самі три властивості, що тримають стиснення, мусять
+ * тримати й ріст: нерухома точка, мертва зона, округлення в бік «вміщається».
+ */
+describe('масштаб росте до вікна', () => {
+	it('без стелі не росте: типово — лише вниз, як було', () => {
+		expect(fitZoom(300, 700, 1)).toBe(1);
+	});
+
+	it('зі стелею росте, доки вміст не заповнить висоту, і ні кроком далі', () => {
+		const zoom = fitZoom(400, 710, 1, 2);
+		expect(zoom).toBeGreaterThan(1);
+		expect(400 * zoom).toBeLessThanOrEqual(710 - SLACK_PX);
+		expect(400 * (zoom + ZOOM_STEP)).toBeGreaterThan(710 - SLACK_PX);
+	});
+
+	/** Стеля не мусить лежати на сітці кроку (2,125 — стеля одиниці), а масштаб — мусить. */
+	it('упирається в стелю — з точністю до кроку', () => {
+		expect(fitZoom(100, 1000, 1, 1.5)).toBe(1.5);
+		const top = fitZoom(100, 1000, 1, MAX_ZOOM);
+		expect(top).toBeLessThanOrEqual(MAX_ZOOM);
+		expect(top).toBeGreaterThan(MAX_ZOOM - ZOOM_STEP);
+	});
+
+	it('вирослий масштаб — нерухома точка', () => {
+		const grown = fitZoom(400, 710, 1, 2);
+		expect(fitZoom(400, 710, grown, 2)).toBe(grown);
+	});
+
+	it('дрібне гуляння висоти вирослий масштаб не рухає', () => {
+		const grown = fitZoom(400, 710, 1, 2);
+		for (const wobble of [-2, -1, 1, 3, 6]) {
+			expect(fitZoom(400, 710 + wobble, grown, 2), `гуляння ${wobble}px`).toBe(grown);
+		}
+	});
+
+	/** Розтягується лише з запасом у два кроки — асиметрія та сама, що й при стисненні. */
+	it('запасу менше за два кроки — не росте', () => {
+		const needed = 400;
+		const available = Math.floor(needed * (1 + GROW_BAND / 2)) + SLACK_PX;
+		expect(fitZoom(needed, available, 1, 2)).toBe(1);
+	});
+
+	it('вирослий масштаб, що перестав уміщатися, стискається одразу', () => {
+		const grown = fitZoom(400, 710, 1, 2);
+		const shrunk = fitZoom(400, 600, grown, 2);
+		expect(shrunk).toBeLessThan(grown);
+		expect(400 * shrunk).toBeLessThanOrEqual(600 - SLACK_PX);
+	});
+
+	/** Вікно звузилося, і місця вшир поменшало: стеля опускає масштаб, навіть коли висоти вдосталь. */
+	it('стеля, нижча за поточний масштаб, його опускає', () => {
+		expect(fitZoom(400, 710, 1.76, 1.3)).toBe(1.3);
+	});
+});
+
+/**
+ * ДНО СТИСНЕННЯ. Сторінки, яким на телефоні природно прокручуватися (лобі, хаб), кличуть
+ * з дном 1: стиснуте до 0,75 лобі вікторини на 390×844 лишалося з прокруткою, тільки
+ * дрібнішою.
+ */
+describe('масштаб, що лише росте', () => {
+	it('з дном 1 не стискається, хоч би як бракувало місця', () => {
+		expect(fitZoom(1000, 500, 1, 1, 1)).toBe(1);
+		expect(fitZoom(1000, 500, 1, 2, 1)).toBe(1);
+	});
+
+	it('з дном 1 росте так само, як без нього', () => {
+		expect(fitZoom(400, 710, 1, 2, 1)).toBe(fitZoom(400, 710, 1, 2));
+	});
+
+	it('вирослий, що перестав уміщатися, опускається рівно до 1, а не нижче', () => {
+		expect(fitZoom(1000, 500, 1.5, 2, 1)).toBe(1);
 	});
 });

@@ -397,6 +397,12 @@ test('стрілки вбік не забирають каретку в полі
  *
  * Сама механіка переїзду (координати, фокус, прибирання) — у
  * `src/lib/utils/fitMenu.test.ts`, разом із заміром із браузера.
+ *
+ * Проміжок міряється в пікселях САМОЇ панелі, а збіг лівих меж — з точністю до
+ * пів пікселя (2026-09-27). Хаб тепер росте до екрана одним `zoom`, і панель бере
+ * той самий масштаб, що й кнопка: 6px проміжку стають 6 × масштаб на екрані, а межа
+ * кнопки — дробовим числом. Округлення тут давало `-0`, і `toBe(0)` на ньому падало,
+ * хоч панель стояла рівно.
  */
 test('панель живе в body і стоїть під кнопкою', async ({ page }) => {
 	await openMenu(page);
@@ -406,11 +412,12 @@ test('панель живе в body і стоїть під кнопкою', asyn
 		const button = document.querySelector<HTMLElement>(`[data-testid="${scope}-select"]`)!;
 		const box = menu.getBoundingClientRect();
 		const trigger = button.getBoundingClientRect();
+		const zoom = (menu as HTMLElement & { currentCSSZoom?: number }).currentCSSZoom ?? 1;
 		return {
 			parent: menu.parentElement?.tagName,
 			position: getComputedStyle(menu).position,
-			gap: Math.round(box.top - trigger.bottom),
-			shift: Math.round(box.left - trigger.left),
+			gap: Math.round((box.top - trigger.bottom) / zoom),
+			shift: Math.abs(box.left - trigger.left),
 			atLeastAsWide: box.width >= trigger.width - 1
 		};
 	}, SCOPE);
@@ -419,7 +426,7 @@ test('панель живе в body і стоїть під кнопкою', asyn
 	expect(place.position, 'у `<body>` немає кнопки, від якої відкладати `absolute`').toBe('fixed');
 	// 6px — той самий проміжок, що доти стояв у CSS як `calc(100% + 6px)`.
 	expect(place.gap, 'панель мусить стояти саме під кнопкою').toBe(6);
-	expect(place.shift, 'ліві межі панелі й кнопки збігаються').toBe(0);
+	expect(place.shift, 'ліві межі панелі й кнопки збігаються').toBeLessThan(0.5);
 	expect(place.atLeastAsWide, 'панель не вужча за кнопку').toBe(true);
 });
 

@@ -7,7 +7,7 @@
 </script>
 
 <div class="error-page">
-	<div class="error-card">
+	<div class="error-card fill fill-window">
 		<h1 class="error-status">{page.status}</h1>
 		<h2 class="error-title">{@html formatFont(t('error.title'))}</h2>
 		<!--
@@ -47,11 +47,20 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-height: 100dvh;
+		/*
+		 * Решта висоти під шапкою, а не `min-height: 100dvh`: сторінка лежить у тому самому
+		 * стовпці під шапкою, що й решта, і `100dvh` давало прокрутку рівно на висоту шапки
+		 * (заміряно 800 проти 718 на 1600×800).
+		 */
+		flex: 1;
 		padding: var(--space-md);
 		background-color: var(--color-bg);
 	}
 
+	/*
+	 * Розмір — `.fill .fill-window` (global.css): доти тут стояло `max-width: 400px`, і на
+	 * ноутбуці картка помилки займала 11% екрана (прохання автора 2026-09-27).
+	 */
 	.error-card {
 		background: var(--color-bg-surface);
 		border-radius: var(--radius-lg);
@@ -61,13 +70,11 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		max-width: 400px;
-		width: 100%;
 		border: 2px solid var(--color-error);
 	}
 
 	.error-status {
-		font-size: 5rem;
+		font-size: calc(var(--fill-u) * 5);
 		font-weight: 900;
 		color: var(--color-error);
 		margin: 0;

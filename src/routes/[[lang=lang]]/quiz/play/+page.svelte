@@ -26,6 +26,6 @@
 	onMount(() => settings.claimHeader('menu.quiz', () => goto(langPath(lang, 'play'))));
 </script>
 
-<div class="menu-page">
+<div class="menu-page fill">
 	<FlatGameMenu {lang} games={QUIZ_GAMES} />
 </div>

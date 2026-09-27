@@ -128,15 +128,16 @@
 		flex: 1;
 		width: 95%;
 		max-width: var(--measure-myths);
-		padding: 10svh 0 var(--space-lg);
+		/*
+		 * Поле зверху — 4svh, як у решти ігор, а не 10–15svh (прохання автора 2026-09-27).
+		 * Велике поле колись опускало картку, щоб вона не липла до шапки; тепер картка сама
+		 * росте на всю висоту (`fitToViewport`), і ці 120px порожнечі лише забирали в неї
+		 * місце: на ноутбуці гра займала 29% екрана.
+		 */
+		padding: 4svh 0 var(--space-lg);
 		gap: clamp(var(--space-xs), 2svh, var(--space-lg));
 		margin: 0 auto;
 		box-sizing: border-box;
-	}
-	@media (min-width: 769px) {
-		.game-page {
-			padding: 15svh 0 var(--space-2xl);
-		}
 	}
 
 	.myth-card-wrapper {

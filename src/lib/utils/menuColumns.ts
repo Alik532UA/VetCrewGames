@@ -190,6 +190,32 @@ function scrollParents(from: HTMLElement | null): EventTarget[] {
 }
 
 /**
+ * МАСШТАБ КНОПКИ, під якою стоїть панель (прохання автора 2026-09-27: «масштабування не
+ * пропорційне»). Панель живе в `<body>` і від кнопки не успадковує нічого: ні `zoom` сторінки
+ * (`fitToViewport` у хабі «Грати онлайн»), ні одиниці `.fill` (вікно «вас запросили»). Без
+ * цього на 1600×800 кнопка росла в 1,4 раза, а панель під нею лишалася телефонною.
+ *
+ * Масштаб — добуток двох чинників: `currentCSSZoom` кнопки (усі `zoom` її предків) і кегель
+ * найближчого `.fill` відносно кореня. Панель отримує той самий `zoom`, а її координати
+ * діляться на нього: у Chrome `left` і `top` фіксованого елемента з власним `zoom`
+ * множаться на цей `zoom` (заміряно: `left: 100px` при `zoom: 2` малюється на 200).
+ */
+function anchorScale(anchor: HTMLElement | null): number {
+	if (!anchor) return 1;
+	const zoom = (anchor as HTMLElement & { currentCSSZoom?: number }).currentCSSZoom ?? 1;
+	const fill = anchor.closest<HTMLElement>('.fill');
+	const unit = fill
+		? parseFloat(getComputedStyle(fill).fontSize) /
+			parseFloat(getComputedStyle(document.documentElement).fontSize)
+		: 1;
+	const scale = zoom * unit;
+	return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
+/** Довжина з двома знаками: ціле число пікселів під дробовим масштабом зсувало б панель. */
+const px = (value: number) => `${Math.round(value * 100) / 100}px`;
+
+/**
  * Дія: сказати панелі, СКІЛЬКИ місця в неї є — праворуч і вниз.
  *
  * ## Що було не так
@@ -273,11 +299,13 @@ export function fitMenu(node: HTMLElement, anchor: HTMLElement | null) {
 		 * Кнопка задає ліву межу, низ і НАЙМЕНШУ ширину: доти цим займався
 		 * `min-width: 100%`, тобто ширина коробки-предка, якої в `<body>` немає.
 		 */
+		const scale = anchorScale(anchor);
+		node.style.zoom = scale === 1 ? '' : String(scale);
 		const button = anchor?.getBoundingClientRect();
 		if (button) {
-			node.style.top = `${Math.round(button.bottom + STEP)}px`;
-			node.style.left = `${Math.round(button.left)}px`;
-			node.style.setProperty('--menu-least', `${Math.round(button.width)}px`);
+			node.style.top = px(button.bottom / scale + STEP);
+			node.style.left = px(button.left / scale);
+			node.style.setProperty('--menu-least', px(button.width / scale));
 		}
 
 		/*
@@ -296,8 +324,8 @@ export function fitMenu(node: HTMLElement, anchor: HTMLElement | null) {
 		 */
 		node.style.setProperty('--menu-room', '0px');
 		const box = node.getBoundingClientRect();
-		node.style.setProperty('--menu-room', `${Math.round(window.innerWidth - box.left - GUTTER)}px`);
-		node.style.setProperty('--menu-tall', `${Math.round(window.innerHeight - box.top - GUTTER)}px`);
+		node.style.setProperty('--menu-room', px((window.innerWidth - box.left - GUTTER) / scale));
+		node.style.setProperty('--menu-tall', px((window.innerHeight - box.top - GUTTER) / scale));
 	}
 
 	measure();

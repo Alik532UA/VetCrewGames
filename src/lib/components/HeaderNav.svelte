@@ -88,4 +88,13 @@
 	.placeholder {
 		visibility: hidden;
 	}
+
+	/*
+	 * «Назад» і «додому» на крок більші за решту значків шапки: це ті самі 22px, що стояли
+	 * в `size`, тільки від одиниці (спільне правило `.header-btn > svg` дає 20).
+	 */
+	.btn-wrap :global(.header-btn > svg) {
+		width: calc(var(--fill-u) * 1.375);
+		height: calc(var(--fill-u) * 1.375);
+	}
 </style>

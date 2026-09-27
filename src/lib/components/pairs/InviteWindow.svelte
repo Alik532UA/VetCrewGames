@@ -46,7 +46,7 @@
 	const mineTaken = $derived(avatar !== '' && taken.has(avatar));
 </script>
 
-<section class="invite" data-testid="room-invite-panel">
+<section class="invite fill fill-window" data-testid="room-invite-panel">
 	<h2 class="invite__title">
 		{@html formatFont(t('pairs.inviteTitle'))}
 		<b class="invite__code" data-testid="room-invite-code-value">{code}</b>
@@ -76,12 +76,14 @@
 </section>
 
 <style>
-	/* Та сама панель, що в блоків форми входу (`.gate__panel`), — одна ширина на телефон. */
+	/*
+	 * Розмір — `.fill-window` (global.css): доти тут стояло `min(26rem, 100%)`, і на
+	 * ноутбуці вікно займало 14% екрана (прохання автора 2026-09-27).
+	 */
 	.invite {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-sm);
-		width: min(26rem, 100%);
 		padding: var(--space-md);
 		border-radius: var(--radius-md);
 		background: var(--color-bg-panel);

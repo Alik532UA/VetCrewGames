@@ -30,7 +30,7 @@
 	const NAME = { quiz: 'menu.quiz', pairs: 'menu.game.memory' } as const;
 </script>
 
-<section class="create" data-testid="online-create-panel">
+<section class="create fill fill-window" data-testid="online-create-panel">
 	<h2 class="create__title">
 		{@html formatFont(t('online.createTitle'))}
 		<b data-testid="online-create-game-value">{@html formatFont(t(NAME[game]))}</b>
@@ -64,12 +64,15 @@
 </section>
 
 <style>
-	/* Та сама панель, що вікно «вас запросили» (`InviteWindow`), — одна ширина на телефон. */
+	/*
+	 * Та сама панель, що вікно «вас запросили» (`InviteWindow`). Розмір — `.fill-window`
+	 * (global.css): доти тут стояло `min(26rem, 100%)`, і на ноутбуці вікно займало 13%
+	 * екрана, а все довкола було порожнім (прохання автора 2026-09-27).
+	 */
 	.create {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-sm);
-		width: min(26rem, 100%);
 		padding: var(--space-md);
 		border-radius: var(--radius-md);
 		background: var(--color-bg-panel);

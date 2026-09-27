@@ -46,45 +46,52 @@
 		{@html formatFont(t('family.prompt'))}
 	</p>
 
-	{#key game.round.id}
-		<div class="cards-grid" in:fade={{ duration: 300 }}>
-			{#each game.round.cards as animal (animal.id)}
-				{@const isAnswer = animal.id === game.round.oddAnimal.id}
-				{@const isChosen = game.chosen?.id === animal.id}
-				<button
-					type="button"
-					class="animal-card"
-					class:animal-card--answer={game.answered && isAnswer}
-					class:animal-card--wrong={game.answered && isChosen && !isAnswer}
-					class:animal-card--dimmed={game.answered && !isAnswer && !isChosen}
-					disabled={game.answered}
-					onclick={() => game.choose(animal)}
-					data-testid="family-animal-btn-{animal.id}"
-				>
-					<div class="animal-card__image-wrap">
-						<img
-							src={animal.image}
-							alt={td(animal.nameKey)}
-							class="animal-card__image"
-							loading="lazy"
-							width="300"
-							height="400"
-						/>
-						{#if game.answered && (isAnswer || isChosen)}
-							<div class="animal-card__mark" in:fade={{ duration: 200 }}>
-								{#if isAnswer}
-									<CheckCircle2 size={28} aria-hidden="true" />
-								{:else}
-									<XCircle size={28} aria-hidden="true" />
-								{/if}
-							</div>
-						{/if}
-					</div>
-					<span class="animal-card__name">{@html formatFont(td(animal.nameKey))}</span>
-				</button>
-			{/each}
-		</div>
-	{/key}
+	<!--
+		ОБГОРТКА — КОНТЕЙНЕР для порогу стовпців нижче (`.cards-shell`). Власного кореня в дошки
+		немає, а сітці потрібна ширина МІСЦЯ: та сама дошка стоїть і на сторінці гри, і в кімнаті
+		вікторини.
+	-->
+	<div class="cards-shell">
+		{#key game.round.id}
+			<div class="cards-grid" in:fade={{ duration: 300 }}>
+				{#each game.round.cards as animal (animal.id)}
+					{@const isAnswer = animal.id === game.round.oddAnimal.id}
+					{@const isChosen = game.chosen?.id === animal.id}
+					<button
+						type="button"
+						class="animal-card"
+						class:animal-card--answer={game.answered && isAnswer}
+						class:animal-card--wrong={game.answered && isChosen && !isAnswer}
+						class:animal-card--dimmed={game.answered && !isAnswer && !isChosen}
+						disabled={game.answered}
+						onclick={() => game.choose(animal)}
+						data-testid="family-animal-btn-{animal.id}"
+					>
+						<div class="animal-card__image-wrap">
+							<img
+								src={animal.image}
+								alt={td(animal.nameKey)}
+								class="animal-card__image"
+								loading="lazy"
+								width="300"
+								height="400"
+							/>
+							{#if game.answered && (isAnswer || isChosen)}
+								<div class="animal-card__mark" in:fade={{ duration: 200 }}>
+									{#if isAnswer}
+										<CheckCircle2 size={28} aria-hidden="true" />
+									{:else}
+										<XCircle size={28} aria-hidden="true" />
+									{/if}
+								</div>
+							{/if}
+						</div>
+						<span class="animal-card__name">{@html formatFont(td(animal.nameKey))}</span>
+					</button>
+				{/each}
+			</div>
+		{/key}
+	</div>
 
 	{#if game.answered}
 		<div class="result" use:revealScroll transition:slide={{ duration: 350 }}>
@@ -169,8 +176,29 @@
 			var(--columns) * (var(--card-image-h) * 3 / 4) + (var(--columns) - 1) * var(--space-md)
 		);
 	}
-	.cards-grid {
-		--columns: 4;
+	/*
+	 * ЧОТИРИ В РЯД — ЛИШЕ ТАМ, ДЕ Є ШИРИНА (2026-09-27, прохання автора «95% порожнє»).
+	 *
+	 * Доти тут стояло безумовне `--columns: 4`, і на телефоні чотири картки ставали в один
+	 * ряд по ~85px: заміряно на 390×844 — вміст закінчувався на 341px, а нижче було порожньо.
+	 * Умова загубилася 2026-08-24 (`4401312`), коли дошку виносили зі сторінки в компонент:
+	 * на сторінці ці правила стояли всередині `@media (min-width: 700px)`, а сюди приїхали без
+	 * обгортки й з зайвим відступом, який наступна правка вирівняла.
+	 *
+	 * `@container`, а не `@media`: дошка стоїть і на сторінці гри, і в кімнаті вікторини, тож
+	 * вирішує ширина місця (FLUID-SIZING § 7A). 37,5rem відтворює старий поріг: нижче 700px
+	 * вікна сторінка має 560px (два стовпці), від 700px — щонайменше 665px (чотири).
+	 */
+	.cards-shell {
+		container-type: inline-size;
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+	@container (min-width: 37.5rem) {
+		.cards-grid {
+			--columns: 4;
+		}
 	}
 	.result {
 		max-width: 620px;
