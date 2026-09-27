@@ -23,7 +23,8 @@ import { fnv1a } from './fnv';
  *    режими «Де живе», два міфи про одну тварину);
  *  - у КІМНАТІ питання не повторюється в наступних партіях, доки не поставлено всі
  *    питання цієї гри; тоді колода перемішується заново — нове коло;
- *  - раунди діляться між вибраними іграми ПОРІВНУ (±1), порядок випадковий.
+ *  - раунди діляться між вибраними іграми ПРОПОРЦІЙНО ПУЛУ, кожна — щонайменше раз
+ *    (прохання автора 2026-09-28, див. `proportionalGames`); порядок випадковий.
  *
  * ## Облік кімнати — у самому зерні, без нового поля в базі
  *
@@ -144,17 +145,48 @@ function deckFor(deck: number, game: string, cycle: number): QuizItem[] {
 	return shuffle(poolOf(game), seededRandom(mix(deck, gameKey(game), cycle)));
 }
 
-/** Раунди між вибраними іграми порівну (±1): хто дістане зайвий — випадково. */
-function balancedGames(games: readonly string[], rounds: number, random: () => number): string[] {
-	const each = Math.floor(rounds / games.length);
-	const lucky = new Set(shuffle(games, random).slice(0, rounds % games.length));
-	const list = games.flatMap((game) => Array<string>(each + (lucky.has(game) ? 1 : 0)).fill(game));
+/** Скільки раундів без повторів дає пул гри: у «Чисельності» раунд бере трійку. */
+const poolRounds = (game: string): number => poolOf(game).length / perRound(game);
+
+/**
+ * РАУНДИ МІЖ ВИБРАНИМИ ІГРАМИ ПРОПОРЦІЙНО ПУЛУ (прохання автора 2026-09-28: «рівномірно
+ * розподіл ігор, але в "Правда чи міф?" понад 100 питань, а в "Що їмо?" десь 10, і як
+ * наслідок "Що їмо?" часто повторюється → пропорційно, відштовхуючись від того, скільки
+ * запитань у цьому типі ігор»).
+ *
+ * Доти — порівну (±1): з усіма шістьма іграми «Що їмо?» діставала два раунди з дванадцяти,
+ * як і «Правда чи міф?» зі ста сімдесятьма питаннями, і вже в пʼятій партії кімнати
+ * починала повторюватися. Тепер кожна вибрана гра — ЩОНАЙМЕНШЕ раз (коли раундів не менше,
+ * ніж ігор: вибрав — побачиш), а решта раундів — за розміром пулу, найбільшими остачами;
+ * рівні остачі розводить випадковість. З усіма шістьма це 5 міфів, 2 «Кого більше?», 2 і 1
+ * «Де живем?», по одному «Що їмо?» й «Родині»: десять наборів їжі тепер — на десять партій.
+ */
+function proportionalGames(
+	games: readonly string[],
+	rounds: number,
+	random: () => number
+): string[] {
+	const least = rounds >= games.length ? 1 : 0;
+	const spare = rounds - least * games.length;
+	const total = games.reduce((sum, game) => sum + poolRounds(game), 0) || 1;
+	const shares = shuffle(games, random).map((game) => {
+		const exact = (spare * poolRounds(game)) / total;
+		return { game, count: least + Math.floor(exact), rest: exact - Math.floor(exact) };
+	});
+	// Лишок — тим, у кого найбільша остача; `sort` стабільний, тож рівних розвів `shuffle`.
+	let left = rounds - shares.reduce((sum, share) => sum + share.count, 0);
+	for (const share of [...shares].sort((a, b) => b.rest - a.rest)) {
+		if (left <= 0) break;
+		share.count += 1;
+		left -= 1;
+	}
+	const list = shares.flatMap((share) => Array<string>(share.count).fill(share.game));
 	return shuffle(list, random);
 }
 
 /**
  * ЧЕРГА ДОБОРУ — від найтіснішої гри до найвільнішої. Порядок РАУНДІВ від цього не
- * залежить (його дає `balancedGames`), лише те, хто вибирає питання першим.
+ * залежить (його дає `proportionalGames`), лише те, хто вибирає питання першим.
  * Заміряно: коли «Родина» (дванадцять загадок, по чотири тварини) добирала
  * останньою, усі її загадки вже мали зайняту тварину, і та сама тварина
  * траплялася двічі. «Хто численніший?» — останнім: із 85 тварин трійка без
@@ -294,7 +326,7 @@ function planOne(
 	rounds: number,
 	decks: Map<string, GameDeck>
 ): PlannedStep[] {
-	const order = balancedGames(games, rounds, seededRandom(mix(deck, gameIndex, 0x5eed)));
+	const order = proportionalGames(games, rounds, seededRandom(mix(deck, gameIndex, 0x5eed)));
 	const need = new Map<string, number>();
 	for (const game of order) need.set(game, (need.get(game) ?? 0) + perRound(game));
 

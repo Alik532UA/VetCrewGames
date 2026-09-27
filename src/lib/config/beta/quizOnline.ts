@@ -352,8 +352,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_26',
 			category: { uk: 'Питання', en: 'Questions' },
 			text: {
-				uk: 'Зіграйте партію з усіма шістьма іграми. Жодне питання не мусить повторитися, і та сама тварина — теж, навіть у різних іграх; раундів кожної гри — порівну (два). Натисніть «Грати знову»: у новій партії питання мусять бути інші.',
-				en: 'Play a game with all six games selected. No question may repeat, and neither may the same animal — even across different games; each game gets an equal share of rounds (two). Press “Play again”: the new game must bring different questions.'
+				uk: 'Зіграйте партію з усіма шістьма іграми. Жодне питання не мусить повторитися, і та сама тварина — теж, навіть у різних іграх. Натисніть «Грати знову»: у новій партії питання мусять бути інші.',
+				en: 'Play a game with all six games selected. No question may repeat, and neither may the same animal — even across different games. Press “Play again”: the new game must bring different questions.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/utils/quizDeck.test.ts',
@@ -424,6 +424,22 @@ export const quizOnlineTab: BetaTab = {
 			coverage: 'covered',
 			test: 'src/lib/components/quiz/QuizRoom.reveal.test.ts',
 			testid: 'quiz-reveal-panel'
+		},
+		{
+			/*
+			 * РАУНДИ ПРОПОРЦІЙНО ПУЛУ (прохання автора 2026-09-28). Доти — порівну, і в пункті
+			 * `quizonline_26` стояло «раундів кожної гри — порівну (два)»: ту половину звідти
+			 * прибрано, щоб давня позначка не підтверджувала правило, якого вже немає.
+			 */
+			id: 'quizonline_33',
+			category: { uk: 'Питання', en: 'Questions' },
+			text: {
+				uk: 'Зіграйте кілька партій у кімнаті з усіма шістьма іграми. «Правда чи міф?», де питань найбільше, мусить траплятися найчастіше (пʼять раундів із дванадцяти), а «Що їмо?» й «Хто з іншої родини?», де їх найменше, — рівно по разу; кожна вибрана гра є в кожній партії. Набори «Що їмо?» не мусять повторюватися десять партій поспіль.',
+				en: 'Play several games in a room with all six games selected. «Fact or Myth?», which has the most questions, must come up most often (five rounds of twelve), and «What do they eat?» and «Who is from another family?», which have the fewest, exactly once each; every selected game is in every game. The «What do they eat?» sets must not repeat for ten games in a row.'
+			},
+			coverage: 'covered',
+			test: 'src/lib/utils/quizDeck.test.ts',
+			testid: 'quiz-board-panel'
 		}
 	]
 };

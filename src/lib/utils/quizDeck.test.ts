@@ -22,8 +22,9 @@ import { ONLINE_GAMES, QUIZ_ROUNDS } from '$lib/config/quizOnline';
  *
  * Зворотні експерименти: не позначати поставлене (`used`) — червоніють «у партії» й
  * «між партіями»; не зважати на тварин — червоніє «та сама тварина»; ділити раунди
- * без рівності — червоніє «порівну»; реванш без 2³¹ (нова колода) — червоніє «між
- * партіями».
+ * порівну, як доти, — червоніють «пропорційно пулу» й «десять партій»; прибрати
+ * «щонайменше раз» — червоніє «кожна вибрана гра»; реванш без 2³¹ (нова колода) —
+ * червоніє «між партіями».
  */
 
 const ALL = ONLINE_GAMES.map((game) => game.id);
@@ -64,14 +65,52 @@ describe('програма партії', () => {
 		expect(planGames(123, ALL, QUIZ_ROUNDS)).toEqual(planGames(123, [...ALL], QUIZ_ROUNDS));
 	});
 
-	it('раунди між вибраними іграми порівну (±1)', () => {
+	/**
+	 * РАУНДИ ПРОПОРЦІЙНО ПУЛУ (прохання автора 2026-09-28): доти порівну, і «Що їмо?» з
+	 * десятьма наборами діставала стільки ж раундів, скільки «Правда чи міф?» зі ста
+	 * сімдесятьма питаннями.
+	 */
+	const countsOf = (steps: PlannedStep[]) => {
+		const counts = new Map<string, number>();
+		for (const step of steps) counts.set(step.game, (counts.get(step.game) ?? 0) + 1);
+		return counts;
+	};
+	/** Скільки раундів без повторів дає пул: у «Чисельності» раунд — трійка. */
+	const poolRounds = (game: string) =>
+		poolOf(game).length / (game === 'population' ? POPULATION_TRIO : 1);
+
+	it('кожна вибрана гра — щонайменше раз', () => {
 		for (const seed of SEEDS.slice(0, 50)) {
-			const counts = new Map<string, number>();
-			for (const step of planGames(seed, ALL, QUIZ_ROUNDS))
-				counts.set(step.game, (counts.get(step.game) ?? 0) + 1);
-			expect([...counts.keys()].sort()).toEqual([...ALL].sort());
-			const values = [...counts.values()];
-			expect(Math.max(...values) - Math.min(...values), `зерно ${seed}`).toBeLessThanOrEqual(1);
+			const counts = countsOf(planGames(seed, ALL, QUIZ_ROUNDS));
+			expect([...counts.keys()].sort(), `зерно ${seed}`).toEqual([...ALL].sort());
+		}
+	});
+
+	it('решта раундів — пропорційно пулу, найбільшими остачами', () => {
+		const spare = QUIZ_ROUNDS - ALL.length;
+		const total = ALL.reduce((sum, game) => sum + poolRounds(game), 0);
+		for (const seed of SEEDS.slice(0, 50)) {
+			const counts = countsOf(planGames(seed, ALL, QUIZ_ROUNDS));
+			expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(QUIZ_ROUNDS);
+			for (const game of ALL) {
+				const exact = 1 + (spare * poolRounds(game)) / total;
+				expect(Math.abs((counts.get(game) ?? 0) - exact), `${game}, зерно ${seed}`).toBeLessThan(1);
+			}
+		}
+		// Найбільший пул — найбільше раундів; найменші — рівно по одному.
+		const counts = countsOf(planGames(SEEDS[0], ALL, QUIZ_ROUNDS));
+		expect(counts.get('myths')).toBe(Math.max(...counts.values()));
+		expect(counts.get('feeding')).toBe(1);
+		expect(counts.get('family')).toBe(1);
+	});
+
+	it('«Що їмо?» з десятьма наборами не повторюється десять партій поспіль', () => {
+		for (const first of SEEDS.slice(0, 20)) {
+			const asked = roomGames(first, ALL, poolOf('feeding').length)
+				.flat()
+				.filter((step) => step.game === 'feeding')
+				.map((step) => step.pick);
+			expect(new Set(asked).size, `зерно ${first}`).toBe(asked.length);
 		}
 	});
 
