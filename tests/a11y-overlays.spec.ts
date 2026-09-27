@@ -50,7 +50,9 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag22aa'];
 const TRIGGERS = [
 	'button[aria-haspopup="menu"][data-testid]',
 	'button[aria-haspopup="listbox"][data-testid]',
-	'button[popovertarget][data-testid]'
+	'button[popovertarget][data-testid]',
+	// Вікно на платформі (`<dialog>`, `showModal`): вибір аватарки (2026-09-27).
+	'button[aria-haspopup="dialog"][data-testid]'
 ].join(', ');
 
 /**
@@ -85,7 +87,8 @@ const OVERLAY_KNOWN: Record<string, readonly string[]> = {
 	 * прибрало б рядок зі звіту й додало зайву зупинку Tab усередині накладки,
 	 * тобто зробило б гірше рівно тим, задля кого правило існує.
 	 */
-	'pairs-country-select': ['scrollable-region-focusable']
+	'pairs-country-select': ['scrollable-region-focusable'],
+	'pairs-avatar-toggle-btn': []
 };
 
 const OVERLAY_BASELINE: Record<string, number> = {
@@ -93,7 +96,8 @@ const OVERLAY_BASELINE: Record<string, number> = {
 	'header-locale-btn': 0,
 	'auth-info-btn': 0,
 	// Один вузол — контейнер прокрутки списку країн. Причина вище.
-	'pairs-country-select': 1
+	'pairs-country-select': 1,
+	'pairs-avatar-toggle-btn': 0
 };
 
 test.beforeEach(async ({ page }) => {

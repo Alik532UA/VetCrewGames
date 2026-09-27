@@ -143,6 +143,21 @@ export const hubTab: BetaTab = {
 			coverage: 'manual',
 			testid: 'online-key-*-btn',
 			negative: true
+		},
+		{
+			/*
+			 * ПЛИТКИ, А НЕ РЯДКИ (скарга автора 2026-09-27: «великі відступи і не великі
+			 * кнопки»). Висоту плиток і поля вікна міряє e2e `hub-windows`.
+			 */
+			id: 'hub_12',
+			category: { uk: 'Створити кімнату', en: 'Create a room' },
+			text: {
+				uk: 'На телефоні натисніть «Створити кімнату». І гра, і «Хто може зайти» мусять вибиратися ВЕЛИКИМИ плитками зі значком — такими самими, як у меню «Грати», — а над заголовком вікна й під «Назад» не мусить стояти порожніх смуг.',
+				en: 'On a phone press «Create a room». Both the game and «Who can join» must be picked with BIG tiles with an icon — the same as in the «Play» menu — and there must be no empty bands above the window title or under «Back».'
+			},
+			coverage: 'covered',
+			test: 'tests/hub-windows.spec.ts',
+			testid: 'online-create-quiz-btn'
 		}
 	]
 };

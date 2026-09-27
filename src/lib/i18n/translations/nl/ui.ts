@@ -118,6 +118,7 @@ export const ui = {
 	'pairs.resumeOne': 'Terug',
 	'pairs.otherName': 'Andere naam',
 	'pairs.avatarChange': 'Avatar wijzigen',
+	'pairs.avatarDone': 'Klaar',
 	'pairs.myAvatar': 'Je avatar',
 	'pairs.inviteTitle': 'Je bent uitgenodigd voor kamer',
 	'pairs.inviteHint': 'Zo zien de anderen je. Je kunt het nu wijzigen of later in de lobby.',

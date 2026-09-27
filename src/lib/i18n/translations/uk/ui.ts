@@ -128,6 +128,7 @@ export const ui = {
 	'pairs.resumeOne': 'Вернутися',
 	'pairs.otherName': 'Інше імʼя',
 	'pairs.avatarChange': 'Змінити аватарку',
+	'pairs.avatarDone': 'Готово',
 	'pairs.myAvatar': 'Ваша аватарка',
 	'pairs.inviteTitle': 'Вас запросили в кімнату',
 	'pairs.inviteHint': 'Так вас побачать інші. Змінити можна й зараз, і потім у лобі.',

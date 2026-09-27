@@ -147,3 +147,85 @@ test('вибір ігор пошуку переживає перезаванта
 		'true'
 	);
 });
+
+/**
+ * «СТВОРИТИ КІМНАТУ» — ПЛИТКАМИ, А НЕ РЯДКАМИ В ПОРОЖНЬОМУ ВІКНІ (скарга автора 2026-09-27:
+ * «великі відступи і не великі кнопки»). Доти кнопки були заввишки 56px, а вікно, яке
+ * `.fill-window` тримає на половину екрана, центрувало їх — і над заголовком та під «Назад»
+ * стояло по сотні пікселів порожнечі. Тепер вибір — плитки меню «Грати».
+ *
+ * Зворотний експеримент (прогнано): повернути рядки `create__choice` — червоніють обидві
+ * межі, і висота плитки, і поля вікна.
+ */
+test('створення: вибір — великими плитками меню «Грати», без порожніх полів у вікні', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await press(page, 'online-create-open-btn');
+	const panel = (await page.getByTestId('online-create-panel').boundingBox())!;
+	const title = (await page.getByTestId('online-create-panel').locator('h2').boundingBox())!;
+	const back = (await page.getByTestId('online-create-back-btn').boundingBox())!;
+
+	for (const id of ['online-create-quiz-btn', 'online-create-pairs-btn']) {
+		const tile = (await page.getByTestId(id).boundingBox())!;
+		expect(tile.height, `${id} — плитка зі значком, а не рядок`).toBeGreaterThan(150);
+	}
+	expect(title.y - panel.y, 'над заголовком — поле вікна, а не порожнеча').toBeLessThan(48);
+	expect(panel.y + panel.height - (back.y + back.height), 'під «Назад» — теж').toBeLessThan(48);
+});
+
+/**
+ * ВИБІР АВАТАРКИ — ОКРЕМИМ ВІКНОМ (скарга автора 2026-09-27: вибір розгортався рядком під
+ * іменем, нижче краю телефона, і його доводилося шукати прокруткою).
+ *
+ * Тут те, чого немає в jsdom: справжній `<dialog>` — `Escape` від браузера, верхній шар,
+ * повернення фокуса, і розкладка, у якій вікно або видно цілком, або ні.
+ */
+test('аватарка: вікно посередині екрана, увесь вибір видно без прокрутки, Escape закриває', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await press(page, 'pairs-avatar-toggle-btn');
+	await expect(page.getByTestId('pairs-avatar-icon-grape-radio')).toBeAttached();
+	await expect(page.getByTestId('pairs-avatar-panel')).toBeInViewport({ ratio: 1 });
+	await expect(page.getByTestId('pairs-avatar-done-btn')).toBeInViewport({ ratio: 1 });
+	expect(await focused(page), 'фокус — на заголовку вікна').toBe('H2||pairs-avatar-panel');
+	await noViolations(page, 'вікно аватарки');
+
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('pairs-avatar-panel')).toBeHidden();
+	expect(await focused(page), 'Escape — фокус вертається на плитку').toBe(
+		'BUTTON|pairs-avatar-toggle-btn|'
+	);
+});
+
+test('аватарка: вибір лишає вікно відкритим і міняє плитку, клік по тлу закриває', async ({
+	page
+}) => {
+	await press(page, 'pairs-avatar-toggle-btn');
+	await page.getByTestId('pairs-avatar-icon-cat-radio').check({ force: true });
+	await expect(page.getByTestId('pairs-avatar-panel'), 'вибір — не закриття').toBeVisible();
+	await expect(
+		page.locator('[data-testid="pairs-avatar-toggle-btn"] svg.lucide-cat')
+	).toBeAttached();
+
+	await page.mouse.click(5, 5);
+	await expect(page.getByTestId('pairs-avatar-panel')).toBeHidden();
+	expect(await focused(page)).toBe('BUTTON|pairs-avatar-toggle-btn|');
+});
+
+/*
+ * ШИРОКИЙ ЕКРАН (скарга автора 2026-09-27: «відрізаний верх та низ вікна»). Хаб тут
+ * збільшено `zoom` (`fitToViewport`, «лише вгору»), і вікно в його дереві росло разом із
+ * ним. Зворотний експеримент (прогнано): лишити `<dialog>` на місці, без `toBody`, —
+ * вікно виходить за екран, і червоніє саме ця перевірка.
+ */
+test('аватарка: на широкому екрані вікно цілком у межах екрана', async ({ page }) => {
+	await page.setViewportSize({ width: 1600, height: 800 });
+	await page.goto(PAGE);
+	await settlePage(page);
+	await press(page, 'pairs-avatar-toggle-btn');
+	await expect(page.getByTestId('pairs-avatar-icon-grape-radio')).toBeAttached();
+	await expect(page.getByTestId('pairs-avatar-panel')).toBeInViewport({ ratio: 1 });
+	await expect(page.getByTestId('pairs-avatar-done-btn')).toBeInViewport({ ratio: 1 });
+});

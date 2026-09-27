@@ -117,6 +117,7 @@ export const ui = {
 	'pairs.resumeOne': 'Return',
 	'pairs.otherName': 'Another name',
 	'pairs.avatarChange': 'Change avatar',
+	'pairs.avatarDone': 'Done',
 	'pairs.myAvatar': 'Your avatar',
 	'pairs.inviteTitle': 'You are invited to room',
 	'pairs.inviteHint':

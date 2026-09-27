@@ -27,9 +27,14 @@
 		focusTitle?: boolean;
 		/** «Назад»; без нього кнопки немає (пошук, що йде, закриває лише «Скасувати»). */
 		onBack?: () => void;
+		/**
+		 * Ширший стовпець — для плиток вибору (`CreateWindow`): дві плитки меню «Грати» поруч
+		 * у 26em стискалися так, що назва гри ламалася на два рядки.
+		 */
+		wide?: boolean;
 	}
 
-	let { scope, title, children, focusTitle = false, onBack }: Props = $props();
+	let { scope, title, children, focusTitle = false, onBack, wide = false }: Props = $props();
 
 	const focus = (node: HTMLElement) => {
 		if (focusTitle) node.focus();
@@ -37,7 +42,7 @@
 </script>
 
 <section class="window fill fill-window" data-testid="{scope}-panel">
-	<div class="window__column">
+	<div class="window__column" class:window__column--wide={wide}>
 		<h2 class="window__title" tabindex="-1" {@attach focus}>{@render title()}</h2>
 		{@render children()}
 		{#if onBack}
@@ -81,6 +86,11 @@
 		gap: var(--space-sm);
 		width: min(100%, 26em);
 		margin-inline: auto;
+	}
+
+	/* Плитки вибору — по 17 одиниць поруч, як у меню «Грати» (`.menu-tile`: основа 15, стеля 22). */
+	.window__column--wide {
+		width: min(100%, 36em);
 	}
 
 	/* Значок і назва — одним рядком; довга назва переноситься під значок, а не за край. */

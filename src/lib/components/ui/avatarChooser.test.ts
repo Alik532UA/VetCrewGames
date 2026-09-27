@@ -3,20 +3,40 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { AVATAR_COLORS, AVATAR_ICONS } from '$lib/config/avatars';
 
 /**
- * АВАТАРКА ПОРУЧ З ІМЕНЕМ (прохання автора 2026-09-26): плитка-кнопка у формі входу,
- * під рядком розгортається вибір.
+ * АВАТАРКА ПОРУЧ З ІМЕНЕМ (прохання автора 2026-09-26): плитка-кнопка у формі входу, а
+ * вибір — окремим вікном (скарга автора 2026-09-27: рядок під іменем лягав нижче краю
+ * телефона, і його доводилося шукати прокруткою).
  *
- * Головне тут — три речі, яких не видно в коді з першого погляду:
+ * Головне тут — речі, яких не видно в коді з першого погляду:
  *
  *  • вибір ЗАКРИТИЙ, доки його не відкрили, і словник підписів (лінивий чанк) до
  *    того не вантажиться — інакше кожне відкриття форми тягло б `i18n/account`;
  *  • до приїзду словника радіокнопок немає зовсім: без підписів вони озвучувалися
  *    б як «кнопка» тридцять разів;
- *  • натиск на плитку віддає ПАРУ (`значок:колір`), складену з поточною половиною.
+ *  • натиск на плитку віддає ПАРУ (`значок:колір`), складену з поточною половиною;
+ *  • вікно закривають «Готово» й клік по тлу, а клік усередині — ні; фокус вертається на
+ *    плитку. `Escape` — справа браузера (`<dialog>`), його міряє e2e `hub-windows`.
  *
  * Зворотний експеримент: вантажити словник одразу — червоніє «закритий»; віддавати
  * лише колір — червоніє «пара».
  */
+
+/*
+ * jsdom 29 `<dialog>` не вміє: ні `showModal`, ні `close`. Тут — рівно те, що з них бере
+ * компонент: атрибут `open` і подія `close`.
+ */
+if (!('showModal' in HTMLElement.prototype)) {
+	Object.assign(HTMLElement.prototype, {
+		showModal(this: HTMLElement) {
+			this.setAttribute('open', '');
+		},
+		close(this: HTMLElement) {
+			if (!this.hasAttribute('open')) return;
+			this.removeAttribute('open');
+			this.dispatchEvent(new Event('close'));
+		}
+	});
+}
 
 const loadAccountText = vi.fn(async () => {
 	const dict: Record<string, string> = {
@@ -88,15 +108,44 @@ describe('вибір аватарки поруч з іменем', () => {
 		expect(first.checked).toBe(true);
 	});
 
-	it('закриває та сама плитка, що відкрила', async () => {
+	it('відкривається модальним вікном із заголовком — фокус на ньому', async () => {
 		const { toggle } = mounted();
 		await fireEvent.click(toggle);
 		await screen.findByTestId('test-avatar-color-red-radio');
 
-		await fireEvent.click(toggle);
+		const dialog = screen.getByTestId('test-avatar-modal');
+		expect(dialog.hasAttribute('open')).toBe(true);
+		expect(toggle.getAttribute('aria-haspopup')).toBe('dialog');
+		const title = screen.getByRole('heading', { name: 'pairs.avatarChange' });
+		expect(dialog.getAttribute('aria-labelledby')).toBe(title.id);
+		expect(document.activeElement).toBe(title);
+	});
 
+	it('«Готово» закриває вікно й вертає фокус на плитку', async () => {
+		const { toggle, onpick } = mounted('cat:blue');
+		await fireEvent.click(toggle);
+		await fireEvent.click(await screen.findByTestId('test-avatar-color-red-radio'));
+		await fireEvent.click(screen.getByTestId('test-avatar-done-btn'));
+
+		expect(onpick, 'вибір зберігається самим натиском, а не «Готово»').toHaveBeenCalledOnce();
+		expect(screen.getByTestId('test-avatar-modal').hasAttribute('open')).toBe(false);
 		expect(toggle.getAttribute('aria-expanded')).toBe('false');
 		expect(screen.queryByTestId('test-avatar-panel')).toBeNull();
+		expect(document.activeElement).toBe(toggle);
+	});
+
+	it('клік по тлу закриває, а клік усередині вікна — ні', async () => {
+		const { toggle } = mounted();
+		await fireEvent.click(toggle);
+		await screen.findByTestId('test-avatar-color-red-radio');
+		const dialog = screen.getByTestId('test-avatar-modal');
+
+		await fireEvent.click(screen.getByTestId('test-avatar-panel'));
+		expect(dialog.hasAttribute('open'), 'клік по вікну — не по тлу').toBe(true);
+
+		await fireEvent.click(dialog);
+		expect(dialog.hasAttribute('open')).toBe(false);
+		expect(document.activeElement).toBe(toggle);
 	});
 	/**
 	 * У КІМНАТІ — лише вільні пари (рішення автора 2026-09-26). Зайнята клітинка

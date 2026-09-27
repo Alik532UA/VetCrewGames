@@ -251,6 +251,22 @@ export const onlineTab: BetaTab = {
 		},
 		{
 			/*
+			 * ОКРЕМЕ ВІКНО, А НЕ РЯДОК ПІД ІМЕНЕМ (скарга автора 2026-09-27: вибір
+			 * розгортався нижче краю телефона, і його доводилося шукати прокруткою).
+			 * Розкладку, `Escape`, тло й фокус міряє e2e `hub-windows`.
+			 */
+			id: 'online_31',
+			category: { uk: 'Зайти в кімнату', en: 'Getting into a room' },
+			text: {
+				uk: 'На телефоні на сторінці «Грати онлайн» натисніть плитку аватарки біля імені. Посередині екрана мусить відкритися вікно «Змінити аватарку», у якому ВЕСЬ вибір — плитка, кольори, значки й «Готово» — видно без прокрутки. Вибір кольору чи значка вікна не закриває; «Готово», Escape і дотик повз вікно — закривають.',
+				en: 'On a phone, on the «Play online» page press the avatar tile next to the name. A «Change avatar» window must open in the middle of the screen, with ALL of the choice — the tile, the colours, the icons and «Done» — visible without scrolling. Picking a colour or an icon does not close the window; «Done», Escape and a tap outside the window do.'
+			},
+			coverage: 'covered',
+			test: 'tests/hub-windows.spec.ts',
+			testid: 'pairs-avatar-toggle-btn'
+		},
+		{
+			/*
 			 * ОДНА ПАРА НА КІМНАТУ (рішення автора 2026-09-26). Правило заміни доводять
 			 * юніт-тести (`utils/roomAvatars`, сесія над `LocalRoom`); руками — два пристрої.
 			 */
