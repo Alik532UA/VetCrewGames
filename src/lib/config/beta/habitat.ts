@@ -143,6 +143,22 @@ export const habitatTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'habitat-animal-name-text'
+		},
+		{
+			/*
+			 * ЕКРАН ГРИ ПРИТИСНУТИЙ ДОНИЗУ (прохання автора 2026-09-28: «якщо є скрол — завжди
+			 * скролити донизу»). Дія одна на всі ігри (`pinToBottom`); e2e тримає її на цій
+			 * сторінці, бо дев'ять зон на 360×520 не вміщаються навіть на дні масштабу.
+			 */
+			id: 'habitat_13',
+			category: { uk: 'Екран', en: 'Screen' },
+			text: {
+				uk: 'Відкрийте «Природні зони» у низькому вікні, де сторінка прокручується (телефон горизонтально або зменшене вікно). Раунд мусить відкриватися НИЗОМ: варіанти й «Перевірити» на екрані, смужка раундів за верхнім краєм. Прокрутіть угору — сторінка не мусить смикатися назад; після «Далі» новий раунд знову відкривається низом. Так само в «Хто з іншої родини?», «Що їмо?», «Правда чи міф?» і «Кого більше?».',
+				en: 'Open «Biomes» in a short window where the page scrolls (a phone held sideways or a shrunk window). A round must open at the BOTTOM: the options and «Check» on screen, the round bar above the top edge. Scroll up — the page must not jerk back; after «Next» the new round again opens at the bottom. The same in «Who is from another family?», «What do they eat?», «Fact or Myth?» and «Who is more?».'
+			},
+			coverage: 'covered',
+			test: 'tests/game-scroll.spec.ts',
+			testid: 'habitat-next-btn'
 		}
 	]
 };

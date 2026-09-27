@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { withoutRoom } from '$lib/utils/roomUrl';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
+	import { pinToBottom } from '$lib/utils/pinToBottom';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser, dev } from '$app/environment';
@@ -76,6 +77,18 @@
 	session.attach();
 
 	const match = $derived(session.match);
+	/**
+	 * Раунд, на який я ще не відповів, — його низ (варіанти й кнопка) тримається в полі зору.
+	 * Табло між раундами й підсумок — ні: там угорі рахунок, і головний саме він.
+	 */
+	const pin = $derived(
+		match !== null &&
+			match.status !== 'lobby' &&
+			match.phase(session.clock) === 'round' &&
+			!match.iAnswered
+			? match.round
+			: null
+	);
 	const takenNames = $derived(lobby.takenNames);
 	const joinUrl = $derived(browser && session.code !== '' ? page.url.href : '');
 
@@ -139,6 +152,7 @@
 	class="quiz-online"
 	class:quiz-online--playing={match !== null && match.status !== 'lobby'}
 	use:fitToViewport={match?.status === 'lobby' && 'grow'}
+	use:pinToBottom={pin}
 >
 	<!-- Нова збірка на сервері видна й без відмови: опитування версії (`updated`) каже
 	     про неї раніше, ніж перша ж спроба зайти впаде на відсутньому шматку. Але не

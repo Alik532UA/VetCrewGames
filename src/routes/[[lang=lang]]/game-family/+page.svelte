@@ -6,6 +6,7 @@
 	import { settings } from '$lib/services/settings.svelte';
 	import { FamilyGameController, familyReview } from '$lib/controllers/familyGame.svelte';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
+	import { pinToBottom } from '$lib/utils/pinToBottom';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
 	import FamilyBoard from '$lib/components/FamilyBoard.svelte';
@@ -17,6 +18,10 @@
 	const game = new FamilyGameController();
 	/** Котре минуле питання переглядають (від нуля); `null` — грають поточне. */
 	let viewing = $state<number | null>(null);
+	/** Раунд без відповіді: його низ — варіанти й кнопка — тримається в полі зору. */
+	const pin = $derived(
+		game.gameOver || viewing !== null || game.answered ? null : game.roundNumber
+	);
 	const lang = $derived(languageFromParam(page.params.lang));
 
 	onMount(() => {
@@ -30,7 +35,7 @@
 	});
 </script>
 
-<div class="game-page" use:fitToViewport>
+<div class="game-page" use:fitToViewport use:pinToBottom={pin}>
 	{#if game.gameOver}
 		{#if viewing === null}
 			<GameOverCard

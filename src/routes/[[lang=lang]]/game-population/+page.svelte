@@ -12,6 +12,7 @@
 		populationReview
 	} from '$lib/controllers/populationGame.svelte';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
+	import { pinToBottom } from '$lib/utils/pinToBottom';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import PopulationBoard from '$lib/components/PopulationBoard.svelte';
 	import ReviewPanel from '$lib/components/ReviewPanel.svelte';
@@ -28,6 +29,8 @@
 	const game = new PopulationGameController();
 	/** Котре минуле питання переглядають (від нуля); `null` — грають поточне. */
 	let viewing = $state<number | null>(null);
+	/** Раунд без відповіді: його низ — варіанти й кнопка — тримається в полі зору. */
+	const pin = $derived(game.gameOver || viewing !== null || game.checked ? null : game.roundNumber);
 
 	/** Максимум партії — у підказці, а не знаменником. Див. `GameOverCard`. */
 	const maxHint = $derived(`${t('common.maxScore')}: ${game.maxScore}`);
@@ -42,7 +45,7 @@
 	onMount(() => settings.claimHeader('population.title', () => goto(langPath(lang, 'quiz/play'))));
 </script>
 
-<div class="game-page" use:fitToViewport>
+<div class="game-page" use:fitToViewport use:pinToBottom={pin}>
 	{#if game.gameOver && viewing !== null}
 		{@render review('review.backToResults')}
 	{:else if game.gameOver}

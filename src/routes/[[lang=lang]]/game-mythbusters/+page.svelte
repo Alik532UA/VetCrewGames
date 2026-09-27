@@ -7,6 +7,7 @@
 	import { page } from '$app/state';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { fitToViewport } from '$lib/utils/fitToViewport';
+	import { pinToBottom } from '$lib/utils/pinToBottom';
 	import RoundIndicator from '$lib/components/RoundIndicator.svelte';
 	import MythCard from '$lib/components/MythCard.svelte';
 	import GameOverCard from '$lib/components/GameOverCard.svelte';
@@ -22,6 +23,10 @@
 	const game = new MythGameController();
 	/** Котре минуле питання переглядають (від нуля); `null` — грають поточне. */
 	let viewing = $state<number | null>(null);
+	/** Раунд без відповіді: його низ — варіанти й кнопка — тримається в полі зору. */
+	const pin = $derived(
+		game.gameOver || viewing !== null || game.current?.answered ? null : game.roundNumber
+	);
 
 	onMount(() => {
 		game.start();
@@ -34,7 +39,7 @@
 	});
 </script>
 
-<div class="game-page" use:fitToViewport>
+<div class="game-page" use:fitToViewport use:pinToBottom={pin}>
 	{#if game.gameOver}
 		<!--
 			СПІЛЬНИЙ компонент, а не власна копія — і саме копія тут була дефектом.

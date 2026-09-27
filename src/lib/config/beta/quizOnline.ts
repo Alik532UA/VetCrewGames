@@ -398,6 +398,16 @@ export const quizOnlineTab: BetaTab = {
 			test: 'src/lib/components/quiz/QuizRoom.final.test.ts',
 			testid: 'quiz-reveal-note-text',
 			negative: true
+		},
+		{
+			// РАУНД ВІДКРИВАЄТЬСЯ НИЗОМ (прохання автора 2026-09-28) — та сама дія, що в соло.
+			id: 'quizonline_31',
+			category: { uk: 'Раунд', en: 'The round' },
+			text: {
+				uk: 'Зіграйте вікторину на телефоні. Коли раунд не вміщається в екран, він мусить відкриватися НИЗОМ — з варіантами й кнопкою відповіді на екрані. Прокрутіть угору — сторінка не мусить смикатися назад до кінця раунду. Табло між раундами й підсумок донизу не тягнуться: там угорі рахунок.',
+				en: 'Play a quiz on a phone. When a round does not fit the screen, it must open at the BOTTOM — with the options and the answer button on screen. Scroll up — the page must not jerk back until the round ends. The scoreboard between rounds and the final are not pulled down: the score is on top there.'
+			},
+			coverage: 'manual'
 		}
 	]
 };
