@@ -174,7 +174,15 @@
 		trackPageView();
 		// Кімната, у якій на мене чекають, з'являється саме тоді, коли я пішов зі
 		// сторінки онлайну — решта переходів індексу не чіпає.
-		if (from?.url.pathname.includes('/online')) checkAwaited();
+		//
+		// `url?.` — ДРУГИЙ `?.` НЕ ЗАЙВИЙ (2026-09-27). На першому показі сторінки БЕЗ
+		// гідрації (фолбек `404.html` на GitHub Pages, маршрут із `ssr = false`) SvelteKit
+		// кличе `start()` через `navigate({ type: 'enter' })`, і `from` там — не `null`, як
+		// при гідрації, а обʼєкт із `url: null` (`create_navigation` бере `current.url`, якого
+		// ще немає). З одним `?.` кожне бите посилання на Pages давало «Unhandled promise
+		// rejection: Cannot read properties of null (reading 'pathname')». Тримає це
+		// `src/structure.test.ts`.
+		if (from?.url?.pathname.includes('/online')) checkAwaited();
 
 		/*
 		 * ФОКУС ПЕРЕЇЖДЖАЄ В НОВУ СТОРІНКУ (ACCESSIBILITY-v9 § 3).

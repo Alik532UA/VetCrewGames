@@ -657,6 +657,40 @@ ${guilty.join(String.fromCharCode(10))}`
 		expect(guilty, `мережа читає екран чи DOM:\n${guilty.join('\n')}`).toEqual([]);
 	});
 
+	/**
+	 * `from.url` У ХУКАХ НАВІГАЦІЇ — ЛИШЕ ЧЕРЕЗ `?.` (2026-09-27).
+	 *
+	 * На першому показі сторінки без гідрації — фолбек `404.html` на GitHub Pages, маршрут
+	 * із `ssr = false` — SvelteKit кличе `afterNavigate` із `from`, що є обʼєктом із
+	 * `url: null` (`create_navigation` бере `current.url`, якого ще немає), а не з
+	 * `from: null`, як при гідрації. Один `?.` (`from?.url.pathname`) цього не рятує: кожне
+	 * бите посилання на Pages давало необроблену відмову промісу — заміряно на зібраному
+	 * сайті, у стеку `nodes/0` (кореневий layout).
+	 *
+	 * Перевірка лексична й дешева: у файлі з хуком навігації `from.url.` чи `from?.url.` без
+	 * другого `?.` — дефект. Коментарі не рахуються: вони якраз описують погану форму.
+	 *
+	 * Зворотний експеримент: повернути `from?.url.pathname` у кореневий layout — червоніє.
+	 */
+	it('з хуків навігації `from.url` читається лише через `?.`', () => {
+		const code = (text: string) =>
+			text
+				.replace(/<!--[\s\S]*?-->/g, '')
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.replace(/^\s*\/\/.*$/gm, '');
+		const HOOK = /\b(?:afterNavigate|beforeNavigate|onNavigate)\s*\(/;
+		const hooked = sources.filter((f) => !isTest(f) && HOOK.test(code(read(f))));
+		expect(
+			hooked.length,
+			'хуків навігації не знайдено — перевірка дивиться не туди'
+		).toBeGreaterThan(0);
+		const guilty = hooked.filter((f) => /\bfrom\??\.url\./.test(code(read(f))));
+		expect(
+			guilty,
+			`\`from.url\` без другого \`?.\` — на першому показі без гідрації там null:\n${guilty.join('\n')}`
+		).toEqual([]);
+	});
+
 	describe('розмір файлу (§ 7)', () => {
 		const LIMITS: Array<[RegExp, number]> = [
 			[/\/routes\/.*\+page\.svelte$/, 400],
