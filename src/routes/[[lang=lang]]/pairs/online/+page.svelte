@@ -7,12 +7,11 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { langPath, languageFromParam } from '$lib/i18n/routing';
 	import { settings } from '$lib/services/settings.svelte';
-	import { toast } from '$lib/controllers/toast.svelte';
-	import { logService } from '$lib/services/logService.svelte';
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { HoverBeam } from '$lib/controllers/hoverBeam.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
+	import { liveProbe } from '$lib/controllers/diagnose';
 	import { reloadBanner } from '$lib/controllers/reloadAdvice.svelte';
 	import { chooseRoomAvatar } from '$lib/controllers/roomAvatar';
 	import { RoomInvite } from '$lib/controllers/roomInvite.svelte';
@@ -60,7 +59,14 @@
 	const player = new PlayerIdentity(Math.random);
 	// Стрічка переліку — щоб господар оголосив свою кімнату в гілці СВОЄЇ гри; читає перелік хаб.
 	const lobby = new LobbyFeed(PAIRS.gameId);
-	const session = new RoomSession(PAIRS, place, player, lobby);
+	// Факти для тоста з причиною збою; опитування версії — звідси: `$app/state` живе на сторінці.
+	const session = new RoomSession(
+		PAIRS,
+		place,
+		player,
+		lobby,
+		liveProbe(() => updated.check())
+	);
 	/** Посилання чи QR-код новачка — спершу коротке вікно, а не мовчазний вхід. */
 	const invite = new RoomInvite(session);
 	session.attach();
@@ -99,11 +105,8 @@
 			if (action === 'yield') await match.yieldTurn(session.now());
 			else await match.endMatch(session.now());
 		} catch (error) {
-			toast.error('pairs.actionFailed');
-			logService.error('network', `${action} failed`, {
-				code: session.code,
-				reason: String(error)
-			});
+			// Тією самою дорогою, що й решта дій кімнати: тост із причиною й журнал із кодом.
+			session.failed(`${action} failed`, error);
 		}
 	}
 

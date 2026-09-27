@@ -1,4 +1,4 @@
-import { isDenied } from '$lib/net/denied';
+import { deniedDeep } from '$lib/utils/netProblem';
 import { settings } from '$lib/services/settings.svelte';
 import { logService } from '$lib/services/logService.svelte';
 import { playerData } from '$lib/services/playerData.svelte';
@@ -9,7 +9,8 @@ import type { PlayerIdentity } from './playerIdentity.svelte';
 import type { Member, Role, RoomTransport } from '$lib/net/roomTypes';
 import type { RoomGame, RoomMatch, RoomPlace } from './roomGame';
 import { liveNet, type RoomNet } from '$lib/net/roomNet';
-import { entryErrorKey, entryRefusal, newcomerRole } from '$lib/utils/roomEntry';
+import { entryRefusal, newcomerRole } from '$lib/utils/roomEntry';
+import { diagnose, logFailure, type ProblemProbe } from './diagnose';
 import { playersOf } from '$lib/utils/roster';
 import { attachRoomPolicies } from './roomPolicies.svelte';
 import { hostClose, hostRematch, hostStart } from './roomHost';
@@ -68,11 +69,16 @@ export class RoomSession<M extends RoomMatch> {
 	#stops: Array<() => void> = [];
 	#transport: RoomTransport | null = null;
 
+	/**
+	 * @param probe звідки факти для причини збою (`controllers/diagnose.ts`): сторінка дає
+	 *   `liveProbe(updated.check)`, тест — свої. Той самий тост із причиною, що на хабі.
+	 */
 	constructor(
 		readonly game: RoomGame<M>,
 		readonly place: RoomPlace,
 		readonly player: PlayerIdentity,
 		readonly lobby: LobbyFeed,
+		readonly probe: ProblemProbe,
 		readonly net: RoomNet = liveNet
 	) {}
 
@@ -203,20 +209,36 @@ export class RoomSession<M extends RoomMatch> {
 			// Причина — під обгорткою: «код зайнятий» після відмов правил — це відмова правил
 			// (шостий аудит, R1). Доти вона не доходила ні до звірки правил, ні до журналу.
 			const cause = error instanceof Error ? error.cause : undefined;
+			const where = code || this.joinCode;
 			// Шматка збірки немає — смуга з кнопкою «оновити», а не «спробуйте ще раз».
 			this.reload.noteFailure(error);
-			if (isDenied(error) || (cause !== undefined && isDenied(cause))) {
-				this.reload.noteDenial(code || this.joinCode);
-			}
-			toast.error(entryErrorKey(reason, cause));
+			if (deniedDeep(error)) this.reload.noteDenial(where);
 			// З кодом: доти звіт казав «не вдалося зайти», а в яку кімнату — ні.
-			logService.error('network', 'room entry failed', {
+			const context = {
 				game: this.game.gameId,
 				action,
-				code: code || this.joinCode,
-				reason,
+				code: where,
 				...(cause === undefined ? {} : { cause: String(cause) })
-			});
+			};
+			if (reason === 'room-full') {
+				// Заповнена кімната — відповідь бази, а не збій: тост як був, без звіту.
+				toast.error('pairs.roomFull');
+				logService.warn('network', 'room entry refused', { ...context, reason });
+			} else {
+				/*
+				 * ЗБІЙ — ТОСТОМ ІЗ ПРИЧИНОЮ, як на хабі (прохання автора 2026-09-27): доти тут
+				 * були «Не вдалося зайти в кімнату. Спробуйте ще раз» і «Спільна гра ще не
+				 * ввімкнена на сервері» — і на відмову правил, і на дефект коду, де жоден повтор
+				 * не допоможе, а звіту й розробника не пропонував ніхто.
+				 */
+				const diagnosis = await diagnose(error, this.probe);
+				logFailure('room entry failed', error, diagnosis, context);
+				/*
+				 * БЕЗ ПЕРЕВІРКИ `stale()`: невдалий `#open` сам виходить із кімнати (`dispose`),
+				 * тож вхід «застаріває» саме тоді, коли людині треба почути причину.
+				 */
+				toast.problem(diagnosis.problem);
+			}
 			if (action === 'join' && !stale()) this.#leaveDoor();
 		} finally {
 			// Застарілий вхід кнопок не відпускає: ними вже володіє наступний (`dispose`).
@@ -405,7 +427,7 @@ export class RoomSession<M extends RoomMatch> {
 			await run();
 			return true;
 		} catch (error) {
-			this.#failed(label, error);
+			this.failed(label, error);
 			return false;
 		}
 	}
@@ -433,10 +455,19 @@ export class RoomSession<M extends RoomMatch> {
 		await this.act('role not changed', () => this.net.updateMe(this.code, { role }));
 	}
 
-	/** Дія не вдалася: сказати людині й записати З КОДОМ кімнати — інакше звіт не скаже, де. */
-	#failed(what: string, error: unknown): void {
-		toast.error('pairs.actionFailed');
-		logService.error('network', what, { code: this.code, reason: String(error) });
-		if (isDenied(error)) this.reload.noteDenial(this.code);
+	/**
+	 * Дія не вдалася: сказати людині ПРИЧИНУ й записати З КОДОМ кімнати — інакше звіт не
+	 * скаже, де. Доти тут було «Сервер не дозволив цю дію» на будь-який збій, і дефект коду
+	 * звучав так само, як обрив; тепер — той самий тост із причиною, що на хабі (прохання
+	 * автора 2026-09-27). Публічний: дії, які сторінка робить повз `act` (забрати хід,
+	 * завершити партію), падають тією самою дорогою.
+	 */
+	failed(what: string, error: unknown): void {
+		const code = this.code;
+		if (deniedDeep(error)) this.reload.noteDenial(code);
+		void diagnose(error, this.probe).then((diagnosis) => {
+			logFailure(what, error, diagnosis, { code });
+			toast.problem(diagnosis.problem);
+		});
 	}
 }

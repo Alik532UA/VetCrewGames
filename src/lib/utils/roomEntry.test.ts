@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { entryErrorKey, entryRefusal, listedSince, newcomerRole } from './roomEntry';
+import { entryRefusal, listedSince, newcomerRole } from './roomEntry';
 import type { RoomInfo } from '$lib/net/roomTypes';
 
 const game = { gameId: 'quiz', rulesVersion: 3 };
@@ -24,33 +24,6 @@ describe('чи пускати в кімнату', () => {
 		expect(entryRefusal(info({ gameId: 'pairs' }), game)).toBe('quiz.otherGame');
 		expect(entryRefusal(info({ rulesVersion: 2 }), game)).toBe('pairs.roomOlder');
 		expect(entryRefusal(info({ rulesVersion: 4 }), game)).toBe('pairs.oldVersion');
-	});
-});
-
-describe('повідомлення на невдалий вхід', () => {
-	it('правила не викладені, правила застарі, мережа — кожне своє', () => {
-		expect(entryErrorKey('rules-missing')).toBe('pairs.rulesMissing');
-		expect(entryErrorKey('PERMISSION_DENIED: Permission denied')).toBe('pairs.rulesStale');
-		expect(entryErrorKey('timeout')).toBe('pairs.netFailed');
-		expect(entryErrorKey('room-full')).toBe('pairs.roomFull');
-	});
-
-	/**
-	 * «КОД ЗАЙНЯТИЙ» ПІСЛЯ ВІДМОВ ПРАВИЛ — ЦЕ ВІДМОВА ПРАВИЛ (шостий аудит, R1): доти
-	 * людина чула «спробуйте ще раз», хоч повтор не допомагав. Справжній зайнятий код
-	 * (без причини) — і далі «спробуйте ще раз».
-	 */
-	it('причина під обгорткою: відмова правил — оновити сторінку', () => {
-		const denied = new Error('PERMISSION_DENIED: Permission denied');
-		expect(entryErrorKey('room-code-taken', denied)).toBe('pairs.rulesStale');
-		expect(entryErrorKey('room-code-taken')).toBe('pairs.netFailed');
-	});
-
-	// Шматка збірки на сервері вже немає: доти це було «спробуйте ще раз» без кінця.
-	it('нова збірка на сервері — «оновіть сторінку», а не «спробуйте ще раз»', () => {
-		expect(
-			entryErrorKey('Failed to fetch dynamically imported module: https://x/rtdbRoom.js')
-		).toBe('pairs.newBuild');
 	});
 });
 

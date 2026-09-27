@@ -10,6 +10,7 @@
 	import { PlayerIdentity } from '$lib/controllers/playerIdentity.svelte';
 	import { LobbyFeed } from '$lib/controllers/lobbyFeed.svelte';
 	import { RoomSession } from '$lib/controllers/roomSession.svelte';
+	import { liveProbe } from '$lib/controllers/diagnose';
 	import { reloadBanner } from '$lib/controllers/reloadAdvice.svelte';
 	import { chooseRoomAvatar } from '$lib/controllers/roomAvatar';
 	import { RoomInvite } from '$lib/controllers/roomInvite.svelte';
@@ -61,7 +62,14 @@
 	const player = new PlayerIdentity(Math.random);
 	// Стрічка переліку — щоб господар оголосив свою кімнату в гілці СВОЄЇ гри; читає перелік хаб.
 	const lobby = new LobbyFeed(quiz.game.gameId);
-	const session = new RoomSession(quiz.game, place, player, lobby);
+	// Факти для тоста з причиною збою; опитування версії — звідси: `$app/state` живе на сторінці.
+	const session = new RoomSession(
+		quiz.game,
+		place,
+		player,
+		lobby,
+		liveProbe(() => updated.check())
+	);
 	/** Посилання чи QR-код новачка — спершу коротке вікно, а не мовчазний вхід. */
 	const invite = new RoomInvite(session);
 	session.attach();

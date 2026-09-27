@@ -1,5 +1,3 @@
-import { isDenied } from '$lib/net/denied';
-import { chunkMissing } from './staleBuild';
 import type { LobbyRoom } from '$lib/net/lobby';
 import type { Role, RoomInfo } from '$lib/net/roomTypes';
 
@@ -39,37 +37,13 @@ export function entryRefusal(
 	return null;
 }
 
-/**
- * ЯКЕ ПОВІДОМЛЕННЯ НА НЕВДАЛИЙ ВХІД — три причини, і кожна вимагає іншої дії.
- *
- * «Правила не пускають» не лікується повтором, «не склалося» — лікується.
- * `PERMISSION_DENIED` означає, що редакції розійшлися — у БУДЬ-ЯКИЙ бік: правила
- * в Firebase старіші за збірку (ще не викладені) або збірка старіша за правила
- * (вкладка, відкрита до деплою). Доти порада знала лише перший бік, і людина зі
- * старою вкладкою чула, що винні правила (аудит 2026-09-24). Тепер спершу
- * «оновіть сторінку» — це правда в обох випадках, — а тоді друга причина.
+/*
+ * ЯКЕ ПОВІДОМЛЕННЯ НА НЕВДАЛИЙ ВХІД — більше не тут. Доти `entryErrorKey` зводив збій до
+ * пʼяти тостів («правила не пускають», «новий білд», «спробуйте ще раз»…); тепер причину
+ * називає `utils/netProblem.ts` із фактами від `controllers/diagnose.ts` — той самий тост
+ * із причиною, звітом і контактами, що на хабі (прохання автора 2026-09-27). Тут лишилась
+ * лише «кімната заповнена»: це відповідь бази, а не збій (`RoomSession.enter`).
  */
-export type EntryError =
-	| 'pairs.rulesMissing'
-	| 'pairs.rulesStale'
-	| 'pairs.roomFull'
-	| 'pairs.newBuild'
-	| 'pairs.netFailed';
-
-/**
- * @param cause причина під обгорткою (`Error.cause`): «код зайнятий» після того, як
- *   база відмовляла на кожному коді, — це відмова правил, а не зайнятий код, і
- *   лікує її оновлення сторінки, а не повтор (шостий аудит, R1).
- */
-export function entryErrorKey(reason: string, cause?: unknown): EntryError {
-	if (reason === 'rules-missing') return 'pairs.rulesMissing';
-	if (reason === 'room-full') return 'pairs.roomFull';
-	if (isDenied(reason) || (cause !== undefined && isDenied(cause))) return 'pairs.rulesStale';
-	// Шматка збірки на сервері вже немає: повтор не допоможе, допоможе оновлення
-	// сторінки (аудит 2026-09-26 — доти це було «спробуйте ще раз» без кінця).
-	if (chunkMissing(reason)) return 'pairs.newBuild';
-	return 'pairs.netFailed';
-}
 
 /**
  * У ЯКІЙ РОЛІ ЗАХОДИТЬ ТОЙ, КОГО В КІМНАТІ ЩЕ НЕМАЄ.

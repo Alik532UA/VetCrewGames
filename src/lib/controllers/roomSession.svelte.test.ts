@@ -15,7 +15,7 @@ import { gamesToConfig, ONLINE_GAMES } from '$lib/config/quizOnline';
  * заступає кімната в памʼяті; матч — справжній `PairsMatch`.
  */
 
-const toast = { error: vi.fn(), info: vi.fn() };
+const toast = { error: vi.fn(), info: vi.fn(), problem: vi.fn() };
 const playerData = { beginOnline: vi.fn(), endOnline: vi.fn(), awardOnline: vi.fn() };
 vi.mock('./toast.svelte', () => ({ toast }));
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { locale: 'uk', addScore: vi.fn() } }));
@@ -165,6 +165,19 @@ function stubs({
 
 let cleanup: (() => void) | null = null;
 
+/**
+ * Факти для тоста з причиною збою (`controllers/diagnose.ts`): звірка правил — своя, щоб
+ * не плутатися з тією, яку робить `ReloadAdvice` (її рахують тести нижче).
+ */
+function probeFor() {
+	return {
+		online: () => true,
+		rules: vi.fn(async (): Promise<'fresh' | 'stale' | 'unknown'> => 'fresh'),
+		newBuild: async () => false,
+		deployed: () => false
+	};
+}
+
 /** Сесія з поставленими політиками — як на сторінці, лише без компонента. */
 function sessionFor(
 	room: LocalRoom,
@@ -175,6 +188,7 @@ function sessionFor(
 ) {
 	const { net, setOnline, setConnected } = fakeNet(room, peek, me);
 	const { place, player, lobby } = stubs(door);
+	const probe = probeFor();
 	let session!: Session;
 	cleanup = $effect.root(() => {
 		session = new RoomSession(
@@ -182,11 +196,12 @@ function sessionFor(
 			place,
 			player as never,
 			lobby as never,
+			probe,
 			net
 		) as Session;
 		session.attach();
 	});
-	return { session, net, place, lobby, setOnline, setConnected };
+	return { session, net, place, lobby, setOnline, setConnected, probe };
 }
 
 const settle = async () => {
@@ -355,14 +370,37 @@ describe('вхід у кімнату', () => {
 		expect(net.updateMe, 'посеред партії роль не міняється').not.toHaveBeenCalled();
 	});
 
-	it('помилка правил — порада про правила, а не «спробуйте ще раз»', async () => {
+	/**
+	 * ТОСТ ІЗ ПРИЧИНОЮ, ЯК НА ХАБІ (прохання автора 2026-09-27): доти тут було «Спільна гра
+	 * ще не ввімкнена на сервері» без звіту й розробника. Читання кімнати, якого не дали
+	 * правила іншої редакції, у локальній збірці — «нові правила ще не опубліковані».
+	 *
+	 * Зворотний експеримент: повернути `toast.error` замість `toast.problem` — червоніє.
+	 */
+	it('помилка правил — тост із причиною, а не «спробуйте ще раз»', async () => {
 		const room = new LocalRoom(roomInfo(), members());
-		const { session, net } = sessionFor(room, null, HOST);
-		net.createRoom.mockRejectedValueOnce(new Error('rules-missing'));
+		const { session, net, probe } = sessionFor(room, null, HOST);
+		probe.rules.mockResolvedValue('stale');
+		net.createRoom.mockRejectedValueOnce(
+			new Error('rules-missing', { cause: new Error('PERMISSION_DENIED: Permission denied') })
+		);
 
 		await session.enter('create');
 
-		expect(toast.error).toHaveBeenCalledWith('pairs.rulesMissing');
+		expect(toast.problem).toHaveBeenCalledWith('rules');
+		expect(toast.error).not.toHaveBeenCalled();
+	});
+
+	/** Заповнена кімната — відповідь бази, а не збій: звичайний тост, без звіту й розробника. */
+	it('кімната заповнена — звичайний тост, а не тост про збій', async () => {
+		const room = new LocalRoom(roomInfo(), members());
+		const { session, net } = sessionFor(room, null, HOST);
+		net.createRoom.mockRejectedValueOnce(new Error('room-full'));
+
+		await session.enter('create');
+
+		expect(toast.error).toHaveBeenCalledWith('pairs.roomFull');
+		expect(toast.problem).not.toHaveBeenCalled();
 	});
 
 	/**
@@ -828,7 +866,7 @@ describe('політики кімнати', () => {
 	 *
 	 * Зворотний експеримент: не розгортати `cause` — червоніє.
 	 */
-	it('створення, що вичерпало коди на відмовах правил, каже оновити сторінку й звіряє правила', async () => {
+	it('створення, що вичерпало коди на відмовах правил, — причина під обгорткою доходить до звірки, тоста й журналу', async () => {
 		const room = new LocalRoom(roomInfo(), members());
 		const { session, net } = sessionFor(room, null, HOST);
 		net.createRoom.mockRejectedValueOnce(
@@ -838,7 +876,8 @@ describe('політики кімнати', () => {
 		await session.enter('create');
 		await settle();
 
-		expect(toast.error).toHaveBeenCalledWith('pairs.rulesStale');
+		// Звірені правила ті самі, а база відмовляє — це код: звіт і розробник.
+		expect(toast.problem).toHaveBeenCalledWith('code');
 		expect(net.checkRules).toHaveBeenCalled();
 		const logged = vi
 			.mocked(logService.error)
@@ -872,7 +911,7 @@ describe('політики кімнати', () => {
 		expect(session.match).toBeNull();
 		expect(session.code).toBe('');
 		expect(place.exit).toHaveBeenCalled();
-		expect(toast.error).toHaveBeenCalled();
+		expect(toast.problem, 'людина чує причину').toHaveBeenCalled();
 	});
 
 	it('кімнату знесли — «кімнату закрито» й геть із неї', async () => {
@@ -1025,7 +1064,7 @@ describe('склад партії', () => {
  * мовчки відкочувалися. Тепер перша відмова, якої гра не пояснює, раз на сторінку
  * звіряє штамп правил, і на `stale` кімната каже оновити сторінку.
  *
- * Зворотні експерименти: не кликати `noteDenial` з `#failed` — червоніє перший;
+ * Зворотні експерименти: не кликати `noteDenial` з `failed` — червоніє перший;
  * прибрати політику `refused` — другий; не памʼятати знайденої причини — «вдруге
  * не звіряє»; не розпізнавати шматка збірки на вході — «нова збірка».
  */
@@ -1033,7 +1072,7 @@ describe('склад партії', () => {
  * ДІЯ, ЯКУ ПОЧАЛА ЛЮДИНА (аудит 2026-09-25): набір ігор, темп, пауза й «граємо
  * далі» у вікторині йшли повз обробку помилок, і відмова не казала нічого.
  *
- * Зворотний експеримент: ковтати помилку в `act` без `#failed` — червоніє.
+ * Зворотний експеримент: ковтати помилку в `act` без `failed` — червоніє.
  */
 describe('дія людини', () => {
 	it('що не вдалася, — вголос і в журнал із кодом кімнати', async () => {
@@ -1047,7 +1086,8 @@ describe('дія людини', () => {
 		});
 
 		expect(done).toBe(false);
-		expect(toast.error).toHaveBeenCalledWith('pairs.actionFailed');
+		// Виняток, якого не мало бути, — код: тост із причиною, і в журнал — помилкою.
+		await vi.waitFor(() => expect(toast.problem).toHaveBeenCalledWith('code'));
 		expect(logService.error).toHaveBeenCalledWith(
 			'network',
 			'quiz pace not changed',
@@ -1114,7 +1154,7 @@ describe('правила бази новіші за сторінку', () => {
 		await session.enter('create');
 
 		expect(session.reload.reason).toBe('build');
-		expect(toast.error).toHaveBeenCalledWith('pairs.newBuild');
+		expect(toast.problem).toHaveBeenCalledWith('reload');
 	});
 });
 
@@ -1143,7 +1183,7 @@ describe('відмова бази на автоматичному записі',
 
 		expect(setStatus, 'старт повторювався після відмови').toHaveBeenCalledTimes(1);
 		expect(session.autoHalted).toBe(true);
-		expect(toast.error).toHaveBeenCalledTimes(1);
+		expect(toast.problem).toHaveBeenCalledTimes(1);
 		expect(lobby.unpublish, 'невдалий старт прибрав кімнату з переліку').not.toHaveBeenCalled();
 	});
 
@@ -1178,7 +1218,7 @@ describe('відмова бази на автоматичному записі',
 		session.autoHalted = true;
 		await session.start();
 
-		expect(toast.error).toHaveBeenCalledWith('pairs.actionFailed');
+		await vi.waitFor(() => expect(toast.problem).toHaveBeenCalled());
 		expect(room.status).toBe('lobby');
 	});
 });
@@ -1506,7 +1546,7 @@ describe('сесія зі справжніми адаптерами ігор', (
 		const { place, player, lobby } = stubs();
 		let session!: InstanceType<typeof RoomSession<M>>;
 		cleanup = $effect.root(() => {
-			session = new RoomSession(game, place, player as never, lobby as never, net);
+			session = new RoomSession(game, place, player as never, lobby as never, probeFor(), net);
 			session.attach();
 			wire(session);
 		});

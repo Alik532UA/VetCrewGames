@@ -97,8 +97,6 @@ export const ui = {
 	'pairs.playNext': 'In der nächsten Partie mitspielen',
 	'pairs.roomOlder':
 		'Diese Partie wurde in einer älteren Version gestartet. Erstelle einen neuen Raum.',
-	'pairs.rulesMissing': 'Gemeinsames Spielen ist auf dem Server noch nicht aktiviert.',
-	'pairs.netFailed': 'Beitritt zum Raum fehlgeschlagen. Bitte erneut versuchen.',
 	'pairs.roomFull': 'Der Raum ist voll – es sind schon zwölf Teilnehmende drin.',
 	'pairs.opponentGone': 'Die Gegenseite spielt schon lange nicht.',
 	'pairs.takeTurn': 'Zug übernehmen',
@@ -263,8 +261,6 @@ export const ui = {
 	'pairs.modeConfirm': 'Auf Bestätigung warten',
 	'pairs.modeAutoHint': 'Das Spiel beginnt von selbst, sobald zwei Spieler da sind.',
 	'pairs.modeConfirmHint': 'Das Spiel wartet, bis der Gastgeber „Spiel starten“ drückt.',
-	'pairs.rulesStale':
-		'Der Server lässt nicht in den Raum: diese Seite und die Datenbankregeln haben verschiedene Versionen. Lade die Seite neu; hilft das nicht, sind die neuen Regeln noch nicht veröffentlicht.',
 	'review.question': 'Frage',
 	'review.of': 'von',
 	'review.correct': 'richtig',

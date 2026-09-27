@@ -96,8 +96,6 @@ export const ui = {
 	'pairs.leaveRoom': 'Kamer verlaten',
 	'pairs.playNext': 'Meespelen in het volgende spel',
 	'pairs.roomOlder': 'Dit spel is in een oudere versie gestart. Maak een nieuwe kamer aan.',
-	'pairs.rulesMissing': 'Samen spelen is nog niet ingeschakeld op de server.',
-	'pairs.netFailed': 'Kon niet in de ruimte komen. Probeer het opnieuw.',
 	'pairs.roomFull': 'De kamer is vol — er zitten al twaalf deelnemers in.',
 	'pairs.opponentGone': 'De tegenstander speelt al een tijd niet.',
 	'pairs.takeTurn': 'Zet overnemen',
@@ -257,8 +255,6 @@ export const ui = {
 	'pairs.modeConfirm': 'Wachten op bevestiging',
 	'pairs.modeAutoHint': 'Het spel begint zelf zodra er twee spelers zijn.',
 	'pairs.modeConfirmHint': 'Het spel wacht tot de host op „Spel starten” drukt.',
-	'pairs.rulesStale':
-		'De server laat je niet in de kamer: deze pagina en de databaseregels zijn verschillende versies. Laad de pagina opnieuw; helpt dat niet, dan zijn de nieuwe regels nog niet gepubliceerd.',
 	'review.question': 'Vraag',
 	'review.of': 'van',
 	'review.correct': 'goed',
