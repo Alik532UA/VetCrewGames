@@ -35,8 +35,9 @@ export const quiz: Record<string, string> = {
 	'quiz.pace.normal': 'Standard',
 	'quiz.pace.slow': 'Slow',
 	'quiz.pace.unlimited': 'No limit',
-	'quiz.paceUnlimitedHint': 'The round lasts until everyone answers.',
-	'quiz.roundUnlimited': 'No time limit — waiting until everyone answers',
+	'quiz.paceUnlimitedHint':
+		'The round lasts until everyone answers, but a faster answer earns more points.',
+	'quiz.roundUnlimited': 'No time limit, but a faster answer earns more points',
 	'quiz.pause': 'Pause',
 	'quiz.pauseResume': 'Resume',
 	'quiz.awayGoOn': 'Play on',

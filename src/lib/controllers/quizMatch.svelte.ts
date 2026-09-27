@@ -29,6 +29,7 @@ import {
 	quizConfig,
 	quizProgramme,
 	roundLimitFor,
+	scoreLimitFor,
 	type RoomPace,
 	type QuizStep
 } from '$lib/config/quizOnline';
@@ -317,12 +318,22 @@ export class QuizMatch extends RoomEnvelopeState {
 			answers: this.answers,
 			startedAt: this.startedAt,
 			players: this.players.map((player) => player.uid),
+			// Межа РАХУНКУ: у «Не обмежений» прихована, у решті та сама (`scoreLimitFor`).
 			limitOf: (round) => {
 				const game = this.programme[round]?.game;
-				return game === undefined ? undefined : roundLimitFor(game, this.pace, this.#factor);
+				return game === undefined ? undefined : scoreLimitFor(game, this.pace, this.#factor);
 			}
 		};
 	}
+
+	/**
+	 * Межа РАУНДУ для перепрогону — та, що відсікає запізнілі відповіді. У «Не обмежений»
+	 * її немає: відповідь зараховується аж до наступного раунду, скільки б не думали.
+	 */
+	#roundLimitOf = (round: number): number | undefined => {
+		const game = this.programme[round]?.game;
+		return game === undefined ? undefined : roundLimitFor(game, this.pace, this.#factor);
+	};
 
 	get scores(): Record<string, number> {
 		return totalScores(this.#log);
@@ -767,7 +778,7 @@ export class QuizMatch extends RoomEnvelopeState {
 		this.games = configToGames(snapshot.info.config);
 		this.pace = paceOf(snapshot.info.config);
 
-		const log = replayQuizLog(snapshot, { limitOf: this.#log.limitOf });
+		const log = replayQuizLog(snapshot, { limitOf: this.#roundLimitOf });
 
 		this.#journal = log;
 		/*

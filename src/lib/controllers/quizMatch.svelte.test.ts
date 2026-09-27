@@ -16,12 +16,15 @@ import {
 	DEFAULT_ROOM_PACE,
 	FAST_POINTS,
 	NO_LIMIT,
+	QUIZ_PACES,
+	SLOW_POINTS,
 	PACE_ROUND_KEY,
 	REVEAL_PACE,
 	ROUND_PACE,
 	paceOf,
 	quizConfig,
 	roundLimitFor,
+	scoreLimitFor,
 	type RoomPace
 } from '$lib/config/quizOnline';
 
@@ -293,10 +296,18 @@ describe('швидкість кімнати', () => {
  * безмежного», а ТІ САМІ відповіді контролера — фаза, наступний раунд, очки —
  * тільки на кімнаті з цією шкалою.
  *
+ * ОЧКИ — ЗА ШВИДКІСТЮ, ЯК І СКРІЗЬ (рішення автора 2026-09-27). Доти тут стояло «очки лише
+ * за правильність: повільна правильна коштує як швидка» — рішення агента, не автора.
+ * Тепер швидкість міряється від прихованої межі, «Повільно» своєї гри (`scoreLimitFor`),
+ * а сам раунд і далі без межі: смуги немає, кімната чекає всіх, відповідь після межі
+ * зараховується як найповільніша.
+ *
  * Зворотні експерименти (AI-AGENT-PITFALLS-v8 § 1.1), кожен червонить свій пункт:
  * `paceOf` читає раунд за `QUIZ_PACES` замість `ROUND_PACES`; `roundLimitFor` не
  * знає «без межі»; `setGames` пише типову швидкість (червоніє тест вище — «набір
- * ігор стер швидкість»).
+ * ігор стер швидкість»); рахунок бере `roundLimitFor` замість `scoreLimitFor` —
+ * червоніють очки; перепрогін бере `scoreLimitFor` — червоніє «відповідь за годину
+ * зараховується».
  */
 describe('раунд без межі часу', () => {
 	const ALL = ONLINE_GAMES.map((game) => game.id);
@@ -362,7 +373,7 @@ describe('раунд без межі часу', () => {
 		stop();
 	});
 
-	it('очки — лише за правильність: повільна правильна коштує як швидка', async () => {
+	it('очки — за швидкістю: миттєва правильна — повні, за годину — найменші, але зараховані', async () => {
 		const { room, host, guest, stop } = free();
 		await host.startRound(0);
 		await host.answer(1);
@@ -370,15 +381,44 @@ describe('раунд без межі часу', () => {
 		await guest.answer(1);
 
 		expect(host.scores[HOST]).toBe(FAST_POINTS);
-		expect(host.scores[GUEST], 'смуги немає, а очки тануть').toBe(FAST_POINTS);
-		expect(host.roundGains[GUEST]).toBe(FAST_POINTS);
+		expect(host.answers[0][GUEST], 'відповідь за годину не зарахувалася').toBeDefined();
+		expect(host.scores[GUEST], 'після прихованої межі — як найповільніша').toBe(SLOW_POINTS);
+		expect(host.roundGains[GUEST]).toBe(SLOW_POINTS);
 		stop();
 	});
 
+	it('на половині прихованої межі — половина надбавки за швидкість', async () => {
+		const { room, host, stop } = free();
+		await host.startRound(0);
+		const hidden = roundLimitMs(host.programme[0].game, ROUND_PACE.slow);
+		room.tick(hidden / 2);
+		await host.answer(1);
+
+		expect(host.scores[HOST]).toBe(answerPoints(hidden / 2, 0, hidden, 1));
+		expect(host.scores[HOST]).toBeGreaterThan(SLOW_POINTS);
+		expect(host.scores[HOST]).toBeLessThan(FAST_POINTS);
+		stop();
+	});
+
+	it('прихована межа — «Повільно» своєї гри; у рівнів межа рахунку та сама, що в раунду', () => {
+		for (const game of ONLINE_GAMES) {
+			expect(scoreLimitFor(game.id, pace('unlimited', 'normal'), 5)).toBe(
+				roundLimitMs(game.id, 5 * ROUND_PACE.slow)
+			);
+			expect(roundLimitFor(game.id, pace('unlimited', 'normal'), 5)).toBe(NO_LIMIT);
+			for (const level of QUIZ_PACES) {
+				expect(scoreLimitFor(game.id, pace(level, 'normal'), 5)).toBe(
+					roundLimitFor(game.id, pace(level, 'normal'), 5)
+				);
+			}
+		}
+	});
+
 	it('частка й хибна відповідь рахуються як завжди', () => {
-		expect(answerPoints(HOUR, 0, NO_LIMIT, 2 / 3)).toBe(67);
-		expect(answerPoints(HOUR, 0, NO_LIMIT, 0)).toBe(0);
-		expect(answerPoints(0, 0, NO_LIMIT, 1)).toBe(FAST_POINTS);
+		const hidden = scoreLimitFor(ONLINE_GAMES[0].id, pace('unlimited', 'normal'));
+		expect(answerPoints(HOUR, 0, hidden, 2 / 3)).toBe(Math.round((2 / 3) * SLOW_POINTS));
+		expect(answerPoints(HOUR, 0, hidden, 0)).toBe(0);
+		expect(answerPoints(0, 0, hidden, 2 / 3)).toBe(Math.round((2 / 3) * FAST_POINTS));
 	});
 
 	it('того, кого немає онлайн, раунд без межі не чекає', async () => {

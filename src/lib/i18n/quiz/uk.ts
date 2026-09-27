@@ -45,8 +45,9 @@ export const quiz: Record<string, string> = {
 	 * екрані саме це слово.
 	 */
 	'quiz.pace.unlimited': 'Не обмежений',
-	'quiz.paceUnlimitedHint': 'Раунд триває, поки кожен не відповість.',
-	'quiz.roundUnlimited': 'Час не обмежений — чекаємо, поки відповідять усі',
+	'quiz.paceUnlimitedHint':
+		'Раунд триває, поки кожен не відповість, але швидша відповідь дає більше очок.',
+	'quiz.roundUnlimited': 'Час не обмежений, але швидша відповідь дає більше очок',
 	'quiz.pause': 'Пауза',
 	'quiz.pauseResume': 'Продовжити',
 	'quiz.awayGoOn': 'Грати далі',

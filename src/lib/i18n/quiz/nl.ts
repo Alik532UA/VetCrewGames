@@ -35,8 +35,9 @@ export const quiz: Record<string, string> = {
 	'quiz.pace.normal': 'Standaard',
 	'quiz.pace.slow': 'Langzaam',
 	'quiz.pace.unlimited': 'Onbeperkt',
-	'quiz.paceUnlimitedHint': 'De ronde duurt tot iedereen heeft geantwoord.',
-	'quiz.roundUnlimited': 'Geen tijdslimiet — we wachten tot iedereen heeft geantwoord',
+	'quiz.paceUnlimitedHint':
+		'De ronde duurt tot iedereen heeft geantwoord, maar een sneller antwoord levert meer punten op.',
+	'quiz.roundUnlimited': 'Geen tijdslimiet, maar een sneller antwoord levert meer punten op',
 	'quiz.pause': 'Pauze',
 	'quiz.pauseResume': 'Doorgaan',
 	'quiz.awayGoOn': 'Doorspelen',
