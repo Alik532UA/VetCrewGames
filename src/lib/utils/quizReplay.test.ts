@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { HELD_PER_ROUND, LATE_ANSWER_GRACE_MS, replayQuizLog } from './quizReplay';
-import { PAUSE_COOLDOWN_MS, RESUME_BONUS_MS } from '$lib/config/quizOnline';
+import {
+	answerPoints,
+	FAST_POINTS,
+	PAUSE_COOLDOWN_MS,
+	RESUME_BONUS_MS
+} from '$lib/config/quizOnline';
+import { totalScores } from './quizScore';
 import type { Member, Move, RoomSnapshot } from '$lib/net/roomTypes';
 
 /**
@@ -469,5 +475,105 @@ describe('журнал, старший за кімнату', () => {
 
 		expect(log.leader).toBe(HOST);
 		expect(log.startedAt[0]).toBe(2000);
+	});
+});
+
+/**
+ * ПАУЗИ Й «ЧЕКАЄМО» НЕ РАХУЮТЬСЯ В ШВИДКІСТЬ (прохання автора 2026-09-27: «віднімати
+ * паузи й „Чекаємо“ від часу відповіді, у всіх режимах»).
+ *
+ * Сцена одна: раунд на сім секунд почався о 1000, на другій секунді (3000) когось не стало
+ * й кімната двадцять секунд чекала, о 23 000 чекання відпустили — з трьома секундами на
+ * повернення, тобто `ms` = 23 000. Хто відповів о 24 000, думав три секунди, а не двадцять
+ * три.
+ *
+ * Зворотні експерименти: повернути `answer.at` замість `answer.at - held` у
+ * `quizScore.ts` — червоніє перевірка очок; не віднімати власне очікування зниклого —
+ * червоніє перевірка зниклого; не віднімати надбавку — червоніє перевірка трьох секунд.
+ */
+describe('пауза не рахується в швидкість', () => {
+	const ROUND_MS = 7000;
+	const start = move(HOST, 'round', 1000, { round: 0 });
+	const waitedForThird = [
+		move(HOST, 'held', 23_000, { round: 0, ms: 23_000, uid: THIRD, spent: 20_000 }),
+		move(GUEST, 'held', 23_100, { round: 0, ms: 23_000, uid: THIRD, spent: 20_000 })
+	];
+
+	it('перевірка жива: без очікування відповідь не має що віднімати', () => {
+		const log = replayQuizLog(
+			snapshot([start, move(HOST, 'answer', 3000, { round: 0, correct: 1 })])
+		);
+		expect(log.answers[0][HOST]).toEqual({ at: 3000, correct: 1 });
+	});
+
+	it('відповідь після очікування: віднімається саме очікування, без трьох секунд на повернення', () => {
+		const log = replayQuizLog(
+			snapshot([start, ...waitedForThird, move(HOST, 'answer', 24_000, { round: 0, correct: 1 })])
+		);
+		expect(log.answers[0][HOST].held).toBe(23_000 - RESUME_BONUS_MS);
+	});
+
+	it('очікування, записане ПІСЛЯ відповіді, її не стосується', () => {
+		const log = replayQuizLog(
+			snapshot([start, move(GUEST, 'answer', 2500, { round: 0, correct: 1 }), ...waitedForThird])
+		);
+		expect(log.answers[0][GUEST]).toEqual({ at: 2500, correct: 1 });
+	});
+
+	/*
+	 * Зниклий вікна «Чекаємо» не бачить: його дошка відкрита, і думати він міг увесь цей
+	 * час. Відняти йому його ж очікування означало б нагородити за обрив звʼязку.
+	 */
+	it('тому, на кого чекали, його власне очікування не віднімається', () => {
+		const log = replayQuizLog(
+			snapshot([start, ...waitedForThird, move(THIRD, 'answer', 24_500, { round: 0, correct: 1 })])
+		);
+		expect(log.answers[0][THIRD]).toEqual({ at: 24_500, correct: 1 });
+	});
+
+	it('автору паузи віднімається вся пауза: під нею дошка закрита і в нього', () => {
+		const log = replayQuizLog(
+			snapshot([
+				start,
+				move(HOST, 'pause', 3000, { round: 0 }),
+				move(HOST, 'resume', 13_000, { round: 0 }),
+				move(HOST, 'held', 13_000, { round: 0, ms: 13_000, uid: HOST, spent: 10_000 }),
+				move(HOST, 'answer', 14_000, { round: 0, correct: 1 }),
+				move(GUEST, 'answer', 14_000, { round: 0, correct: 1 })
+			])
+		);
+		expect(log.answers[0][HOST].held).toBe(10_000);
+		expect(log.answers[0][GUEST].held).toBe(10_000);
+	});
+
+	it('два очікування — дві надбавки: різних чисел у найповнішого автора стільки ж', () => {
+		const log = replayQuizLog(
+			snapshot([
+				start,
+				move(HOST, 'held', 8000, { round: 0, ms: 8000 }),
+				move(HOST, 'held', 20_000, { round: 0, ms: 17_000 }),
+				move(GUEST, 'held', 20_050, { round: 0, ms: 17_000 }),
+				move(GUEST, 'answer', 21_000, { round: 0, correct: 1 })
+			])
+		);
+		expect(log.answers[0][GUEST].held).toBe(17_000 - 2 * RESUME_BONUS_MS);
+	});
+
+	it('очки: хто думав три секунди, отримує стільки ж, скільки без очікування за три секунди', () => {
+		const log = replayQuizLog(
+			snapshot([start, ...waitedForThird, move(HOST, 'answer', 24_000, { round: 0, correct: 1 })]),
+			{ limitOf: () => ROUND_MS }
+		);
+		const scores = totalScores({
+			answers: log.answers,
+			startedAt: log.startedAt,
+			players: [HOST],
+			limitOf: () => ROUND_MS
+		});
+		const threeSeconds = answerPoints(1000 + 3000, 1000, ROUND_MS, 1);
+		expect(scores[HOST]).toBe(threeSeconds);
+		// Доти очікування йшло в залік: 23 секунди на семисекундному раунді — найменші 50.
+		expect(scores[HOST]).toBeGreaterThan(answerPoints(24_000, 1000, ROUND_MS, 1));
+		expect(scores[HOST]).toBeLessThan(FAST_POINTS);
 	});
 });

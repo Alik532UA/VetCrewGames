@@ -7,6 +7,11 @@ export interface QuizAnswer {
 	at: number;
 	/** Частка правильного: 1 — усе, 0 — нічого. */
 	correct: number;
+	/**
+	 * Скільки з часу до цієї відповіді раунд ПРОСТОЯВ для самого гравця — паузи й
+	 * «Чекаємо», — мс. У швидкість не рахується (`quizScore.ts`). Немає — 0.
+	 */
+	held?: number;
 }
 
 /** Усе, що перепрогін журналу дає партії. */
@@ -158,6 +163,8 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 	const pausedBy: Record<number, string> = {};
 	const pausedAt: Record<number, number> = {};
 	const pauseUsedAt: Record<string, number> = {};
+	/** Хто в якому раунді ставив паузу: для нього чекання — теж закрита дошка (`heldFor`). */
+	const pausers: Record<number, Set<string>> = {};
 	const answered: Array<{ round: number; by: string } & QuizAnswer> = [];
 	const holds: Array<{ round: number; by: string; at: number; payload: Move['payload'] }> = [];
 
@@ -201,6 +208,7 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 			if (used !== undefined && at < used + PAUSE_COOLDOWN_MS) continue;
 			pausedBy[round] = move.by;
 			pausedAt[round] = at;
+			(pausers[round] ??= new Set()).add(move.by);
 			continue;
 		}
 
@@ -239,7 +247,7 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		answered.push({ round, by: move.by, at, correct });
 	}
 
-	const { held, spentByRound, graceSpent } = countHolds(holds, startedAt);
+	const { held, spentByRound, graceSpent, timeline } = countHolds(holds, startedAt);
 
 	/*
 	 * ВІДПОВІДІ — ДРУГИМ ПРОХОДОМ, бо межа раунду залежить від ПОЧАТКУ наступного,
@@ -271,7 +279,13 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 		// ОДИН РАУНД — ОДНА ВІДПОВІДЬ. Повторна нічого не додає: інакше повтор
 		// надсилання давав би подвійні очки.
 		if (forRound[entry.by] === undefined) {
-			forRound[entry.by] = { at: entry.at, correct: entry.correct };
+			const paused = pausers[entry.round]?.has(entry.by) ?? false;
+			const stood = heldFor(timeline[entry.round], entry.by, entry.at, paused);
+			// Поле — лише коли є що віднімати: відповідь без очікування лишається тією самою.
+			forRound[entry.by] =
+				stood > 0
+					? { at: entry.at, correct: entry.correct, held: stood }
+					: { at: entry.at, correct: entry.correct };
 		}
 	}
 
@@ -314,10 +328,13 @@ export function replayQuizLog(snapshot: RoomSnapshot, options: ReplayOptions = {
 function countHolds(
 	holds: ReadonlyArray<{ round: number; by: string; at: number; payload: Move['payload'] }>,
 	startedAt: Readonly<Record<number, number>>
-): Pick<QuizLog, 'held' | 'spentByRound' | 'graceSpent'> {
+): Pick<QuizLog, 'held' | 'spentByRound' | 'graceSpent'> & {
+	timeline: Record<number, HoldPoint[]>;
+} {
 	const held: Record<number, number> = {};
 	const spentByRound: Record<number, Record<string, number>> = {};
 	const totalsBy: Record<string, number[]> = {};
+	const timeline: Record<number, HoldPoint[]> = {};
 
 	for (const entry of [...holds].sort((a, b) => a.at - b.at)) {
 		const start = startedAt[entry.round];
@@ -334,10 +351,18 @@ function countHolds(
 
 		const uid = entry.payload?.uid;
 		const spent = Number(entry.payload?.spent);
-		if (typeof uid === 'string' && Number.isFinite(spent) && spent > 0) {
+		const charged = typeof uid === 'string' && Number.isFinite(spent) && spent > 0;
+		if (charged) {
 			const forRound = (spentByRound[entry.round] ??= {});
 			forRound[uid] = Math.max(forRound[uid] ?? 0, Math.min(spent, ms));
 		}
+		(timeline[entry.round] ??= []).push({
+			at: entry.at,
+			by: entry.by,
+			ms,
+			uid: charged ? uid : undefined,
+			spent: charged ? Math.min(spent, ms) : 0
+		});
 	}
 
 	const graceSpent: Record<string, number> = {};
@@ -346,5 +371,56 @@ function countHolds(
 			graceSpent[uid] = (graceSpent[uid] ?? 0) + spent;
 		}
 	}
-	return { held, spentByRound, graceSpent };
+	return { held, spentByRound, graceSpent, timeline };
+}
+
+/** Зарахований запис чекання: коли ліг, хто писав, скільки раунд простояв і кому це списано. */
+interface HoldPoint {
+	at: number;
+	by: string;
+	ms: number;
+	uid: string | undefined;
+	spent: number;
+}
+
+/**
+ * СКІЛЬКИ РАУНД ПРОСТОЯВ ДЛЯ ГРАВЦЯ ДО ЙОГО ВІДПОВІДІ — те, що не рахується в швидкість
+ * (прохання автора 2026-09-27: «віднімати паузи й „Чекаємо“ від часу відповіді, у всіх
+ * режимах»).
+ *
+ * Доти швидкість міряли від початку раунду, і час під вікном «Чекаємо» чи «Пауза»
+ * рахувався тому, хто відповідав після нього: на раунді в сім секунд двадцять секунд
+ * очікування з другої секунди й відповідь за секунду після повернення давали 50 очок —
+ * найменше з можливого, — хоч людина думала три секунди. Тепер береться те саме число,
+ * на яке очікування відсунуло дедлайн (`held`), але лише записане ДО відповіді:
+ * очікування, що почалося пізніше, її не стосується.
+ *
+ * БЕЗ ТРЬОХ СЕКУНД НА ПОВЕРНЕННЯ (`RESUME_BONUS_MS`). Їх дедлайн дає, щоб після вікна
+ * встигнути зорієнтуватися, а не щоб відповідь у них коштувала як миттєва: з ними приклад
+ * вище давав би 100 очок замість 79. Скільки очікувань було до відповіді, журнал знає —
+ * кожен автор пише одне сукупне число на кожне відпущене чекання, тож різних чисел у
+ * найповнішого автора стільки ж, скільки очікувань.
+ *
+ * ВИНЯТОК — ЧАС, КОЛИ ЧЕКАЛИ САМЕ НА НЬОГО. Вікно очікування бачать ті, хто чекає, а
+ * зниклий — ні: його дошка відкрита, і думати він може весь цей час. Відняти йому його ж
+ * очікування означало б нагородити за обрив звʼязку. Скільки чекали на кого, журнал уже
+ * знає (`spent`). Автору паузи це не стосується: під паузою дошка закрита й у нього.
+ */
+function heldFor(
+	points: readonly HoldPoint[] | undefined,
+	by: string,
+	answeredAt: number,
+	paused: boolean
+): number {
+	let total = 0;
+	let own = 0;
+	const releases: Record<string, Set<number>> = {};
+	for (const point of points ?? []) {
+		if (point.at > answeredAt) break;
+		total = Math.max(total, point.ms);
+		if (point.uid === by) own = Math.max(own, point.spent);
+		(releases[point.by] ??= new Set()).add(point.ms);
+	}
+	const holds = Math.max(0, ...Object.values(releases).map((values) => values.size));
+	return Math.max(0, total - (paused ? 0 : own) - RESUME_BONUS_MS * holds);
 }

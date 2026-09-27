@@ -62,7 +62,7 @@ export function totalScores(view: QuizLogView): Record<string, number> {
 		if (start === undefined || limit === undefined || limit === 0) continue;
 
 		for (const [uid, answer] of Object.entries(byPlayer)) {
-			out[uid] = (out[uid] ?? 0) + answerPoints(answer.at, start, limit, answer.correct);
+			out[uid] = (out[uid] ?? 0) + pointsOf(answer, start, limit);
 		}
 	}
 	return out;
@@ -84,9 +84,18 @@ export function roundGains(view: QuizLogView, round: number): Record<string, num
 	if (start === undefined || limit === undefined || limit === 0) return out;
 
 	for (const [uid, answer] of Object.entries(view.answers[round] ?? {})) {
-		out[uid] = answerPoints(answer.at, start, limit, answer.correct);
+		out[uid] = pointsOf(answer, start, limit);
 	}
 	return out;
+}
+
+/**
+ * Ціна однієї відповіді: швидкість — без часу, коли раунд стояв для гравця (`held`,
+ * `quizReplay.ts`, `heldFor`). Паузи й «Чекаємо» не мусять коштувати очок тому, хто
+ * відповів після них.
+ */
+function pointsOf(answer: QuizAnswer, start: number, limit: number): number {
+	return answerPoints(answer.at - (answer.held ?? 0), start, limit, answer.correct);
 }
 
 /**
