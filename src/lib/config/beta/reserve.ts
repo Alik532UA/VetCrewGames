@@ -242,8 +242,8 @@ export const reserveTab: BetaTab = {
 			id: 'reserve_23',
 			category: { uk: 'Керування часом', en: 'Time controls' },
 			text: {
-				uk: 'Знімiть галочку гарячих клавіш у шапці — цифри 1, 2, 3 і клавіша паузи мусять перестати діяти, а підписи клавіш під кнопками зникнути. Самі кнопки мусять і далі працювати мишкою.',
-				en: 'Turn the shortcut switch off in the header — the digits 1, 2, 3 and the pause key must stop working and the key labels under the buttons must disappear. The buttons themselves must still work with the mouse.'
+				uk: 'ЗАРАЗ НЕ ПЕРЕВІРЯЄТЬСЯ: вимикача гарячих клавіш у шапці немає, його сховано рішенням автора 2026-09-27. Коли його повернуть: зніміть галочку — цифри 1, 2, 3 і клавіша паузи мусять перестати діяти, а підписи клавіш під кнопками зникнути. Самі кнопки мусять і далі працювати мишкою.',
+				en: 'NOT CHECKED FOR NOW: the header has no shortcut switch, it was hidden by the author on 2026-09-27. Once it is back: turn it off — the digits 1, 2, 3 and the pause key must stop working and the key labels under the buttons must disappear. The buttons themselves must still work with the mouse.'
 			},
 			negative: true,
 			coverage: 'manual',
