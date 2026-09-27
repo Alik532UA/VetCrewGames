@@ -24,32 +24,35 @@
 	let { lang }: Props = $props();
 </script>
 
-<div class="mode-picker" in:fade={{ duration: 300 }}>
+<div class="mode-picker fill" in:fade={{ duration: 300 }}>
 	<h2 class="mode-picker__title text-panel">{@html formatFont(t('habitat.chooseMode'))}</h2>
 
-	<a
-		class="mode-btn btn-secondary"
-		href={langPath(lang, 'game-habitat/continents')}
-		data-testid="habitat-mode-continents-link"
-	>
-		<Globe2 size={28} aria-hidden="true" />
-		<span class="mode-btn__text">
+	<!--
+		ПЛИТКИ, А НЕ РЯДКИ (прохання автора 2026-09-27: «класична проблема, що 50% вільного
+		простору — зробити наш новий підхід з великими кнопками, коли іконка над текстом»). Той
+		самий вигляд, що в меню «Грати» й у «Створити кімнату» (`.menu-tile-grid`).
+	-->
+	<nav class="menu-tile-grid">
+		<a
+			class="menu-btn menu-btn--game menu-tile"
+			href={langPath(lang, 'game-habitat/continents')}
+			data-testid="habitat-mode-continents-link"
+		>
+			<Globe2 class="menu-tile__icon" aria-hidden="true" />
 			<strong>{@html formatFont(t('habitat.mode.continents'))}</strong>
-			<small>{@html formatFont(t('habitat.mode.continents.hint'))}</small>
-		</span>
-	</a>
+			<span class="menu-tile__hint">{@html formatFont(t('habitat.mode.continents.hint'))}</span>
+		</a>
 
-	<a
-		class="mode-btn btn-secondary"
-		href={langPath(lang, 'game-habitat/biomes')}
-		data-testid="habitat-mode-biomes-link"
-	>
-		<Trees size={28} aria-hidden="true" />
-		<span class="mode-btn__text">
+		<a
+			class="menu-btn menu-btn--game menu-tile"
+			href={langPath(lang, 'game-habitat/biomes')}
+			data-testid="habitat-mode-biomes-link"
+		>
+			<Trees class="menu-tile__icon" aria-hidden="true" />
 			<strong>{@html formatFont(t('habitat.mode.biomes'))}</strong>
-			<small>{@html formatFont(t('habitat.mode.biomes.hint'))}</small>
-		</span>
-	</a>
+			<span class="menu-tile__hint">{@html formatFont(t('habitat.mode.biomes.hint'))}</span>
+		</a>
+	</nav>
 </div>
 
 <style>
@@ -57,21 +60,19 @@
 	 * Власна стеля ширини, і вона тут обов'язкова.
 	 *
 	 * Сторінка гри від 1000px розширюється до 1100px — але заради ОДНОГО свого
-	 * елемента, ряду варіантів у раунді. Решту вона там-таки підрізає до 460px.
-	 * Цей екран у той перелік не потрапив і розтягувався на всі 1100: заміряно
-	 * на 1730px вікні — кнопка 1100px, текст у ній 269px, тобто 755px порожнечі
-	 * праворуч від підпису.
+	 * елемента, ряду варіантів у раунді. Цей екран у той перелік не потрапив і
+	 * розтягувався на всі 1100: заміряно на 1730px вікні — кнопка 1100px, текст у
+	 * ній 269px, тобто 755px порожнечі праворуч від підпису.
 	 *
-	 * 560px — це та сама ширина, яку сторінка має до розширення. Вибір режиму
-	 * так виглядає однаково на планшеті й на великому екрані, а не як окремий
-	 * стан, що зʼявляється лише на широкому вікні.
+	 * Стеля — в одиницях екрана (`.fill`), а не 560px: дві плитки по 15 одиниць стають
+	 * поруч і на великому екрані, де одиниця росте до 34px, а не падають одна під одну.
 	 */
 	.mode-picker {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-md);
 		width: 100%;
-		max-width: 560px;
+		max-width: calc(var(--fill-u) * 36);
 		margin: auto;
 	}
 
@@ -81,38 +82,4 @@
 		font-size: var(--font-size-xl);
 		color: var(--color-text);
 	}
-
-	/* Режим — кнопкою (`.btn-secondary`), а не напівпрозорою панеллю з тінню (2026-09-27). */
-	.mode-btn {
-		display: flex;
-		align-items: center;
-		gap: var(--space-md);
-		width: 100%;
-		padding: var(--space-lg);
-		border-radius: var(--radius-md);
-		text-decoration: none;
-		font: inherit;
-		text-align: left;
-	}
-
-	.mode-btn__text {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-	}
-
-	.mode-btn__text strong {
-		font-size: var(--font-size-lg);
-	}
-
-	/*
-	 * Пояснення приглушене КЕГЛЕМ, а не прозорістю — та сама причина, що в `RoomList`: на
-	 * тлі кнопки (`--color-bg-card`) `opacity: 0.85` давала 4,01:1 у світло-зеленій темі й
-	 * 3,71:1 у зимовій (заміряно `tests/contrast-runtime.spec.ts`).
-	 */
-	.mode-btn__text small {
-		font-size: var(--font-size-sm);
-	}
-
 </style>

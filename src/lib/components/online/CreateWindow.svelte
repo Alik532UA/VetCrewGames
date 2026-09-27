@@ -57,28 +57,28 @@
 
 		{#if game}
 			<p class="create__question">{@html formatFont(t('pairs.visibility'))}</p>
-			<div class="create__tiles">
+			<div class="menu-tile-grid">
 				<button
 					type="button"
-					class="create__tile menu-btn menu-tile btn-accent"
+					class="menu-btn menu-tile btn-accent"
 					onclick={() => onChoose(false)}
 					aria-disabled={busy}
 					data-testid="online-create-everyone-btn"
 				>
 					<Globe class="menu-tile__icon" aria-hidden="true" />
 					<span class="create__label">{@html formatFont(t('pairs.everyone'))}</span>
-					<span class="create__hint">{@html formatFont(t('online.everyoneHint'))}</span>
+					<span class="menu-tile__hint">{@html formatFont(t('online.everyoneHint'))}</span>
 				</button>
 				<button
 					type="button"
-					class="create__tile menu-btn menu-btn--game menu-tile"
+					class="menu-btn menu-btn--game menu-tile"
 					onclick={() => onChoose(true)}
 					aria-disabled={busy}
 					data-testid="online-create-friends-btn"
 				>
 					<Lock class="menu-tile__icon" aria-hidden="true" />
 					<span class="create__label">{@html formatFont(t('pairs.friendsOnly'))}</span>
-					<span class="create__hint">{@html formatFont(t('online.friendsHint'))}</span>
+					<span class="menu-tile__hint">{@html formatFont(t('online.friendsHint'))}</span>
 				</button>
 			</div>
 		{:else}
@@ -88,10 +88,10 @@
 				називають саме його (`betaChecks.test.ts`). Порядок, значки й сам вигляд — ті самі,
 				що в меню «Грати»: той самий вибір, та сама плитка.
 			-->
-			<div class="create__tiles">
+			<div class="menu-tile-grid">
 				<button
 					type="button"
-					class="create__tile menu-btn menu-btn--game menu-tile"
+					class="menu-btn menu-btn--game menu-tile"
 					onclick={() => onGame?.('quiz')}
 					data-testid="online-create-quiz-btn"
 				>
@@ -100,7 +100,7 @@
 				</button>
 				<button
 					type="button"
-					class="create__tile menu-btn menu-btn--game menu-tile"
+					class="menu-btn menu-btn--game menu-tile"
 					onclick={() => onGame?.('pairs')}
 					data-testid="online-create-pairs-btn"
 				>
@@ -121,36 +121,10 @@
 
 	/*
 	 * ВИБІР — ПЛИТКАМИ МЕНЮ «ГРАТИ», а не рядками-кнопками (прохання автора 2026-09-27: «як
-	 * тобі великі відступи і не великі кнопки? … взяти приклад … як в виборі гри в соло
-	 * режимі»). Доти тут стояли кнопки заввишки 56px у вікні, яке `.fill-window` тримає на
-	 * половину екрана: вміст займав третину вікна, решта була полями.
-	 *
-	 * Сітка, а не ряд `.menu-tiles`: дві плитки стають поруч, щойно для кожної є 11 одиниць, і
-	 * одна під одною на телефоні. Контейнер — для запиту плиток із global.css: у вузькому
-	 * вікні вони беруть менші поля й значок, як у меню на телефоні.
+	 * тобі великі відступи і не великі кнопки?»): сітка й пояснення — глобальні
+	 * (`.menu-tile-grid`, `.menu-tile__hint`), спільні з пошуком і вибором режиму.
 	 */
-	.create__tiles {
-		container-type: inline-size;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--fill-u) * 11)), 1fr));
-		gap: var(--space-md);
-	}
-
-	/* Плитка у вікні — на всю клітинку сітки: `max-width` меню тут не потрібен. */
-	.create__tile {
-		max-width: none;
-		font: inherit;
-		font-size: var(--font-size-2xl);
-	}
-
 	.create__label {
 		font-weight: var(--font-weight-bold);
-	}
-
-	/* Пояснення під назвою — дрібніше й звичайним накресленням: це підпис, а не дія. */
-	.create__hint {
-		font-size: var(--font-size-sm);
-		font-weight: var(--font-weight-normal);
-		line-height: 1.3;
 	}
 </style>

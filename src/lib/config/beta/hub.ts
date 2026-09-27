@@ -158,6 +158,35 @@ export const hubTab: BetaTab = {
 			coverage: 'covered',
 			test: 'tests/hub-windows.spec.ts',
 			testid: 'online-create-quiz-btn'
+		},
+		{
+			/*
+			 * ДО 90% ЕКРАНА Й ПОСЕРЕДИНІ (правило автора 2026-09-27: «елементи разом на 90%
+			 * екрану», «всі меню по центру»). П'ять розмірів екрана міряє e2e `hub-windows`.
+			 */
+			id: 'hub_13',
+			category: { uk: 'Вікна хабу', en: 'Hub windows' },
+			text: {
+				uk: 'Відкрийте по черзі «Автоматичний пошук», «Створити кімнату» й «Підключитися» на невеликому телефоні й на компʼютері. Кожне вікно мусить стояти посередині екрана й уміщатися цілком — «Назад» видно без прокрутки, — а не займати половину екрана чи виходити за його край.',
+				en: 'Open «Automatic search», «Create a room» and «Join» in turn on a small phone and on a computer. Each window must sit in the middle of the screen and fit whole — «Back» visible without scrolling — rather than taking half the screen or running past its edge.'
+			},
+			coverage: 'covered',
+			test: 'tests/hub-windows.spec.ts',
+			testid: 'online-search-panel'
+		},
+		{
+			/*
+			 * ДВА РЯДКИ Й ПЛИТКИ ПОШУКУ (прохання автора 2026-09-27). Розкладку міряє e2e
+			 * `hub-windows`; руками — чи це читається як вибір і як один рядок підпису.
+			 */
+			id: 'hub_14',
+			category: { uk: 'Вікна хабу', en: 'Hub windows' },
+			text: {
+				uk: 'На телефоні подивіться на «Як вас звати?»: прапор, аватарка й підпис мусять стояти ОДНИМ рядком, а поле імені з кубиком — другим. Відкрийте «Автоматичний пошук»: ігри мусять вибиратися великими плитками зі значком, а ввімкнену гру видно за рамкою й галочкою.',
+				en: 'On a phone look at «What’s your name?»: the flag, the avatar and the label must stand on ONE line, and the name field with the dice on the second. Open «Automatic search»: the games must be picked with big tiles with an icon, and the game that is on is shown by a ring and a check mark.'
+			},
+			coverage: 'manual',
+			testid: 'online-search-*-toggle'
 		}
 	]
 };

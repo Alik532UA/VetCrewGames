@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { fitZoom, GROW_BAND, MAX_ZOOM, MIN_ZOOM, SLACK_PX, ZOOM_STEP } from './fitZoom';
+import { FILL_SHARE, fitZoom, GROW_BAND, MAX_ZOOM, MIN_ZOOM, SLACK_PX, ZOOM_STEP } from './fitZoom';
 
 /**
  * Арифметика проти дрижання.
@@ -15,9 +15,16 @@ describe('масштаб під вікно', () => {
 		expect(fitZoom(1000, 500, 1)).toBeLessThan(1);
 	});
 
-	it('сторінка, яка вміщається, лишається без масштабу', () => {
+	/**
+	 * ЦІЛЬ — 90% ВИСОТИ, а не 100% (правило автора 2026-09-27: «елементи разом на 90%
+	 * екрану»). Зворотний експеримент: повернути `FILL_SHARE = 1` — червоніє другий рядок.
+	 */
+	it('сторінка, що займає до 90% висоти, лишається без масштабу, а на всю — стискається', () => {
 		expect(fitZoom(400, 500, 1)).toBe(1);
-		expect(fitZoom(500, 500, 1)).toBe(1);
+		expect(fitZoom(500 * FILL_SHARE, 500, 1)).toBe(1);
+		const full = fitZoom(500, 500, 1);
+		expect(full, 'уся висота — уже забагато').toBeLessThan(1);
+		expect(500 * full).toBeLessThanOrEqual(500 * FILL_SHARE - SLACK_PX);
 	});
 
 	/**
@@ -35,17 +42,18 @@ describe('масштаб під вікно', () => {
 
 	/** Дрібне гуляння висоти не рухає масштаб: саме воно й смикало сторінку. */
 	it('зміна менша за крок не рухає масштаб', () => {
-		const settled = fitZoom(1000, 800, 1);
+		const settled = fitZoom(1000, 1000, 1);
+		expect(settled, 'робоча точка, а не дно — інакше перевіряти нічого').toBeGreaterThan(MIN_ZOOM);
 		for (const wobble of [-6, -3, -1, 1, 3, 6]) {
-			expect(fitZoom(1000, 800 + wobble, settled), `гуляння ${wobble}px`).toBe(settled);
+			expect(fitZoom(1000, 1000 + wobble, settled), `гуляння ${wobble}px`).toBe(settled);
 		}
 	});
 
 	/** А справжня зміна — рухає: інакше запобіжник просто ламав би підгонку. */
 	it('справжня зміна вікна масштаб таки рухає', () => {
-		const settled = fitZoom(1000, 800, 1);
-		expect(fitZoom(1000, 600, settled)).toBeLessThan(settled);
-		expect(fitZoom(1000, 990, settled)).toBeGreaterThan(settled);
+		const settled = fitZoom(1000, 1000, 1);
+		expect(fitZoom(1000, 800, settled)).toBeLessThan(settled);
+		expect(fitZoom(1000, 1250, settled)).toBeGreaterThan(settled);
 	});
 
 	/** Кратність кроку — або саме дно: воно не мусить лягати на сітку. */
@@ -93,11 +101,11 @@ describe('масштаб росте до вікна', () => {
 		expect(fitZoom(300, 700, 1)).toBe(1);
 	});
 
-	it('зі стелею росте, доки вміст не заповнить висоту, і ні кроком далі', () => {
+	it('зі стелею росте, доки вміст не займе 90% висоти, і ні кроком далі', () => {
 		const zoom = fitZoom(400, 710, 1, 2);
 		expect(zoom).toBeGreaterThan(1);
-		expect(400 * zoom).toBeLessThanOrEqual(710 - SLACK_PX);
-		expect(400 * (zoom + ZOOM_STEP)).toBeGreaterThan(710 - SLACK_PX);
+		expect(400 * zoom).toBeLessThanOrEqual(710 * FILL_SHARE - SLACK_PX);
+		expect(400 * (zoom + ZOOM_STEP)).toBeGreaterThan(710 * FILL_SHARE - SLACK_PX);
 	});
 
 	/** Стеля не мусить лежати на сітці кроку (2,125 — стеля одиниці), а масштаб — мусить. */
@@ -123,7 +131,7 @@ describe('масштаб росте до вікна', () => {
 	/** Розтягується лише з запасом у два кроки — асиметрія та сама, що й при стисненні. */
 	it('запасу менше за два кроки — не росте', () => {
 		const needed = 400;
-		const available = Math.floor(needed * (1 + GROW_BAND / 2)) + SLACK_PX;
+		const available = Math.floor((needed * (1 + GROW_BAND / 2) + SLACK_PX) / FILL_SHARE);
 		expect(fitZoom(needed, available, 1, 2)).toBe(1);
 	});
 
@@ -131,7 +139,7 @@ describe('масштаб росте до вікна', () => {
 		const grown = fitZoom(400, 710, 1, 2);
 		const shrunk = fitZoom(400, 600, grown, 2);
 		expect(shrunk).toBeLessThan(grown);
-		expect(400 * shrunk).toBeLessThanOrEqual(600 - SLACK_PX);
+		expect(400 * shrunk).toBeLessThanOrEqual(600 * FILL_SHARE - SLACK_PX);
 	});
 
 	/** Вікно звузилося, і місця вшир поменшало: стеля опускає масштаб, навіть коли висоти вдосталь. */

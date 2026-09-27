@@ -52,6 +52,18 @@ export const ZOOM_STEP = 0.02;
 export const GROW_BAND = 2 * ZOOM_STEP;
 
 /**
+ * ЯКУ ЧАСТКУ ВИСОТИ ЗАЙМАЄ ВМІСТ — 90%, і в обидва боки (правило автора 2026-09-27: «треба
+ * триматися правила для всіх випадків так, щоб елементи разом на 90% екрану»).
+ *
+ * Доти ціль була 100%: сторінка стискалася лише тоді, коли вже не вміщалася, і росла, доки
+ * не впиралася в край. Звідси обидві скарги того самого дня — вікно пошуку на телефоні
+ * займало 105% екрана (вікна не масштабувалися зовсім), а до плиток — 60%. Тепер і стискання,
+ * і ріст цілять у 90% висоти під шапкою: десята частина лишається полями, а не прокруткою
+ * чи порожнечею.
+ */
+export const FILL_SHARE = 0.9;
+
+/**
  * Скільки місця лишити під краєм. Без запасу сторінка, яка «рівно вміщається»,
  * у вужчому вікні вже віддає прокрутку через смугу (FLUID-SIZING-v8 § 8.1).
  */
@@ -70,21 +82,25 @@ export const SLACK_PX = 2;
  * `min` — наскільки дозволено СТИСКАТИСЯ. Типово дно для пальця (`MIN_ZOOM`); 1 — не
  * стискатися зовсім: так масштабують сторінки, яким на телефоні природно прокручуватися
  * (лобі, хаб), а не зменшуватися.
+ *
+ * `share` — ціль, частка висоти (`FILL_SHARE`). Параметром — лише для тестів арифметики.
  */
 export function fitZoom(
 	needed: number,
 	available: number,
 	current: number,
 	max = 1,
-	min = MIN_ZOOM
+	min = MIN_ZOOM,
+	share = FILL_SHARE
 ): number {
 	if (needed <= 0 || available <= 0) return 1;
 
+	const room = available * share;
 	const ceiling = Math.max(1, max);
-	let raw = needed > available + SLACK_PX ? (available - SLACK_PX) / needed : 1;
-	// Ріст — лише коли його дозволили і вміст справді нижчий за вікно.
-	if (ceiling > 1 && needed < available - SLACK_PX) {
-		raw = Math.min(ceiling, (available - SLACK_PX) / needed);
+	let raw = needed > room + SLACK_PX ? (room - SLACK_PX) / needed : 1;
+	// Ріст — лише коли його дозволили і вміст справді нижчий за ціль.
+	if (ceiling > 1 && needed < room - SLACK_PX) {
+		raw = Math.min(ceiling, (room - SLACK_PX) / needed);
 	}
 
 	/*
@@ -92,7 +108,7 @@ export function fitZoom(
 	 * не вищий за стелю, і вільного місця не набралося на два кроки. Саме ця умова й
 	 * глушить дрижання — дрібне гуляння висоти жодну з її частин не перевертає.
 	 */
-	const fits = needed * current <= available - SLACK_PX;
+	const fits = needed * current <= room - SLACK_PX;
 	if (fits && current <= ceiling && raw - current < GROW_BAND) return current;
 
 	// Округлення ВНИЗ: 0.951 → 0.94, а не 0.96. Догори могло б не вміститися.

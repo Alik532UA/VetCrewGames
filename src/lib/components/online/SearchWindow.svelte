@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Zap } from 'lucide-svelte';
+	import { Check, CircleQuestionMark, LayoutGrid, Zap } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import OnlineWindow from './OnlineWindow.svelte';
+	import DynamicIcon from '$lib/components/ui/DynamicIcon.svelte';
 	import type { SearchPhase } from '$lib/controllers/autoSearch.svelte';
 	import type { OnlineGame } from '$lib/utils/crossGame';
 
@@ -36,9 +37,10 @@
 	let { games, phase, onToggle, onStart, onCancel, onBack, focusTitle = false }: Props = $props();
 
 	/** Порядок — той самий, що в головному меню «Грати». */
+	/* Значки — ті самі, що в меню «Грати» й у «Створити кімнату»: та сама гра, той самий знак. */
 	const CHOICES = [
-		{ id: 'quiz', key: 'menu.quiz' },
-		{ id: 'pairs', key: 'menu.game.memory' }
+		{ id: 'quiz', key: 'menu.quiz', icon: CircleQuestionMark },
+		{ id: 'pairs', key: 'menu.game.memory', icon: LayoutGrid }
 	] as const;
 
 	const STATUS = {
@@ -62,7 +64,7 @@
 	};
 </script>
 
-<OnlineWindow scope="online-search" {focusTitle} onBack={busy ? undefined : onBack}>
+<OnlineWindow scope="online-search" {focusTitle} onBack={busy ? undefined : onBack} wide>
 	{#snippet title()}
 		<Zap size={24} aria-hidden="true" />
 		{@html formatFont(t('online.search'))}
@@ -70,21 +72,26 @@
 
 	<fieldset class="search__games" data-testid="online-search-fieldset">
 		<legend class="search__legend">{@html formatFont(t('online.searchGames'))}</legend>
-		<div class="seg-track">
+		<div class="menu-tile-grid">
 			{#each CHOICES as game (game.id)}
 				{@const on = games.includes(game.id)}
 				{@const last = on && games.length === 1}
 				<button
 					type="button"
-					class="seg-item"
-					class:seg-item--on={on}
+					class="search__tile menu-btn menu-btn--game menu-tile"
+					class:search__tile--on={on}
 					aria-pressed={on}
 					aria-disabled={busy || last}
 					title={last ? t('online.searchLast') : ''}
 					onclick={() => onToggle(game.id)}
 					data-testid="online-search-{game.id}-toggle"
 				>
-					{@html formatFont(t(game.key))}
+					{#if on}
+						<span class="search__check"><Check size={18} strokeWidth={3} aria-hidden="true" /></span
+						>
+					{/if}
+					<DynamicIcon icon={game.icon} class="menu-tile__icon" aria-hidden="true" />
+					<span>{@html formatFont(t(game.key))}</span>
 				</button>
 			{/each}
 		</div>
@@ -140,6 +147,40 @@
 	}
 
 	/*
+	 * ІГРИ — ПЛИТКАМИ-ПЕРЕМИКАЧАМИ, а не вузькою смугою (прохання автора 2026-09-27: «50%
+	 * вікна порожня, кнопки вибору гри з маленьким шрифтом»). Вигляд — плитки меню «Грати»,
+	 * як і в «Створити кімнату»; сітка — спільна (`.menu-tile-grid`).
+	 *
+	 * УВІМКНЕНА — КІЛЬЦЕМ І ГАЛОЧКОЮ, а не акцентом: акцент тут належить «Шукати», і три
+	 * жовті плями поспіль не сказали б, що з них дія. Кільце — кольором тексту, як вибрана
+	 * клітинка аватарки: воно тримає 3:1 до тла у всіх чотирьох темах (WCAG 1.4.11). Стан для
+	 * читалки несе `aria-pressed`, а кільце його лише малює.
+	 */
+	.search__tile {
+		position: relative;
+	}
+
+	.search__tile--on {
+		box-shadow:
+			inset 0 0 0 3px var(--color-text),
+			0 4px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+	}
+
+	.search__check {
+		position: absolute;
+		top: var(--space-sm);
+		right: var(--space-sm);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: var(--color-text);
+		color: var(--color-bg-card);
+	}
+
+	/*
 	 * Кнопка пошуку — акцентом, як була «Швидка гра»: це найкоротший шлях у гру, і він
 	 * мусить читатися першим. Висота — від одиниці вікна (`.fill`), дно — сенсорна ціль;
 	 * ширина — від слова, а не від вікна: смуга на всю ширину з одним словом читалася б як
@@ -163,7 +204,7 @@
 	/* Підказки приглушені КЕГЛЕМ, а не прозорістю — та сама причина, що в `RoomList`. */
 	.search__hint {
 		margin: 0;
-		font-size: var(--font-size-sm);
+		font-size: var(--font-size-md);
 		color: var(--color-text-on-panel);
 	}
 

@@ -229,3 +229,118 @@ test('аватарка: на широкому екрані вікно цілко
 	await expect(page.getByTestId('pairs-avatar-panel')).toBeInViewport({ ratio: 1 });
 	await expect(page.getByTestId('pairs-avatar-done-btn')).toBeInViewport({ ratio: 1 });
 });
+
+/**
+ * МЕНЮ — ПОСЕРЕДИНІ ЕКРАНА (прохання автора 2026-09-27: «більшість меню зверху — всі меню
+ * по центру»). Доти хаб і вікна стояли під шапкою, а нижня половина телефона була порожня.
+ * Міра — центр вмісту проти центру місця під шапкою; допуск — поле сторінки.
+ *
+ * Зворотний експеримент (прогнано): прибрати `margin-block: auto` зі сторінки хабу —
+ * червоніють і хаб, і вікно.
+ */
+test('хаб і вікно стоять посередині екрана, а не під шапкою', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	const middle = async (testid: string) =>
+		page.evaluate((id) => {
+			const box = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+			const header = document.querySelector('header')!.getBoundingClientRect();
+			return { content: (box.top + box.bottom) / 2, room: (header.bottom + innerHeight) / 2 };
+		}, testid);
+
+	const hub = await middle('online-search-open-btn');
+	const shell = await page.evaluate(() => {
+		const box = document.querySelector('.hub-shell')!.getBoundingClientRect();
+		const header = document.querySelector('header')!.getBoundingClientRect();
+		return { content: (box.top + box.bottom) / 2, room: (header.bottom + innerHeight) / 2 };
+	});
+	expect(Math.abs(shell.content - shell.room), 'хаб — посередині').toBeLessThan(48);
+	expect(hub.content, 'перша дорога — не під самою шапкою').toBeGreaterThan(150);
+
+	await press(page, 'online-join-open-btn');
+	const join = await middle('online-join-panel');
+	expect(Math.abs(join.content - join.room), 'вікно — посередині').toBeLessThan(48);
+});
+
+/**
+ * «ЯК ВАС ЗВАТИ?» НА ТЕЛЕФОНІ — ДВА РЯДКИ (прохання автора 2026-09-27: «прапор та аватарка
+ * в перший рядок ліворуч»). Доти підпис займав рядок сам, прапор із плиткою — другий.
+ */
+test('як вас звати: на телефоні прапор, плитка й підпис — один рядок, імʼя — другий', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	const top = async (selector: string) =>
+		(await page.locator(selector).first().boundingBox())!.y +
+		(await page.locator(selector).first().boundingBox())!.height / 2;
+	const flag = await top('[data-testid="pairs-country-select"]');
+	const avatar = await top('[data-testid="pairs-avatar-toggle-btn"]');
+	const label = await top('.identity__label');
+	const field = await top('[data-testid="pairs-name-input"]');
+	const dice = await top('[data-testid="pairs-name-random-btn"]');
+	expect(Math.abs(flag - avatar), 'прапор і плитка — поруч').toBeLessThan(8);
+	expect(Math.abs(label - avatar), 'підпис — у тому самому рядку').toBeLessThan(12);
+	expect(field - avatar, 'імʼя — рядком нижче').toBeGreaterThan(30);
+	expect(Math.abs(dice - field), 'кубик — поруч з іменем').toBeLessThan(8);
+});
+
+/**
+ * «АВТОМАТИЧНИЙ ПОШУК» — ІГРИ ПЛИТКАМИ (прохання автора 2026-09-27: «50% вікна порожня,
+ * кнопки вибору гри з маленьким шрифтом»). Стан перемикача несе `aria-pressed`.
+ */
+test('пошук: ігри — великими плитками-перемикачами', async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await press(page, 'online-search-open-btn');
+	for (const id of ['online-search-quiz-toggle', 'online-search-pairs-toggle']) {
+		const tile = (await page.getByTestId(id).boundingBox())!;
+		expect(tile.height, `${id} — плитка зі значком`).toBeGreaterThan(150);
+		await expect(page.getByTestId(id)).toHaveAttribute('aria-pressed', 'true');
+	}
+	await expect(page.getByTestId('online-search-back-btn')).toBeInViewport({ ratio: 1 });
+});
+
+/**
+ * ВІКНО — ДО 90% ЕКРАНА НА БУДЬ-ЯКОМУ РОЗМІРІ (правило автора 2026-09-27: «елементи разом
+ * на 90% екрану»). Доти вікна доріг не масштабувалися, і на нижчому телефоні вікно пошуку з
+ * плитками займало 105% — «Назад» ховався під край, а до плиток те саме вікно займало 60%.
+ *
+ * Кожен розмір — окремим завантаженням: масштаб рахується й на зміну розміру, але тест
+ * мусить перевіряти перший показ, який бачить людина. Межа знизу — 60% висоти під шапкою:
+ * саме вікно без полів сторінки, а 90% — ціль разом із ними.
+ *
+ * Зворотний експеримент (прогнано): повернути сторінці хабу `!opened && 'grow'` — на
+ * 360×640 і 460×640 вікно пошуку виходить за низ.
+ */
+const SIZES = [
+	{ width: 360, height: 640 },
+	{ width: 460, height: 640 },
+	{ width: 390, height: 844 },
+	{ width: 1280, height: 800 },
+	{ width: 1920, height: 1080 }
+];
+
+for (const size of SIZES) {
+	test(`вікна вміщаються в екран ${size.width}×${size.height} і займають помітну його частину`, async ({
+		page
+	}) => {
+		await page.setViewportSize(size);
+		for (const road of ['search', 'create', 'join']) {
+			await page.goto(PAGE);
+			await settlePage(page);
+			await press(page, `online-${road}-open-btn`);
+			const panel = page.getByTestId(`online-${road}-panel`);
+			await expect(panel).toBeInViewport({ ratio: 1 });
+			await expect(page.getByTestId(`online-${road}-back-btn`)).toBeInViewport({ ratio: 1 });
+			if (road === 'search') {
+				// Масштаб осідає за 140 мс тиші (`fitToViewport`), тож частка — опитуванням.
+				const share = () =>
+					panel.evaluate((node) => {
+						const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+						return node.getBoundingClientRect().height / (innerHeight - header);
+					});
+				await expect
+					.poll(share, { message: `${road}: частка висоти під шапкою` })
+					.toBeGreaterThan(0.6);
+			}
+		}
+	});
+}

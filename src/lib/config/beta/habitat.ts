@@ -103,6 +103,20 @@ export const habitatTab: BetaTab = {
 			},
 			coverage: 'testable',
 			testid: 'round-review-*-btn'
+		},
+		{
+			/*
+			 * ПЛИТКИ ВИБОРУ РЕЖИМУ (прохання автора 2026-09-27: «класична проблема, що 50%
+			 * вільного простору — зробити наш новий підхід з великими кнопками»).
+			 */
+			id: 'habitat_10',
+			category: { uk: 'Вибір режиму', en: 'Choosing a mode' },
+			text: {
+				uk: 'Відкрийте «Де живем?» на телефоні й на компʼютері. «Континенти» й «Природні зони» мусять бути ВЕЛИКИМИ плитками зі значком над назвою — як у меню «Грати», — на телефоні одна під одною, на компʼютері поруч, і разом займати більшу частину екрана, а не половину.',
+				en: 'Open «Where do they live?» on a phone and on a computer. «Continents» and «Biomes» must be BIG tiles with the icon above the name — as in the «Play» menu — one under the other on a phone, side by side on a computer, and together take most of the screen rather than half.'
+			},
+			coverage: 'manual',
+			testid: 'habitat-mode-continents-link'
 		}
 	]
 };
