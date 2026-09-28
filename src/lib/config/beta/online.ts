@@ -388,6 +388,21 @@ export const onlineTab: BetaTab = {
 			coverage: 'manual',
 			testid: 'net-lost-text',
 			negative: true
+		},
+		{
+			/*
+			 * ПІДСУМОК ВІКНОМ ПОВЕРХ КАРТОК (прохання автора 2026-09-28, відповідь A). Порядок блоків,
+			 * «Подивитися на картки» й реванш перевіряє `OnlineRoom.test.ts`; як воно виглядає на
+			 * телефоні й чи видно картки під вікном — лише очима.
+			 */
+			id: 'online_32',
+			category: { uk: 'Дошка', en: 'The board' },
+			text: {
+				uk: 'Дограйте партію на двох пристроях. Підсумок мусить зʼявитися вікном поверх карток: «Перемога: …» або «Нічия», під ним гравці з рахунком (переможець першим і в обводці) і «Ходів», а ще нижче — кнопки однакової ширини. Картки мусять вгадуватися під вікном. «Подивитися на картки» мусить сховати вікно, а кнопка «Підсумок» унизу — повернути. Після «Зіграти ще» підсумок нової партії знову мусить бути вікном.',
+				en: 'Finish a game on two devices. The result must appear as a window over the cards: «Winner: …» or «A draw», the players with their scores below it (the winner first and outlined) and «Moves», and the buttons of equal width under all that. The cards must be guessable under the window. «Look at the cards» must hide the window, and the «Results» button at the bottom must bring it back. After «Play again» the next game’s result must again be a window.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-show-cards-btn'
 		}
 	]
 };

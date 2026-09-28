@@ -71,6 +71,8 @@ export const ui = {
 	'pairs.draw': 'Unentschieden',
 	'pairs.rematch': 'Nochmal spielen',
 	'pairs.closeRoom': 'Raum schließen',
+	'pairs.showCards': 'Karten ansehen',
+	'pairs.showResult': 'Ergebnis',
 	'room.playPairs': '„Finde das Paar“ spielen',
 	'room.playQuiz': '„Quiz“ spielen',
 	'room.goNext': 'Zum neuen Raum',

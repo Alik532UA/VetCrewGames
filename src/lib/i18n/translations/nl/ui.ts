@@ -71,6 +71,8 @@ export const ui = {
 	'pairs.draw': 'Gelijkspel',
 	'pairs.rematch': 'Nog eens spelen',
 	'pairs.closeRoom': 'Ruimte sluiten',
+	'pairs.showCards': 'Kaarten bekijken',
+	'pairs.showResult': 'Uitslag',
 	'room.playPairs': '“Zoek het paar” spelen',
 	'room.playQuiz': '“Quiz” spelen',
 	'room.goNext': 'Naar de nieuwe kamer',

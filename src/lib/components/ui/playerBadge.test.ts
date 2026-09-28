@@ -34,6 +34,8 @@ import { join } from 'node:path';
 const BADGE = 'src/lib/components/ui/PlayerBadge.svelte';
 const YOU = 'src/lib/components/ui/YouTag.svelte';
 const ROOM = 'src/lib/components/pairs/OnlineRoom.svelte';
+/** Підсумок партії — окреме вікно поверх карток (прохання автора 2026-09-28). */
+const RESULT = 'src/lib/components/pairs/PairsResult.svelte';
 const SCORES = 'src/lib/components/quiz/QuizScores.svelte';
 
 const read = (path: string) => readFileSync(path, 'utf8');
@@ -223,7 +225,8 @@ describe('шапка партії', () => {
 	it('перевірка жива: усі три блоки шапки на місці', () => {
 		expect(room).toContain('data-testid="pairs-turn-status"');
 		expect(room).toContain('data-testid="pairs-stall-panel"');
-		expect(room).toContain('data-testid="pairs-result-panel"');
+		expect(code(RESULT)).toContain('data-testid="pairs-result-panel"');
+		expect(room, 'підсумок показує вікно, а не рядок').toContain('<PairsResult');
 	});
 
 	it('черга не пишеться словами на екрані, але лишається для скрінрідера', () => {
@@ -288,8 +291,8 @@ describe('шапка партії', () => {
 	});
 
 	it('підсумок оголошується сам, а не через рядок черги', () => {
-		expect(room, 'кінець партії перестав оголошуватися скрінрідеру').toMatch(
-			/class="board__over text-panel" role="status"/
+		expect(code(RESULT), 'кінець партії перестав оголошуватися скрінрідеру').toMatch(
+			/class="result text-panel fill fill-window"\s+role="status"/
 		);
 	});
 });

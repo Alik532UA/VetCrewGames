@@ -70,6 +70,8 @@ export const ui = {
 	'pairs.draw': 'A draw',
 	'pairs.rematch': 'Play again',
 	'pairs.closeRoom': 'Close the room',
+	'pairs.showCards': 'Look at the cards',
+	'pairs.showResult': 'Results',
 	'room.playPairs': 'Play “Find a Pair”',
 	'room.playQuiz': 'Play “Quiz”',
 	'room.goNext': 'Go to the new room',

@@ -91,7 +91,8 @@ describe('обвʼязка переїзду', () => {
 
 	it('кнопки є в підсумку ОБОХ ігор', () => {
 		for (const file of [
-			'src/lib/components/pairs/OnlineRoom.svelte',
+			// Підсумок «Знайди пару» — вікно поверх карток (`PairsResult`, 2026-09-28).
+			'src/lib/components/pairs/PairsResult.svelte',
 			'src/lib/components/quiz/QuizRoom.svelte'
 		]) {
 			const source = read(file);

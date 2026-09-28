@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
+import { flushSync } from 'svelte';
 import { LocalRoom } from '$lib/net/localRoom';
 import { rosterOf } from '$lib/utils/roster';
 import type { Member, RoomInfo } from '$lib/net/roomTypes';
@@ -120,5 +121,88 @@ describe('екран підсумку «Знайди пару»', () => {
 		});
 		expect(view.queryByTestId('pairs-close-btn')).toBeNull();
 		expect(view.queryByTestId('pairs-need-players-text')).toBeNull();
+	});
+
+	/**
+	 * ПІДСУМОК — ВІКНОМ ПОВЕРХ КАРТОК (прохання автора 2026-09-28): «на фоні картки, а
+	 * результати та кнопки у вікні поверх карток», «результати над кнопками». Доти підсумок
+	 * стояв рядком над табло й дошкою, і кнопки різних розмірів ділили з ними екран.
+	 *
+	 * Зворотні експерименти: повернути підсумок у рядок над дошкою (без `GameDialog`) —
+	 * червоніє «у вікні»; кнопки над результатами — «результати над кнопками»; «Подивитися на
+	 * картки» без дії — «ховає вікно»; сховане без прив'язки до зерна — «реванш».
+	 */
+	it('підсумок — у вікні поверх карток, і результати стоять над кнопками', async () => {
+		const host = await finished();
+		const view = render(OnlineRoom, {
+			props: {
+				match: host,
+				me: HOST,
+				online: [HOST, GUEST],
+				amHost: true,
+				cross,
+				onRematch: vi.fn(),
+				onClose: vi.fn()
+			}
+		});
+
+		const backdrop = view.getByTestId('pairs-result-backdrop');
+		expect(backdrop.contains(view.getByTestId('pairs-result-panel')), 'у вікні').toBe(true);
+		expect(view.getByTestId('pairs-deck-container'), 'картки лишаються на тлі').toBeTruthy();
+
+		const results = view.getByTestId(`pairs-result-${GUEST}-item`);
+		for (const action of ['pairs-rematch-btn', 'pairs-close-btn', 'pairs-show-cards-btn']) {
+			const follows = results.compareDocumentPosition(view.getByTestId(action));
+			expect(follows & Node.DOCUMENT_POSITION_FOLLOWING, `${action}: результати над кнопками`).toBe(
+				Node.DOCUMENT_POSITION_FOLLOWING
+			);
+		}
+	});
+
+	it('переможець позначений у своєму рядку, рахунок — числом, і ходи', async () => {
+		const host = await finished();
+		const view = render(OnlineRoom, {
+			props: { match: host, me: GUEST, online: [HOST, GUEST], cross }
+		});
+
+		const won = view.getByTestId(`pairs-result-${HOST}-item`);
+		expect(won.classList.contains('result__player--won')).toBe(true);
+		expect(won.textContent).toContain('2');
+		expect(view.getByTestId(`pairs-result-${GUEST}-item`).textContent).toContain('0');
+		expect(view.getByTestId('pairs-result-text').textContent).toContain('Господар');
+		expect(view.getByTestId('pairs-result-moves-value').textContent).toContain(
+			String(host.game.moves)
+		);
+	});
+
+	it('«Подивитися на картки» ховає вікно, а «Підсумок» повертає його', async () => {
+		const host = await finished();
+		const view = render(OnlineRoom, {
+			props: { match: host, me: GUEST, online: [HOST, GUEST], cross }
+		});
+
+		view.getByTestId('pairs-show-cards-btn').click();
+		flushSync();
+		expect(view.queryByTestId('pairs-result-backdrop'), 'вікно сховане').toBeNull();
+
+		view.getByTestId('pairs-show-result-btn').click();
+		flushSync();
+		expect(view.queryByTestId('pairs-result-backdrop'), 'вікно повернулося').not.toBeNull();
+		expect(view.queryByTestId('pairs-show-result-btn')).toBeNull();
+	});
+
+	it('реванш — підсумок нової партії знову вікном, хоч минулий і сховали', async () => {
+		const host = await finished();
+		const view = render(OnlineRoom, {
+			props: { match: host, me: GUEST, online: [HOST, GUEST], cross }
+		});
+		view.getByTestId('pairs-show-cards-btn').click();
+		flushSync();
+		expect(view.queryByTestId('pairs-result-backdrop')).toBeNull();
+
+		// Реванш приходить із новим зерном: сховане стосувалося лише минулої партії.
+		host.seed += 1;
+		flushSync();
+		expect(view.queryByTestId('pairs-result-backdrop')).not.toBeNull();
 	});
 });

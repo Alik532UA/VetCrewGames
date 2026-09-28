@@ -7,6 +7,7 @@
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import TimerBar from '$lib/components/ui/TimerBar.svelte';
+	import PairsResult from './PairsResult.svelte';
 	import type { CrossGameLinks } from '$lib/utils/crossGame';
 	import type { PairsMatch } from '$lib/controllers/pairsMatch.svelte';
 
@@ -106,15 +107,6 @@
 
 	/** Скільки пар зібрав кожен: рахунок живе в правилах, не в кімнаті. */
 	const scoreOf = (uid: string) => match.game.players.find((p) => p.id === uid)?.score ?? 0;
-
-	/**
-	 * Хто переміг. `null` — нічия, і це не рідкість: пар парна кількість.
-	 *
-	 * Відповідь дає МАТЧ: те саме число потрібне ще й нарахуванню балів у кінці
-	 * партії, а дві копії цієї арифметики розійшлися б непомітно.
-	 */
-	const winner = $derived(match.players.find((player) => player.uid === match.winnerUid) ?? null);
-
 </script>
 
 <div class="board">
@@ -137,9 +129,9 @@
 		щоб літера була у шрифті, — а це потрібно тому, що МАЛЮЄТЬСЯ. Те, що читає
 		машина, від такої підміни вимовляється покручем (див. AGENTS.md).
 
-		Гілки «партія скінчилася» тут немає, і це попереднє прохання автора: підсумок
-		нижче каже «Нічия» й показує кнопку «Зіграти ще», тобто містить те саме з
-		подробицями. Разом із гілкою на підсумок переїхав і `role="status"`.
+		Гілки «партія скінчилася» тут немає, і це попереднє прохання автора: вікно
+		підсумку (`PairsResult`) каже «Нічия» й показує кнопку «Зіграти ще», тобто містить
+		те саме з подробицями. Разом із гілкою туди переїхав і `role="status"`.
 	-->
 	{#if !match.over}
 		<p class="visually-hidden" role="status" data-testid="pairs-turn-status">
@@ -172,99 +164,13 @@
 		/>
 	{/snippet}
 
+	<!--
+		ПІДСУМОК — ВІКНОМ ПОВЕРХ КАРТОК (`PairsResult`, прохання автора 2026-09-28): картки
+		лишаються на місці під підкладкою, бо після партії на них дивляться — «а де ж була та
+		друга сова», — і вікно можна сховати, щоб роздивитися їх.
+	-->
 	{#if match.over}
-		<!--
-			Підсумок замість зникнення дошки: картки лишаються на місці, бо після
-			партії на них дивляться — «а де ж була та друга сова».
-		-->
-		<!--
-			`role="status"` тут не для повноти: доти кінець партії оголошував рядок
-			черги словами «партія скінчилася», і саме той рядок прибрано як дубль. Роль
-			переїхала разом із обовʼязком — тепер скрінрідер чує підсумок, а не
-			повідомлення про те, що підсумок є.
-		-->
-		<div class="board__over text-panel" role="status" data-testid="pairs-result-panel">
-			<!--
-				ЯК партія скінчилася — окремим рядком, і він тут не для повноти.
-
-				«Перемога: Аня 4:2» над тим, хто пішов на другому ході, — правда про
-				рахунок і неправда про партію. Рядок називає причину, тож рахунок нікого
-				не вводить в оману й нічого не приховує.
-			-->
-			{#if match.endedBy !== null}
-				<span class="board__wait" data-testid="pairs-ended-early-hint">
-					{@html formatFont(t('pairs.endedEarly'))}
-				</span>
-			{/if}
-			<b data-testid="pairs-result-text">
-				{#if winner}
-					<!--
-						«Перемога: Аня», а не «Аня перемогла»: імʼя тут вільний рядок, і роду
-						ми не знаємо. Перша версія писала «Аня — переміг», тобто вгадувала —
-						і вгадувала неправильно рівно в половині випадків.
-					-->
-					{@html formatFont(t('pairs.won'))}: {winner.name}{#if winner.uid === me}
-						<YouTag />
-					{/if}
-				{:else}
-					{@html formatFont(t('pairs.draw'))}
-				{/if}
-			</b>
-			<!--
-				«ЗАКРИТИ» — ОКРЕМО ВІД «ЗІГРАТИ ЩЕ» (аудит 2026-09-25). Доти обидві кнопки
-				стояли під однією умовою, і господар, від якого суперник пішов (реванш без
-				пари не починається), бачив «Чекаємо, доки лідер почне» — тобто чекав сам на
-				себе й не мав чим закрити кімнату. Тепер господар без пари чує, чого бракує,
-				а закрити може завжди; гість, як і доти, чекає господаря.
-			-->
-			{#if onPlayNext}
-				<button type="button" class="chip" onclick={onPlayNext} data-testid="pairs-play-next-btn">
-					{@html formatFont(t('pairs.playNext'))}
-				</button>
-			{/if}
-			{#if onRematch}
-				<button
-					type="button"
-					class="btn-primary"
-					onclick={onRematch}
-					data-testid="pairs-rematch-btn"
-				>
-					{@html formatFont(t('pairs.rematch'))}
-				</button>
-			{:else if onClose}
-				<span class="board__wait" data-testid="pairs-need-players-text">
-					{@html formatFont(t('pairs.needPlayers'))}
-				</span>
-			{:else}
-				<span class="board__wait">{@html formatFont(t('pairs.waitingHost'))}</span>
-			{/if}
-			{#if onClose}
-				<button type="button" class="chip" onclick={onClose} data-testid="pairs-close-btn">
-					{@html formatFont(t('pairs.closeRoom'))}
-				</button>
-			{/if}
-
-			<!--
-				ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом.
-			
-				Прохання автора: «після фіналу можна повторити і поточну гру „Грати
-				знову“, і іншу гру». Кнопки дві, бо це два різні кроки: господар створює
-				кімнату іншої гри (посилання несе код цієї, щоб нова могла про себе
-				сказати), а решта чекає й переходить за оголошеним кодом.
-			
-				Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці» мусить
-				працювати. Той самий взірець, що у виході в меню поруч.
-			-->
-			{#if cross.next}
-				<a href={cross.next} class="btn-primary" data-testid="room-next-link">
-					{@html formatFont(t('room.goNext'))}
-				</a>
-			{:else if amHost}
-				<a href={cross.create} class="chip" data-testid="room-other-game-link">
-					{@html formatFont(t(cross.createLabel))}
-				</a>
-			{/if}
-		</div>
+		<PairsResult {match} {me} {onRematch} {onClose} {onPlayNext} {amHost} {cross} />
 	{/if}
 
 	<!--
@@ -446,14 +352,6 @@
 		font-size: var(--font-size-sm);
 	}
 
-	.board__over {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-md);
-		align-items: center;
-		justify-content: center;
-	}
-
 	.chip {
 		min-height: 44px;
 		padding: 0 var(--space-md);
@@ -462,11 +360,6 @@
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
-	}
-
-	.board__wait {
-		font-size: var(--font-size-sm);
-		opacity: 0.75;
 	}
 
 	/*
