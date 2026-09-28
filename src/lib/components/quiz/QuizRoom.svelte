@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { t, formatFont } from '$lib/i18n';
+	import { slide } from 'svelte/transition';
+	import { motionMs } from '$lib/utils/transitions';
 	import { langPath } from '$lib/i18n/routing';
 	import type { Language } from '$lib/i18n/routing';
 	import type { QuizMatch } from '$lib/controllers/quizMatch.svelte';
@@ -299,7 +301,7 @@
 			нічого не спиняє, але накриває всім питання вікном, була б лише способом
 			заважати.
 		-->
-		<div class="room__strip">
+		<div class="room__strip" transition:slide={{ duration: motionMs(300) }}>
 			<QuizScores
 				players={match.players}
 				answered={match.answered}

@@ -4,6 +4,7 @@
 	import { t, td, formatFont } from '$lib/i18n';
 	import type { FamilyView } from '$lib/controllers/familyGame.svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { motionMs } from '$lib/utils/transitions';
 
 	/**
 	 * ДОШКА «Хто зайвий?»: підказка, картки тварин, розбір відповіді.
@@ -48,7 +49,11 @@
 
 {#if game.round}
 	{#if !compact}
-		<p class="prompt text-panel" data-testid="family-prompt-text">
+		<p
+			class="prompt text-panel"
+			transition:slide={{ duration: motionMs(300) }}
+			data-testid="family-prompt-text"
+		>
 			{@html formatFont(t('family.prompt'))}
 		</p>
 
@@ -57,7 +62,7 @@
 			немає, а сітці потрібна ширина МІСЦЯ: та сама дошка стоїть і на сторінці гри, і в кімнаті
 			вікторини.
 		-->
-		<div class="cards-shell">
+		<div class="cards-shell" transition:slide={{ duration: motionMs(300) }}>
 			{#key game.round.id}
 				<div class="cards-grid" in:fade={{ duration: 300 }}>
 					{#each game.round.cards as animal (animal.id)}

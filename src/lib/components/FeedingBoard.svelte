@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import { t, td, formatFont } from '$lib/i18n';
+	import { motionMs } from '$lib/utils/transitions';
 	import type { FeedingView } from '$lib/controllers/feedingGame.svelte';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { BIN } from '$lib/config/feeding-game';
@@ -60,7 +62,7 @@
 </script>
 
 {#if compact}
-	<div class="settled" data-testid="feeding-settled-panel">
+	<div class="settled" in:slide={{ duration: motionMs(300) }} data-testid="feeding-settled-panel">
 		{#each owners as owner (owner.id)}
 			{@const verdicts = verdictsFor(owner.id)}
 			{#if verdicts.length > 0}
@@ -78,7 +80,7 @@
 		{/each}
 	</div>
 {:else}
-	<div class="board" class:board--fed={game.fed}>
+	<div class="board" class:board--fed={game.fed} out:slide={{ duration: motionMs(300) }}>
 		{#if game.fed}
 			<div class="cell cell--verdict0">
 				<FeedingVerdicts
@@ -140,7 +142,7 @@
 		Смітник і його розбір — одна пара, тож і обгортка в них спільна: на
 		телефоні вони стають рядом, як тварина з розбором вище.
 	-->
-	<div class="bin-row" class:bin-row--fed={game.fed}>
+	<div class="bin-row" class:bin-row--fed={game.fed} out:slide={{ duration: motionMs(300) }}>
 		<FeedingZone
 			labelKey="feeding.bin"
 			image={null}

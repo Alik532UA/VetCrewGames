@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { formatFont } from '$lib/i18n';
+	import { slide } from 'svelte/transition';
+	import { motionMs } from '$lib/utils/transitions';
 	import type { QuizPhase } from '$lib/controllers/quizMatch.svelte';
 	import type { QuizStep } from '$lib/config/quizOnline';
 	import QuizBoard from './QuizBoard.svelte';
@@ -89,9 +91,15 @@
 	{#if settled}
 		<!-- Смуги раунду на таблі немає: у табла своя — до наступного раунду. -->
 	{:else if Number.isFinite(limitMs)}
-		<TimerBar {leftMs} {limitMs} label={text('quiz.roundTimer')} testId="quiz-round-progress" />
+		<div class="round__timer" transition:slide={{ duration: motionMs(300) }}>
+			<TimerBar {leftMs} {limitMs} label={text('quiz.roundTimer')} testId="quiz-round-progress" />
+		</div>
 	{:else}
-		<p class="round__free text-panel" data-testid="quiz-round-unlimited-text">
+		<p
+			class="round__free text-panel"
+			transition:slide={{ duration: motionMs(300) }}
+			data-testid="quiz-round-unlimited-text"
+		>
 			{@html formatFont(text('quiz.roundUnlimited'))}
 		</p>
 	{/if}
@@ -125,12 +133,20 @@
 	{#if settled}
 		<!-- Рядки «чекаємо» — про раунд, а він скінчився. -->
 	{:else if watching}
-		<p class="round__wait text-panel" data-testid="quiz-watching-text">
+		<p
+			class="round__wait text-panel"
+			transition:slide={{ duration: motionMs(300) }}
+			data-testid="quiz-watching-text"
+		>
 			{@html formatFont(text('quiz.watching'))}
 		</p>
 	{:else if answered}
 		<!-- На місце кнопки «Далі», яку в кімнаті ховає сама дошка (`hideNext`). -->
-		<p class="round__wait text-panel" data-testid="quiz-answered-text">
+		<p
+			class="round__wait text-panel"
+			transition:slide={{ duration: motionMs(300) }}
+			data-testid="quiz-answered-text"
+		>
 			{@html formatFont(text('quiz.answered'))}
 		</p>
 	{/if}
@@ -142,6 +158,11 @@
 -->
 
 <style>
+	/* Обгортка — лише під перехід: смуга сама на всю ширину. */
+	.round__timer {
+		width: 100%;
+	}
+
 	/* Вигляд смуги переїхав у `ui/TimerBar.svelte`: та сама смуга тепер і в парах. */
 	.round__wait,
 	.round__free {

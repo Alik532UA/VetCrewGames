@@ -4,7 +4,7 @@
 	import type { PopulationView, Place } from '$lib/controllers/populationGame.svelte';
 	import type { Animal } from '$lib/config/population-game';
 	import { Check, X } from 'lucide-svelte';
-	import { createCrossfade } from '$lib/utils/transitions';
+	import { createCrossfade, motionMs } from '$lib/utils/transitions';
 	import { parkDraggedCard } from '$lib/utils/parkDraggedCard';
 	import { revealScroll } from '$lib/utils/revealScroll';
 	import { fitLabel } from '$lib/utils/fitLabel';
@@ -334,7 +334,7 @@
 </script>
 
 {#if !compact}
-	<div class="sorting-panel">
+	<div class="sorting-panel" transition:slide={{ duration: motionMs(300) }}>
 		<p class="sorting-panel__instruction">{@html formatFont(t('population.description'))}</p>
 		<div class="slots-row">
 			{#each game.slots as slotAnimal, i (i)}

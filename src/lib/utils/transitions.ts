@@ -1,4 +1,5 @@
 import { cubicOut } from 'svelte/easing';
+import { MediaQuery } from 'svelte/reactivity';
 
 /**
  * Власні переходи, які не описати вбудованими.
@@ -20,7 +21,7 @@ import { cubicOut } from 'svelte/easing';
  */
 export function flyAndSlide(
 	node: HTMLElement,
-	{ delay = 0, duration = 400, easing = cubicOut, y = 0 } = {}
+	{ delay = 0, duration = 400, easing = cubicOut, x = 0, y = 0 } = {}
 ) {
 	const style = getComputedStyle(node);
 	const targetOpacity = +style.opacity;
@@ -34,7 +35,7 @@ export function flyAndSlide(
 		duration,
 		easing,
 		css: (t: number) => `
-			transform: ${transform} translateY(${y * (1 - t)}px);
+			transform: ${transform} translate(${x * (1 - t)}px, ${y * (1 - t)}px);
 			opacity: ${targetOpacity * t};
 			height: ${t * height}px;
 			padding-top: ${t * paddingTop}px;
@@ -43,6 +44,16 @@ export function flyAndSlide(
 		`
 	};
 }
+
+/**
+ * ЛЮДИНА ПРОСИЛА БЕЗ РУХУ (WCAG 2.3.3) — тоді тривалість переходу нуль.
+ *
+ * Переходи Svelte йдуть через Web Animations, і глобальне правило `global.css` для
+ * `animation-duration` їх не зупиняє: тому `Toast` і `QuizReveal` питали `MediaQuery` самі.
+ * Тут — те саме одним викликом для решти переходів, щоб ніхто не забув.
+ */
+const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
+export const motionMs = (ms: number): number => (reducedMotion.current ? 0 : ms);
 
 /**
  * Переліт картки з місця на місце — власний crossfade замість вбудованого.

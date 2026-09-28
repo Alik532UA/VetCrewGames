@@ -34,27 +34,7 @@ vi.stubGlobal('matchMedia', (media: string) => ({
 }));
 vi.stubGlobal('requestAnimationFrame', () => 0);
 vi.stubGlobal('cancelAnimationFrame', () => {});
-
-/*
- * Переходи Svelte 5 крутяться через Web Animations (`element.animate`), якого в jsdom
- * немає, — а дошки на них стоять усі. Підставка: анімація «одразу скінчилася», тож
- * вхідні й вихідні вузли стають туди, де вони будуть після переходу.
- */
-Element.prototype.animate = function () {
-	const animation = {
-		onfinish: null as null | (() => void),
-		oncancel: null,
-		cancel() {},
-		finish() {},
-		play() {},
-		pause() {},
-		currentTime: 0,
-		playState: 'finished',
-		finished: Promise.resolve()
-	};
-	queueMicrotask(() => animation.onfinish?.());
-	return animation as unknown as Animation;
-};
+// Web Animations для переходів — спільна підставка `src/web-animations.setup.ts`.
 
 const { QuizMatch } = await import('$lib/controllers/quizMatch.svelte');
 const { default: QuizRoom } = await import('./QuizRoom.svelte');
@@ -185,6 +165,29 @@ describe('табло між раундами: рахунок і розбір', (
 		expect(screen.getByTestId('quiz-board-panel'), 'дошку створено заново').toBe(board);
 		expect(board.querySelector('.result-header'), 'відповідь гравця загубилася').not.toBeNull();
 		expect(board.querySelector('.myth-card__image-wrap'), 'розбір — без картинки').toBeNull();
+		stop();
+	});
+
+	/**
+	 * ПЕРЕХІД МІЖ РАУНДАМИ — АНІМАЦІЄЮ, як меню (прохання автора 2026-09-28: «перемикання
+	 * між раундами та результатами жорстке → плавне»). Дошку міняє `{#key}` батька; без
+	 * переходу на її корені стара зникала, а нова ставала на її місце в тому самому кадрі.
+	 * Зворотний експеримент: прибрати `in:`/`out:` із кореня `QuizBoard` — червоніє. (Прибрати
+	 * лише `|global` — ні, і так і мусить бути: для `{#key}` вистачає локального переходу.)
+	 */
+	it('новий раунд заходить переходом, а не підміною', async () => {
+		const { host, stop, during, reveal } = await firstRound('myths');
+		const room = view(host, during);
+		await room.at(reveal);
+		const animate = vi.spyOn(Element.prototype, 'animate');
+
+		await host.startRound(1);
+		await room.at(host.startedAt[1] + 1);
+		const boards = animate.mock.contexts.filter(
+			(node) => (node as Element).getAttribute?.('data-testid') === 'quiz-board-panel'
+		);
+		expect(boards.length, 'дошка нового раунду стала без переходу').toBeGreaterThan(0);
+		animate.mockRestore();
 		stop();
 	});
 

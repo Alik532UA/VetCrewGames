@@ -440,6 +440,21 @@ export const quizOnlineTab: BetaTab = {
 			coverage: 'covered',
 			test: 'src/lib/utils/quizDeck.test.ts',
 			testid: 'quiz-board-panel'
+		},
+		{
+			/*
+			 * ПЛАВНИЙ ПЕРЕХІД МІЖ РАУНДАМИ Й ТАБЛОМ (прохання автора 2026-09-28: «перемикання
+			 * жорстке → плавне з анімацією, як меню»). Юніт-тест бачить лише, що перехід є;
+			 * чи він плавний — око.
+			 */
+			id: 'quizonline_34',
+			category: { uk: 'Раунд', en: 'The round' },
+			text: {
+				uk: 'Зіграйте кілька раундів. Коли раунд скінчився, смуга гравців має плавно згорнутися, табло — виїхати згори, а від дошки має лишитися розбір без стрибка. На новий раунд табло й розбір їдуть ліворуч, нова дошка — праворуч, як сторінки меню. З увімкненим «зменшити рух» у системі все міняється одразу, без анімації.',
+				en: 'Play several rounds. When a round ends, the players bar must fold away smoothly, the scoreboard slide in from the top, and the board must turn into the breakdown without a jump. On a new round the scoreboard and the breakdown move left and the new board comes in from the right, like menu pages. With «reduce motion» on in the system everything switches at once, without animation.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-board-panel'
 		}
 	]
 };

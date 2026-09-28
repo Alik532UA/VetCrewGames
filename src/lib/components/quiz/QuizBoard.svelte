@@ -11,6 +11,7 @@
 		startQuizGame
 	} from '$lib/controllers/quizGame';
 	import { BIN } from '$lib/config/feeding-game';
+	import { flyAndSlide, motionMs } from '$lib/utils/transitions';
 	import type { QuizStep } from '$lib/config/quizOnline';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import type { QuickTarget } from '$lib/components/FeedingDish.svelte';
@@ -334,8 +335,19 @@
 	(`--measure-*` у `global.css`). Тобто елементи над грою більше не можуть змінити
 	гру: у них своя ширина, у гри — своя.
 -->
+<!--
+	ПЕРЕХІД МІЖ РАУНДАМИ — як у меню (прохання автора 2026-09-28: «перемикання між раундами
+	та результатами жорстке → плавне з анімацією, як меню, коли перемикається»). Нова дошка
+	заходить праворуч, стара йде ліворуч, і обидві при цьому міняють висоту — стара
+	згортається, нова розгортається (`flyAndSlide`), тож сторінка не підстрибує на час, коли
+	в ній дві дошки. Дошку міняє `{#key}` батька (`QuizRound`), і для нього вистачило б і
+	локального переходу; `|global` — щоб дошка так само йшла, коли зникає вся гілка раунду:
+	на фінальне табло чи з кімнати.
+-->
 <div
 	class="board"
+	in:flyAndSlide|global={{ x: 48, duration: motionMs(350) }}
+	out:flyAndSlide|global={{ x: -48, duration: motionMs(300) }}
 	class:board--myths={created?.kind === 'myths'}
 	class:board--family={created?.kind === 'family'}
 	class:board--population={created?.kind === 'population'}

@@ -27,8 +27,9 @@ export default defineConfig({
 		globals: true,
 		// Мережа в юніт-тестах заблокована, а тест, що до неї дійшов, падає з
 		// адресою: без цього незамоканий `connect()` реєстрував акаунт у живому
-		// Firebase (`src/no-network.setup.ts`).
-		setupFiles: ['src/no-network.setup.ts'],
+		// Firebase (`src/no-network.setup.ts`). Друга підставка — Web Animations, яких у jsdom
+		// немає, а переходи Svelte 5 крутяться саме через них (`src/web-animations.setup.ts`).
+		setupFiles: ['src/no-network.setup.ts', 'src/web-animations.setup.ts'],
 		/**
 		 * МЕЖА ЧАСУ МІРЯЄ КОД, А НЕ ЗБІРНИК — і типові 5 секунд міряли збірник.
 		 *

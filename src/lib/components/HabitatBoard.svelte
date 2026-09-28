@@ -5,6 +5,7 @@
 	import type { HabitatMode } from '$lib/config/habitat-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { motionMs } from '$lib/utils/transitions';
 	import HabitatOptions from '$lib/components/HabitatOptions.svelte';
 
 	/**
@@ -59,7 +60,7 @@
 
 {#if game.round}
 	{#if !compact}
-		<div class="animal">
+		<div class="animal" transition:slide={{ duration: motionMs(300) }}>
 			<!--
 				Головне зображення раунду, тобто LCP: `eager`, а не `lazy`
 				(PERFORMANCE-v8 § 3.1 — «типова помилка з добрих намірів»). Розмітку
@@ -84,7 +85,7 @@
 			</span>
 		</div>
 
-		<div class="question text-panel">
+		<div class="question text-panel" transition:slide={{ duration: motionMs(300) }}>
 			<p class="question__prompt">
 				{@html formatFont(
 					t(mode === 'continents' ? 'habitat.prompt.continents' : 'habitat.prompt.biomes')
@@ -93,14 +94,17 @@
 			<p class="question__hint">{@html formatFont(t('habitat.hintMultiple'))}</p>
 		</div>
 
-		<HabitatOptions
-			options={game.round.options}
-			{mode}
-			selected={game.selected}
-			correct={game.round.correct}
-			checked={game.checked}
-			ontoggle={(option) => game.toggle(option)}
-		/>
+		<!-- Обгортка — лише під перехід до розбору (`compact`): компонент його не отримає. -->
+		<div class="options-wrap" transition:slide={{ duration: motionMs(300) }}>
+			<HabitatOptions
+				options={game.round.options}
+				{mode}
+				selected={game.selected}
+				correct={game.round.correct}
+				checked={game.checked}
+				ontoggle={(option) => game.toggle(option)}
+			/>
+		</div>
 	{/if}
 
 	{#if !game.checked}
@@ -184,6 +188,9 @@
 		overflow: hidden;
 		border: 2px solid var(--color-bg-panel-dark);
 		box-shadow: var(--shadow-card);
+	}
+	.options-wrap {
+		width: 100%;
 	}
 	.animal__image {
 		display: block;

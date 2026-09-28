@@ -7,6 +7,7 @@
 	import { placesOf } from '$lib/utils/standings';
 	import { formatFont } from '$lib/i18n';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { flyAndSlide, motionMs } from '$lib/utils/transitions';
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -250,6 +251,8 @@
 	class="reveal text-panel"
 	class:reveal--followed={followed}
 	style:--reveal-unit="{unit}px"
+	in:flyAndSlide|global={{ y: -12, duration: motionMs(350) }}
+	out:flyAndSlide|global={{ x: -48, duration: motionMs(300) }}
 	use:revealScroll
 	data-testid={testId}
 >

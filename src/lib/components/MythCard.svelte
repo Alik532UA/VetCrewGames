@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade, slide, fly } from 'svelte/transition';
-	import { flyAndSlide } from '$lib/utils/transitions';
+	import { flyAndSlide, motionMs } from '$lib/utils/transitions';
 	import { t, td, formatFont } from '$lib/i18n';
 	import { CheckCircle2, XCircle } from 'lucide-svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
@@ -61,7 +61,7 @@
 >
 	<div class="myth-card__inner-key">
 		{#if !compact}
-			<div class="myth-card__image-wrap">
+			<div class="myth-card__image-wrap" transition:slide={{ duration: motionMs(300) }}>
 				<!--
 					Головне зображення екрана, тобто LCP: `eager`, а не `lazy`
 					(PERFORMANCE-v8 § 3.1 — канон називає `lazy` тут «типовою помилкою з
