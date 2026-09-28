@@ -167,11 +167,17 @@ export const commonTab: BetaTab = {
 			testid: 'header-back-link'
 		},
 		{
+			/*
+			 * «ПОКРИТО» ТУТ БУЛО НЕПРАВДОЮ до 2026-09-28: автор знайшов кнопку, що вела в
+			 * заповідник і вікно входу, а тест це пропускав — рахував «усі адреси, крім
+			 * винятків», тобто той самий спосіб, що й код. Тепер тест тримає обіцянку кнопки:
+			 * рівно шість ігор меню, і жодної адреси поза ними (`randomGame.test.ts`).
+			 */
 			id: 'common_11',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Відкрийте «Грати» → «Вікторина» і натисніть «Випадкова гра» пʼять разів. Щоразу мусить відкриватися ГРА — жодного разу меню чи сторінка вибору режиму.',
-				en: 'Open «Play» → «Quiz» and press «Random game» five times. Each time a GAME must open — never a menu or a mode-choice screen.'
+				uk: 'Відкрийте «Грати» → «Вікторина» і натисніть «Випадкова гра» десять разів. Щоразу мусить відкриватися одна з шести ігор — «Правда чи міф?», «Кого більше?», «Де живем?» (континенти чи природні зони), «Хто з іншої родини?», «Що їмо?» — і жодного разу меню, вибір режиму, заповідник, вікно входу чи онлайн-кімната.',
+				en: 'Open «Play» → «Quiz» and press «Random game» ten times. Each time one of the six games must open — «Fact or Myth?», «Who is more?», «Where do they live?» (continents or biomes), «Who is from another family?», «What do they eat?» — and never a menu, a mode choice, the reserve, the sign-in window or an online room.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/services/randomGame.test.ts',
