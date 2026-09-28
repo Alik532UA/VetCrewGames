@@ -152,15 +152,24 @@ export const formatFont = (text: string): string => {
  * інваріант у `src/security.test.ts` вимагає, щоб туди потрапляв лише
  * результат форматерів словника — page-локальна функція під це не підпадала
  * і робила перевірку слабшою.
+ *
+ * ДРОБОВА ЧАСТИНА — ТЕЖ МОВОЮ СТОРІНКИ (2026-09-28). Доти локаль отримувала лише
+ * остання гілка, а в решті число ставало рядком JS — із крапкою: українська,
+ * німецька й нідерландська сторінки показували «~1.6 млрд» і «~4.5 Tausend» там, де
+ * пишуть кому. Округлення не змінилося: `toLocaleString` типово лишає до трьох
+ * знаків після коми, а в даних гри їх не більше — це стереже
+ * `formatPopulation.test.ts` на кожній тварині.
  */
 export const formatPopulation = (value: number): string => {
 	const locale = settings.locale;
+	const amount = (units: number) => units.toLocaleString(locale);
 	if (value >= 1_000_000_000_000)
-		return formatFont(`~${value / 1_000_000_000_000} ${t('unit.trillion')}`);
-	if (value >= 1_000_000_000) return formatFont(`~${value / 1_000_000_000} ${t('unit.billion')}`);
-	if (value >= 1_000_000) return formatFont(`~${value / 1_000_000} ${t('unit.million')}`);
-	if (value >= 1_000) return formatFont(`~${value / 1_000} ${t('unit.thousand')}`);
-	return formatFont(`~${value.toLocaleString(locale)}`);
+		return formatFont(`~${amount(value / 1_000_000_000_000)} ${t('unit.trillion')}`);
+	if (value >= 1_000_000_000)
+		return formatFont(`~${amount(value / 1_000_000_000)} ${t('unit.billion')}`);
+	if (value >= 1_000_000) return formatFont(`~${amount(value / 1_000_000)} ${t('unit.million')}`);
+	if (value >= 1_000) return formatFont(`~${amount(value / 1_000)} ${t('unit.thousand')}`);
+	return formatFont(`~${amount(value)}`);
 };
 
 export const formatPlain = (text: string): string => {
