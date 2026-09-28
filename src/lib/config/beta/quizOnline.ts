@@ -257,8 +257,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_30',
 			category: { uk: 'Раунд', en: 'The round' },
 			text: {
-				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. За 36–100 секунд, залежно від гри (удвічі довше за межу «Повільно» цієї гри), у того, хто відповів, мусить зʼявитися вікно «Ще не вибрали відповідь:» з імʼям другого й кнопкою «Грати далі». Натиск — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
-				en: 'In “No limit”, answer on one device and do nothing on the other. After 36–100 seconds, depending on the game (twice its “Slow” limit), the one who answered must see a “Have not chosen an answer yet:” window with the other player’s name and a “Play on” button. Pressing it must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
+				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. За 36–100 секунд, залежно від гри (удвічі довше за межу «Повільно» цієї гри), у того, хто відповів, мусить зʼявитися вікно «Задовго думає над відповіддю:» з імʼям другого, питанням «Продовжити гру без цієї відповіді?» і двома кнопками: «Продовжити 0/1» і «Чекати ще хвилину». Натиск «Продовжити» — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
+				en: 'In “No limit”, answer on one device and do nothing on the other. After 36–100 seconds, depending on the game (twice its “Slow” limit), the one who answered must see a “Taking too long to answer:” window with the other player’s name, the question “Continue the game without this answer?” and two buttons: “Continue 0/1” and “Wait one more minute”. Pressing “Continue” must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-away-panel'
@@ -455,6 +455,21 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-board-panel'
+		},
+		{
+			/*
+			 * «ЧЕКАТИ ЩЕ ХВИЛИНУ» (прохання автора 2026-09-28, відповідь A). Згортання, повернення за
+			 * хвилину й голос зі смуги перевіряє `QuizIdle.test.ts`; що смуга не закриває відповідь
+			 * і що вікно справді повертається в живій партії — лише на двох пристроях.
+			 */
+			id: 'quizonline_35',
+			category: { uk: 'Раунд', en: 'The round' },
+			text: {
+				uk: 'Дочекайтеся вікна «Задовго думає над відповіддю:» (пункт вище) і натисніть «Чекати ще хвилину». Вікно мусить згорнутися у вузьку смугу внизу — аватарка того, хто думає, «Продовжити 0/1» і «Знову за 1:00», — а ваша відповідь і розбір мусять бути видні й читатися. За хвилину вікно мусить відкритися знову. Натиск «Продовжити» у смузі мусить діяти так само, як у вікні. Утрьох: після вашого голосу вікно більше не відкривається, а смуга каже «Ваш голос враховано 1/2».',
+				en: 'Wait for the “Taking too long to answer:” window (item above) and press “Wait one more minute”. The window must fold into a narrow bar at the bottom — the thinker’s avatar, “Continue 0/1” and “Again in 1:00” — and your answer with its breakdown must stay visible and readable. After a minute the window must open again. “Continue” in the bar must work the same as in the window. With three players: after your vote the window no longer opens, and the bar says “Your vote is counted 1/2”.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-idle-snooze-btn'
 		}
 	]
 };

@@ -3,6 +3,7 @@
 	import type { Member } from '$lib/net/roomTypes';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import GameDialog from '$lib/components/ui/GameDialog.svelte';
 
 	/**
 	 * ВІКНО ОЧІКУВАННЯ: кого чекаємо, скільки ще, і рішення грати далі.
@@ -99,11 +100,18 @@
 		 */
 		onkick?: (uid: string) => void;
 		/**
-		 * ВІКНО «ЩЕ НЕ ВИБРАЛИ ВІДПОВІДЬ» замість «Чекаємо» (`utils/idleWait`): ті, кого
-		 * перелічено, на звʼязку, але думають довше за приховану межу «Не обмежений». Відліку
-		 * немає — межа вже минула, — тож «Грати далі» одразу, а прибирати тут нікого.
+		 * ВІКНО «ЗАДОВГО ДУМАЄ» замість «Чекаємо» (`QuizIdle`, `utils/idleWait`): ті, кого
+		 * перелічено, на звʼязку, але думають довше за подвійну приховану межу «Не
+		 * обмежений». Відліку немає — межа вже минула, — тож «Продовжити» одразу, а
+		 * прибирати тут нікого. Питання й слова — як просив автор 2026-09-28: хто задовго
+		 * думає, і чи продовжити гру без цієї відповіді.
 		 */
 		idle?: boolean;
+		/**
+		 * «Чекати ще хвилину» — лише у вікні «Задовго думає»: згорнути його для себе, щоб
+		 * дочитати відповідь (`QuizIdle` тримає хвилину й смугу знизу).
+		 */
+		onSnooze?: () => void;
 	}
 
 	let {
@@ -118,8 +126,22 @@
 		onkick,
 		pausedBy = null,
 		onResume,
-		idle = false
+		idle = false,
+		onSnooze
 	}: Props = $props();
+
+	/** Один чи кілька: від цього залежить форма дієслова й питання (імен без родів). */
+	const many = $derived(away.length > 1);
+
+	/** Про що рядок над іменами: хто задовго думає, хто поставив паузу чи кого чекаємо. */
+	const label = $derived(
+		idle ? (many ? 'quiz.idleMany' : 'quiz.idleOne') : pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait'
+	);
+
+	/** Напис на кнопці: чи мій голос уже врахований — і, у «Задовго думає», «Продовжити». */
+	const goOnLabel = $derived(
+		idle && !iVoted ? 'quiz.idleGoOn' : iVoted ? 'quiz.awayVoted' : 'quiz.awayGoOn'
+	);
 
 	/** Кого показує рядок: автора паузи або тих, кого немає. */
 	const listed = $derived(pausedBy ? [pausedBy] : away);
@@ -129,10 +151,12 @@
 	<!--
 		ВІКНО ІСНУЄ, ЛИШЕ ПОКИ ПАРТІЯ ЧЕКАЄ — і тому підкладка тут беззастережна.
 
-		`aria-modal` НЕ ставиться: вікно нічого не забирає у фокус силою.
-		`role="status"` лишається — читалка мусить оголосити появу, а не вимагати дії.
+		Доти тут було два стани: по центру з підкладкою — поки чекаємо, і смуга над дошкою —
+		коли «граємо далі без нього». Другий стан і був помилкою: панель висіла над грою вже
+		після того, як рішення ухвалили, і питала те, на що відповіли. Тепер відповідь
+		означає зникнення вікна, а не зміну його вигляду.
 	-->
-	<div class="away-scrim" data-testid="quiz-away-backdrop">
+	<GameDialog testId="quiz-away-backdrop">
 		<!--
 			ВІКНО НА ПІВ ЕКРАНА, А НЕ ПІГУЛКА (прохання автора 2026-09-27: «чому у нас 95%
 			порожнє, а ми мілким елементом пишемо інформацію?»). Доти тут був один рядок
@@ -150,9 +174,7 @@
 		-->
 		<section class="away text-panel fill fill-window" role="status" data-testid="quiz-away-panel">
 			<p class="away__label">
-				{@html formatFont(
-					text(idle ? 'quiz.idleWait' : pausedBy ? 'quiz.pauseBy' : 'quiz.awayWait')
-				)}
+				{@html formatFont(text(label))}
 			</p>
 
 			<ul class="away__people">
@@ -166,6 +188,17 @@
 					</li>
 				{/each}
 			</ul>
+
+			{#if idle}
+				<!--
+					ПИТАННЯ СЛОВАМИ (прохання автора 2026-09-28): «задовго думає над відповіддю,
+					продовжити гру без їх відповіді?». «Без цієї відповіді», а не «без його» чи «без
+					її»: імена тут випадкові з обох родів, а займенник угадував би.
+				-->
+				<p class="away__ask" data-testid="quiz-idle-ask-text">
+					{@html formatFont(text(many ? 'quiz.idleAskMany' : 'quiz.idleAskOne'))}
+				</p>
+			{/if}
 
 			{#if secondsLeft > 0}
 				<!--
@@ -203,16 +236,34 @@
 					тобто той самий шум, від якого ми щойно пішли. «Грати далі» коротке,
 					гендерно чисте й не залежить від кількості зниклих.
 				-->
-				<button
-					type="button"
-					class="away__goon"
-					disabled={iVoted}
-					onclick={onGoOn}
-					data-testid="quiz-away-goon-btn"
-				>
-					{@html formatFont(text(iVoted ? 'quiz.awayVoted' : 'quiz.awayGoOn'))}
-					<b class="away__count" data-testid="quiz-away-goon-count">{voted}/{needed}</b>
-				</button>
+				<div class="away__actions">
+					<button
+						type="button"
+						class="away__goon"
+						disabled={iVoted}
+						onclick={onGoOn}
+						data-testid="quiz-away-goon-btn"
+					>
+						{@html formatFont(text(goOnLabel))}
+						<b class="away__count" data-testid="quiz-away-goon-count">{voted}/{needed}</b>
+					</button>
+
+					{#if idle && onSnooze}
+						<!--
+							«ЧЕКАТИ ЩЕ ХВИЛИНУ» — рішення лише для себе: вікно згортається в смугу, і
+							відповідь можна дочитати (автор: «вікно закривається і можна далі читати
+							результати»). Голосом це не є, тож лічильника тут немає.
+						-->
+						<button
+							type="button"
+							class="away__snooze btn-secondary"
+							onclick={onSnooze}
+							data-testid="quiz-idle-snooze-btn"
+						>
+							{@html formatFont(text('quiz.idleSnooze'))}
+						</button>
+					{/if}
+				</div>
 
 				{#if onkick && !pausedBy && !idle}
 					<!-- Лідер може прибрати зниклого назовсім — це інша дія, ніж «грати далі». -->
@@ -231,46 +282,11 @@
 				{/if}
 			{/if}
 		</section>
-	</div>
+	</GameDialog>
 {/if}
 
 <style>
-	/*
-	 * ПІДКЛАДКА БЕЗЗАСТЕРЕЖНА, бо вікно існує лише поки партія чекає.
-	 *
-	 * Доти тут було два стани: по центру з підкладкою — поки чекаємо, і смуга над
-	 * дошкою — коли «граємо далі без нього». Другий стан і був помилкою: панель
-	 * висіла над грою вже після того, як рішення ухвалили, і питала те, на що
-	 * відповіли. Тепер відповідь означає зникнення вікна, а не зміну його вигляду.
-	 */
-	.away-scrim {
-		position: fixed;
-		inset: 0;
-		/*
-		 * НИЖЧЕ ЗА ШАПКУ (`GameHeader`, 100), а не поверх неї (прохання автора 2026-09-27).
-		 * Доти тут стояло 7000, і підкладка накривала шапку разом із «назад» і меню: той,
-		 * хто чекав, не міг ні вийти з кімнати, ні піти в головне меню — лише чекати. Тепер
-		 * шапка зверху й працює, а гра під підкладкою так само закрита. Що ця підкладка лежить
-		 * під шапкою, тримає `src/content-fill.test.ts`.
-		 */
-		z-index: 90;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		/*
-		 * Зверху — під шапку, щоб велике вікно не заходило під неї. Шапка росте з одиницею
-		 * (3,25 одиниці, `.fill-window` у global.css), тож і поле теж.
-		 */
-		padding: calc(var(--fill-u) * 3.25 + var(--space-md)) var(--space-md) var(--space-md);
-		box-sizing: border-box;
-		/*
-		 * Затемнення ПРОЗОРЕ: фонове фото теми мусить лишатися видимим (це стежить
-		 * `backdrop.test.ts`), а гра під вікном — вгадуватися, щоб пауза читалася як
-		 * пауза, а не як перехід на інший екран.
-		 */
-		background: color-mix(in srgb, var(--color-bg), transparent 35%);
-		backdrop-filter: var(--blur-glass);
-	}
+	/* Підкладка — `ui/GameDialog`: вона одна на всі вікна поверх гри. */
 
 	/*
 	 * Розмір вікна — `.fill-window` (global.css): щонайменше 60% ширини й 52% висоти, тобто
@@ -365,6 +381,39 @@
 		background: transparent;
 		color: var(--color-text-on-panel);
 		cursor: default;
+	}
+
+	/*
+	 * ЛІЧИЛЬНИК НА КНОПЦІ — кольором самої кнопки. Доти він лишався акцентним, тобто на
+	 * акцентній кнопці його не було видно зовсім: «Грати далі» стояла з порожнім місцем
+	 * праворуч (знімок автора 2026-09-28), а кнопка без числа виглядає як «натиснув і не
+	 * працює» — рівно те, від чого число й поставили.
+	 */
+	.away__goon .away__count {
+		color: inherit;
+	}
+
+	/* Питання — під іменами: на нього й відповідають кнопки нижче. */
+	.away__ask {
+		margin: 0;
+		font-size: var(--font-size-lg);
+	}
+
+	/* Дві дії поруч, а на вузькому екрані — одна під одною. */
+	.away__actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-sm);
+	}
+
+	/* «Чекати ще хвилину» — другорядна: вона нічого не вирішує за інших. */
+	.away__snooze {
+		min-height: max(44px, calc(var(--fill-u) * 2.75));
+		padding: 0 var(--space-lg);
+		border-radius: var(--radius-sm);
+		font: inherit;
+		font-size: var(--font-size-lg);
 	}
 
 	.away__kicks {

@@ -160,7 +160,7 @@ describe('усе росте однією пропорцією', () => {
 	});
 });
 
-describe('підкладка очікування у вікторині', () => {
+describe('підкладка вікна поверх гри (`ui/GameDialog`)', () => {
 	/*
 	 * Прохання автора 2026-09-27: «під час очікування гравців хедар не видно і той, хто
 	 * чекає, заблокований». Підкладка стояла на 7000 і накривала шапку разом із «назад» і
@@ -172,8 +172,13 @@ describe('підкладка очікування у вікторині', () => 
 			if (z === undefined) throw new Error(`у «${selector}» немає z-index`);
 			return Number(z);
 		};
-		const scrim = zOf(read('src/lib/components/quiz/QuizAway.svelte'), '.away-scrim');
 		const header = zOf(read('src/lib/components/GameHeader.svelte'), '.game-header');
-		expect(scrim).toBeLessThan(header);
+		// Смуга «Задовго думає» (після «Чекати ще хвилину») — той самий шар, та сама вимога.
+		for (const [file, selector] of [
+			['src/lib/components/ui/GameDialog.svelte', '.game-dialog'],
+			['src/lib/components/quiz/QuizIdle.svelte', '.idle-strip']
+		]) {
+			expect(zOf(read(file), selector), `${file} ${selector}`).toBeLessThan(header);
+		}
 	});
 });

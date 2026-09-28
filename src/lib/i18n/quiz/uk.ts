@@ -28,7 +28,13 @@ export const quiz: Record<string, string> = {
 	'quiz.answered': 'Чекаємо на решту.',
 	'quiz.watching': 'Ви дивитеся — відповіді глядача не зараховуються.',
 	'quiz.awayWait': 'Чекаємо:',
-	'quiz.idleWait': 'Ще не вибрали відповідь:',
+	'quiz.idleOne': 'Задовго думає над відповіддю:',
+	'quiz.idleMany': 'Задовго думають над відповіддю:',
+	'quiz.idleAskOne': 'Продовжити гру без цієї відповіді?',
+	'quiz.idleAskMany': 'Продовжити гру без цих відповідей?',
+	'quiz.idleGoOn': 'Продовжити',
+	'quiz.idleSnooze': 'Чекати ще хвилину',
+	'quiz.idleAgain': 'Знову за',
 	'quiz.pauseBy': 'Пауза:',
 	/*
 	 * ШВИДКІСТЬ КІМНАТИ. Дві шкали, бо це два різні питання: скільки думати над
