@@ -4,6 +4,7 @@
 	import { t, td, formatFont } from '$lib/i18n';
 	import { CheckCircle2, XCircle } from 'lucide-svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { fitCaption } from '$lib/utils/fitCaption';
 	import type { ActiveQuestion } from '$lib/controllers/mythGame.svelte';
 
 	/**
@@ -79,7 +80,10 @@
 					width="200"
 					height="266"
 				/>
-				<div class="myth-card__animal-name image-caption">
+				<div
+					class="myth-card__animal-name image-caption"
+					use:fitCaption={td(question.animal.nameKey)}
+				>
 					{@html formatFont(td(question.animal.nameKey))}
 				</div>
 			</div>
@@ -203,7 +207,8 @@
 	/*
 	 * Вигляд — спільний `.image-caption` (`global.css`). Кегль там 11cqi, тобто вдвічі більший
 	 * за колишні 12px на картинці 216px (прохання автора 2026-09-28: «назва тварини займає 20%
-	 * від зображення — зробити в 2 рази більшу»), і на телефоні частка та сама.
+	 * від зображення — зробити в 2 рази більшу»), і на телефоні частка та сама. Слову, що в
+	 * рядок не стає, — трохи менший (`fitCaption`).
 	 */
 	.myth-card__animal-name {
 		animation: blur-in 3s ease 1s both;

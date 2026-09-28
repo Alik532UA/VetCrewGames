@@ -4,6 +4,7 @@
 	import { t, td, formatFont } from '$lib/i18n';
 	import type { FamilyView } from '$lib/controllers/familyGame.svelte';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { fitCaption } from '$lib/utils/fitCaption';
 	import { motionMs } from '$lib/utils/transitions';
 
 	/**
@@ -96,7 +97,9 @@
 										{/if}
 									</div>
 								{/if}
-								<span class="image-caption">{@html formatFont(td(animal.nameKey))}</span>
+								<span class="image-caption" use:fitCaption={td(animal.nameKey)}>
+									{@html formatFont(td(animal.nameKey))}
+								</span>
 							</div>
 						</button>
 					{/each}

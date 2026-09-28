@@ -253,22 +253,74 @@ test.describe('підпис картки', () => {
 });
 
 /**
- * ПІДПИС НА ЗОБРАЖЕННІ (`.image-caption`, `global.css`) — жодне слово назви не рветься.
+ * ПІДПИС НА ЗОБРАЖЕННІ (`.image-caption`, `global.css`) — жодне слово назви не рветься, і
+ * жодне не меншає без потреби.
  *
  * Назва тварини в «Правда чи міф?», «Де живем?» і «Хто зайвий?» лежить на самій картинці
- * (прохання автора 2026-09-28). Кегль там у `cqi`, тобто частка ширини картинки, і 11cqi —
- * найбільший, за якого найдовше слово з назв (нідерл. «Reuzenmiereneter») стає в рядок.
- * Запас — кілька відсотків, тож будь-яка правка полів, кегля чи зміна назви в перекладі
- * може тихо перевести довге слово на «Reuzenmierene / ter»: `overflow-wrap` не дасть йому
- * вилізти за картинку, і на око це помітно лише в тій мові й на тій тварині.
+ * (прохання автора 2026-09-28). Кегль там у `cqi`, тобто частка ширини картинки: 11cqi для
+ * всіх назв, а слову, що в рядок не стає, `utils/fitCaption.ts` дає трохи менший — кроком
+ * 5%, не менше 70%. Виняток, а не менший кегль для всіх, — прохання автора того ж дня: «не
+ * роби шрифт усюди менше, а тільки виняток для таких довгих слів».
  *
- * Тому перевіряються ВСІ слова всіх назв чотирьох мов, а не вибрані: кожне окремо в
- * справжньому класі на трьох ширинах картинки — від найвужчої («Де живем?», 96px) до
- * найширшої («Правда чи міф?», 216px). Слово стоїть у рядок, коли висота підпису та сама,
- * що в однолітерного. Три ширини, а не одна: частки однакові на всіх, тож розбіжність
- * означає, що якийсь розмір знову записали пікселями.
+ * ## Чому виняток міряється на пристрої, а не підбирається числом
+ *
+ * Перша редакція тримала «11cqi досить для найдовшого слова» й перевіряла рівно це. На
+ * Windows нідерл. «Reuzenmiereneter» мав 4px запасу на картинці 142px, а Chromium у CI
+ * (Linux) округлює ширини гліфів до цілих пікселів — і там слово рвалося на
+ * «Reuzenmierene / ter». Число, підібране на одному комп'ютері, на іншому неправда. З тієї
+ * самої причини менший кегль на Linux буває ширшим за пропорцію, тож дія перевіряє його
+ * виміром, а перевірка під тиском відтворює це навмисно (`LINUX_ROUNDING_CSS`).
+ *
+ * ## Що перевіряється
+ *
+ *   слово, що стає в рядок, — кеглем 11cqi, без винятку;
+ *   слово, що не стає, — меншає, стає в рядок і меншає не більше, ніж треба;
+ *   кожне слово кожної назви чотирьох мов на трьох ширинах картинки рятує щонайменше дно.
+ *
+ * «Стає в рядок» міряється за МАСШТАБУ 1, як і в `readLabels` вище: `readCaptions` знімає
+ * виняток, міряє й повертає — тим самим прийомом, що й дія.
+ *
+ * Зворотні експерименти (2026-09-28), кожен червоний: без `use:fitCaption` на дошці — три
+ * перевірки з дошкою; без множника `--caption-scale` у CSS — дві під тиском («масштаб на
+ * кегль не діє»); лише пропорція, без перевірки виміром — «виміром, а не пропорцією»;
+ * 10cqi для всіх — три; «зменшувати завжди» — «стає — кеглем 11cqi»; «одразу на дно» —
+ * «рівно настільки». Два останні спершу ПРОХОДИЛИ: опитування приймало стан до першого
+ * виміру, а груба похибка округлення зводила всіх на дно, де «на дно» — правильна відповідь.
+ */
+
+/** Кегль підпису без винятку — 11cqi (рішення автора 2026-09-28). */
+const BASE_CAPTION_CQI = 11;
+
+/** Дно, крок і запас винятку — ті самі, що в `utils/labelScale.ts`. */
+const CAPTION_FLOOR = 0.7;
+const CAPTION_STEP = 0.05;
+const CAPTION_SLACK_PX = 1;
+
+/**
+ * Ширини картинки — від найвужчої («Де живем?», 96px) до найширшої («Правда чи міф?», 216px).
+ * Три, а не одна: частки однакові на всіх, тож розбіжність означає, що якийсь розмір знову
+ * записали пікселями.
  */
 const CAPTION_WIDTHS = [96, 142, 216] as const;
+
+/**
+ * Скільки місця лишити слову під тиском — частка від потрібного. Вистачає, щоб виняток
+ * знадобився кожному слову, і не досить, щоб усіх звело на дно: тоді «не більше, ніж
+ * треба» нічого б не перевіряло.
+ */
+const SQUEEZE_SHARE = 0.85;
+
+/**
+ * Менший кегль ширший за пропорцію — як на Linux, де ширини гліфів округлено до цілих
+ * пікселів. Тут це зроблено навмисно й однаково на кожній машині: що менший масштаб, то
+ * більший `letter-spacing`. За масштабу 1 додатку немає, тож «стає в рядок» не міняється.
+ *
+ * Похибка навмисно груба — до 0,6px на літеру на дні, — тож коротке слово на малій картинці
+ * доходить і до дна. Для цієї перевірки досить, що кегль із пропорції тут НЕ проходить;
+ * «не більше, ніж треба» тримає тиск без неї.
+ */
+const LINUX_ROUNDING_CSS =
+	'.image-caption { letter-spacing: calc((1 - var(--caption-scale, 1)) * 2px) !important; }';
 
 /** Слова з назв тварин — прямо з перекладів, щоб нова назва потрапляла сюди сама. */
 function animalNameWords(): string[] {
@@ -284,58 +336,267 @@ function animalNameWords(): string[] {
 	return [...words];
 }
 
+interface CaptionState {
+	name: string;
+	/** `--caption-scale` на підписі; 1 — винятку немає. */
+	scale: number;
+	/** Кегль зараз і за масштабу 1, і скільки пікселів у 1cqi цієї картинки. */
+	fontPx: number;
+	basePx: number;
+	cqiPx: number;
+	/** Поля підпису й місце для тексту, px. */
+	padding: number;
+	room: number;
+	/** Найдовше слово: за масштабу 1, за теперішнього й на крок більшого (`null` — там уже 1). */
+	atBase: number;
+	atScale: number;
+	atStepUp: number | null;
+}
+
+async function readCaptions(page: Page): Promise<CaptionState[]> {
+	return page.$$eval(
+		'.image-caption',
+		(captions, step) =>
+			captions.map((element) => {
+				const caption = element as HTMLElement;
+				const zoom = (caption as HTMLElement & { currentCSSZoom?: number }).currentCSSZoom || 1;
+				const style = getComputedStyle(caption);
+				const fontPx = parseFloat(style.fontSize);
+				const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+				const room = parseFloat(style.maxWidth) - padding;
+
+				/*
+				 * Найдовше слово — `min-content` без переносу посеред слова й без стелі ширини.
+				 * Усе синхронно й повертається назад, тож браузер між цими рядками не малює, а
+				 * дія не бачить нічого.
+				 */
+				const saved = caption.style.getPropertyValue('--caption-scale');
+				const longestAt = (scale: number) => {
+					caption.style.setProperty('--caption-scale', String(scale));
+					caption.style.setProperty('max-width', 'none', 'important');
+					caption.style.setProperty('overflow-wrap', 'normal', 'important');
+					caption.style.setProperty('width', 'min-content', 'important');
+					const width = caption.getBoundingClientRect().width / zoom - padding;
+					caption.style.removeProperty('width');
+					caption.style.removeProperty('overflow-wrap');
+					caption.style.removeProperty('max-width');
+					return width;
+				};
+				const scale = saved ? parseFloat(saved) : 1;
+				const atBase = longestAt(1);
+				const basePx = parseFloat(getComputedStyle(caption).fontSize);
+				const atScale = longestAt(scale);
+				const up = Number((scale + step).toFixed(4));
+				const atStepUp = up < 1 ? longestAt(up) : null;
+				if (saved) caption.style.setProperty('--caption-scale', saved);
+				else caption.style.removeProperty('--caption-scale');
+
+				// 1cqi — зондом у самій картинці: у неї рамка, а `cqi` рахується без рамки.
+				const probe = document.createElement('div');
+				probe.style.cssText = 'position: absolute; width: 100cqi; visibility: hidden;';
+				caption.parentElement!.append(probe);
+				const cqiPx = parseFloat(getComputedStyle(probe).width) / 100;
+				probe.remove();
+
+				return {
+					name: (caption.textContent ?? '').trim(),
+					scale,
+					fontPx,
+					basePx,
+					cqiPx,
+					padding,
+					room,
+					atBase,
+					atScale,
+					atStepUp
+				};
+			}),
+		CAPTION_STEP
+	);
+}
+
+/**
+ * Усе, що не за правилом, — рядком із числами, щоб невдача опитування пояснювала себе сама
+ * (див. `report` вище).
+ *
+ * На дні слову дозволено рватися — далі рятує перенос, і що жодна наявна назва до цього не
+ * доходить, тримає перевірка даних. Тому окремо звіряється, що масштаб справді міняє
+ * кегль: мутант «множник прибрано з CSS» доти проходив би — дія, не бачачи зміни кегля,
+ * доходила до дна, а там уже дозволено все.
+ */
+function captionVerdict(captions: CaptionState[]): string {
+	if (captions.length === 0) return 'підписів немає';
+	const wrong = captions.flatMap((c) => {
+		const fits = (width: number) => width <= c.room - CAPTION_SLACK_PX;
+		const base = BASE_CAPTION_CQI * c.cqiPx;
+		const where = `«${c.name}» ×${c.scale}: слово ${c.atBase.toFixed(1)}px, місця ${c.room.toFixed(1)}px`;
+
+		if (Math.abs(c.basePx - base) > 0.1) {
+			return [
+				`«${c.name}»: кегль без винятку ${c.basePx.toFixed(2)}px, а 11cqi — ${base.toFixed(2)}px`
+			];
+		}
+		if (Math.abs(c.fontPx - c.basePx * c.scale) > 0.1) {
+			return [`${where} — а кегль ${c.fontPx.toFixed(2)}px: масштаб на кегль не діє`];
+		}
+		if (fits(c.atBase)) return c.scale === 1 ? [] : [`${where} — стає в рядок, а кегль менший`];
+		if (c.scale >= 1) return [`${where} — не стає в рядок, а винятку немає`];
+		if (c.scale > CAPTION_FLOOR && !fits(c.atScale)) {
+			return [`${where} — і з винятком ${c.atScale.toFixed(1)}px, рветься`];
+		}
+		if (c.atStepUp !== null && fits(c.atStepUp)) {
+			return [`${where} — на крок більший кегль уже ставав у рядок, зменшено зайве`];
+		}
+		return [];
+	});
+	return wrong.length === 0 ? 'усе за правилом' : wrong.join('; ');
+}
+
+/** «Хто зайвий?» нідерландською: відкривається одразу раундом, а найдовші назви — там. */
+async function openFamily(page: Page) {
+	await page.goto('/VetCrewGames/nl/game-family/');
+	await expect(page.locator('[data-testid^="family-animal-btn-"]').first()).toBeVisible();
+	await page.evaluate(() => document.fonts?.ready);
+}
+
+/**
+ * Тиск: кожному підпису лишається `SQUEEZE_SHARE` місця, якого потребує його найдовше слово.
+ *
+ * У `cqi`, як і сам підпис: зміниться розмір картинки — частка лишиться. `!important`, бо
+ * стеля підпису задана в `global.css`, і без нього правило тесту могло б програти каскаду
+ * й не перевірити нічого; тому ж `pressedVerdict` спершу звіряє, що тиск діє.
+ */
+async function squeeze(page: Page, extraCss = '') {
+	const before = await readCaptions(page);
+	expect(before.length, 'підписів на дошці немає').toBeGreaterThan(0);
+
+	await page.$$eval('.image-caption', (captions) =>
+		captions.forEach((caption, i) => ((caption as HTMLElement).dataset.squeeze = String(i)))
+	);
+	const rules = before.map((c, i) => {
+		const maxWidth = (c.atBase * SQUEEZE_SHARE + c.padding) / c.cqiPx;
+		return `.image-caption[data-squeeze='${i}'] { max-width: ${maxWidth.toFixed(3)}cqi !important; }`;
+	});
+	return page.addStyleTag({ content: [...rules, extraCss].join('\n') });
+}
+
+async function pressedVerdict(page: Page): Promise<string> {
+	const now = await readCaptions(page);
+	const loose = now.filter((c) => c.atBase <= c.room - CAPTION_SLACK_PX);
+	if (loose.length > 0) return `тиск не діє: ${loose.map((c) => c.name).join(', ')}`;
+	return captionVerdict(now);
+}
+
 test.describe('підпис на зображенні', () => {
-	test('кожне слово кожної назви стає в рядок на картинці будь-якої ширини', async ({ page }) => {
+	/**
+	 * Дані: кожне слово кожної назви окремо, у справжньому класі, на трьох ширинах. Слово
+	 * стоїть у рядок, коли висота підпису та сама, що в однолітерного, — своїм кеглем, а ні,
+	 * то на дні винятку. Рветься й там — отже, така назва на картинку вже не лізе.
+	 */
+	test('кожне слово кожної назви стає в рядок — своїм кеглем або винятком', async ({ page }) => {
 		const words = animalNameWords();
 		expect(words.length, 'назв тварин не знайдено — шлях до перекладів змінився?').toBeGreaterThan(
 			100
 		);
 
 		await page.goto('/VetCrewGames/');
-		const broken = await page.evaluate(
-			async ({ words, widths }) => {
+		const { broken, exceptions } = await page.evaluate(
+			async ({ words, widths, floor }) => {
 				const host = document.createElement('div');
 				document.body.append(host);
-				const make = (width: number, text: string) => {
+				const heightOf = (width: number, text: string, scale: number) => {
 					const frame = document.createElement('div');
 					frame.style.cssText = `position: relative; container-type: inline-size; width: ${width}px; height: 200px;`;
 					const caption = document.createElement('span');
 					caption.className = 'image-caption';
+					caption.style.setProperty('--caption-scale', String(scale));
 					caption.textContent = text;
 					frame.append(caption);
 					host.append(frame);
-					return caption;
+					return caption.getBoundingClientRect().height;
 				};
 				// Шрифт вантажиться на вимогу: без цього міряється запасний.
 				await document.fonts.load('700 16px Inglobal', words.join(' '));
 				await document.fonts.ready;
 
-				const out: string[] = [];
+				const broken: string[] = [];
+				const exceptions: string[] = [];
 				for (const width of widths) {
-					const oneLine = make(width, 'A').getBoundingClientRect().height;
+					const oneLine = heightOf(width, 'A', 1);
+					const oneLineAtFloor = heightOf(width, 'A', floor);
 					for (const word of words) {
-						const height = make(width, word).getBoundingClientRect().height;
-						if (height > oneLine + 0.5) out.push(`${word} @ ${width}px`);
+						if (heightOf(width, word, 1) <= oneLine + 0.5) continue;
+						exceptions.push(`${word} @ ${width}px`);
+						if (heightOf(width, word, floor) > oneLineAtFloor + 0.5) {
+							broken.push(`${word} @ ${width}px`);
+						}
 					}
 				}
 				host.remove();
-				return out;
+				return { broken, exceptions };
 			},
-			{ words, widths: CAPTION_WIDTHS }
+			{ words, widths: CAPTION_WIDTHS, floor: CAPTION_FLOOR }
 		);
 
-		expect(broken, `слова, що рвуться на картинці: ${broken.join(', ')}`).toEqual([]);
+		// Кому знадобився виняток — у звіт прогону: видно, чи він досі рідкість.
+		test.info().annotations.push({
+			type: 'виняток fitCaption',
+			description: exceptions.join(', ') || 'нікому'
+		});
+		expect(broken, `слова, що рвуться й на дні винятку: ${broken.join(', ')}`).toEqual([]);
 	});
 
 	/**
-	 * На справжній дошці підпис — усередині картинки, а не під нею чи за її краєм. Дошка
-	 * «Хто зайвий?», бо вона відкривається одразу раундом, нідерландською — там найдовші назви.
+	 * Головна перевірка — рівно прохання автора: без винятку там, де слово стає в рядок, і
+	 * трохи менший кегль там, де не стає. На будь-якій четвірці тварин.
+	 *
+	 * СПЕРШУ ТИСК, ПОТІМ ЙОГО ЗНЯТО — і це не прикраса. Перша редакція просто опитувала дошку,
+	 * і зворотний експеримент «зменшувати завжди» пройшов: до першого виміру дії (~140 мс
+	 * після того, як розкладка вгамувалася) винятку немає ні в кого, і правило «стає — без
+	 * винятку» виконується саме собою. Коли тиск спершу зменшив усіх, повернення до 11cqi
+	 * можна побачити лише після нового виміру. Заодно видно, що виняток не залипає, коли
+	 * місце повертається (дефект, який `fitLabel` уже мав).
 	 */
+	test('слово, що стає в рядок, — кеглем 11cqi, а що не стає, — трохи меншим', async ({ page }) => {
+		await openFamily(page);
+		const pressure = await squeeze(page);
+		await expect
+			.poll(async () => (await readCaptions(page)).every((c) => c.scale < 1), { timeout: 10_000 })
+			.toBe(true);
+
+		await pressure.evaluate((node) => (node as HTMLElement).remove());
+		await expect
+			.poll(async () => captionVerdict(await readCaptions(page)), { timeout: 10_000 })
+			.toBe('усе за правилом');
+	});
+
+	/**
+	 * Під тиском: кожному слову лишається 85% місця, якого воно потребує. Без дії слово
+	 * лишається свого кегля; без множника в CSS масштаб не міняє кегля; «одразу на дно» — на
+	 * крок більший кегль уже ставав у рядок. Опитування тут не проходить саме собою: до
+	 * виміру під тиском винятку немає, а слово не стає.
+	 */
+	test('під тиском слово меншає рівно настільки, щоб стати в рядок', async ({ page }) => {
+		await openFamily(page);
+		await squeeze(page);
+		await expect.poll(() => pressedVerdict(page), { timeout: 10_000 }).toBe('усе за правилом');
+	});
+
+	/**
+	 * Той самий тиск, і менший кегль ширший за пропорцію, як на Linux. Без перевірки виміром
+	 * дія бере кегль із пропорції — і слово рветься вже зменшеним. Саме так підпис рвався б
+	 * у CI і з винятком.
+	 */
+	test('менший кегль перевіряється виміром, а не пропорцією', async ({ page }) => {
+		await openFamily(page);
+		await squeeze(page, LINUX_ROUNDING_CSS);
+		await expect.poll(() => pressedVerdict(page), { timeout: 10_000 }).toBe('усе за правилом');
+	});
+
+	/** На справжній дошці підпис — усередині картинки, а не під нею чи за її краєм. */
 	test('на дошці підпис лежить у межах своєї картинки', async ({ page }) => {
-		await page.goto('/VetCrewGames/nl/game-family/');
+		await openFamily(page);
 		const cards = page.locator('[data-testid^="family-animal-btn-"]');
-		await expect(cards.first()).toBeVisible();
-		await page.evaluate(() => document.fonts?.ready);
 
 		const outside = await cards.evaluateAll((buttons) =>
 			buttons.flatMap((button) => {

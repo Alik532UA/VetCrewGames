@@ -77,3 +77,39 @@ export function labelFit(needed: number, available: number): LabelFit {
 	// Дно не врятувало — далі рятує перенос, а не дальше зменшення.
 	return { scale, wrap: raw < MIN_LABEL_SCALE };
 }
+
+/**
+ * НАЙБІЛЬШИЙ КРОК, ЗА ЯКОГО ТЕКСТ СПРАВДІ ВМІЩАЄТЬСЯ, — вимір, а не пропорція.
+ *
+ * `labelFit` рахує пропорцією: кегль на 10% менший — рядок на 10% вужчий. Так і є, поки
+ * ширини гліфів дробові (Windows). Chromium на Linux округлює їх до цілих пікселів, і той
+ * самий рядок меншим кеглем буває ширшим за пропорцію на кілька пікселів — рівно стільки,
+ * скільки підпису на картинці й забракло в CI (2026-09-28). Тож пропорція тут — лише
+ * перша спроба: від неї крок униз, поки не вміститься, або вгору, поки вміщається. Текст
+ * меншає рівно настільки, щоб стати в рядок, — і не більше.
+ *
+ * Масштаб 1 не пробується: сюди приходять, коли за нього вже НЕ вмістилося.
+ *
+ * @param first Перша спроба — `labelFit(...).scale`.
+ * @param fits Чи вміщається текст за цього масштабу — вимір на сторінці.
+ */
+export function largestFittingScale(first: number, fits: (scale: number) => boolean): number {
+	const onGrid = (scale: number) => {
+		const clamped = Math.min(1, Math.max(MIN_LABEL_SCALE, scale));
+		return Number((Math.round(clamped / LABEL_STEP) * LABEL_STEP).toFixed(4));
+	};
+
+	let scale = onGrid(first);
+	if (fits(scale)) {
+		for (let up = onGrid(scale + LABEL_STEP); up < 1 && fits(up); up = onGrid(up + LABEL_STEP)) {
+			scale = up;
+		}
+		return scale;
+	}
+	while (scale > MIN_LABEL_SCALE) {
+		scale = onGrid(scale - LABEL_STEP);
+		if (fits(scale)) return scale;
+	}
+	// І дно не врятувало — далі рятує перенос.
+	return MIN_LABEL_SCALE;
+}

@@ -5,6 +5,7 @@
 	import type { HabitatMode } from '$lib/config/habitat-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import { revealScroll } from '$lib/utils/revealScroll';
+	import { fitCaption } from '$lib/utils/fitCaption';
 	import { motionMs } from '$lib/utils/transitions';
 	import HabitatOptions from '$lib/components/HabitatOptions.svelte';
 
@@ -80,7 +81,11 @@
 				width="300"
 				height="400"
 			/>
-			<span class="image-caption" data-testid="habitat-animal-name-text">
+			<span
+				class="image-caption"
+				use:fitCaption={td(game.round.animal.nameKey)}
+				data-testid="habitat-animal-name-text"
+			>
 				{@html formatFont(td(game.round.animal.nameKey))}
 			</span>
 		</div>
