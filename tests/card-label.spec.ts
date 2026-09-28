@@ -280,12 +280,12 @@ test.describe('підпис картки', () => {
  * «Стає в рядок» міряється за МАСШТАБУ 1, як і в `readLabels` вище: `readCaptions` знімає
  * виняток, міряє й повертає — тим самим прийомом, що й дія.
  *
- * Зворотні експерименти (2026-09-28), кожен червоний: без `use:fitCaption` на дошці — три
- * перевірки з дошкою; без множника `--caption-scale` у CSS — дві під тиском («масштаб на
- * кегль не діє»); лише пропорція, без перевірки виміром — «виміром, а не пропорцією»;
- * 10cqi для всіх — три; «зменшувати завжди» — «стає — кеглем 11cqi»; «одразу на дно» —
- * «рівно настільки». Два останні спершу ПРОХОДИЛИ: опитування приймало стан до першого
- * виміру, а груба похибка округлення зводила всіх на дно, де «на дно» — правильна відповідь.
+ * Зворотні експерименти (2026-09-28), кожен червоний: без `use:fitCaption` на дошці — обидві
+ * перевірки з тиском; без множника `--caption-scale` у CSS — обидві («масштаб на кегль не
+ * діє»); лише пропорція, без перевірки виміром — «виміром, а не пропорцією»; 10cqi для всіх
+ * — обидві; «зменшувати завжди» — головна, після зняття тиску; «одразу на дно» — головна,
+ * під тиском. Два останні спершу ПРОХОДИЛИ: опитування приймало стан до першого виміру, а
+ * груба похибка округлення зводила всіх на дно, де «на дно» — правильна відповідь.
  */
 
 /** Кегль підпису без винятку — 11cqi (рішення автора 2026-09-28). */
@@ -464,27 +464,49 @@ async function openFamily(page: Page) {
  *
  * У `cqi`, як і сам підпис: зміниться розмір картинки — частка лишиться. `!important`, бо
  * стеля підпису задана в `global.css`, і без нього правило тесту могло б програти каскаду
- * й не перевірити нічого; тому ж `pressedVerdict` спершу звіряє, що тиск діє.
+ * й не перевірити нічого; тому ж `verdict` спершу звіряє, що тиск діє.
+ *
+ * ТИСК ТРИМАЄ СЕБЕ САМ. Перший прогін у CI (run 36412285614) упав на «тиск не діє:
+ * Sifaka»: слово, заміряне для правила, потім стало вужчим більш ніж на 15% — на
+ * повільному раннері щось у розкладці (шрифт чи масштаб сторінки) лягло вже після
+ * розрахунку, і повтор пройшов. Тож тиск, що перестав діяти, перераховується з нового
+ * виміру, а опитування йде далі: це умова самого тесту, а не поведінка дії, і вердикт
+ * про дію від цього не м'якшає.
  */
 async function squeeze(page: Page, extraCss = '') {
-	const before = await readCaptions(page);
-	expect(before.length, 'підписів на дошці немає').toBeGreaterThan(0);
+	let style: Awaited<ReturnType<Page['addStyleTag']>> | null = null;
+	const apply = async (captions: CaptionState[]) => {
+		await page.$$eval('.image-caption', (nodes) =>
+			nodes.forEach((node, i) => ((node as HTMLElement).dataset.squeeze = String(i)))
+		);
+		const rules = captions.map((c, i) => {
+			const maxWidth = (c.atBase * SQUEEZE_SHARE + c.padding) / c.cqiPx;
+			return `.image-caption[data-squeeze='${i}'] { max-width: ${maxWidth.toFixed(3)}cqi !important; }`;
+		});
+		await style?.evaluate((node) => (node as HTMLElement).remove());
+		style = await page.addStyleTag({ content: [...rules, extraCss].join('\n') });
+	};
 
-	await page.$$eval('.image-caption', (captions) =>
-		captions.forEach((caption, i) => ((caption as HTMLElement).dataset.squeeze = String(i)))
-	);
-	const rules = before.map((c, i) => {
-		const maxWidth = (c.atBase * SQUEEZE_SHARE + c.padding) / c.cqiPx;
-		return `.image-caption[data-squeeze='${i}'] { max-width: ${maxWidth.toFixed(3)}cqi !important; }`;
-	});
-	return page.addStyleTag({ content: [...rules, extraCss].join('\n') });
-}
+	const first = await readCaptions(page);
+	expect(first.length, 'підписів на дошці немає').toBeGreaterThan(0);
+	await apply(first);
 
-async function pressedVerdict(page: Page): Promise<string> {
-	const now = await readCaptions(page);
-	const loose = now.filter((c) => c.atBase <= c.room - CAPTION_SLACK_PX);
-	if (loose.length > 0) return `тиск не діє: ${loose.map((c) => c.name).join(', ')}`;
-	return captionVerdict(now);
+	return {
+		/** Вердикт під тиском — або рядок про перерахований тиск, і тоді опитування йде далі. */
+		async verdict(): Promise<string> {
+			const now = await readCaptions(page);
+			const loose = now.filter((c) => c.atBase <= c.room - CAPTION_SLACK_PX);
+			if (loose.length === 0) return captionVerdict(now);
+			await apply(now);
+			const which = loose.map(
+				(c) => `«${c.name}» ${c.atBase.toFixed(1)} із ${c.room.toFixed(1)}px`
+			);
+			return `тиск не діяв, перераховано: ${which.join(', ')}`;
+		},
+		async release() {
+			await style?.evaluate((node) => (node as HTMLElement).remove());
+		}
+	};
 }
 
 test.describe('підпис на зображенні', () => {
@@ -547,39 +569,33 @@ test.describe('підпис на зображенні', () => {
 	});
 
 	/**
-	 * Головна перевірка — рівно прохання автора: без винятку там, де слово стає в рядок, і
-	 * трохи менший кегль там, де не стає. На будь-якій четвірці тварин.
+	 * Головна перевірка — рівно прохання автора: слово, що не стає в рядок, меншає рівно
+	 * настільки, щоб стати, а слово, що стає, лишається кеглем 11cqi. На будь-якій четвірці
+	 * тварин.
 	 *
-	 * СПЕРШУ ТИСК, ПОТІМ ЙОГО ЗНЯТО — і це не прикраса. Перша редакція просто опитувала дошку,
-	 * і зворотний експеримент «зменшувати завжди» пройшов: до першого виміру дії (~140 мс
-	 * після того, як розкладка вгамувалася) винятку немає ні в кого, і правило «стає — без
-	 * винятку» виконується саме собою. Коли тиск спершу зменшив усіх, повернення до 11cqi
-	 * можна побачити лише після нового виміру. Заодно видно, що виняток не залипає, коли
-	 * місце повертається (дефект, який `fitLabel` уже мав).
-	 */
-	test('слово, що стає в рядок, — кеглем 11cqi, а що не стає, — трохи меншим', async ({ page }) => {
-		await openFamily(page);
-		const pressure = await squeeze(page);
-		await expect
-			.poll(async () => (await readCaptions(page)).every((c) => c.scale < 1), { timeout: 10_000 })
-			.toBe(true);
-
-		await pressure.evaluate((node) => (node as HTMLElement).remove());
-		await expect
-			.poll(async () => captionVerdict(await readCaptions(page)), { timeout: 10_000 })
-			.toBe('усе за правилом');
-	});
-
-	/**
-	 * Під тиском: кожному слову лишається 85% місця, якого воно потребує. Без дії слово
+	 * Спершу тиск: кожному слову лишається 85% місця, якого воно потребує. Без дії слово
 	 * лишається свого кегля; без множника в CSS масштаб не міняє кегля; «одразу на дно» — на
 	 * крок більший кегль уже ставав у рядок. Опитування тут не проходить саме собою: до
 	 * виміру під тиском винятку немає, а слово не стає.
+	 *
+	 * ПОТІМ ТИСК ЗНЯТО — і це не прикраса. Перша редакція просто опитувала дошку, і
+	 * зворотний експеримент «зменшувати завжди» пройшов: до першого виміру дії (~140 мс після
+	 * того, як розкладка вгамувалася) винятку немає ні в кого, і правило «стає — без винятку»
+	 * виконується саме собою. Коли тиск спершу зменшив усіх, повернення до 11cqi видно лише
+	 * після нового виміру. Заодно видно, що виняток не залипає, коли місце повертається
+	 * (дефект, який `fitLabel` уже мав).
 	 */
-	test('під тиском слово меншає рівно настільки, щоб стати в рядок', async ({ page }) => {
+	test('слово, що не стає в рядок, меншає рівно настільки, а що стає, — кеглем 11cqi', async ({
+		page
+	}) => {
 		await openFamily(page);
-		await squeeze(page);
-		await expect.poll(() => pressedVerdict(page), { timeout: 10_000 }).toBe('усе за правилом');
+		const pressure = await squeeze(page);
+		await expect.poll(() => pressure.verdict(), { timeout: 10_000 }).toBe('усе за правилом');
+
+		await pressure.release();
+		await expect
+			.poll(async () => captionVerdict(await readCaptions(page)), { timeout: 10_000 })
+			.toBe('усе за правилом');
 	});
 
 	/**
@@ -589,8 +605,8 @@ test.describe('підпис на зображенні', () => {
 	 */
 	test('менший кегль перевіряється виміром, а не пропорцією', async ({ page }) => {
 		await openFamily(page);
-		await squeeze(page, LINUX_ROUNDING_CSS);
-		await expect.poll(() => pressedVerdict(page), { timeout: 10_000 }).toBe('усе за правилом');
+		const pressure = await squeeze(page, LINUX_ROUNDING_CSS);
+		await expect.poll(() => pressure.verdict(), { timeout: 10_000 }).toBe('усе за правилом');
 	});
 
 	/** На справжній дошці підпис — усередині картинки, а не під нею чи за її краєм. */
