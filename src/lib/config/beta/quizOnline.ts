@@ -257,8 +257,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_30',
 			category: { uk: 'Раунд', en: 'The round' },
 			text: {
-				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. За 18–50 секунд, залежно від гри (межа «Повільно» цієї гри), у того, хто відповів, мусить зʼявитися вікно «Ще не вибрали відповідь:» з імʼям другого й кнопкою «Грати далі». Натиск — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
-				en: 'In “No limit”, answer on one device and do nothing on the other. After 18–50 seconds, depending on the game (its “Slow” limit), the one who answered must see a “Have not chosen an answer yet:” window with the other player’s name and a “Play on” button. Pressing it must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
+				uk: 'У «Не обмежений» відповідайте на одному пристрої, а на другому — ні, нічого не натискайте. За 36–100 секунд, залежно від гри (удвічі довше за межу «Повільно» цієї гри), у того, хто відповів, мусить зʼявитися вікно «Ще не вибрали відповідь:» з імʼям другого й кнопкою «Грати далі». Натиск — і раунд мусить піти на табло. У того, хто думає, вікна мусить НЕ бути, і відповісти він мусить могти аж до натиску.',
+				en: 'In “No limit”, answer on one device and do nothing on the other. After 36–100 seconds, depending on the game (twice its “Slow” limit), the one who answered must see a “Have not chosen an answer yet:” window with the other player’s name and a “Play on” button. Pressing it must take the round to the scoreboard. The one still thinking must NOT see that window and must be able to answer right up to the press.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-away-panel'

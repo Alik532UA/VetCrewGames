@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Member } from '$lib/net/roomTypes';
-import { awaitedOf, idleView, noWaitDecided, type IdleSource } from './idleWait';
+import {
+	awaitedOf,
+	idlePatienceMs,
+	idlePatienceOf,
+	idleView,
+	noWaitDecided,
+	type IdleSource
+} from './idleWait';
 
 /**
  * «ГРАТИ ДАЛІ» ДЛЯ ТОГО, ХТО ДУМАЄ (рішення автора 2026-09-27, 5-B) — правила без мережі.
@@ -93,5 +100,26 @@ describe('вікно «Ще не вибрали відповідь»', () => {
 		const view = idleView(source({ noWait: ['a'] }), 20_000, 'a');
 		expect(view.iVoted).toBe(true);
 		expect(view.voted).toBe(1);
+	});
+});
+
+/**
+ * ПОДВІЙНА МЕЖА (прохання автора 2026-09-28): бали за швидкість — від межі рахунку, а
+ * питання «не чекати?» — удвічі пізніше, однаково у вікні й у перепрогоні.
+ *
+ * Зворотні експерименти: `IDLE_PATIENCE_FACTOR = 1` — червоніють обидві перевірки тут,
+ * «між межею рахунку й подвійною межею» в `quizMatch.svelte.test.ts` і «після подвійної
+ * прихованої межі» в `quizRoom.svelte.test.ts`; подвоєння лише у вікні, а не в перепрогоні,
+ * — друга з них; лише в перепрогоні — третя.
+ */
+describe('коли питати «не чекати?»', () => {
+	it('удвічі пізніше за межу рахунку', () => {
+		expect(idlePatienceMs(18_000)).toBe(36_000);
+	});
+
+	it('для перепрогону — те саме з кожного раунду, а невідома межа лишається невідомою', () => {
+		const patienceOf = idlePatienceOf((round) => (round === 0 ? 30_000 : undefined));
+		expect(patienceOf(0)).toBe(60_000);
+		expect(patienceOf(1)).toBeUndefined();
 	});
 });

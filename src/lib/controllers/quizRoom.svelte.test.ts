@@ -447,13 +447,13 @@ describe('реакції вікторини', () => {
 /**
  * ВІКНО «ЩЕ НЕ ВИБРАЛИ ВІДПОВІДЬ» — З МАТЧУ Й ГОДИННИКА СЕСІЇ (рішення автора 2026-09-27,
  * 5-B). Правила вікна — `idleWait.test.ts`; тут те, що межу рахує матч поточного раунду:
- * від його початку, з прихованою межею гри.
+ * від його початку, з ПОДВІЙНОЮ прихованою межею гри (прохання автора 2026-09-28).
  *
- * Зворотний експеримент: не додавати `scoreLimitMs` до початку раунду — червоніє «до межі
- * вікна немає».
+ * Зворотні експерименти: не додавати межу до початку раунду — червоніє «до межі вікна
+ * немає»; додавати саму межу рахунку, а не подвійну, — «на межі рахунку вікна ще немає».
  */
 describe('хто думає у «Не обмежений»', () => {
-	it('після прихованої межі той, хто відповів, бачить того, хто думає', async () => {
+	it('після подвійної прихованої межі той, хто відповів, бачить того, хто думає', async () => {
 		const games = ONLINE_GAMES.map((game) => game.id);
 		const config = quizConfig(games, { round: 'unlimited', reveal: 'normal' });
 		const room = new LocalRoom(info({ config }), members());
@@ -471,6 +471,14 @@ describe('хто думає у «Не обмежений»', () => {
 		expect(quiz.idle.show, 'до межі вікна немає').toBe(false);
 
 		seat.clock = start + lead.scoreLimitMs;
+		flushSync();
+		expect(quiz.idle.show, 'на межі рахунку вікна ще немає — лише на подвійній').toBe(false);
+
+		seat.clock = start + 2 * lead.scoreLimitMs - 1;
+		flushSync();
+		expect(quiz.idle.show, 'за мить до подвійної межі вікна немає').toBe(false);
+
+		seat.clock = start + 2 * lead.scoreLimitMs;
 		flushSync();
 		expect(quiz.idle.show).toBe(true);
 		expect(quiz.idle.idle.map((player) => player.uid)).toEqual([GUEST]);

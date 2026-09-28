@@ -422,15 +422,16 @@ describe('раунд без межі часу', () => {
 	});
 
 	/*
-	 * ХТО НА ЗВʼЯЗКУ, АЛЕ ДУМАЄ ДОВШЕ ЗА ПРИХОВАНУ МЕЖУ (рішення автора 2026-09-27, 5-B):
-	 * решта може не чекати, і раунд іде на табло. Доти такий раунд стояв вічно.
+	 * ХТО НА ЗВʼЯЗКУ, АЛЕ ДУМАЄ ДОВШЕ ЗА ПОДВІЙНУ ПРИХОВАНУ МЕЖУ (рішення автора 2026-09-27,
+	 * 5-B; подвійна — 2026-09-28): решта може не чекати, і раунд іде на табло. Доти такий
+	 * раунд стояв вічно.
 	 */
-	it('хто думає довше за приховану межу — решта може не чекати, і раунд іде на табло', async () => {
+	it('хто думає довше за подвійну приховану межу — решта може не чекати, і раунд іде на табло', async () => {
 		const { room, host, stop } = free();
 		host.present = [HOST, GUEST];
 		await host.startRound(0);
 		await host.answer(1);
-		room.tick(roundLimitMs(host.programme[0].game, ROUND_PACE.slow) + 1);
+		room.tick(2 * roundLimitMs(host.programme[0].game, ROUND_PACE.slow) + 1);
 
 		expect(host.everyoneAnswered, 'раунд чекає того, хто думає, — як і має').toBe(false);
 		await host.voteNoWait();
@@ -450,6 +451,24 @@ describe('раунд без межі часу', () => {
 
 		await host.voteNoWait();
 		expect(host.noWait).toEqual([]);
+		expect(host.everyoneAnswered).toBe(false);
+		stop();
+	});
+
+	/*
+	 * МІЖ МЕЖЕЮ РАХУНКУ Й ПОДВІЙНОЮ — ще чекаємо (прохання автора 2026-09-28): бали за
+	 * швидкість уже найменші, але питати «не чекати?» рано. Правила дев'ятої редакції цей
+	 * голос зараховували.
+	 */
+	it('голос між межею рахунку й подвійною межею ще нічого не вирішує', async () => {
+		const { room, host, stop } = free();
+		host.present = [HOST, GUEST];
+		await host.startRound(0);
+		await host.answer(1);
+		room.tick(roundLimitMs(host.programme[0].game, ROUND_PACE.slow) + 1);
+
+		await host.voteNoWait();
+		expect(host.noWait, 'голос після межі рахунку, але до подвійної — не рахується').toEqual([]);
 		expect(host.everyoneAnswered).toBe(false);
 		stop();
 	});

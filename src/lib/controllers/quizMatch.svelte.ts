@@ -6,7 +6,7 @@ import { EMPTY_QUIZ_LOG, replayQuizLog, type QuizLog } from '$lib/utils/quizRepl
 import { freeSeq } from '$lib/utils/journalSeq';
 import { quizPartyOf, stayingOf } from '$lib/utils/roster';
 import { heldPayloads } from '$lib/utils/awayWait';
-import { awaitedOf } from '$lib/utils/idleWait';
+import { awaitedOf, idlePatienceOf } from '$lib/utils/idleWait';
 import { QuizHold, type ReleasedHold } from '$lib/utils/quizHold';
 import { takeLead } from './takeLead';
 import { logService } from '$lib/services/logService.svelte';
@@ -797,7 +797,7 @@ export class QuizMatch extends RoomEnvelopeState {
 
 		const log = replayQuizLog(snapshot, {
 			limitOf: this.#roundLimitOf,
-			patienceOf: this.#log.limitOf
+			patienceOf: idlePatienceOf(this.#log.limitOf)
 		});
 
 		this.#journal = log;
