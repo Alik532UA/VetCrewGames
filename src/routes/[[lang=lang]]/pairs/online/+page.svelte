@@ -210,7 +210,7 @@
 			amHost={session.amHost}
 			cross={crossGameLinks(lang, 'pairs', session.code, match?.nextCode ?? null)}
 			onRematch={session.canRematch ? session.rematch : undefined}
-			onClose={session.amHost ? () => session.close() : undefined}
+			onClose={session.amHost ? (to) => session.close(to) : undefined}
 			onPlayNext={session.myRole === 'spectator' ? () => session.setRole('player') : undefined}
 			onYield={canTakeTurn ? () => stallAction('yield') : undefined}
 			onEnd={canTakeTurn ? () => stallAction('end') : undefined}

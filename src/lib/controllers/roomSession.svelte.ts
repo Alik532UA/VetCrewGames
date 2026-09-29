@@ -434,8 +434,8 @@ export class RoomSession<M extends RoomMatch> {
 
 	/** Почати партію; `auto` — це відлік, а не людина (`roomHost.ts`, `hostStart`). */
 	start = (auto = false): Promise<void> => hostStart(this, auto);
-	/** Закрити кімнату ЯВНОЮ дією (`hostClose`). */
-	close = (): Promise<void> => hostClose(this);
+	/** Закрити кімнату ЯВНОЮ дією (`hostClose`); `to` — куди піти після (головне меню). */
+	close = (to?: string): Promise<void> => hostClose(this, to);
 	/** Реванш — з тими, хто на звʼязку зараз, і лише коли їх досить (`hostRematch`). */
 	rematch = (): Promise<void> => hostRematch(this);
 	switchAutoStart = (on: boolean) => this.hostAction((transport) => transport.setAutoStart(on));

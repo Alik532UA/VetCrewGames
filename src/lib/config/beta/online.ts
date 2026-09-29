@@ -103,8 +103,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_9',
 			category: { uk: 'Господар кімнати', en: 'The host' },
 			text: {
-				uk: 'Кнопки «Зіграти ще» й «Закрити кімнату» мусять бути лише в господаря кімнати — спершу це той, хто її створив, але ведення може перейти до іншого. У другого гравця їх не мусить бути видно.',
-				en: 'The «Play again» and «Close the room» buttons must belong only to the room’s host — at first whoever created it, but the lead can pass to someone else. The other player must not see them at all.'
+				uk: 'Кнопка «Зіграти ще» й «Головне меню», яке закриває кімнату, мусять бути лише в господаря кімнати — спершу це той, хто її створив, але ведення може перейти до іншого. Другий гравець замість них бачить «Головне меню» простим посиланням, що кімнати не закриває.',
+				en: 'The «Play again» button and the «Main menu» that closes the room must belong only to the room’s host — at first whoever created it, but the lead can pass to someone else. The other player instead sees «Main menu» as a plain link that does not close the room.'
 			},
 			coverage: 'manual',
 			negative: true
@@ -122,8 +122,8 @@ export const onlineTab: BetaTab = {
 			id: 'online_11',
 			category: { uk: 'Господар кімнати', en: 'The host' },
 			text: {
-				uk: 'Господар натискає «Закрити кімнату». Обидва мусять вийти з партії, а спроба зайти за тим самим кодом — сказати, що кімнати немає.',
-				en: 'The host presses «Close the room». Both must leave the game, and trying the same code again must say the room is gone.'
+				uk: 'Господар натискає «Головне меню» в підсумку. Він мусить опинитися в головному меню, другий гравець — вийти з партії, а спроба зайти за тим самим кодом — сказати, що кімнати немає.',
+				en: 'The host presses «Main menu» in the result. The host must land in the main menu, the other player must leave the game, and trying the same code again must say the room is gone.'
 			},
 			coverage: 'manual'
 		},

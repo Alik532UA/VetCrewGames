@@ -35,8 +35,8 @@
 		me: string;
 		/** Нова партія; `undefined` — я не господар або пари немає. */
 		onRematch?: () => void;
-		/** Закрити кімнату назовсім — лише господар. */
-		onClose?: () => void;
+		/** Закрити кімнату й піти туди (`to`) — «Головне меню» господаря. Лише господар. */
+		onClose?: (to?: string) => void;
 		/** Я дивився — і хочу грати наступну. `undefined` — я вже гравець. */
 		onPlayNext?: () => void;
 		/** Чи я господар: лише він створює кімнату іншої гри. */
@@ -145,11 +145,13 @@
 			</span>
 
 			<!--
-				ДІЇ — стовпцем однакової ширини: головна зверху, «Закрити кімнату» — під переходом у
-				другу гру, а «Подивитися на картки» — останньою, бо вона нічого не міняє.
+				ДІЇ — стовпцем однакової ширини (прохання автора 2026-09-29, та сама схема, що в
+				«Гру завершено» вікторини): «Зіграти ще» й «Зіграти у „Вікторину“» — акцентні,
+				«Головне меню» — ні (для господаря воно ж закриває кімнату), а «Подивитися на картки» —
+				останньою, бо вона нічого не міняє.
 
-				«Закрити» — ОКРЕМО ВІД «Зіграти ще» (аудит 2026-09-25): господар без пари чує, чого
-				бракує, а закрити може завжди; гість чекає господаря.
+				Закриття — ОКРЕМО ВІД «Зіграти ще» (аудит 2026-09-25): господар без пари чує, чого
+				бракує, а закрити (піти в меню) може завжди; гість чекає господаря.
 			-->
 			<div class="result__actions">
 				{#if onRematch}
@@ -187,19 +189,28 @@
 						{@html formatFont(t('room.goNext'))}
 					</a>
 				{:else if amHost}
-					<a href={cross.create} class="btn-secondary" data-testid="room-other-game-link">
+					<a href={cross.create} class="btn-primary" data-testid="room-other-game-link">
 						{@html formatFont(t(cross.createLabel))}
 					</a>
 				{/if}
+				<!--
+					«ГОЛОВНЕ МЕНЮ» ГОСПОДАРЯ ЗАКРИВАЄ КІМНАТУ (прохання автора 2026-09-29: «це те саме, що
+					Закрити кімнату»): окремої кнопки закриття більше немає, і закрити можна й без пари.
+					Гість просто йде.
+				-->
 				{#if onClose}
 					<button
 						type="button"
 						class="btn-secondary"
-						onclick={onClose}
+						onclick={() => onClose(cross.menu)}
 						data-testid="pairs-close-btn"
 					>
-						{@html formatFont(t('pairs.closeRoom'))}
+						{@html formatFont(t('common.mainMenu'))}
 					</button>
+				{:else}
+					<a href={cross.menu} class="btn-secondary" data-testid="pairs-main-menu-link">
+						{@html formatFont(t('common.mainMenu'))}
+					</a>
 				{/if}
 				<button
 					type="button"

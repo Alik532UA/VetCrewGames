@@ -81,14 +81,14 @@ const view = (
 	match: InstanceType<typeof QuizMatch>,
 	clock: number,
 	amHost = true,
-	canRematch = true
+	canRematch = true,
+	onClose: (to?: string) => void = vi.fn()
 ) =>
 	render(QuizRoom, {
 		props: {
 			text: (key: string) => key,
 			match,
 			me: amHost ? HOST : GUEST,
-			lang: 'uk',
 			amHost,
 			clock,
 			wait: calm,
@@ -100,7 +100,7 @@ const view = (
 			onResume: vi.fn(),
 			onanswer: vi.fn(),
 			onRematch: canRematch ? vi.fn() : undefined,
-			onClose: vi.fn(),
+			onClose,
 			cross: crossGameLinks('uk', 'quiz', '42', null),
 			onkick: vi.fn()
 		}
@@ -175,6 +175,54 @@ describe('фінал вікторини', () => {
 		view(host, host.deadlineAt() as number);
 		expect(screen.getByTestId('quiz-reveal-panel')).toBeTruthy();
 		expect(screen.queryByTestId('quiz-over-panel')).toBeNull();
+		stop();
+	});
+});
+
+/**
+ * КНОПКИ «ГРУ ЗАВЕРШЕНО» (прохання автора 2026-09-29): «Грати знову» й «Зіграти у „Знайти пару“» —
+ * акцентні, «Головне меню» — ні, і воно ж «Закрити кімнату» («це те саме»): окремої кнопки
+ * закриття більше немає. Господар, натиснувши «Головне меню», закриває кімнату й іде в меню.
+ *
+ * Зворотні експерименти: повернути «Закрити кімнату» окремою кнопкою — червоніє «окремої кнопки
+ * закриття немає»; перехід в іншу гру не акцентний — «акцентні»; «Головне меню» господаря без
+ * закриття — «закриває кімнату».
+ */
+describe('кнопки фіналу', () => {
+	it('«Грати знову» й перехід в іншу гру — акцентні, «Головне меню» — ні', async () => {
+		const { host, stop, clock } = await lastTable();
+		view(host, clock);
+		await host.startRound(QUIZ_ROUNDS);
+		flushSync();
+
+		expect(screen.getByTestId('quiz-play-again-btn').classList.contains('btn-primary')).toBe(true);
+		expect(screen.getByTestId('room-other-game-link').classList.contains('btn-primary')).toBe(true);
+		const menu = screen.getByTestId('quiz-close-btn');
+		expect(menu.classList.contains('btn-primary'), 'головне меню не акцентне').toBe(false);
+		expect(menu.textContent).toContain('Головне меню');
+		stop();
+	});
+
+	it('окремої кнопки закриття немає: «Головне меню» господаря закриває кімнату й веде в меню', async () => {
+		const { host, stop, clock } = await lastTable();
+		const onClose = vi.fn();
+		view(host, clock, true, true, onClose);
+		await host.startRound(QUIZ_ROUNDS);
+		flushSync();
+
+		expect(screen.queryByText('Закрити кімнату'), 'окремої кнопки закриття немає').toBeNull();
+		expect(screen.queryByTestId('quiz-main-menu-link'), 'у господаря меню — кнопка').toBeNull();
+		screen.getByTestId('quiz-close-btn').click();
+		expect(onClose).toHaveBeenCalledWith(crossGameLinks('uk', 'quiz', '42', null).menu);
+		stop();
+	});
+
+	it('гість іде в меню посиланням і кімнати не закриває', async () => {
+		const { host, stop, clock } = await lastTable();
+		view(host, clock, false);
+		expect(screen.queryByTestId('quiz-close-btn')).toBeNull();
+		const link = screen.getByTestId('quiz-main-menu-link') as HTMLAnchorElement;
+		expect(link.getAttribute('href')).toBe(crossGameLinks('uk', 'quiz', '42', null).menu);
 		stop();
 	});
 });

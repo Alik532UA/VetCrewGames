@@ -40,14 +40,22 @@ export async function hostStart<M extends RoomMatch>(
 	session.lobby.unpublish();
 }
 
-/** Закрити кімнату — ЯВНОЮ дією: «пішов назовсім» від «перезавантажив» не відрізнити. */
-export async function hostClose<M extends RoomMatch>(session: RoomSession<M>): Promise<void> {
+/**
+ * Закрити кімнату — ЯВНОЮ дією: «пішов назовсім» від «перезавантажив» не відрізнити.
+ *
+ * `to` — куди піти після закриття (кнопка «Головне меню» у фіналі, прохання автора
+ * 2026-09-29: «це те саме, що закрити кімнату»); без нього — на двері цієї ж гри.
+ */
+export async function hostClose<M extends RoomMatch>(
+	session: RoomSession<M>,
+	to?: string
+): Promise<void> {
 	if (!session.match || !session.amHost) return;
 	// Спершу з переліку: навпаки був би рядок кімнати, якої вже немає.
 	session.lobby.unpublish();
 	await session.act('room not closed', async () => {
 		await session.net.closeRoom(session.code);
-		await session.place.exit();
+		await session.place.exit(to);
 	});
 }
 

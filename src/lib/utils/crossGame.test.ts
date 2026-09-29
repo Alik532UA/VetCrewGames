@@ -38,6 +38,7 @@ vi.mock('$app/paths', () => ({
 }));
 
 const { crossGameLinks } = await import('./crossGame');
+const { langPath } = await import('$lib/i18n/routing');
 
 describe('переїзд у другу гру', () => {
 	it('кожна гра веде в ДРУГУ, і підпис називає саме її', () => {
@@ -86,6 +87,17 @@ describe('переїзд у другу гру', () => {
  * грі, оголошення в другій) легко, і зламане буде лише в одному напрямку — тобто
  * помітить це той, хто випадково піде саме туди.
  */
+/**
+ * ГОЛОВНЕ МЕНЮ — разом із переїздом (прохання автора 2026-09-29): у фіналі це й «закрити кімнату»
+ * господаря, і посилання гостя, тож адреса — мовою сторінки.
+ */
+describe('головне меню після партії', () => {
+	it('веде на головну мовою сторінки', () => {
+		expect(crossGameLinks('uk', 'quiz', '42', null).menu).toBe(langPath('uk'));
+		expect(crossGameLinks('en', 'pairs', '42', null).menu).toBe(langPath('en'));
+	});
+});
+
 describe('обвʼязка переїзду', () => {
 	const read = (path: string) => readFileSync(path, 'utf8');
 

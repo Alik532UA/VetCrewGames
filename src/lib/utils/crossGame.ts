@@ -63,6 +63,11 @@ export interface CrossGameLinks {
 	createLabel: TranslationKey;
 	/** Куда йдуть ВСІ, коли переїзд оголошено. `null` — ще нікуди. */
 	next: string | null;
+	/**
+	 * ГОЛОВНЕ МЕНЮ. У фіналі це й «закрити кімнату» для господаря (прохання автора 2026-09-29:
+	 * «Головне меню — це те саме, що Закрити кімнату»), тож адреса їде разом із переїздом.
+	 */
+	menu: string;
 }
 
 /**
@@ -91,7 +96,8 @@ export function crossGameLinks(
 		 * `move=1` — «це група переїжджає»: вікна «вас запросили» (`RoomInvite`) їй не
 		 * треба, бо все про себе вона сказала в попередній кімнаті хвилину тому.
 		 */
-		next: nextCode ? `${pagePath}?room=${encodeURIComponent(nextCode)}&move=1` : null
+		next: nextCode ? `${pagePath}?room=${encodeURIComponent(nextCode)}&move=1` : null,
+		menu: langPath(lang)
 	};
 }
 

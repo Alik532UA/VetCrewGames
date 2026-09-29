@@ -46,6 +46,13 @@ export function roomPlace(
 	const step = { noScroll: true, keepFocus: true };
 	const replace = { ...step, replaceState: true };
 	const param = (name: string) => (browser ? url().searchParams.get(name) : null);
+	/*
+	 * КУДИ ВИХОДИМО, коли це вже названо (`exit(to)`). Господар, що закрив кімнату кнопкою
+	 * «Головне меню», виходить туди — а політика кімнати, побачивши її закритою, кличе
+	 * `exit()` сама й повернула б його на двері гри. Хто з двох викликів буде останнім,
+	 * не відомо, тож ціль одна на обидва.
+	 */
+	let leavingTo: string | null = null;
 	return {
 		urlRoom: () => param('room') ?? '',
 		moved: () => param('move') === '1',
@@ -56,7 +63,12 @@ export function roomPlace(
 			const intent = url().searchParams.has('create') || url().searchParams.has('from');
 			await navigate(withRoom(url(), code), intent ? replace : step);
 		},
-		exit: () => navigate(withoutRoom(url()), step),
+		exit: (to) => {
+			if (to) leavingTo = to;
+			return leavingTo
+				? navigate(new URL(leavingTo, url()), replace)
+				: navigate(withoutRoom(url()), step);
+		},
 		announce: (code) => announceFrom(url(), code),
 		creating: () => {
 			const wanted = param('create');

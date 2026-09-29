@@ -206,3 +206,48 @@ describe('екран підсумку «Знайди пару»', () => {
 		expect(view.queryByTestId('pairs-result-backdrop')).not.toBeNull();
 	});
 });
+
+/**
+ * КНОПКИ ПІДСУМКУ — ТА САМА СХЕМА, ЩО «ГРУ ЗАВЕРШЕНО» ВІКТОРИНИ (прохання автора 2026-09-29,
+ * відповідь A): «Зіграти ще» й «Зіграти у „Вікторину“» — акцентні, «Головне меню» — ні, і для
+ * господаря воно ж закриває кімнату; гість іде посиланням.
+ *
+ * Зворотні експерименти: повернути «Закрити кімнату» окремою кнопкою — червоніє «окремої кнопки
+ * немає»; перехід в іншу гру не акцентний — «акцентні»; меню господаря без закриття — «закриває».
+ */
+describe('кнопки підсумку «Знайди пару»', () => {
+	it('«Зіграти ще» й перехід в іншу гру — акцентні; «Головне меню» господаря закриває кімнату', async () => {
+		const host = await finished();
+		const onClose = vi.fn();
+		const view = render(OnlineRoom, {
+			props: {
+				match: host,
+				me: HOST,
+				online: [HOST, GUEST],
+				amHost: true,
+				cross,
+				onRematch: vi.fn(),
+				onClose
+			}
+		});
+
+		expect(view.getByTestId('pairs-rematch-btn').classList.contains('btn-primary')).toBe(true);
+		expect(view.getByTestId('room-other-game-link').classList.contains('btn-primary')).toBe(true);
+		expect(view.queryByText('Закрити кімнату'), 'окремої кнопки закриття немає').toBeNull();
+		const menu = view.getByTestId('pairs-close-btn');
+		expect(menu.textContent).toContain('Головне меню');
+		expect(menu.classList.contains('btn-primary')).toBe(false);
+		menu.click();
+		expect(onClose, 'закриває кімнату й веде в меню').toHaveBeenCalledWith(cross.menu);
+	});
+
+	it('гість іде в меню посиланням', async () => {
+		const host = await finished();
+		const view = render(OnlineRoom, {
+			props: { match: host, me: GUEST, online: [HOST, GUEST], cross }
+		});
+		const link = view.getByTestId('pairs-main-menu-link');
+		expect(link.getAttribute('href')).toBe(cross.menu);
+		expect(view.queryByTestId('pairs-close-btn')).toBeNull();
+	});
+});

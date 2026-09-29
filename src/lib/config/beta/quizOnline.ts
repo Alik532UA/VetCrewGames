@@ -337,8 +337,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_25',
 			category: { uk: 'Фінал', en: 'The final' },
 			text: {
-				uk: 'Дограйте партію до кінця. Після останнього раунду мусить одразу зʼявитися ВЕЛИКЕ табло «Гру завершено!» з «+балами» останнього раунду й місцями — без проміжного «Наступний раунд» і без маленької панелі після нього. Кнопки «Грати знову» й «Закрити кімнату» за кілька секунд мусять ожити; у гостя під табло — «Чекаємо, доки лідер почне нову партію.»',
-				en: 'Play the game to the end. Right after the last round a BIG “Game over!” scoreboard must appear with the last round’s “+points” and the places — with no “Next round” step and no small panel after it. The “Play again” and “Close the room” buttons must come alive within a few seconds; a guest sees “Waiting for the host to start a new game.” under the scoreboard.'
+				uk: 'Дограйте партію до кінця. Після останнього раунду мусить одразу зʼявитися ВЕЛИКЕ табло «Гру завершено!» з «+балами» останнього раунду й місцями — без проміжного «Наступний раунд» і без маленької панелі після нього. Кнопки «Грати знову» й «Головне меню» (у господаря воно ж закриває кімнату) за кілька секунд мусять ожити, а «Грати знову» й «Зіграти у „Знайти пару“» — бути акцентними; у гостя під табло — «Чекаємо, доки лідер почне нову партію.»',
+				en: 'Play the game to the end. Right after the last round a BIG “Game over!” scoreboard must appear with the last round’s “+points” and the places — with no “Next round” step and no small panel after it. The “Play again” and “Main menu” buttons (for the host the latter closes the room) must come alive within a few seconds, and “Play again” and “Play „Find a pair“” must be the accent ones; a guest sees “Waiting for the host to start a new game.” under the scoreboard.'
 			},
 			coverage: 'manual',
 			testid: 'quiz-over-panel'
@@ -391,8 +391,8 @@ export const quizOnlineTab: BetaTab = {
 			id: 'quizonline_29',
 			category: { uk: 'Фінал', en: 'The final' },
 			text: {
-				uk: 'Дограйте вікторину удвох, а тоді на пристрої гостя закрийте вкладку. У господаря замість «Грати знову» мусить стояти «Потрібні щонайменше двоє гравців.», а «Закрити кімнату» — лишитися.',
-				en: 'Play a quiz to the end with two players, then close the tab on the guest device. Instead of «Play again» the host must see «At least two players are needed.», and «Close the room» must stay.'
+				uk: 'Дограйте вікторину удвох, а тоді на пристрої гостя закрийте вкладку. У господаря замість «Грати знову» мусить стояти «Потрібні щонайменше двоє гравців.», а «Головне меню», що закриває кімнату, — лишитися.',
+				en: 'Play a quiz to the end with two players, then close the tab on the guest device. Instead of «Play again» the host must see «At least two players are needed.», and «Main menu», which closes the room, must stay.'
 			},
 			coverage: 'covered',
 			test: 'src/lib/components/quiz/QuizRoom.final.test.ts',

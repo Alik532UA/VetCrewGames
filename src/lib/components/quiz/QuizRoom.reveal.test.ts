@@ -83,7 +83,6 @@ function view(match: InstanceType<typeof QuizMatch>, clock: number) {
 		text: (key: string) => key,
 		match,
 		me: HOST,
-		lang: 'uk' as const,
 		amHost: true,
 		clock,
 		wait: calm,

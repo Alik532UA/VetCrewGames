@@ -42,6 +42,23 @@ describe('адреса кімнати', () => {
 		expect(left.searchParams.has('room')).toBe(false);
 	});
 
+	/**
+	 * ВИХІД ІЗ ЦІЛЛЮ (`exit(to)`, «Головне меню» господаря, 2026-09-29): туди й ЗАМІНОЮ, а
+	 * пізніший вихід без цілі — політика кімнати, що побачила її закритою, — іде туди ж, а не на
+	 * двері гри. Зворотний експеримент: не памʼятати ціль — червоніє другий виклик.
+	 */
+	it('вихід із ціллю — туди й заміною; пізніший вихід без цілі — туди ж', async () => {
+		const navigate = vi.fn(async () => {});
+		const room = place('https://x.test/quiz/online/?room=7', navigate);
+
+		await room.exit('/menu/');
+		await room.exit();
+
+		const calls = navigate.mock.calls as unknown as [URL, { replaceState?: boolean }][];
+		expect(calls.map(([to]) => to.pathname)).toEqual(['/menu/', '/menu/']);
+		expect(calls.map(([, options]) => options.replaceState)).toEqual([true, true]);
+	});
+
 	it('вхід з адреси з наміром — ЗАМІНОЮ: «назад» не створює ще однієї кімнати', async () => {
 		const navigate = vi.fn(async () => {});
 		await place('https://x.test/pairs/online/?create=everyone', navigate).remember('42');

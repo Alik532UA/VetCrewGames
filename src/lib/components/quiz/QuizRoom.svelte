@@ -2,8 +2,6 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { slide } from 'svelte/transition';
 	import { motionMs } from '$lib/utils/transitions';
-	import { langPath } from '$lib/i18n/routing';
-	import type { Language } from '$lib/i18n/routing';
 	import type { QuizMatch } from '$lib/controllers/quizMatch.svelte';
 	import { Pause } from 'lucide-svelte';
 	import type { WaitView } from '$lib/utils/awayWait';
@@ -49,7 +47,6 @@
 		text: (key: string) => string;
 		match: QuizMatch;
 		me: string;
-		lang: Language;
 		amHost: boolean;
 		/** Час однією величиною — фази й смуга рахуються від нього. */
 		clock: number;
@@ -78,7 +75,8 @@
 		onanswer: (correct: number) => void;
 		/** Немає — реваншу почати не можна: гравців на звʼязку замало (`RoomSession.canRematch`). */
 		onRematch?: () => void;
-		onClose: () => void;
+		/** Закрити кімнату й піти туди (`to`) — у фіналі це «Головне меню» господаря. */
+		onClose: (to?: string) => void;
 		/** Я дивився — і хочу грати наступну. `undefined` — я вже гравець. */
 		onPlayNext?: () => void;
 		/** Адреси переїзду в другу гру. Будує їх сторінка, бо це навігація. */
@@ -91,7 +89,6 @@
 		text,
 		match,
 		me,
-		lang,
 		amHost,
 		clock,
 		wait,
@@ -182,33 +179,27 @@
 				простояло свій час. Реванш раніше стер би журнал до того, як запишеться
 				нагорода, а «наступна партія» глядача до `over` не робить нічого.
 			-->
-			{#if amHost}
-				<!--
-					Без пари реваншу не почати — і кнопки для нього немає, а чого бракує, каже
-					примітка табла (`note` вище): так само, як у «Знайди пару» (шостий аудит).
-					Доти кнопка була, а натиск відповідав тостом, що зникав за кілька секунд.
-				-->
-				{#if onRematch}
-					<button
-						type="button"
-						class="btn-primary"
-						onclick={onRematch}
-						disabled={!match.over}
-						data-testid="quiz-play-again-btn"
-					>
-						{@html formatFont(t('common.playAgain'))}
-					</button>
-				{/if}
+			<!--
+				ПОРЯДОК І ВАГА (прохання автора 2026-09-29): «Грати знову» й «Зіграти у „Знайти пару“» —
+				акцентні, «Головне меню» — ні, і для господаря воно ж «Закрити кімнату» («це те саме»):
+				окремої кнопки закриття більше немає. Гість — чекає господаря або переходить за ним.
+			-->
+			<!--
+				Без пари реваншу не почати — і кнопки для нього немає, а чого бракує, каже примітка
+				табла (`note` вище): так само, як у «Знайди пару» (шостий аудит).
+			-->
+			{#if amHost && onRematch}
 				<button
 					type="button"
-					class="chip"
-					onclick={onClose}
+					class="btn-primary"
+					onclick={onRematch}
 					disabled={!match.over}
-					data-testid="quiz-close-btn"
+					data-testid="quiz-play-again-btn"
 				>
-					{@html formatFont(t('pairs.closeRoom'))}
+					{@html formatFont(t('common.playAgain'))}
 				</button>
-			{:else if onPlayNext}
+			{/if}
+			{#if !amHost && onPlayNext}
 				<button
 					type="button"
 					class="chip"
@@ -221,30 +212,42 @@
 			{/if}
 
 			<!--
-				ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом.
-
-				Прохання автора: «після фіналу можна повторити і поточну гру „Грати
-				знову“, і іншу гру». Кнопки дві, бо це два різні кроки: господар створює
-				кімнату іншої гри (посилання несе код цієї, щоб нова могла про себе
-				сказати), а решта чекає й переходить за оголошеним кодом.
-
-				Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці» мусить
-				працювати. Кімнату іншої гри — лише після записаного кінця: інакше
-				господар пішов би з партії, яку ще не закрито.
+				ЗІГРАТИ В ІНШУ ГРУ — і група лишається разом. Господар створює кімнату іншої гри
+				(посилання несе код цієї, щоб нова могла про себе сказати), решта переходить за
+				оголошеним кодом. Посилання, а не кнопки: це навігація, і «відкрити в новій вкладці»
+				мусить працювати. Кімнату іншої гри — лише після записаного кінця: інакше господар
+				пішов би з партії, яку ще не закрито.
 			-->
 			{#if cross.next}
 				<a href={cross.next} class="btn-primary" data-testid="room-next-link">
 					{@html formatFont(t('room.goNext'))}
 				</a>
 			{:else if amHost && match.over}
-				<a href={cross.create} class="chip" data-testid="room-other-game-link">
+				<a href={cross.create} class="btn-primary" data-testid="room-other-game-link">
 					{@html formatFont(t(cross.createLabel))}
 				</a>
 			{/if}
 
-			<a href={langPath(lang)} class="chip" data-testid="quiz-main-menu-link">
-				{@html formatFont(t('common.mainMenu'))}
-			</a>
+			<!--
+				«ГОЛОВНЕ МЕНЮ» ГОСПОДАРЯ ЗАКРИВАЄ КІМНАТУ: інші дізнаються, що партію скінчено, а не
+				чекають ведучого, який пішов. Кнопка, а не посилання: це дія, і живе вона лише після
+				записаного кінця — інакше закриття стерло б нагороду. Гість просто йде.
+			-->
+			{#if amHost}
+				<button
+					type="button"
+					class="chip"
+					onclick={() => onClose(cross.menu)}
+					disabled={!match.over}
+					data-testid="quiz-close-btn"
+				>
+					{@html formatFont(t('common.mainMenu'))}
+				</button>
+			{:else}
+				<a href={cross.menu} class="chip" data-testid="quiz-main-menu-link">
+					{@html formatFont(t('common.mainMenu'))}
+				</a>
+			{/if}
 		{/snippet}
 	</QuizReveal>
 {:else}

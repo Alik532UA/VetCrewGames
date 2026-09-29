@@ -225,7 +225,6 @@
 			{text}
 			{match}
 			me={session.me}
-			{lang}
 			cross={crossGameLinks(lang, 'quiz', session.code, match?.nextCode ?? null)}
 			amHost={session.amHost}
 			clock={session.clock}
@@ -238,7 +237,7 @@
 			onNoWait={() => void session.act('quiz nowait not written', () => match?.voteNoWait())}
 			onanswer={answer}
 			onRematch={session.canRematch ? session.rematch : undefined}
-			onClose={() => session.close()}
+			onClose={(to) => session.close(to)}
 			onPlayNext={session.myRole === 'spectator' ? () => session.setRole('player') : undefined}
 			onkick={session.kick}
 		/>
