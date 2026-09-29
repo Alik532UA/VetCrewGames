@@ -351,6 +351,11 @@ async function measure(page: Page, theme: string): Promise<Report> {
  * початку (2026-09-27), і обіцянка «знайдеться без правки» на ньому не справдилася.
  * Тепер міряються обидва.
  *
+ * Того ж дня з'явилося вікно кнопки «на весь екран» у шапці. Воно `"dialog"`, але БЕЗ
+ * `aria-controls`: до натиску вікна в DOM немає, і посилання вело б у нікуди. Тож
+ * `aria-controls` для `"dialog"` не вимагається, а для таких чекаємо будь-який відкритий
+ * `dialog`. Шапка стоїть на кожній сторінці, тому кожна кнопка міряється раз за тему.
+ *
  * ЗВОРОТНИЙ ЕКСПЕРИМЕНТ (AI-AGENT-PITFALLS-v8 § 1.1) проведено: `color` пункту
  * зроблено рівним `--color-bg-surface`, тобто кольором тла під ним. Прогін
  * `тема winter` упав, назвавши сторінку разом зі станом —
@@ -365,10 +370,12 @@ async function measure(page: Page, theme: string): Promise<Report> {
  */
 async function pickerTriggers(page: Page): Promise<{ testid: string; controls: string }[]> {
 	const triggers = page.locator(
-		'button[aria-haspopup="listbox"][aria-controls][data-testid], button[aria-haspopup="dialog"][aria-controls][data-testid]'
+		'button[aria-haspopup="listbox"][aria-controls][data-testid], button[aria-haspopup="dialog"][data-testid]'
 	);
 	const found: { testid: string; controls: string }[] = [];
 	for (let i = 0; i < (await triggers.count()); i += 1) {
+		// Схована кнопка (`no-fullscreen`) нічого не відкриває — і натиснути її не можна.
+		if (!(await triggers.nth(i).isVisible())) continue;
 		found.push({
 			testid: (await triggers.nth(i).getAttribute('data-testid')) ?? '',
 			controls: (await triggers.nth(i).getAttribute('aria-controls')) ?? ''
@@ -426,6 +433,8 @@ for (const theme of THEMES) {
 		const findings: Finding[] = [];
 		let checked = 0;
 		let disabled = 0;
+		/** Які вибірники вже міряно в цій темі. */
+		const opened = new Set<string>();
 
 		for (const url of APP_PAGES) {
 			await openIn(page, url, theme);
@@ -443,9 +452,15 @@ for (const theme of THEMES) {
 			 * клік упав би в тло вікна.
 			 */
 			for (const { testid, controls } of await pickerTriggers(page)) {
+				// Кнопка шапки стоїть на кожній сторінці, а вікно в неї те саме: міряти раз.
+				if (opened.has(testid)) continue;
+				opened.add(testid);
 				const trigger = page.locator(`[data-testid="${testid}"]`);
 				await trigger.click();
-				await page.locator(`[id="${controls}"]`).waitFor({ state: 'visible' });
+				// Вікно, якого до натиску в DOM немає, `aria-controls` не має — чекаємо будь-яке відкрите.
+				await page
+					.locator(controls ? `[id="${controls}"]` : 'dialog[open]')
+					.waitFor({ state: 'visible' });
 				const withPanel = await measure(page, theme);
 				checked += withPanel.checked;
 				disabled += withPanel.skippedDisabled;

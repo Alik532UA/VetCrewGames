@@ -229,8 +229,9 @@ export const commonTab: BetaTab = {
 		 * фотографія теми зникала. Причина була в запасному режимі повного екрана
 		 * (`data-fake-fullscreen`), який вмикався не лише на iPhone, а щоразу,
 		 * коли справжній Fullscreen API відмовив. Сам режим прибрано 2026-09-26: на
-		 * iPhone він панелей Safari не ховав, тож кнопка читалася як баг; тепер її
-		 * там немає зовсім (`common_29`).
+		 * iPhone він панелей Safari не ховав, тож кнопка читалася як баг. З 2026-09-29
+		 * кнопка там знову є — і пояснює, чому повного екрана немає, з кроками
+		 * встановлення застосунку (`common_29`).
 		 *
 		 * Причина, чому цього не було в чеклисті, важливіша за сам дефект: кнопки
 		 * повного екрана не згадував жоден пункт узагалі. Інваріант § 5.1 цього не
@@ -252,8 +253,8 @@ export const commonTab: BetaTab = {
 			id: 'common_15',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'На компʼютері чи Android натисніть кнопку розгортання на весь екран у шапці (на iPhone її немає — для нього окремий пункт нижче). Сторінка мусить зайняти весь екран, а значок зі стрілок НАЗОВНІ мусить стати стрілками ВСЕРЕДИНУ; повторне натискання мусить повернути як було.',
-				en: 'On a computer or Android press the full-screen button in the header (an iPhone has none — it has its own item below). The page must fill the screen, and the arrows pointing OUT must become arrows pointing IN; pressing it again must bring back the previous view.'
+				uk: 'На компʼютері чи Android у браузері натисніть кнопку розгортання на весь екран у шапці. Мусить відкритися вікно з двома пунктами: «На весь екран у цьому браузері» й «Встановити застосунок». Перший мусить розгорнути сторінку на весь екран, а значок зі стрілок НАЗОВНІ — стати стрілками ВСЕРЕДИНУ; повторне натискання мусить одразу, без вікна, повернути як було.',
+				en: 'On a computer or Android in the browser press the full-screen button in the header. A window with two items must open: «Full screen in this browser» and «Install the app». The first must make the page fill the screen, and the arrows pointing OUT must become arrows pointing IN; pressing again must bring back the previous view at once, without the window.'
 			},
 			coverage: 'manual',
 			testid: 'header-fullscreen-btn'
@@ -271,21 +272,72 @@ export const commonTab: BetaTab = {
 		},
 		{
 			/*
-			 * iPhone не дає сторінкам повного екрана (лише відео), і кнопка, що міняла
-			 * тільки власний значок, читалася як баг сайту (прохання автора 2026-09-26).
-			 * Ховання й умову перевіряють `src/fullscreen-first-frame.test.ts` і
-			 * `features/homeScreenHint.test.ts`; руками — те, чого jsdom не має:
-			 * справжній Safari на телефоні.
+			 * iPhone не дає сторінкам повного екрана (лише відео). З 2026-09-29 (прохання
+			 * автора) кнопка там є й пояснює це, з кроками встановлення; ховається лише в
+			 * застосунку, відкритому з початкового екрана. Умови — `buttonAction` і
+			 * `src/fullscreen-first-frame.test.ts`, вікно — e2e `fullscreen-offer` з
+			 * емуляцією iPhone; руками — справжній Safari і справжнє встановлення.
 			 */
 			id: 'common_29',
 			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
 			text: {
-				uk: 'Відкрийте сайт на iPhone у Safari. Кнопки «на весь екран» у шапці НЕ мусить бути; при першому відкритті внизу мусить зʼявитися підказка «Поділитися → На початковий екран», а після перезавантаження — вже ні. Відкрийте сайт з початкового екрана: ні кнопки, ні підказки.',
-				en: 'Open the site on an iPhone in Safari. There must be NO full-screen button in the header; on the first visit a hint “Share → Add to Home Screen” must appear at the bottom, and after a reload it must not. Open the site from the Home Screen: neither the button nor the hint.'
+				uk: 'Відкрийте сайт на iPhone у Safari й натисніть кнопку «на весь екран» у шапці. Мусить відкритися вікно з поясненням, що пристрій не дозволяє розгорнути гру на весь екран, і кроками «Поділитися» → «На початковий екран». Пройдіть їх і відкрийте гру значком з початкового екрана: панелей Safari НЕ мусить бути, як і кнопки «на весь екран» у шапці.',
+				en: 'Open the site on an iPhone in Safari and press the full-screen button in the header. A window must open explaining that the device does not let the game go full screen, with the steps «Share» → «Add to Home Screen». Follow them and open the game from the Home Screen icon: there must be NO Safari bars, and no full-screen button in the header.'
 			},
 			coverage: 'manual',
 			testid: 'header-fullscreen-btn',
 			negative: true
+		},
+		{
+			/*
+			 * ВСТАНОВЛЕННЯ ОДНИМ НАТИСКОМ (прохання автора 2026-09-29, відповідь 2 — «A»). Подію
+			 * `beforeinstallprompt` тест лише підробляє (`installPrompt.test.ts`); справжнє
+			 * вікно браузера кидає тільки справжній Chrome чи Edge.
+			 */
+			id: 'common_35',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'На компʼютері в Chrome чи Edge, де сайт ще не встановлено, натисніть кнопку «на весь екран» → «Встановити застосунок». Мусить відкритися вікно САМОГО браузера «Встановити…» — без наших кроків. Після встановлення гра мусить відкритися окремим вікном, і кнопка «на весь екран» у ньому мусить розгортати одразу, без вікна вибору.',
+				en: 'On a computer in Chrome or Edge, where the site is not installed yet, press the full-screen button → «Install the app». The browser’s OWN «Install…» window must open — without our steps. After installing, the game must open in its own window, and the full-screen button there must go full screen at once, without the choice window.'
+			},
+			coverage: 'manual',
+			testid: 'fullscreen-offer-install-btn'
+		},
+		{
+			/*
+			 * КРОКИ ПІД БРАУЗЕР (відповідь 5 — «A»: Slovko з виправленим iPad, плюс Safari на Mac,
+			 * Firefox і месенджери). Вибір інструкції за рядком браузера тримає
+			 * `installGuide.test.ts`; що кроки справді ведуть до встановлення — лише людина.
+			 */
+			id: 'common_36',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Натисніть «на весь екран» → «Встановити застосунок» на iPad у Safari, у Safari на Mac і у Firefox на компʼютері. Кроки мусять бути саме для цього браузера: на iPad — «Поділитися» вгорі праворуч, на Mac — «Файл» → «Додати в Dock», у Firefox — відкрити гру в Chrome чи Edge. Пройдіть кроки: вони мусять справді вести до встановленого застосунку.',
+				en: 'Press full screen → «Install the app» on an iPad in Safari, in Safari on a Mac and in Firefox on a computer. The steps must fit that browser: on the iPad — «Share» at the top right, on the Mac — «File» → «Add to Dock», in Firefox — open the game in Chrome or Edge. Follow the steps: they must really lead to an installed app.'
+			},
+			coverage: 'manual',
+			testid: 'fullscreen-offer-steps-list'
+		},
+		{
+			id: 'common_37',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Відкрийте посилання на сайт з Instagram чи Facebook — у їхньому вбудованому браузері — і натисніть «на весь екран». Мусять зʼявитися кроки «Відкрити в браузері», а не кроки встановлення, яких такий браузер не має.',
+				en: 'Open a link to the site from Instagram or Facebook — in their built-in browser — and press full screen. The steps must say «Open in browser», not installation steps such a browser does not have.'
+			},
+			coverage: 'manual',
+			testid: 'fullscreen-offer-steps-list'
+		},
+		{
+			id: 'common_38',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'Натисніть «на весь екран» і закрийте вікно по черзі хрестиком, клавішею Escape і кліком по темному тлу. Щоразу вікно мусить зникнути, а фокус — повернутися на кнопку в шапці.',
+				en: 'Press full screen and close the window in turn with the cross, the Escape key and a click on the dark backdrop. Each time the window must disappear and the focus must return to the button in the header.'
+			},
+			coverage: 'covered',
+			test: 'tests/fullscreen-offer.spec.ts',
+			testid: 'fullscreen-offer-modal'
 		},
 		{
 			/*

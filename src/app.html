@@ -116,15 +116,33 @@
 					document.documentElement.classList.add('has-custom-scrollbar');
 				}
 			} catch (e) {}
-			// SYNC: та сама умова, що в `canFullscreen` (services/fullscreen.svelte.ts).
-			// iPhone не дає сторінкам повного екрана, і кнопка, яка нічого не робить,
-			// читалася як баг сайту (прохання автора 2026-09-26). Ховається ДО гідрації,
-			// тож не блимає: правило з цим класом — у стилях `GameHeader`, а стилі
-			// компонента зібраний сайт кладе в <head>. Звіряє умови `src/fullscreen-first-frame.test.ts`.
+			// SYNC: та сама умова, що `buttonAction` → 'hidden' (services/fullscreen.svelte.ts).
+			// Кнопки немає лише у ВСТАНОВЛЕНОМУ застосунку, який повного екрана не вміє
+			// (iPhone з початкового екрана): запропонувати там більше нічого. На iPhone у
+			// браузері кнопка є й відкриває пояснення з кроками (прохання автора 2026-09-29).
+			// Ховається ДО гідрації, тож не блимає: правило з цим класом — у стилях `GameHeader`,
+			// а стилі компонента зібраний сайт кладе в <head>. Звіряє умови `src/fullscreen-first-frame.test.ts`.
 			try {
-				if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+				const can = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+				const standalone =
+					navigator.standalone === true ||
+					window.matchMedia('(display-mode: standalone)').matches === true;
+				if (!can && standalone) {
 					document.documentElement.classList.add('no-fullscreen');
 				}
+			} catch (e) {}
+			// ВСТАНОВЛЕННЯ ОДНИМ НАТИСКОМ: подію Chrome/Edge `beforeinstallprompt` ловимо ТУТ, на
+			// першому кадрі (скарга автора 2026-09-29: «у Slovko вікно Chrome викликається, а в нас
+			// ні»). Слухач у лінивому модулі чіплявся пізніше за подію, а в dev не чіплявся зовсім.
+			// Подія приходить раз, тож її зберігаємо; читає її `lib/pwa/installPrompt.ts`.
+			try {
+				window.addEventListener('beforeinstallprompt', function (event) {
+					event.preventDefault();
+					window.__vetcrewgamesInstallPrompt = event;
+				});
+				window.addEventListener('appinstalled', function () {
+					window.__vetcrewgamesInstallPrompt = null;
+				});
 			} catch (e) {}
 		</script>
 	</head>

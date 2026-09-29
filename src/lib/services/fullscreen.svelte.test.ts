@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { canFullscreen, fullscreen, wantsHomeScreenHint } from './fullscreen.svelte';
+import { buttonAction, canFullscreen, fullscreen, isStandalone } from './fullscreen.svelte';
 import { logService } from '$lib/services/logService.svelte';
 
 /**
@@ -189,28 +189,62 @@ describe('стан', () => {
 	});
 });
 
-describe('підказка «на початковий екран»', () => {
-	it('iPhone у браузері — так', () => {
-		ua(IPHONE_UA);
-		expect(wantsHomeScreenHint()).toBe(true);
+/**
+ * НАТИСК КНОПКИ (прохання автора 2026-09-29, відповіді 1 і 4 — «A»).
+ *
+ * Зворотні експерименти: «встановлено» перестає важити (вікно й у застосунку) — червоніє
+ * «у встановленому одразу»; iPhone у браузері без вікна — червоніє «пояснює й радить».
+ */
+describe('що робить натиск кнопки', () => {
+	it('повний екран уже ввімкнено — вийти одразу, хоч би що', () => {
+		for (const can of [false, true]) {
+			for (const installed of [false, true]) {
+				expect(buttonAction({ active: true, can, installed })).toBe('exit');
+			}
+		}
 	});
 
-	it('iPhone, відкритий з початкового екрана, — ні: там уже без панелей', () => {
+	it('уміє, не встановлено — вікно з вибором', () => {
+		expect(buttonAction({ active: false, can: true, installed: false })).toBe('offer');
+	});
+
+	it('уміє, у встановленому застосунку — одразу на весь екран', () => {
+		expect(buttonAction({ active: false, can: true, installed: true })).toBe('enter');
+	});
+
+	it('не вміє, не встановлено (iPhone у браузері) — вікно пояснює й радить встановити', () => {
+		expect(buttonAction({ active: false, can: false, installed: false })).toBe('blocked');
+	});
+
+	it('не вміє, встановлено (iPhone з початкового екрана) — кнопки немає', () => {
+		expect(buttonAction({ active: false, can: false, installed: true })).toBe('hidden');
+	});
+});
+
+describe('чи відкрито як застосунок', () => {
+	it('у вкладці браузера — ні', () => {
+		ua(IPHONE_UA);
+		expect(isStandalone()).toBe(false);
+	});
+
+	it('Safari з початкового екрана — так (`navigator.standalone`)', () => {
 		ua(IPHONE_UA);
 		patch(navigator, 'standalone', true);
-		expect(wantsHomeScreenHint()).toBe(false);
+		expect(isStandalone()).toBe(true);
 	});
 
-	it('iPad — ні: звітує як Mac і повний екран уміє', () => {
+	it('встановлений застосунок Chromium — так (`display-mode: standalone`)', () => {
+		ua(DESKTOP_UA);
+		patch(window, 'matchMedia', (query: string) => ({
+			matches: query === '(display-mode: standalone)'
+		}));
+		expect(isStandalone()).toBe(true);
+	});
+
+	it('iPad у вкладці — ні: звітує як Mac, але вкладка лишається вкладкою', () => {
 		ua(IPAD_UA);
 		able();
-		expect(wantsHomeScreenHint()).toBe(false);
-	});
-
-	it('комп’ютер — ні', () => {
-		ua(DESKTOP_UA);
-		able();
-		expect(wantsHomeScreenHint()).toBe(false);
+		expect(isStandalone()).toBe(false);
 	});
 });
 
@@ -225,7 +259,7 @@ describe('без браузера', () => {
 		const ssr = await import('./fullscreen.svelte');
 
 		expect(ssr.canFullscreen()).toBe(false);
-		expect(ssr.wantsHomeScreenHint()).toBe(false);
+		expect(ssr.isStandalone()).toBe(false);
 		expect(() => ssr.fullscreen.toggle()).not.toThrow();
 		const stop = ssr.fullscreen.watch();
 		expect(() => stop()).not.toThrow();

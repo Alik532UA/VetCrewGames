@@ -91,7 +91,9 @@ const OVERLAY_KNOWN: Record<string, readonly string[]> = {
 	 * тобто зробило б гірше рівно тим, задля кого правило існує.
 	 */
 	'pairs-country-select': ['scrollable-region-focusable'],
-	'pairs-avatar-toggle-btn': []
+	'pairs-avatar-toggle-btn': [],
+	// Вікно кнопки «на весь екран» (2026-09-29): `<dialog>` на платформі, монтується на натиск.
+	'header-fullscreen-btn': []
 };
 
 const OVERLAY_BASELINE: Record<string, number> = {
@@ -100,7 +102,8 @@ const OVERLAY_BASELINE: Record<string, number> = {
 	'auth-info-btn': 0,
 	// Один вузол — контейнер прокрутки списку країн. Причина вище.
 	'pairs-country-select': 1,
-	'pairs-avatar-toggle-btn': 0
+	'pairs-avatar-toggle-btn': 0,
+	'header-fullscreen-btn': 0
 };
 
 test.beforeEach(async ({ page }) => {

@@ -219,8 +219,6 @@ export const ui = {
 	'header.toggleLocale': 'Змінити мову',
 	'header.toggleFullscreen': 'На весь екран',
 	'header.exitFullscreen': 'Вийти з повноекранного режиму',
-	'header.fullscreenHint':
-		'На весь екран на iPhone: у Safari натисніть «Поділитися» → «На початковий екран» і відкривайте сайт звідти.',
 	'header.score': 'Загальний рахунок',
 
 	// Вимикач одиночних літерних скорочень (WCAG SC 2.1.4, рівень A).

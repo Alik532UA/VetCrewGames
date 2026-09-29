@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { Expand, Shrink } from 'lucide-svelte';
 	import { settings } from '$lib/services/settings.svelte';
-	import { fullscreen } from '$lib/services/fullscreen.svelte';
-	import { hintHomeScreenOnce } from '$lib/features/homeScreenHint';
+	import {
+		buttonAction,
+		canFullscreen,
+		fullscreen,
+		isStandalone
+	} from '$lib/services/fullscreen.svelte';
+	import { logService } from '$lib/services/logService.svelte';
 	import HeaderControls from './HeaderControls.svelte';
 	import HeaderNav from './HeaderNav.svelte';
 	// Без `formatPlain`: підписи нижче — `aria-label`, а не текст на екрані.
@@ -51,12 +56,50 @@
 	// Мова сторінки поїхала в `HeaderNav` разом із посиланнями, які її вживають:
 	// «назад» і «додому» ведуть у меню ТІЄЇ САМОЇ мови, і знати її має той, хто
 	// будує адресу.
+	/**
+	 * Натиск відкриває ВІКНО, а не вмикає повний екран одразу: застосунок не встановлено
+	 * (`buttonAction`). Відомо лише в браузері, тож до монтування — «ні».
+	 */
+	let offers = $state(false);
+	let offerOpen = $state(false);
+
 	onMount(() => {
-		// На iPhone кнопки повного екрана немає — замість неї один раз підказка
-		// «Поділитися → На початковий екран» (`features/homeScreenHint`).
-		hintHomeScreenOnce();
+		offers = !isStandalone();
 		return fullscreen.watch();
 	});
+
+	/**
+	 * Вікно вантажиться ЛИШЕ на натиск (`features/fullscreenOffer.ts`): кореневий layout,
+	 * де стоїть шапка, на межі бюджету.
+	 */
+	function pressFullscreen(event: MouseEvent) {
+		const action = buttonAction({
+			active: fullscreen.active,
+			can: canFullscreen(),
+			installed: isStandalone()
+		});
+		if (action !== 'offer' && action !== 'blocked') {
+			fullscreen.toggle();
+			return;
+		}
+		const trigger = event.currentTarget as HTMLElement;
+		import('$lib/features/fullscreenOffer')
+			.then(({ openFullscreenOffer }) =>
+				openFullscreenOffer({
+					mode: action === 'offer' ? 'choice' : 'blocked',
+					trigger,
+					onchange: (open) => {
+						offerOpen = open;
+					},
+					// Передаються, а не імпортуються вікном: причина — у `features/fullscreenOffer.ts`.
+					onfullscreen: () => fullscreen.toggle(),
+					fullscreenIcon: Expand
+				})
+			)
+			.catch((error: unknown) => {
+				logService.warn('ui', 'fullscreen offer not shown', { reason: String(error) });
+			});
+	}
 </script>
 
 <header class="game-header fill">
@@ -104,15 +147,19 @@
 			<HeaderControls />
 
 			<!--
-				КНОПКИ НЕМАЄ ТАМ, ДЕ БРАУЗЕР НЕ ВМІЄ (прохання автора 2026-09-26): на iPhone
-				вона лише міняла власний значок і читалася як баг. Ховає її клас
-				`no-fullscreen`, який ставить скрипт першого кадру в `app.html`, — до
-				гідрації, тож кнопка не блимає, а шапка не стрибає.
+				КНОПКА Є СКРІЗЬ, КРІМ ВСТАНОВЛЕНОГО ЗАСТОСУНКУ, ЩО НЕ ВМІЄ ПОВНОГО ЕКРАНА
+				(прохання автора 2026-09-29). Там, де не встановлено, натиск відкриває вікно:
+				вибір «у цьому браузері / встановити», а на iPhone — пояснення й кроки
+				(`buttonAction`). Ховає її клас `no-fullscreen`, який ставить скрипт першого
+				кадру в `app.html`, — до гідрації, тож кнопка не блимає, а шапка не стрибає.
+				`aria-controls` немає навмисно: вікна в DOM немає, доки його не відкрили.
 			-->
 			<button
 				type="button"
 				class="header-btn fullscreen-btn"
-				onclick={() => fullscreen.toggle()}
+				onclick={pressFullscreen}
+				aria-haspopup={offers && !fullscreen.active ? 'dialog' : undefined}
+				aria-expanded={offers && !fullscreen.active ? offerOpen : undefined}
 				aria-label={t(fullscreen.active ? 'header.exitFullscreen' : 'header.toggleFullscreen')}
 				aria-keyshortcuts={settings.shortcutsEnabled ? 'F' : undefined}
 				data-testid="header-fullscreen-btn"
@@ -331,8 +378,9 @@
 	 */
 
 	/*
-	 * Кнопки «на весь екран» немає там, де браузер не вміє (iPhone): клас на
-	 * `<html>` ставить скрипт першого кадру в `app.html`, ще до гідрації.
+	 * Кнопки «на весь екран» немає лише у встановленому застосунку, який повного екрана не
+	 * вміє (iPhone з початкового екрана): клас на `<html>` ставить скрипт першого кадру в
+	 * `app.html`, ще до гідрації.
 	 */
 	:global(html.no-fullscreen) .fullscreen-btn {
 		display: none;

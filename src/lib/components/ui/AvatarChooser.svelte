@@ -4,6 +4,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { loadAccountText } from '$lib/i18n/account';
 	import { settings } from '$lib/services/settings.svelte';
+	import { closeOnBackdrop } from '$lib/utils/closeOnBackdrop';
 	import Avatar from './Avatar.svelte';
 	import AvatarPicker from './AvatarPicker.svelte';
 
@@ -106,18 +107,6 @@
 	const toBody: Attachment<HTMLDialogElement> = (node) => {
 		document.body.appendChild(node);
 		return () => node.remove();
-	};
-
-	/**
-	 * Клік по тлу закриває. Ціль такого кліку — сам `<dialog>`: вміст займає його цілком,
-	 * тож клік усередині вікна потрапляє в дитину й вікна не закриває.
-	 */
-	const closeOnBackdrop: Attachment<HTMLDialogElement> = (node) => {
-		const click = (event: MouseEvent) => {
-			if (event.target === node) node.close();
-		};
-		node.addEventListener('click', click);
-		return () => node.removeEventListener('click', click);
 	};
 </script>
 

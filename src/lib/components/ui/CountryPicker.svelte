@@ -5,6 +5,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { countryLabel } from '$lib/config/countries';
 	import { settings } from '$lib/services/settings.svelte';
+	import { closeOnBackdrop } from '$lib/utils/closeOnBackdrop';
 	import Flag from './Flag.svelte';
 	import CountryMenu from './CountryMenu.svelte';
 
@@ -133,15 +134,6 @@
 	const toBody: Attachment<HTMLDialogElement> = (node) => {
 		document.body.appendChild(node);
 		return () => node.remove();
-	};
-
-	/** Клік по тлу закриває: ціль такого кліку — сам `<dialog>`, вміст займає його цілком. */
-	const closeOnBackdrop: Attachment<HTMLDialogElement> = (node) => {
-		const click = (event: MouseEvent) => {
-			if (event.target === node) node.close();
-		};
-		node.addEventListener('click', click);
-		return () => node.removeEventListener('click', click);
 	};
 
 	/**
