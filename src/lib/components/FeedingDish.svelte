@@ -3,6 +3,7 @@
 	import { t, formatFont } from '$lib/i18n';
 	import type { Food, Target } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import { touchDrag } from '$lib/utils/touchDrag';
 
 	/** Куди можна відправити страву одним рухом. */
 	export interface QuickTarget {
@@ -38,6 +39,23 @@
 	}
 
 	let { food, picked, disabled, dimmed, targets, onpick, onsend }: Props = $props();
+
+	/**
+	 * Узяти страву — але не «відкласти»: `onpick` перемикає, а тягнуть завжди, щоб покласти.
+	 * Доти мишачий тяг уже взятої страви знімав вибір, і кидок у зону не клав нічого.
+	 */
+	const grab = () => {
+		if (!picked) onpick();
+	};
+
+	/**
+	 * Пальцем (`utils/touchDrag`): відпустили над зоною — НАТИСНУТИ її, тим самим шляхом, яким
+	 * страву кладуть торканням; поза зонами — страву з рук.
+	 */
+	const dropOn = (zone: HTMLElement | null) => {
+		if (zone) zone.click();
+		else if (picked) onpick();
+	};
 </script>
 
 <div class="dish-slot" class:dish-slot--picked={picked} class:dish-slot--dimmed={dimmed}>
@@ -48,13 +66,14 @@
 			class:dish--picked={picked}
 			draggable={!disabled}
 			{disabled}
+			use:touchDrag={{ disabled, onstart: grab, ondrop: dropOn }}
 			onclick={(e) => {
 				// Стіл над нами теж слухає клік — інакше «взяв» одразу стало б «поклав назад».
 				e.stopPropagation();
 				onpick();
 			}}
 			ondragstart={(e) => {
-				onpick();
+				grab();
 				if (e.dataTransfer) {
 					e.dataTransfer.setData('text/plain', food.id);
 					e.dataTransfer.effectAllowed = 'move';

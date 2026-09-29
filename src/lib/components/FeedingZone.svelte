@@ -98,6 +98,7 @@
 	role="button"
 	tabindex="0"
 	aria-label={t(labelKey)}
+	data-drop-zone={testId}
 	data-testid={testId}
 	onclick={() => !disabled && onplace()}
 	onkeydown={(e) => {

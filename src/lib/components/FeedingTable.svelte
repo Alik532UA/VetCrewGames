@@ -45,6 +45,7 @@
 		role="button"
 		tabindex="0"
 		aria-label={t('feeding.table')}
+		data-drop-zone="feeding-table-container"
 		data-testid="feeding-table-container"
 		onclick={returnToTable}
 		onkeydown={(e) => {

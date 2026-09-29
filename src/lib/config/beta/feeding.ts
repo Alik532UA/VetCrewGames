@@ -111,6 +111,20 @@ export const feedingTab: BetaTab = {
 				en: 'The animal names above their zones and the task line on top must be one and a half times bigger than before and readable at arm’s length. The same for the task line in «Who is from another family?», «Where do they live?», «Who is more?» and the quiz.'
 			},
 			coverage: 'manual'
+		},
+		{
+			/*
+			 * ПЕРЕТЯГУВАННЯ ПАЛЬЦЕМ (прохання автора 2026-09-29). Зону, столи й скасування перевіряє
+			 * `tests/touch-drag.spec.ts` справжніми подіями дотику; на справжньому телефоні — лише руками.
+			 */
+			id: 'feeding_11',
+			category: { uk: 'Розкладання корму', en: 'Handing out food' },
+			text: {
+				uk: 'На телефоні перетягніть страву пальцем зі столу до тварини: копія страви мусить їхати під пальцем, зона під ним — підсвічуватися, а відпущена страва — лягти в ту зону. Так само перетягніть покладену страву до іншої тварини й назад на стіл. Відпущена поза зонами страва мусить лишитися на столі. Звичайне «торкнись страви — торкнись зони» мусить працювати, як і доти.',
+				en: 'On a phone, drag a dish with your finger from the table to an animal: a copy of the dish must follow the finger, the zone under it must light up, and the released dish must land in that zone. Likewise drag a placed dish to the other animal and back to the table. A dish released outside the zones must stay on the table. The usual «tap a dish — tap a zone» must keep working as before.'
+			},
+			coverage: 'testable',
+			testid: 'feeding-zone-animal-0'
 		}
 	]
 };

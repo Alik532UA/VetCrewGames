@@ -2,6 +2,7 @@
 	import { t } from '$lib/i18n';
 	import type { Food } from '$lib/config/feeding-game';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
+	import { touchDrag } from '$lib/utils/touchDrag';
 
 	/**
 	 * Страва, яку вже поклали в зону.
@@ -29,6 +30,17 @@
 	}
 
 	let { food, picked, disabled, ontap, ontakeback, onpickup, testId }: Props = $props();
+
+	/** Узяти — але не «відкласти»: `onpickup` перемикає вибір (див. `FeedingDish`). */
+	const grab = () => {
+		if (!picked) onpickup();
+	};
+
+	/** Пальцем: над зоною — натиснути її, як торканням; поза зонами — страву з рук. */
+	const dropOn = (zone: HTMLElement | null) => {
+		if (zone) zone.click();
+		else if (picked) onpickup();
+	};
 </script>
 
 <button
@@ -37,6 +49,7 @@
 	class:plated--picked={picked}
 	{disabled}
 	draggable={!disabled}
+	use:touchDrag={{ disabled, onstart: grab, ondrop: dropOn }}
 	onclick={(e) => {
 		e.stopPropagation();
 		ontap();
@@ -47,7 +60,7 @@
 	}}
 	ondragstart={(e) => {
 		if (disabled) return;
-		onpickup();
+		grab();
 		if (e.dataTransfer) {
 			e.dataTransfer.setData('text/plain', food.id);
 			e.dataTransfer.effectAllowed = 'move';

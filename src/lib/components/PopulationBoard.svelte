@@ -942,23 +942,7 @@
 		font-size: var(--font-size-md);
 		font-weight: var(--font-weight-bold);
 	}
-	:global(.touch-drag-clone) {
-		position: fixed !important;
-		pointer-events: none !important;
-		z-index: 9999 !important;
-		transition: none !important;
-		top: 0;
-		left: 0;
-		filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
-		/* Тінь тут своя: картка її не має, а клон летить у <body>, де нема
-		   контейнера, з-під якого можна вилізти. */
-		box-shadow: 0 4px 0 var(--color-bg-panel-dark) !important;
-		/*
-		 * Скруглення тут НЕ задається: клон — це `cloneNode` картки, він несе
-		 * її ж клас і її ж радіус. Власне значення тільки розійшлося б із
-		 * карткою, як тільки та своє змінить.
-		 */
-	}
+	/* Копія під пальцем — глобальний `.touch-drag-clone` (`global.css`), спільний з «Що їмо?». */
 	@media (max-width: 480px) {
 		.btn-check {
 			padding: var(--space-md) 3rem;
