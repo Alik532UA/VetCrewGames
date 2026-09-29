@@ -43,6 +43,21 @@
 	 * немає (прохання автора 2026-09-26: фінал — великим, а не дрібним табло).
 	 */
 	const ranked = $derived([...players].sort((a, b) => a.order - b.order));
+
+	/**
+	 * ЧУЖІ ПЛИТКИ ДРІБНІШІ (прохання автора 2026-09-29: «інші гравці на 10–15% менші
+	 * контейнери мають, щоб візуально розуміти, що більший контейнер — це поточний гравець»).
+	 * Глядач свого рядка не має — тоді однакові всі.
+	 */
+	const OTHER_TILE = 0.88;
+	const iPlay = $derived(players.some((player) => player.uid === me));
+	const tileScale = (uid: string) => (iPlay && uid !== me ? OTHER_TILE : 1);
+
+	/**
+	 * Скільки «плиток завширшки» в рядку — для телефона, де всі мусять стати в ОДИН рядок:
+	 * від цього числа й ширини смуги стилі рахують розмір плитки (див. `.scores__row`).
+	 */
+	const weight = $derived(ranked.reduce((sum, player) => sum + tileScale(player.uid), 0));
 </script>
 
 <!--
@@ -58,36 +73,47 @@
 	однаково навмисно — два вигляди того самого рядка розійшлися б на першій же
 	правці.
 -->
-<ul class="scores" data-testid="quiz-scores-list">
-	{#each ranked as player (player.uid)}
-		<!--
+<!--
+	ОБОЛОНКА — лише для вузького місця: на широкому її немає (`display: contents`), а на вузькому
+	вона контейнер, від ширини якого рахується розмір плиток (див. стилі).
+-->
+<div class="scores-shell">
+	<ul
+		class="scores"
+		style:--count={ranked.length}
+		style:--weight={weight}
+		data-testid="quiz-scores-list"
+	>
+		{#each ranked as player (player.uid)}
+			<!--
 			ФОН РЯДКА — ЦЕ Й Є «ВІН УЖЕ ВІДПОВІВ».
 			
 			Саме факт, без правильності: показати «правильно» до кінця раунду
 			означало б підказати відповідь тим, хто ще думає. Автор попросив рівно
 			це — «просто сам факт відповіді, наприклад інший фон контейнеру».
 		-->
-		<li
-			class="scores__row text-panel"
-			class:scores__row--answered={answered.includes(player.uid)}
-			class:player-away={away.includes(player.uid)}
-			data-testid="quiz-score-{player.uid}-item"
-		>
-			<!--
-				ПОЗНАЧКА ПОПЕРЕДУ, а не в хвості імені — так само, як у таблі «Знайди
-				пару». Прохання автора там було дослівне: «статуси треба ставити на
-				початку», і причина та сама: у хвості позначку видно, лише дочитавши рядок,
-				а на вузькому екрані ще й після переносу.
+			<li
+				class="scores__row text-panel"
+				class:scores__row--answered={answered.includes(player.uid)}
+				class:scores__row--other={tileScale(player.uid) !== 1}
+				class:player-away={away.includes(player.uid)}
+				data-testid="quiz-score-{player.uid}-item"
+			>
+				<!--
+				«ВИ» — ПІСЛЯ АВАТАРКИ, перед іменем (прохання автора 2026-09-29), як і на таблі.
+				На телефоні імʼя й позначку не видно зовсім («тільки прапор та аватарка») — свою
+				плитку там видно за розміром, — але для читалки вони лишаються текстом.
 			-->
-			{#if player.uid === me}<YouTag />{/if}
-			<span class="scores__who">
-				<Flag code={player.country} />
-				<Avatar avatar={player.avatar} />
-				{player.name}
-			</span>
-		</li>
-	{/each}
-</ul>
+				<span class="scores__who">
+					<Flag code={player.country} />
+					<Avatar avatar={player.avatar} />
+					{#if player.uid === me}<YouTag />{/if}
+					<span class="scores__name">{player.name}</span>
+				</span>
+			</li>
+		{/each}
+	</ul>
+</div>
 
 <style>
 	/*
@@ -143,23 +169,115 @@
 	 * прапором і числом. Скоупований селектор специфічніший за глобальний, тож
 	 * перекриття навмисне (SVELTE-UI-v8 § 3.6) — так само, як у таблі «Знайди пару».
 	 */
+	/*
+	 * `--k` — частка розміру плитки: 1 для свого рядка, 0,88 для чужих (`OTHER_TILE`). Нею
+	 * множиться все — поля, кегель, аватарка (`--avatar-box`) і прапор, — тож менша плитка —
+	 * та сама плитка, лише зменшена.
+	 */
 	.scores__row {
+		--k: 1;
 		display: flex;
-		padding: 4px var(--space-sm);
+		padding: calc(4px * var(--k)) calc(var(--space-sm) * var(--k));
 		border-radius: var(--radius-sm);
 		flex: 0 1 auto;
 		align-items: center;
-		gap: var(--space-sm);
-		font-size: var(--font-size-sm);
+		gap: calc(var(--space-sm) * var(--k));
+		font-size: calc(var(--font-size-sm) * var(--k));
+		--avatar-box: calc(22px * var(--k));
+	}
+
+	.scores__row--other {
+		--k: 0.88;
+	}
+
+	.scores__row :global(.flag) {
+		width: auto;
+		height: calc(14px * var(--k));
 	}
 
 	.scores__who {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(6px * var(--k));
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.scores__name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	/*
+	 * ВУЗЬКЕ МІСЦЕ — ОДИН РЯДОК, лише прапор і аватарка (прохання автора 2026-09-29: «на
+	 * мобільній версії… в одних рядок в незалежності від кількості гравців»).
+	 *
+	 * Питаємо МІСЦЕ, а не екран (FLUID-SIZING, `src/container-queries.test.ts`): смуга гравців
+	 * (`.room__strip` у `QuizRoom`) — контейнер, і коли вона вужча за 560px — той самий поріг,
+	 * що в `COMPACT_SCREEN_QUERY` (`utils/screen.ts`), — це і є телефон. Телефон боком має
+	 * смугу ширшу, і там імена лишаються: місця на них досить.
+	 *
+	 * Плитки МЕНШАЮТЬ, щоб стати в рядок усі (відповідь автора A): розмір аватарки `--a` — це
+	 * ширина оболонки (`100cqi`) без проміжків, поділена на `--weight` (скільки «плиток
+	 * завширшки», рахує скрипт) і на ширину плитки в аватарках (~2,8 — поля, прапор, проміжок,
+	 * аватарка; тут 3 із запасом). Не менше 16px — далі рядок гортається вбік — і не більше 36px.
+	 *
+	 * Оболонка тут — сама контейнер: `flex: 1 1 0` бере те, що лишає кнопка паузи поруч (та не
+	 * переїжджає на свій рядок), і плитки рахуються саме від цього місця.
+	 */
+	.scores-shell {
+		display: contents;
+	}
+
+	@container (max-width: 559px) {
+		.scores-shell {
+			display: block;
+			flex: 1 1 0;
+			min-width: 0;
+			container-type: inline-size;
+		}
+
+		.scores {
+			flex-wrap: nowrap;
+			justify-content: safe center;
+			column-gap: var(--space-xs);
+			overflow-x: auto;
+		}
+
+		.scores__row {
+			--a: clamp(
+				16px,
+				calc((100cqi - (var(--count) - 1) * var(--space-xs)) / var(--weight) / 3),
+				36px
+			);
+			flex-shrink: 0;
+			padding: calc(var(--a) * 0.18 * var(--k)) calc(var(--a) * 0.28 * var(--k));
+			gap: calc(var(--a) * 0.22 * var(--k));
+			--avatar-box: calc(var(--a) * var(--k));
+		}
+
+		.scores__row :global(.flag) {
+			height: calc(var(--a) * 0.64 * var(--k));
+		}
+
+		.scores__who {
+			gap: calc(var(--a) * 0.22 * var(--k));
+		}
+
+		/* Імʼя й «ви» — лише для читалки (та сама будова, що глобальний `.visually-hidden`). */
+		.scores__name,
+		.scores__row :global(.badge) {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			margin: -1px;
+			padding: 0;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+			border: 0;
+		}
 	}
 </style>

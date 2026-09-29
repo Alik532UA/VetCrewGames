@@ -484,6 +484,20 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-reveal-panel'
+		},
+		{
+			/*
+			 * СМУГА ГРАВЦІВ ПІД ЧАС РАУНДУ (прохання автора 2026-09-29). Хто менший і вагу рядка
+			 * перевіряє `QuizScores.test.ts`; розкладку телефона — лише очима.
+			 */
+			id: 'quizonline_37',
+			category: { uk: 'Раунд', en: 'The round' },
+			text: {
+				uk: 'На телефоні під час раунду смуга гравців над питанням мусить стояти ОДНИМ рядком за будь-якої кількості гравців: у кожного лише прапор і аватарка, без імені й без «ви», а ваша плитка — помітно більша за чужі. Коли гравців багато, плитки мусять зменшитися, а коли й так не вміщаються, рядок мусить гортатися вбік. На ноутбуці імена лишаються, «ви» стоїть після аватарки, і чужі плитки теж менші за вашу.',
+				en: 'On a phone during a round, the players bar above the question must stay on ONE line for any number of players: each shows only the flag and the avatar, without the name or «you», and your tile is visibly bigger than the others. With many players the tiles must shrink, and when they still do not fit, the row must scroll sideways. On a laptop the names stay, «you» comes after the avatar, and the other tiles are smaller than yours too.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-scores-list'
 		}
 	]
 };

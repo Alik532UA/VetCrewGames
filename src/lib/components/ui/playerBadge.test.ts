@@ -130,7 +130,7 @@ describe('позначки гравця', () => {
 		expect(away, 'позначка «немає звʼязку» після прапора').toBeLessThan(flag);
 	});
 
-	it('табло ВІКТОРИНИ — теж плитки, і позначка теж попереду', () => {
+	it('смуга ВІКТОРИНИ — теж плитки, а позначка «ви» — після аватарки', () => {
 		/*
 		 * «Окремі візуальні контейнери (як в грі з „знайти пару“)». Той самий інваріант,
 		 * що двома пунктами вище, тільки в іншій грі — і саме тому він тут, а не в
@@ -144,11 +144,19 @@ describe('позначки гравця', () => {
 		expect(quiz, 'перелік знову спільна панель').not.toMatch(/class="scores text-panel"/);
 		expect(quiz, 'у рядка гравця немає своєї плитки').toMatch(/class="scores__row text-panel"/);
 
+		/*
+		 * Позначка — ПІСЛЯ АВАТАРКИ, перед іменем (прохання автора 2026-09-29), як і на таблі
+		 * `QuizReveal`. Доти тут стерегли протилежне — «позначка попереду», за давнішим «статуси
+		 * треба ставити на початку»; у «Знайди пару» (вище) те правило лишається.
+		 */
 		const each = quiz.slice(quiz.indexOf('{#each ranked'));
 		const row = each.slice(0, each.indexOf('{/each}'));
 		expect(row.indexOf('<YouTag'), 'позначки «ви» в рядку немає').toBeGreaterThan(-1);
-		expect(row.indexOf('<YouTag'), 'позначка «ви» після прапора').toBeLessThan(
-			row.indexOf('<Flag')
+		expect(row.indexOf('<YouTag'), 'позначка «ви» перед аватаркою').toBeGreaterThan(
+			row.indexOf('<Avatar')
+		);
+		expect(row.indexOf('<YouTag'), 'позначка «ви» після імені').toBeLessThan(
+			row.indexOf('player.name')
 		);
 	});
 
