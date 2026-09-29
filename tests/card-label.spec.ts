@@ -472,9 +472,27 @@ async function openFamily(page: Page) {
  * розрахунку, і повтор пройшов. Тож тиск, що перестав діяти, перераховується з нового
  * виміру, а опитування йде далі: це умова самого тесту, а не поведінка дії, і вердикт
  * про дію від цього не м'якшає.
+ *
+ * КОЖНА ЗМІНА ТИСКУ — РАЗОМ ІЗ ЗМІНОЮ ШИРИНИ КАРТИНКИ на піксель. Саме правило тиску нового
+ * виміру не гарантує: коли слово й так вужче за нову стелю, коробка підпису не міняється,
+ * `ResizeObserver` мовчить, і дія не міряє. Так головна перевірка й падала в CI
+ * (run 36430086331, 3 з 3): після зняття тиску кегль лишався зменшеним. Локально вона
+ * проходила лише тому, що зняття випадало на ще відкладений повторний вимір (дія міряє
+ * вдруге після власного запису кегля), — тобто на перегонах. У справжній грі стеля підпису
+ * залежить лише від ширини картинки, а за нею дія стежить; тож тест подає той самий сигнал.
  */
 async function squeeze(page: Page, extraCss = '') {
 	let style: Awaited<ReturnType<Page['addStyleTag']>> | null = null;
+	let nudge = 0;
+	/** Ширина картинки «Хто зайвий?» — на піксель інша, ніж була: сигнал дії виміряти знову. */
+	const wrapNudge = () => {
+		nudge = 1 - nudge;
+		return `.animal-card__image-wrap { width: calc(100% - ${nudge}px) !important; }`;
+	};
+	const restyle = async (css: string) => {
+		await style?.evaluate((node) => (node as HTMLElement).remove());
+		style = await page.addStyleTag({ content: css });
+	};
 	const apply = async (captions: CaptionState[]) => {
 		await page.$$eval('.image-caption', (nodes) =>
 			nodes.forEach((node, i) => ((node as HTMLElement).dataset.squeeze = String(i)))
@@ -483,8 +501,7 @@ async function squeeze(page: Page, extraCss = '') {
 			const maxWidth = (c.atBase * SQUEEZE_SHARE + c.padding) / c.cqiPx;
 			return `.image-caption[data-squeeze='${i}'] { max-width: ${maxWidth.toFixed(3)}cqi !important; }`;
 		});
-		await style?.evaluate((node) => (node as HTMLElement).remove());
-		style = await page.addStyleTag({ content: [...rules, extraCss].join('\n') });
+		await restyle([...rules, extraCss, wrapNudge()].join('\n'));
 	};
 
 	const first = await readCaptions(page);
@@ -503,8 +520,9 @@ async function squeeze(page: Page, extraCss = '') {
 			);
 			return `тиск не діяв, перераховано: ${which.join(', ')}`;
 		},
+		/** Тиск знято — і картинка знову на піксель інша, щоб дія виміряла без нього. */
 		async release() {
-			await style?.evaluate((node) => (node as HTMLElement).remove());
+			await restyle(wrapNudge());
 		}
 	};
 }
