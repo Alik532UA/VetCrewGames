@@ -110,3 +110,62 @@ describe('фінал — те саме табло, великим', () => {
 		expect(screen.getByTestId('quiz-reveal-panel')).toBeTruthy();
 	});
 });
+
+/**
+ * СВІЙ РЯДОК — БІЛЬШИЙ, «ВИ» ПІСЛЯ АВАТАРКИ (прохання автора 2026-09-29): у чужих рядків
+ * контейнер на 10% менший, а позначка стоїть після аватарки, перед іменем. Однаково між
+ * раундами й у фіналі — це те саме табло.
+ *
+ * Зворотні експерименти: повернути позначку першою — червоніє «після аватарки»; позначати
+ * чужим і свій рядок — «свій рядок звичайний»; зменшувати й глядачеві — «глядач».
+ */
+describe('свій рядок на таблі', () => {
+	// Аватарка без значення не малює нічого, а порядок звіряється саме з нею.
+	const withAvatars = players.map((player, i) => ({
+		...player,
+		avatar: ['cat:blue', 'dog:green', 'bird:red'][i]
+	}));
+	const props = (me: string) => ({
+		text: (key: string) => key,
+		players: withAvatars,
+		me,
+		duration: 0,
+		settle: 0,
+		travel: 0,
+		scores: { a: 10, b: 5, c: 1 },
+		gains: {}
+	});
+
+	it('«Ви» — після аватарки, перед іменем', () => {
+		render(QuizReveal, { props: props('b') });
+		const who = screen.getByTestId('quiz-reveal-b-row').querySelector('.reveal__who')!;
+		const avatar = who.querySelector('.avatar')!;
+		const badge = who.querySelector('.badge')!;
+		expect(badge, 'позначки «ви» немає').toBeTruthy();
+		expect(
+			avatar.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING,
+			'позначка після аватарки'
+		).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+		expect(who.textContent?.trim().endsWith('Рожевий Фламінго'), 'імʼя — останнім').toBe(true);
+	});
+
+	it('свій рядок звичайний, чужі — на 10% менші', () => {
+		render(QuizReveal, { props: props('b') });
+		const row = (uid: string) => screen.getByTestId(`quiz-reveal-${uid}-row`);
+		expect(row('b').classList.contains('reveal__row--other'), 'свій рядок звичайний').toBe(false);
+		for (const uid of ['a', 'c']) {
+			expect(row(uid).classList.contains('reveal__row--other'), uid).toBe(true);
+			expect(row(uid).style.getPropertyValue('--row-scale')).toBe('0.9');
+		}
+	});
+
+	it('глядач, якого немає серед гравців, бачить усі рядки однаковими', () => {
+		render(QuizReveal, { props: props('uid-eye') });
+		for (const uid of ['a', 'b', 'c']) {
+			expect(
+				screen.getByTestId(`quiz-reveal-${uid}-row`).classList.contains('reveal__row--other'),
+				uid
+			).toBe(false);
+		}
+	});
+});

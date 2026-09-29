@@ -470,6 +470,20 @@ export const quizOnlineTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'quiz-idle-snooze-btn'
+		},
+		{
+			/*
+			 * СВІЙ РЯДОК НА ТАБЛІ (прохання автора 2026-09-29). Порядок і розмір рядків перевіряє
+			 * `standings.test.ts`; як воно читається на телефоні — лише очима.
+			 */
+			id: 'quizonline_36',
+			category: { uk: 'Табло', en: 'The scoreboard' },
+			text: {
+				uk: 'Утрьох зіграйте раунд до табла й до фіналу «Гру завершено». У вашому рядку позначка «ви» мусить стояти після аватарки, перед іменем. Рядки інших гравців мусять бути помітно меншими за ваш — приблизно на 10% і вужчими, — а ваш — на всю ширину. Так само й у фіналі.',
+				en: 'With three players, play a round to the scoreboard and to the «Game over» final. In your row the «you» tag must come after the avatar, before the name. The other players’ rows must be visibly smaller than yours — about 10% and narrower — and yours full width. The same in the final.'
+			},
+			coverage: 'manual',
+			testid: 'quiz-reveal-panel'
 		}
 	]
 };

@@ -173,6 +173,17 @@
 	const unit = $derived(Math.min(36, Math.max(16, (innerWidth.current ?? 0) * 0.0195)));
 
 	/**
+	 * ЧУЖІ РЯДКИ НА 10% МЕНШІ (прохання автора 2026-09-29: «інші гравці мають приблизно на 10%
+	 * менший контейнер»): свій рядок видно відразу за розміром, а не лише за позначкою. Та сама
+	 * міра на все в рядку — кегель, висота, поля (`--u` у стилях) і значки (числом, тут), — тож
+	 * менший рядок — той самий рядок, лише зменшений. Хто сам не грає (глядач), свого рядка не
+	 * має, і тоді однакові всі.
+	 */
+	const OTHER_ROW = 0.9;
+	const iPlay = $derived(players.some((player) => player.uid === me));
+	const rowScale = (uid: string) => (iPlay && uid !== me ? OTHER_ROW : 1);
+
+	/**
 	 * Частка набору: 0 — рахунок до раунду, 1 — після нього.
 	 *
 	 * Одне число на всіх, а не окреме на гравця: рядки мусять доїхати разом,
@@ -275,9 +286,12 @@
 
 	<ul class="reveal__list">
 		{#each ranked as player (player.uid)}
+			{@const scale = rowScale(player.uid)}
 			<li
 				class="reveal__row"
+				class:reveal__row--other={scale !== 1}
 				class:player-away={away.includes(player.uid)}
+				style:--row-scale={scale}
 				data-testid="quiz-reveal-{player.uid}-row"
 				animate:flip={{ duration: reduceMotion.current ? 0 : travel, easing: cubicOut }}
 			>
@@ -290,15 +304,15 @@
 					{places[player.uid]}
 				</b>
 				<!--
-					«ВИ» ПОПЕРЕДУ, а не в хвості імені — як у смузі гравців і в «Знайди пару»
-					(прохання автора: «статуси треба ставити на початку»). У хвості позначку
-					на телефоні обрізав «+бали»: довге імʼя доходило до них раніше за неї, і
-					тепер, коли фінал — це саме це табло, так виглядав би й фінал.
+					«ВИ» — ПІСЛЯ АВАТАРКИ, перед іменем (прохання автора 2026-09-29). Доти вона стояла
+					першою («статуси треба ставити на початку»); у хвості імені її обрізали б «+бали» —
+					довге імʼя доходило до них раніше за неї. Перед іменем вона так само не
+					обрізається: обрізається лише саме імʼя.
 				-->
 				<span class="reveal__who">
+					<Flag code={player.country} height={Math.max(14, Math.round(unit * 0.75 * scale))} />
+					<Avatar avatar={player.avatar} size={Math.max(22, Math.round(unit * 1.2 * scale))} />
 					{#if player.uid === me}<YouTag />{/if}
-					<Flag code={player.country} height={Math.max(14, Math.round(unit * 0.75))} />
-					<Avatar avatar={player.avatar} size={Math.max(22, Math.round(unit * 1.2))} />
 					{player.name}
 				</span>
 				<!--
@@ -428,6 +442,16 @@
 		border-radius: var(--radius-md);
 		background: color-mix(in srgb, var(--color-text), transparent 94%);
 		font-size: var(--u);
+	}
+
+	/*
+	 * Чужий рядок: та сама міра, помножена на `--row-scale` (0,9 — див. `OTHER_ROW`), і вужчий
+	 * на ту саму частку, посередині. Усе в рядку рахується від `--u`, тож зменшується разом.
+	 */
+	.reveal__row--other {
+		--u: calc(var(--reveal-unit, 16px) * var(--row-scale, 1));
+		align-self: center;
+		width: calc(100% * var(--row-scale, 1));
 	}
 
 	.reveal__place {
