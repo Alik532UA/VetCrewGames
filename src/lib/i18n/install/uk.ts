@@ -40,7 +40,12 @@ export const install: Record<string, string> = {
 	'install.step.openHome':
 		'Відкривайте гру значком VetCrewGames на початковому екрані — вона запуститься на весь екран',
 	'install.step.dots': 'Натисніть на три крапки в кутку браузера',
-	'install.step.addHomeAndroid': 'Виберіть «Додати на головний екран» або «Установити застосунок»',
+	// Назва пункту — як у Chrome 149–150 (перевірка автора на телефоні 2026-09-29); стара — в
+	// дужках: нову назву Chrome розкочує не на всі телефони одразу.
+	'install.step.addHomeAndroid':
+		'Виберіть «Установити й створити ярлик» (у старіших версіях Chrome — «Додати на головний екран»)',
+	'install.step.edgeMenu': 'Натисніть кнопку меню внизу посередині — три горизонтальні лінії',
+	'install.step.edgeAddToPhone': 'Виберіть «Додати на телефон»',
 	'install.step.openHomeAndroid':
 		'Відкривайте гру значком VetCrewGames на головному екрані — вона запуститься на весь екран',
 	'install.step.installIcon':

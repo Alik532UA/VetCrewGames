@@ -41,8 +41,12 @@ export const install: Record<string, string> = {
 	'install.step.openHome':
 		'Öffnen Sie das Spiel über das VetCrewGames-Symbol auf dem Home-Bildschirm – es startet im Vollbild',
 	'install.step.dots': 'Tippen Sie auf die drei Punkte in der Browserecke',
+	// Menünamen hier übersetzt, nicht am deutschen Chrome/Edge geprüft (uk und en sind geprüft).
 	'install.step.addHomeAndroid':
-		'Wählen Sie „Zum Startbildschirm hinzufügen“ oder „App installieren“',
+		'Wählen Sie „Installieren und Verknüpfung erstellen“ (in älteren Chrome-Versionen: „Zum Startbildschirm hinzufügen“)',
+	'install.step.edgeMenu':
+		'Tippen Sie unten in der Mitte auf die Menütaste – drei waagerechte Striche',
+	'install.step.edgeAddToPhone': 'Wählen Sie „Zum Telefon hinzufügen“',
 	'install.step.openHomeAndroid':
 		'Öffnen Sie das Spiel über das VetCrewGames-Symbol auf dem Startbildschirm – es startet im Vollbild',
 	'install.step.installIcon':

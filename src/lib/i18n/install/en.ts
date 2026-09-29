@@ -41,7 +41,12 @@ export const install: Record<string, string> = {
 	'install.step.openHome':
 		'Open the game with the VetCrewGames icon on the Home Screen — it will start full screen',
 	'install.step.dots': 'Tap the three dots in the corner of the browser',
-	'install.step.addHomeAndroid': 'Choose “Add to Home screen” or “Install app”',
+	// The label as in Chrome 149–150; the old one in brackets: Chrome rolls the rename out
+	// gradually, so some phones still show it.
+	'install.step.addHomeAndroid':
+		'Choose “Install and create shortcut” (in older Chrome versions, “Add to Home screen”)',
+	'install.step.edgeMenu': 'Tap the menu button at the bottom centre — three horizontal lines',
+	'install.step.edgeAddToPhone': 'Choose “Add to phone”',
 	'install.step.openHomeAndroid':
 		'Open the game with the VetCrewGames icon on the home screen — it will start full screen',
 	'install.step.installIcon':

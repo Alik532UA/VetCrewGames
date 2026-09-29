@@ -26,6 +26,7 @@ export type Guide =
 	| 'ios-other'
 	| 'ipad-safari'
 	| 'android'
+	| 'android-edge'
 	| 'desktop'
 	| 'edge'
 	| 'mac-safari'
@@ -37,6 +38,8 @@ export type StepIcon =
 	| 'share'
 	| 'add'
 	| 'dots'
+	/** Меню Edge на Android: три горизонтальні лінії внизу посередині, а не три крапки. */
+	| 'menu'
 	/** Кнопка встановлення в адресному рядку Chrome: монітор зі стрілкою вниз. */
 	| 'install'
 	/** Та сама кнопка в Edge: сітка з трьох квадратів і плюса (скарга автора 2026-09-29). */
@@ -83,7 +86,14 @@ export function guideFor(userAgent: string, maxTouchPoints: number): Guide {
 		return iPad ? 'ipad-safari' : 'ios-safari';
 	}
 
-	if (/Android/.test(userAgent)) return 'android';
+	if (/Android/.test(userAgent)) {
+		/*
+		 * Edge на Android — не Chrome (перевірка автора на телефоні 2026-09-29): меню там
+		 * відкриває кнопка з трьох ліній унизу посередині, трьох крапок немає зовсім, а пункт
+		 * зветься «Додати на телефон».
+		 */
+		return /EdgA\//.test(userAgent) ? 'android-edge' : 'android';
+	}
 	if (/Firefox\//.test(userAgent)) return 'firefox-desktop';
 	// Edge малює кнопку встановлення інакше, ніж Chrome, і крок мусить показати саме її.
 	if (/Edg\//.test(userAgent)) return 'edge';
@@ -132,6 +142,15 @@ export const GUIDES: Record<Guide, GuideText> = {
 		steps: [
 			{ text: 'install.step.dots', icon: 'dots' },
 			{ text: 'install.step.addHomeAndroid', icon: 'add' },
+			{ text: 'install.step.openHomeAndroid', icon: 'phone' }
+		]
+	},
+	'android-edge': {
+		title: 'install.title.android',
+		note: MANUAL,
+		steps: [
+			{ text: 'install.step.edgeMenu', icon: 'menu' },
+			{ text: 'install.step.edgeAddToPhone', icon: 'add' },
 			{ text: 'install.step.openHomeAndroid', icon: 'phone' }
 		]
 	},

@@ -40,7 +40,11 @@ export const install: Record<string, string> = {
 	'install.step.openHome':
 		'Open het spel met het VetCrewGames-icoon op het beginscherm – het start op volledig scherm',
 	'install.step.dots': 'Tik op de drie puntjes in de hoek van de browser',
-	'install.step.addHomeAndroid': 'Kies ‘Toevoegen aan startscherm’ of ‘App installeren’',
+	// Menunamen hier vertaald, niet in de Nederlandse Chrome/Edge gecontroleerd (uk en en wel).
+	'install.step.addHomeAndroid':
+		'Kies ‘Installeren en snelkoppeling maken’ (in oudere versies van Chrome: ‘Toevoegen aan startscherm’)',
+	'install.step.edgeMenu': 'Tik onderaan in het midden op de menuknop – drie horizontale streepjes',
+	'install.step.edgeAddToPhone': 'Kies ‘Toevoegen aan telefoon’',
 	'install.step.openHomeAndroid':
 		'Open het spel met het VetCrewGames-icoon op het startscherm – het start op volledig scherm',
 	'install.step.installIcon': 'Klik op het installatie-icoon in de adresbalk, rechts van het adres',

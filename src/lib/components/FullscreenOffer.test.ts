@@ -151,6 +151,33 @@ describe('значок кнопки встановлення — той, що в
 	});
 });
 
+describe('Android: пункти меню — так, як їх називає браузер', () => {
+	/**
+	 * Перевірка автора на телефоні 2026-09-29: у Chrome пункт тепер «Установити й створити
+	 * ярлик», а в Edge трьох крапок немає — меню відкриває кнопка з трьох ліній унизу, і
+	 * пункт зветься «Додати на телефон».
+	 */
+	const ANDROID_CHROME =
+		'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+
+	it('Chrome — три крапки й «Установити й створити ярлик»', async () => {
+		open('choice', ANDROID_CHROME);
+		await fireEvent.click(screen.getByTestId('fullscreen-offer-install-btn'));
+		const steps = screen.getAllByTestId('fullscreen-offer-step-item');
+		expect(steps[0].querySelector('.lucide-ellipsis-vertical')).not.toBeNull();
+		expect(steps[1].textContent).toContain('Установити й створити ярлик');
+	});
+
+	it('Edge — меню з трьох ліній і «Додати на телефон»', async () => {
+		open('choice', `${ANDROID_CHROME} EdgA/129.0.2792.84`);
+		await fireEvent.click(screen.getByTestId('fullscreen-offer-install-btn'));
+		const steps = screen.getAllByTestId('fullscreen-offer-step-item');
+		expect(steps[0].querySelector('.lucide-menu')).not.toBeNull();
+		expect(steps[0].textContent).toContain(uk['install.step.edgeMenu']);
+		expect(steps[1].textContent).toContain('Додати на телефон');
+	});
+});
+
 describe('повного екрана не дають (iPhone у браузері)', () => {
 	it('одразу пояснення й кроки Safari, без попередження', () => {
 		open('blocked', IPHONE_SAFARI);

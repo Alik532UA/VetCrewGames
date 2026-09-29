@@ -31,6 +31,8 @@ const UA = {
 	androidChrome:
 		'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36',
 	androidFirefox: 'Mozilla/5.0 (Android 14; Mobile; rv:131.0) Gecko/131.0 Firefox/131.0',
+	androidEdge:
+		'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36 EdgA/129.0.2792.84',
 	samsung:
 		'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36',
 	windowsChrome:
@@ -62,6 +64,7 @@ const cases: Array<[string, string, number, Guide]> = [
 	['Safari на Mac', UA.macLikeSafari, 0, 'mac-safari'],
 	['Chrome на Android', UA.androidChrome, 5, 'android'],
 	['Firefox на Android', UA.androidFirefox, 5, 'android'],
+	['Edge на Android', UA.androidEdge, 5, 'android-edge'],
 	['Samsung Internet', UA.samsung, 5, 'android'],
 	['Chrome на Windows', UA.windowsChrome, 0, 'desktop'],
 	['Edge на Windows', UA.windowsEdge, 0, 'edge'],
@@ -103,6 +106,20 @@ describe('інструкції', () => {
 	it('Edge — власна іконка встановлення (сітка з плюсом), Chrome — монітор зі стрілкою', () => {
 		expect(GUIDES.edge.steps[0].icon).toBe('installEdge');
 		expect(GUIDES.desktop.steps[0].icon).toBe('install');
+	});
+
+	/**
+	 * Перевірка автора на телефоні 2026-09-29: в Edge на Android трьох крапок немає, меню
+	 * відкриває кнопка з трьох ліній унизу посередині, а пункт зветься «Додати на телефон».
+	 * Зворотний експеримент: Edge на Android у загальній гілці — червоніє «Edge на Android».
+	 */
+	it('Edge на Android — меню з трьох ліній і «Додати на телефон», а не три крапки Chrome', () => {
+		expect(GUIDES['android-edge'].steps.map((step) => [step.text, step.icon])).toEqual([
+			['install.step.edgeMenu', 'menu'],
+			['install.step.edgeAddToPhone', 'add'],
+			['install.step.openHomeAndroid', 'phone']
+		]);
+		expect(GUIDES.android.steps[0]).toEqual({ text: 'install.step.dots', icon: 'dots' });
 	});
 
 	it('iPad — кнопка «Поділитися» вгорі, а не внизу, як на iPhone', () => {

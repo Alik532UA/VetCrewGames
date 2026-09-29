@@ -341,6 +341,22 @@ export const commonTab: BetaTab = {
 		},
 		{
 			/*
+			 * ПУНКТИ МЕНЮ ANDROID — так, як їх називає браузер (перевірка автора на телефоні
+			 * 2026-09-29): Chrome перейменував «Додати на головний екран» на «Установити й створити
+			 * ярлик», а в Edge трьох крапок немає — меню внизу посередині й «Додати на телефон».
+			 * Вибір інструкції тримає `installGuide.test.ts`; назви в живому меню — лише людина.
+			 */
+			id: 'common_39',
+			category: { uk: 'Шапка й навігація', en: 'Header and navigation' },
+			text: {
+				uk: 'На Android у Chrome і в Edge натисніть «на весь екран» → «Встановити застосунок». Якщо відкрилися наші кроки, а не вікно браузера, вони мусять називати ті самі кнопки й пункти, що в меню: у Chrome — три крапки в куті → «Установити й створити ярлик», в Edge — кнопка з трьох ліній унизу посередині → «Додати на телефон». Пройдіть кроки до кінця: гра мусить стати значком на головному екрані.',
+				en: 'On Android in Chrome and in Edge press full screen → «Install the app». If our steps opened instead of the browser’s window, they must name the same buttons and items as the menu: in Chrome — the three dots in the corner → «Install and create shortcut», in Edge — the three-line button at the bottom centre → «Add to phone». Follow the steps to the end: the game must become an icon on the home screen.'
+			},
+			coverage: 'manual',
+			testid: 'fullscreen-offer-steps-list'
+		},
+		{
+			/*
 			 * PWA (прохання автора 2026-09-27): маніфест і значки — `src/pwa.test.ts`; руками —
 			 * справжнє встановлення, якого браузер у тесті не робить.
 			 */

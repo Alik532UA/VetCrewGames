@@ -1,23 +1,12 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import {
-		AppWindow,
-		CircleAlert,
-		Dock,
-		EllipsisVertical,
-		ExternalLink,
-		Grid2X2Plus,
-		MonitorDown,
-		Share,
-		Smartphone,
-		SquarePlus,
-		X
-	} from 'lucide-svelte';
+	import { CircleAlert, Grid2X2Plus, MonitorDown, type Share, X } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { loadInstallText } from '$lib/i18n/install';
 	import { settings } from '$lib/services/settings.svelte';
 	import { canPromptInstall, promptInstall } from '$lib/pwa/installPrompt';
-	import { GUIDES, guideFor, type StepIcon } from '$lib/pwa/installGuide';
+	import { GUIDES, guideFor } from '$lib/pwa/installGuide';
+	import { STEP_ICONS } from '$lib/pwa/installIcons';
 	import { closeOnBackdrop } from '$lib/utils/closeOnBackdrop';
 	import DynamicIcon from './ui/DynamicIcon.svelte';
 
@@ -71,18 +60,6 @@
 	let view = $state<'choice' | 'steps'>(untrack(() => (mode === 'choice' ? 'choice' : 'steps')));
 	const which = guideFor(navigator.userAgent, navigator.maxTouchPoints ?? 0);
 	const guide = GUIDES[which];
-
-	const ICONS: Record<StepIcon, typeof Share> = {
-		share: Share,
-		add: SquarePlus,
-		dots: EllipsisVertical,
-		install: MonitorDown,
-		installEdge: Grid2X2Plus,
-		dock: Dock,
-		browser: ExternalLink,
-		phone: Smartphone,
-		app: AppWindow
-	};
 
 	let dialog = $state<HTMLDialogElement>();
 	let first = $state<HTMLButtonElement>();
@@ -179,7 +156,7 @@
 						<span
 							class="offer__icon"
 							class:offer__icon--edge={step.icon === 'installEdge'}
-							aria-hidden="true"><DynamicIcon icon={ICONS[step.icon]} /></span
+							aria-hidden="true"><DynamicIcon icon={STEP_ICONS[step.icon]} /></span
 						>
 						<span>{@html formatFont(label(step.text))}</span>
 					</li>
