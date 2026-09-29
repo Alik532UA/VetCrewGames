@@ -132,9 +132,24 @@
 	 * прапори злиплися б у смугу.
 	 */
 	.menu__option--flag {
-		width: 44px;
+		width: var(--flag-tile, 44px);
+		min-height: var(--flag-tile, 44px);
 		padding: 0;
 		justify-content: center;
+	}
+
+	/*
+	 * У ВІКНІ МАЙЖЕ НА ВЕСЬ ЕКРАН плитка й прапор ростуть з екраном (`--flag-tile`, `--flag-h`
+	 * задає вікно в `CountryPicker`, прохання автора 2026-09-29): 21×14 на ноутбуці лишали б
+	 * вікно на 90% порожнім. Без вікна (запасні значення) — ті самі 44px і 14px, що й доти.
+	 */
+	.menu__option--flag .menu__mark {
+		width: auto;
+	}
+
+	.menu__option--flag .menu__mark :global(.flag) {
+		width: auto;
+		height: var(--flag-h, 14px);
 	}
 
 	/*
@@ -142,13 +157,22 @@
 	 *
 	 * Фіксована ширина ОБОВʼЯЗКОВА: без неї пункт без прапора зсував би назву
 	 * влівo, і рівний стовпчик назв розсипався б на цьому рядку.
+	 *
+	 * У `em`, а не в px (2026-09-29): вікно вибору росте з екраном (`.fill`), і кегель назви
+	 * з ним. Прапор 21×14 поруч із назвою на 27px (Full HD) читався як крапка. `1em` при
+	 * звичайному кеглі — ті самі 14px, тобто без вікна не змінюється нічого.
 	 */
 	.menu__mark {
 		display: flex;
 		flex-shrink: 0;
 		align-items: center;
 		justify-content: center;
-		width: 21px;
+		width: 1.5em;
+	}
+
+	.menu__mark :global(.flag) {
+		width: 1.5em;
+		height: 1em;
 	}
 
 	/*

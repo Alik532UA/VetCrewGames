@@ -187,6 +187,22 @@ export const hubTab: BetaTab = {
 			},
 			coverage: 'manual',
 			testid: 'online-search-*-toggle'
+		},
+		{
+			/*
+			 * ВИБІР ПРАПОРА — ОКРЕМЕ ВІКНО (прохання автора 2026-09-29: «окреме вікно, щоб
+			 * більше 90% було зайнято активністю»). Розмір, модальність, закриття й назви без
+			 * розривів посеред слова міряє e2e `country-menu`; руками — чи прапор упізнати й
+			 * чи в нього влучити пальцем.
+			 */
+			id: 'hub_15',
+			category: { uk: 'Вікна хабу', en: 'Hub windows' },
+			text: {
+				uk: 'Натисніть прапор біля «Як вас звати?» на телефоні й на компʼютері. Мусить відкритися окреме вікно майже на весь екран (а не невеликий список під кнопкою), а прапори в ньому — бути досить великими, щоб упізнати свій і влучити в нього пальцем. Наберіть літеру: назви мусять стати колонками й читатися без розривів посеред слова. Вибраний прапор мусить одразу стати на кнопці.',
+				en: 'Press the flag next to «What’s your name?» on a phone and on a computer. A separate window must open over almost the whole screen (not a small list under the button), and its flags must be big enough to recognise yours and hit it with a finger. Type a letter: the names must turn into columns and read with no breaks in the middle of a word. The picked flag must stand on the button at once.'
+			},
+			coverage: 'manual',
+			testid: 'pairs-country-select'
 		}
 	]
 };

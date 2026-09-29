@@ -26,10 +26,12 @@ import { reduceMotion, settlePage } from './support/settle';
  * ОЗНАКА, а не назва — кнопка, яка оголошує, що щось відкриває:
  *
  *   `aria-haspopup="menu"`     — меню шапки (тема, мова);
- *   `aria-haspopup="listbox"`  — вибір країни;
- *   `popovertarget`            — накладка на платформі (`InfoPopover`).
+ *   `aria-haspopup="listbox"`  — випадний список (з 2026-09-29 таких немає: вибір
+ *                                країни став вікном, але ознака лишається для наступного);
+ *   `popovertarget`            — накладка на платформі (`InfoPopover`);
+ *   `aria-haspopup="dialog"`   — вікно на платформі: вибір аватарки й вибір країни.
  *
- * Кнопка без жодної з трьох ознак накладкою не є ні для скрінрідера, ні для
+ * Кнопка без жодної з чотирьох ознак накладкою не є ні для скрінрідера, ні для
  * браузера — тобто пропустити щось справжнє цей спосіб може лише тоді, коли воно
  * вже зламане іншим способом, і про це скаже axe на самій сторінці.
  *
@@ -51,7 +53,8 @@ const TRIGGERS = [
 	'button[aria-haspopup="menu"][data-testid]',
 	'button[aria-haspopup="listbox"][data-testid]',
 	'button[popovertarget][data-testid]',
-	// Вікно на платформі (`<dialog>`, `showModal`): вибір аватарки (2026-09-27).
+	// Вікно на платформі (`<dialog>`, `showModal`): вибір аватарки (2026-09-27) і вибір
+	// країни (2026-09-29; доти — `listbox`, тож ключ `pairs-country-select` той самий).
 	'button[aria-haspopup="dialog"][data-testid]'
 ].join(', ');
 

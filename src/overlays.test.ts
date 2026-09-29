@@ -95,16 +95,15 @@ const files = svelteFiles('src').map((path) => ({
  * меню шапки відкрите, другий — клавіатуру всередині відкритого. Переводити їх
  * доведеться разом, але це дві різні правки.
  *
- * `CountryPicker` тут НЕМАЄ, хоч накладку малює саме він: клавіатуру, разом із
- * `Escape`, тримає його `CountryMenu`, і переводитиметься накладка звідти. Рядок
- * тут спершу стояв — і четверта перевірка одразу сказала, що він бреше.
+ * Другий погашений — `ui/CountryMenu` (2026-09-29): вибір країни став вікном на
+ * платформі (`<dialog>` і `showModal()` у `CountryPicker`), і `Escape`, верхній шар та
+ * фокус дає браузер. Власний закривач прибрано разом із рядком.
  */
 const OWN_OVERLAYS = [
 	'src/lib/components/HeaderControls.svelte',
 	'src/lib/components/HeaderMenu.svelte',
 	'src/lib/components/ScrollbarContextMenu.svelte',
-	'src/lib/components/reserve/ReserveHud.svelte',
-	'src/lib/components/ui/CountryMenu.svelte'
+	'src/lib/components/reserve/ReserveHud.svelte'
 ];
 
 describe('накладки: платформа замість саморобки', () => {

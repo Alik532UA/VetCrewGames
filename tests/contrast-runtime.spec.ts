@@ -46,7 +46,7 @@ import { reduceMotion, settlePage } from './support/settle';
  *    `:hover`), екран підсумку — око людини за чеклистом.
  *
  *    ОДИН ВИНЯТОК З 2026-08-24: вибір країни розкривається й міряється
- *    відкритим. Причина — у `countryPickerScopes` нижче: доти цей стан не
+ *    відкритим. Причина — у `pickerTriggers` нижче: доти цей стан не
  *    покривався ні тут, ні деінде, бо був нативним `<select>`, і саме в ньому
  *    прожив дефект «світлий текст на світлому фоні».
  * 2. **Фотографія тла.** `--bg-image` — це знімок, і його місцева яскравість
@@ -341,27 +341,40 @@ async function measure(page: Page, theme: string): Promise<Report> {
  * Решта пунктів «чого не покриває» лишається як була: наведення, фокус і меню
  * шапки цей гейт і далі не бачить.
  *
- * Кнопки шукаються за РОЛЛЮ (`aria-haspopup="listbox"`), а не за іменем
- * локатора: так само знайдеться будь-який наступний вибірник із випадним
- * списком, і його теж почнуть міряти без правки цього файлу.
+ * Кнопки шукаються за РОЛЛЮ (`aria-haspopup="listbox"` або `"dialog"`, з
+ * `aria-controls`), а не за іменем локатора: так само знайдеться будь-який
+ * наступний вибірник, і його теж почнуть міряти без правки цього файлу.
+ *
+ * `"dialog"` — з 2026-09-29, коли вибір країни став вікном (прохання автора: «окреме
+ * вікно на 90% екрана»). Без нього гейт мовчки перестав би міряти відкритий вибір —
+ * і так само, як виявилося, не міряв вікна аватарки: воно `"dialog"` від самого
+ * початку (2026-09-27), і обіцянка «знайдеться без правки» на ньому не справдилася.
+ * Тепер міряються обидва.
  *
  * ЗВОРОТНИЙ ЕКСПЕРИМЕНТ (AI-AGENT-PITFALLS-v8 § 1.1) проведено: `color` пункту
  * зроблено рівним `--color-bg-surface`, тобто кольором тла під ним. Прогін
  * `тема winter` упав, назвавши сторінку разом зі станом —
  * «/VetCrewGames/quiz/online/ [pairs-country відкрито] button.menu__option».
  * Тобто зелений результат тут неможливий через те, що панель не розкрилася.
+ * Повторено 2026-09-29, коли панель стала вікном: той самий мутант дав «1.00:1
+ * (треба 4.5) /VetCrewGames/online/ [pairs-country-select відкрито]
+ * button.menu__option > span.menu__name», тобто вікно відкривається й міряється.
  *
- * @returns основи `data-testid` знайдених вибірників; порожній масив — на цій
- * сторінці їх немає, і другий замір не робиться.
+ * @returns `data-testid` кнопок і `id` того, що кожна відкриває; порожній масив — на
+ * цій сторінці вибірників немає, і другий замір не робиться.
  */
-async function countryPickerScopes(page: Page): Promise<string[]> {
-	const triggers = page.locator('button[aria-haspopup="listbox"][data-testid]');
-	const scopes: string[] = [];
+async function pickerTriggers(page: Page): Promise<{ testid: string; controls: string }[]> {
+	const triggers = page.locator(
+		'button[aria-haspopup="listbox"][aria-controls][data-testid], button[aria-haspopup="dialog"][aria-controls][data-testid]'
+	);
+	const found: { testid: string; controls: string }[] = [];
 	for (let i = 0; i < (await triggers.count()); i += 1) {
-		const id = (await triggers.nth(i).getAttribute('data-testid')) ?? '';
-		scopes.push(id.replace(/-select$/, ''));
+		found.push({
+			testid: (await triggers.nth(i).getAttribute('data-testid')) ?? '',
+			controls: (await triggers.nth(i).getAttribute('aria-controls')) ?? ''
+		});
 	}
-	return scopes;
+	return found;
 }
 
 /**
@@ -424,20 +437,23 @@ for (const theme of THEMES) {
 			/*
 			 * Кожен вибірник розкривається ОКРЕМО, і після заміру закривається.
 			 *
-			 * Не всі разом: клік по другій кнопці — це `pointerdown` поза першою
-			 * панеллю, тобто вона закрилася б сама (так і задумано в компоненті), і
-			 * звіт стверджував би, що міряв два відкритих меню, маючи одне.
+			 * Не всі разом: модальне вікно робить сторінку під собою неактивною, тобто
+			 * другої кнопки просто не натиснути, а звіт стверджував би, що міряв два
+			 * відкритих вікна, маючи одне. Закриття теж стверджується — інакше наступний
+			 * клік упав би в тло вікна.
 			 */
-			for (const scope of await countryPickerScopes(page)) {
-				await page.locator(`[data-testid="${scope}-select"]`).click();
-				await page.locator(`[data-testid="${scope}-menu"]`).waitFor({ state: 'visible' });
+			for (const { testid, controls } of await pickerTriggers(page)) {
+				const trigger = page.locator(`[data-testid="${testid}"]`);
+				await trigger.click();
+				await page.locator(`[id="${controls}"]`).waitFor({ state: 'visible' });
 				const withPanel = await measure(page, theme);
 				checked += withPanel.checked;
 				disabled += withPanel.skippedDisabled;
 				findings.push(
-					...withPanel.findings.map((f) => ({ ...f, page: `${url} [${scope} відкрито]` }))
+					...withPanel.findings.map((f) => ({ ...f, page: `${url} [${testid} відкрито]` }))
 				);
 				await page.keyboard.press('Escape');
+				await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 			}
 		}
 

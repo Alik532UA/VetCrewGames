@@ -91,6 +91,20 @@ const CROSS_COMPONENT: Record<string, { declaredIn: string; why: string }> = {
 	'--avatar-box': {
 		declaredIn: 'src/lib/components/HeaderControls.svelte',
 		why: 'avatar tile size set by an ancestor that grows with the screen; also QuizAway'
+	},
+	/*
+	 * The country picker became a window on ~94% of the screen (2026-09-29), and its flag
+	 * grid grows with it. The window (`.country__window`) sets the tile and the flag
+	 * height once; `CountryOption` — one tile of 263 — reads them. The fallbacks are the
+	 * old fixed 44px and 14px, for an option rendered outside that window.
+	 */
+	'--flag-tile': {
+		declaredIn: 'src/lib/components/ui/CountryPicker.svelte',
+		why: 'flag tile of the country picker, set by its window that grows with the screen'
+	},
+	'--flag-h': {
+		declaredIn: 'src/lib/components/ui/CountryPicker.svelte',
+		why: 'flag height inside that tile'
 	}
 };
 

@@ -47,8 +47,9 @@ const SCOPE = 'pairs-country';
 /**
  * Скільки пікселів вважати «та сама колонка» й «той самий рядок».
  *
- * Колонки стоять на ~188px одна від одної, рядок — 44px. Допуск у 2px покриває
- * дроби `getBoundingClientRect()` і не дозволяє переплутати сусідів.
+ * У вікні 1280×720 колонки стоять на ~240px одна від одної, рядок сітки — ~72px
+ * (доти, у панелі під кнопкою, — 188 і 44). Допуск у 2px покриває дроби
+ * `getBoundingClientRect()` і не дозволяє переплутати сусідів.
  */
 const NEAR = 2;
 
@@ -391,55 +392,177 @@ test('стрілки вбік не забирають каретку в полі
 });
 
 /**
- * ПАНЕЛЬ СТОЇТЬ НЕ В КАРТЦІ, А В `<body>` — і саме під кнопкою.
+ * ВИБІР — ОКРЕМЕ ВІКНО НА ПОНАД 90% ЕКРАНА, і воно в `<body>`.
  *
- * Скарга автора зі знімком: на сторінці акаунта панель лежить ПІД картками
- * «Приватність», «Мої підписки» й «Таблиця лідерів». `z-index` тут ні до чого:
- * глобальний `.text-panel` має `backdrop-filter`, а це власний контекст
- * накладання — число 9500 порівнюється лише з сусідами всередині тієї самої
- * картки, тоді як картки малюються в порядку документа, кожна поверх попередньої
- * ЦІЛКОМ.
+ * Прохання автора 2026-09-29: «реалізований як випадаючий список під кнопкою, як
+ * наслідок користувач бачить невелике вікно на 15–25% екрану; очікуваний — окреме
+ * вікно, щоб більше 90% було зайнято активністю, по прикладу вибору аватарки».
+ * Відповідь на уточнення — «~90% екрана скрізь», тобто і на телефоні, і на
+ * ноутбуці; тому розміри нижче парою.
  *
- * Сам симптом тут не відтворити: єдина сторінка з такою карткою — акаунт, а вона
- * за входом, і в прогоні видно лише форму входу. Тому тут перевіряється те, чим
- * симптом лікується, і рівно там, де його можна зламати непомітно: зв'язка
- * «кнопка → панель». Забрати `anchor` — панель поїде в куток екрана, забрати
- * переїзд — вернеться в картку; обидва рази ця перевірка червоніє, а решта файлу
- * лишається зеленою.
+ * `<body>` — не звичка, а те, що тримає «понад 90%» і «не за екраном» разом: хаб
+ * росте до екрана одним `zoom` (`fitToViewport`), а верхній шар `<dialog>` масштаб
+ * предків успадковує. Вікно, лишене в хабі, було б 94% × масштаб, тобто за краєм.
+ * Та сама причина, що й у вибору аватарки.
  *
- * Сама механіка переїзду (координати, фокус, прибирання) — у
- * `src/lib/utils/fitMenu.test.ts`, разом із заміром із браузера.
- *
- * Проміжок міряється в пікселях САМОЇ панелі, а збіг лівих меж — з точністю до
- * пів пікселя (2026-09-27). Хаб тепер росте до екрана одним `zoom`, і панель бере
- * той самий масштаб, що й кнопка: 6px проміжку стають 6 × масштаб на екрані, а межа
- * кнопки — дробовим числом. Округлення тут давало `-0`, і `toBe(0)` на ньому падало,
- * хоч панель стояла рівно.
+ * Зворотні експерименти (2026-09-29), кожен червоний уже на 390×844: без `toBody` —
+ * «вікно мусить бути в body»; вікно завбільшки як у аватарки (30rem × 36rem) —
+ * «понад 90% висоти»; без розміру зовсім — «за нижнім краєм» (вікно міряється
+ * вмістом, тобто 262 прапорами); `open` замість `showModal()` — «модальне».
  */
-test('панель живе в body і стоїть під кнопкою', async ({ page }) => {
-	await openMenu(page);
+test('вибір — окреме вікно в body, понад 90% екрана і на телефоні, і на ноутбуці', async ({
+	page
+}) => {
+	for (const size of [
+		{ width: 390, height: 844 },
+		{ width: 1280, height: 720 }
+	]) {
+		await page.setViewportSize(size);
+		await openMenu(page);
 
-	const place = await page.evaluate((scope) => {
-		const menu = document.querySelector<HTMLElement>(`[data-testid="${scope}-menu"]`)!;
-		const button = document.querySelector<HTMLElement>(`[data-testid="${scope}-select"]`)!;
-		const box = menu.getBoundingClientRect();
-		const trigger = button.getBoundingClientRect();
-		const zoom = (menu as HTMLElement & { currentCSSZoom?: number }).currentCSSZoom ?? 1;
-		return {
-			parent: menu.parentElement?.tagName,
-			position: getComputedStyle(menu).position,
-			gap: Math.round((box.top - trigger.bottom) / zoom),
-			shift: Math.abs(box.left - trigger.left),
-			atLeastAsWide: box.width >= trigger.width - 1
-		};
+		const place = await page.evaluate((scope) => {
+			const menu = document.querySelector<HTMLElement>(`[data-testid="${scope}-menu"]`)!;
+			const dialog = menu.closest('dialog');
+			const box = document
+				.querySelector<HTMLElement>(`[data-testid="${scope}-panel"]`)!
+				.getBoundingClientRect();
+			return {
+				parent: dialog?.parentElement?.tagName,
+				modal: dialog?.matches(':modal') ?? false,
+				wide: box.width / innerWidth,
+				tall: box.height / innerHeight,
+				overRight: Math.round(box.right - innerWidth),
+				overBottom: Math.round(box.bottom - innerHeight),
+				focused: document.activeElement?.getAttribute('data-testid')
+			};
+		}, SCOPE);
+
+		const at = `${size.width}×${size.height}`;
+		expect(place.parent, `${at}: вікно мусить бути в body, а не в хабі під zoom`).toBe('BODY');
+		expect(place.modal, `${at}: вікно модальне — сторінка під ним неактивна`).toBe(true);
+		expect(place.wide, `${at}: вікно займає понад 90% ширини`).toBeGreaterThan(0.9);
+		expect(place.tall, `${at}: вікно займає понад 90% висоти`).toBeGreaterThan(0.9);
+		expect(place.overRight, `${at}: вікно за правим краєм`).toBeLessThanOrEqual(0);
+		expect(place.overBottom, `${at}: вікно за нижнім краєм`).toBeLessThanOrEqual(0);
+		expect(place.focused, `${at}: фокус — у полі пошуку`).toBe(`${SCOPE}-search-input`);
+
+		// «Закрити» у вікні: вікно зникає, фокус вертається на кнопку.
+		await page.getByTestId(`${SCOPE}-close-btn`).click();
+		await expect(page.locator(`[data-testid="${SCOPE}-menu"]`)).toHaveCount(0);
+		await expect(page.locator(`[data-testid="${SCOPE}-select"]`)).toBeFocused();
+	}
+
+	// Клік по тлу (кут екрана — поза вікном) теж закриває.
+	await page.locator(`[data-testid="${SCOPE}-select"]`).click();
+	await page.locator(`[data-testid="${SCOPE}-menu"]`).waitFor({ state: 'visible' });
+	await page.mouse.click(2, 2);
+	await expect(page.locator(`[data-testid="${SCOPE}-menu"]`)).toHaveCount(0);
+});
+
+/**
+ * Слова назв, що стоять на РІЗНИХ рядках, — тобто назва розірвана посеред слова.
+ *
+ * `spilling` у першому тесті цього не бачить і не може: `.menu__name` має
+ * `overflow-wrap: break-word`, тож задовге слово не вилазить за колонку, а рветься.
+ *
+ * Рядок літери — її `top`, але з допуском у пів висоти: `formatFont` малює «є»,
+ * «ї» й «ґ» іншим шрифтом в окремому вузлі (а «ї» й «ґ» ще й зсуває на 0,06em
+ * униз), тож верх такого гліфа стоїть на піксель-два інакше. Без допуску «Україна»
+ * й «Єгипет» виходили б «розірваними» на будь-якому екрані — заміряно. Дефіс — законне місце розриву («Гвінея-Бісау»), тож слово ним
+ * закінчується.
+ */
+async function brokenWords(page: Page): Promise<{ broken: string[]; names: string[] }> {
+	return page.evaluate((scope) => {
+		const names = [
+			...document.querySelectorAll<HTMLElement>(`[data-testid="${scope}-menu"] .menu__name`)
+		];
+		const broken: string[] = [];
+		for (const name of names) {
+			const chars: { ch: string; top: number; h: number }[] = [];
+			const walker = document.createTreeWalker(name, NodeFilter.SHOW_TEXT);
+			for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text) {
+				for (let i = 0; i < node.length; i += 1) {
+					const range = document.createRange();
+					range.setStart(node, i);
+					range.setEnd(node, i + 1);
+					const rect = range.getClientRects()[0];
+					if (rect) chars.push({ ch: node.data[i], top: rect.top, h: rect.height });
+				}
+			}
+			let word: typeof chars = [];
+			const flush = () => {
+				if (word.length > 1) {
+					const tops = word.map((c) => c.top);
+					const lines = Math.max(...tops) - Math.min(...tops);
+					if (lines > 0.5 * Math.max(...word.map((c) => c.h))) {
+						broken.push(word.map((c) => c.ch).join(''));
+					}
+				}
+				word = [];
+			};
+			for (const c of chars) {
+				if (/\s/.test(c.ch)) flush();
+				else {
+					word.push(c);
+					if (c.ch === '-') flush();
+				}
+			}
+			flush();
+		}
+		return { broken, names: names.map((n) => n.closest('[role="option"]')?.id ?? '') };
 	}, SCOPE);
+}
 
-	expect(place.parent, 'у картці панель нічим не підняти над сусідніми картками').toBe('BODY');
-	expect(place.position, 'у `<body>` немає кнопки, від якої відкладати `absolute`').toBe('fixed');
-	// 6px — той самий проміжок, що доти стояв у CSS як `calc(100% + 6px)`.
-	expect(place.gap, 'панель мусить стояти саме під кнопкою').toBe(6);
-	expect(place.shift, 'ліві межі панелі й кнопки збігаються').toBeLessThan(0.5);
-	expect(place.atLeastAsWide, 'панель не вужча за кнопку').toBe(true);
+/**
+ * НАЗВИ НЕ РВУТЬСЯ ПОСЕРЕД СЛОВА — і на ноутбуці, і на Full HD (2026-09-29).
+ *
+ * Вікно росте з екраном (`.fill`), і кегель назв із ним. Колонка, що лишилася 11rem,
+ * дала на Full HD «Азербайд-жан» і «Аргентин-а»; колонка в 11 одиниць — одну
+ * «Центральноафриканську». Тому розмір саме парою: на 1280×720 обидві помилки
+ * мовчать, і ловить їх лише великий екран.
+ *
+ * Сім запитів — щоб пройти майже всі назви, а не лише ті, що під «а»: канарка
+ * нижче стверджує, скільки різних назв оглянуто.
+ *
+ * Зворотний експеримент (2026-09-29): колонка 11 одиниць — червоніє 1920×1080,
+ * «назва розірвана посеред слова». Колонку в 11rem видно на знімку, зробленому до
+ * тесту: на 1920×1080 рвалися «Азербайджан», «Бангладеш», «Аргентина» та інші.
+ */
+test('після набору назви не рвуться посеред слова — на ноутбуці й на Full HD', async ({ page }) => {
+	for (const size of [
+		{ width: 1280, height: 720 },
+		{ width: 1920, height: 1080 }
+	]) {
+		await page.setViewportSize(size);
+		await openMenu(page);
+		const seen = new Set<string>();
+		const broken = new Set<string>();
+		for (const query of ['а', 'о', 'і', 'е', 'у', 'и', 'я']) {
+			await page.getByTestId(`${SCOPE}-search-input`).fill(query);
+			await expect(page.locator(`[data-testid="${SCOPE}-menu"] .menu__name`).first()).toBeVisible();
+			const found = await brokenWords(page);
+			for (const id of found.names) seen.add(id);
+			for (const word of found.broken) broken.add(word);
+		}
+		const at = `${size.width}×${size.height}`;
+		expect(seen.size, `${at}: оглянуто замало назв`).toBeGreaterThan(240);
+		expect([...broken], `${at}: назва розірвана посеред слова`).toEqual([]);
+	}
+});
+
+/**
+ * `Tab` ВЕДЕ ДО «ЗАКРИТИ», а не стоїть на полі (2026-09-29). Доти, у саморобній панелі,
+ * `Tab` затримувався навмисно, і вихід був один — `Escape`. У модальному вікні фокус на
+ * сторінку й так не піде, а затримка лише ховала б кнопку закриття від клавіатури.
+ * Зворотний експеримент: повернена затримка `Tab` — червоніє перше ж `toBeFocused`.
+ */
+test('Shift+Tab із поля пошуку веде на «Закрити», Escape закриває', async ({ page }) => {
+	await openMenu(page);
+	await page.keyboard.press('Shift+Tab');
+	await expect(page.getByTestId(`${SCOPE}-close-btn`)).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(page.locator(`[data-testid="${SCOPE}-menu"]`)).toHaveCount(0);
+	await expect(page.locator(`[data-testid="${SCOPE}-select"]`)).toBeFocused();
 });
 
 test('набір, Enter, Escape і порожній результат', async ({ page }) => {

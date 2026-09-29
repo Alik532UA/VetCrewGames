@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { ChevronDown } from 'lucide-svelte';
+	import { tick } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
+	import { ChevronDown, X } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { countryLabel } from '$lib/config/countries';
 	import { settings } from '$lib/services/settings.svelte';
@@ -42,7 +44,7 @@
 	 *
 	 * | Було безкоштовно                          | Тепер                             |
 	 * | ----------------------------------------- | --------------------------------- |
-	 * | вибірник на всю висоту екрана на телефоні | панель на все вільне місце під кнопкою (заміряне, не `vh`) |
+	 * | вибірник на всю висоту екрана на телефоні | вікно (`<dialog>`) на ~94% екрана скрізь |
 	 * | пошук набором літер                       | поле пошуку; літера на кнопці відкриває панель уже з нею |
 	 * | стрілки, Home/End, Enter, Escape          | ті самі клавіші на полі пошуку, плюс стрілки вбік по колонках |
 	 *
@@ -89,42 +91,58 @@
 	let open = $state(false);
 	/** Із чого починається пошук у щойно відкритій панелі. Див. `onTriggerKeydown`. */
 	let seed = $state('');
-	let root = $state<HTMLElement | null>(null);
 	let trigger = $state<HTMLButtonElement | null>(null);
 
 	const chosen = $derived(
 		value === '' ? t('pairs.countryNone') : countryLabel(value, settings.locale, t)
 	);
 
-	function openPanel(from = '') {
+	let dialog = $state<HTMLDialogElement>();
+
+	/**
+	 * ВИБІР — ОКРЕМИМ ВІКНОМ майже на весь екран (прохання автора 2026-09-29: «окреме вікно,
+	 * щоб більше 90% було зайнято активністю, по прикладу вибору аватарки»). Доти тут був
+	 * випадний список під кнопкою — 15–25% екрана, і 262 прапори в ньому доводилося гортати.
+	 *
+	 * `<dialog>` і `showModal()` — як у `AvatarChooser`: верхній шар, `Escape`, фокус у вікні
+	 * й неактивна сторінка під ним. Фокус після відкриття — у полі пошуку: з нього й працює
+	 * вся клавіатура меню (`CountryMenu`), а платформа поставила б його на першу кнопку.
+	 */
+	async function openPanel(from = '') {
 		seed = from;
 		open = true;
+		await tick();
+		if (!dialog) return;
+		if (typeof dialog.showModal === 'function') dialog.showModal();
+		else dialog.setAttribute('open', '');
+		dialog.querySelector<HTMLInputElement>('input')?.focus();
 	}
 
-	function closePanel() {
+	const closePanel = () => dialog?.close();
+
+	/** Вікно закрилося — будь-як: вибір, `Escape`, «Закрити» чи клік по тлу. Фокус — на кнопку. */
+	function closed() {
 		open = false;
 		trigger?.focus();
 	}
 
 	/**
-	 * Чи належить клік цьому вибірнику. ДВА місця, а не одне.
-	 *
-	 * Панель живе в `<body>`, а не в цьому вузлі (причина — у
-	 * `utils/menuColumns.ts`), тож `root.contains` про неї не знає. Без другої
-	 * перевірки клік по країні закривав би панель ДО того, як вибір дійде: сам
-	 * вибір ще спрацював би (він на `click`, а це `pointerdown`), але панель
-	 * блимала б, а прокрутка списку мишкою закривала б її на першому ж натиску.
-	 *
-	 * За `data-testid`, а не за посиланням на вузол: панель віддавати назовні
-	 * нема потреби, а цей атрибут у неї є завжди — на ньому тримається весь
-	 * `tests/country-menu.spec.ts`.
+	 * Вікно — у `<body>`, як і вибір аватарки: предки з `zoom` (`fitToViewport` хабу й лобі)
+	 * збільшили б і його, і вікно на 90% екрана вийшло б за екран.
 	 */
-	function inside(target: EventTarget | null): boolean {
-		const node = target as Node | null;
-		if (!node) return false;
-		if (root?.contains(node)) return true;
-		return !!(node as Element).closest?.(`[data-testid="${scope}-menu"]`);
-	}
+	const toBody: Attachment<HTMLDialogElement> = (node) => {
+		document.body.appendChild(node);
+		return () => node.remove();
+	};
+
+	/** Клік по тлу закриває: ціль такого кліку — сам `<dialog>`, вміст займає його цілком. */
+	const closeOnBackdrop: Attachment<HTMLDialogElement> = (node) => {
+		const click = (event: MouseEvent) => {
+			if (event.target === node) node.close();
+		};
+		node.addEventListener('click', click);
+		return () => node.removeEventListener('click', click);
+	};
 
 	/**
 	 * Клавіатура на КНОПЦІ: стрілка вниз і будь-яка літера відкривають панель.
@@ -153,23 +171,7 @@
 	}
 </script>
 
-<!--
-	Клік ПОЗА компонентом закриває панель.
-
-	`pointerdown` на вікні, а не підкладка на весь екран: підкладка ловила б
-	`pointerdown` сама, а `click` після неї доходив би до кнопки й відкривав
-	панель знову — цей дефект уже був у `HeaderMenu`. Перевірка вмісту замість
-	`stopPropagation` на кнопці: так само працює й тоді, коли на сторінці стоять
-	два вибірники. Фокус тут НЕ вертається на кнопку — його щойно забрала мишка, і
-	смикати його назад означало б сперечатися з тим, що зробила людина.
--->
-<svelte:window
-	onpointerdown={(event) => {
-		if (open && !inside(event.target)) open = false;
-	}}
-/>
-
-<div class="country" class:country--compact={compact} bind:this={root}>
+<div class="country" class:country--compact={compact}>
 	<label class="country__label" id="{scope}-label" for="{scope}-select">
 		<span>{@html formatFont(t('pairs.country'))}</span>
 	</label>
@@ -189,8 +191,9 @@
 		bind:this={trigger}
 		onclick={() => (open ? closePanel() : openPanel())}
 		onkeydown={onTriggerKeydown}
-		aria-haspopup="listbox"
+		aria-haspopup="dialog"
 		aria-expanded={open}
+		aria-controls="{scope}-dialog"
 		aria-labelledby="{scope}-label {scope}-value"
 		data-testid="{scope}-select"
 	>
@@ -199,27 +202,50 @@
 		<span class="country__chevron" aria-hidden="true"><ChevronDown size={16} /></span>
 	</button>
 
-	{#if open}
-		<CountryMenu
-			{value}
-			{scope}
-			{seed}
-			anchor={trigger}
-			onpick={(code) => {
-				value = code;
-				closePanel();
-			}}
-			onclose={closePanel}
-		/>
-	{/if}
+	<dialog
+		bind:this={dialog}
+		id="{scope}-dialog"
+		class="country__dialog"
+		aria-labelledby="{scope}-dialog-title"
+		onclose={closed}
+		{@attach toBody}
+		{@attach closeOnBackdrop}
+		data-testid="{scope}-modal"
+	>
+		{#if open}
+			<div class="country__window fill" data-testid="{scope}-panel">
+				<div class="country__head">
+					<h2 class="country__title" id="{scope}-dialog-title">
+						{@html formatFont(t('pairs.country'))}
+					</h2>
+					<button
+						type="button"
+						class="country__close btn-secondary"
+						onclick={closePanel}
+						aria-label={t('common.close')}
+						data-testid="{scope}-close-btn"
+					>
+						<X size={20} aria-hidden="true" />
+					</button>
+				</div>
+				<CountryMenu
+					{value}
+					{scope}
+					{seed}
+					onpick={(code) => {
+						value = code;
+						closePanel();
+					}}
+				/>
+			</div>
+		{/if}
+	</dialog>
 </div>
 
 <style>
 	/*
-	 * `relative` тут БІЛЬШЕ НЕ ПОТРІБЕН і навмисно прибраний: панель більше не
-	 * позиціюється від цієї коробки — вона живе в `<body>` і стоїть за заміром
-	 * кнопки (`utils/menuColumns.ts`). Лишити його означало б лишити підказку, що
-	 * панель усередині, — а саме це припущення й було дефектом.
+	 * `relative` тут НЕ ПОТРІБЕН: вибір живе не в цій коробці, а у вікні в `<body>` (верхній
+	 * шар `<dialog>`), тож позиціювати від неї нема чого.
 	 */
 	.country {
 		display: flex;
@@ -335,5 +361,81 @@
 		.country--compact .country__trigger:hover {
 			background: color-mix(in srgb, var(--color-text), transparent 90%);
 		}
+	}
+	/*
+	 * ВІКНО МАЙЖЕ НА ВЕСЬ ЕКРАН (прохання автора 2026-09-29, відповідь A: так скрізь, а не лише
+	 * на телефоні). `<dialog>` — лише рамка верхнього шару: без полів, рамки й тла, щоб клік по
+	 * ньому означав рівно «по тлу» (`closeOnBackdrop`). Поле довкола — від меншого боку екрана,
+	 * 8–24px: вікно займає понад 90% і все ж читається як вікно, а не як нова сторінка.
+	 */
+	.country__dialog {
+		--edge: clamp(8px, 2vmin, 24px);
+		width: calc(100vw - 2 * var(--edge));
+		height: calc(100dvh - 2 * var(--edge));
+		max-width: none;
+		max-height: none;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: inherit;
+		overflow: visible;
+	}
+
+	.country__dialog::backdrop {
+		background: rgba(0, 0, 0, 0.55);
+	}
+
+	/*
+	 * Та сама поверхня й ті самі кольори, що мав випадний список (`--color-bg-surface`,
+	 * `--color-text`): їх уже бачив замір контрасту в усіх чотирьох темах. Кегель росте з
+	 * екраном (`.fill`), а з ним — і плитки прапорів (`--flag-tile`, `CountryOption`): на
+	 * великому екрані вікно на 90% із дрібними прапорами лишалося б порожнім.
+	 */
+	.country__window {
+		--flag-tile: max(44px, calc(var(--fill-u) * 3.25));
+		--flag-h: calc(var(--flag-tile) * 0.42);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-sm);
+		width: 100%;
+		height: 100%;
+		padding: var(--space-md);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-bg-surface);
+		color: var(--color-text);
+		box-shadow: var(--shadow-card-hover);
+		box-sizing: border-box;
+	}
+
+	.country__head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-sm);
+	}
+
+	.country__title {
+		margin: 0;
+		font-size: var(--font-size-lg);
+		color: var(--color-text);
+	}
+
+	/* 44px — дно сенсорної цілі (ACCESSIBILITY-v8 § 8); далі росте з кеглем вікна. */
+	.country__close {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		width: max(44px, calc(var(--fill-u) * 2.75));
+		height: max(44px, calc(var(--fill-u) * 2.75));
+		padding: 0;
+		border-radius: var(--radius-sm);
+	}
+
+	/* Значок росте разом із кнопкою: 20px у квадраті на 85px (Full HD) читалися як крапка. */
+	.country__close :global(svg) {
+		width: calc(var(--fill-u) * 1.25);
+		height: calc(var(--fill-u) * 1.25);
 	}
 </style>

@@ -101,7 +101,7 @@
 	 * і на `<dialog>` у верхньому шарі теж: вікно на 30rem ставало у 1,6 раза більшим і
 	 * виходило за екран. У `<body>` предків із `zoom` немає, тож межі вікна — межі екрана.
 	 * Верхньому шару місце в дереві байдуже, а фокус і `aria-controls` тримаються за `id`.
-	 * Той самий переїзд робить меню країн (`utils/menuColumns.ts`, `fitMenu`).
+	 * Той самий переїзд робить вікно вибору країни (`CountryPicker`).
 	 */
 	const toBody: Attachment<HTMLDialogElement> = (node) => {
 		document.body.appendChild(node);
