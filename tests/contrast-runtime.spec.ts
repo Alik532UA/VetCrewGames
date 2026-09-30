@@ -1,6 +1,6 @@
 import { expect, test, type Page } from './fixtures';
 import { APP_PAGES, expectAllRoutesListed } from './support/pages';
-import { reduceMotion, settlePage } from './support/settle';
+import { reduceMotion, settleAfterAction, settlePage } from './support/settle';
 
 /**
  * КОНТРАСТ У РАНТАЙМІ: чотири теми × усі сторінки, з реальним складанням шарів.
@@ -461,6 +461,8 @@ for (const theme of THEMES) {
 				await page
 					.locator(controls ? `[id="${controls}"]` : 'dialog[open]')
 					.waitFor({ state: 'visible' });
+				// «Видиме» — це перший кадр вікна, а не стан: замір лише після спокою.
+				await settleAfterAction(page);
 				const withPanel = await measure(page, theme);
 				checked += withPanel.checked;
 				disabled += withPanel.skippedDisabled;
