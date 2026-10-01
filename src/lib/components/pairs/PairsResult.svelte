@@ -353,4 +353,32 @@
 		transform: translateX(-50%);
 		cursor: pointer;
 	}
+
+	/*
+	 * НА МОБІЛЬНОМУ (<600px): вікно підсумку займає ~95% екрана.
+	 * Списку гравців дається вертикальний простір (зручні більші рядки), а дії закріплені внизу під пальцем.
+	 */
+	@container (max-width: 599px) {
+		.result {
+			width: 100%;
+			height: 100%;
+			max-height: 100%;
+			justify-content: space-between;
+			padding: var(--space-md);
+		}
+
+		.result__players {
+			flex: 1;
+			justify-content: center;
+			width: 100%;
+		}
+
+		.result__player {
+			padding: var(--space-sm) var(--space-md);
+		}
+
+		.result__actions {
+			width: 100%;
+		}
+	}
 </style>

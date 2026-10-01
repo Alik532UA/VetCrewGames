@@ -142,6 +142,9 @@
 				});
 				window.addEventListener('appinstalled', function () {
 					window.__vetcrewgamesInstallPrompt = null;
+					try {
+						localStorage.setItem('vetcrewgames_installed', 'true');
+					} catch (e) {}
 				});
 			} catch (e) {}
 		</script>

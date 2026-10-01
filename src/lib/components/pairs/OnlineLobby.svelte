@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { CheckCircle2, Clock, Timer, Users } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import type { TranslationKey } from '$lib/i18n/translations/uk';
 	import type { Member, Role } from '$lib/net/roomTypes';
 	import SegmentedChoice from '$lib/components/ui/SegmentedChoice.svelte';
 	import YouTag from '$lib/components/ui/YouTag.svelte';
-	import RoomQr from '$lib/components/pairs/RoomQr.svelte';
+	import LobbyInvite from './LobbyInvite.svelte';
 	import Flag from '$lib/components/ui/Flag.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import AvatarChooser from '$lib/components/ui/AvatarChooser.svelte';
@@ -104,21 +105,8 @@
 	}
 
 	let {
-		code,
-		joinUrl,
-		members,
-		online,
-		me,
-		amHost,
-		myRole,
-		countdownLeft,
-		ready,
-		autoStart,
-		onRole,
-		onAvatar,
-		onStart,
-		onAutoStart,
-		settings
+		code, joinUrl, members, online, me, amHost, myRole,
+		countdownLeft, ready, autoStart, onRole, onAvatar, onStart, onAutoStart, settings
 	}: Props = $props();
 
 	/**
@@ -176,26 +164,38 @@
 	ширина `.lobby` — рівно те, що він вирішує.
 -->
 <div class="lobby-shell">
+	<!--
+		СТАТУС КІМНАТИ — НА САМОМУ ВЕРХУ, ПОМІТНИЙ БАНЕР.
+		Прохання автора: "Партія чекає, доки лідер натисне «Почати партію»." повинна бути
+		зверху і в три рази крупніше!
+	-->
+	<div class="lobby__banner" role="status" data-testid="pairs-lobby-status-text">
+		<span class="lobby__banner-icon" aria-hidden="true">
+			{#if countdownLeft !== null}
+				<Timer size={32} />
+			{:else if statusKey === 'pairs.needPlayers'}
+				<Users size={32} />
+			{:else if statusKey === 'pairs.startWhenReady'}
+				<CheckCircle2 size={32} />
+			{:else}
+				<Clock size={32} />
+			{/if}
+		</span>
+		<div class="lobby__banner-content">
+			{#if statusKey === null}
+				<span class="lobby__banner-lead">{@html formatFont(t('pairs.startingIn'))}</span>
+				<b class="lobby__seconds">{countdownLeft}{@html formatFont(t('pairs.seconds'))}</b>
+			{:else}
+				<span class="lobby__banner-lead">{@html formatFont(t(statusKey))}</span>
+			{/if}
+		</div>
+	</div>
+
 	<div class="lobby" class:lobby--settings={settings !== undefined}>
-		<!--
-			── 1. ЗАПРОСИТИ ─────────────────────────────────────────────────────────
-
-			QR СТОЇТЬ ПОРУЧ ІЗ КОДОМ, а не окремим екраном.
-
-			Це два способи передати те саме, і вибір між ними залежить від того, де
-			співрозмовник: код диктують у слухавку, QR показують тому, хто сидить
-			навпроти. Поруч вони не конкурують — видно обидва шляхи одразу.
-
-			Тепер це одна панель, а не дві плашки поспіль: розділені, вони читалися
-			як дві різні речі, хоча відповідають на одне питання — «як сюди зайти».
-		-->
-		<section class="lobby__panel lobby__panel--invite">
-			<p class="lobby__code">
-				{@html formatFont(t('pairs.roomCode'))}:
-				<b class="lobby__value" data-testid="pairs-room-code-value">{code}</b>
-			</p>
-			<RoomQr url={joinUrl} />
-		</section>
+		<!-- ── 1. ЗАПРОСИТИ (код, посилання, QR) ──────────────────────────────────── -->
+		<div class="lobby__col-invite">
+			<LobbyInvite {code} {joinUrl} />
+		</div>
 
 		<!-- ── 2. ХТО ТУТ І СТАРТ ────────────────────────────────────────────────── -->
 		<section class="lobby__panel lobby__panel--players">
@@ -268,71 +268,17 @@
 				scope="pairs-role"
 				value={myRole}
 				onchange={(id) => onRole(id as Role)}
-				options={[
-					{ id: 'player', label: t('pairs.rolePlayer') },
-					{ id: 'spectator', label: t('pairs.roleSpectator') }
-				]}
+				options={[{ id: 'player', label: t('pairs.rolePlayer') }, { id: 'spectator', label: t('pairs.roleSpectator') }]}
 			/>
 
-			<!--
-				СТАТУС — ОДИН, і в ОДНОМУ МІСЦІ.
-
-				Стоїть тут навмисно: вище нього немає жодного умовного блока, тож рядок не
-				стрибає ні між лідером і гостем, ні коли починається відлік. Доти статуси
-				жили в трьох різних місцях сторінки й з’являлися по два (див. `statusKey`).
-
-				Підпису «Статус» немає — автор попросив прямо, і він має рацію: рядок
-				читається як стан і без назви, а назва зробила б із нього поле форми.
-
-				`role="status"` рівно один: три живі області поспіль скрінрідер зачитує
-				впереміш, і зрозуміти, яка з них щойно змінилася, неможливо.
-
-				ВІДЛІК БАЧАТЬ ОБОЄ, і це головне в ньому. Той, хто зайшов другим, кнопки
-				«Почати» не має зовсім, тож без цього рядка партія починалася б для нього
-				раптово. Число те саме, що в лідера: воно виводиться з серверної позначки, а
-				не з місцевого таймера.
-
-				Скасувати може лідер перемикачем режиму; гість — перейшовши в глядачі, бо
-				тоді гравців стає менше двох і відлік гасне сам. Тобто вихід є в обох, і
-				жоден не потребує окремого права в базі.
-			-->
-			<p class="lobby__status" role="status" data-testid="pairs-lobby-status-text">
-				{#if statusKey === null}
-					{@html formatFont(t('pairs.startingIn'))}
-					<b class="lobby__seconds">{countdownLeft}{@html formatFont(t('pairs.seconds'))}</b>
-				{:else}
-					{@html formatFont(t(statusKey))}
-				{/if}
-			</p>
-
-			<!--
-				РЕЖИМ ПОЧАТКУ ПАРТІЇ — налаштування кімнати, а не поведінка.
-
-				Дві названі кнопки замість здогадки: «Автостарт» і «Підтвердження
-				готовності». Кімната, створена руками, стоїть на другому — її відкривають
-				для когось конкретного, і партія, що почалася сама, щойно зайшов ХТОСЬ,
-				була б несподіванкою. «Швидка гра» створює кімнату на першому: вона
-				зводить незнайомців, і зайвий натиск лише заважає.
-
-				Гість бачить режим РЯДКОМ у статусі вище, а не кнопками: міняти його він не
-				може (правило бази), але знати, чого чекати, мусить — інакше «чому не
-				починається» лишається без відповіді з того боку, де немає кнопки.
-
-				Стоїть у ЦІЙ панелі, а не серед налаштувань гри, хоч і є налаштуванням
-				кімнати: режим вирішує, чи знадобиться кнопка під ним, і статус над ним
-				описує саме його. Розведені по різних стовпцях, ці три рядки перестали б
-				читатися як одна відповідь на «коли почнемо».
-			-->
+			<!-- ── РЕЖИМ ПОЧАТКУ ПАРТІЇ ── -->
 			{#if amHost}
 				<SegmentedChoice
 					legend={t('pairs.startMode')}
 					scope="pairs-start-mode"
 					value={autoStart ? 'auto' : 'confirm'}
 					onchange={(id) => onAutoStart(id === 'auto')}
-					options={[
-						{ id: 'auto', label: t('pairs.modeAuto') },
-						{ id: 'confirm', label: t('pairs.modeConfirm') }
-					]}
+					options={[{ id: 'auto', label: t('pairs.modeAuto') }, { id: 'confirm', label: t('pairs.modeConfirm') }]}
 				/>
 				<!--
 					Починає лише лідер, і кнопка не ховається, коли гравців бракує: заборона з
@@ -431,7 +377,7 @@
 			max-width: none;
 		}
 
-		.lobby__panel--invite {
+		.lobby__col-invite {
 			grid-area: invite;
 		}
 
@@ -468,6 +414,29 @@
 		}
 	}
 
+	/* Банер статусу — на самому верху, великий і помітний (вимога A: 1.35rem, акцентна рамка). */
+	.lobby__banner {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
+		padding: var(--space-sm) var(--space-md);
+		border-radius: var(--radius-md);
+		border: 2px solid var(--color-accent);
+		background: color-mix(in srgb, var(--color-bg-panel), var(--color-accent) 12%);
+		color: var(--color-text-on-panel);
+		box-shadow: var(--shadow-card);
+		text-align: center;
+		max-width: 46rem;
+		margin-inline: auto;
+		margin-bottom: var(--space-md);
+	}
+
+	.lobby__banner-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--color-accent); }
+	.lobby__banner-content { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-xs); }
+	.lobby__banner-lead { font-size: clamp(1.15rem, 3.5cqi, 1.35rem); font-weight: var(--font-weight-bold); line-height: 1.3; }
+	.lobby__col-invite { display: flex; flex-direction: column; }
+
 	/*
 	 * Панель — та сама, що в блоків форми входу (`.gate__panel`): тло, радіус і
 	 * тінь. Спільного класу немає, бо спільними були б і всі розміри всередині, а
@@ -487,54 +456,6 @@
 		background: var(--color-bg-panel);
 		color: var(--color-text-on-panel);
 		box-shadow: var(--shadow-card);
-	}
-
-	/*
-	 * Код — по центру панелі, над QR, який іде на всю її ширину (`RoomQr`): рядок
-	 * біля лівого краю над квадратом на всю ширину виглядав би відірваним.
-	 */
-	.lobby__panel--invite {
-		align-items: center;
-	}
-
-	.lobby__code {
-		margin: 0;
-		font-size: var(--font-size-md);
-	}
-
-	/*
-	 * ОДИН СТАТУС — і місце під нього ЗАКРІПЛЕНЕ.
-	 *
-	 * `min-height` не косметика: текст статусу перемикається між «потрібні двоє»,
-	 * відліком і вказівкою лідерові, і рядки в них різної довжини. Без резерву
-	 * висоти кнопка «Почати партію» стрибала б угору-вниз рівно тоді, коли на неї
-	 * націлюються пальцем.
-	 *
-	 * Прозорості тут НЕМА, і це не забутий рядок: доти ці підказки були
-	 * `opacity: 0.75`, тобто «додаткова інформація». Тепер це єдиний стан лобі —
-	 * головне, що людина читає, чекаючи. Заразом знімається й ризик для гейта
-	 * контрасту: приглушений текст на цій панелі вже одного разу впирався в 4.5:1.
-	 *
-	 * Рамка — бо власної плашки в статусу більше немає: він усередині панелі, і
-	 * без межі злився б із підписом «Початок партії» під ним в один абзац. Колір
-	 * рамки від тексту панелі, а не `--color-border`: у темі orange-purple
-	 * `--color-border` дорівнює тлу панелі, і межі не було б видно (те саме
-	 * джерело й та сама причина — у `QuizGamePicker`).
-	 */
-	.lobby__status {
-		margin: 0;
-		min-height: 2.5em;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-xs);
-		padding: var(--space-xs) var(--space-sm);
-		border: 1px solid color-mix(in srgb, var(--color-text-on-panel), transparent 82%);
-		border-radius: var(--radius-sm);
-		text-align: center;
-		font-size: var(--font-size-md);
-		color: var(--color-text-on-panel);
 	}
 
 	/*
@@ -563,12 +484,6 @@
 	 */
 	.lobby__start {
 		max-width: none;
-	}
-
-	/* Код диктують уголос, тож він великий і з проміжками між літерами. */
-	.lobby__value {
-		font-size: var(--font-size-xl);
-		letter-spacing: 0.25em;
 	}
 
 	/*

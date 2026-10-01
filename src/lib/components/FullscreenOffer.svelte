@@ -4,11 +4,12 @@
 	import { t, formatFont } from '$lib/i18n';
 	import { loadInstallText } from '$lib/i18n/install';
 	import { settings } from '$lib/services/settings.svelte';
-	import { canPromptInstall, promptInstall } from '$lib/pwa/installPrompt';
+	import { canPromptInstall, isAppAlreadyInstalled, promptInstall } from '$lib/pwa/installPrompt';
 	import { GUIDES, guideFor } from '$lib/pwa/installGuide';
 	import { STEP_ICONS } from '$lib/pwa/installIcons';
 	import { closeOnBackdrop } from '$lib/utils/closeOnBackdrop';
 	import DynamicIcon from './ui/DynamicIcon.svelte';
+	import FullscreenAlready from './FullscreenAlready.svelte';
 
 	/**
 	 * ВІКНО КНОПКИ «НА ВЕСЬ ЕКРАН» (прохання автора 2026-09-29).
@@ -56,8 +57,10 @@
 		});
 	});
 
-	/** Вибір — лише на початку: після «Встановити» без вікна браузера лишаються кроки. */
-	let view = $state<'choice' | 'steps'>(untrack(() => (mode === 'choice' ? 'choice' : 'steps')));
+	/** Вибір — на початку; після «Встановити» без вікна браузера — або «вже встановлено», або кроки. */
+	let view = $state<'choice' | 'steps' | 'already'>(
+		untrack(() => (mode === 'choice' ? 'choice' : 'steps'))
+	);
 	const which = guideFor(navigator.userAgent, navigator.maxTouchPoints ?? 0);
 	const guide = GUIDES[which];
 
@@ -86,6 +89,11 @@
 			close();
 			return;
 		}
+		if (await isAppAlreadyInstalled()) {
+			view = 'already';
+			heading?.focus();
+			return;
+		}
 		view = 'steps';
 		heading?.focus();
 	}
@@ -102,7 +110,9 @@
 	<div class="offer__window fill" data-testid="fullscreen-offer-panel">
 		<div class="offer__head">
 			<h2 class="offer__title" id="fullscreen-offer-title" tabindex="-1" bind:this={heading}>
-				{@html formatFont(label(view === 'choice' ? 'install.title.choice' : guide.title))}
+				{@html formatFont(
+					label(view === 'choice' ? 'install.title.choice' : view === 'already' ? 'install.title.already' : guide.title)
+				)}
 			</h2>
 			<button
 				type="button"
@@ -110,9 +120,7 @@
 				onclick={close}
 				aria-label={t('common.close')}
 				data-testid="fullscreen-offer-close-btn"
-			>
-				<X aria-hidden="true" />
-			</button>
+			><X aria-hidden="true" /></button>
 		</div>
 
 		{#if view === 'choice'}
@@ -140,6 +148,13 @@
 				<span class="offer__label">{@html formatFont(label('install.app'))}</span>
 				<span class="offer__hint">{@html formatFont(label('install.appHint'))}</span>
 			</button>
+		{:else if view === 'already'}
+			<FullscreenAlready
+				{label}
+				{fullscreenIcon}
+				onfullscreen={goFullscreen}
+				onclose={close}
+			/>
 		{:else}
 			{#if mode === 'blocked'}
 				<p class="offer__lead" data-testid="fullscreen-offer-lead-text">
@@ -182,14 +197,15 @@
 
 <style>
 	/*
-	 * `<dialog>` — лише рамка верхнього шару: без полів, рамки й тла, щоб клік по ньому
-	 * означав рівно «по тлу». Ширина — від одиниці вікна (`--fill-u`): кегель усередині росте
-	 * з екраном (`.fill`), і вікно в фіксованих rem на великому екрані ставало б тісним.
+	 * ВІКНО КНОПКИ «НА ВЕСЬ ЕКРАН» — як CountryPicker.svelte:
+	 * на мобільному займає ~95% екрана, на десктопі обмежене 34 одиницями.
 	 */
 	.offer {
-		width: min(calc(100vw - 32px), calc(var(--fill-u) * 34));
+		--edge: clamp(8px, 2vmin, 24px);
+		width: min(calc(100vw - 2 * var(--edge)), calc(var(--fill-u) * 34));
 		max-width: none;
-		max-height: calc(100dvh - 32px);
+		height: min(calc(100dvh - 2 * var(--edge)), calc(var(--fill-u) * 44));
+		max-height: calc(100dvh - 2 * var(--edge));
 		padding: 0;
 		border: none;
 		background: transparent;
@@ -205,9 +221,12 @@
 	.offer__window {
 		display: flex;
 		flex-direction: column;
+		justify-content: space-between;
 		gap: var(--space-md);
-		max-height: calc(100dvh - 32px);
-		padding: var(--space-lg);
+		width: 100%;
+		height: 100%;
+		max-height: 100%;
+		padding: clamp(var(--space-md), 3vw, var(--space-lg));
 		border-radius: var(--radius-md);
 		background: var(--color-bg-panel);
 		color: var(--color-text-on-panel);
@@ -236,7 +255,7 @@
 		align-items: center;
 		justify-content: center;
 		width: max(44px, calc(var(--fill-u) * 2.75));
-		height: max(44px, calc(var(--fill-u) * 2.75));
+		aspect-ratio: 1;
 		padding: 0;
 		border-radius: var(--radius-sm);
 	}
@@ -245,8 +264,7 @@
 	.offer__option {
 		display: grid;
 		grid-template-columns: auto 1fr;
-		column-gap: var(--space-md);
-		row-gap: var(--space-xs);
+		gap: var(--space-xs) var(--space-md);
 		align-items: center;
 		min-height: 44px;
 		padding: var(--space-md);
@@ -311,6 +329,8 @@
 	.offer__steps {
 		display: flex;
 		flex-direction: column;
+		justify-content: space-evenly;
+		flex: 1;
 		gap: var(--space-sm);
 		margin: 0;
 		padding: 0;
@@ -350,3 +370,4 @@
 		font-weight: var(--font-weight-bold);
 	}
 </style>
+

@@ -97,12 +97,12 @@
 -->
 <fieldset class="games" data-testid="quiz-games-fieldset">
 	<legend class="games__legend">{@html formatFont(text(legendKey))}</legend>
-	<div class="seg-track">
+	<div class="seg-track games__track">
 		{#each ONLINE_GAMES as game (game.id)}
 			{@const on = selected.includes(game.id)}
 			<button
 				type="button"
-				class="seg-item"
+				class="seg-item games__item"
 				class:seg-item--on={on}
 				aria-pressed={on}
 				aria-disabled={!editable || (on && isLast)}
@@ -122,6 +122,7 @@
 		padding: 0;
 		border: none;
 		min-width: 0;
+		width: 100%;
 	}
 
 	.games__legend {
@@ -129,6 +130,23 @@
 		margin-bottom: var(--space-xs);
 		font-size: var(--font-size-sm);
 		color: var(--color-text-on-panel);
+	}
+
+	/*
+	 * СМУГА ІГОР — СІТКА 3×2 (прохання автора: по 3 опції в кожному рядку).
+	 * Доти стояв flex-wrap, через що перший ряд брав 4 ігри, а другий лише 2.
+	 */
+	.games__track {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.games__item {
+		white-space: normal;
+		line-height: 1.15;
+		padding: var(--space-xs) 4px;
 	}
 
 	/*

@@ -239,4 +239,12 @@
 	.online-page--lobby {
 		max-width: 48rem;
 	}
+
+	@media (max-width: 599px) {
+		.online-page {
+			width: calc(100vw - 16px);
+			max-width: calc(100vw - 16px);
+			padding: 8px 0;
+		}
+	}
 </style>

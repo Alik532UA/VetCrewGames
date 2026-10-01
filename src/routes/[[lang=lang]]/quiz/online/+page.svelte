@@ -293,4 +293,12 @@
 	.quiz-online--playing {
 		max-width: var(--measure-habitat-wide);
 	}
+
+	@media (max-width: 599px) {
+		.quiz-online {
+			width: calc(100vw - 16px);
+			max-width: calc(100vw - 16px);
+			padding: 8px 0;
+		}
+	}
 </style>

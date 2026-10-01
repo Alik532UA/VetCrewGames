@@ -43,11 +43,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		container-type: inline-size;
 		/*
 		 * Зверху — під шапку, щоб велике вікно не заходило під неї. Шапка росте з одиницею
 		 * (3,25 одиниці, `.fill-window` у global.css), тож і поле теж.
 		 */
-		padding: calc(var(--fill-u) * 3.25 + var(--space-md)) var(--space-md) var(--space-md);
+		--dialog-pad: clamp(8px, 2vmin, var(--space-md));
+		padding: calc(var(--fill-u) * 3.25 + var(--dialog-pad)) var(--dialog-pad) var(--dialog-pad);
 		box-sizing: border-box;
 		/*
 		 * Затемнення ПРОЗОРЕ: фонове фото теми мусить лишатися видимим (це стежить

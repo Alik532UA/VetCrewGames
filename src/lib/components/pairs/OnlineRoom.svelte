@@ -107,6 +107,15 @@
 
 	/** Скільки пар зібрав кожен: рахунок живе в правилах, не в кімнаті. */
 	const scoreOf = (uid: string) => match.game.players.find((p) => p.id === uid)?.score ?? 0;
+
+	/**
+	 * ЧУЖІ ПЛИТКИ ДРІБНІШІ (як у Вікторині, QuizScores):
+	 * поточний гравець 100%, решта гравців на 12% менші (`OTHER_TILE = 0.88`).
+	 */
+	const OTHER_TILE = 0.88;
+	const iPlay = $derived(match.players.some((player) => player.uid === me));
+	const tileScale = (uid: string) => (iPlay && uid !== me ? OTHER_TILE : 1);
+	const weight = $derived(match.players.reduce((sum, player) => sum + tileScale(player.uid), 0));
 </script>
 
 <div class="board">
@@ -185,57 +194,65 @@
 		Сам рядок фону більше не має — його мають плитки. Тло на тлі дало б шов на
 		межі й нічого більше.
 	-->
-	<div class="board__score">
-		{#each match.players as player (player.uid)}
-			<!--
-				ПОЗНАЧКИ ПОПЕРЕДУ, а не в хвості рядка.
-
-				Прохання автора дослівно: «статуси треба ставити на початку» — замість
-				«Плавна Манта: 0 (немає звʼязку)» очікується «(немає звʼязку) Плавна
-				Манта: 0». Причина не в смаку: у хвості позначка стоїть ПІСЛЯ рахунку,
-				тобто щоб дізнатися стан гравця, доводиться дочитати плитку до кінця, а
-				на вузькому екрані ще й після переносу. Попереду вона читається як мітка
-				рядка — так само, як мітка теки стоїть перед назвою, а не після.
-
-				Побічний виграш: `role="status"` на самій плитці. Доти «суперник зник»
-				оголошувала панель застою, і саме той рядок прибрано як дубль; тепер
-				оголошує плитка, у якій пілюля зʼявляється. Регіон живе з монтування, тож
-				поява пілюлі — саме та зміна, яку скрінрідер читає (регіон, створений
-				РАЗОМ із вмістом, не оголошує нічого).
-			-->
-			<span
-				class="board__player text-panel"
-				class:board__player--turn={player.uid === match.actor?.id}
-				class:board__player--away={!online.includes(player.uid)}
-				role="status"
-				data-testid="pairs-player-{player.uid}-status"
+	<div class="board__top">
+		<div class="board__score scores-shell">
+			<div
+				class="scores-list"
+				style:--count={match.players.length}
+				style:--weight={weight}
 			>
-				{#if player.uid === me}<YouTag />{/if}
-				<!--
-					СТАН СЛОВАМИ, а не лише стилем.
+				{#each match.players as player (player.uid)}
+					<!--
+						ПОЗНАЧКИ ПОПЕРЕДУ, а не в хвості рядка.
 
-					Доти «немає звʼязку» передавалося перекресленням і прозорістю — тобто
-					скрінрідер не отримував нічого, а очима це читалося як «видалено» або
-					«недоступно», хоч людина могла просто зайти в тунель. Тепер причина
-					написана, а стиль лишається підказкою, а не єдиним джерелом.
-				-->
-				{#if !online.includes(player.uid)}
-					<PlayerBadge tone="away">{@html formatFont(t('pairs.away'))}</PlayerBadge>
-				{/if}
-				<Flag code={match.members.find((m) => m.uid === player.uid)?.country} />
-				<Avatar avatar={match.members.find((m) => m.uid === player.uid)?.avatar} />
-				<!--
-					ІМʼЯ, ДВОКРАПКА Й РАХУНОК — ОДИН елемент флексу, а не три.
+						Прохання автора дослівно: «статуси треба ставити на початку» — замість
+						«Плавна Манта: 0 (немає звʼязку)» очікується «(немає звʼязку) Плавна
+						Манта: 0». Причина не в смаку: у хвості позначка стоїть ПІСЛЯ рахунку,
+						тобто щоб дізнатися стан гравця, доводиться дочитати плитку до кінця, а
+						на вузькому екрані ще й після переносу. Попереду вона читається як мітка
+						рядка — так само, як мітка теки стоїть перед назвою, а не після.
 
-					`.board__player` — це `inline-flex` із проміжком, а проміжок стосується
-					КОЖНОЇ дитини. Доти позначка стояла в цьому ж потоці, і двокрапка
-					відʼїжджала від неї на ті самі пʼять пікселів: «Дикий Манул ВИ : 0».
-					Позначки звідси пішли, але обгортка лишається — вона й тримає інваріант,
-					а не сподівається на те, що сусідні текстові вузли злипнуться самі.
-				-->
-				<span class="board__who">{player.name}: {scoreOf(player.uid)}</span>
-			</span>
-		{/each}
+						Побічний виграш: `role="status"` на самій плитці. Доти «суперник зник»
+						оголошувала панель застою, і саме той рядок прибрано як дубль; тепер
+						оголошує плитка, у якій пілюля зʼявляється. Регіон живе з монтування, тож
+						поява пілюлі — саме та зміна, яку скрінрідер читає (регіон, створений
+						РАЗОМ із вмістом, не оголошує нічого).
+					-->
+					<span
+						class="board__player text-panel"
+						class:board__player--turn={player.uid === match.actor?.id}
+						class:board__player--other={tileScale(player.uid) !== 1}
+						class:board__player--away={!online.includes(player.uid)}
+						role="status"
+						data-testid="pairs-player-{player.uid}-status"
+					>
+						{#if player.uid === me}<YouTag />{/if}
+						<!--
+							СТАН СЛОВАМИ, а не лише стилем.
+
+							Доти «немає звʼязку» передавалося перекресленням і прозорістю — тобто
+							скрінрідер не отримував нічого, а очима це читалося як «видалено» або
+							«недоступно», хоч людина могла просто зайти в тунель. Тепер причина
+							написана, а стиль лишається підказкою, а не єдиним джерелом.
+						-->
+						{#if !online.includes(player.uid)}
+							<PlayerBadge tone="away">{@html formatFont(t('pairs.away'))}</PlayerBadge>
+						{/if}
+						<Flag code={match.members.find((m) => m.uid === player.uid)?.country} />
+						<Avatar avatar={match.members.find((m) => m.uid === player.uid)?.avatar} />
+						<!--
+							ІМʼЯ, ДВОКРАПКА Й РАХУНОК — на компʼютері всі разом,
+							на мобільному імʼя приховано для екрана, лишається рахунок біля аватарки.
+						-->
+						<span class="board__who">
+							<span class="board__name">{player.name}</span>
+							<span class="board__sep">: </span>
+							<b class="board__score-val">{scoreOf(player.uid)}</b>
+						</span>
+					</span>
+				{/each}
+			</div>
+		</div>
 		<span class="board__moves text-panel" data-testid="pairs-moves-value">
 			{@html formatFont(t('memory.moves'))}: {match.game.moves}
 		</span>
@@ -329,6 +346,7 @@
 		gap: var(--space-sm);
 		width: 100%;
 		min-height: 0;
+		container-type: inline-size;
 	}
 
 	/*
@@ -367,39 +385,57 @@
 	 * доти (`--space-md` → `--space-sm`): межу тепер тримає не порожнє місце, а
 	 * край плитки, і від великого проміжку рядок просто розповзався.
 	 */
-	.board__score {
+	.board__top {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-sm);
+		align-items: center;
 		justify-content: center;
+		gap: var(--space-sm);
+		width: 100%;
+	}
+
+	.board__score {
+		display: contents;
+	}
+
+	.scores-list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-sm);
 		font-variant-numeric: tabular-nums;
 	}
 
 	/* Чия черга — видно й тут: підпис вище відповідає на питання, табло показує рахунок. */
 	/* Прапор і підпис в один рядок: без цього прапор злітає на базову лінію. */
 	.board__player {
+		--k: 1;
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
+		gap: calc(5px * var(--k));
+		padding: calc(4px * var(--k)) calc(var(--space-sm) * var(--k));
+		border-radius: var(--radius-sm);
+		font-size: calc(var(--font-size-sm) * var(--k));
+		--avatar-box: calc(22px * var(--k));
 	}
 
-	/*
-	 * Плитки вужчі за `.text-panel`: та розрахована на абзац, а тут рядок із
-	 * прапором і числом. Скоупований селектор специфічніший за глобальний, тож
-	 * перекриття тут навмисне — а не нічия, яку розвʼязує бандлер
-	 * (SVELTE-UI-v8 § 3.6).
-	 */
-	.board__player,
-	.board__moves {
-		padding: 4px var(--space-sm);
+	.board__player--other {
+		--k: 0.88;
 	}
 
-	/*
-	 * Рядковий потік: усередині нього проміжок флексу не діє, тож двокрапка
-	 * лишається впритул до імені, а перенос на вузькому екрані рве рядок по
-	 * пробілу, а не по елементах.
-	 */
+	.board__player :global(.flag) {
+		width: auto;
+		height: calc(14px * var(--k));
+	}
+
 	.board__who {
+		display: inline;
+	}
+
+	.board__name,
+	.board__sep,
+	.board__score-val {
 		display: inline;
 	}
 
@@ -407,19 +443,7 @@
 	 * ЧИЯ ЧЕРГА — ОБВОДКА, А НЕ КОЛІР ТЕКСТУ.
 	 *
 	 * Прохання автора: «колір тексту не міняти, а робити обводку гравця, що
-	 * ходить». Причин, чому це краще, дві, і жодна не про смак.
-	 *
-	 * По-перше, `outline` не входить у розкладку: обводка зʼявляється й зникає, не
-	 * зсунувши ні плитку, ні рядок, ні дошку під ним. Рамка (`border`) на цьому ж
-	 * місці штовхала б сусідів на два пікселі туди-сюди щохода.
-	 *
-	 * По-друге, акцентний текст на плитці — це другий колір тексту в рядку, і його
-	 * контраст доводилося міряти окремо в кожній із чотирьох тем
-	 * (`src/contrast.test.ts`). Обводка тримає контраст сама, бо стоїть на межі
-	 * плитки й тла, а текст лишається тим самим текстом.
-	 *
-	 * Жирність лишається: це другий носій тієї самої ознаки, не колір, і на
-	 * монохромному екрані вона єдина, що працює.
+	 * ходить».
 	 */
 	.board__player--turn {
 		font-weight: var(--font-weight-bold);
@@ -429,24 +453,76 @@
 
 	/*
 	 * Звʼязок обірвався. Не «вийшов»: людина могла просто зайти в тунель.
-	 *
-	 * ПЕРЕКРЕСЛЕННЯ ПРИБРАНО НАВМИСНО. Воно означає «видалено» — а гравець нікуди
-	 * не подівся: його рахунок лишається в силі, його черга лишається його. Стан
-	 * тепер написаний словами на початку плитки (пілюля `badge--away`), тож стилю
-	 * досить бути приглушенням, а не окремим твердженням.
 	 */
 	.board__player--away {
 		opacity: 0.75;
 	}
 
-	/*
-	 * `opacity` тут БІЛЬШЕ НЕМА. Плитка вже відділяє рахунок ходів від гравців
-	 * формою, а приглушення на цій панелі одного разу вже впиралося в 4.5:1
-	 * (`src/contrast.test.ts`). Кегль лишається тим самим: це не другорядне
-	 * число, просто інша річ.
-	 */
 	.board__moves {
 		display: inline-flex;
 		align-items: center;
+		padding: 4px var(--space-sm);
+	}
+
+	/*
+	 * НА МОБІЛЬНОМУ / ВУЗЬКОМУ ЕКРАНІ (до 560px, як у Вікторині):
+	 * один горизонтальний рядок, без розривів на 4 окремі рядки.
+	 * Ім'я приховане для екрана (залишене для скрінрідера),
+	 * видно [Прапор] [Аватар] [Рахунок].
+	 */
+	@container (max-width: 559px) {
+		.board__top {
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.scores-shell {
+			display: block;
+			width: 100%;
+			max-width: 100%;
+			overflow-x: auto;
+		}
+
+		.scores-list {
+			flex-wrap: nowrap;
+			justify-content: safe center;
+			gap: var(--space-xs);
+		}
+
+		.board__player {
+			--a: clamp(18px, calc((100vw - 40px) / var(--weight) / 3), 32px);
+			flex-shrink: 0;
+			padding: calc(var(--a) * 0.16 * var(--k)) calc(var(--a) * 0.28 * var(--k));
+			gap: calc(var(--a) * 0.2 * var(--k));
+			--avatar-box: calc(var(--a) * var(--k));
+		}
+
+		.board__player :global(.flag) {
+			height: calc(var(--a) * 0.64 * var(--k));
+		}
+
+		.board__name,
+		.board__sep,
+		.board__player :global(.badge) {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			margin: -1px;
+			padding: 0;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+			border: 0;
+		}
+
+		.board__score-val {
+			font-size: calc(var(--a) * 0.75 * var(--k));
+			font-weight: var(--font-weight-bold);
+		}
+
+		.board__moves {
+			font-size: var(--font-size-xs);
+			padding: 2px var(--space-sm);
+		}
 	}
 </style>

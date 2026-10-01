@@ -106,6 +106,8 @@ const BACKED_BY_PARENT: Record<string, string> = {
 	// її відкриває сам вибір, а не сторінка.
 	'src/lib/components/reserve/ReserveTrial.svelte':
 		'перевірка у вікні вибору, фон дає .care-window',
+	'src/lib/components/FullscreenAlready.svelte':
+		'вміст вікна «На весь екран», фон дає .offer__window',
 	'src/lib/components/ErrorFallback.svelte': 'екран помилки — суцільна картка',
 	// Панелі заповідника малюються ЛИШЕ всередині `BottomSheet`, і фон дає він.
 	// Свій фон тут був би панеллю на панелі — двома шарами того самого кольору

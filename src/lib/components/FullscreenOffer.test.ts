@@ -39,6 +39,7 @@ if (!('showModal' in HTMLElement.prototype)) {
 
 const toggle = vi.fn();
 const canPromptInstall = vi.fn(() => false);
+const isAppAlreadyInstalled = vi.fn(async () => false);
 const promptInstall = vi.fn(
 	async (): Promise<'accepted' | 'dismissed' | 'unavailable'> => 'accepted'
 );
@@ -46,7 +47,7 @@ const promptInstall = vi.fn(
 vi.mock('$lib/i18n', () => ({ t: (key: string) => key, formatFont: (s: string) => s }));
 vi.mock('$lib/i18n/install', () => ({ loadInstallText: async () => uk }));
 vi.mock('$lib/services/settings.svelte', () => ({ settings: { locale: 'uk' } }));
-vi.mock('$lib/pwa/installPrompt', () => ({ canPromptInstall, promptInstall }));
+vi.mock('$lib/pwa/installPrompt', () => ({ canPromptInstall, isAppAlreadyInstalled, promptInstall }));
 
 const { default: FullscreenOffer } = await import('./FullscreenOffer.svelte');
 
@@ -120,6 +121,25 @@ describe('вибір: браузер уміє, застосунок не вст�
 		);
 		expect(screen.queryByTestId('fullscreen-offer-lead-text')).toBeNull();
 		expect(screen.getByRole('heading').textContent).toContain(uk['install.title.desktop']);
+	});
+
+	it('«Встановити», коли додаток уже встановлено — показує екран «Застосунок уже встановлено»', async () => {
+		isAppAlreadyInstalled.mockResolvedValueOnce(true);
+		const { onclose, dialog } = open('choice', WINDOWS_CHROME);
+		await fireEvent.click(screen.getByTestId('fullscreen-offer-install-btn'));
+		expect(promptInstall).not.toHaveBeenCalled();
+		expect(onclose).not.toHaveBeenCalled();
+		expect(screen.getByRole('heading').textContent).toContain(uk['install.title.already']);
+		expect(screen.getByTestId('fullscreen-offer-already-lead-text').textContent).toContain(
+			uk['install.alreadyInstalled.lead']
+		);
+		expect(screen.getByTestId('fullscreen-offer-already-hint-text').textContent).toContain(
+			uk['install.alreadyInstalled.hint']
+		);
+		// Перехід у повний екран за кнопкою
+		await fireEvent.click(screen.getByTestId('fullscreen-offer-already-browser-btn'));
+		expect(dialog.hasAttribute('open')).toBe(false);
+		expect(toggle).toHaveBeenCalledTimes(1);
 	});
 });
 

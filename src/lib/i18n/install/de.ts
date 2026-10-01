@@ -19,10 +19,15 @@ export const install: Record<string, string> = {
 	'install.title.iphone': 'Auf iPhone installieren',
 	'install.title.ipad': 'Auf iPad installieren',
 	'install.title.app': 'App installieren',
+	'install.title.already': 'App bereits installiert',
 	'install.title.android': 'Auf Android installieren',
 	'install.title.desktop': 'Auf Computer installieren',
 	'install.title.mac': 'Auf Mac installieren',
 	'install.title.inApp': 'Spiel im Browser öffnen',
+
+	'install.alreadyInstalled.lead': 'VetCrewGames ist auf diesem Gerät bereits installiert.',
+	'install.alreadyInstalled.hint':
+		'Sie können sie vom Startbildschirm öffnen, um ohne Browserleisten zu spielen, oder hier im Vollbildmodus fortfahren.',
 
 	'install.note.manual':
 		'Die Sicherheitsregeln des Browsers erlauben keine Installation mit einem Tippen, daher sind ein paar Schritte selbst zu erledigen:',

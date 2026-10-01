@@ -16,7 +16,10 @@ import { GUIDES } from '$lib/pwa/installGuide';
  * інструкціями (`installGuide.ts`) і самим вікном.
  */
 
-const WINDOW = 'src/lib/components/FullscreenOffer.svelte';
+const WINDOWS = [
+	'src/lib/components/FullscreenOffer.svelte',
+	'src/lib/components/FullscreenAlready.svelte'
+];
 
 /** Ключі, які читають вікно й інструкції. */
 function usedKeys(): Set<string> {
@@ -27,8 +30,10 @@ function usedKeys(): Set<string> {
 		if (guide.warning) keys.add(guide.warning);
 		for (const step of guide.steps) keys.add(step.text);
 	}
-	for (const match of readFileSync(WINDOW, 'utf8').matchAll(/'(install\.[\w.]+)'/g)) {
-		keys.add(match[1]);
+	for (const path of WINDOWS) {
+		for (const match of readFileSync(path, 'utf8').matchAll(/'(install\.[\w.]+)'/g)) {
+			keys.add(match[1]);
+		}
 	}
 	return keys;
 }

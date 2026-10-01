@@ -1,4 +1,7 @@
+import { browser } from '$app/environment';
+import { isStandalone } from '$lib/services/fullscreen.svelte';
 import { logService } from '$lib/services/logService.svelte';
+import { storage } from '$lib/services/storage';
 
 /**
  * ВСТАНОВЛЕННЯ ОДНИМ НАТИСКОМ — там, де браузер це дає (прохання автора 2026-09-29).
@@ -63,3 +66,36 @@ export async function promptInstall(): Promise<InstallOutcome> {
 		return 'unavailable';
 	}
 }
+
+/**
+ * Чи вже встановлено додаток на цьому пристрої.
+ *
+ * Перевіряє три джерела:
+ * 1. Вікно вже запущено в standalone (`isStandalone`);
+ * 2. API `navigator.getInstalledRelatedApps()` (Chromium);
+ * 3. Локальний прапорець `vetcrewgames_installed` від події `appinstalled`.
+ */
+export async function isAppAlreadyInstalled(): Promise<boolean> {
+	if (!browser) return false;
+	if (isStandalone()) return true;
+
+	if ('getInstalledRelatedApps' in navigator && typeof navigator.getInstalledRelatedApps === 'function') {
+		try {
+			const apps = await (
+				navigator as Navigator & {
+					getInstalledRelatedApps: () => Promise<Array<{ id?: string; platform?: string; url?: string }>>;
+				}
+			).getInstalledRelatedApps();
+			if (apps && apps.length > 0) return true;
+		} catch {
+			// не підтримується або заблоковано браузером
+		}
+	}
+
+	if (storage.get('installed') === 'true') {
+		return true;
+	}
+
+	return false;
+}
+

@@ -1,34 +1,11 @@
 <script lang="ts">
+	import { Check, Copy } from 'lucide-svelte';
 	import { t, formatFont } from '$lib/i18n';
 	import { logService } from '$lib/services/logService.svelte';
 
 	/**
 	 * QR-код на кімнату: навів камеру — зайшов.
-	 *
-	 * ## Навіщо, якщо код і так на екрані
-	 *
-	 * Код диктують уголос, а це працює лише коли співрозмовник поруч або на
-	 * зв'язку. QR закриває найчастіший випадок «удвох в одній кімнаті з двома
-	 * телефонами»: другий телефон не набирає нічого, і помилитися в цифрі
-	 * неможливо. Посилання в адресі для цього вже є (`?room=…`) — тут лишається
-	 * лише показати його камері.
-	 *
-	 * ## Бібліотека, а не власний кодувальник
-	 *
-	 * QR — це Ріда—Соломона поверх бітового потоку з масками; своя реалізація на
-	 * триста рядків дала б код, який неможливо перевірити тут: неправильний QR не
-	 * падає, він просто не сканується. `qrcode-generator` — класична реалізація
-	 * Kazuhiko Arase, MIT, без залежностей.
-	 *
-	 * Імпорт ДИНАМІЧНИЙ: бібліотека потрібна лише в лобі спільної партії, і в
-	 * бандл кожного відвідувача їй нема чого потрапляти.
-	 *
-	 * ## Чому SVG, а не canvas
-	 *
-	 * Canvas дає растр: на екрані з подвійною щільністю точки розмиваються, а
-	 * сканеру потрібні чіткі межі. SVG малює рівно ті квадрати, що є в матриці, і
-	 * лишається чітким на будь-якому масштабі. Плюс один `<path>` замість
-	 * тисячі `<rect>` — інакше 33×33 модулі дали б понад пʼятсот вузлів.
+	 * Також надає кнопку копіювання посилання, щоб зайти можна було в один клік.
 	 */
 	interface Props {
 		/** Повне посилання на кімнату. Порожнє — не малюємо нічого. */
@@ -39,6 +16,21 @@
 
 	/** Розмір матриці й шлях її темних модулів. `null` — ще не порахували. */
 	let matrix = $state<{ size: number; path: string } | null>(null);
+	let copied = $state(false);
+	let copiedTimeout: ReturnType<typeof setTimeout> | undefined;
+
+	async function copyUrl() {
+		try {
+			await navigator.clipboard.writeText(url);
+			copied = true;
+			clearTimeout(copiedTimeout);
+			copiedTimeout = setTimeout(() => {
+				copied = false;
+			}, 2500);
+		} catch (error) {
+			logService.warn('ui', 'clipboard copy denied', { reason: String(error) });
+		}
+	}
 
 	/**
 	 * Тиха зона — ЧОТИРИ модулі, як вимагає стандарт.
@@ -124,6 +116,20 @@
 			<path d={matrix.path} fill="#000000" />
 		</svg>
 		<span class="qr__hint">{@html formatFont(t('pairs.qrHint'))}</span>
+		<button
+			type="button"
+			class="btn-secondary qr__copy-btn"
+			onclick={copyUrl}
+			data-testid="room-qr-copy-btn"
+		>
+			{#if copied}
+				<Check size={18} aria-hidden="true" />
+				<span>{@html formatFont(t('pairs.linkCopied'))}</span>
+			{:else}
+				<Copy size={18} aria-hidden="true" />
+				<span>{@html formatFont(t('pairs.copyLink'))}</span>
+			{/if}
+		</button>
 	</div>
 {/if}
 
@@ -132,7 +138,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--space-xs);
+		gap: var(--space-sm);
 		width: 100%;
 	}
 
@@ -159,5 +165,19 @@
 	.qr__hint {
 		font-size: var(--font-size-xs);
 		text-align: center;
+	}
+
+	.qr__copy-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-xs);
+		min-height: 40px;
+		width: 100%;
+		padding: 0 var(--space-md);
+		border-radius: var(--radius-sm);
+		font: inherit;
+		font-size: var(--font-size-sm);
+		cursor: pointer;
 	}
 </style>

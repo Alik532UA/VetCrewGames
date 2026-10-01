@@ -18,10 +18,15 @@ export const install: Record<string, string> = {
 	'install.title.iphone': 'Встановити на iPhone',
 	'install.title.ipad': 'Встановити на iPad',
 	'install.title.app': 'Встановити застосунок',
+	'install.title.already': 'Застосунок уже встановлено',
 	'install.title.android': 'Встановити на Android',
 	'install.title.desktop': 'Встановити на компʼютер',
 	'install.title.mac': 'Встановити на Mac',
 	'install.title.inApp': 'Відкрийте гру в браузері',
+
+	'install.alreadyInstalled.lead': 'VetCrewGames уже додано на цей пристрій як застосунок.',
+	'install.alreadyInstalled.hint':
+		'Ви можете відкрити його з головного екрана для гри без панелей браузера, або продовжити на весь екран тут.',
 
 	'install.note.manual':
 		'Система безпеки браузера не дозволяє встановити застосунок одним натиском, тож кілька кроків треба зробити самостійно:',
