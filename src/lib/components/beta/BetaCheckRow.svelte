@@ -143,7 +143,7 @@
 		border-width: 2px;
 	}
 	.row.row--skip {
-		border-color: var(--color-info, #3b82f6);
+		border-color: #3b82f6;
 		border-width: 2px;
 	}
 
@@ -172,7 +172,7 @@
 		--vote-ok: var(--color-success, #22c55e);
 		--vote-fail: var(--color-error, #ef4444);
 		--vote-unclear: var(--color-warning, #eab308);
-		--vote-skip: var(--color-info, #3b82f6);
+		--vote-skip: #3b82f6;
 	}
 
 	.vote--ok {
