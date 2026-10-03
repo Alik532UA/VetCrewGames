@@ -61,7 +61,7 @@ export const COVERAGE_ORDER: Record<Coverage, number> = { manual: 0, testable: 1
  * саме те, що бінарне «так/ні» округляє до «так». Взято з чеклиста сусіднього
  * проєкту, де ці ж чотири стани стоять кнопками під кожним пунктом.
  */
-export type Vote = 'none' | 'fail' | 'weird' | 'ok';
+export type Vote = 'none' | 'ok' | 'fail' | 'unclear' | 'skip' | 'weird';
 
 export interface BetaCheck {
 	/**

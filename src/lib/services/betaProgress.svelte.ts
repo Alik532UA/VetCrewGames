@@ -23,13 +23,7 @@ export interface Mark {
 	version: string;
 }
 
-const VOTES: readonly Vote[] = ['fail', 'weird', 'ok'];
-
-function isMark(value: unknown): value is Mark {
-	if (typeof value !== 'object' || value === null) return false;
-	const m = value as Record<string, unknown>;
-	return VOTES.includes(m.vote as Vote) && typeof m.version === 'string';
-}
+const VOTES: readonly Vote[] = ['ok', 'fail', 'unclear', 'skip'];
 
 /**
  * Прочитане зі сховища — НЕДОВІРЕНИЙ ВВІД (BETA-CHECKLIST-v9 § 8.6).
@@ -48,7 +42,14 @@ function readMarks(): Record<string, Mark> {
 	const known = new Set(allBetaChecks().map((check) => check.id));
 	const out: Record<string, Mark> = {};
 	for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
-		if (known.has(id) && isMark(value)) out[id] = value;
+		if (!known.has(id)) continue;
+		if (typeof value === 'object' && value !== null) {
+			const m = value as Record<string, unknown>;
+			const vote = m.vote === 'weird' ? 'unclear' : m.vote;
+			if (VOTES.includes(vote as Vote) && typeof m.version === 'string') {
+				out[id] = { vote: vote as Vote, version: m.version };
+			}
+		}
 	}
 	return out;
 }

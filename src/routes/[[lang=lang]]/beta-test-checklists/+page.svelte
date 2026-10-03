@@ -52,6 +52,24 @@
 	const uk = $derived(checklistLang !== null ? checklistLang === 'uk' : lang === 'uk');
 
 	let tabId = $state(BETA_TABS[0].id);
+
+	function selectTab(id: string) {
+		tabId = id;
+		if (typeof window !== 'undefined') {
+			const url = new URL(window.location.href);
+			url.searchParams.set('tab', id);
+			window.history.replaceState(window.history.state, '', url.href);
+		}
+	}
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const param = new URL(window.location.href).searchParams.get('tab');
+		if (param && BETA_TABS.some((candidate) => candidate.id === param)) {
+			tabId = param;
+		}
+	});
+
 	let tab = $derived(BETA_TABS.find((candidate) => candidate.id === tabId) ?? BETA_TABS[0]);
 
 	/**
@@ -207,7 +225,7 @@
 		тестувальника — прочитав пункт, шукає, де це на сайті. Показаний той
 		САМИЙ перелік, тож розійтися з дійсністю непоміченим він не може.
 	-->
-	<p class="screens text-panel">
+	<p class="screens text-panel" data-sveltekit-preload-data="off">
 		{#each tab.routes as route (route)}
 			<a
 				class="screens__link"
@@ -235,7 +253,7 @@
 				class="seg-item"
 				class:seg-item--on={candidate.id === tabId}
 				aria-pressed={candidate.id === tabId}
-				onclick={() => (tabId = candidate.id)}
+				onclick={() => selectTab(candidate.id)}
 				data-testid="beta-tab-{candidate.id}-btn"
 			>
 				{@html formatFont(uk ? candidate.title.uk : candidate.title.en)}
@@ -428,8 +446,7 @@
 	 * пару `--color-text-on-panel` на `.text-panel` заміряно в усіх чотирьох
 	 * темах (`src/contrast.test.ts`).
 	 */
-	.meta__link,
-	.screens__link {
+	.meta__link {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -437,6 +454,27 @@
 		min-height: 44px;
 		color: var(--color-text-on-panel);
 		text-decoration: underline;
+	}
+
+	.screens__link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0 0.75rem;
+		border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+		border-radius: 6px;
+		background: var(--color-bg-surface, rgba(128, 128, 128, 0.08));
+		font-family: monospace;
+		font-size: 0.85rem;
+		color: var(--color-text-on-panel);
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	.screens__link:hover {
+		border-color: currentColor;
 	}
 
 	.meta__link--btn {

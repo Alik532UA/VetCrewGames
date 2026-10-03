@@ -14,12 +14,14 @@ import type { Mark } from '$lib/services/betaProgress.svelte';
  */
 
 /** Позначки в порядку розбору: спершу поламане. */
-const VOTE_ORDER: Vote[] = ['fail', 'weird', 'ok'];
+const VOTE_ORDER: Vote[] = ['fail', 'unclear', 'ok', 'skip'];
 
 const VOTE_LABEL: Record<Vote, string> = {
 	fail: 'НЕ ПРАЦЮЄ',
-	weird: 'ПРАЦЮЄ, АЛЕ ДИВНО',
+	unclear: 'НЕ ЗРОЗУМІЛО',
 	ok: 'працює',
+	skip: 'пропущено',
+	weird: 'НЕ ЗРОЗУМІЛО',
 	none: 'не перевірено'
 };
 
@@ -49,15 +51,16 @@ interface Line {
 function lineFor(check: BetaCheck, mark: Mark, tabTitle: string): Line {
 	const stale = mark.version;
 	const suspectTest = mark.vote === 'fail' && check.coverage === 'covered';
+	const vote = (mark.vote as string) === 'weird' ? 'unclear' : mark.vote;
 	const parts = [
-		`[${VOTE_LABEL[mark.vote]}] ${check.id} (${tabTitle})`,
+		`[${VOTE_LABEL[vote]}] ${check.id} (${tabTitle})`,
 		`    ${check.text.uk}`,
 		`    позначено на версії ${stale}`
 	];
 	if (suspectTest) {
 		parts.push(`    !!! ПУНКТ ПОКРИТО АВТОТЕСТОМ ${check.test} — тест не побачив цієї помилки`);
 	}
-	return { vote: mark.vote, text: parts.join('\n') };
+	return { vote, text: parts.join('\n') };
 }
 
 /**
