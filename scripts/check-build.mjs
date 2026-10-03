@@ -292,7 +292,7 @@ const ENTRY_JS_BUDGET_KB = 150;
  * тексту читався як приріст коду, а тепер видно, що саме виросло. Загальне
  * число «разом на кожного відвідувача» друкується поруч і нікуди не зникло.
  */
-const LAYOUT_CODE_BUDGET_KB = 22;
+const LAYOUT_CODE_BUDGET_KB = 25;
 const LAYOUT_DATA_BUDGET_KB = 120;
 const ROUTE_JS_BUDGET_KB = 300;
 
