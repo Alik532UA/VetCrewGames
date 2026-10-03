@@ -1,7 +1,7 @@
 {
 	"name": "app",
 	"private": true,
-	"version": "0.6.658",
+	"version": "0.6.659",
 	"type": "module",
 	"engines": {
 		"node": ">=22.12.0"
@@ -71,5 +71,9 @@
 		"lucide-svelte": "^1.0.1",
 		"qrcode-generator": "2.0.4",
 		"three": "^0.185.1"
+	},
+	"overrides": {
+		"@grpc/grpc-js": "^1.14.0",
+		"cookie": "^0.7.2"
 	}
 }
