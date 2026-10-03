@@ -218,26 +218,6 @@
 	</p>
 
 	<!--
-		КУДИ ЙТИ ПО ЦЮ ВКЛАДКУ (§ 8.4, `BETA-SCREEN-LINKS`).
-
-		Перелік маршрутів вкладки лежав у даних невикористаним: його читав лише
-		інваріант § 5.1. При одинадцяти вкладках це найдовший крок у роботі
-		тестувальника — прочитав пункт, шукає, де це на сайті. Показаний той
-		САМИЙ перелік, тож розійтися з дійсністю непоміченим він не може.
-	-->
-	<p class="screens text-panel" data-sveltekit-preload-data="off">
-		{#each tab.routes as route (route)}
-			<a
-				class="screens__link"
-				href={langPath(lang, route)}
-				data-testid="beta-screen-{screenTid(route)}-link"
-			>
-				{route === '' ? '/' : route}
-			</a>
-		{/each}
-	</p>
-
-	<!--
 		ПОСТУП НА КОЖНІЙ ВКЛАДЦІ (§ 8.1), а не лише загальний.
 
 		Вкладок одинадцять, у найбільшій — 33 пункти. Загальне «17 / 169» не
@@ -267,6 +247,26 @@
 			</button>
 		{/each}
 	</nav>
+
+	<!--
+		КУДИ ЙТИ ПО ЦЮ ВКЛАДКУ (§ 8.4, `BETA-SCREEN-LINKS`).
+
+		Перелік маршрутів вкладки лежав у даних невикористаним: його читав лише
+		інваріант § 5.1. При одинадцяти вкладках це найдовший крок у роботі
+		тестувальника — прочитав пункт, шукає, де це на сайті. Показаний той
+		САМИЙ перелік, тож розійтися з дійсністю непоміченим він не може.
+	-->
+	<p class="screens text-panel" data-sveltekit-preload-data="off">
+		{#each tab.routes as route (route)}
+			<a
+				class="screens__link"
+				href={langPath(lang, route)}
+				data-testid="beta-screen-{screenTid(route)}-link"
+			>
+				{route === '' ? '/' : route}
+			</a>
+		{/each}
+	</p>
 
 	{#each LEVELS as level (level.coverage)}
 		{@const items = ordered.filter((check) => check.coverage === level.coverage)}
