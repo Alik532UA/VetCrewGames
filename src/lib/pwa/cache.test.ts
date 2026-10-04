@@ -20,7 +20,7 @@ const release: Release = {
 	build: [`${BASE}/_app/immutable/entry/start.A.js`, `${BASE}/_app/immutable/assets/0.B.css`],
 	files: [
 		`${BASE}/favicon.svg`,
-		`${BASE}/fonts/inglobal.woff2`,
+		`${BASE}/fonts/shantell-sans-regular.woff2`,
 		`${BASE}/images/animals/cat.webp`,
 		`${BASE}/app-version.json`,
 		// У справжньому переліку статики його немає (він із `_app/`, а не зі `static/`), і
@@ -156,7 +156,9 @@ describe('що воркер бере на себе', () => {
 		expect(kind('https://x.firebasedatabase.app/.lp?id=1')).toBe('pass');
 		expect(kind(`${BASE}/`, { method: 'POST' })).toBe('pass');
 		expect(
-			kind(`${BASE}/fonts/inglobal.woff2`, { headers: new Headers({ range: 'bytes=0-1' }) })
+			kind(`${BASE}/fonts/shantell-sans-regular.woff2`, {
+				headers: new Headers({ range: 'bytes=0-1' })
+			})
 		).toBe('pass');
 		expect(kind('/Slovko/')).toBe('pass');
 	});
@@ -253,7 +255,7 @@ describe('встановлення', () => {
 		[`${BASE}/_app/immutable/assets/0.B.css`]: () => new Response('css'),
 		[`${BASE}/_app/env.js`]: () => new Response('env'),
 		[`${BASE}/favicon.svg`]: () => new Response('svg'),
-		[`${BASE}/fonts/inglobal.woff2`]: () => new Response('font'),
+		[`${BASE}/fonts/shantell-sans-regular.woff2`]: () => new Response('font'),
 		[`${BASE}/manifest.webmanifest`]: () => new Response('{}'),
 		[`${BASE}/images/animals/cat.webp`]: () => new Response('img')
 	};
@@ -270,7 +272,7 @@ describe('встановлення', () => {
 				`${BASE}/_app/immutable/entry/start.A.js`,
 				`${BASE}/en/`,
 				`${BASE}/favicon.svg`,
-				`${BASE}/fonts/inglobal.woff2`,
+				`${BASE}/fonts/shantell-sans-regular.woff2`,
 				`${BASE}/images/animals/cat.webp`,
 				`${BASE}/manifest.webmanifest`
 			].sort()

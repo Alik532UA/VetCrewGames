@@ -16,19 +16,20 @@ export type { Theme };
  * заведений одним джерелом правди.
  */
 export type Locale = Language;
-export type Font = 'inglobal' | 'e-ukraine';
+export type Font = 'shantell-sans' | 'e-ukraine';
 /** Яку смугу прокрутки малювати: системну чи власну (SCROLLBAR-v8 § 2.2). */
 export type ScrollbarMode = 'standard' | 'custom';
 
 const LOCALES: readonly Locale[] = LANGUAGES;
-const FONTS: readonly Font[] = ['inglobal', 'e-ukraine'];
+const FONTS: readonly Font[] = ['shantell-sans', 'e-ukraine'];
 const SCROLLBAR_MODES: readonly ScrollbarMode[] = ['standard', 'custom'];
 
 const DARK_SCHEME_THEMES: readonly Theme[] = ['dark', 'orange-purple'];
 
 const isTheme = (value: string | null): value is Theme => THEMES.includes(value as Theme);
 const isLocale = (value: string | null): value is Locale => LOCALES.includes(value as Locale);
-const isFont = (value: string | null): value is Font => FONTS.includes(value as Font);
+const isFont = (value: string | null): value is Font =>
+	FONTS.includes(value as Font) || value === 'inglobal';
 const isScrollbarMode = (value: string | null): value is ScrollbarMode =>
 	SCROLLBAR_MODES.includes(value as ScrollbarMode);
 
@@ -55,7 +56,7 @@ const isScrollbarMode = (value: string | null): value is ScrollbarMode =>
 class Settings {
 	theme = $state<Theme>('dark');
 	locale = $state<Locale>('uk');
-	font = $state<Font>('inglobal');
+	font = $state<Font>('shantell-sans');
 	/*
 	 * SYNC: значення за замовчуванням і ключ сховища продубльовані в інлайн-скрипті
 	 * `src/app.html`. Розходження видно як зміну вигляду смуги під час гідрації —
@@ -129,7 +130,12 @@ class Settings {
 		if (isScrollbarMode(savedScrollbar)) this.scrollbarMode = savedScrollbar;
 
 		const savedFont = storage.get('font');
-		if (isFont(savedFont)) this.font = savedFont;
+		if (savedFont === 'inglobal') {
+			this.font = 'shantell-sans';
+			storage.set('font', 'shantell-sans');
+		} else if (isFont(savedFont)) {
+			this.font = savedFont;
+		}
 		this.#applyFont();
 
 		// Типове значення — `true`: скорочення діють, доки їх не вимкнули. Ключа

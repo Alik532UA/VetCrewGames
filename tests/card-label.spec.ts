@@ -556,7 +556,7 @@ test.describe('підпис на зображенні', () => {
 					return caption.getBoundingClientRect().height;
 				};
 				// Шрифт вантажиться на вимогу: без цього міряється запасний.
-				await document.fonts.load('700 16px Inglobal', words.join(' '));
+				await document.fonts.load('700 16px "Shantell Sans"', words.join(' '));
 				await document.fonts.ready;
 
 				const broken: string[] = [];

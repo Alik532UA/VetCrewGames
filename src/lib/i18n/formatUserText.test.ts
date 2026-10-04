@@ -36,8 +36,8 @@ describe('formatUserText', () => {
 		expect(formatUserText('A & "B" \'C\'')).toContain('A &amp; &quot;B&quot; &#39;C&#39;');
 	});
 
-	it('форматування літер лишається: «Ї» у запасному шрифті, як і в словнику', () => {
+	it('українські літери лишаються рідними символами', () => {
 		const out = formatUserText('Їжак');
-		expect(out).toMatch(/<span class="font-comfortaa"[^>]*>Ї<\/span>/);
+		expect(out).toBe('Їжак');
 	});
 });

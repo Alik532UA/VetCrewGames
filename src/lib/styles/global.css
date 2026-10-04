@@ -47,9 +47,33 @@ html[data-theme='winter'] {
 
 /* ===== Fonts ===== */
 @font-face {
-	font-family: 'Inglobal';
-	src: url('/fonts/inglobal.woff2') format('woff2');
+	font-family: 'Shantell Sans';
+	src: url('/fonts/shantell-sans-regular.woff2') format('woff2');
 	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Shantell Sans';
+	src: url('/fonts/shantell-sans-bold.woff2') format('woff2');
+	font-weight: bold;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Inglobal';
+	src: url('/fonts/shantell-sans-regular.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Inglobal';
+	src: url('/fonts/shantell-sans-bold.woff2') format('woff2');
+	font-weight: bold;
 	font-style: normal;
 	font-display: swap;
 }
@@ -125,7 +149,7 @@ html[data-theme='winter'] {
 /* ===== Design Tokens ===== */
 :root {
 	/* Typography fallback */
-	--font-main: 'Inglobal', 'e-Ukraine', system-ui, sans-serif;
+	--font-main: 'Shantell Sans', 'e-Ukraine', system-ui, sans-serif;
 
 	/* Spacing */
 	--space-xs: 0.25rem;
@@ -223,8 +247,9 @@ html[data-theme='winter'] {
 	--font-weight-bold: 700;
 }
 
+[data-font='shantell-sans'],
 [data-font='inglobal'] {
-	--font-main: 'Inglobal', 'e-Ukraine', system-ui, sans-serif;
+	--font-main: 'Shantell Sans', 'e-Ukraine', system-ui, sans-serif;
 }
 
 [data-font='e-ukraine'] {
