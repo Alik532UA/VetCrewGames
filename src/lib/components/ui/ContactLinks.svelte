@@ -23,10 +23,10 @@
 	let { scope }: { scope: string } = $props();
 
 	const CONTACTS = [
-		{ id: 'telegram', name: 'Telegram', url: 'https://t.me/alik532' },
-		{ id: 'viber', name: 'Viber', url: 'viber://chat?number=%2B380937251208' },
-		{ id: 'whatsapp', name: 'WhatsApp', url: 'https://wa.me/380937251208' },
-		{ id: 'linkedin', name: 'LinkedIn', url: 'https://linkedin.com/in/alik-qa-engineer' }
+		{ id: 'telegram', icon: 'message_telegram_512.svg', name: 'Telegram', url: 'https://t.me/alik532' },
+		{ id: 'viber', icon: 'message_viber_512.svg', name: 'Viber', url: 'viber://chat?number=%2B380937251208' },
+		{ id: 'whatsapp', icon: 'message_whatsapp_512.svg', name: 'WhatsApp', url: 'https://wa.me/380937251208' },
+		{ id: 'linkedin', icon: 'message_linkedin_512.svg', name: 'LinkedIn', url: 'https://linkedin.com/in/alik-qa-engineer' }
 	] as const;
 </script>
 
@@ -43,7 +43,7 @@
 				aria-label={`${t('problem.writeVia')} ${contact.name}`}
 				data-testid="{scope}-contact-{contact.id}-link"
 			>
-				<img src={asset(`/svg/social/${contact.id}.svg`)} alt="" width="28" height="28" />
+				<img src={asset(`/svg/social/${contact.icon}`)} alt="" width="28" height="28" />
 			</a>
 		</li>
 	{/each}
