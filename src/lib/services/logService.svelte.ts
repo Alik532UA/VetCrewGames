@@ -58,8 +58,8 @@ function scrubText(text: string): string {
 	return text.replace(EMAIL, '«пошта»').replace(JWT, '«токен»');
 }
 
-export function scrubPII(value: unknown, seen = new WeakSet()): unknown {
-	return scrub(value, seen);
+export function scrubPII(value: unknown): unknown {
+	return scrub(value);
 }
 
 function scrub(value: unknown, depth = 0): unknown {
