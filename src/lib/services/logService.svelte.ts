@@ -173,6 +173,26 @@ class LogService {
 		return this.logs;
 	}
 
+	getReport(): string {
+		const inBrowser = typeof window !== 'undefined';
+		const header = [
+			'--- LOG REPORT ---',
+			`DATE: ${new Date().toISOString()}`,
+			`VERSION: ${this.appVersion}`,
+			`URL: ${inBrowser ? window.location.href : 'SSR'}`,
+			`DEVICE: ${inBrowser ? navigator.userAgent : 'SSR'}`,
+			`ONLINE: ${inBrowser ? navigator.onLine : 'n/a'}`,
+			`ERRORS: ${this.errorCount}`,
+			'---'
+		].join('\n');
+
+		const body = this.logs
+			.map((l) => `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.category.toUpperCase()}] ${l.message}`)
+			.join('\n');
+
+		return `${header}\n--- RECENT LOGS ---\n${body}`;
+	}
+
 	clear() {
 		this.logs = [];
 		this.errorCount = 0;
