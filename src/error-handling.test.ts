@@ -117,4 +117,39 @@ describe('обробка помилок (ERROR-HANDLING-v8 § 7)', () => {
 			/onerror=\{[\s\S]{0,200}logService\.error/
 		);
 	});
+
+	it('експортує базовий клас AppError та підкласи (§ 1.1–§ 1.2)', async () => {
+		const errors = await import('$lib/errors');
+		expect(errors.AppError).toBeDefined();
+		expect(errors.ValidationError).toBeDefined();
+		expect(errors.NotFoundError).toBeDefined();
+		expect(errors.NetworkError).toBeDefined();
+		expect(errors.AuthError).toBeDefined();
+
+		const appErr = new errors.AppError('TEST_CODE', 'Test message');
+		expect(appErr.code).toBe('TEST_CODE');
+		expect(appErr.name).toBe('AppError');
+	});
+
+	it('маппер errorToMessageKey повертає власні ключі для кожного класу (§ 4.1)', async () => {
+		const { errorToMessageKey, ValidationError, NotFoundError, NetworkError, AuthError } =
+			await import('$lib/errors');
+
+		const keys = new Set<string>();
+		const samples = [
+			new ValidationError({ field: 'err' }),
+			new NotFoundError('item'),
+			new NetworkError('failed'),
+			new AuthError()
+		];
+
+		for (const err of samples) {
+			const key = errorToMessageKey(err);
+			expect(key).not.toBe('errors.unexpected');
+			expect(keys.has(key), `дублікат ключа для ${err.name}`).toBe(false);
+			keys.add(key);
+		}
+
+		expect(errorToMessageKey(new Error('raw'))).toBe('errors.unexpected');
+	});
 });

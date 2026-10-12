@@ -5,6 +5,7 @@ import { logService } from '$lib/services/logService.svelte';
 import { hasAccount } from '$lib/services/accountFlag';
 import { chunkMissing, reloadOnce } from '$lib/utils/staleBuild';
 import type { HandleClientError } from '@sveltejs/kit';
+import { AppError } from '$lib/errors';
 
 /**
  * СИНХРОНІЗАЦІЯ РАХУНКУ — і лише для того, у кого є акаунт.
