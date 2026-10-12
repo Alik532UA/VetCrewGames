@@ -58,6 +58,10 @@ function scrubText(text: string): string {
 	return text.replace(EMAIL, '«пошта»').replace(JWT, '«токен»');
 }
 
+export function scrubPII(value: unknown, seen = new WeakSet()): unknown {
+	return scrub(value, seen);
+}
+
 function scrub(value: unknown, depth = 0): unknown {
 	// Обмеження глибини — не оптимізація: об'єкт із циклічним посиланням інакше
 	// зациклює логер, а логер не має права зламати те, що логується (§ 1.5).

@@ -225,9 +225,7 @@ const config = {
 				'form-action': ['self']
 			}
 		},
-		paths: {
-			base: process.env.NODE_ENV === 'production' ? '/VetCrewGames' : ''
-		},
+		paths: { base: process.env.BASE_PATH ?? (process.env.NODE_ENV === 'production' ? '/VetCrewGames' : ''), relative: false },
 		/**
 		 * ЧИ НЕ ВИЙШЛА НОВА ЗБІРКА — питаємо раз на пʼять хвилин.
 		 *
