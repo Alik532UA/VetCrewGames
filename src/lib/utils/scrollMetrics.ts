@@ -37,10 +37,16 @@ export function readMetrics(el: HTMLElement): ScrollMetrics {
  * весь список простіше й надійніше, ніж вести діф.
  */
 export function watchScroller(el: HTMLElement, onChange: () => void): () => void {
+	let rafId = 0;
+	const scheduleChange = () => {
+		cancelAnimationFrame(rafId);
+		rafId = requestAnimationFrame(onChange);
+	};
+
 	const onScroll = () => onChange();
 	el.addEventListener('scroll', onScroll, { passive: true });
 
-	const resize = new ResizeObserver(onChange);
+	const resize = new ResizeObserver(scheduleChange);
 	resize.observe(el);
 	const observeChildren = () => {
 		for (const child of el.children) resize.observe(child);
@@ -49,11 +55,12 @@ export function watchScroller(el: HTMLElement, onChange: () => void): () => void
 
 	const mutations = new MutationObserver(() => {
 		observeChildren();
-		onChange();
+		scheduleChange();
 	});
 	mutations.observe(el, { childList: true });
 
 	return () => {
+		cancelAnimationFrame(rafId);
 		el.removeEventListener('scroll', onScroll);
 		resize.disconnect();
 		mutations.disconnect();

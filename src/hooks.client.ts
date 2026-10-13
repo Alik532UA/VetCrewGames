@@ -5,7 +5,6 @@ import { logService } from '$lib/services/logService.svelte';
 import { hasAccount } from '$lib/services/accountFlag';
 import { chunkMissing, reloadOnce } from '$lib/utils/staleBuild';
 import type { HandleClientError } from '@sveltejs/kit';
-import { AppError } from '$lib/errors';
 
 /**
  * СИНХРОНІЗАЦІЯ РАХУНКУ — і лише для того, у кого є акаунт.
@@ -159,6 +158,7 @@ const tracker =
  * `load` не бачив ні той, ні той, і у звіті бета-тестувальника її не було.
  */
 export const handleError: HandleClientError = async ({ error, event, status, message }) => {
+	if (typeof message === 'string' && message.includes('ResizeObserver loop')) return;
 	const route = event.route.id ?? 'unknown';
 	logService.error('app', 'Unhandled client error', { message, status, route });
 

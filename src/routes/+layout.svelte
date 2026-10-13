@@ -325,6 +325,7 @@
 			logService.error('app', 'Unhandled promise rejection', { reason: String(event.reason) });
 		};
 		const onError = (event: ErrorEvent) => {
+			if (event.message?.includes('ResizeObserver loop')) return;
 			logService.error('app', 'Window error', {
 				message: event.message,
 				source: event.filename,
