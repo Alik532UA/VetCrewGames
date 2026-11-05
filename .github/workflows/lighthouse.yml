@@ -9,7 +9,7 @@ name: Lighthouse
 
 on:
   workflow_run:
-    workflows: ["Deploy to GitHub Pages"]
+    workflows: ['Deploy to GitHub Pages']
     types: [completed]
   workflow_dispatch:
 
@@ -66,4 +66,3 @@ jobs:
           else
             echo "⚠️ Audit did not generate reports or was skipped." >> $GITHUB_STEP_SUMMARY
           fi
-
