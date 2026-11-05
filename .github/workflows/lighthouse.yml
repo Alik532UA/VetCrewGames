@@ -1,0 +1,69 @@
+name: Lighthouse
+
+# OBSERVABILITY-v9 § 4.2, CI-CD-AND-TOOLS-v9 § 1.18 — важкі аудити не блокують реліз.
+#
+# Як і в `teatralo4ka.odesa.ua` та `DigitalWorkshop`, Lighthouse винесено в окремий workflow, що
+# запускається після завершення основного деплою (`workflow_run`) або вручну
+# (`workflow_dispatch`). Завдяки цьому деплой сайту триває лічені хвилини й не
+# залежить від тривалих чи потенційно нестабільних прогонів браузерного аудиту.
+
+on:
+  workflow_run:
+    workflows: ["Deploy to GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: lighthouse
+  cancel-in-progress: false
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site for audit
+        id: build
+        run: npm run build
+
+      - name: Lighthouse Audit
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npx @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs
+
+      - name: Upload Lighthouse report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Add Lighthouse summary
+        if: ${{ always() }}
+        run: |
+          echo "## 🚦 Lighthouse CI Audit Result" >> $GITHUB_STEP_SUMMARY
+          echo "Target commit: \`${{ github.event.workflow_run.head_sha || github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -d .lighthouseci ]; then
+            echo "✅ Audit completed. Full HTML reports uploaded as artifact \`lighthouse-report\`." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Audit did not generate reports or was skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+
