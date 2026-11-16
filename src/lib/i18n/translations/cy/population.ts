@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Pwy sydd â mwy?',
+	'population.round': 'Rownd',
+	'population.description': 'Trefnwch o\'r Boblogaeth Leiaf i\'r Fwyaf',
+	'population.least': 'Lleiaf',
+	'population.middle': 'Canol',
+	'population.most': 'Mwyaf',
+	'population.check': 'Gwirio',
+	'population.nextRound': 'Nesaf',
+	'population.dropHere': 'Gollwng yma',
+	'population.yourAnimals': 'Llusgwch y cardiau i\'r slotiau uchod!',
+	'population.population': 'Poblogaeth',
+	'population.fact': 'Ffaith ddiddorol',
+	'unit.billion': 'biliwn',
+	'unit.million': 'miliwn',
+	'unit.trillion': 'triliwn',
+	'unit.thousand': 'mil',
+} as const;

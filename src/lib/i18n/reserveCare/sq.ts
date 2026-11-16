@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Dil vetë në terren',
+	'reserve.raid.selfHint': 'Pesë raunde të një mini-loje: mbi 70% e pikëve ndalon gjuetarët e paligjshëm.',
+	'reserve.care.title.vet': 'Kërkohet një veteriner',
+	'reserve.care.title.keeper': 'Kërkohet një kujdestar',
+	'reserve.care.hint.vet': 'Pa mjekim, shëndeti bie çdo ditë, dhe në nivelin zero kafsha ngordh.',
+	'reserve.care.hint.keeper': 'Pa përkujdesje, stresi shtohet, dhe niveli i lartë i stresit e bën të pamundur lëshimin në natyrë.',
+	'reserve.care.hire': 'Punëso një punonjës',
+	'reserve.care.perDay': 'ditë',
+	'reserve.care.self': 'Bëje vetë',
+	'reserve.care.trialScore': 'Pikë',
+	'reserve.care.trialNeed': 'nevojiten',
+	'reserve.care.selfHint': 'Pesë raunde të një mini-loje. Nevojiten mbi 70% të pikëve; dështimi gjithashtu harxhon ditën.',
+	'reserve.care.ignore': 'Mos bëj asgjë',
+	'reserve.care.done': 'Ia dole mbanë vetë.',
+	'reserve.care.failed': 'Nuk pati sukses — dita shkoi dëm.',
+} as const;

@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Min għandu l-aktar?',
+	'population.round': 'Rawnd',
+	'population.description': 'Irranġa mill-Iżgħar sal-Akbar Popolazzjoni',
+	'population.least': 'L-iżgħar',
+	'population.middle': 'Fin-nofs',
+	'population.most': 'L-akbar',
+	'population.check': 'Iċċekkja',
+	'population.nextRound': 'Li jmiss',
+	'population.dropHere': 'Qiegħed hawn',
+	'population.yourAnimals': 'Iġbed il-karti għal ġol-postijiet ta\' fuq!',
+	'population.population': 'Popolazzjoni',
+	'population.fact': 'Fatt interessanti',
+	'unit.billion': 'biljun',
+	'unit.million': 'miljun',
+	'unit.trillion': 'triljun',
+	'unit.thousand': 'elf',
+} as const;

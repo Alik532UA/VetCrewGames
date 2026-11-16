@@ -1,7 +1,9 @@
 # Vet Crew Games
 
-Набір розвиваючих ігор про тварин. Чотири мови інтерфейсу (`uk`, `en`, `de`,
-`nl`), чотири теми.
+Набір розвиваючих ігор про тварин. Підтримка 42 мов інтерфейсу (`uk`, `en`, `en-us`,
+`de`, `nl`, `be`, `pl`, `cs`, `sk`, `bg`, `hr`, `sl`, `mk`, `es`, `ca`, `fr`, `pt`,
+`it`, `ro`, `sv`, `no`, `da`, `is`, `ga`, `cy`, `et`, `lv`, `lt`, `fi`, `el`, `sq`,
+`crh`, `tr`, `ka`, `ja`, `ko`, `he`, `mt`, `chk`, `pon`, `kos`, `yap`), чотири теми.
 
 ## Ігри
 
@@ -37,7 +39,11 @@
 кожного звіряє інваріант.
 
 Мова живе в адресі: українська на голому шляху, решта за префіксом — `/en/`,
-`/de/`, `/nl/`, тобто `/en/game-population/` і так далі. Політика адрес — в
+`/en-us/`, `/de/`, `/nl/`, `/be/`, `/pl/`, `/cs/`, `/sk/`, `/bg/`, `/hr/`, `/sl/`,
+`/mk/`, `/es/`, `/ca/`, `/fr/`, `/pt/`, `/it/`, `/ro/`, `/sv/`, `/no/`, `/da/`,
+`/is/`, `/ga/`, `/cy/`, `/et/`, `/lv/`, `/lt/`, `/fi/`, `/el/`, `/sq/`, `/crh/`,
+`/tr/`, `/ka/`, `/ja/`, `/ko/`, `/he/`, `/mt/`, `/chk/`, `/pon/`, `/kos/`,
+`/yap/`, тобто `/en/game-population/` і так далі. Політика адрес — в
 одному модулі [`src/lib/i18n/routing.ts`](src/lib/i18n/routing.ts); посилання
 будуються `langPath()`, абсолютні адреси для canonical і sitemap — `langUrl()`.
 
@@ -91,7 +97,7 @@ CSP і теми дивляться на `npm run preview`, а не на `npm run
 - `paths.base` дорівнює `/VetCrewGames` у продакшені й `''` у dev, тож шлях, зашитий вручну, зламається на одному з двох;
 - `localStorage` спільний із сусідніми проєктами, тому всі ключі обов'язково мають префікс `vetcrewgames_`.
 
-Якщо колись з'явиться власний домен — не міняй `base` наосліп: набір граблів зібраний у [CUSTOM-DOMAIN-v9.md](../sveltekit-canon/selection_criteria/v9/ops/CUSTOM-DOMAIN-v9.md).
+Якщо колись з'явиться власний домен — не міняй `base` наосліп: набір граблів зібраний у [CUSTOM-DOMAIN-v9.md](../../sveltekit-canon/selection_criteria/v9/ops/CUSTOM-DOMAIN-v9.md).
 
 ## Для AI-асистентів
 

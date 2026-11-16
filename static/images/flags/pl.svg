@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+    width="32"
+    height="24"
+    viewBox="0 0 32 24"
+    preserveAspectRatio="xMidYMid slice"
+    
+>
+    <rect width="32" height="12" y="0" fill="#fff" />
+    <rect width="32" height="12" y="12" fill="#DC143C" />
+</svg>

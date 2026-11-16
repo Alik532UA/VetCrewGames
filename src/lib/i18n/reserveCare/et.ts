@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Mine ise reidile',
+	'reserve.raid.selfHint': 'Viis minimängu vooru: üle 70% punktidest peatab salakütid.',
+	'reserve.care.title.vet': 'Vaja on loomaarsti',
+	'reserve.care.title.keeper': 'Vaja on talitajat',
+	'reserve.care.hint.vet': 'Ilma ravita halveneb tervis iga päevaga ja nulli jõudes loom sureb.',
+	'reserve.care.hint.keeper': 'Ilma hoolitsuseta stress kasvab ning kõrge stress teeb vabadusse laskmise võimatuks.',
+	'reserve.care.hire': 'Palka töötaja',
+	'reserve.care.perDay': 'päev',
+	'reserve.care.self': 'Tee ise',
+	'reserve.care.trialScore': 'Punktid',
+	'reserve.care.trialNeed': 'vaja',
+	'reserve.care.selfHint': 'Viis minimängu vooru. Vaja on üle 70% punktidest; ebaõnnestumisel kulub päev samuti tühja.',
+	'reserve.care.ignore': 'Ära tee midagi',
+	'reserve.care.done': 'Said ise hakkama.',
+	'reserve.care.failed': 'Ei õnnestunud — päev läks raisku.',
+} as const;

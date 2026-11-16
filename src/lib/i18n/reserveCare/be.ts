@@ -1,0 +1,17 @@
+export const reserveCare: Record<string, string> = {
+	'reserve.raid.self': 'Вийти самому',
+	'reserve.raid.selfHint': 'Пʼять раундів міні-гри: понад 70% балів — браконьєрів зупинено.',
+	'reserve.care.title.vet': 'Потрібен лікар',
+	'reserve.care.title.keeper': 'Потрібен доглядач',
+	'reserve.care.hint.vet': 'Без лікування здоровʼя падає щодня, а на нулі тварина помирає.',
+	'reserve.care.hint.keeper': 'Без догляду стрес росте, і при високому стресі випуск неможливий.',
+	'reserve.care.hire': 'Найняти працівника',
+	'reserve.care.perDay': 'день',
+	'reserve.care.self': 'Зробити самому',
+	'reserve.care.trialScore': 'Балів',
+	'reserve.care.trialNeed': 'потрібно',
+	'reserve.care.selfHint': 'Пʼять раундів міні-гри. Потрібно понад 70% балів; провал теж витрачає день.',
+	'reserve.care.ignore': 'Нічого не робити',
+	'reserve.care.done': 'Ви впоралися самі.',
+	'reserve.care.failed': 'Не вийшло — день витрачено даремно.',
+};

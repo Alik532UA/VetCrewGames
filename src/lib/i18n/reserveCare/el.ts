@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Βγες έξω μόνος σου',
+	'reserve.raid.selfHint': 'Πέντε γύροι ενός μίνι παιχνιδιού: πάνω από 70% των πόντων σταματά τους λαθροθήρες.',
+	'reserve.care.title.vet': 'Χρειάζεται κτηνίατρος',
+	'reserve.care.title.keeper': 'Χρειάζεται φροντιστής',
+	'reserve.care.hint.vet': 'Χωρίς θεραπεία η υγεία πέφτει κάθε μέρα, και στο μηδέν το ζώο πεθαίνει.',
+	'reserve.care.hint.keeper': 'Χωρίς φροντίδα το στρες αυξάνεται, και το υψηλό στρες καθιστά την επανένταξη αδύνατη.',
+	'reserve.care.hire': 'Πρόσληψη εργαζομένου',
+	'reserve.care.perDay': 'ημέρα',
+	'reserve.care.self': 'Κάν\' το μόνος σου',
+	'reserve.care.trialScore': 'Πόντοι',
+	'reserve.care.trialNeed': 'απαιτούνται',
+	'reserve.care.selfHint': 'Πέντε γύροι ενός μίνι παιχνιδιού. Απαιτείται πάνω από 70% των πόντων· η αποτυχία αναλώνει επίσης την ημέρα.',
+	'reserve.care.ignore': 'Μην κάνεις τίποτα',
+	'reserve.care.done': 'Τα κατάφερες μόνος σου.',
+	'reserve.care.failed': 'Δεν πέτυχε — η ημέρα χάθηκε άδικα.',
+} as const;

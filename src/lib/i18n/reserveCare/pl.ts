@@ -1,0 +1,17 @@
+export const reserveCare: Record<string, string> = {
+	'reserve.raid.self': 'Wyjdź sam',
+	'reserve.raid.selfHint': 'Pięć rund minigry: ponad 70% wyniku – zatrzymanie kłusowników.',
+	'reserve.care.title.vet': 'Potrzebuję lekarza',
+	'reserve.care.title.keeper': 'Potrzebny opiekun',
+	'reserve.care.hint.vet': 'Bez leczenia zdrowie spada z każdym dniem, a przy zera zwierzę umiera.',
+	'reserve.care.hint.keeper': 'Bez opieki stres narasta, a przy dużym stresie uwolnienie jest niemożliwe.',
+	'reserve.care.hire': 'Zatrudnij pracownika',
+	'reserve.care.perDay': 'dzień',
+	'reserve.care.self': 'Zrób to sam',
+	'reserve.care.trialScore': 'Baliv',
+	'reserve.care.trialNeed': 'potrzeba',
+	'reserve.care.selfHint': 'Pięć rund minigier. Wymagane jest uzyskanie ponad 70% punktów; porażka również marnuje dzień.',
+	'reserve.care.ignore': 'Nie rób nic',
+	'reserve.care.done': 'Sam to zrobiłeś.',
+	'reserve.care.failed': 'Nie udało się – dzień stracony.',
+};

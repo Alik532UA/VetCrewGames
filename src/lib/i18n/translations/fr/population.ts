@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Qui est le plus nombreux ?',
+	'population.round': 'Manche',
+	'population.description': 'Trier de la plus petite à la plus grande population',
+	'population.least': 'Plus petite',
+	'population.middle': 'Moyenne',
+	'population.most': 'Plus grande',
+	'population.check': 'Vérifier',
+	'population.nextRound': 'Suivant',
+	'population.dropHere': 'Déposer ici',
+	'population.yourAnimals': 'Glissez les cartes dans les emplacements ci-dessus !',
+	'population.population': 'Population',
+	'population.fact': 'Le saviez-vous ?',
+	'unit.billion': 'milliard',
+	'unit.million': 'million',
+	'unit.trillion': 'billion',
+	'unit.thousand': 'mille',
+} as const;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '$lib/styles/global.css';
 	import '$lib/styles/animations.css';
-	import { t, formatFont } from '$lib/i18n/index';
+	import { t, formatFont, ensureLocaleLoaded } from '$lib/i18n/index';
 	import { logService } from '$lib/services/logService.svelte';
 	import { settings } from '$lib/services/settings.svelte';
 	import { scrollbar } from '$lib/controllers/scrollbar.svelte';
@@ -77,6 +77,7 @@
 	// оновиться розмітка, інакше один кадр показує попередню.
 	$effect.pre(() => {
 		settings.applyRouteLocale(routeLanguage);
+		void ensureLocaleLoaded(routeLanguage);
 	});
 
 	/** «Хвіст» адреси без мови — спільний для всіх мовних версій цієї сторінки. */

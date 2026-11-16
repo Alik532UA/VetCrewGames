@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kush ka popullatë më të madhe?',
+	'population.round': 'Raundi',
+	'population.description': 'Rendit nga popullata më e vogël te më e madhja',
+	'population.least': 'Më e vogla',
+	'population.middle': 'E mesmja',
+	'population.most': 'Më e madhja',
+	'population.check': 'Kontrollo',
+	'population.nextRound': 'Vazhdo',
+	'population.dropHere': 'Lësho këtu',
+	'population.yourAnimals': 'Tërhiq kartat te vendet më sipër!',
+	'population.population': 'Popullata',
+	'population.fact': 'Fakt interesant',
+	'unit.billion': 'miliardë',
+	'unit.million': 'milionë',
+	'unit.trillion': 'trilionë',
+	'unit.thousand': 'mijë',
+} as const;

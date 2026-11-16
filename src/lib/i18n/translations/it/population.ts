@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Chi è più numeroso?',
+	'population.round': 'Round',
+	'population.description': 'Ordina dalla popolazione più piccola a quella più grande',
+	'population.least': 'Minore',
+	'population.middle': 'Intermedio',
+	'population.most': 'Maggiore',
+	'population.check': 'Verifica',
+	'population.nextRound': 'Avanti',
+	'population.dropHere': 'Rilascia qui',
+	'population.yourAnimals': 'Trascina le carte negli slot in alto!',
+	'population.population': 'Popolazione',
+	'population.fact': 'Curiosità',
+	'unit.billion': 'miliardi',
+	'unit.million': 'milioni',
+	'unit.trillion': 'bilioni',
+	'unit.thousand': 'mila',
+} as const;

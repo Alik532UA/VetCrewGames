@@ -59,7 +59,7 @@ const RESOLVERS: Record<string, () => string> = {
 		const source = read('src/lib/i18n/routing.ts');
 		const list = source.match(/export const LANGUAGES: readonly Language\[\] = \[([^\]]*)\]/)?.[1];
 		expect(list, 'у routing.ts не знайдено LANGUAGES — джерело перейменували').toBeTruthy();
-		return [...(list as string).matchAll(/'([a-z]{2})'/g)].map((m) => m[1]).join(', ');
+		return [...(list as string).matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1]).join(', ');
 	},
 
 	/** Префікс сховища. Origin спільний із шістьма застосунками — ціна помилки чужі дані. */

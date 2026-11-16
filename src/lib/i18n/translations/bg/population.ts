@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Кой е по-многоброен?',
+	'population.round': 'Рунд',
+	'population.description': 'Подредете от най-малката към най-голямата популация',
+	'population.least': 'Най-малка',
+	'population.middle': 'Средна',
+	'population.most': 'Най-голяма',
+	'population.check': 'Провери',
+	'population.nextRound': 'Напред',
+	'population.dropHere': 'Пуснете тук',
+	'population.yourAnimals': 'Плъзнете картите в полетата по-горе!',
+	'population.population': 'Популация',
+	'population.fact': 'Интересен факт',
+	'unit.billion': 'милиарда',
+	'unit.million': 'милиона',
+	'unit.trillion': 'трилиона',
+	'unit.thousand': 'хиляди',
+} as const;

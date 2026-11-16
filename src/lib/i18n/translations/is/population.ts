@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Hverjir eru fleiri?',
+	'population.round': 'Umferð',
+	'population.description': 'Raðaðu frá fámennasta stofni til þess fjölmennasta',
+	'population.least': 'Fæstir',
+	'population.middle': 'Í miðju',
+	'population.most': 'Flestir',
+	'population.check': 'Athuga',
+	'population.nextRound': 'Næsta',
+	'population.dropHere': 'Slepptu hér',
+	'population.yourAnimals': 'Dragðu spjöldin í hólfin hér að ofan!',
+	'population.population': 'Stofnstærð',
+	'population.fact': 'Fróðleiksmoli',
+	'unit.billion': 'milljarður',
+	'unit.million': 'milljón',
+	'unit.trillion': 'billjón',
+	'unit.thousand': 'þúsund',
+} as const;

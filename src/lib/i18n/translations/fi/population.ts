@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kumpaa on enemmän?',
+	'population.round': 'Kierros',
+	'population.description': 'Järjestä pienimmästä kannasta suurimpaan',
+	'population.least': 'Pienin',
+	'population.middle': 'Keskimmäinen',
+	'population.most': 'Suurin',
+	'population.check': 'Tarkista',
+	'population.nextRound': 'Seuraava',
+	'population.dropHere': 'Pudota tähän',
+	'population.yourAnimals': 'Vedä kortit yllä oleviin ruutuihin!',
+	'population.population': 'Kanta',
+	'population.fact': 'Mielenkiintoinen fakta',
+	'unit.billion': 'miljardia',
+	'unit.million': 'miljoonaa',
+	'unit.trillion': 'biljoonaa',
+	'unit.thousand': 'tuhatta',
+} as const;

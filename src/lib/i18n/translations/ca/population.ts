@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Qui en té més?',
+	'population.round': 'Ronda',
+	'population.description': 'Ordena de menor a major població',
+	'population.least': 'La més petita',
+	'population.middle': 'Mitjana',
+	'population.most': 'La més gran',
+	'population.check': 'Comprova',
+	'population.nextRound': 'Següent',
+	'population.dropHere': 'Deixa anar aquí',
+	'population.yourAnimals': 'Arrossega les cartes a les caselles superiors!',
+	'population.population': 'Població',
+	'population.fact': 'Dada curiosa',
+	'unit.billion': 'mil milions',
+	'unit.million': 'milió',
+	'unit.trillion': 'bilió',
+	'unit.thousand': 'mil',
+} as const;

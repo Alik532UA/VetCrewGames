@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': '自分で出動する',
+	'reserve.raid.selfHint': '全5ラウンドのミニゲーム：70%以上のスコアを獲得すれば密猟者を阻止できます。',
+	'reserve.care.title.vet': '獣医師が必要です',
+	'reserve.care.title.keeper': '飼育員が必要です',
+	'reserve.care.hint.vet': '治療を行わないと毎日健康度が低下し、0になるとその動物は死亡します。',
+	'reserve.care.hint.keeper': '世話を怠るとストレスが蓄積し、ストレスが高すぎると野生復帰（放獣）ができなくなります。',
+	'reserve.care.hire': 'スタッフを雇う',
+	'reserve.care.perDay': '日',
+	'reserve.care.self': '自分で世話をする',
+	'reserve.care.trialScore': 'スコア',
+	'reserve.care.trialNeed': '必要スコア',
+	'reserve.care.selfHint': '全5ラウンドのミニゲーム。70%以上のスコアが必要です。失敗した場合も1日を消費します。',
+	'reserve.care.ignore': '何もしない',
+	'reserve.care.done': '自分で処置を完了しました。',
+	'reserve.care.failed': 'うまくいきませんでした。1日を無駄にしてしまいました。',
+} as const;

@@ -1,0 +1,17 @@
+export const reserveCare: Record<string, string> = {
+	'reserve.raid.self': 'Sal tú mismo',
+	'reserve.raid.selfHint': 'Cinco rondas de un minijuego: más del 70% de los puntos detiene a los cazadores furtivos.',
+	'reserve.care.title.vet': 'se necesita un veterinario',
+	'reserve.care.title.keeper': 'Se necesita un portero',
+	'reserve.care.hint.vet': 'Sin tratamiento, la salud disminuye todos los días y, en cero, el animal muere.',
+	'reserve.care.hint.keeper': 'Sin cuidado, el estrés crece y un estrés elevado hace que la liberación sea imposible.',
+	'reserve.care.hire': 'contratar un trabajador',
+	'reserve.care.perDay': 'dia',
+	'reserve.care.self': 'hazlo tu mismo',
+	'reserve.care.trialScore': 'Puntos',
+	'reserve.care.trialNeed': 'necesitar',
+	'reserve.care.selfHint': 'Cinco rondas de un minijuego. Se necesita más del 70% de los puntos; fallando también se pasa el día.',
+	'reserve.care.ignore': 'no hacer nada',
+	'reserve.care.done': 'Lo lograste tú mismo.',
+	'reserve.care.failed': 'No funcionó: el día se gastó en vano.',
+};

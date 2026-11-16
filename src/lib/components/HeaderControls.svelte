@@ -5,10 +5,11 @@
 	import { canFullscreen, fullscreen } from '$lib/services/fullscreen.svelte';
 	import { acceptsShortcut } from '$lib/services/keyboard';
 	import { settings } from '$lib/services/settings.svelte';
-	import { LANGUAGE_META, flagSrc, languageLabel } from '$lib/i18n/languages';
-	import { langPath, languageFromParam, routeRestFromId, type Language } from '$lib/i18n/routing';
+	import { flagSrc } from '$lib/i18n/languages';
+	import { langPath, languageFromParam, routeRestFromId } from '$lib/i18n/routing';
 	import { THEME_OPTIONS, type Theme } from '$lib/config/themes';
 	import HeaderMenu from './HeaderMenu.svelte';
+	import LanguageModal from './LanguageModal.svelte';
 	import DynamicIcon from './ui/DynamicIcon.svelte';
 	import { playerAvatar } from '$lib/services/playerAvatar.svelte';
 	import { paintAvatar } from '$lib/features/headerAvatar';
@@ -250,33 +251,32 @@
 	{/snippet}
 </HeaderMenu>
 
-<HeaderMenu
-	label={t('header.toggleLocale')}
-	keyshortcuts={settings.shortcutsEnabled ? 'L' : undefined}
-	testId="header-locale"
-	items={LANGUAGE_META.map((meta) => ({
-		id: meta.code,
-		label: languageLabel(meta.code),
-		href: langPath(meta.code, rest),
-		hreflang: meta.code,
-		active: meta.code === current
-	}))}
-	open={openMenu === 'lang'}
-	onToggle={(next) => (openMenu = next ? 'lang' : null)}
-	onselect={(id) => {
-		openMenu = null;
-		// Той самий вибір, що й раніше: пам'ятаємо мову, щоб голий шлях відкрився
-		// нею наступного разу.
-		settings.rememberLocale(id as Language);
-	}}
->
-	{#snippet trigger()}
+<div class="lang-container">
+	<button
+		type="button"
+		class="header-btn"
+		class:header-btn--active={openMenu === 'lang'}
+		onclick={(e) => {
+			e.stopPropagation();
+			openMenu = openMenu === 'lang' ? null : 'lang';
+		}}
+		aria-haspopup="dialog"
+		aria-expanded={openMenu === 'lang'}
+		aria-label={t('header.toggleLocale')}
+		aria-keyshortcuts={settings.shortcutsEnabled ? 'L' : undefined}
+		data-testid="header-locale-btn"
+	>
 		<img src={flagSrc(current)} alt="" class="flag" width="24" height="16" />
-	{/snippet}
-	{#snippet itemVisual(item)}
-		<img src={flagSrc(item.id as Language)} alt="" class="flag" width="24" height="16" />
-	{/snippet}
-</HeaderMenu>
+	</button>
+
+	{#if openMenu === 'lang'}
+		<LanguageModal
+			{current}
+			{rest}
+			onclose={() => (openMenu = null)}
+		/>
+	{/if}
+</div>
 
 <!--
 	АКАУНТ — ІКОНКОЮ В ШАПЦІ, між вибором мови й повним екраном.
@@ -343,6 +343,10 @@
 </a>
 
 <style>
+	.lang-container {
+		position: relative;
+		display: flex;
+	}
 	/*
 	 * Посилання в ряду іконок мусить виглядати кнопкою: клас той самий, що в
 	 * решти, а підкреслення тексту тут нема чого підкреслювати.

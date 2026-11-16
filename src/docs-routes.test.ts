@@ -56,7 +56,7 @@ describe(`факти ${README} проти routing.ts (PIT-DOC-FACTS)`, () => {
 		 * «Дві мови інтерфейсу (`uk`, `en`)» при чотирьох оголошених дає
 		 * «не названі: de, nl».
 		 */
-		const mentioned = [...text.matchAll(/`([a-z]{2})`/g)].map((m) => m[1]);
+		const mentioned = [...text.matchAll(/`([a-z]{2,3}(?:-[a-z]{2})?)`/g)].map((m) => m[1]);
 		const missing = LANGUAGES.filter((lang) => !mentioned.includes(lang));
 		expect(missing, `мова є на сайті й не названа в README: ${missing.join(', ')}`).toEqual([]);
 	});
@@ -79,7 +79,7 @@ describe(`факти ${README} проти routing.ts (PIT-DOC-FACTS)`, () => {
 			`мова живе в адресі, а README про її префікс не каже: ${missing.join(', ')}`
 		).toEqual([]);
 
-		const mentionedPrefixes = [...text.matchAll(/`\/([a-z]{2})\/`/g)].map((m) => m[1]);
+		const mentionedPrefixes = [...text.matchAll(/`\/([a-z]{2,3}(?:-[a-z]{2})?)\/`/g)].map((m) => m[1]);
 		const extra = [...new Set(mentionedPrefixes)].filter(
 			(code) => !(LANGUAGES as readonly string[]).includes(code)
 		);

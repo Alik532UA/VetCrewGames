@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Cine sunt mai mulți?',
+	'population.round': 'Rundă',
+	'population.description': 'Ordonează de la cea mai mică la cea mai mare populație',
+	'population.least': 'Cea mai mică',
+	'population.middle': 'Mijloc',
+	'population.most': 'Cea mai mare',
+	'population.check': 'Verifică',
+	'population.nextRound': 'Următoarea',
+	'population.dropHere': 'Plasează aici',
+	'population.yourAnimals': 'Trage cartonașele în sloturile de mai sus!',
+	'population.population': 'Populație',
+	'population.fact': 'Curiozitate',
+	'unit.billion': 'miliard',
+	'unit.million': 'milion',
+	'unit.trillion': 'trilion',
+	'unit.thousand': 'mie',
+} as const;

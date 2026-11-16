@@ -1,19 +1,13 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { LANGUAGES } from '$lib/i18n/routing';
+import { loadInstallText } from '$lib/i18n/install';
 import { install as uk } from '$lib/i18n/install/uk';
-import { install as en } from '$lib/i18n/install/en';
-import { install as de } from '$lib/i18n/install/de';
-import { install as nl } from '$lib/i18n/install/nl';
 import { GUIDES } from '$lib/pwa/installGuide';
 
 /**
  * Паритет ЛІНИВОГО словника вікна «На весь екран».
- *
- * `check:i18n` звіряє зібрані словники, а цей довантажується окремо — тобто без цієї
- * перевірки нова мова або новий ключ розійшлися б непомітно, і на екрані стояв би сам
- * ключ. Та сама форма, що в `i18n-awaited.test.ts`, плюс звірка з тим, хто ці ключі читає:
- * інструкціями (`installGuide.ts`) і самим вікном.
  */
 
 const WINDOWS = [
@@ -39,22 +33,23 @@ function usedKeys(): Set<string> {
 }
 
 describe('словник вікна «На весь екран»', () => {
-	const dicts = { uk, en, de, nl };
-
 	it('перевірка жива: ключі є', () => {
 		expect(Object.keys(uk).length).toBeGreaterThan(20);
 		expect(usedKeys().size).toBeGreaterThan(20);
+		expect(LANGUAGES).toHaveLength(42);
 	});
 
-	it('однаковий набір ключів у всіх мовах', () => {
+	it('однаковий набір ключів у всіх мовах', async () => {
 		const keys = Object.keys(uk).sort();
-		for (const [lang, dict] of Object.entries(dicts)) {
+		for (const lang of LANGUAGES) {
+			const dict = await loadInstallText(lang);
 			expect(Object.keys(dict).sort(), `${lang}: набір ключів розійшовся`).toEqual(keys);
 		}
 	});
 
-	it('жодного порожнього рядка', () => {
-		for (const [lang, dict] of Object.entries(dicts)) {
+	it('жодного порожнього рядка', async () => {
+		for (const lang of LANGUAGES) {
+			const dict = await loadInstallText(lang);
 			const empty = Object.entries(dict)
 				.filter(([, value]) => value.trim() === '')
 				.map(([key]) => key);

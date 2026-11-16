@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Fara sjálfur á vettvang',
+	'reserve.raid.selfHint': 'Fimm umferðir í smáleik: Meira en 70% stiga stöðvar veiðiþjófana.',
+	'reserve.care.title.vet': 'Dýralæknis er þörf',
+	'reserve.care.title.keeper': 'Dýrahirðis er þörf',
+	'reserve.care.hint.vet': 'Án meðferðar hrakar heilsunni daglega, og nái hún núlli deyr dýrið.',
+	'reserve.care.hint.keeper': 'Án umhirðu eykst streita, og mikil streita gerir sleppingu í náttúruna ómögulega.',
+	'reserve.care.hire': 'Ráða starfsmann',
+	'reserve.care.perDay': 'á dag',
+	'reserve.care.self': 'Gera sjálfur',
+	'reserve.care.trialScore': 'Stig',
+	'reserve.care.trialNeed': 'þarf',
+	'reserve.care.selfHint': 'Fimm umferðir í smáleik. Yfir 70% stiga þarf; ef mistekst fer dagurinn samt til spillis.',
+	'reserve.care.ignore': 'Gera ekkert',
+	'reserve.care.done': 'Þér tókst þetta sjálfum.',
+	'reserve.care.failed': 'Þetta gekk ekki — dagurinn fór til einskis.',
+} as const;

@@ -8,32 +8,13 @@ import {
 	randomCrewName
 } from './crewNames';
 import { animals } from './population-game';
-import { crew as uk } from '$lib/i18n/crew/uk';
-import { crew as en } from '$lib/i18n/crew/en';
-import { crew as de } from '$lib/i18n/crew/de';
-import { crew as nl } from '$lib/i18n/crew/nl';
+import { LANGUAGES as ALL_LANGUAGES } from '$lib/i18n/routing';
+import { loadCrewNames } from '$lib/i18n/crew';
 
-/**
- * Імена команди — дані, і в них є межа, яку ставить НЕ код.
- *
- * `database.rules.json` перевіряє `name` учасника: `newData.isString() &&
- * newData.val().length <= 48`. Довше імʼя база просто ВІДКИДАЄ, і виглядає це
- * як «не вдалося зайти в кімнату» — тобто найдорожчий різновид дефекту, бо
- * причина лежить у словнику, а падає мережа. Жоден інший гейт цієї пари не
- * бачить: `check:i18n` звіряє ключі, а не довжину, а правила бази не знають про
- * словник.
- *
- * МЕЖА БУЛА 24, і саме вона диктувала, які імена можна вигадати: німецьке
- * «Tollpatschiges Flusspferd» (25) доводилося різати до «Tapsiges Flusspferd».
- * Тепер 48 — і число тут мусить іти за правилом, а не жити своїм життям: якби
- * воно лишилося 24, тест стверджував би заборону, якої вже немає.
- *
- * Друга перевірка — на пусте місце. `td()` віддає САМ КЛЮЧ, коли перекладу
- * немає, тож забутий `pairs.crew.wombat` у німецькій показався б гравцеві
- * рядком «pairs.crew.wombat» замість імені. Паритет ключів у `check:i18n` це
- * вловив би лише якби ключ був відсутній у ВСІХ мовах, а не в одній.
- */
-const LANGUAGES = { uk, en, de, nl } as Record<string, Record<string, string>>;
+const LANGUAGES: Record<string, Record<string, string>> = {};
+for (const lang of ALL_LANGUAGES) {
+	LANGUAGES[lang] = await loadCrewNames(lang);
+}
 
 /** Межа з `database.rules.json`, а не з голови. */
 const NAME_MAX = 48;
@@ -44,7 +25,7 @@ describe('імена команди', () => {
 	it('перевірка жива: ключі й мови знайдено', () => {
 		expect(keys.length).toBeGreaterThan(50);
 		expect(keys).toHaveLength(CREW_NAME_COUNT);
-		expect(Object.keys(LANGUAGES)).toHaveLength(4);
+		expect(Object.keys(LANGUAGES)).toHaveLength(42);
 	});
 
 	/**

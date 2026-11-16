@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Lähde partioimaan itse',
+	'reserve.raid.selfHint': 'Viisieräinen minipeli: yli 70 % pisteistä pysäyttää salametsästäjät.',
+	'reserve.care.title.vet': 'Eläinlääkäriä tarvitaan',
+	'reserve.care.title.keeper': 'Eläintenhoitajaa tarvitaan',
+	'reserve.care.hint.vet': 'Ilman hoitoa terveys heikkenee päivittäin, ja nollassa eläin menehtyy.',
+	'reserve.care.hint.keeper': 'Ilman hoivaa stressi kasvaa, ja korkea stressitaso tekee luontoon palauttamisesta mahdotonta.',
+	'reserve.care.hire': 'Palkkaa työntekijä',
+	'reserve.care.perDay': 'päivä',
+	'reserve.care.self': 'Hoida itse',
+	'reserve.care.trialScore': 'Pisteet',
+	'reserve.care.trialNeed': 'vaaditaan',
+	'reserve.care.selfHint': 'Viisieräinen minipeli. Yli 70 % pisteistä vaaditaan; epäonnistuminen kuluttaa myös päivän.',
+	'reserve.care.ignore': 'Älä tee mitään',
+	'reserve.care.done': 'Selvisit siitä itse.',
+	'reserve.care.failed': 'Se ei onnistunut — päivä kului hukkaan.',
+} as const;

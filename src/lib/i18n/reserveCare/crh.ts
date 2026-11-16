@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Özüñ çıq',
+	'reserve.raid.selfHint': 'Mini-oyunnıñ beş raundı: ballarnıñ 70%-den ziyadesi brakonyerlerni toqtatır.',
+	'reserve.care.title.vet': 'Baytar kerek',
+	'reserve.care.title.keeper': 'Baqıcı kerek',
+	'reserve.care.hint.vet': 'Tedaviysiz sañ-selâmetlik er kün tüşe, sıfırda ise ayvan öle.',
+	'reserve.care.hint.keeper': 'Baqımsız stres arta, yüksek stres ise serbestlikke çıqaruvnı imkânsız ete.',
+	'reserve.care.hire': 'İşçi tut',
+	'reserve.care.perDay': 'kün',
+	'reserve.care.self': 'Özüñ yap',
+	'reserve.care.trialScore': 'Ballar',
+	'reserve.care.trialNeed': 'kerek',
+	'reserve.care.selfHint': 'Mini-oyunnıñ beş raundı. Ballarnıñ 70%-den ziyadesi kerek; muvafaqiyetsizlik de künni keri qaytarmaz.',
+	'reserve.care.ignore': 'İç bir şey yapma',
+	'reserve.care.done': 'Özüñ becerdiñ.',
+	'reserve.care.failed': 'Alınmadı — kün boşqa keçti.',
+} as const;

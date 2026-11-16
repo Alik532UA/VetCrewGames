@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Pojdi osebno',
+	'reserve.raid.selfHint': 'Pet krogov miniigre: več kot 70 % točk ustavi krivolovce.',
+	'reserve.care.title.vet': 'Potreben je veterinar',
+	'reserve.care.title.keeper': 'Potreben je oskrbnik',
+	'reserve.care.hint.vet': 'Brez zdravljenja se zdravje vsak dan poslabša, pri ničli pa žival pogine.',
+	'reserve.care.hint.keeper': 'Brez oskrbe se raven stresa zvišuje, visok stres pa onemogoča izpustitev v naravo.',
+	'reserve.care.hire': 'Zaposli delavca',
+	'reserve.care.perDay': 'dan',
+	'reserve.care.self': 'Poskrbi sam',
+	'reserve.care.trialScore': 'Točke',
+	'reserve.care.trialNeed': 'potrebno',
+	'reserve.care.selfHint': 'Pet krogov miniigre. Potrebnih je več kot 70 % točk; ob neuspehu prav tako izgubiš dan.',
+	'reserve.care.ignore': 'Ne ukrepaj',
+	'reserve.care.done': 'Uspelo ti je poskrbeti samemu.',
+	'reserve.care.failed': 'Ni uspelo — dan je bil zapravljen zaman.',
+} as const;

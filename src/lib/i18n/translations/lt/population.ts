@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kurių daugiau?',
+	'population.round': 'Raundas',
+	'population.description': 'Išrikiuokite nuo mažiausios iki didžiausios populiacijos',
+	'population.least': 'Mažiausia',
+	'population.middle': 'Vidutinė',
+	'population.most': 'Didžiausia',
+	'population.check': 'Tikrinti',
+	'population.nextRound': 'Kitas',
+	'population.dropHere': 'Meskite čia',
+	'population.yourAnimals': 'Vilkite korteles į viršuje esančius langelius!',
+	'population.population': 'Populiacija',
+	'population.fact': 'Įdomus faktas',
+	'unit.billion': 'milijardas',
+	'unit.million': 'milijonas',
+	'unit.trillion': 'trilijonas',
+	'unit.thousand': 'tūkstantis',
+} as const;

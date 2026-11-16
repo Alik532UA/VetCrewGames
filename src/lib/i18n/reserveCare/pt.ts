@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Ir pessoalmente',
+	'reserve.raid.selfHint': 'Cinco rodadas de um minijogo: mais de 70% dos pontos impede os caçadores ilegais.',
+	'reserve.care.title.vet': 'É necessário um veterinário',
+	'reserve.care.title.keeper': 'É necessário um tratador',
+	'reserve.care.hint.vet': 'Sem tratamento, a saúde diminui todos os dias; a zero, o animal morre.',
+	'reserve.care.hint.keeper': 'Sem cuidados, o estresse aumenta, e níveis elevados de estresse impossibilitam a soltura.',
+	'reserve.care.hire': 'Contratar um funcionário',
+	'reserve.care.perDay': 'dia',
+	'reserve.care.self': 'Fazer por conta própria',
+	'reserve.care.trialScore': 'Pontos',
+	'reserve.care.trialNeed': 'necessário',
+	'reserve.care.selfHint': 'Cinco rodadas de um minijogo. É necessário obter mais de 70% dos pontos; falhar também consome o dia.',
+	'reserve.care.ignore': 'Não fazer nada',
+	'reserve.care.done': 'Você cuidou disso por conta própria.',
+	'reserve.care.failed': 'Não deu certo — o dia foi gasto em vão.',
+} as const;

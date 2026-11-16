@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'თვითონ წადი რეიდზე',
+	'reserve.raid.selfHint': 'მინი-თამაშის ხუთი რაუნდი: ქულების 70%-ზე მეტი ბრაკონიერებს აჩერებს.',
+	'reserve.care.title.vet': 'საჭიროა ვეტერინარი',
+	'reserve.care.title.keeper': 'საჭიროა მომვლელი',
+	'reserve.care.hint.vet': 'მკურნალობის გარეშე ჯანმრთელობის დონე ყოველდღიურად იკლებს, ნულზე კი ცხოველი იღუპება.',
+	'reserve.care.hint.keeper': 'მოვლის გარეშე სტრესი იზრდება, მაღალი სტრესი კი ველურ ბუნებაში გაშვებას შეუძლებელს ხდის.',
+	'reserve.care.hire': 'დაიქირავე თანამშრომელი',
+	'reserve.care.perDay': 'დღეში',
+	'reserve.care.self': 'თვითონ გააკეთე',
+	'reserve.care.trialScore': 'ქულები',
+	'reserve.care.trialNeed': 'საჭიროა',
+	'reserve.care.selfHint': 'მინი-თამაშის ხუთი რაუნდი. საჭიროა ქულების 70%-ზე მეტი; მარცხის შემთხვევაშიც დღე დაკარგულად ითვლება.',
+	'reserve.care.ignore': 'არაფერი გააკეთო',
+	'reserve.care.done': 'თავად გაართვი თავი.',
+	'reserve.care.failed': 'არ გამოვიდა — დღე ფუჭად დაიკარგა.',
+} as const;

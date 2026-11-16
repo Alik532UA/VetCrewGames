@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Ποιο είναι πολυπληθέστερο;',
+	'population.round': 'Γύρος',
+	'population.description': 'Ταξινομήστε από τον μικρότερο στον μεγαλύτερο πληθυσμό',
+	'population.least': 'Μικρότερος',
+	'population.middle': 'Μεσαίος',
+	'population.most': 'Μεγαλύτερος',
+	'population.check': 'Έλεγχος',
+	'population.nextRound': 'Επόμενο',
+	'population.dropHere': 'Αφήστε εδώ',
+	'population.yourAnimals': 'Σύρετε τις κάρτες στις παραπάνω θέσεις!',
+	'population.population': 'Πληθυσμός',
+	'population.fact': 'Ενδιαφέρον στοιχείο',
+	'unit.billion': 'δισεκατομμύριο',
+	'unit.million': 'εκατομμύριο',
+	'unit.trillion': 'τρισεκατομμύριο',
+	'unit.thousand': 'χιλιάδα',
+} as const;

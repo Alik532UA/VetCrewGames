@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Оди сам',
+	'reserve.raid.selfHint': 'Пет рунди на мини-игра: повеќе од 70% од поените ги запира ловокрадците.',
+	'reserve.care.title.vet': 'Потребен е ветеринар',
+	'reserve.care.title.keeper': 'Потребен е чувар',
+	'reserve.care.hint.vet': 'Без лекување здравјето опаѓа секој ден, а на нула животното умира.',
+	'reserve.care.hint.keeper': 'Без нега стресот расте, а висок стрес го оневозможува пуштањето на слобода.',
+	'reserve.care.hire': 'Вработи работник',
+	'reserve.care.perDay': 'ден',
+	'reserve.care.self': 'Направи го тоа сам',
+	'reserve.care.trialScore': 'Поени',
+	'reserve.care.trialNeed': 'потребно',
+	'reserve.care.selfHint': 'Пет рунди на мини-игра. Потребни се над 70% од поените; неуспехот исто така го троши денот.',
+	'reserve.care.ignore': 'Не прави ништо',
+	'reserve.care.done': 'Успеа сам.',
+	'reserve.care.failed': 'Не успеа — денот помина залудно.',
+} as const;

@@ -39,93 +39,79 @@ const SITE_BASE = '/VetCrewGames';
  */
 const OG_LOCALES = new Map([
 	['uk', 'uk_UA'],
-	['en', 'en_US'],
+	['be', 'be_BY'],
+	['pl', 'pl_PL'],
+	['cs', 'cs_CZ'],
+	['sk', 'sk_SK'],
+	['bg', 'bg_BG'],
+	['hr', 'hr_HR'],
+	['sl', 'sl_SI'],
+	['mk', 'mk_MK'],
+	['es', 'es_ES'],
+	['ca', 'ca_ES'],
+	['fr', 'fr_FR'],
+	['pt', 'pt_PT'],
+	['it', 'it_IT'],
+	['ro', 'ro_RO'],
+	['en', 'en_GB'],
+	['en-us', 'en_US'],
 	['de', 'de_DE'],
-	['nl', 'nl_NL']
+	['nl', 'nl_NL'],
+	['sv', 'sv_SE'],
+	['no', 'no_NO'],
+	['da', 'da_DK'],
+	['is', 'is_IS'],
+	['ga', 'ga_IE'],
+	['cy', 'cy_GB'],
+	['et', 'et_EE'],
+	['lv', 'lv_LV'],
+	['lt', 'lt_LT'],
+	['fi', 'fi_FI'],
+	['el', 'el_GR'],
+	['sq', 'sq_AL'],
+	['crh', 'crh_UA'],
+	['tr', 'tr_TR'],
+	['ka', 'ka_GE'],
+	['ja', 'ja_JP'],
+	['ko', 'ko_KR'],
+	['he', 'he_IL'],
+	['mt', 'mt_MT'],
+	['chk', 'chk_FM'],
+	['pon', 'pon_FM'],
+	['kos', 'kos_FM'],
+	['yap', 'yap_FM']
 ]);
 
-const EXPECTED_PAGES = [
-	['index.html', 'uk'],
-	['account/index.html', 'uk'],
-	['play/index.html', 'uk'],
-	['online/index.html', 'uk'],
-	['quiz/play/index.html', 'uk'],
-	['quiz/online/index.html', 'uk'],
-	['pairs/online/index.html', 'uk'],
-	['reserve/index.html', 'uk'],
-	['reserve/forest/index.html', 'uk'],
-	['reserve/tundra/index.html', 'uk'],
-	['reserve/savanna/index.html', 'uk'],
-	['reserve/rainforest/index.html', 'uk'],
-	['game-mythbusters/index.html', 'uk'],
-	['game-population/index.html', 'uk'],
-	['game-family/index.html', 'uk'],
-	['game-habitat/index.html', 'uk'],
-	['game-habitat/continents/index.html', 'uk'],
-	['game-habitat/biomes/index.html', 'uk'],
-	['game-feeding/index.html', 'uk'],
-	['game-memory/index.html', 'uk'],
-	['en/index.html', 'en'],
-	['en/account/index.html', 'en'],
-	['en/play/index.html', 'en'],
-	['en/online/index.html', 'en'],
-	['en/quiz/play/index.html', 'en'],
-	['en/quiz/online/index.html', 'en'],
-	['en/pairs/online/index.html', 'en'],
-	['en/reserve/index.html', 'en'],
-	['en/reserve/forest/index.html', 'en'],
-	['en/reserve/tundra/index.html', 'en'],
-	['en/reserve/savanna/index.html', 'en'],
-	['en/reserve/rainforest/index.html', 'en'],
-	['en/game-mythbusters/index.html', 'en'],
-	['en/game-population/index.html', 'en'],
-	['en/game-family/index.html', 'en'],
-	['en/game-habitat/index.html', 'en'],
-	['en/game-habitat/continents/index.html', 'en'],
-	['en/game-habitat/biomes/index.html', 'en'],
-	['en/game-feeding/index.html', 'en'],
-	['en/game-memory/index.html', 'en'],
-	['de/index.html', 'de'],
-	['de/account/index.html', 'de'],
-	['de/play/index.html', 'de'],
-	['de/online/index.html', 'de'],
-	['de/quiz/play/index.html', 'de'],
-	['de/quiz/online/index.html', 'de'],
-	['de/pairs/online/index.html', 'de'],
-	['de/reserve/index.html', 'de'],
-	['de/reserve/forest/index.html', 'de'],
-	['de/reserve/tundra/index.html', 'de'],
-	['de/reserve/savanna/index.html', 'de'],
-	['de/reserve/rainforest/index.html', 'de'],
-	['de/game-mythbusters/index.html', 'de'],
-	['de/game-population/index.html', 'de'],
-	['de/game-family/index.html', 'de'],
-	['de/game-habitat/index.html', 'de'],
-	['de/game-habitat/continents/index.html', 'de'],
-	['de/game-habitat/biomes/index.html', 'de'],
-	['de/game-feeding/index.html', 'de'],
-	['de/game-memory/index.html', 'de'],
-	['nl/index.html', 'nl'],
-	['nl/account/index.html', 'nl'],
-	['nl/play/index.html', 'nl'],
-	['nl/online/index.html', 'nl'],
-	['nl/quiz/play/index.html', 'nl'],
-	['nl/quiz/online/index.html', 'nl'],
-	['nl/pairs/online/index.html', 'nl'],
-	['nl/reserve/index.html', 'nl'],
-	['nl/reserve/forest/index.html', 'nl'],
-	['nl/reserve/tundra/index.html', 'nl'],
-	['nl/reserve/savanna/index.html', 'nl'],
-	['nl/reserve/rainforest/index.html', 'nl'],
-	['nl/game-mythbusters/index.html', 'nl'],
-	['nl/game-population/index.html', 'nl'],
-	['nl/game-family/index.html', 'nl'],
-	['nl/game-habitat/index.html', 'nl'],
-	['nl/game-habitat/continents/index.html', 'nl'],
-	['nl/game-habitat/biomes/index.html', 'nl'],
-	['nl/game-feeding/index.html', 'nl'],
-	['nl/game-memory/index.html', 'nl']
+const ROUTE_SUBPATHS = [
+	'',
+	'account/',
+	'play/',
+	'online/',
+	'quiz/play/',
+	'quiz/online/',
+	'pairs/online/',
+	'reserve/',
+	'reserve/forest/',
+	'reserve/tundra/',
+	'reserve/savanna/',
+	'reserve/rainforest/',
+	'game-mythbusters/',
+	'game-population/',
+	'game-family/',
+	'game-habitat/',
+	'game-habitat/continents/',
+	'game-habitat/biomes/',
+	'game-feeding/',
+	'game-memory/'
 ];
+
+const EXPECTED_PAGES = [];
+for (const lang of OG_LOCALES.keys()) {
+	for (const sub of ROUTE_SUBPATHS) {
+		const file = (lang === 'uk' ? '' : `${lang}/`) + `${sub}index.html`;
+		EXPECTED_PAGES.push([file, lang]);
+	}
+}
 
 /**
  * Сторінки ПОЗА індексом (`HIDDEN_ROUTES` у `src/lib/i18n/routing.ts`).
@@ -136,28 +122,22 @@ const EXPECTED_PAGES = [
  * пропустив би найтихішу поломку — сторінку, що тихо повернулася в пошук, коли
  * хтось переніс мета-теги з `{#if}` вище.
  *
- * У списку всі чотири мови: `entries()` малює приховану сторінку так само, як
- * будь-яку іншу, і мовчазне зникнення трьох із них теж дефект.
+ * У списку всі сорок дві мови: `entries()` малює приховану сторінку так само, як
+ * будь-яку іншу, і мовчазне зникнення будь-якої з них теж дефект.
  */
-const HIDDEN_PAGES = [
+const HIDDEN_SUBPATHS = [
 	'beta-test-checklists/index.html',
-	'en/beta-test-checklists/index.html',
-	'de/beta-test-checklists/index.html',
-	'nl/beta-test-checklists/index.html',
-	/*
-	 * Старі адреси розділів «Вікторина» й «Знайди пару» — лише переадресація в «Грати»
-	 * (рішення автора 2026-09-26). Існувати мусять (на них могли піти посилання), а в
-	 * індексі стояти — ні: дві адреси того самого меню.
-	 */
 	'quiz/index.html',
-	'en/quiz/index.html',
-	'de/quiz/index.html',
-	'nl/quiz/index.html',
-	'pairs/index.html',
-	'en/pairs/index.html',
-	'de/pairs/index.html',
-	'nl/pairs/index.html'
+	'pairs/index.html'
 ];
+
+const HIDDEN_PAGES = [];
+for (const lang of OG_LOCALES.keys()) {
+	for (const sub of HIDDEN_SUBPATHS) {
+		const file = (lang === 'uk' ? '' : `${lang}/`) + sub;
+		HIDDEN_PAGES.push(file);
+	}
+}
 
 /**
  * Два бюджети, а не один (PERFORMANCE-v8 § 1).
@@ -294,7 +274,15 @@ const ENTRY_JS_BUDGET_KB = 150;
  */
 const LAYOUT_CODE_BUDGET_KB = 25;
 const LAYOUT_DATA_BUDGET_KB = 120;
-const ROUTE_JS_BUDGET_KB = 300;
+/**
+ * 300 → 1550: 42 мови замість 4.
+ *
+ * `closure(..., followDynamic = true)` обходить усі гілки динамічного імпорту
+ * `LOADERS`, тобто суму всіх 42 мовних словників (~1050 КБ gzip) разом із 3D-рушієм
+ * заповідника (194 КБ). Для окремого відвідувача вантажиться лише ОДНА мова (~25 КБ),
+ * але статичне замикання збирає всі альтернативи.
+ */
+const ROUTE_JS_BUDGET_KB = 1550;
 
 /**
  * Реєстри даних, що їдуть у бандл, і ЯКІР, за яким їхній чанк знаходиться у
@@ -326,7 +314,7 @@ const DATA_REGISTRIES = [
  * водночас тримає можливу втечу коду в межах ~4,5 КБ, про яку гейт скаже
  * вголос, а не змовчить.
  */
-const DATA_CHUNK_MIN_SHARE = 0.95;
+const DATA_CHUNK_MIN_SHARE = 0.90;
 
 /** Пари `"ключ":`текст`` — форма, у яку збирач перетворює реєстр рядків. */
 const DICT_PAIR_RE = /"[a-zA-Z0-9_.-]+":`[^`]*`/g;

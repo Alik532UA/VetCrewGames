@@ -9,7 +9,49 @@ import { resolve } from '$app/paths';
  * дають сайт, де адреса каже одне, а сторінка показує інше.
  */
 
-export type Language = 'uk' | 'en' | 'de' | 'nl';
+export type Language =
+	| 'uk'
+	| 'en'
+	| 'en-us'
+	| 'de'
+	| 'nl'
+	| 'be'
+	| 'pl'
+	| 'cs'
+	| 'sk'
+	| 'bg'
+	| 'hr'
+	| 'sl'
+	| 'mk'
+	| 'es'
+	| 'ca'
+	| 'fr'
+	| 'pt'
+	| 'it'
+	| 'ro'
+	| 'sv'
+	| 'no'
+	| 'da'
+	| 'is'
+	| 'ga'
+	| 'cy'
+	| 'et'
+	| 'lv'
+	| 'lt'
+	| 'fi'
+	| 'el'
+	| 'sq'
+	| 'crh'
+	| 'tr'
+	| 'ka'
+	| 'ja'
+	| 'ko'
+	| 'he'
+	| 'mt'
+	| 'chk'
+	| 'pon'
+	| 'kos'
+	| 'yap';
 
 /**
  * Мови, які сайт СПРАВДІ віддає. Порядок тут — порядок у перемикачі.
@@ -22,7 +64,62 @@ export type Language = 'uk' | 'en' | 'de' | 'nl';
  * Увімкнути мову — це дописати її сюди й покласти словник. Обидва кроки
  * стереже `src/i18n-completeness.test.ts`: він падає, якщо зроблено лише один.
  */
-export const LANGUAGES: readonly Language[] = ['uk', 'en', 'de', 'nl'];
+export const LANGUAGES: readonly Language[] = [
+	'uk',
+	'en',
+	'en-us',
+	'de',
+	'nl',
+	'be',
+	'pl',
+	'cs',
+	'sk',
+	'bg',
+	'hr',
+	'sl',
+	'mk',
+	'es',
+	'ca',
+	'fr',
+	'pt',
+	'it',
+	'ro',
+	'sv',
+	'no',
+	'da',
+	'is',
+	'ga',
+	'cy',
+	'et',
+	'lv',
+	'lt',
+	'fi',
+	'el',
+	'sq',
+	'crh',
+	'tr',
+	'ka',
+	'ja',
+	'ko',
+	'he',
+	'mt',
+	'chk',
+	'pon',
+	'kos',
+	'yap'
+];
+
+/** Повертає напрямок тексту: 'rtl' для івриту ('he'), 'ltr' для інших мов. */
+export function textDirection(lang: Language): 'rtl' | 'ltr' {
+	return lang === 'he' ? 'rtl' : 'ltr';
+}
+
+/** Канонічний BCP 47 код для атрибута lang/hreflang. */
+export function bcp47(lang: Language): string {
+	if (lang === 'en-us') return 'en-US';
+	if (lang === 'crh') return 'crh';
+	return lang;
+}
 
 /** Мова, що живе на ГОЛОМУ шляху: `/`, а не `/uk/`. */
 export const DEFAULT_LANGUAGE: Language = 'uk';

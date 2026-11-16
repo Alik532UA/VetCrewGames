@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Ge dig ut själv',
+	'reserve.raid.selfHint': 'Fem omgångar av ett minispel: över 70 % av poängen stoppar tjuvjägarna.',
+	'reserve.care.title.vet': 'En veterinär behövs',
+	'reserve.care.title.keeper': 'En djurskötare behövs',
+	'reserve.care.hint.vet': 'Utan behandling sjunker hälsan varje dag, och vid noll dör djuret.',
+	'reserve.care.hint.keeper': 'Utan omvårdnad ökar stressen, och hög stress gör frisläppning omöjlig.',
+	'reserve.care.hire': 'Anställ en medarbetare',
+	'reserve.care.perDay': 'dag',
+	'reserve.care.self': 'Gör det själv',
+	'reserve.care.trialScore': 'Poäng',
+	'reserve.care.trialNeed': 'krävs',
+	'reserve.care.selfHint': 'Fem omgångar av ett minispel. Över 70 % av poängen krävs; misslyckas du förbrukas ändå dagen.',
+	'reserve.care.ignore': 'Gör ingenting',
+	'reserve.care.done': 'Du klarade det själv.',
+	'reserve.care.failed': 'Det fungerade inte – dagen gick till spillo.',
+} as const;

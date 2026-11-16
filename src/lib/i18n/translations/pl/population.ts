@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kto jeszcze?',
+	'population.round': 'Okrągły',
+	'population.description': 'Ułóż populację od najmniejszej do największej',
+	'population.least': 'Najmniejszy',
+	'population.middle': 'średnia',
+	'population.most': 'Największy',
+	'population.check': 'sprawdź',
+	'population.nextRound': 'Następny',
+	'population.dropHere': 'Przeciągnij tutaj',
+	'population.yourAnimals': 'Przeciągnij karty do odpowiednich miejsc powyżej!',
+	'population.population': 'Ludność',
+	'population.fact': 'Ciekawy fakt',
+	'unit.billion': 'miliard',
+	'unit.million': 'milion',
+	'unit.trillion': 'bilion',
+	'unit.thousand': 'tysiąc',
+} as const;

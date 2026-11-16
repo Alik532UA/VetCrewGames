@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Hangisi daha çok?',
+	'population.round': 'Tur',
+	'population.description': 'En Küçük Popülasyondan En Büyüğe Doğru Sırala',
+	'population.least': 'En Küçük',
+	'population.middle': 'Orta',
+	'population.most': 'En Büyük',
+	'population.check': 'Kontrol Et',
+	'population.nextRound': 'Sonraki',
+	'population.dropHere': 'Buraya bırak',
+	'population.yourAnimals': 'Kartları yukarıdaki yuvalara sürükle!',
+	'population.population': 'Popülasyon',
+	'population.fact': 'İlginç bilgi',
+	'unit.billion': 'milyar',
+	'unit.million': 'milyon',
+	'unit.trillion': 'trilyon',
+	'unit.thousand': 'bin',
+} as const;

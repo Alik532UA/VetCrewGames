@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Iö a kon watte?',
+	'population.round': 'Roun',
+	'population.description': 'Afanafan seni mekisit me kukkun ngeni mekisit me watte ititin man',
+	'population.least': 'Kukkun mekisit',
+	'population.middle': 'Nukanap',
+	'population.most': 'Watte mekisit',
+	'population.check': 'Chekini',
+	'population.nextRound': 'Sopwosopwonó',
+	'population.dropHere': 'Nenien isoni ikei',
+	'population.yourAnimals': 'Attawa ekkewe kaat ngeni ekkewe neniyen asan!',
+	'population.population': 'Ititin aramas me man',
+	'population.fact': 'Poraus mi amusala',
+	'unit.billion': 'piirion',
+	'unit.million': 'miirion',
+	'unit.trillion': 'tiriirion',
+	'unit.thousand': 'ngéngéú',
+} as const;

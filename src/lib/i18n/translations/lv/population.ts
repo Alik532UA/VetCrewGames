@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kura ir vairāk?',
+	'population.round': 'Raunds',
+	'population.description': 'Sakārto no mazākās līdz lielākajai populācijai',
+	'population.least': 'Mazākā',
+	'population.middle': 'Vidējā',
+	'population.most': 'Lielākā',
+	'population.check': 'Pārbaudīt',
+	'population.nextRound': 'Nākamais',
+	'population.dropHere': 'Noliec šeit',
+	'population.yourAnimals': 'Velc kārtis uz lauciņiem augstāk!',
+	'population.population': 'Populācija',
+	'population.fact': 'Interesants fakts',
+	'unit.billion': 'miljards',
+	'unit.million': 'miljons',
+	'unit.trillion': 'triljons',
+	'unit.thousand': 'tūkstotis',
+} as const;

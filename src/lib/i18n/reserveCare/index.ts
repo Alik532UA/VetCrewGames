@@ -1,43 +1,61 @@
 /**
  * Словник вибору «найняти / зробити самому» — ДОВАНТАЖУЄТЬСЯ.
- *
- * Той самий прийом і та сама причина, що в `i18n/quiz/index.ts`: головний
- * словник імпортує всі чотири мови статично, тобто вони лежать у першому payload
- * КОЖНОГО відвідувача. Тринадцять рядків на мову коштували кілобайт gzip і
- * перевищили бюджет кореневого layout (123 проти 122) заради вікна, яке побачить
- * лише той, хто дійшов до заповідника й лишився без працівника.
- *
- * ЦІНА НАЗВАНА: паритет цих ключів більше не стереже `check:i18n` — він звіряє
- * зібрані словники. Замість нього це робить `src/i18n-reserve-care.test.ts`.
  */
 
 const loaded = new Map<string, Record<string, string>>();
+
+const LOADERS: Record<string, () => Promise<{ reserveCare: Record<string, string> }>> = {
+	uk: () => import('./uk'),
+	en: () => import('./en'),
+	'en-us': () => import('./en-us'),
+	de: () => import('./de'),
+	nl: () => import('./nl'),
+	be: () => import('./be'),
+	pl: () => import('./pl'),
+	cs: () => import('./cs'),
+	sk: () => import('./sk'),
+	bg: () => import('./bg'),
+	hr: () => import('./hr'),
+	sl: () => import('./sl'),
+	mk: () => import('./mk'),
+	es: () => import('./es'),
+	ca: () => import('./ca'),
+	fr: () => import('./fr'),
+	pt: () => import('./pt'),
+	it: () => import('./it'),
+	ro: () => import('./ro'),
+	sv: () => import('./sv'),
+	no: () => import('./no'),
+	da: () => import('./da'),
+	is: () => import('./is'),
+	ga: () => import('./ga'),
+	cy: () => import('./cy'),
+	et: () => import('./et'),
+	lv: () => import('./lv'),
+	lt: () => import('./lt'),
+	fi: () => import('./fi'),
+	el: () => import('./el'),
+	sq: () => import('./sq'),
+	crh: () => import('./crh'),
+	tr: () => import('./tr'),
+	ka: () => import('./ka'),
+	ja: () => import('./ja'),
+	ko: () => import('./ko'),
+	he: () => import('./he'),
+	mt: () => import('./mt'),
+	chk: () => import('./chk'),
+	pon: () => import('./pon'),
+	kos: () => import('./kos'),
+	yap: () => import('./yap')
+};
 
 /** Словник для мови. Порожній — невідома мова, і тоді ключ видно на екрані. */
 export async function loadReserveCareText(locale: string): Promise<Record<string, string>> {
 	const cached = loaded.get(locale);
 	if (cached) return cached;
 
-	/*
-	 * Явний `switch`, а не `import(`./${locale}.ts`)`: динамічний імпорт зі
-	 * змінною змушує збирач покласти в бандл ВСІ файли, що підходять під шаблон, —
-	 * тобто рівно те, від чого ми тут ідемо.
-	 */
-	let dict: Record<string, string> = {};
-	switch (locale) {
-		case 'uk':
-			dict = (await import('./uk')).reserveCare;
-			break;
-		case 'en':
-			dict = (await import('./en')).reserveCare;
-			break;
-		case 'de':
-			dict = (await import('./de')).reserveCare;
-			break;
-		case 'nl':
-			dict = (await import('./nl')).reserveCare;
-			break;
-	}
+	const loader = LOADERS[locale];
+	const dict: Record<string, string> = loader ? (await loader()).reserveCare : {};
 
 	loaded.set(locale, dict);
 	return dict;

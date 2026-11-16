@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/sveltekit';
 import { handleErrorWithSentry } from '@sentry/sveltekit';
 import { env } from '$env/dynamic/public';
 import type { Handle } from '@sveltejs/kit';
-import { languageFromParam } from '$lib/i18n/routing';
+import { languageFromParam, textDirection } from '$lib/i18n/routing';
 
 /**
  * Профіль static: серверного рантайму немає, тож цей hook виконується РІВНО
@@ -20,7 +20,7 @@ Sentry.init({
 });
 
 /**
- * `<html lang>` для ЗГЕНЕРОВАНОЇ сторінки (I18N-v8 § 5.2, ACCESSIBILITY-v8 § 9).
+ * `<html lang>` та `<html dir>` для ЗГЕНЕРОВАНОЇ сторінки (I18N-v8 § 5.2, ACCESSIBILITY-v8 § 9).
  *
  * Атрибут був зашитий у `app.html` як `uk`, тож англійські сторінки виходили
  * зі збірки українськими для скрінрідера й для пошуковика — а на екрані все
@@ -32,8 +32,10 @@ Sentry.init({
  */
 export const handle: Handle = async ({ event, resolve }) => {
 	const lang = languageFromParam(event.params.lang);
+	const dir = textDirection(lang);
 	return resolve(event, {
-		transformPageChunk: ({ html }) => html.replace('%lang%', lang)
+		transformPageChunk: ({ html }) =>
+			html.replace('%lang%', lang).replace('%dir%', dir)
 	});
 };
 

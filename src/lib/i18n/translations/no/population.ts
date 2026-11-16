@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Hvem er flest?',
+	'population.round': 'Runde',
+	'population.description': 'Sorter fra minst til størst bestand',
+	'population.least': 'Minst',
+	'population.middle': 'Mellomst',
+	'population.most': 'Størst',
+	'population.check': 'Sjekk',
+	'population.nextRound': 'Neste',
+	'population.dropHere': 'Slipp her',
+	'population.yourAnimals': 'Dra kortene til feltene ovenfor!',
+	'population.population': 'Bestand',
+	'population.fact': 'Interessant fakta',
+	'unit.billion': 'milliard',
+	'unit.million': 'million',
+	'unit.trillion': 'billion',
+	'unit.thousand': 'tusen',
+} as const;

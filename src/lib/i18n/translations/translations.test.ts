@@ -2,8 +2,46 @@ import { describe, it, expect } from 'vitest';
 import { LANGUAGES, type Language } from '$lib/i18n/routing';
 import { uk } from './uk';
 import { en } from './en';
+import { enUS } from './en-us';
 import { de } from './de';
 import { nl } from './nl';
+import { be } from './be';
+import { pl } from './pl';
+import { cs } from './cs';
+import { sk } from './sk';
+import { bg } from './bg';
+import { hr } from './hr';
+import { sl } from './sl';
+import { mk } from './mk';
+import { es } from './es';
+import { ca } from './ca';
+import { fr } from './fr';
+import { pt } from './pt';
+import { it as itDict } from './it';
+import { ro } from './ro';
+import { sv } from './sv';
+import { no } from './no';
+import { da } from './da';
+import { is as isDict } from './is';
+import { ga } from './ga';
+import { cy } from './cy';
+import { et } from './et';
+import { lv } from './lv';
+import { lt } from './lt';
+import { fi } from './fi';
+import { el } from './el';
+import { sq } from './sq';
+import { crh } from './crh';
+import { tr } from './tr';
+import { ka } from './ka';
+import { ja } from './ja';
+import { ko } from './ko';
+import { he } from './he';
+import { mt } from './mt';
+import { chk } from './chk';
+import { pon } from './pon';
+import { kos } from './kos';
+import { yap } from './yap';
 
 /**
  * Словники як ДАНІ, а не як файли: тут перевіряється те, що справді зібралося в
@@ -41,7 +79,50 @@ import { nl } from './nl';
  */
 
 /** Зібрані словники за кодом мови. Джерело — ті самі модулі, що імпортує `i18n/index.ts`. */
-const DICTIONARIES: Partial<Record<Language, Record<string, unknown>>> = { uk, en, de, nl };
+const DICTIONARIES: Record<Language, Record<string, unknown>> = {
+	uk,
+	en,
+	'en-us': enUS,
+	de,
+	nl,
+	be,
+	pl,
+	cs,
+	sk,
+	bg,
+	hr,
+	sl,
+	mk,
+	es,
+	ca,
+	fr,
+	pt,
+	it: itDict,
+	ro,
+	sv,
+	no,
+	da,
+	is: isDict,
+	ga,
+	cy,
+	et,
+	lv,
+	lt,
+	fi,
+	el,
+	sq,
+	crh,
+	tr,
+	ka,
+	ja,
+	ko,
+	he,
+	mt,
+	chk,
+	pon,
+	kos,
+	yap
+};
 
 /** Еталон, з якого писалося все інше. Той самий, що й у типі `TranslationKey`. */
 const REFERENCE: Language = 'uk';

@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Bizzat devriyeye çık',
+	'reserve.raid.selfHint': 'Beş turluk mini oyun: Puanların %70\'inden fazlası kaçak avcıları durdurur.',
+	'reserve.care.title.vet': 'Veteriner hekim gerekiyor',
+	'reserve.care.title.keeper': 'Bakıcı gerekiyor',
+	'reserve.care.hint.vet': 'Tedavi edilmezse sağlık durumu her gün düşer ve sıfıra indiğinde hayvan ölür.',
+	'reserve.care.hint.keeper': 'Bakım yapılmazsa stres artar ve yüksek stres doğaya salınmayı imkânsız kılar.',
+	'reserve.care.hire': 'Çalışan tut',
+	'reserve.care.perDay': 'gün',
+	'reserve.care.self': 'Kendin yap',
+	'reserve.care.trialScore': 'Puan',
+	'reserve.care.trialNeed': 'gereken',
+	'reserve.care.selfHint': 'Beş turluk mini oyun. Puanların %70\'inden fazlası gereklidir; başarısız olmak da günü harcar.',
+	'reserve.care.ignore': 'Hiçbir şey yapma',
+	'reserve.care.done': 'Kendi başına hallettin.',
+	'reserve.care.failed': 'İşe yaramadı — gün boşa gitti.',
+} as const;

@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { on } from 'svelte/events';
 import { storage } from '$lib/services/storage';
 import type { TranslationKey } from '$lib/i18n/translations/uk';
-import { LANGUAGES, type Language } from '$lib/i18n/routing';
+import { LANGUAGES, type Language, textDirection } from '$lib/i18n/routing';
 
 import { THEMES, type Theme } from '$lib/config/themes';
 
@@ -186,6 +186,7 @@ class Settings {
 
 	#applyLocale(): void {
 		document.documentElement.setAttribute('lang', this.locale);
+		document.documentElement.setAttribute('dir', textDirection(this.locale));
 	}
 
 	#applyFont(): void {

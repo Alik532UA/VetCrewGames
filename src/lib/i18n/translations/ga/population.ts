@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Cé acu is mó?',
+	'population.round': 'Babhta',
+	'population.description': 'Sórtáil ón Daonra is Lú go dtí an Daonra is Mó',
+	'population.least': 'Is Lú',
+	'population.middle': 'Meánach',
+	'population.most': 'Is Mó',
+	'population.check': 'Seiceáil',
+	'population.nextRound': 'Ar aghaidh',
+	'population.dropHere': 'Scaoil anseo',
+	'population.yourAnimals': 'Tarraing na cártaí go dtí na sliotáin thuas!',
+	'population.population': 'Daonra',
+	'population.fact': 'Fíric spéisiúil',
+	'unit.billion': 'billiún',
+	'unit.million': 'milliún',
+	'unit.trillion': 'trilliún',
+	'unit.thousand': 'míle',
+} as const;

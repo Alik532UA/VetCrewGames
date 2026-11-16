@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Ves-hi tu mateix',
+	'reserve.raid.selfHint': 'Cinc rondes d\'un minijoc: amb més del 70% dels punts s\'aturen els furtius.',
+	'reserve.care.title.vet': 'Es necessita un veterinari',
+	'reserve.care.title.keeper': 'Es necessita un cuidador',
+	'reserve.care.hint.vet': 'Sense tractament la salut baixa cada dia, i a zero l\'animal mor.',
+	'reserve.care.hint.keeper': 'Sense atencions l\'estrès augmenta, i un nivell alt d\'estrès fa impossible l\'alliberament.',
+	'reserve.care.hire': 'Contracta un treballador',
+	'reserve.care.perDay': 'dia',
+	'reserve.care.self': 'Fes-ho tu mateix',
+	'reserve.care.trialScore': 'Punts',
+	'reserve.care.trialNeed': 'necessaris',
+	'reserve.care.selfHint': 'Cinc rondes d\'un minijoc. Cal superar el 70% dels punts; fallar també consumirà el dia.',
+	'reserve.care.ignore': 'No facis res',
+	'reserve.care.done': 'Te n\'has sortit tu mateix.',
+	'reserve.care.failed': 'No ha funcionat: s\'ha perdut el dia per a res.',
+} as const;

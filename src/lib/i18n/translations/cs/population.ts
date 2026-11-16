@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kdo je početnější?',
+	'population.round': 'Kolo',
+	'population.description': 'Seřaď od nejmenší po největší populaci',
+	'population.least': 'Nejmenší',
+	'population.middle': 'Střední',
+	'population.most': 'Největší',
+	'population.check': 'Zkontrolovat',
+	'population.nextRound': 'Další',
+	'population.dropHere': 'Přetáhni sem',
+	'population.yourAnimals': 'Přetáhni karty do políček výše!',
+	'population.population': 'Populace',
+	'population.fact': 'Zajímavost',
+	'unit.billion': 'miliarda',
+	'unit.million': 'milion',
+	'unit.trillion': 'bilion',
+	'unit.thousand': 'tisíc',
+} as const;

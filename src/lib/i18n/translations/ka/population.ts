@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'ვინ უფრო მეტია?',
+	'population.round': 'რაუნდი',
+	'population.description': 'დაალაგეთ პოპულაციის მიხედვით: უმცირესიდან უდიდესამდე',
+	'population.least': 'უმცირესი',
+	'population.middle': 'საშუალო',
+	'population.most': 'უდიდესი',
+	'population.check': 'შემოწმება',
+	'population.nextRound': 'შემდეგი',
+	'population.dropHere': 'ჩააგდეთ აქ',
+	'population.yourAnimals': 'გადაიტანეთ ბარათები ზედა უჯრებში!',
+	'population.population': 'პოპულაცია',
+	'population.fact': 'საინტერესო ფაქტი',
+	'unit.billion': 'მილიარდი',
+	'unit.million': 'მილიონი',
+	'unit.trillion': 'ტრილიონი',
+	'unit.thousand': 'ათასი',
+} as const;

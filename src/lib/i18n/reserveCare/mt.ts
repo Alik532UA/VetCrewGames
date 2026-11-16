@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Oħroġ int stess',
+	'reserve.raid.selfHint': 'Ħames rawnds ta\' mini-logħba: aktar minn 70% tal-punti jwaqqfu l-kaċċaturi klandestini.',
+	'reserve.care.title.vet': 'Hemm bżonn veterinarju',
+	'reserve.care.title.keeper': 'Hemm bżonn gwardjan',
+	'reserve.care.hint.vet': 'Mingħajr kura s-saħħa tonqos kuljum, u f\'żero l-annimal imut.',
+	'reserve.care.hint.keeper': 'Mingħajr attenzjoni l-istress jikber, u stress għoli jagħmel ir-rilaxx impossibbli.',
+	'reserve.care.hire': 'Qabbad ħaddiem',
+	'reserve.care.perDay': 'jum',
+	'reserve.care.self': 'Agħmilha int stess',
+	'reserve.care.trialScore': 'Punti',
+	'reserve.care.trialNeed': 'bżonn',
+	'reserve.care.selfHint': 'Ħames rawnds ta\' mini-logħba. Hemm bżonn aktar minn 70% tal-punti; jekk tfalli xorta jgħaddi l-jum.',
+	'reserve.care.ignore': 'Tagħmel xejn',
+	'reserve.care.done': 'Irnexxejt waħdek.',
+	'reserve.care.failed': 'Ma rnexxiex — il-jum inħela għalxejn.',
+} as const;

@@ -1,9 +1,7 @@
 import { uk, type LazyTranslationKey, type TranslationKey } from './translations/uk';
 import { lazyText } from './lazyText.svelte';
-import { en } from './translations/en';
-import { de } from './translations/de';
-import { nl } from './translations/nl';
 import { settings } from '$lib/services/settings.svelte';
+import type { Language } from './routing';
 
 /**
  * `Record<TranslationKey, string>` — це і є контракт повноти: словник, у якому
@@ -23,11 +21,64 @@ import { settings } from '$lib/services/settings.svelte';
 type Translations = Record<Exclude<TranslationKey, LazyTranslationKey>, string>;
 
 const translations: Record<string, Translations> = {
-	uk,
-	en,
-	de,
-	nl
+	uk
 };
+
+const LOADERS: Record<Language, () => Promise<{ default: Translations }>> = {
+	uk: () => import('./translations/uk').then((m) => ({ default: m.uk })),
+	en: () => import('./translations/en').then((m) => ({ default: m.en })),
+	'en-us': () => import('./translations/en-us').then((m) => ({ default: m.enUS })),
+	de: () => import('./translations/de').then((m) => ({ default: m.de })),
+	nl: () => import('./translations/nl').then((m) => ({ default: m.nl })),
+	be: () => import('./translations/be').then((m) => ({ default: m.be })),
+	pl: () => import('./translations/pl').then((m) => ({ default: m.pl })),
+	cs: () => import('./translations/cs').then((m) => ({ default: m.cs })),
+	sk: () => import('./translations/sk').then((m) => ({ default: m.sk })),
+	bg: () => import('./translations/bg').then((m) => ({ default: m.bg })),
+	hr: () => import('./translations/hr').then((m) => ({ default: m.hr })),
+	sl: () => import('./translations/sl').then((m) => ({ default: m.sl })),
+	mk: () => import('./translations/mk').then((m) => ({ default: m.mk })),
+	es: () => import('./translations/es').then((m) => ({ default: m.es })),
+	ca: () => import('./translations/ca').then((m) => ({ default: m.ca })),
+	fr: () => import('./translations/fr').then((m) => ({ default: m.fr })),
+	pt: () => import('./translations/pt').then((m) => ({ default: m.pt })),
+	it: () => import('./translations/it').then((m) => ({ default: m.it })),
+	ro: () => import('./translations/ro').then((m) => ({ default: m.ro })),
+	sv: () => import('./translations/sv').then((m) => ({ default: m.sv })),
+	no: () => import('./translations/no').then((m) => ({ default: m.no })),
+	da: () => import('./translations/da').then((m) => ({ default: m.da })),
+	is: () => import('./translations/is').then((m) => ({ default: m.is })),
+	ga: () => import('./translations/ga').then((m) => ({ default: m.ga })),
+	cy: () => import('./translations/cy').then((m) => ({ default: m.cy })),
+	et: () => import('./translations/et').then((m) => ({ default: m.et })),
+	lv: () => import('./translations/lv').then((m) => ({ default: m.lv })),
+	lt: () => import('./translations/lt').then((m) => ({ default: m.lt })),
+	fi: () => import('./translations/fi').then((m) => ({ default: m.fi })),
+	el: () => import('./translations/el').then((m) => ({ default: m.el })),
+	sq: () => import('./translations/sq').then((m) => ({ default: m.sq })),
+	crh: () => import('./translations/crh').then((m) => ({ default: m.crh })),
+	tr: () => import('./translations/tr').then((m) => ({ default: m.tr })),
+	ka: () => import('./translations/ka').then((m) => ({ default: m.ka })),
+	ja: () => import('./translations/ja').then((m) => ({ default: m.ja })),
+	ko: () => import('./translations/ko').then((m) => ({ default: m.ko })),
+	he: () => import('./translations/he').then((m) => ({ default: m.he })),
+	mt: () => import('./translations/mt').then((m) => ({ default: m.mt })),
+	chk: () => import('./translations/chk').then((m) => ({ default: m.chk })),
+	pon: () => import('./translations/pon').then((m) => ({ default: m.pon })),
+	kos: () => import('./translations/kos').then((m) => ({ default: m.kos })),
+	yap: () => import('./translations/yap').then((m) => ({ default: m.yap }))
+};
+
+/** Довантажити словник для мови в пам'ять (якщо ще не завантажено). */
+export async function ensureLocaleLoaded(locale: Language | string): Promise<void> {
+	if (translations[locale]) return;
+	const loader = LOADERS[locale as Language];
+	if (loader) {
+		const mod = await loader();
+		translations[locale] = mod.default;
+		lazyText.bump();
+	}
+}
 
 /**
  * ДОДАТИ ДОВАНТАЖЕНІ РЯДКИ у той самий реєстр, з якого читає `t()`.

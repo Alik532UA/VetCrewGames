@@ -76,9 +76,13 @@ describe('повнота мов', () => {
 	 * шляхом, яким ходить сторінка.
 	 */
 	it('кожна оголошена мова підключена до перекладача', async () => {
-		const { td } = await import('$lib/i18n');
+		const { td, ensureLocaleLoaded } = await import('$lib/i18n');
 		// Ключ навмисно з даних, а не з інтерфейсу: саме такі йдуть через `td()`.
 		const probe = 'animal.cat';
+
+		for (const lang of LANGUAGES) {
+			await ensureLocaleLoaded(lang);
+		}
 
 		const unwired = LANGUAGES.filter((lang) => {
 			settingsMock.locale = lang;
@@ -122,7 +126,7 @@ describe('повнота мов', () => {
 		const { ogLocale } = await import('$lib/i18n/languages');
 
 		const bad = LANGUAGES.map((lang) => [lang, ogLocale(lang)] as const).filter(
-			([, locale]) => !/^[a-z]{2}_[A-Z]{2}$/.test(locale ?? '')
+			([, locale]) => !/^[a-z]{2,3}_[A-Z]{2}$/.test(locale ?? '')
 		);
 		expect(
 			bad.map(([lang, locale]) => `${lang}: ${locale}`),

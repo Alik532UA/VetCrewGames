@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': '직접 출동하기',
+	'reserve.raid.selfHint': '5라운드로 진행되는 미니게임: 70% 이상의 점수를 획득하면 밀렵꾼을 저지할 수 있습니다.',
+	'reserve.care.title.vet': '수의사가 필요합니다',
+	'reserve.care.title.keeper': '사육사가 필요합니다',
+	'reserve.care.hint.vet': '치료하지 않으면 매일 건강 상태가 악화되며, 0이 되면 동물이 폐사합니다.',
+	'reserve.care.hint.keeper': '돌보지 않으면 스트레스가 증가하며, 스트레스 수치가 높으면 야생 방사가 불가능해집니다.',
+	'reserve.care.hire': '직원 고용',
+	'reserve.care.perDay': '일',
+	'reserve.care.self': '직접 돌보기',
+	'reserve.care.trialScore': '점수',
+	'reserve.care.trialNeed': '필요 점수',
+	'reserve.care.selfHint': '5라운드로 진행되는 미니게임입니다. 70% 이상의 점수가 필요하며, 실패해도 하루가 소모됩니다.',
+	'reserve.care.ignore': '아무것도 하지 않기',
+	'reserve.care.done': '직접 치료/관리를 마쳤습니다.',
+	'reserve.care.failed': '실패했습니다. 하루를 허비하고 말았습니다.',
+} as const;

@@ -1,63 +1,71 @@
 import { addTranslations } from '../index';
 
 /**
- * Словник ЗАПОВІДНИКА — довантажується, і це найбільший виніс у проєкті.
- *
- * ## Скільки він коштував у головному словнику
- *
- * 14,88 КБ gzip на чотири мови (46,8 КБ сирих) — понад десята частина чанку
- * кореневого layout, який везе КОЖЕН відвідувач. Зокрема той, хто зайшов
- * пограти у вікторину й до заповідника не дійде ніколи: головний словник
- * імпортує всі чотири мови статично.
- *
- * Борг був названий числом у `scripts/check-build.mjs` — саме він двічі підіймав
- * стелю бюджету (120 → 121 → 122). Тепер він погашений, а не переоцінений.
- *
- * ## Чому інакше, ніж `i18n/quiz` і `i18n/account`
- *
- * Ті словники читають ОДИН-ДВА екрани, і перекладач туди приходить пропом
- * (`text`). Заповідник читають двадцять чотири компоненти в п'ять рівнів
- * завглибшки — від сторінки до картки тварини; проп довелося б протягнути через
- * кожен, і кожен новий компонент починався б із того самого протягування.
- *
- * Тому тут інший прийом: словник ДОДАЄТЬСЯ в той самий реєстр, з якого читає
- * `t()`. Компоненти не змінюються зовсім, а рядки просто зʼявляються, коли
- * приїхали. Ціна названа: між першим кадром і приїздом чанку `t()` віддає ключ,
- * і саме тому екран заповідника має власний стан завантаження.
+ * Словник ЗАПОВІДНИКА — довантажується.
  */
 
 const loaded = new Set<string>();
 
+const LOADERS: Record<string, () => Promise<{ reserve: Record<string, string> }>> = {
+	uk: () => import('./uk'),
+	en: () => import('./en'),
+	'en-us': () => import('./en-us'),
+	de: () => import('./de'),
+	nl: () => import('./nl'),
+	be: () => import('./be'),
+	pl: () => import('./pl'),
+	cs: () => import('./cs'),
+	sk: () => import('./sk'),
+	bg: () => import('./bg'),
+	hr: () => import('./hr'),
+	sl: () => import('./sl'),
+	mk: () => import('./mk'),
+	es: () => import('./es'),
+	ca: () => import('./ca'),
+	fr: () => import('./fr'),
+	pt: () => import('./pt'),
+	it: () => import('./it'),
+	ro: () => import('./ro'),
+	sv: () => import('./sv'),
+	no: () => import('./no'),
+	da: () => import('./da'),
+	is: () => import('./is'),
+	ga: () => import('./ga'),
+	cy: () => import('./cy'),
+	et: () => import('./et'),
+	lv: () => import('./lv'),
+	lt: () => import('./lt'),
+	fi: () => import('./fi'),
+	el: () => import('./el'),
+	sq: () => import('./sq'),
+	crh: () => import('./crh'),
+	tr: () => import('./tr'),
+	ka: () => import('./ka'),
+	ja: () => import('./ja'),
+	ko: () => import('./ko'),
+	he: () => import('./he'),
+	mt: () => import('./mt'),
+	chk: () => import('./chk'),
+	pon: () => import('./pon'),
+	kos: () => import('./kos'),
+	yap: () => import('./yap')
+};
+
 /**
  * Довантажити рядки заповідника для мови й додати їх у спільний реєстр.
- *
- * Ідемпотентна: другий виклик для тієї самої мови не робить нічого — реєстр уже
- * має ці ключі, а зайвий `import()` коштував би ще одного розбору модуля.
  */
 export async function loadReserveText(locale: string): Promise<void> {
 	if (loaded.has(locale)) return;
 
-	/*
-	 * Явний `switch`, а не `import(`./${locale}.ts`)`: динамічний імпорт зі
-	 * змінною змушує збирач покласти в бандл ВСІ файли, що підходять під шаблон, —
-	 * тобто рівно те, від чого ми тут ідемо.
-	 */
-	let dict: Record<string, string> = {};
-	switch (locale) {
-		case 'uk':
-			dict = (await import('./uk')).reserve;
-			break;
-		case 'en':
-			dict = (await import('./en')).reserve;
-			break;
-		case 'de':
-			dict = (await import('./de')).reserve;
-			break;
-		case 'nl':
-			dict = (await import('./nl')).reserve;
-			break;
-	}
+	const loader = LOADERS[locale];
+	const dict: Record<string, string> = loader ? (await loader()).reserve : {};
 
 	loaded.add(locale);
 	addTranslations(locale, dict);
+}
+
+/** Отримати словник заповідника для мови безпосередньо. */
+export async function getReserveText(locale: string): Promise<Record<string, string>> {
+	const loader = LOADERS[locale];
+	return loader ? (await loader()).reserve : {};
 }

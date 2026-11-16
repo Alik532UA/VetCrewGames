@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Хто яшчэ?',
+	'population.round': 'Круглая',
+	'population.description': 'Упарадкуйце папуляцыю ад найменшай да самай вялікай',
+	'population.least': 'Самы маленькі',
+	'population.middle': 'сярэдні',
+	'population.most': 'Самы вялікі',
+	'population.check': 'праверыць',
+	'population.nextRound': 'Далей',
+	'population.dropHere': 'Перацягнуць сюды',
+	'population.yourAnimals': 'Перацягніце карты ў адпаведныя слоты вышэй!',
+	'population.population': 'Колькасць насельніцтва',
+	'population.fact': 'Цікавы факт',
+	'unit.billion': 'мільярд',
+	'unit.million': 'мільёнаў',
+	'unit.trillion': 'трлн',
+	'unit.thousand': 'тысяча',
+} as const;

@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'צא בעצמך',
+	'reserve.raid.selfHint': 'חמישה סיבובים של מיני-משחק: השגת מעל 70% מהנקודות תבלום את הציידים הבלתי חוקיים.',
+	'reserve.care.title.vet': 'דרוש וטרינר',
+	'reserve.care.title.keeper': 'דרוש מטפל',
+	'reserve.care.hint.vet': 'ללא טיפול הבריאות מידרדרת מדי יום, ובאפס נקודות בריאות החיה מתה.',
+	'reserve.care.hint.keeper': 'ללא השגחה וטיפול רמת העקה עולה, ועקה גבוהה מונעת השבה לטבע.',
+	'reserve.care.hire': 'שכור עובד',
+	'reserve.care.perDay': 'יום',
+	'reserve.care.self': 'בצע בעצמך',
+	'reserve.care.trialScore': 'נקודות',
+	'reserve.care.trialNeed': 'דרוש',
+	'reserve.care.selfHint': 'חמישה סיבובים של מיני-משחק. נדרשים מעל 70% מהנקודות; כישלון מבזבז גם כן את היום.',
+	'reserve.care.ignore': 'אל תעשה דבר',
+	'reserve.care.done': 'הסתדרת בעצמך.',
+	'reserve.care.failed': 'זה לא עבד — היום התבזבז לחינם.',
+} as const;

@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Téigh amach tú féin',
+	'reserve.raid.selfHint': 'Cúig bhabhta de mhionchluiche: stopann níos mó ná 70% de na pointí na póitseálaithe.',
+	'reserve.care.title.vet': 'Tá tréidlia de dhíth',
+	'reserve.care.title.keeper': 'Tá coimeádaí de dhíth',
+	'reserve.care.hint.vet': 'Gan chóireáil titeann an tsláinte gach lá, agus ag náid faigheann an t-ainmhí bás.',
+	'reserve.care.hint.keeper': 'Gan chúram méadaíonn an strus, agus fágann strus ard nach féidir é a scaoileadh saor.',
+	'reserve.care.hire': 'Fostaigh oibrí',
+	'reserve.care.perDay': 'lá',
+	'reserve.care.self': 'Déan tú féin é',
+	'reserve.care.trialScore': 'Pointí',
+	'reserve.care.trialNeed': 'ag teastáil',
+	'reserve.care.selfHint': 'Cúig bhabhta de mhionchluiche. Tá níos mó ná 70% de na pointí ag teastáil; má theipeann ort cuirtear an lá amú freisin.',
+	'reserve.care.ignore': 'Ná déan faic',
+	'reserve.care.done': 'D\'éirigh leat é a dhéanamh tú féin.',
+	'reserve.care.failed': 'Níor oibrigh sé — cuireadh an lá amú i ndaoine gan bhrí.',
+} as const;

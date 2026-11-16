@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 /*
  * Налаштування підмінені, як і в `formatUserText.test.ts`: справжній синглтон у
@@ -8,8 +8,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mocked = vi.hoisted(() => ({ settings: { font: 'default', locale: 'uk' } }));
 vi.mock('$lib/services/settings.svelte', () => mocked);
 
-const { formatPopulation } = await import('./index');
+const { formatPopulation, ensureLocaleLoaded } = await import('./index');
 const { animals } = await import('$lib/config/population-game');
+
+beforeAll(async () => {
+	await Promise.all(['en', 'de', 'nl'].map(ensureLocaleLoaded));
+});
 
 /** Число прописом мовою `locale`. */
 function inLocale(locale: string, value: number): string {

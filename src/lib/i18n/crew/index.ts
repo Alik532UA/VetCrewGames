@@ -2,74 +2,64 @@ import type { Translate } from '$lib/config/crewNames';
 
 /**
  * Словник імен команди — ДОВАНТАЖУЄТЬСЯ, а не лежить у кожному payload.
- *
- * ## Чому окремо від решти словника
- *
- * Заміряно, а не припущено. `i18n/index.ts` імпортує всі чотири мови статично,
- * тобто вони потрапляють у бандл кореневого layout — у перший payload КОЖНОГО
- * відвідувача, включно з тим, хто ніколи не відкриє спільну гру. Вісімдесят шість
- * імен на мову додали до нього 3 КБ gzip і перевищили бюджет: `check:build`
- * показав 123 КБ проти 120.
- *
- * Правильний хід тут — не підняти бюджет (борг у цьому проєкті лише
- * зменшується), а винести дані туди, де вони потрібні: імена читає рівно одна
- * сторінка, `pairs/online`.
- *
- * ## Чому не через `t()`
- *
- * `t()` і `td()` дивляться в один зібраний словник — той самий, що в layout.
- * Додати до нього ключі означало б вернути вагу назад. Тому імена живуть поза
- * `TranslationKey` і читаються власною функцією, яку `randomCrewName` уже вміє
- * приймати аргументом (`Translate`).
- *
- * Побічний наслідок, названий прямо: паритет цих ключів НЕ стереже
- * `check:i18n` — він звіряє зібрані словники. Замість нього це робить
- * `config/crewNames.test.ts`, який імпортує всі чотири файли й падає і на
- * бракуючому імені, і на тварині гри без імені.
  */
 
-/**
- * Уже завантажені словники. Ключ — код мови.
- *
- * Кеш тут не про швидкість, а про те, щоб перемикання мови туди-назад не
- * породжувало новий запит щоразу: файл незмінний, і другий раз він не потрібен.
- */
 const loaded = new Map<string, Record<string, string>>();
+
+const LOADERS: Record<string, () => Promise<{ crew: Record<string, string> }>> = {
+	uk: () => import('./uk'),
+	en: () => import('./en'),
+	'en-us': () => import('./en-us'),
+	de: () => import('./de'),
+	nl: () => import('./nl'),
+	be: () => import('./be'),
+	pl: () => import('./pl'),
+	cs: () => import('./cs'),
+	sk: () => import('./sk'),
+	bg: () => import('./bg'),
+	hr: () => import('./hr'),
+	sl: () => import('./sl'),
+	mk: () => import('./mk'),
+	es: () => import('./es'),
+	ca: () => import('./ca'),
+	fr: () => import('./fr'),
+	pt: () => import('./pt'),
+	it: () => import('./it'),
+	ro: () => import('./ro'),
+	sv: () => import('./sv'),
+	no: () => import('./no'),
+	da: () => import('./da'),
+	is: () => import('./is'),
+	ga: () => import('./ga'),
+	cy: () => import('./cy'),
+	et: () => import('./et'),
+	lv: () => import('./lv'),
+	lt: () => import('./lt'),
+	fi: () => import('./fi'),
+	el: () => import('./el'),
+	sq: () => import('./sq'),
+	crh: () => import('./crh'),
+	tr: () => import('./tr'),
+	ka: () => import('./ka'),
+	ja: () => import('./ja'),
+	ko: () => import('./ko'),
+	he: () => import('./he'),
+	mt: () => import('./mt'),
+	chk: () => import('./chk'),
+	pon: () => import('./pon'),
+	kos: () => import('./kos'),
+	yap: () => import('./yap')
+};
 
 /**
  * Завантажити імена для мови. Невідома мова віддає порожній словник.
- *
- * Порожній, а не український: підмінити мову тихо означало б показати гравцеві
- * імена не тією мовою й не сказати про це. Порожній словник разом із поведінкою
- * `Translate` нижче дає видимий результат — ключ на екрані, — тобто дефект
- * побачить перший, хто відкриє сторінку.
  */
 export async function loadCrewNames(locale: string): Promise<Record<string, string>> {
 	const cached = loaded.get(locale);
 	if (cached) return cached;
 
-	/*
-	 * Явний `switch`, а не `import(\`./${locale}.ts\`)`.
-	 *
-	 * Динамічний імпорт зі змінною змушує збирач покласти в бандл ВСІ файли, що
-	 * підходять під шаблон, — тобто рівно те, від чого ми тут ідемо. Перелічені
-	 * імпорти дають чотири окремі чанки, з яких приїде один.
-	 */
-	let dict: Record<string, string> = {};
-	switch (locale) {
-		case 'uk':
-			dict = (await import('./uk')).crew;
-			break;
-		case 'en':
-			dict = (await import('./en')).crew;
-			break;
-		case 'de':
-			dict = (await import('./de')).crew;
-			break;
-		case 'nl':
-			dict = (await import('./nl')).crew;
-			break;
-	}
+	const loader = LOADERS[locale];
+	const dict: Record<string, string> = loader ? (await loader()).crew : {};
 
 	loaded.set(locale, dict);
 	return dict;
@@ -77,10 +67,6 @@ export async function loadCrewNames(locale: string): Promise<Record<string, stri
 
 /**
  * Перекладач для `randomCrewName` над уже завантаженим словником.
- *
- * Віддає САМ КЛЮЧ, коли перекладу немає, — так само, як `td()`. Це не м'яка
- * відмова: ключ на екрані видно одразу, а підстановка іншої мови чи порожнього
- * рядка лишила б дефект непоміченим.
  */
 export const crewTranslate =
 	(dict: Record<string, string>): Translate =>

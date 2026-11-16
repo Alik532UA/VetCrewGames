@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': '어느 쪽이 더 많을까요?',
+	'population.round': '라운드',
+	'population.description': '개체 수가 적은 순서에서 많은 순서로 정렬하세요',
+	'population.least': '가장 적음',
+	'population.middle': '중간',
+	'population.most': '가장 많음',
+	'population.check': '확인',
+	'population.nextRound': '다음',
+	'population.dropHere': '여기에 놓기',
+	'population.yourAnimals': '카드를 위의 슬롯으로 드래그하세요!',
+	'population.population': '개체 수',
+	'population.fact': '흥미로운 사실',
+	'unit.billion': '10억',
+	'unit.million': '100만',
+	'unit.trillion': '1조',
+	'unit.thousand': '1천',
+} as const;

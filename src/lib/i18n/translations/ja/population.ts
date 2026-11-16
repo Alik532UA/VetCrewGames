@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'どっちが多い？',
+	'population.round': 'ラウンド',
+	'population.description': '個体数が少ない順から多い順に並べ替えよう',
+	'population.least': '最少',
+	'population.middle': '中間',
+	'population.most': '最多',
+	'population.check': '判定',
+	'population.nextRound': '次へ',
+	'population.dropHere': 'ここにドロップ',
+	'population.yourAnimals': 'カードを上の枠にドラッグしよう！',
+	'population.population': '個体数',
+	'population.fact': '豆知識',
+	'unit.billion': '十億',
+	'unit.million': '百万',
+	'unit.trillion': '兆',
+	'unit.thousand': '千',
+} as const;

@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Keda on rohkem?',
+	'population.round': 'Voor',
+	'population.description': 'Järjesta väikseimast suurima populatsioonini',
+	'population.least': 'Väikseim',
+	'population.middle': 'Keskmine',
+	'population.most': 'Suurim',
+	'population.check': 'Kontrolli',
+	'population.nextRound': 'Järgmine',
+	'population.dropHere': 'Aseta siia',
+	'population.yourAnimals': 'Lohista kaardid ülalolevatesse pesadesse!',
+	'population.population': 'Populatsioon',
+	'population.fact': 'Huvitav fakt',
+	'unit.billion': 'miljardit',
+	'unit.million': 'miljonit',
+	'unit.trillion': 'triljonit',
+	'unit.thousand': 'tuhat',
+} as const;

@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Ewch eich hun',
+	'reserve.raid.selfHint': 'Pum rownd o fân-gêm: mae dros 70% o bwyntiau yn atal y potswyr.',
+	'reserve.care.title.vet': 'Mae angen milfeddyg',
+	'reserve.care.title.keeper': 'Mae angen ceidwad',
+	'reserve.care.hint.vet': 'Heb driniaeth mae iechyd yn dirywio bob dydd, ac ar sero mae\'r anifail yn marw.',
+	'reserve.care.hint.keeper': 'Heb ofal mae straen yn cynyddu, ac mae straen uchel yn ei gwneud hi\'n amhosib rhyddhau\'r anifail.',
+	'reserve.care.hire': 'Cyflogi gweithiwr',
+	'reserve.care.perDay': 'diwrnod',
+	'reserve.care.self': 'Gwnewch hyn eich hun',
+	'reserve.care.trialScore': 'Pwyntiau',
+	'reserve.care.trialNeed': 'angen',
+	'reserve.care.selfHint': 'Pum rownd o fân-gêm. Mae angen dros 70% o bwyntiau; mae methu hefyd yn treulio\'r diwrnod.',
+	'reserve.care.ignore': 'Gwneud dim',
+	'reserve.care.done': 'Llwyddoch i\'w wneud eich hun.',
+	'reserve.care.failed': 'Ni weithiodd — treuliwyd y diwrnod yn ofer.',
+} as const;

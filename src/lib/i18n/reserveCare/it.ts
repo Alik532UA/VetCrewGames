@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Intervieni di persona',
+	'reserve.raid.selfHint': 'Cinque round di un minigioco: oltre il 70% dei punti ferma i bracconieri.',
+	'reserve.care.title.vet': 'Serve un veterinario',
+	'reserve.care.title.keeper': 'Serve un guardiano',
+	'reserve.care.hint.vet': 'Senza cure la salute scende ogni giorno, e a zero l\'animale muore.',
+	'reserve.care.hint.keeper': 'Senza accudimento lo stress aumenta, e un livello elevato di stress rende impossibile la reintroduzione.',
+	'reserve.care.hire': 'Assumi un operatore',
+	'reserve.care.perDay': 'giorno',
+	'reserve.care.self': 'Fai da te',
+	'reserve.care.trialScore': 'Punti',
+	'reserve.care.trialNeed': 'richiesti',
+	'reserve.care.selfHint': 'Cinque round di un minigioco. È necessario oltre il 70% dei punti; fallire consumerà comunque la giornata.',
+	'reserve.care.ignore': 'Non fare nulla',
+	'reserve.care.done': 'Ce l\'hai fatta da solo.',
+	'reserve.care.failed': 'Non ha funzionato: la giornata è andata sprecata invano.',
+} as const;

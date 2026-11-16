@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Eiti pačiam',
+	'reserve.raid.selfHint': 'Penki mini žaidimo raundai: surinkus virš 70 % taškų brakonieriai bus sustabdyti.',
+	'reserve.care.title.vet': 'Reikalingas veterinaras',
+	'reserve.care.title.keeper': 'Reikalingas prižiūrėtojas',
+	'reserve.care.hint.vet': 'Be gydymo sveikata kasdien prastėja, o pasiekus nulį gyvūnas žūsta.',
+	'reserve.care.hint.keeper': 'Be priežiūros kyla streso lygis, o didelis stresas neleidžia paleisti gyvūno į laisvę.',
+	'reserve.care.hire': 'Samdyti darbuotoją',
+	'reserve.care.perDay': 'diena',
+	'reserve.care.self': 'Daryti pačiam',
+	'reserve.care.trialScore': 'Taškai',
+	'reserve.care.trialNeed': 'reikia',
+	'reserve.care.selfHint': 'Penki mini žaidimo raundai. Reikia surinkti virš 70 % taškų; nesėkmės atveju diena vis tiek bus išnaudota.',
+	'reserve.care.ignore': 'Nieko nedaryti',
+	'reserve.care.done': 'Susitvarkėte patys.',
+	'reserve.care.failed': 'Nepavyko – diena praėjo veltui.',
+} as const;

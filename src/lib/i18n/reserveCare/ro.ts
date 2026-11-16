@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Mergi chiar tu',
+	'reserve.raid.selfHint': 'Cinci runde dintr-un mini-joc: peste 70% din puncte oprește braconierii.',
+	'reserve.care.title.vet': 'Este nevoie de un veterinar',
+	'reserve.care.title.keeper': 'Este nevoie de un îngrijitor',
+	'reserve.care.hint.vet': 'Fără tratament, sănătatea scade în fiecare zi, iar la zero animalul moare.',
+	'reserve.care.hint.keeper': 'Fără îngrijire, stresul crește, iar un nivel ridicat de stres face eliberarea imposibilă.',
+	'reserve.care.hire': 'Angajează un lucrător',
+	'reserve.care.perDay': 'zi',
+	'reserve.care.self': 'Ocupă-te personal',
+	'reserve.care.trialScore': 'Puncte',
+	'reserve.care.trialNeed': 'necesar',
+	'reserve.care.selfHint': 'Cinci runde dintr-un mini-joc. Sunt necesare peste 70% din puncte; un eșec consumă, de asemenea, ziua.',
+	'reserve.care.ignore': 'Nu face nimic',
+	'reserve.care.done': 'Te-ai descurcat de unul singur.',
+	'reserve.care.failed': 'Nu a funcționat — ziua a fost pierdută degeaba.',
+} as const;

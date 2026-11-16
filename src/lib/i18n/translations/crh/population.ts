@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'Kim daa çoq?',
+	'population.round': 'Raund',
+	'population.description': 'Eñ az populâtsiyadan eñ çoq populâtsiyağa qadar sıralañız',
+	'population.least': 'Eñ az',
+	'population.middle': 'Orta',
+	'population.most': 'Eñ çoq',
+	'population.check': 'Teşker',
+	'population.nextRound': 'Nevbetteki',
+	'population.dropHere': 'Mında bıraqıñız',
+	'population.yourAnimals': 'Kartalarnı yuqarıdaki yerlerge süyrekleñiz!',
+	'population.population': 'Populâtsiya',
+	'population.fact': 'Meraqlı malümat',
+	'unit.billion': 'milyard',
+	'unit.million': 'milyon',
+	'unit.trillion': 'trillion',
+	'unit.thousand': 'biñ',
+} as const;

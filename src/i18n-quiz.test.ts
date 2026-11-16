@@ -1,33 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { LANGUAGES } from '$lib/i18n/routing';
+import { loadQuizText } from '$lib/i18n/quiz';
 import { quiz as uk } from '$lib/i18n/quiz/uk';
-import { quiz as en } from '$lib/i18n/quiz/en';
-import { quiz as de } from '$lib/i18n/quiz/de';
-import { quiz as nl } from '$lib/i18n/quiz/nl';
 
 /**
  * ПАРИТЕТ СЛОВНИКА ВІКТОРИНИ — бо `check:i18n` його більше не бачить.
- *
- * Ці рядки лежать у ЛІНИВОМУ чанку (`i18n/quiz`), а `check:i18n` звіряє зібрані
- * словники — тобто після виносу він перестав знати про ці ключі зовсім. Це
- * названа ціна виносу, і ось перевірка, яка її покриває: вона імпортує всі
- * чотири файли й падає і на бракуючому рядку, і на зайвому.
- *
- * Той самий файл, що `src/i18n-account.test.ts`, і з тієї самої причини.
  */
-
-const DICTS: Array<[string, Record<string, string>]> = [
-	['uk', uk],
-	['en', en],
-	['de', de],
-	['nl', nl]
-];
 
 describe('словник вікторини', () => {
 	const keys = Object.keys(uk);
 
 	it('перевірка жива: ключі й мови знайдено', () => {
 		expect(keys.length).toBeGreaterThanOrEqual(10);
-		expect(DICTS).toHaveLength(4);
+		expect(LANGUAGES).toHaveLength(42);
 	});
 
 	it('усі ключі починаються з `quiz.`', () => {
@@ -35,8 +20,9 @@ describe('словник вікторини', () => {
 		expect(wrong, `не з того простору: ${wrong.join(', ')}`).toEqual([]);
 	});
 
-	it('у кожній мові той самий набір ключів', () => {
-		for (const [lang, dict] of DICTS) {
+	it('у кожній мові той самий набір ключів', async () => {
+		for (const lang of LANGUAGES) {
+			const dict = await loadQuizText(lang);
 			const missing = keys.filter((key) => !(key in dict));
 			const extra = Object.keys(dict).filter((key) => !keys.includes(key));
 			expect(missing, `${lang}: немає ключів ${missing.join(', ')}`).toEqual([]);
@@ -44,8 +30,9 @@ describe('словник вікторини', () => {
 		}
 	});
 
-	it('порожніх рядків немає ні в одній мові', () => {
-		for (const [lang, dict] of DICTS) {
+	it('порожніх рядків немає ні в одній мові', async () => {
+		for (const lang of LANGUAGES) {
+			const dict = await loadQuizText(lang);
 			const empty = Object.entries(dict)
 				.filter(([, value]) => value.trim() === '')
 				.map(([key]) => key);

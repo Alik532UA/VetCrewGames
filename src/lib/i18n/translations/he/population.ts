@@ -1,0 +1,18 @@
+export const population = {
+	'population.title': 'מי יותר?',
+	'population.round': 'סיבוב',
+	'population.description': 'סדרו מגודל האוכלוסייה הקטן ביותר לגדול ביותר',
+	'population.least': 'הקטן ביותר',
+	'population.middle': 'אמצעי',
+	'population.most': 'הגדול ביותר',
+	'population.check': 'בדיקה',
+	'population.nextRound': 'הבא',
+	'population.dropHere': 'גררו לכאן',
+	'population.yourAnimals': 'גררו את הקלפים למשבצות שלמעלה!',
+	'population.population': 'אוכלוסייה',
+	'population.fact': 'עובדה מעניינת',
+	'unit.billion': 'מיליארד',
+	'unit.million': 'מיליון',
+	'unit.trillion': 'טריליון',
+	'unit.thousand': 'אלף',
+} as const;

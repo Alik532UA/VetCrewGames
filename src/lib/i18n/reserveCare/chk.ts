@@ -1,0 +1,17 @@
+export const reserveCare = {
+	'reserve.raid.self': 'Feino pwisin en',
+	'reserve.raid.selfHint': 'Nimmwän kukkun kouk: napaseni 70% me nein point epwe aúkätä ekkewe chón solapilap mään.',
+	'reserve.care.title.vet': 'A mochen emén toktorin mään',
+	'reserve.care.title.keeper': 'A mochen emén chón tümwün mään',
+	'reserve.care.hint.vet': 'Ese wor safei, pekin pöchökkun epwe kukkunano iteiten rän, iwe nupwen a zero, ewe mään epwe mäno.',
+	'reserve.care.hint.keeper': 'Ese wor tümwün, meefi weires epwe watteeno, iwe watteen weires epwe aúkätä an emén mään tongeni pwandeno ngeni fetanfanü.',
+	'reserve.care.hire': 'Kounö emén chón angang',
+	'reserve.care.perDay': 'rän',
+	'reserve.care.self': 'Férú pwisin en',
+	'reserve.care.trialScore': 'Pwoin',
+	'reserve.care.trialNeed': 'a mochen',
+	'reserve.care.selfHint': 'Nimmwän kukkun kouk. A mochen napaseni 70% me nein point; ika pwe ke kuffät, ewe rän epwe chök pwonano ngeni esapw wor pochokunan.',
+	'reserve.care.ignore': 'Ese wor méttoch kopwe férú',
+	'reserve.care.done': 'Ke pwisin aükätä fengen me fëri ren en chök.',
+	'reserve.care.failed': 'Ese mo feioch — ewe rän a chök pwonano ngeni esapw wor pochokunan.',
+} as const;

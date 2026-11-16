@@ -67,6 +67,7 @@ for (const locale of locales) {
 	if (missing.length || extra.length) {
 		console.error(`[${locale}] missing: ${missing.length}, extra: ${extra.length}`);
 		if (missing.length) console.error('  missing keys:', missing);
+		if (extra.length) console.error('  extra keys:', extra);
 		hasErrors = true;
 	}
 }
