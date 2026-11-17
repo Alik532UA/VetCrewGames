@@ -121,6 +121,7 @@
 	role="region"
 	aria-label={t('header.toggleLocale')}
 	data-testid="header-locale-menu"
+	id="header-locale-menu"
 	bind:this={panelEl}
 	onkeydown={handleKeydown}
 	onclick={(e) => e.stopPropagation()}

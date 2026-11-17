@@ -261,6 +261,7 @@
 			openMenu = openMenu === 'lang' ? null : 'lang';
 		}}
 		aria-haspopup="dialog"
+		aria-controls="header-locale-menu"
 		aria-expanded={openMenu === 'lang'}
 		aria-label={t('header.toggleLocale')}
 		aria-keyshortcuts={settings.shortcutsEnabled ? 'L' : undefined}

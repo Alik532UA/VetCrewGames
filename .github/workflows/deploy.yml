@@ -134,7 +134,7 @@ jobs:
   # може перезаписати теку для деплою: вона в іншому джобі, на іншому раннері
   # (CI-CD-AND-TOOLS-v9 § 1.10, `CI-DEPLOY-ORDER`).
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     timeout-minutes: 30
