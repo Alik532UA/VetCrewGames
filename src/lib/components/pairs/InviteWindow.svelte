@@ -100,7 +100,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		gap: clamp(var(--space-xs), 1.5vh, var(--space-md));
+		gap: clamp(var(--space-xs), 1.5dvh, var(--space-md));
 		width: min(calc(100vw - 16px), 36rem);
 		height: min(calc(100dvh - var(--fill-u) * 3.25 - 20px), 48rem);
 		max-height: calc(100dvh - var(--fill-u) * 3.25 - 20px);
@@ -214,8 +214,8 @@
 		width: 100%;
 		max-width: none;
 		flex: 1 1 auto;
-		min-height: clamp(84px, 14vh, 150px);
-		padding: clamp(var(--space-sm), 2vh, var(--space-lg)) var(--space-md);
+		min-height: clamp(84px, 14dvh, 150px);
+		padding: clamp(var(--space-sm), 2dvh, var(--space-lg)) var(--space-md);
 		border-radius: var(--radius-lg);
 		font: inherit;
 		cursor: pointer;

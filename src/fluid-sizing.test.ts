@@ -106,4 +106,28 @@ describe('текуча розкладка (FLUID-SIZING-v8 § 1.1)', () => {
 			`число стало підлогою ширини, а не порогом переносу — вміст вилазить за сітку:\n${bad.join('\n')}`
 		).toEqual([]);
 	});
+
+	it('жодна колонка не має підлоги від голого repeat(N, 1fr) (§ 1)', () => {
+		const bad: string[] = [];
+		for (const file of sources) {
+			const source = blankComments(readFileSync(file, 'utf8'));
+			for (const match of source.matchAll(/repeat\(\s*\d+\s*,\s*1fr\s*\)/g)) {
+				const line = source.slice(0, match.index ?? 0).split('\n').length;
+				bad.push(`${file}:${line} — repeat(N, 1fr); треба minmax(0, 1fr)`);
+			}
+		}
+		expect(bad, `Голий 1fr — це minmax(auto, 1fr); треба minmax(0, 1fr):\n${bad.join('\n')}`).toEqual([]);
+	});
+
+	it('жодного bare vh у розмірах в’юпорта — тільки dvh (§ 2)', () => {
+		const bad: string[] = [];
+		for (const file of sources) {
+			const source = blankComments(readFileSync(file, 'utf8'));
+			for (const match of source.matchAll(/(?<![dsl])\b\d+(\.\d+)?vh\b/g)) {
+				const line = source.slice(0, match.index ?? 0).split('\n').length;
+				bad.push(`${file}:${line} — ${match[0]}`);
+			}
+		}
+		expect(bad, `Використовуйте dvh замість vh (§ 2):\n${bad.join('\n')}`).toEqual([]);
+	});
 });

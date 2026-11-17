@@ -199,7 +199,7 @@
 
 	.board {
 		display: grid;
-		grid-template-columns: minmax(92px, 1.25fr) minmax(76px, 1fr) minmax(92px, 1.25fr);
+		grid-template-columns: minmax(min(92px, 100%), 1.25fr) minmax(min(76px, 100%), 1fr) minmax(min(92px, 100%), 1.25fr);
 		grid-template-areas: 'zone0 table zone1';
 		gap: var(--space-sm);
 		width: 100%;

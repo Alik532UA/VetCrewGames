@@ -163,7 +163,7 @@
 		 * `rem`, а стелю задають ті самі 26em, тобто там не змінюється нічого.
 		 */
 		width: min(22em, 78vw);
-		max-height: min(80vh, 26em);
+		max-height: min(80dvh, 26em);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: var(--space-sm);

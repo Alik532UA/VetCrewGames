@@ -186,7 +186,7 @@
 		flex-direction: column;
 		gap: var(--space-xs, 6px);
 		width: min(92vw, 760px);
-		max-height: min(80vh, 540px);
+		max-height: min(80dvh, 540px);
 		padding: calc(var(--fill-u) * 0.5);
 		border-radius: var(--radius-md);
 		border: 1px solid var(--color-border);
