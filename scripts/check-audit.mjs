@@ -121,8 +121,45 @@ if (!report) {
 	process.exit(0);
 }
 
+/**
+ * Свідомо дозволені консультативні сповіщення (наприклад, DoS обробки форм на суто статичних сайтах без сервера).
+ * GHSA-3r8g-jcqq-3p5j: SvelteKit DoS while parsing form data from remote functions (статичний експорт не парсить форми).
+ */
+const ALLOWED_ADVISORIES = new Set([
+	'GHSA-3r8g-jcqq-3p5j',
+	'https://github.com/advisories/GHSA-3r8g-jcqq-3p5j'
+]);
+
+function isVulnerabilityBlocking(pkg, info, vulnerabilities, visited = new Set()) {
+	if (visited.has(pkg)) return false;
+	visited.add(pkg);
+	if (!THRESHOLD.includes(info.severity)) return false;
+
+	const vias = Array.isArray(info.via) ? info.via : [];
+	const directAdvisories = vias.filter((v) => typeof v === 'object');
+	const unallowedDirect = directAdvisories.filter((v) => {
+		if (!THRESHOLD.includes(v.severity)) return false;
+		const id = v.url?.split('/').pop();
+		return !ALLOWED_ADVISORIES.has(id) && !ALLOWED_ADVISORIES.has(v.url);
+	});
+	if (unallowedDirect.length > 0) return true;
+
+	const transitiveNames = vias.filter((v) => typeof v === 'string');
+	for (const depName of transitiveNames) {
+		const depInfo = vulnerabilities[depName];
+		if (depInfo && isVulnerabilityBlocking(depName, depInfo, vulnerabilities, visited)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 const levels = report.metadata?.vulnerabilities ?? {};
-const blocking = THRESHOLD.reduce((sum, level) => sum + (levels[level] ?? 0), 0);
+const vulns = report.vulnerabilities ?? {};
+const blockingPackages = Object.entries(vulns).filter(([pkg, info]) =>
+	isVulnerabilityBlocking(pkg, info, vulns)
+);
+const blocking = blockingPackages.length;
 // `total` серед рівнів — окремий ключ npm, а не рівень: підсумовувати його разом
 // з рештою означало б подвоїти число й назвати `total` рівнем.
 const total = levels.total ?? 0;
