@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Bezplatné vzdělávací hry o zvířatech: vyzkoušejte si své znalosti o tom, čím se živí, kolik jich ještě zbývá ve volné přírodě a jakým mýtům o nich lidé stále věří. Vytvořeno na podporu ochrany a dobrých životních podmínek zvířat.',
+	'app.description':
+		'Bezplatné vzdělávací hry o zvířatech: vyzkoušejte si své znalosti o tom, čím se živí, kolik jich ještě zbývá ve volné přírodě a jakým mýtům o nich lidé stále věří. Vytvořeno na podporu ochrany a dobrých životních podmínek zvířat.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Čím se živí?',
 	'menu.game.memory': 'Najdi dvojici',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Tato místnost je určena pro jinou hru.',
 	'menu.play': 'Hrát',
 	'menu.playOnline': 'Hrát online',
-	'problem.offline': 'Připojení k hernímu serveru selhalo. Zkontrolujte připojení k internetu a zkuste to znovu.',
-	'problem.reload': 'Byla vydána nová verze hry a tato stránka je zastaralá. Obnovte stránku a vše bude fungovat.',
-	'problem.mismatch': 'Pravidla na serveru jsou již novější než tato stránka: hra se právě aktualizuje. Obnovte stránku za několik minut, a pokud problém přetrvá, kontaktujte vývojáře.',
-	'problem.rules': 'Nová pravidla databáze ještě nejsou nasazena na Firebase: tato verze hry očekává jiná pravidla, než jaká nyní běží na serveru. Opakovaný pokus nepomůže – pravidla musí být nejprve nasazena.',
-	'problem.code': 'Došlo k chybě v kódu hry – opakovaný pokus problém nevyřeší. Kontaktujte prosím vývojáře: zkopírujte hlášení o chybě a odešlete jej ve zprávě.',
-	'problem.emulator': 'Místní emulátor Firebase neodpovídá: vývojová verze komunikuje s ním, nikoli se skutečnou databází. Spusťte v terminálu příkaz npm run emulators – a pokud již běží, restartujte jej.',
+	'problem.offline':
+		'Připojení k hernímu serveru selhalo. Zkontrolujte připojení k internetu a zkuste to znovu.',
+	'problem.reload':
+		'Byla vydána nová verze hry a tato stránka je zastaralá. Obnovte stránku a vše bude fungovat.',
+	'problem.mismatch':
+		'Pravidla na serveru jsou již novější než tato stránka: hra se právě aktualizuje. Obnovte stránku za několik minut, a pokud problém přetrvá, kontaktujte vývojáře.',
+	'problem.rules':
+		'Nová pravidla databáze ještě nejsou nasazena na Firebase: tato verze hry očekává jiná pravidla, než jaká nyní běží na serveru. Opakovaný pokus nepomůže – pravidla musí být nejprve nasazena.',
+	'problem.code':
+		'Došlo k chybě v kódu hry – opakovaný pokus problém nevyřeší. Kontaktujte prosím vývojáře: zkopírujte hlášení o chybě a odešlete jej ve zprávě.',
+	'problem.emulator':
+		'Místní emulátor Firebase neodpovídá: vývojová verze komunikuje s ním, nikoli se skutečnou databází. Spusťte v terminálu příkaz npm run emulators – a pokud již běží, restartujte jej.',
 	'problem.copyReport': 'Zkopírovat hlášení',
 	'problem.copied': 'Hlášení zkopírováno',
 	'problem.contact': 'Kontaktovat vývojáře',
-	'problem.contactHint': 'Napište v aplikaci, která vám nejlépe vyhovuje, a vložte do zprávy zkopírované hlášení.',
+	'problem.contactHint':
+		'Napište v aplikaci, která vám nejlépe vyhovuje, a vložte do zprávy zkopírované hlášení.',
 	'problem.writeVia': 'Napsat vývojáři přes',
-	'online.searchBusy': 'Během automatického vyhledávání není dostupná žádná jiná akce – nejprve vyhledávání zrušte.',
+	'online.searchBusy':
+		'Během automatického vyhledávání není dostupná žádná jiná akce – nejprve vyhledávání zrušte.',
 	'online.search': 'Automatické vyhledávání',
 	'online.searchGames': 'Co hrajeme',
 	'online.searchLast': 'Alespoň jedna hra musí zůstat aktivní',
-	'online.searchHint': 'Vyhledáme soupeře v jedné ze zvolených her – a pokud nikdo není online, počkáme, až se někdo připojí.',
+	'online.searchHint':
+		'Vyhledáme soupeře v jedné ze zvolených her – a pokud nikdo není online, počkáme, až se někdo připojí.',
 	'online.searching': 'Hledání hráče…',
-	'online.waiting': 'Čekání na hráče. Jakmile bude někdo hledat jednu ze zvolených her, budete zařazeni do stejné místnosti.',
+	'online.waiting':
+		'Čekání na hráče. Jakmile bude někdo hledat jednu ze zvolených her, budete zařazeni do stejné místnosti.',
 	'online.found': 'Hráč nalezen – probíhá připojování…',
 	'online.searchCancel': 'Zrušit',
 	'online.createTitle': 'Nová místnost:',
 	'online.everyoneHint': 'Místnost se zobrazí v seznamu a může se k ní připojit kdokoli.',
-	'online.friendsHint': 'Místnost není veřejně uvedena v seznamu: ostatní se mohou připojit pouze pomocí kódu, který jim pošlete.',
+	'online.friendsHint':
+		'Místnost není veřejně uvedena v seznamu: ostatní se mohou připojit pouze pomocí kódu, který jim pošlete.',
 	'online.back': 'Zpět',
 	'online.join': 'Připojit se',
 	'online.opening': 'Otevírání místnosti…',
@@ -79,10 +91,13 @@ export const ui = {
 	'pairs.roomLost': 'Místnost již není dostupná – připojte se znovu.',
 	'pairs.removed': 'Zakladatel vás odebral z místnosti.',
 	'pairs.offline': 'Připojení k serveru ztraceno – čeká se na obnovení spojení.',
-	'pairs.rulesChanged': 'Pravidla na serveru byla aktualizována a tato stránka je zastaralá, takže tahy nelze provést. Obnovte stránku – hra bude pokračovat tam, kde skončila.',
-	'pairs.newBuild': 'Byla vydána nová verze hry – obnovte stránku. Místnost, ve které jste byli, se znovu otevře, pokud nedošlo ke změně herních pravidel.',
+	'pairs.rulesChanged':
+		'Pravidla na serveru byla aktualizována a tato stránka je zastaralá, takže tahy nelze provést. Obnovte stránku – hra bude pokračovat tam, kde skončila.',
+	'pairs.newBuild':
+		'Byla vydána nová verze hry – obnovte stránku. Místnost, ve které jste byli, se znovu otevře, pokud nedošlo ke změně herních pravidel.',
 	'pairs.reload': 'Obnovit stránku',
-	'pairs.noLead': 'Zakladatel odešel a nikdo jiný nemůže převzít vedení hry. Můžete místnost opustit nebo vytvořit novou.',
+	'pairs.noLead':
+		'Zakladatel odešel a nikdo jiný nemůže převzít vedení hry. Můžete místnost opustit nebo vytvořit novou.',
 	'pairs.leaveRoom': 'Opustit místnost',
 	'pairs.playNext': 'Hrát v další hře',
 	'pairs.roomOlder': 'Tato hra byla spuštěna ve starší verzi. Vytvořte prosím novou místnost.',
@@ -105,8 +120,10 @@ export const ui = {
 	'pairs.inviteHint': 'Takhle vás uvidí ostatní. Můžete to změnit teď nebo později v lobby.',
 	'pairs.inviteJoin': 'Připojit se',
 	'pairs.inviteBack': 'Do seznamu místností',
-	'pairs.inviteAvatarTaken': 'Tohoto avatara už zde má jiný hráč. Vyberte si jiného – nebo se rovnou připojte a dostanete volného.',
-	'pairs.avatarReplaced': 'Vašeho avatara už v této místnosti má jiný hráč, proto vám byl přidělen jiný. Můžete ho změnit v lobby.',
+	'pairs.inviteAvatarTaken':
+		'Tohoto avatara už zde má jiný hráč. Vyberte si jiného – nebo se rovnou připojte a dostanete volného.',
+	'pairs.avatarReplaced':
+		'Vašeho avatara už v této místnosti má jiný hráč, proto vám byl přidělen jiný. Můžete ho změnit v lobby.',
 	'pairs.nickname': 'Přezdívka',
 	'pairs.country': 'Vlajka',
 	'country.xr': 'Ruský dobrovolnický sbor',
@@ -124,7 +141,8 @@ export const ui = {
 	'pairs.shownNewest': 'Zobrazují se nejnovější – je jich víc',
 	'pairs.startingIn': 'Začíná za',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Seznam místností je nedostupný. Připojení pomocí kódu a vytvoření místnosti stále fungují.',
+	'pairs.roomsUnavailable':
+		'Seznam místností je nedostupný. Připojení pomocí kódu a vytvoření místnosti stále fungují.',
 	'menu.game.population': 'Kterých je víc?',
 	'menu.game.habitat': 'Kde žijí?',
 	'menu.game.mythbusters': 'Fakt, nebo mýtus?',
@@ -138,11 +156,13 @@ export const ui = {
 	'scrollbar.custom': 'Autorský',
 	'memory.title': 'Pexeso',
 	'memory.card': 'Karta',
-	'memory.prompt': 'Otáčejte dvě karty najednou. Dvojice, které k sobě patří, zůstávají lícem nahoru.',
+	'memory.prompt':
+		'Otáčejte dvě karty najednou. Dvojice, které k sobě patří, zůstávají lícem nahoru.',
 	'memory.you': 'Vy',
 	'memory.rival': 'Soupeř',
 	'memory.moves': 'Tahy',
-	'memory.resized': 'Velikost obrazovky se změnila. Rozložení zůstalo takové, jaké bylo na začátku hry.',
+	'memory.resized':
+		'Velikost obrazovky se změnila. Rozložení zůstalo takové, jaké bylo na začátku hry.',
 	'memory.relayout': 'Znovu rozdat podle velikosti',
 	'memory.found': 'Nalezeno',
 	'memory.turn': 'Tah',
@@ -164,6 +184,8 @@ export const ui = {
 	'common.copyDenied': 'Prohlížeč nemohl zapisovat do schránky. Zkopírujte ručně: Ctrl+C.',
 	'header.toggleTheme': 'Změnit motiv',
 	'header.toggleLocale': 'Změnit jazyk',
+	'header.searchLocale': 'Hledat jazyk…',
+	'header.emptyLanguages': 'Žádné jazyky nenalezeny',
 	'header.toggleFullscreen': 'Režim celé obrazovky',
 	'header.exitFullscreen': 'Ukončit celou obrazovku',
 	'header.score': 'Celkové skóre',
@@ -180,7 +202,8 @@ export const ui = {
 	'error.retry': 'Zkusit znovu',
 	'error.goHome': 'Domů',
 	'beta.title': 'Beta testování',
-	'beta.intro': 'Seznam věcí k prověření. Označte jednotlivé položky, na konci zkopírujte hlášení a pošlete nám ho.',
+	'beta.intro':
+		'Seznam věcí k prověření. Označte jednotlivé položky, na konci zkopírujte hlášení a pošlete nám ho.',
 	'beta.progress': 'Označeno v této verzi',
 	'beta.vote.none': 'Nezkontrolováno',
 	'beta.vote.fail': 'Nefunguje',
@@ -191,9 +214,12 @@ export const ui = {
 	'beta.coverage.manual': 'Pouze manuálně',
 	'beta.coverage.testable': 'Zatím bez automatického testu',
 	'beta.coverage.covered': 'Pokryto testem',
-	'beta.coverage.manualHint': 'Tuto položku nekontroluje žádný systém – je zapotřebí vaše vlastní posouzení.',
-	'beta.coverage.testableHint': 'Toto by bylo možné kontrolovat automaticky, ale příslušný test zatím neexistuje.',
-	'beta.coverage.coveredHint': 'Tuto oblast již sleduje automatický test. Pokud zde najdete chybu, test je neplatný – a to je pro nás obzvlášť cenné zjištění.',
+	'beta.coverage.manualHint':
+		'Tuto položku nekontroluje žádný systém – je zapotřebí vaše vlastní posouzení.',
+	'beta.coverage.testableHint':
+		'Toto by bylo možné kontrolovat automaticky, ale příslušný test zatím neexistuje.',
+	'beta.coverage.coveredHint':
+		'Tuto oblast již sleduje automatický test. Pokud zde najdete chybu, test je neplatný – a to je pro nás obzvlášť cenné zjištění.',
 	'beta.stale': 'označeno v jiné verzi',
 	'beta.copy': 'Zkopírovat hlášení',
 	'beta.copied': 'Hlášení zkopírováno',
@@ -220,5 +246,5 @@ export const ui = {
 	'review.partial': 'částečně správně',
 	'review.back': 'Zpět k aktuální otázce',
 	'review.backToResults': 'Zpět k výsledkům',
-	'review.list': 'Otázky této hry',
+	'review.list': 'Otázky této hry'
 } as const;

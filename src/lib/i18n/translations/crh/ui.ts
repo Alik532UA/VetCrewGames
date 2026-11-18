@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Ayvanlar aqqında serbest maarıfiy oyunlar: olarnıñ ne aşağanını, qaç dane qalğanını ve insanlar inanğan uydurmalarnı bilesiñizmi — teşkeriñiz. Ayvanlarnı qoruv destegi içün yapılğan.',
+	'app.description':
+		'Ayvanlar aqqında serbest maarıfiy oyunlar: olarnıñ ne aşağanını, qaç dane qalğanını ve insanlar inanğan uydurmalarnı bilesiñizmi — teşkeriñiz. Ayvanlarnı qoruv destegi içün yapılğan.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Olar ne aşay?',
 	'menu.game.memory': 'Çiftini tap',
@@ -13,23 +14,32 @@ export const ui = {
 	'menu.play': 'Oyna',
 	'menu.playOnline': 'Ağda oyna',
 	'problem.offline': 'Oyun serverine bağlantı yoq. İnternetiñizni teşkerip, yañıdan sınañız.',
-	'problem.reload': 'Oyunnıñ yañı versiyası çıqtı, bu saife ise eskidir. Saifeni yañıdan yükleseñiz, er şey çalışır.',
-	'problem.mismatch': 'Server qaideleri endi bu saifeden yañıca: oyun şu daqqa yañartılmaqta. Bir qaç daqqadan saifeni yañıdan yükleñiz, eger kene de çalışmasa, programmacığa yazıñız.',
-	'problem.rules': 'Yañı malümat bazası qaideleri alâ Firebase-ge yerleştirilmedi: oyunnıñ bu versiyası serverde şimdiki qaidelere köre başqa qaidelerni bekley. Tekrar sınağan fayda bermez — evelâ qaidelerni yerleştirmek kerek.',
-	'problem.code': 'Bu oyun kodundaki bir meseledir — tekrar sınağan fayda bermez. Lütfen, programmacı ile alâqağa keçiñiz: esabatnı kopyalap, bildirişiñizge yapıştırıñız.',
-	'problem.emulator': 'Yerli Firebase emulâtordan cevap yoq: inkişaf qurası kerçek bazağa degil de, oña muracaat ete. Terminalde «npm run emulators» buyruğını çaptırıñız — eger endi çalışsa, yañıdan başlatıñız.',
+	'problem.reload':
+		'Oyunnıñ yañı versiyası çıqtı, bu saife ise eskidir. Saifeni yañıdan yükleseñiz, er şey çalışır.',
+	'problem.mismatch':
+		'Server qaideleri endi bu saifeden yañıca: oyun şu daqqa yañartılmaqta. Bir qaç daqqadan saifeni yañıdan yükleñiz, eger kene de çalışmasa, programmacığa yazıñız.',
+	'problem.rules':
+		'Yañı malümat bazası qaideleri alâ Firebase-ge yerleştirilmedi: oyunnıñ bu versiyası serverde şimdiki qaidelere köre başqa qaidelerni bekley. Tekrar sınağan fayda bermez — evelâ qaidelerni yerleştirmek kerek.',
+	'problem.code':
+		'Bu oyun kodundaki bir meseledir — tekrar sınağan fayda bermez. Lütfen, programmacı ile alâqağa keçiñiz: esabatnı kopyalap, bildirişiñizge yapıştırıñız.',
+	'problem.emulator':
+		'Yerli Firebase emulâtordan cevap yoq: inkişaf qurası kerçek bazağa degil de, oña muracaat ete. Terminalde «npm run emulators» buyruğını çaptırıñız — eger endi çalışsa, yañıdan başlatıñız.',
 	'problem.copyReport': 'Esabatnı kopyala',
 	'problem.copied': 'Esabat kopyalandı',
 	'problem.contact': 'Programmacı ile alâqa',
-	'problem.contactHint': 'Özüñizge qolay olğan mesencerde yazıñız ve kopyalanğan esabatnı anda yapıştırıñız.',
+	'problem.contactHint':
+		'Özüñizge qolay olğan mesencerde yazıñız ve kopyalanğan esabatnı anda yapıştırıñız.',
 	'problem.writeVia': 'Programmacığa mında yazıñız:',
-	'online.searchBusy': 'Avtomatik qıdıruv devam etkence, başqa bir şeyge irişim yoq — evelâ qıdıruvnı lâğu etiñiz.',
+	'online.searchBusy':
+		'Avtomatik qıdıruv devam etkence, başqa bir şeyge irişim yoq — evelâ qıdıruvnı lâğu etiñiz.',
 	'online.search': 'Avtomatik qıdıruv',
 	'online.searchGames': 'Biz ne oynaymız',
 	'online.searchLast': 'Eñ azından bir oyun saylanğan qalmalı',
-	'online.searchHint': 'Saylanğan oyunlardan birinde sizge raqip taparmız — eger iç kimse olmasa, birisi kelgence bekleriz.',
+	'online.searchHint':
+		'Saylanğan oyunlardan birinde sizge raqip taparmız — eger iç kimse olmasa, birisi kelgence bekleriz.',
 	'online.searching': 'Oyun partneri qıdırıla…',
-	'online.waiting': 'Oyun partneri beklene. Birisi saylanğan oyunlardan birini qıdırğan an, aynı odada olursıñız.',
+	'online.waiting':
+		'Oyun partneri beklene. Birisi saylanğan oyunlardan birini qıdırğan an, aynı odada olursıñız.',
 	'online.found': 'Oyun partneri tapıldı — bağlanıla…',
 	'online.searchCancel': 'Lâğu et',
 	'online.createTitle': 'Yañı oda:',
@@ -79,13 +89,17 @@ export const ui = {
 	'pairs.roomLost': 'Oda endi irişimli degil — kene qoşulıñız.',
 	'pairs.removed': 'Meydan saibi sizni odadan çıqardı.',
 	'pairs.offline': 'Serverge bağlantı yoq — yañıdan peyda oluvı beklene.',
-	'pairs.rulesChanged': 'Server qaideleri yañartıldı, bu saife ise eskirdi, şu sebepten adımlar keçmey. Saifeni yañıdan yükleñiz — oyun qalğan yerinden devam etecek.',
-	'pairs.newBuild': 'Oyunnıñ yañı versiyası çıqtı — saifeni yañıdan yükleñiz. Oyun qaideleri deñişmegen olsa, siz bulunğan oda yañıdan açılır.',
+	'pairs.rulesChanged':
+		'Server qaideleri yañartıldı, bu saife ise eskirdi, şu sebepten adımlar keçmey. Saifeni yañıdan yükleñiz — oyun qalğan yerinden devam etecek.',
+	'pairs.newBuild':
+		'Oyunnıñ yañı versiyası çıqtı — saifeni yañıdan yükleñiz. Oyun qaideleri deñişmegen olsa, siz bulunğan oda yañıdan açılır.',
 	'pairs.reload': 'Saifeni yañıdan yükle',
-	'pairs.noLead': 'Meydan saibi ketti, mında ise idare etüvni qabul etecek kimse yoq. Odadan çıqa ya da yañısını yarata bilesiñiz.',
+	'pairs.noLead':
+		'Meydan saibi ketti, mında ise idare etüvni qabul etecek kimse yoq. Odadan çıqa ya da yañısını yarata bilesiñiz.',
 	'pairs.leaveRoom': 'Odadan çıq',
 	'pairs.playNext': 'Nevbetteki oyunda oyna',
-	'pairs.roomOlder': 'Bu oyun daa eski bir versiyada başlandı. Lütfen, yañı oda meydanğa ketiriñiz.',
+	'pairs.roomOlder':
+		'Bu oyun daa eski bir versiyada başlandı. Lütfen, yañı oda meydanğa ketiriñiz.',
 	'pairs.roomFull': 'Oda tolu — anda endi on eki kişi bar.',
 	'pairs.opponentGone': 'Raqibiñiz bir qaç vaqıt faal degil.',
 	'pairs.takeTurn': 'Nevbetni al',
@@ -102,11 +116,14 @@ export const ui = {
 	'pairs.avatarDone': 'Oldı',
 	'pairs.myAvatar': 'Siziñ avatarıñız',
 	'pairs.inviteTitle': 'Siz odağa davet etildiñiz',
-	'pairs.inviteHint': 'Başqaları sizni böyle körecek. Onı şimdi ya da soñra lobbide deñiştire bilersiñiz.',
+	'pairs.inviteHint':
+		'Başqaları sizni böyle körecek. Onı şimdi ya da soñra lobbide deñiştire bilersiñiz.',
 	'pairs.inviteJoin': 'Qoşul',
 	'pairs.inviteBack': 'Odalar cedveline',
-	'pairs.inviteAvatarTaken': 'Bu yerdeki başqa bir oyuncınıñ böyle avatarı endi bar. Başqasını saylañız — ya da sadece qoşuluñız, ve sizge serbest biri berilir.',
-	'pairs.avatarReplaced': 'Bu odadaki başqa bir oyuncınıñ sizin avatarıñız bar edi, şu sebepten sizge başqası berildi. Onı lobbide deñiştire bilersiñiz.',
+	'pairs.inviteAvatarTaken':
+		'Bu yerdeki başqa bir oyuncınıñ böyle avatarı endi bar. Başqasını saylañız — ya da sadece qoşuluñız, ve sizge serbest biri berilir.',
+	'pairs.avatarReplaced':
+		'Bu odadaki başqa bir oyuncınıñ sizin avatarıñız bar edi, şu sebepten sizge başqası berildi. Onı lobbide deñiştire bilersiñiz.',
 	'pairs.nickname': 'Lağap',
 	'pairs.country': 'Bayraq',
 	'country.xr': 'Rusiye Gönülliler Korpusi',
@@ -118,13 +135,15 @@ export const ui = {
 	'pairs.everyone': 'Er kes',
 	'pairs.rooms': 'Odalar',
 	'pairs.noRooms': 'Şimdilik açıq odalar yoq',
-	'pairs.noRoomsHint': 'Birini meydanğa ketiriñiz — bu saifeni açqan er kes içün o mında körünecek.',
+	'pairs.noRoomsHint':
+		'Birini meydanğa ketiriñiz — bu saifeni açqan er kes içün o mında körünecek.',
 	'pairs.players': 'Oyuncılar',
 	'pairs.enter': 'Kir',
 	'pairs.shownNewest': 'Eñ yañıları kösterile — daa da bar',
 	'pairs.startingIn': 'Başlamağa qaldı:',
 	'pairs.seconds': 'san.',
-	'pairs.roomsUnavailable': 'Odalar cedveli irişilmez. Kodnen qoşuluv ve oda meydanğa ketirüv alâ daa çalışa.',
+	'pairs.roomsUnavailable':
+		'Odalar cedveli irişilmez. Kodnen qoşuluv ve oda meydanğa ketirüv alâ daa çalışa.',
 	'menu.game.population': 'Kim daa çoq?',
 	'menu.game.habitat': 'Olar qayerde yaşay?',
 	'menu.game.mythbusters': 'Kerçekmi ya da Efsanemi?',
@@ -164,6 +183,8 @@ export const ui = {
 	'common.copyDenied': 'Bravzer buferge yazıp olamadı. Qolnen kopiyalañız: Ctrl+C.',
 	'header.toggleTheme': 'Temanı deñiştir',
 	'header.toggleLocale': 'Tilni deñiştir',
+	'header.searchLocale': 'Til qıdır…',
+	'header.emptyLanguages': 'Til tapılmadı',
 	'header.toggleFullscreen': 'Tam ekranğa keç',
 	'header.exitFullscreen': 'Tam ekrandan çıq',
 	'header.score': 'Umumiy bellar',
@@ -180,7 +201,8 @@ export const ui = {
 	'error.retry': 'Kene deñeñiz',
 	'error.goHome': 'Baş saifeghe bar',
 	'beta.title': 'Beta-synav',
-	'beta.intro': 'Teşkerilmege lâyıq şeyler cedveli. Unsurlarnı işaretleñiz, soñra soñundaki esabatnı kopyalap, bizge yollañız.',
+	'beta.intro':
+		'Teşkerilmege lâyıq şeyler cedveli. Unsurlarnı işaretleñiz, soñra soñundaki esabatnı kopyalap, bizge yollañız.',
 	'beta.progress': 'Bu versiyada işaretlendi',
 	'beta.vote.none': 'Teşkerilmedi',
 	'beta.vote.fail': 'Bozuqlıq bar',
@@ -192,8 +214,10 @@ export const ui = {
 	'beta.coverage.testable': 'Şimdilik avtomatik synav yoq',
 	'beta.coverage.covered': 'Synav ile qaplandı',
 	'beta.coverage.manualHint': 'Bunı iç bir maşna teşkerip olamaz — mında öz közleriñiz kerek.',
-	'beta.coverage.testableHint': 'Bu avtomatik tarzda teşkerilip biline edi, amma öyle bir synav alâ daa yoq.',
-	'beta.coverage.coveredHint': 'Avtomatik synav bunı artıq nezaret ete. Mında bir hata tapsañız, synavnıñ özi yañlıştır — ve bu bizim içün pek qıymetlidir.',
+	'beta.coverage.testableHint':
+		'Bu avtomatik tarzda teşkerilip biline edi, amma öyle bir synav alâ daa yoq.',
+	'beta.coverage.coveredHint':
+		'Avtomatik synav bunı artıq nezaret ete. Mında bir hata tapsañız, synavnıñ özi yañlıştır — ve bu bizim içün pek qıymetlidir.',
 	'beta.stale': 'başqa bir versiyada işaretlengen',
 	'beta.copy': 'Esabatnı kopyala',
 	'beta.copied': 'Esabat kopyalandı',
@@ -201,12 +225,14 @@ export const ui = {
 	'beta.clearConfirm': 'Kerçekten temislensinmi? Kene basıñız',
 	'beta.tabProgress': 'bu vkladkada işaretlengen',
 	'beta.home': 'Baş saife',
-	'beta.copyFailed': 'Brauzer kopyalavğa izin bermedi. Aşağıdaki metinni saylap, qolnen kopyalañız.',
+	'beta.copyFailed':
+		'Brauzer kopyalavğa izin bermedi. Aşağıdaki metinni saylap, qolnen kopyalañız.',
 	'beta.rulesTitle': 'Malumat bazasına kiriş qaideleri',
 	'beta.rulesCheck': 'Teşker',
 	'beta.rulesChecking': 'Malumat bazasından sorala…',
 	'beta.rulesFresh': 'Qurulğan versiya bu cıyıntıqqa uyğun kele',
-	'beta.rulesStale': 'Malumat bazası BAŞQA bir versiyanı çalıştıra — bu cıyıntıq alâ daa qurulmağan',
+	'beta.rulesStale':
+		'Malumat bazası BAŞQA bir versiyanı çalıştıra — bu cıyıntıq alâ daa qurulmağan',
 	'beta.rulesUnknown': 'Belgilenip olamadı: ağ yoq yaki malumat bazasına irişip olamadıq',
 	'pairs.startMode': 'Oyun başlay',
 	'pairs.modeAuto': 'Avto başlav',
@@ -220,5 +246,5 @@ export const ui = {
 	'review.partial': 'qısmen doğru',
 	'review.back': 'Şimdiki sualge qayt',
 	'review.backToResults': 'Neticelerge qayt',
-	'review.list': 'Bu oyunnıñ sualleri',
+	'review.list': 'Bu oyunnıñ sualleri'
 } as const;

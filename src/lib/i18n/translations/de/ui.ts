@@ -212,6 +212,8 @@ export const ui = {
 	// sich wie eine Handlung liest.
 	'header.toggleTheme': 'Design wechseln',
 	'header.toggleLocale': 'Sprache wechseln',
+	'header.searchLocale': 'Sprache suchen…',
+	'header.emptyLanguages': 'Keine Sprachen gefunden',
 	'header.toggleFullscreen': 'Vollbild einschalten',
 	'header.exitFullscreen': 'Vollbild beenden',
 	'header.score': 'Gesamtpunktzahl',

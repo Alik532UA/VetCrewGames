@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Besplatne edukativne igre o životinjama: provjerite svoje znanje o tome čime se hrane, koliko ih je još preostalo u divljini i o mitovima u koje ljudi još uvijek vjeruju. Stvoreno kao podrška dobrobiti životinja.',
+	'app.description':
+		'Besplatne edukativne igre o životinjama: provjerite svoje znanje o tome čime se hrane, koliko ih je još preostalo u divljini i o mitovima u koje ljudi još uvijek vjeruju. Stvoreno kao podrška dobrobiti životinja.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Čime se hrane?',
 	'menu.game.memory': 'Pronađi par',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Ta je soba namijenjena drugoj igri.',
 	'menu.play': 'Igraj',
 	'menu.playOnline': 'Igraj na mreži',
-	'problem.offline': 'Nema veze s poslužiteljem igre. Provjerite internetsku vezu i pokušajte ponovno.',
-	'problem.reload': 'Izašla je nova inačica igre, a ova stranica je zastarjela. Ponovno učitajte stranicu i sve će raditi.',
-	'problem.mismatch': 'Pravila poslužitelja novija su od ove stranice: igra se upravo ažurira. Ponovno učitajte stranicu za nekoliko minuta, a ako i dalje ne radi, javite se razvojnom programeru.',
-	'problem.rules': 'Nova pravila baze podataka još nisu objavljena na Firebaseu: ova inačica igre očekuje drukčija pravila od onih koja poslužitelj trenutačno koristi. Ponovni pokušaj neće pomoći — pravila se najprije moraju implementirati.',
-	'problem.code': 'Došlo je do pogreške u programskom kodu igre — ponovni pokušaj neće riješiti problem. Obratite se razvojnom programeru: kopirajte izvješće i pošaljite ga u poruci.',
-	'problem.emulator': 'Lokalni Firebase emulator ne odgovara: razvojna verzija komunicira s njim, a ne sa stvarnom bazom podataka. Pokrenite npm run emulators u terminalu — a ako je već pokrenut, ponovno ga pokrenite.',
+	'problem.offline':
+		'Nema veze s poslužiteljem igre. Provjerite internetsku vezu i pokušajte ponovno.',
+	'problem.reload':
+		'Izašla je nova inačica igre, a ova stranica je zastarjela. Ponovno učitajte stranicu i sve će raditi.',
+	'problem.mismatch':
+		'Pravila poslužitelja novija su od ove stranice: igra se upravo ažurira. Ponovno učitajte stranicu za nekoliko minuta, a ako i dalje ne radi, javite se razvojnom programeru.',
+	'problem.rules':
+		'Nova pravila baze podataka još nisu objavljena na Firebaseu: ova inačica igre očekuje drukčija pravila od onih koja poslužitelj trenutačno koristi. Ponovni pokušaj neće pomoći — pravila se najprije moraju implementirati.',
+	'problem.code':
+		'Došlo je do pogreške u programskom kodu igre — ponovni pokušaj neće riješiti problem. Obratite se razvojnom programeru: kopirajte izvješće i pošaljite ga u poruci.',
+	'problem.emulator':
+		'Lokalni Firebase emulator ne odgovara: razvojna verzija komunicira s njim, a ne sa stvarnom bazom podataka. Pokrenite npm run emulators u terminalu — a ako je već pokrenut, ponovno ga pokrenite.',
 	'problem.copyReport': 'Kopiraj izvješće',
 	'problem.copied': 'Izvješće je kopirano',
 	'problem.contact': 'Kontaktirajte programera',
-	'problem.contactHint': 'Pišite putem aplikacije za poruke koja vam najviše odgovara i ondje zalijepite kopirano izvješće.',
+	'problem.contactHint':
+		'Pišite putem aplikacije za poruke koja vam najviše odgovara i ondje zalijepite kopirano izvješće.',
 	'problem.writeVia': 'Pošaljite poruku programeru putem',
-	'online.searchBusy': 'Dok traje automatsko pretraživanje, ništa drugo nije dostupno — najprije otkažite pretraživanje.',
+	'online.searchBusy':
+		'Dok traje automatsko pretraživanje, ništa drugo nije dostupno — najprije otkažite pretraživanje.',
 	'online.search': 'Automatsko pretraživanje',
 	'online.searchGames': 'Što igramo',
 	'online.searchLast': 'Barem jedna igra mora ostati odabrana',
-	'online.searchHint': 'Pronaći ćemo protivnika u jednoj od odabranih igara — a ako nema nikoga, pričekat ćemo dok se netko ne pojavi.',
+	'online.searchHint':
+		'Pronaći ćemo protivnika u jednoj od odabranih igara — a ako nema nikoga, pričekat ćemo dok se netko ne pojavi.',
 	'online.searching': 'Traženje igrača…',
-	'online.waiting': 'Čekanje igrača. Čim netko potraži neku od odabranih igara, bit ćete u istoj sobi.',
+	'online.waiting':
+		'Čekanje igrača. Čim netko potraži neku od odabranih igara, bit ćete u istoj sobi.',
 	'online.found': 'Igrač je pronađen — povezivanje…',
 	'online.searchCancel': 'Odustani',
 	'online.createTitle': 'Nova soba:',
 	'online.everyoneHint': 'Soba se prikazuje na popisu i svatko se može pridružiti.',
-	'online.friendsHint': 'Soba nije na popisu: igrači se mogu pridružiti samo s kodom koji im pošaljete.',
+	'online.friendsHint':
+		'Soba nije na popisu: igrači se mogu pridružiti samo s kodom koji im pošaljete.',
 	'online.back': 'Natrag',
 	'online.join': 'Pridruži se',
 	'online.opening': 'Otvaranje sobe…',
@@ -79,10 +91,13 @@ export const ui = {
 	'pairs.roomLost': 'Soba više nije dostupna — pridružite se ponovno.',
 	'pairs.removed': 'Domaćin vas je uklonio iz sobe.',
 	'pairs.offline': 'Nema veze s poslužiteljem — čeka se ponovno uspostavljanje veze.',
-	'pairs.rulesChanged': 'Pravila poslužitelja su ažurirana i ova je stranica zastarjela, stoga se potezi ne bilježe. Ponovno učitajte stranicu — igra se nastavlja tamo gdje je stala.',
-	'pairs.newBuild': 'Izašla je nova inačica igre — ponovno učitajte stranicu. Soba u kojoj ste bili ponovno će se otvoriti, osim ako su promijenjena pravila igre.',
+	'pairs.rulesChanged':
+		'Pravila poslužitelja su ažurirana i ova je stranica zastarjela, stoga se potezi ne bilježe. Ponovno učitajte stranicu — igra se nastavlja tamo gdje je stala.',
+	'pairs.newBuild':
+		'Izašla je nova inačica igre — ponovno učitajte stranicu. Soba u kojoj ste bili ponovno će se otvoriti, osim ako su promijenjena pravila igre.',
 	'pairs.reload': 'Ponovno učitaj stranicu',
-	'pairs.noLead': 'Domaćin je otišao i nitko ovdje ne može preuzeti vođenje. Možete napustiti sobu ili stvoriti novu.',
+	'pairs.noLead':
+		'Domaćin je otišao i nitko ovdje ne može preuzeti vođenje. Možete napustiti sobu ili stvoriti novu.',
 	'pairs.leaveRoom': 'Napusti sobu',
 	'pairs.playNext': 'Igraj u sljedećoj igri',
 	'pairs.roomOlder': 'Ova igra je pokrenuta u starijoj verziji. Molimo stvorite novu sobu.',
@@ -102,11 +117,14 @@ export const ui = {
 	'pairs.avatarDone': 'Gotovo',
 	'pairs.myAvatar': 'Tvoj avatar',
 	'pairs.inviteTitle': 'Pozvani ste u sobu',
-	'pairs.inviteHint': 'Ovako će vas drugi vidjeti. Možete to promijeniti sada ili kasnije u predvorju.',
+	'pairs.inviteHint':
+		'Ovako će vas drugi vidjeti. Možete to promijeniti sada ili kasnije u predvorju.',
 	'pairs.inviteJoin': 'Pridruži se',
 	'pairs.inviteBack': 'Na popis soba',
-	'pairs.inviteAvatarTaken': 'Drugi igrač ovdje već ima ovaj avatar. Odaberite drugi — ili se jednostavno pridružite i dobit ćete slobodan avatar.',
-	'pairs.avatarReplaced': 'Drugi igrač u ovoj sobi već ima vaš avatar, pa ste dobili drugi. Možete ga promijeniti u predvorju.',
+	'pairs.inviteAvatarTaken':
+		'Drugi igrač ovdje već ima ovaj avatar. Odaberite drugi — ili se jednostavno pridružite i dobit ćete slobodan avatar.',
+	'pairs.avatarReplaced':
+		'Drugi igrač u ovoj sobi već ima vaš avatar, pa ste dobili drugi. Možete ga promijeniti u predvorju.',
 	'pairs.nickname': 'Nadimak',
 	'pairs.country': 'Zastava',
 	'country.xr': 'Ruski dobrovoljački korpus',
@@ -124,7 +142,8 @@ export const ui = {
 	'pairs.shownNewest': 'Prikazuju se najnovije — ima ih još',
 	'pairs.startingIn': 'Počinje za',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Popis soba nije dostupan. Pridruživanje kodom i stvaranje sobe i dalje rade.',
+	'pairs.roomsUnavailable':
+		'Popis soba nije dostupan. Pridruživanje kodom i stvaranje sobe i dalje rade.',
 	'menu.game.population': 'Kojih ima više?',
 	'menu.game.habitat': 'Gdje žive?',
 	'menu.game.mythbusters': 'Činjenica ili mit?',
@@ -138,11 +157,13 @@ export const ui = {
 	'scrollbar.custom': 'Autorska',
 	'memory.title': 'Pronađi par',
 	'memory.card': 'Karta',
-	'memory.prompt': 'Okrenite po dvije karte odjednom. One koje se podudaraju ostaju okrenute licem prema gore.',
+	'memory.prompt':
+		'Okrenite po dvije karte odjednom. One koje se podudaraju ostaju okrenute licem prema gore.',
 	'memory.you': 'Vi',
 	'memory.rival': 'Suparnik',
 	'memory.moves': 'Potezi',
-	'memory.resized': 'Veličina zaslona se promijenila. Raspored je ostao onakav kakav je bio na početku partije.',
+	'memory.resized':
+		'Veličina zaslona se promijenila. Raspored je ostao onakav kakav je bio na početku partije.',
 	'memory.relayout': 'Ponovno podijeli za prilagodbu',
 	'memory.found': 'Pronađeno',
 	'memory.turn': 'Potez',
@@ -164,6 +185,8 @@ export const ui = {
 	'common.copyDenied': 'Preglednik ne može pisati u međuspremnik. Kopirajte ručno: Ctrl+C.',
 	'header.toggleTheme': 'Promijeni temu',
 	'header.toggleLocale': 'Promijeni jezik',
+	'header.searchLocale': 'Pretraži jezik…',
+	'header.emptyLanguages': 'Nema pronađenih jezika',
 	'header.toggleFullscreen': 'Cijeli zaslon',
 	'header.exitFullscreen': 'Izađi iz cijelog zaslona',
 	'header.score': 'Ukupni rezultat',
@@ -180,7 +203,8 @@ export const ui = {
 	'error.retry': 'Pokušaj ponovno',
 	'error.goHome': 'Idi na početnu',
 	'beta.title': 'Beta testiranje',
-	'beta.intro': 'Popis stavki koje vrijedi provjeriti. Označite stavke, zatim na kraju kopirajte izvješće i pošaljite nam ga.',
+	'beta.intro':
+		'Popis stavki koje vrijedi provjeriti. Označite stavke, zatim na kraju kopirajte izvješće i pošaljite nam ga.',
 	'beta.progress': 'Označeno u ovoj verziji',
 	'beta.vote.none': 'Nije provjereno',
 	'beta.vote.fail': 'Ne radi',
@@ -191,9 +215,12 @@ export const ui = {
 	'beta.coverage.manual': 'Samo ljudi',
 	'beta.coverage.testable': 'Još nema automatskog testa',
 	'beta.coverage.covered': 'Pokriveno testom',
-	'beta.coverage.manualHint': 'Nijedan sustav ovo ne provjerava — ovdje su potrebne vaše vlastite oči.',
-	'beta.coverage.testableHint': 'Ovo bi se moglo automatski provjeriti, ali takav test još ne postoji.',
-	'beta.coverage.coveredHint': 'Automatski test već prati ovu stavku. Ako ovdje pronađete grešku, test je netočan — a to nam je osobito dragocjeno.',
+	'beta.coverage.manualHint':
+		'Nijedan sustav ovo ne provjerava — ovdje su potrebne vaše vlastite oči.',
+	'beta.coverage.testableHint':
+		'Ovo bi se moglo automatski provjeriti, ali takav test još ne postoji.',
+	'beta.coverage.coveredHint':
+		'Automatski test već prati ovu stavku. Ako ovdje pronađete grešku, test je netočan — a to nam je osobito dragocjeno.',
 	'beta.stale': 'označeno u drugoj verziji',
 	'beta.copy': 'Kopiraj izvješće',
 	'beta.copied': 'Izvješće kopirano',
@@ -201,7 +228,8 @@ export const ui = {
 	'beta.clearConfirm': 'Stvarno očistiti? Pritisnite ponovno',
 	'beta.tabProgress': 'označeno na ovoj kartici',
 	'beta.home': 'Početna',
-	'beta.copyFailed': 'Preglednik je odbio kopiranje. Označite tekst u nastavku i ručno ga kopirajte.',
+	'beta.copyFailed':
+		'Preglednik je odbio kopiranje. Označite tekst u nastavku i ručno ga kopirajte.',
 	'beta.rulesTitle': 'Pravila pristupa bazi podataka',
 	'beta.rulesCheck': 'Provjeri',
 	'beta.rulesChecking': 'Upit bazi podataka…',
@@ -220,5 +248,5 @@ export const ui = {
 	'review.partial': 'djelomično točno',
 	'review.back': 'Natrag na trenutno pitanje',
 	'review.backToResults': 'Natrag na rezultate',
-	'review.list': 'Pitanja ove igre',
+	'review.list': 'Pitanja ove igre'
 } as const;

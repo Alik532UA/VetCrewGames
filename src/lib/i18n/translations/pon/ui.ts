@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Free educational games about animals: test what you know about what they eat, how many are left, and the myths people still believe. Made in support of animal welfare.',
+	'app.description':
+		'Free educational games about animals: test what you know about what they eat, how many are left, and the myths people still believe. Made in support of animal welfare.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'What do they eat?',
 	'menu.game.memory': 'Find a pair',
@@ -12,24 +13,34 @@ export const ui = {
 	'quiz.otherGame': 'That room is for a different game.',
 	'menu.play': 'Play',
 	'menu.playOnline': 'Play online',
-	'problem.offline': 'There is no connection to the game server. Check your internet and try again.',
-	'problem.reload': 'A new version of the game is out, and this page is the old one. Reload the page and everything will work.',
-	'problem.mismatch': 'The server rules are already newer than this page: the game is being updated right now. Reload the page in a few minutes, and if it still does not work, message the developer.',
-	'problem.rules': 'The new database rules are not published to Firebase yet: this version of the game expects different rules from the ones the server runs now. Trying again will not help — the rules have to be deployed first.',
-	'problem.code': 'This is a problem in the game code — trying again will not fix it. Please contact the developer: copy the report and send it in your message.',
-	'problem.emulator': 'The local Firebase emulator is not responding: the dev build talks to it, not to the real database. Run npm run emulators in a terminal — and if it is already running, restart it.',
+	'problem.offline':
+		'There is no connection to the game server. Check your internet and try again.',
+	'problem.reload':
+		'A new version of the game is out, and this page is the old one. Reload the page and everything will work.',
+	'problem.mismatch':
+		'The server rules are already newer than this page: the game is being updated right now. Reload the page in a few minutes, and if it still does not work, message the developer.',
+	'problem.rules':
+		'The new database rules are not published to Firebase yet: this version of the game expects different rules from the ones the server runs now. Trying again will not help — the rules have to be deployed first.',
+	'problem.code':
+		'This is a problem in the game code — trying again will not fix it. Please contact the developer: copy the report and send it in your message.',
+	'problem.emulator':
+		'The local Firebase emulator is not responding: the dev build talks to it, not to the real database. Run npm run emulators in a terminal — and if it is already running, restart it.',
 	'problem.copyReport': 'Copy the report',
 	'problem.copied': 'Report copied',
 	'problem.contact': 'Contact the developer',
-	'problem.contactHint': 'Write in whichever messenger suits you and paste the copied report there.',
+	'problem.contactHint':
+		'Write in whichever messenger suits you and paste the copied report there.',
 	'problem.writeVia': 'Message the developer on',
-	'online.searchBusy': 'While the automatic search runs, nothing else is available — cancel the search first.',
+	'online.searchBusy':
+		'While the automatic search runs, nothing else is available — cancel the search first.',
 	'online.search': 'Automatic search',
 	'online.searchGames': 'What we play',
 	'online.searchLast': 'At least one game has to stay on',
-	'online.searchHint': 'We will find an opponent in one of the chosen games — and if nobody is around, we will wait until someone comes.',
+	'online.searchHint':
+		'We will find an opponent in one of the chosen games — and if nobody is around, we will wait until someone comes.',
 	'online.searching': 'Looking for a player…',
-	'online.waiting': 'Waiting for a player. As soon as someone looks for one of the chosen games, you will be in the same room.',
+	'online.waiting':
+		'Waiting for a player. As soon as someone looks for one of the chosen games, you will be in the same room.',
 	'online.found': 'Found a player — connecting…',
 	'online.searchCancel': 'Cancel',
 	'online.createTitle': 'New room:',
@@ -64,7 +75,7 @@ export const ui = {
 	'pairs.linkCopied': 'Link copied!',
 	'pairs.showQr': 'Show QR code',
 	'pairs.hideQr': 'Hide QR code',
-	'pairs.yourName': 'What\'s your name?',
+	'pairs.yourName': "What's your name?",
 	'pairs.rolePlayer': 'Player',
 	'pairs.roleSpectator': 'Spectator',
 	'pairs.start': 'Start the game',
@@ -79,10 +90,13 @@ export const ui = {
 	'pairs.roomLost': 'The room is no longer available — join it again.',
 	'pairs.removed': 'The host removed you from the room.',
 	'pairs.offline': 'No connection to the server — waiting for it to come back.',
-	'pairs.rulesChanged': 'The server rules have been updated and this page is out of date, so moves are not going through. Reload the page — the game continues where it left off.',
-	'pairs.newBuild': 'A new version of the game is out — reload the page. The room you were in opens again unless the game rules changed.',
+	'pairs.rulesChanged':
+		'The server rules have been updated and this page is out of date, so moves are not going through. Reload the page — the game continues where it left off.',
+	'pairs.newBuild':
+		'A new version of the game is out — reload the page. The room you were in opens again unless the game rules changed.',
 	'pairs.reload': 'Reload page',
-	'pairs.noLead': 'The host is gone, and nobody here can take over the lead. You can leave the room or create a new one.',
+	'pairs.noLead':
+		'The host is gone, and nobody here can take over the lead. You can leave the room or create a new one.',
 	'pairs.leaveRoom': 'Leave the room',
 	'pairs.playNext': 'Play in the next game',
 	'pairs.roomOlder': 'This game was started in an older version. Please create a new room.',
@@ -102,11 +116,14 @@ export const ui = {
 	'pairs.avatarDone': 'Done',
 	'pairs.myAvatar': 'Your avatar',
 	'pairs.inviteTitle': 'You are invited to room',
-	'pairs.inviteHint': 'This is how others will see you. You can change it now or later in the lobby.',
+	'pairs.inviteHint':
+		'This is how others will see you. You can change it now or later in the lobby.',
 	'pairs.inviteJoin': 'Join',
 	'pairs.inviteBack': 'To the room list',
-	'pairs.inviteAvatarTaken': 'Another player here already has this avatar. Pick another one — or just join, and you will get a free one.',
-	'pairs.avatarReplaced': 'Another player in this room already has your avatar, so you got a different one. You can change it in the lobby.',
+	'pairs.inviteAvatarTaken':
+		'Another player here already has this avatar. Pick another one — or just join, and you will get a free one.',
+	'pairs.avatarReplaced':
+		'Another player in this room already has your avatar, so you got a different one. You can change it in the lobby.',
 	'pairs.nickname': 'Nickname',
 	'pairs.country': 'Flag',
 	'country.xr': 'Russian Volunteer Corps',
@@ -124,7 +141,8 @@ export const ui = {
 	'pairs.shownNewest': 'Showing the newest — there are more',
 	'pairs.startingIn': 'Starting in',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'The room list is unavailable. Joining by code and creating a room still work.',
+	'pairs.roomsUnavailable':
+		'The room list is unavailable. Joining by code and creating a room still work.',
 	'menu.game.population': 'Who is more?',
 	'menu.game.habitat': 'Where do they live?',
 	'menu.game.mythbusters': 'Fact or Myth?',
@@ -164,6 +182,8 @@ export const ui = {
 	'common.copyDenied': 'The browser would not write to the clipboard. Copy by hand: Ctrl+C.',
 	'header.toggleTheme': 'Change theme',
 	'header.toggleLocale': 'Change language',
+	'header.searchLocale': 'Rapahki lokaia…',
+	'header.emptyLanguages': 'Sohte lokaia diarada',
 	'header.toggleFullscreen': 'Enter fullscreen',
 	'header.exitFullscreen': 'Exit fullscreen',
 	'header.score': 'Total score',
@@ -180,7 +200,8 @@ export const ui = {
 	'error.retry': 'Try again',
 	'error.goHome': 'Go home',
 	'beta.title': 'Beta testing',
-	'beta.intro': 'A list of things worth checking. Mark the items, then copy the report at the end and send it to us.',
+	'beta.intro':
+		'A list of things worth checking. Mark the items, then copy the report at the end and send it to us.',
 	'beta.progress': 'Marked on this version',
 	'beta.vote.none': 'Not checked',
 	'beta.vote.fail': 'Broken',
@@ -193,7 +214,8 @@ export const ui = {
 	'beta.coverage.covered': 'Covered by a test',
 	'beta.coverage.manualHint': 'No machine checks this — your own eyes are what is needed here.',
 	'beta.coverage.testableHint': 'This could be checked automatically, but no such test exists yet.',
-	'beta.coverage.coveredHint': 'An automated test already watches this. If you find a bug here, the test is wrong — and that is especially valuable to us.',
+	'beta.coverage.coveredHint':
+		'An automated test already watches this. If you find a bug here, the test is wrong — and that is especially valuable to us.',
 	'beta.stale': 'marked on a different version',
 	'beta.copy': 'Copy the report',
 	'beta.copied': 'Report copied',
@@ -220,5 +242,5 @@ export const ui = {
 	'review.partial': 'partly right',
 	'review.back': 'Back to the current question',
 	'review.backToResults': 'Back to the results',
-	'review.list': 'This game’s questions',
+	'review.list': 'This game’s questions'
 } as const;

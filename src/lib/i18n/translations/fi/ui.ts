@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Ilmaisia opettavaisia eläinpelejä: testaa tietosi siitä, mitä eläimet syövät, kuinka monta niitä on jäljellä ja mitä myyttejä ihmiset yhä uskovat. Tehty tukemaan eläinten hyvinvointia.',
+	'app.description':
+		'Ilmaisia opettavaisia eläinpelejä: testaa tietosi siitä, mitä eläimet syövät, kuinka monta niitä on jäljellä ja mitä myyttejä ihmiset yhä uskovat. Tehty tukemaan eläinten hyvinvointia.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Mitä ne syövät?',
 	'menu.game.memory': 'Etsi pari',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Tämä huone on eri peliä varten.',
 	'menu.play': 'Pelaa',
 	'menu.playOnline': 'Pelaa verkossa',
-	'problem.offline': 'Yhteyttä pelipalvelimeen ei ole. Tarkista internet-yhteytesi ja yritä uudelleen.',
-	'problem.reload': 'Pelistä on julkaistu uusi versio, ja tämä sivu on vanhentunut. Lataa sivu uudelleen, niin kaikki toimii.',
-	'problem.mismatch': 'Palvelimen säännöt ovat jo uudemmat kuin tällä sivulla: peliä päivitetään juuri nyt. Lataa sivu uudelleen muutaman minuutin kuluttua. Jos se ei vieläkään toimi, ota yhteyttä kehittäjään.',
-	'problem.rules': 'Tietokannan uusia sääntöjä ei ole vielä julkaistu Firebaseen: tämä peliversio odottaa eri sääntöjä kuin mitä palvelimella on parhaillaan käytössä. Uudelleen yrittäminen ei auta — säännöt on otettava ensin käyttöön.',
-	'problem.code': 'Tämä on virhe pelikoodissa — uudelleen yrittäminen ei korjaa sitä. Ota yhteyttä kehittäjään: kopioi virheraportti ja lähetä se viestissäsi.',
-	'problem.emulator': 'Paikallinen Firebase-emulaattori ei vastaa: kehitysversio kommunikoi sen, ei oikean tietokannan kanssa. Suorita terminaalissa komento npm run emulators — ja jos se on jo käynnissä, käynnistä se uudelleen.',
+	'problem.offline':
+		'Yhteyttä pelipalvelimeen ei ole. Tarkista internet-yhteytesi ja yritä uudelleen.',
+	'problem.reload':
+		'Pelistä on julkaistu uusi versio, ja tämä sivu on vanhentunut. Lataa sivu uudelleen, niin kaikki toimii.',
+	'problem.mismatch':
+		'Palvelimen säännöt ovat jo uudemmat kuin tällä sivulla: peliä päivitetään juuri nyt. Lataa sivu uudelleen muutaman minuutin kuluttua. Jos se ei vieläkään toimi, ota yhteyttä kehittäjään.',
+	'problem.rules':
+		'Tietokannan uusia sääntöjä ei ole vielä julkaistu Firebaseen: tämä peliversio odottaa eri sääntöjä kuin mitä palvelimella on parhaillaan käytössä. Uudelleen yrittäminen ei auta — säännöt on otettava ensin käyttöön.',
+	'problem.code':
+		'Tämä on virhe pelikoodissa — uudelleen yrittäminen ei korjaa sitä. Ota yhteyttä kehittäjään: kopioi virheraportti ja lähetä se viestissäsi.',
+	'problem.emulator':
+		'Paikallinen Firebase-emulaattori ei vastaa: kehitysversio kommunikoi sen, ei oikean tietokannan kanssa. Suorita terminaalissa komento npm run emulators — ja jos se on jo käynnissä, käynnistä se uudelleen.',
 	'problem.copyReport': 'Kopioi raportti',
 	'problem.copied': 'Raportti kopioitu',
 	'problem.contact': 'Ota yhteyttä kehittäjään',
-	'problem.contactHint': 'Kirjoita haluamassasi pikaviestimessä ja liitä kopioitu raportti viestiin.',
+	'problem.contactHint':
+		'Kirjoita haluamassasi pikaviestimessä ja liitä kopioitu raportti viestiin.',
 	'problem.writeVia': 'Lähetä kehittäjälle viesti palvelussa',
-	'online.searchBusy': 'Automaattisen haun ollessa käynnissä mikään muu ei ole käytettävissä — peruuta ensin haku.',
+	'online.searchBusy':
+		'Automaattisen haun ollessa käynnissä mikään muu ei ole käytettävissä — peruuta ensin haku.',
 	'online.search': 'Automaattinen haku',
 	'online.searchGames': 'Mitä pelataan',
 	'online.searchLast': 'Vähintään yhden pelin on pysyttävä valittuna',
-	'online.searchHint': 'Etsimme vastustajan johonkin valituista peleistä — ja jos ketään ei löydy, odotamme, kunnes joku saapuu.',
+	'online.searchHint':
+		'Etsimme vastustajan johonkin valituista peleistä — ja jos ketään ei löydy, odotamme, kunnes joku saapuu.',
 	'online.searching': 'Etsitään pelaajaa…',
-	'online.waiting': 'Odotetaan pelaajaa. Heti kun joku etsii peliä valituista peleistä, pääsette samaan huoneeseen.',
+	'online.waiting':
+		'Odotetaan pelaajaa. Heti kun joku etsii peliä valituista peleistä, pääsette samaan huoneeseen.',
 	'online.found': 'Pelaaja löytyi — yhdistetään…',
 	'online.searchCancel': 'Peruuta',
 	'online.createTitle': 'Uusi huone:',
 	'online.everyoneHint': 'Huone näkyy listalla, ja kuka tahansa voi liittyä.',
-	'online.friendsHint': 'Huone ei ole julkisella listalla: mukaan pääsee vain lähettämälläsi koodilla.',
+	'online.friendsHint':
+		'Huone ei ole julkisella listalla: mukaan pääsee vain lähettämälläsi koodilla.',
 	'online.back': 'Takaisin',
 	'online.join': 'Liity',
 	'online.opening': 'Avataan huonetta…',
@@ -79,10 +91,13 @@ export const ui = {
 	'pairs.roomLost': 'Huone ei ole enää saatavilla — liity siihen uudelleen.',
 	'pairs.removed': 'Ylläpitäjä poisti sinut huoneesta.',
 	'pairs.offline': 'Ei yhteyttä palvelimeen — odotetaan yhteyden palautumista.',
-	'pairs.rulesChanged': 'Palvelimen säännöt on päivitetty ja tämä sivu on vanhentunut, joten siirrot eivät mene läpi. Lataa sivu uudelleen — peli jatkuu siitä, mihin se jäi.',
-	'pairs.newBuild': 'Pelistä on julkaistu uusi versio — lataa sivu uudelleen. Huone, jossa olit, aukeaa uudelleen, elleivät pelisäännöt ole muuttuneet.',
+	'pairs.rulesChanged':
+		'Palvelimen säännöt on päivitetty ja tämä sivu on vanhentunut, joten siirrot eivät mene läpi. Lataa sivu uudelleen — peli jatkuu siitä, mihin se jäi.',
+	'pairs.newBuild':
+		'Pelistä on julkaistu uusi versio — lataa sivu uudelleen. Huone, jossa olit, aukeaa uudelleen, elleivät pelisäännöt ole muuttuneet.',
 	'pairs.reload': 'Lataa sivu uudelleen',
-	'pairs.noLead': 'Ylläpitäjä on poistunut, eikä kukaan täällä voi ottaa pelinjohtajan roolia. Voit poistua huoneesta tai luoda uuden.',
+	'pairs.noLead':
+		'Ylläpitäjä on poistunut, eikä kukaan täällä voi ottaa pelinjohtajan roolia. Voit poistua huoneesta tai luoda uuden.',
 	'pairs.leaveRoom': 'Poistu huoneesta',
 	'pairs.playNext': 'Pelaa seuraavassa pelissä',
 	'pairs.roomOlder': 'Tämä peli aloitettiin vanhemmassa versiossa. Luo uusi huone.',
@@ -105,8 +120,10 @@ export const ui = {
 	'pairs.inviteHint': 'Näin muut näkevät sinut. Voit vaihtaa tämän nyt tai myöhemmin aulassa.',
 	'pairs.inviteJoin': 'Liity',
 	'pairs.inviteBack': 'Huoneluetteloon',
-	'pairs.inviteAvatarTaken': 'Toisella pelaajalla on jo tämä profiilikuva. Valitse toinen — tai liity vain mukaan, niin saat vapaana olevan kuvan.',
-	'pairs.avatarReplaced': 'Toisella pelaajalla tässä huoneessa on jo sama profiilikuva, joten sait toisen. Voit vaihtaa sen aulassa.',
+	'pairs.inviteAvatarTaken':
+		'Toisella pelaajalla on jo tämä profiilikuva. Valitse toinen — tai liity vain mukaan, niin saat vapaana olevan kuvan.',
+	'pairs.avatarReplaced':
+		'Toisella pelaajalla tässä huoneessa on jo sama profiilikuva, joten sait toisen. Voit vaihtaa sen aulassa.',
 	'pairs.nickname': 'Nimimerkki',
 	'pairs.country': 'Lippu',
 	'country.xr': 'Venäjän vapaaehtoisjoukot',
@@ -124,7 +141,8 @@ export const ui = {
 	'pairs.shownNewest': 'Näytetään uusimmat — huoneita on enemmän',
 	'pairs.startingIn': 'Alkaa ajassa',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Huoneluettelo ei ole käytettävissä. Koodilla liittyminen ja huoneen luominen toimivat silti.',
+	'pairs.roomsUnavailable':
+		'Huoneluettelo ei ole käytettävissä. Koodilla liittyminen ja huoneen luominen toimivat silti.',
 	'menu.game.population': 'Kumman kanta on suurempi?',
 	'menu.game.habitat': 'Missä ne elävät?',
 	'menu.game.mythbusters': 'Faktaa vai tarua?',
@@ -164,6 +182,8 @@ export const ui = {
 	'common.copyDenied': 'Selain ei voinut kirjoittaa leikepöydälle. Kopioi näppäimistöllä: Ctrl+C.',
 	'header.toggleTheme': 'Vaihda teemaa',
 	'header.toggleLocale': 'Vaihda kieltä',
+	'header.searchLocale': 'Hae kieltä…',
+	'header.emptyLanguages': 'Kieliä ei löytynyt',
 	'header.toggleFullscreen': 'Koko näyttö',
 	'header.exitFullscreen': 'Poistu koko näytöstä',
 	'header.score': 'Kokonaispisteet',
@@ -180,7 +200,8 @@ export const ui = {
 	'error.retry': 'Yritä uudelleen',
 	'error.goHome': 'Palaa alkuun',
 	'beta.title': 'Betatestaus',
-	'beta.intro': 'Luettelo tarkistettavista kohteista. Merkitse kohdat, kopioi raportti lopuksi ja lähetä se meille.',
+	'beta.intro':
+		'Luettelo tarkistettavista kohteista. Merkitse kohdat, kopioi raportti lopuksi ja lähetä se meille.',
 	'beta.progress': 'Merkitty tähän versioon',
 	'beta.vote.none': 'Ei tarkistettu',
 	'beta.vote.fail': 'Rikkuva / Ei toimi',
@@ -192,8 +213,10 @@ export const ui = {
 	'beta.coverage.testable': 'Ei automaattitestiä vielä',
 	'beta.coverage.covered': 'Automaattitestin kattama',
 	'beta.coverage.manualHint': 'Mikään kone ei tarkista tätä – tässä tarvitaan omia silmiäsi.',
-	'beta.coverage.testableHint': 'Tämä voitaisiin tarkistaa automaattisesti, mutta sellaista testiä ei vielä ole.',
-	'beta.coverage.coveredHint': 'Automaattitesti valvoo jo tätä. Jos löydät täältä virheen, testi on väärässä – ja se on meille erityisen arvokasta.',
+	'beta.coverage.testableHint':
+		'Tämä voitaisiin tarkistaa automaattisesti, mutta sellaista testiä ei vielä ole.',
+	'beta.coverage.coveredHint':
+		'Automaattitesti valvoo jo tätä. Jos löydät täältä virheen, testi on väärässä – ja se on meille erityisen arvokasta.',
 	'beta.stale': 'merkitty toisessa versiossa',
 	'beta.copy': 'Kopioi raportti',
 	'beta.copied': 'Raportti kopioitu',
@@ -206,7 +229,8 @@ export const ui = {
 	'beta.rulesCheck': 'Tarkista',
 	'beta.rulesChecking': 'Kysytään tietokannalta…',
 	'beta.rulesFresh': 'Käyttöön otettu versio vastaa tätä koontiversiota',
-	'beta.rulesStale': 'Tietokannassa on ERI versio – tätä koontiversiota ei ole vielä otettu käyttöön',
+	'beta.rulesStale':
+		'Tietokannassa on ERI versio – tätä koontiversiota ei ole vielä otettu käyttöön',
 	'beta.rulesUnknown': 'Ei voitu selvittää: ei verkkoyhteyttä tai tietokantaan ei saada yhteyttä',
 	'pairs.startMode': 'Pelin aloitus',
 	'pairs.modeAuto': 'Automaattinen aloitus',
@@ -220,5 +244,5 @@ export const ui = {
 	'review.partial': 'osittain oikein',
 	'review.back': 'Takaisin nykyiseen kysymykseen',
 	'review.backToResults': 'Takaisin tuloksiin',
-	'review.list': 'Tämän pelin kysymykset',
+	'review.list': 'Tämän pelin kysymykset'
 } as const;

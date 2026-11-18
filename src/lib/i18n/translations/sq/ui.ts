@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Lojërat e Vet Crew',
-	'app.description': 'Lojëra edukative falas për kafshët: testoni njohuritë tuaja rreth ushqimit të tyre, sa individë kanë mbetur dhe miteve që njerëzit ende besojnë. Krijuar në mbështetje të mirëqenies së kafshëve.',
+	'app.description':
+		'Lojëra edukative falas për kafshët: testoni njohuritë tuaja rreth ushqimit të tyre, sa individë kanë mbetur dhe miteve që njerëzit ende besojnë. Krijuar në mbështetje të mirëqenies së kafshëve.',
 	'menu.title': 'Lojërat e Vet Crew',
 	'menu.game.feeding': 'Çfarë hanë ato?',
 	'menu.game.memory': 'Gjej çiftin',
@@ -12,34 +13,45 @@ export const ui = {
 	'quiz.otherGame': 'Ajo dhomë është për një lojë tjetër.',
 	'menu.play': 'Luaj',
 	'menu.playOnline': 'Luaj në internet',
-	'problem.offline': 'Nuk ka lidhje me serverin e lojës. Kontrolloni lidhjen tuaj me internetin dhe provoni përsëri.',
-	'problem.reload': 'Ka dalë një version i ri i lojës, ndërsa kjo faqe është e vjetërsuar. Ringarkoni faqen dhe gjithçka do të funksionojë.',
-	'problem.mismatch': 'Rregullat e serverit janë tashmë më të reja se kjo faqe: loja po përditësohet pikërisht tani. Ringarkoni faqen pas pak minutash, dhe nëse ende nuk funksionon, njoftoni zhvilluesin.',
-	'problem.rules': 'Rregullat e reja të bazës së të dhënave nuk janë publikuar ende në Firebase: ky version i lojës kërkon rregulla të ndryshme nga ato që serveri po ekzekuton tani. Riprovimi nuk do të ndihmojë — rregullat duhet të vendosen fillimisht.',
-	'problem.code': 'Ky është një problem në kodin e lojës — riprovimi nuk do ta zgjidhë. Ju lutemi kontaktoni zhvilluesin: kopjoni raportin dhe dërgojeni në mesazhin tuaj.',
-	'problem.emulator': 'Emuluesi lokal i Firebase nuk po përgjigjet: versioni i zhvillimit komunikon me të, jo me bazën reale të të dhënave. Ekzekutoni npm run emulators në terminal — dhe nëse tashmë po ekzekutohet, riniseni atë.',
+	'problem.offline':
+		'Nuk ka lidhje me serverin e lojës. Kontrolloni lidhjen tuaj me internetin dhe provoni përsëri.',
+	'problem.reload':
+		'Ka dalë një version i ri i lojës, ndërsa kjo faqe është e vjetërsuar. Ringarkoni faqen dhe gjithçka do të funksionojë.',
+	'problem.mismatch':
+		'Rregullat e serverit janë tashmë më të reja se kjo faqe: loja po përditësohet pikërisht tani. Ringarkoni faqen pas pak minutash, dhe nëse ende nuk funksionon, njoftoni zhvilluesin.',
+	'problem.rules':
+		'Rregullat e reja të bazës së të dhënave nuk janë publikuar ende në Firebase: ky version i lojës kërkon rregulla të ndryshme nga ato që serveri po ekzekuton tani. Riprovimi nuk do të ndihmojë — rregullat duhet të vendosen fillimisht.',
+	'problem.code':
+		'Ky është një problem në kodin e lojës — riprovimi nuk do ta zgjidhë. Ju lutemi kontaktoni zhvilluesin: kopjoni raportin dhe dërgojeni në mesazhin tuaj.',
+	'problem.emulator':
+		'Emuluesi lokal i Firebase nuk po përgjigjet: versioni i zhvillimit komunikon me të, jo me bazën reale të të dhënave. Ekzekutoni npm run emulators në terminal — dhe nëse tashmë po ekzekutohet, riniseni atë.',
 	'problem.copyReport': 'Kopjo raportin',
 	'problem.copied': 'Raporti u kopjua',
 	'problem.contact': 'Kontakto zhvilluesin',
-	'problem.contactHint': 'Shkruani në çfarëdo aplikacioni mesazhesh që ju përshtatet dhe ngjisni aty raportin e kopjuar.',
+	'problem.contactHint':
+		'Shkruani në çfarëdo aplikacioni mesazhesh që ju përshtatet dhe ngjisni aty raportin e kopjuar.',
 	'problem.writeVia': 'Dërgojini mesazh zhvilluesit në',
-	'online.searchBusy': 'Ndërsa kërkimi automatik është në proces, asgjë tjetër nuk është e disponueshme — anuloni kërkimin më parë.',
+	'online.searchBusy':
+		'Ndërsa kërkimi automatik është në proces, asgjë tjetër nuk është e disponueshme — anuloni kërkimin më parë.',
 	'online.search': 'Kërkim automatik',
 	'online.searchGames': 'Çfarë luajmë',
 	'online.searchLast': 'Të paktën një lojë duhet të mbetet aktive',
-	'online.searchHint': 'Ne do të gjejmë një kundërshtar në njërën nga lojërat e zgjedhura — dhe nëse nuk ka njeri pranë, do të presim derisa dikush të bashkohet.',
+	'online.searchHint':
+		'Ne do të gjejmë një kundërshtar në njërën nga lojërat e zgjedhura — dhe nëse nuk ka njeri pranë, do të presim derisa dikush të bashkohet.',
 	'online.searching': 'Po kërkohet një lojtar…',
-	'online.waiting': 'Po pritet për një lojtar. Sapo dikush të kërkojë njërën nga lojërat e zgjedhura, do të jeni në të njëjtën dhomë.',
+	'online.waiting':
+		'Po pritet për një lojtar. Sapo dikush të kërkojë njërën nga lojërat e zgjedhura, do të jeni në të njëjtën dhomë.',
 	'online.found': 'U gjet një lojtar — po lidhet…',
 	'online.searchCancel': 'Anulo',
 	'online.createTitle': 'Dhomë e re:',
 	'online.everyoneHint': 'Dhoma shfaqet në listë dhe çdokush mund të bashkohet.',
-	'online.friendsHint': 'Dhoma nuk është në listë: njerëzit bashkohen vetëm me kodin që u dërgoni ju.',
+	'online.friendsHint':
+		'Dhoma nuk është në listë: njerëzit bashkohen vetëm me kodin që u dërgoni ju.',
 	'online.back': 'Kthehu',
 	'online.join': 'Bashkohu',
 	'online.opening': 'Po hapet dhoma…',
 	'online.searchGo': 'Kërko',
-	'online.searchLead': 'Ne do t\'ju gjejmë një kundërshtar',
+	'online.searchLead': "Ne do t'ju gjejmë një kundërshtar",
 	'online.createLead': 'Për të gjithë ose vetëm për miqtë',
 	'online.joinLead': 'Me kodin që ju dërguan',
 	'online.codeFull': 'Vendosni kodin e plotë të dhomës.',
@@ -58,7 +70,7 @@ export const ui = {
 	'pairs.youLead': 'Pritësi u largua — tani ju po e drejtoni lojën.',
 	'pairs.createRoom': 'Krijo një dhomë',
 	'pairs.roomCode': 'Kodi i dhomës',
-	'pairs.qrHint': 'Drejtoni kamerën për t\'u bashkuar',
+	'pairs.qrHint': "Drejtoni kamerën për t'u bashkuar",
 	'pairs.qrLabel': 'Kodi QR për këtë dhomë',
 	'pairs.copyLink': 'Kopjo lidhjen',
 	'pairs.linkCopied': 'Lidhja u kopjua!',
@@ -79,13 +91,17 @@ export const ui = {
 	'pairs.roomLost': 'Dhoma nuk është më e disponueshme — bashkohuni përsëri.',
 	'pairs.removed': 'Pritësi ju hoqi nga dhoma.',
 	'pairs.offline': 'Nuk ka lidhje me serverin — po pritet që ajo të rikthehet.',
-	'pairs.rulesChanged': 'Rregullat e serverit janë përditësuar dhe kjo faqe është e vjetëruar, ndaj lëvizjet nuk po kryhen. Ringarkoni faqen — loja vazhdon aty ku mbeti.',
-	'pairs.newBuild': 'Ka dalë një version i ri i lojës — ringarkoni faqen. Dhoma ku ndodheshit hapet përsëri, përveç nëse rregullat e lojës kanë ndryshuar.',
+	'pairs.rulesChanged':
+		'Rregullat e serverit janë përditësuar dhe kjo faqe është e vjetëruar, ndaj lëvizjet nuk po kryhen. Ringarkoni faqen — loja vazhdon aty ku mbeti.',
+	'pairs.newBuild':
+		'Ka dalë një version i ri i lojës — ringarkoni faqen. Dhoma ku ndodheshit hapet përsëri, përveç nëse rregullat e lojës kanë ndryshuar.',
 	'pairs.reload': 'Ringarko faqen',
-	'pairs.noLead': 'Pritësi është larguar dhe askush këtu nuk mund të marrë drejtimin. Mund të largoheni nga dhoma ose të krijoni një të re.',
+	'pairs.noLead':
+		'Pritësi është larguar dhe askush këtu nuk mund të marrë drejtimin. Mund të largoheni nga dhoma ose të krijoni një të re.',
 	'pairs.leaveRoom': 'Largohu nga dhoma',
 	'pairs.playNext': 'Luaj në lojën tjetër',
-	'pairs.roomOlder': 'Kjo lojë u fillua në një version më të vjetër. Ju lutemi krijoni një dhomë të re.',
+	'pairs.roomOlder':
+		'Kjo lojë u fillua në një version më të vjetër. Ju lutemi krijoni një dhomë të re.',
 	'pairs.roomFull': 'Dhoma është plot — tashmë ka dymbëdhjetë persona.',
 	'pairs.opponentGone': 'Kundërshtari juaj ka qenë pasiv për njëfarë kohe.',
 	'pairs.takeTurn': 'Merr radhën',
@@ -102,11 +118,14 @@ export const ui = {
 	'pairs.avatarDone': 'U krye',
 	'pairs.myAvatar': 'Avatari yt',
 	'pairs.inviteTitle': 'Je i ftuar në dhomën',
-	'pairs.inviteHint': 'Kështu do t\'ju shohin të tjerët. Mund ta ndryshoni tani ose më vonë në holl.',
+	'pairs.inviteHint':
+		"Kështu do t'ju shohin të tjerët. Mund ta ndryshoni tani ose më vonë në holl.",
 	'pairs.inviteJoin': 'Bashkohu',
 	'pairs.inviteBack': 'Te lista e dhomave',
-	'pairs.inviteAvatarTaken': 'Një lojtar tjetër këtu e ka tashmë këtë avatar. Zgjidhni një tjetër — ose thjesht bashkohuni dhe do të merrni një të lirë.',
-	'pairs.avatarReplaced': 'Një lojtar tjetër në këtë dhomë tashmë ka avatarin tuaj, ndaj morët një tjetër. Mund ta ndryshoni në holl.',
+	'pairs.inviteAvatarTaken':
+		'Një lojtar tjetër këtu e ka tashmë këtë avatar. Zgjidhni një tjetër — ose thjesht bashkohuni dhe do të merrni një të lirë.',
+	'pairs.avatarReplaced':
+		'Një lojtar tjetër në këtë dhomë tashmë ka avatarin tuaj, ndaj morët një tjetër. Mund ta ndryshoni në holl.',
 	'pairs.nickname': 'Nofka',
 	'pairs.country': 'Flamuri',
 	'country.xr': 'Korpusi Vullnetar Rus',
@@ -124,7 +143,8 @@ export const ui = {
 	'pairs.shownNewest': 'Po shfaqen më të rejat — ka edhe të tjera',
 	'pairs.startingIn': 'Fillon pas',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Lista e dhomave nuk është e disponueshme. Bashkimi me kod dhe krijimi i dhomës funksionojnë ende.',
+	'pairs.roomsUnavailable':
+		'Lista e dhomave nuk është e disponueshme. Bashkimi me kod dhe krijimi i dhomës funksionojnë ende.',
 	'menu.game.population': 'Kush është më shumë?',
 	'menu.game.habitat': 'Ku jetojnë?',
 	'menu.game.mythbusters': 'Fakt apo Mit?',
@@ -143,7 +163,7 @@ export const ui = {
 	'memory.rival': 'Rivali',
 	'memory.moves': 'Lëvizjet',
 	'memory.resized': 'Madhësia e ekranit ndryshoi. Paraqitja mbeti siç nisi loja.',
-	'memory.relayout': 'Ndaj përsëri për t\'u përshtatur',
+	'memory.relayout': "Ndaj përsëri për t'u përshtatur",
 	'memory.found': 'U gjetën',
 	'memory.turn': 'Radha',
 	'common.playAgain': 'Luaj përsëri',
@@ -160,10 +180,14 @@ export const ui = {
 	'common.copy': 'Kopjo',
 	'common.clear': 'Pastro',
 	'common.copied': 'U kopjua',
-	'common.pasteDenied': 'Shfletuesi nuk mundi të lexonte kujtesën e fragmenteve. Ngjiteni manualisht: Ctrl+V.',
-	'common.copyDenied': 'Shfletuesi nuk mundi të shkruante në kujtesën e fragmenteve. Kopjojeni manualisht: Ctrl+C.',
+	'common.pasteDenied':
+		'Shfletuesi nuk mundi të lexonte kujtesën e fragmenteve. Ngjiteni manualisht: Ctrl+V.',
+	'common.copyDenied':
+		'Shfletuesi nuk mundi të shkruante në kujtesën e fragmenteve. Kopjojeni manualisht: Ctrl+C.',
 	'header.toggleTheme': 'Ndrysho temën',
 	'header.toggleLocale': 'Ndrysho gjuhën',
+	'header.searchLocale': 'Kërko gjuhë…',
+	'header.emptyLanguages': 'Nuk u gjet asnjë gjuhë',
 	'header.toggleFullscreen': 'Hyr në ekran të plotë',
 	'header.exitFullscreen': 'Dil nga ekrani i plotë',
 	'header.score': 'Pikët totale',
@@ -180,7 +204,8 @@ export const ui = {
 	'error.retry': 'Provo përsëri',
 	'error.goHome': 'Kthehu në fillim',
 	'beta.title': 'Testimi beta',
-	'beta.intro': 'Një listë me elemente që ia vlen të kontrollohen. Shënoni elementet, më pas kopjoni raportin në fund dhe na e dërgoni.',
+	'beta.intro':
+		'Një listë me elemente që ia vlen të kontrollohen. Shënoni elementet, më pas kopjoni raportin në fund dhe na e dërgoni.',
 	'beta.progress': 'E shënuar në këtë version',
 	'beta.vote.none': 'E pakontrolluar',
 	'beta.vote.fail': 'Nuk punon',
@@ -192,22 +217,27 @@ export const ui = {
 	'beta.coverage.testable': 'Ende pa test të automatizuar',
 	'beta.coverage.covered': 'Mbuluar nga një test',
 	'beta.coverage.manualHint': 'Asnjë makinë nuk e kontrollon këtë — këtu nevojiten sytë tuaj.',
-	'beta.coverage.testableHint': 'Kjo mund të kontrollohet automatikisht, por ende nuk ekziston një test i tillë.',
-	'beta.coverage.coveredHint': 'Një test i automatizuar tashmë e mbikëqyr këtë. Nëse gjeni një gabim këtu, testi është i pasaktë — dhe kjo është veçanërisht e vlefshme për ne.',
+	'beta.coverage.testableHint':
+		'Kjo mund të kontrollohet automatikisht, por ende nuk ekziston një test i tillë.',
+	'beta.coverage.coveredHint':
+		'Një test i automatizuar tashmë e mbikëqyr këtë. Nëse gjeni një gabim këtu, testi është i pasaktë — dhe kjo është veçanërisht e vlefshme për ne.',
 	'beta.stale': 'shënuar në një version tjetër',
 	'beta.copy': 'Kopjo raportin',
 	'beta.copied': 'Raporti u kopjua',
 	'beta.clear': 'Pastro shenjat',
-	'beta.clearConfirm': 'Je i sigurt që dëshiron t\'i pastrosh? Shtyp përsëri',
+	'beta.clearConfirm': "Je i sigurt që dëshiron t'i pastrosh? Shtyp përsëri",
 	'beta.tabProgress': 'shënuar në këtë skedë',
 	'beta.home': 'Kreu',
-	'beta.copyFailed': 'Shfletuesi refuzoi ta kopjonte. Zgjidhni tekstin më poshtë dhe kopjojeni me dorë.',
+	'beta.copyFailed':
+		'Shfletuesi refuzoi ta kopjonte. Zgjidhni tekstin më poshtë dhe kopjojeni me dorë.',
 	'beta.rulesTitle': 'Rregullat e qasjes në bazën e të dhënave',
 	'beta.rulesCheck': 'Kontrollo',
 	'beta.rulesChecking': 'Po pyetet baza e të dhënave…',
 	'beta.rulesFresh': 'Rishikimi i vendosur përputhet me këtë version',
-	'beta.rulesStale': 'Baza e të dhënave po ekzekuton një rishikim TË NDRYSHËM — ky version nuk është vendosur ende',
-	'beta.rulesUnknown': 'Nuk mund të përcaktohet: nuk ka rrjet ose baza e të dhënave nuk është e arritshme',
+	'beta.rulesStale':
+		'Baza e të dhënave po ekzekuton një rishikim TË NDRYSHËM — ky version nuk është vendosur ende',
+	'beta.rulesUnknown':
+		'Nuk mund të përcaktohet: nuk ka rrjet ose baza e të dhënave nuk është e arritshme',
 	'pairs.startMode': 'Nisja e lojës',
 	'pairs.modeAuto': 'Nisje automatike',
 	'pairs.modeConfirm': 'Prit për konfirmim',
@@ -220,5 +250,5 @@ export const ui = {
 	'review.partial': 'pjesërisht e saktë',
 	'review.back': 'Kthehu te pyetja aktuale',
 	'review.backToResults': 'Kthehu te rezultatet',
-	'review.list': 'Pyetjet e kësaj loje',
+	'review.list': 'Pyetjet e kësaj loje'
 } as const;

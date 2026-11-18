@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Juegos de tripulación veterinaria',
-	'app.description': 'Juegos educativos gratuitos sobre animales: prueba lo que sabes sobre lo que comen, cuántos quedan y los mitos que la gente todavía cree. Elaborado en apoyo al bienestar animal.',
+	'app.description':
+		'Juegos educativos gratuitos sobre animales: prueba lo que sabes sobre lo que comen, cuántos quedan y los mitos que la gente todavía cree. Elaborado en apoyo al bienestar animal.',
 	'menu.title': 'Juegos de tripulación veterinaria',
 	'menu.game.feeding': '¿Qué comen?',
 	'menu.game.memory': 'encontrar un par',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Ese cuarto es para un juego diferente.',
 	'menu.play': 'Jugar',
 	'menu.playOnline': 'Jugar en línea',
-	'problem.offline': 'No hay conexión con el servidor del juego. Comprueba tu Internet y vuelve a intentarlo.',
-	'problem.reload': 'Ha salido una nueva versión del juego y esta página es la antigua. Vuelva a cargar la página y todo funcionará.',
-	'problem.mismatch': 'Las reglas del servidor ya son más recientes que esta página: el juego se está actualizando ahora mismo. Vuelva a cargar la página en unos minutos y, si aún no funciona, envíe un mensaje al desarrollador.',
-	'problem.rules': 'Las nuevas reglas de la base de datos aún no se han publicado en Firebase: esta versión del juego espera reglas diferentes a las que ejecuta el servidor ahora. Intentarlo de nuevo no ayudará: primero hay que implementar las reglas.',
-	'problem.code': 'Este es un problema en el código del juego; intentarlo de nuevo no lo solucionará. Comuníquese con el desarrollador: copie el informe y envíelo en su mensaje.',
-	'problem.emulator': 'El emulador local de Firebase no responde: la compilación del desarrollador habla con él, no con la base de datos real. Ejecute npm run emulators en una terminal y, si ya se está ejecutando, reinícielo.',
+	'problem.offline':
+		'No hay conexión con el servidor del juego. Comprueba tu Internet y vuelve a intentarlo.',
+	'problem.reload':
+		'Ha salido una nueva versión del juego y esta página es la antigua. Vuelva a cargar la página y todo funcionará.',
+	'problem.mismatch':
+		'Las reglas del servidor ya son más recientes que esta página: el juego se está actualizando ahora mismo. Vuelva a cargar la página en unos minutos y, si aún no funciona, envíe un mensaje al desarrollador.',
+	'problem.rules':
+		'Las nuevas reglas de la base de datos aún no se han publicado en Firebase: esta versión del juego espera reglas diferentes a las que ejecuta el servidor ahora. Intentarlo de nuevo no ayudará: primero hay que implementar las reglas.',
+	'problem.code':
+		'Este es un problema en el código del juego; intentarlo de nuevo no lo solucionará. Comuníquese con el desarrollador: copie el informe y envíelo en su mensaje.',
+	'problem.emulator':
+		'El emulador local de Firebase no responde: la compilación del desarrollador habla con él, no con la base de datos real. Ejecute npm run emulators en una terminal y, si ya se está ejecutando, reinícielo.',
 	'problem.copyReport': 'Copiar el informe',
 	'problem.copied': 'Informe copiado',
 	'problem.contact': 'Contacta al desarrollador',
-	'problem.contactHint': 'Escriba en el mensajero que más le convenga y pegue allí el informe copiado.',
+	'problem.contactHint':
+		'Escriba en el mensajero que más le convenga y pegue allí el informe copiado.',
 	'problem.writeVia': 'Envía un mensaje al desarrollador al',
-	'online.searchBusy': 'Mientras se ejecuta la búsqueda automática, no hay nada más disponible; primero cancele la búsqueda.',
+	'online.searchBusy':
+		'Mientras se ejecuta la búsqueda automática, no hay nada más disponible; primero cancele la búsqueda.',
 	'online.search': 'Búsqueda automática',
 	'online.searchGames': 'que jugamos',
 	'online.searchLast': 'Al menos un juego debe permanecer activo.',
-	'online.searchHint': 'Encontraremos un oponente en uno de los juegos elegidos y, si no hay nadie, esperaremos hasta que llegue alguien.',
+	'online.searchHint':
+		'Encontraremos un oponente en uno de los juegos elegidos y, si no hay nadie, esperaremos hasta que llegue alguien.',
 	'online.searching': 'Se busca jugador...',
-	'online.waiting': 'Esperando a un jugador. En cuanto alguien busque uno de los juegos elegidos, estarás en la misma sala.',
+	'online.waiting':
+		'Esperando a un jugador. En cuanto alguien busque uno de los juegos elegidos, estarás en la misma sala.',
 	'online.found': 'Encontré un jugador: conectándome...',
 	'online.searchCancel': 'Cancelar',
 	'online.createTitle': 'Nueva sala:',
 	'online.everyoneHint': 'La sala aparece en la lista y cualquiera puede unirse.',
-	'online.friendsHint': 'La sala no aparece en la lista: las personas se unen solo con el código que les envías.',
+	'online.friendsHint':
+		'La sala no aparece en la lista: las personas se unen solo con el código que les envías.',
 	'online.back': 'Atrás',
 	'online.join': 'Unirse',
 	'online.opening': 'Abriendo la habitación…',
@@ -79,13 +91,17 @@ export const ui = {
 	'pairs.roomLost': 'La sala ya no está disponible: únete nuevamente.',
 	'pairs.removed': 'El anfitrión te sacó de la habitación.',
 	'pairs.offline': 'No hay conexión con el servidor, esperando a que vuelva.',
-	'pairs.rulesChanged': 'Las reglas del servidor se han actualizado y esta página está desactualizada, por lo que no se realizan movimientos. Vuelve a cargar la página: el juego continúa donde lo dejó.',
-	'pairs.newBuild': 'Ya salió una nueva versión del juego: recarga la página. La habitación en la que estabas se abre nuevamente a menos que las reglas del juego hayan cambiado.',
+	'pairs.rulesChanged':
+		'Las reglas del servidor se han actualizado y esta página está desactualizada, por lo que no se realizan movimientos. Vuelve a cargar la página: el juego continúa donde lo dejó.',
+	'pairs.newBuild':
+		'Ya salió una nueva versión del juego: recarga la página. La habitación en la que estabas se abre nuevamente a menos que las reglas del juego hayan cambiado.',
 	'pairs.reload': 'Recargar página',
-	'pairs.noLead': 'El anfitrión se ha ido y nadie aquí puede tomar el mando. Puedes salir de la habitación o crear una nueva.',
+	'pairs.noLead':
+		'El anfitrión se ha ido y nadie aquí puede tomar el mando. Puedes salir de la habitación o crear una nueva.',
 	'pairs.leaveRoom': 'salir de la habitación',
 	'pairs.playNext': 'Juega en el próximo juego.',
-	'pairs.roomOlder': 'Este juego se inició en una versión anterior. Por favor crea una nueva habitación.',
+	'pairs.roomOlder':
+		'Este juego se inició en una versión anterior. Por favor crea una nueva habitación.',
 	'pairs.roomFull': 'La sala está llena: ya hay doce personas.',
 	'pairs.opponentGone': 'Tu oponente ha estado inactivo por un tiempo.',
 	'pairs.takeTurn': 'toma el turno',
@@ -105,8 +121,10 @@ export const ui = {
 	'pairs.inviteHint': 'Así te verán los demás. Puedes cambiarlo ahora o más tarde en el lobby.',
 	'pairs.inviteJoin': 'Unirse',
 	'pairs.inviteBack': 'A la lista de habitaciones',
-	'pairs.inviteAvatarTaken': 'Otro jugador aquí ya tiene este avatar. Elija otro, o simplemente únase y obtendrá uno gratis.',
-	'pairs.avatarReplaced': 'Otro jugador en esta sala ya tiene tu avatar, así que tienes uno diferente. Puedes cambiarlo en el lobby.',
+	'pairs.inviteAvatarTaken':
+		'Otro jugador aquí ya tiene este avatar. Elija otro, o simplemente únase y obtendrá uno gratis.',
+	'pairs.avatarReplaced':
+		'Otro jugador en esta sala ya tiene tu avatar, así que tienes uno diferente. Puedes cambiarlo en el lobby.',
 	'pairs.nickname': 'Apodo',
 	'pairs.country': 'Bandera',
 	'country.xr': 'Cuerpo de voluntarios rusos',
@@ -124,7 +142,8 @@ export const ui = {
 	'pairs.shownNewest': 'Mostrando lo más nuevo: hay más',
 	'pairs.startingIn': 'Comenzando en',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'La lista de habitaciones no está disponible. Unirse por código y crear una sala todavía funciona.',
+	'pairs.roomsUnavailable':
+		'La lista de habitaciones no está disponible. Unirse por código y crear una sala todavía funciona.',
 	'menu.game.population': '¿Quién es más?',
 	'menu.game.habitat': '¿Dónde viven?',
 	'menu.game.mythbusters': '¿Realidad o mito?',
@@ -142,7 +161,8 @@ export const ui = {
 	'memory.you': 'tu',
 	'memory.rival': 'Rival',
 	'memory.moves': 'se mueve',
-	'memory.resized': 'El tamaño de la pantalla cambió. El diseño se mantuvo cuando comenzó la fiesta.',
+	'memory.resized':
+		'El tamaño de la pantalla cambió. El diseño se mantuvo cuando comenzó la fiesta.',
 	'memory.relayout': 'Trato de nuevo para encajar',
 	'memory.found': 'Encontrado',
 	'memory.turn': 'girar',
@@ -164,6 +184,8 @@ export const ui = {
 	'common.copyDenied': 'El navegador no escribe en el portapapeles. Copiar a mano: Ctrl+C.',
 	'header.toggleTheme': 'Cambiar tema',
 	'header.toggleLocale': 'Cambiar idioma',
+	'header.searchLocale': 'Buscar idioma…',
+	'header.emptyLanguages': 'No se han encontrado idiomas',
 	'header.toggleFullscreen': 'Entrar en pantalla completa',
 	'header.exitFullscreen': 'Salir de pantalla completa',
 	'header.score': 'Puntuación total',
@@ -180,7 +202,8 @@ export const ui = {
 	'error.retry': 'Inténtalo de nuevo',
 	'error.goHome': 'Vete a casa',
 	'beta.title': 'Pruebas beta',
-	'beta.intro': 'Una lista de cosas que vale la pena comprobar. Marque los elementos, luego copie el informe al final y envíenoslo.',
+	'beta.intro':
+		'Una lista de cosas que vale la pena comprobar. Marque los elementos, luego copie el informe al final y envíenoslo.',
 	'beta.progress': 'Marcado en esta versión.',
 	'beta.vote.none': 'No comprobado',
 	'beta.vote.fail': 'roto',
@@ -191,9 +214,12 @@ export const ui = {
 	'beta.coverage.manual': 'Solo personas',
 	'beta.coverage.testable': 'Aún no hay prueba automatizada',
 	'beta.coverage.covered': 'Cubierto por una prueba',
-	'beta.coverage.manualHint': 'Ninguna máquina comprueba esto; aquí lo que se necesita son tus propios ojos.',
-	'beta.coverage.testableHint': 'Esto podría comprobarse automáticamente, pero todavía no existe tal prueba.',
-	'beta.coverage.coveredHint': 'Una prueba automatizada ya observa esto. Si encuentra un error aquí, la prueba es incorrecta y eso es especialmente valioso para nosotros.',
+	'beta.coverage.manualHint':
+		'Ninguna máquina comprueba esto; aquí lo que se necesita son tus propios ojos.',
+	'beta.coverage.testableHint':
+		'Esto podría comprobarse automáticamente, pero todavía no existe tal prueba.',
+	'beta.coverage.coveredHint':
+		'Una prueba automatizada ya observa esto. Si encuentra un error aquí, la prueba es incorrecta y eso es especialmente valioso para nosotros.',
 	'beta.stale': 'marcado en una versión diferente',
 	'beta.copy': 'Copiar el informe',
 	'beta.copied': 'Informe copiado',
@@ -201,12 +227,14 @@ export const ui = {
 	'beta.clearConfirm': '¿Realmente claro? Presione nuevamente',
 	'beta.tabProgress': 'marcado en esta pestaña',
 	'beta.home': 'Inicio',
-	'beta.copyFailed': 'El navegador se negó a copiarlo. Seleccione el texto a continuación y cópielo a mano.',
+	'beta.copyFailed':
+		'El navegador se negó a copiarlo. Seleccione el texto a continuación y cópielo a mano.',
 	'beta.rulesTitle': 'Reglas de acceso a la base de datos',
 	'beta.rulesCheck': 'comprobar',
 	'beta.rulesChecking': 'Preguntando a la base de datos…',
 	'beta.rulesFresh': 'La revisión implementada coincide con esta compilación.',
-	'beta.rulesStale': 'La base de datos ejecuta una revisión DIFERENTE: esta compilación aún no está implementada',
+	'beta.rulesStale':
+		'La base de datos ejecuta una revisión DIFERENTE: esta compilación aún no está implementada',
 	'beta.rulesUnknown': 'No se pudo saber: no hay red o la base de datos es inaccesible',
 	'pairs.startMode': 'Comenzando el juego',
 	'pairs.modeAuto': 'inicio automático',
@@ -220,5 +248,5 @@ export const ui = {
 	'review.partial': 'en parte correcto',
 	'review.back': 'Volver a la pregunta actual',
 	'review.backToResults': 'Volver a los resultados',
-	'review.list': 'Las preguntas de este juego',
+	'review.list': 'Las preguntas de este juego'
 } as const;

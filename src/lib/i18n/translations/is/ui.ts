@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Ókeypis fræðsluleikir um dýr: prófaðu hvað þú veist um hvað þau éta, hversu mörg eru eftir og goðsagnirnar sem fólk trúir enn á. Gert til stuðnings dýravelferð.',
+	'app.description':
+		'Ókeypis fræðsluleikir um dýr: prófaðu hvað þú veist um hvað þau éta, hversu mörg eru eftir og goðsagnirnar sem fólk trúir enn á. Gert til stuðnings dýravelferð.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Hvað éta þau?',
 	'menu.game.memory': 'Finndu par',
@@ -13,28 +14,38 @@ export const ui = {
 	'menu.play': 'Spila',
 	'menu.playOnline': 'Spila á netinu',
 	'problem.offline': 'Engin tenging er við leikjaþjóninn. Athugaðu nettenginguna og reyndu aftur.',
-	'problem.reload': 'Ný útgáfa af leiknum er komin út og þessi síða er úrelt. Endurhladdu síðunni og allt mun virka.',
-	'problem.mismatch': 'Reglur þjónsins eru nú þegar nýrri en þessi síða: leikurinn er í uppfærslu núna. Endurhladdu síðunni eftir nokkrar mínútur, og ef það virkar enn ekki skaltu hafa samband við forritarann.',
-	'problem.rules': 'Nýju gagnagrunnsreglurnar eru ekki enn gefnar út á Firebase: þessi útgáfa af leiknum krefst annarra reglna en þjónninn keyrir núna. Það hjálpar ekki að reyna aftur — reglurnar verða að vera innleiddar fyrst.',
-	'problem.code': 'Þetta er villa í leikjakóðanum — það lagast ekki við að reyna aftur. Vinsamlegast hafðu samband við forritarann: afritaðu villuskýrsluna og sendu hana í skilaboðum.',
-	'problem.emulator': 'Staðbundni Firebase-hermirinn svarar ekki: þróunarútgáfan talar við hann, ekki raunverulega gagnagrunninn. Keyrðu npm run emulators í skipanalínu — og ef hann er þegar í gangi skaltu endurræsa hann.',
+	'problem.reload':
+		'Ný útgáfa af leiknum er komin út og þessi síða er úrelt. Endurhladdu síðunni og allt mun virka.',
+	'problem.mismatch':
+		'Reglur þjónsins eru nú þegar nýrri en þessi síða: leikurinn er í uppfærslu núna. Endurhladdu síðunni eftir nokkrar mínútur, og ef það virkar enn ekki skaltu hafa samband við forritarann.',
+	'problem.rules':
+		'Nýju gagnagrunnsreglurnar eru ekki enn gefnar út á Firebase: þessi útgáfa af leiknum krefst annarra reglna en þjónninn keyrir núna. Það hjálpar ekki að reyna aftur — reglurnar verða að vera innleiddar fyrst.',
+	'problem.code':
+		'Þetta er villa í leikjakóðanum — það lagast ekki við að reyna aftur. Vinsamlegast hafðu samband við forritarann: afritaðu villuskýrsluna og sendu hana í skilaboðum.',
+	'problem.emulator':
+		'Staðbundni Firebase-hermirinn svarar ekki: þróunarútgáfan talar við hann, ekki raunverulega gagnagrunninn. Keyrðu npm run emulators í skipanalínu — og ef hann er þegar í gangi skaltu endurræsa hann.',
 	'problem.copyReport': 'Afrita skýrslu',
 	'problem.copied': 'Skýrsla afrituð',
 	'problem.contact': 'Hafa samband við forritara',
-	'problem.contactHint': 'Skrifaðu í því skilaboðaforriti sem hentar þér og límdu afrituðu skýrsluna þar inn.',
+	'problem.contactHint':
+		'Skrifaðu í því skilaboðaforriti sem hentar þér og límdu afrituðu skýrsluna þar inn.',
 	'problem.writeVia': 'Senda skilaboð til forritara á',
-	'online.searchBusy': 'Á meðan sjálfvirka leitin er í gangi er ekkert annað í boði — hættu fyrst við leitina.',
+	'online.searchBusy':
+		'Á meðan sjálfvirka leitin er í gangi er ekkert annað í boði — hættu fyrst við leitina.',
 	'online.search': 'Sjálfvirk leit',
 	'online.searchGames': 'Hvað við spilum',
 	'online.searchLast': 'Að minnsta kosti einn leikur verður að vera valinn',
-	'online.searchHint': 'Við finnum andstæðing í einum af völdu leikjunum — og ef enginn finnst bíðum við þar til einhver mætir.',
+	'online.searchHint':
+		'Við finnum andstæðing í einum af völdu leikjunum — og ef enginn finnst bíðum við þar til einhver mætir.',
 	'online.searching': 'Leitar að leikmanni…',
-	'online.waiting': 'Bíður eftir leikmanni. Um leið og einhver leitar að einum af völdu leikjunum verðið þið í sama herbergi.',
+	'online.waiting':
+		'Bíður eftir leikmanni. Um leið og einhver leitar að einum af völdu leikjunum verðið þið í sama herbergi.',
 	'online.found': 'Leikmaður fannst — tengist…',
 	'online.searchCancel': 'Hætta við',
 	'online.createTitle': 'Nýtt herbergi:',
 	'online.everyoneHint': 'Herbergið birtist á listanum og hver sem er getur verið með.',
-	'online.friendsHint': 'Herbergið er ekki á listanum: fólk kemst aðeins inn með kóðanum sem þú sendir því.',
+	'online.friendsHint':
+		'Herbergið er ekki á listanum: fólk kemst aðeins inn með kóðanum sem þú sendir því.',
 	'online.back': 'Til baka',
 	'online.join': 'Taka þátt',
 	'online.opening': 'Opnar herbergið…',
@@ -79,10 +90,13 @@ export const ui = {
 	'pairs.roomLost': 'Herbergið er ekki lengur tiltækt — vertu með aftur.',
 	'pairs.removed': 'Stjórnandinn fjarlægði þig úr herberginu.',
 	'pairs.offline': 'Engin tenging við þjóninn — bíður eftir að hún komist aftur á.',
-	'pairs.rulesChanged': 'Reglur þjónsins hafa verið uppfærðar og þessi síða er úrelt, svo leikir komast ekki í gegn. Endurhladdu síðunni — leikurinn heldur áfram þar sem frá var horfið.',
-	'pairs.newBuild': 'Ný útgáfa af leiknum er komin út — endurhladdu síðunni. Herbergið sem þú varst í opnast aftur nema leikreglum hafi verið breytt.',
+	'pairs.rulesChanged':
+		'Reglur þjónsins hafa verið uppfærðar og þessi síða er úrelt, svo leikir komast ekki í gegn. Endurhladdu síðunni — leikurinn heldur áfram þar sem frá var horfið.',
+	'pairs.newBuild':
+		'Ný útgáfa af leiknum er komin út — endurhladdu síðunni. Herbergið sem þú varst í opnast aftur nema leikreglum hafi verið breytt.',
 	'pairs.reload': 'Endurhlaða síðu',
-	'pairs.noLead': 'Stjórnandinn er farinn og enginn hér getur tekið við stjórninni. Þú getur yfirgefið herbergið eða búið til nýtt.',
+	'pairs.noLead':
+		'Stjórnandinn er farinn og enginn hér getur tekið við stjórninni. Þú getur yfirgefið herbergið eða búið til nýtt.',
 	'pairs.leaveRoom': 'Yfirgefa herbergi',
 	'pairs.playNext': 'Spila í næsta leik',
 	'pairs.roomOlder': 'Þessi leikur var hafinn í eldri útgáfu. Vinsamlegast búðu til nýtt herbergi.',
@@ -105,8 +119,10 @@ export const ui = {
 	'pairs.inviteHint': 'Svona munu aðrir sjá þig. Þú getur breytt þessu núna eða síðar í anddyrinu.',
 	'pairs.inviteJoin': 'Taka þátt',
 	'pairs.inviteBack': 'Í herbergjalistann',
-	'pairs.inviteAvatarTaken': 'Annar spilari hér er nú þegar með þennan avatar. Veldu annan — eða taktu þátt og þú færð annan úthlutaðan.',
-	'pairs.avatarReplaced': 'Annar spilari í þessu herbergi var nú þegar með þinn avatar, svo þú fékkst annan. Þú getur breytt honum í anddyrinu.',
+	'pairs.inviteAvatarTaken':
+		'Annar spilari hér er nú þegar með þennan avatar. Veldu annan — eða taktu þátt og þú færð annan úthlutaðan.',
+	'pairs.avatarReplaced':
+		'Annar spilari í þessu herbergi var nú þegar með þinn avatar, svo þú fékkst annan. Þú getur breytt honum í anddyrinu.',
 	'pairs.nickname': 'Gælunafn',
 	'pairs.country': 'Fáni',
 	'country.xr': 'Sjálfboðaliðasveit Rússlands',
@@ -118,13 +134,15 @@ export const ui = {
 	'pairs.everyone': 'Allir',
 	'pairs.rooms': 'Herbergi',
 	'pairs.noRooms': 'Engin opin herbergi enn sem komið er',
-	'pairs.noRoomsHint': 'Búðu til herbergi — það mun birtast hér fyrir alla sem eru með þessa síðu opna.',
+	'pairs.noRoomsHint':
+		'Búðu til herbergi — það mun birtast hér fyrir alla sem eru með þessa síðu opna.',
 	'pairs.players': 'Spilarar',
 	'pairs.enter': 'Fara inn',
 	'pairs.shownNewest': 'Sýnir þau nýjustu — fleiri eru í boði',
 	'pairs.startingIn': 'Hefst eftir',
 	'pairs.seconds': 'sek.',
-	'pairs.roomsUnavailable': 'Herbergjalistinn er ekki aðgengilegur. Enn er hægt að skrá sig inn með kóða og stofna nýtt herbergi.',
+	'pairs.roomsUnavailable':
+		'Herbergjalistinn er ekki aðgengilegur. Enn er hægt að skrá sig inn með kóða og stofna nýtt herbergi.',
 	'menu.game.population': 'Hvor er fjölmennari?',
 	'menu.game.habitat': 'Hvar búa þau?',
 	'menu.game.mythbusters': 'Staðreynd eða mýta?',
@@ -164,6 +182,8 @@ export const ui = {
 	'common.copyDenied': 'Vafrinn gat ekki skrifað á klemmuspjaldið. Afritaðu handvirkt: Ctrl+C.',
 	'header.toggleTheme': 'Breyta þema',
 	'header.toggleLocale': 'Breyta tungumáli',
+	'header.searchLocale': 'Leita að tungumáli…',
+	'header.emptyLanguages': 'Engin tungumál fundust',
 	'header.toggleFullscreen': 'Fylla skjá',
 	'header.exitFullscreen': 'Fara úr fullum skjá',
 	'header.score': 'Heildarstig',
@@ -180,7 +200,8 @@ export const ui = {
 	'error.retry': 'Reyna aftur',
 	'error.goHome': 'Fara á forsíðu',
 	'beta.title': 'Beta-prófun',
-	'beta.intro': 'Listi yfir atriði sem vert er að athuga. Merktu við atriðin, afritaðu síðan skýrsluna í lokin og sendu okkur.',
+	'beta.intro':
+		'Listi yfir atriði sem vert er að athuga. Merktu við atriðin, afritaðu síðan skýrsluna í lokin og sendu okkur.',
 	'beta.progress': 'Merkt við í þessari útgáfu',
 	'beta.vote.none': 'Óathugað',
 	'beta.vote.fail': 'Virkar ekki',
@@ -192,8 +213,10 @@ export const ui = {
 	'beta.coverage.testable': 'Ekkert sjálfvirkt próf enn',
 	'beta.coverage.covered': 'Prófað með sjálfvirkri prófun',
 	'beta.coverage.manualHint': 'Engin vél athugar þetta — þín eigin augu eru það sem þarf hér.',
-	'beta.coverage.testableHint': 'Hægt væri að prófa þetta sjálfvirkt, en ekkert slíkt próf er til enn sem komið er.',
-	'beta.coverage.coveredHint': 'Sjálfvirkt próf fylgist nú þegar með þessu. Ef þú finnur villu hér er prófið rangt — og það er okkur sérstaklega dýrmætt.',
+	'beta.coverage.testableHint':
+		'Hægt væri að prófa þetta sjálfvirkt, en ekkert slíkt próf er til enn sem komið er.',
+	'beta.coverage.coveredHint':
+		'Sjálfvirkt próf fylgist nú þegar með þessu. Ef þú finnur villu hér er prófið rangt — og það er okkur sérstaklega dýrmætt.',
 	'beta.stale': 'merkt við í annarri útgáfu',
 	'beta.copy': 'Afrita skýrsluna',
 	'beta.copied': 'Skýrsla afrituð',
@@ -207,7 +230,8 @@ export const ui = {
 	'beta.rulesChecking': 'Spyr gagnagrunninn…',
 	'beta.rulesFresh': 'Uppsett útgáfa passar við þessa keyrsluútgáfu',
 	'beta.rulesStale': 'Gagnagrunnurinn keyrir AÐRA útgáfu — þessi keyrsla er ekki uppsett ennþá',
-	'beta.rulesUnknown': 'Tókst ekki að greina: engin nettenging eða gagnagrunnurinn er ótengjanlegur',
+	'beta.rulesUnknown':
+		'Tókst ekki að greina: engin nettenging eða gagnagrunnurinn er ótengjanlegur',
 	'pairs.startMode': 'Hefja leikinn',
 	'pairs.modeAuto': 'Sjálfvirk byrjun',
 	'pairs.modeConfirm': 'Bíða eftir staðfestingu',
@@ -220,5 +244,5 @@ export const ui = {
 	'review.partial': 'að hluta rétt',
 	'review.back': 'Aftur í núverandi spurningu',
 	'review.backToResults': 'Aftur í niðurstöður',
-	'review.list': 'Spurningar þessa leiks',
+	'review.list': 'Spurningar þessa leiks'
 } as const;

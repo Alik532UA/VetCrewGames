@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': '동물에 관한 무료 교육용 게임: 동물들의 먹이, 남은 개체 수, 널리 퍼진 잘못된 통념에 관한 지식을 시험해 보세요. 동물 복지를 지원하기 위해 제작되었습니다.',
+	'app.description':
+		'동물에 관한 무료 교육용 게임: 동물들의 먹이, 남은 개체 수, 널리 퍼진 잘못된 통념에 관한 지식을 시험해 보세요. 동물 복지를 지원하기 위해 제작되었습니다.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': '무엇을 먹을까요?',
 	'menu.game.memory': '짝 맞추기',
@@ -13,23 +14,31 @@ export const ui = {
 	'menu.play': '플레이',
 	'menu.playOnline': '온라인 플레이',
 	'problem.offline': '게임 서버에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.',
-	'problem.reload': '게임의 새 버전이 출시되었으며, 현재 페이지는 이전 버전입니다. 페이지를 새로고침하면 정상 작동합니다.',
-	'problem.mismatch': '서버 규칙이 현재 페이지보다 최신 버전입니다. 지금 게임이 업데이트되는 중입니다. 몇 분 후 페이지를 새로고침해 보시고, 여전히 작동하지 않으면 개발자에게 문의해 주세요.',
-	'problem.rules': '새 데이터베이스 규칙이 아직 Firebase에 배포되지 않았습니다. 이 버전의 게임은 서버에서 현재 실행 중인 규칙과 다른 규칙을 필요로 합니다. 다시 시도해도 해결되지 않으므로 먼저 규칙이 배포되어야 합니다.',
-	'problem.code': '게임 코드 오류로 인해 발생한 문제입니다. 다시 시도해도 해결되지 않습니다. 오류 보고서를 복사하여 메시지로 개발자에게 문의해 주세요.',
-	'problem.emulator': '로컬 Firebase 에뮬레이터가 응답하지 않습니다. 개발 빌드는 실제 데이터베이스가 아닌 에뮬레이터와 통신합니다. 터미널에서 npm run emulators를 실행하고, 이미 실행 중이라면 재시작해 주세요.',
+	'problem.reload':
+		'게임의 새 버전이 출시되었으며, 현재 페이지는 이전 버전입니다. 페이지를 새로고침하면 정상 작동합니다.',
+	'problem.mismatch':
+		'서버 규칙이 현재 페이지보다 최신 버전입니다. 지금 게임이 업데이트되는 중입니다. 몇 분 후 페이지를 새로고침해 보시고, 여전히 작동하지 않으면 개발자에게 문의해 주세요.',
+	'problem.rules':
+		'새 데이터베이스 규칙이 아직 Firebase에 배포되지 않았습니다. 이 버전의 게임은 서버에서 현재 실행 중인 규칙과 다른 규칙을 필요로 합니다. 다시 시도해도 해결되지 않으므로 먼저 규칙이 배포되어야 합니다.',
+	'problem.code':
+		'게임 코드 오류로 인해 발생한 문제입니다. 다시 시도해도 해결되지 않습니다. 오류 보고서를 복사하여 메시지로 개발자에게 문의해 주세요.',
+	'problem.emulator':
+		'로컬 Firebase 에뮬레이터가 응답하지 않습니다. 개발 빌드는 실제 데이터베이스가 아닌 에뮬레이터와 통신합니다. 터미널에서 npm run emulators를 실행하고, 이미 실행 중이라면 재시작해 주세요.',
 	'problem.copyReport': '보고서 복사',
 	'problem.copied': '보고서가 복사되었습니다',
 	'problem.contact': '개발자에게 문의하기',
 	'problem.contactHint': '편한 메신저를 선택하여 복사한 보고서를 붙여넣어 보내주세요.',
 	'problem.writeVia': '다음 메신저로 개발자에게 메시지 보내기',
-	'online.searchBusy': '자동 매칭 검색 중에는 다른 작업을 진행할 수 없습니다. 먼저 검색을 취소해 주세요.',
+	'online.searchBusy':
+		'자동 매칭 검색 중에는 다른 작업을 진행할 수 없습니다. 먼저 검색을 취소해 주세요.',
 	'online.search': '자동 매칭',
 	'online.searchGames': '플레이할 게임',
 	'online.searchLast': '최소 하나 이상의 게임을 선택해야 합니다',
-	'online.searchHint': '선택한 게임 중 하나에서 상대를 찾아드립니다. 대기 중인 플레이어가 없으면 다른 사람이 참가할 때까지 대기합니다.',
+	'online.searchHint':
+		'선택한 게임 중 하나에서 상대를 찾아드립니다. 대기 중인 플레이어가 없으면 다른 사람이 참가할 때까지 대기합니다.',
 	'online.searching': '플레이어를 찾는 중…',
-	'online.waiting': '플레이어를 기다리는 중입니다. 누군가 선택한 게임 중 하나를 찾으면 같은 방으로 연결됩니다.',
+	'online.waiting':
+		'플레이어를 기다리는 중입니다. 누군가 선택한 게임 중 하나를 찾으면 같은 방으로 연결됩니다.',
 	'online.found': '플레이어를 찾았습니다. 연결 중…',
 	'online.searchCancel': '취소',
 	'online.createTitle': '새 방 만들기:',
@@ -79,10 +88,13 @@ export const ui = {
 	'pairs.roomLost': '방을 더 이상 이용할 수 없습니다. 다시 참가해 주세요.',
 	'pairs.removed': '방장에 의해 방에서 퇴장 처리되었습니다.',
 	'pairs.offline': '서버 연결이 끊겼습니다 — 다시 연결되기를 기다리는 중입니다.',
-	'pairs.rulesChanged': '서버 규칙이 업데이트되었으나 페이지가 이전 버전이어서 행동이 처리되지 않고 있습니다. 페이지를 새로고침해 주세요 — 중단된 지점부터 게임이 계속 이어집니다.',
-	'pairs.newBuild': '새로운 게임 버전이 출시되었습니다 — 페이지를 새로고침해 주세요. 게임 규칙이 바뀌지 않았다면 참여 중이던 방이 다시 열립니다.',
+	'pairs.rulesChanged':
+		'서버 규칙이 업데이트되었으나 페이지가 이전 버전이어서 행동이 처리되지 않고 있습니다. 페이지를 새로고침해 주세요 — 중단된 지점부터 게임이 계속 이어집니다.',
+	'pairs.newBuild':
+		'새로운 게임 버전이 출시되었습니다 — 페이지를 새로고침해 주세요. 게임 규칙이 바뀌지 않았다면 참여 중이던 방이 다시 열립니다.',
 	'pairs.reload': '페이지 새로고침',
-	'pairs.noLead': '방장이 나갔으며, 방장 권한을 이어받을 수 있는 사람이 없습니다. 방을 나가거나 새 방을 만들 수 있습니다.',
+	'pairs.noLead':
+		'방장이 나갔으며, 방장 권한을 이어받을 수 있는 사람이 없습니다. 방을 나가거나 새 방을 만들 수 있습니다.',
 	'pairs.leaveRoom': '방 나가기',
 	'pairs.playNext': '다음 게임 참가',
 	'pairs.roomOlder': '이전 버전에서 시작된 게임입니다. 새 방을 만들어 주세요.',
@@ -102,11 +114,14 @@ export const ui = {
 	'pairs.avatarDone': '완료',
 	'pairs.myAvatar': '내 아바타',
 	'pairs.inviteTitle': '방으로 초대받았습니다',
-	'pairs.inviteHint': '다른 플레이어에게 표시될 모습입니다. 지금 또는 나중에 로비에서 변경할 수 있습니다.',
+	'pairs.inviteHint':
+		'다른 플레이어에게 표시될 모습입니다. 지금 또는 나중에 로비에서 변경할 수 있습니다.',
 	'pairs.inviteJoin': '참가',
 	'pairs.inviteBack': '방 목록으로',
-	'pairs.inviteAvatarTaken': '이 방의 다른 플레이어가 이미 사용 중인 아바타입니다. 다른 아바타를 선택하거나 바로 입장해 임의의 아바타를 받으세요.',
-	'pairs.avatarReplaced': '이 방의 다른 플레이어가 이미 회원님의 아바타를 사용 중이어서 다른 아바타로 변경되었습니다. 로비에서 다시 바꿀 수 있습니다.',
+	'pairs.inviteAvatarTaken':
+		'이 방의 다른 플레이어가 이미 사용 중인 아바타입니다. 다른 아바타를 선택하거나 바로 입장해 임의의 아바타를 받으세요.',
+	'pairs.avatarReplaced':
+		'이 방의 다른 플레이어가 이미 회원님의 아바타를 사용 중이어서 다른 아바타로 변경되었습니다. 로비에서 다시 바꿀 수 있습니다.',
 	'pairs.nickname': '닉네임',
 	'pairs.country': '국기',
 	'country.xr': '러시아 의용군',
@@ -124,7 +139,8 @@ export const ui = {
 	'pairs.shownNewest': '최신 항목 표시 중 — 더 많은 방이 있습니다',
 	'pairs.startingIn': '시작까지',
 	'pairs.seconds': '초',
-	'pairs.roomsUnavailable': '방 목록을 불러올 수 없습니다. 코드로 참가하거나 방을 생성하는 것은 가능합니다.',
+	'pairs.roomsUnavailable':
+		'방 목록을 불러올 수 없습니다. 코드로 참가하거나 방을 생성하는 것은 가능합니다.',
 	'menu.game.population': '어느 쪽 개체수가 더 많을까요?',
 	'menu.game.habitat': '어디에 서식할까요?',
 	'menu.game.mythbusters': '진실 혹은 거짓?',
@@ -164,6 +180,8 @@ export const ui = {
 	'common.copyDenied': '브라우저에서 클립보드에 쓸 수 없습니다. 직접 복사해 주세요: Ctrl+C.',
 	'header.toggleTheme': '테마 변경',
 	'header.toggleLocale': '언어 변경',
+	'header.searchLocale': '언어 검색…',
+	'header.emptyLanguages': '언어를 찾을 수 없습니다',
 	'header.toggleFullscreen': '전체 화면 시작',
 	'header.exitFullscreen': '전체 화면 종료',
 	'header.score': '총점',
@@ -180,7 +198,8 @@ export const ui = {
 	'error.retry': '다시 시도',
 	'error.goHome': '홈으로 이동',
 	'beta.title': '베타 테스트',
-	'beta.intro': '확인이 필요한 항목 목록입니다. 항목을 체크한 뒤, 마지막에 보고서를 복사하여 저희에게 보내주세요.',
+	'beta.intro':
+		'확인이 필요한 항목 목록입니다. 항목을 체크한 뒤, 마지막에 보고서를 복사하여 저희에게 보내주세요.',
 	'beta.progress': '현재 버전에서 확인됨',
 	'beta.vote.none': '미확인',
 	'beta.vote.fail': '오류/작동 안 함',
@@ -191,9 +210,12 @@ export const ui = {
 	'beta.coverage.manual': '수동 확인 전용',
 	'beta.coverage.testable': '자동화 테스트 아직 없음',
 	'beta.coverage.covered': '테스트 적용됨',
-	'beta.coverage.manualHint': '시스템이 자동으로 확인하지 못하는 항목입니다. 직접 눈으로 확인해 주셔야 합니다.',
-	'beta.coverage.testableHint': '자동 검사가 가능한 항목이지만, 아직 해당 테스트가 작성되지 않았습니다.',
-	'beta.coverage.coveredHint': '자동화 테스트가 이미 감시 중인 항목입니다. 여기서 버그를 발견하셨다면 테스트 자체에 오류가 있다는 뜻이므로 저희에게 매우 소중한 피드백이 됩니다.',
+	'beta.coverage.manualHint':
+		'시스템이 자동으로 확인하지 못하는 항목입니다. 직접 눈으로 확인해 주셔야 합니다.',
+	'beta.coverage.testableHint':
+		'자동 검사가 가능한 항목이지만, 아직 해당 테스트가 작성되지 않았습니다.',
+	'beta.coverage.coveredHint':
+		'자동화 테스트가 이미 감시 중인 항목입니다. 여기서 버그를 발견하셨다면 테스트 자체에 오류가 있다는 뜻이므로 저희에게 매우 소중한 피드백이 됩니다.',
 	'beta.stale': '다른 버전에서 표시됨',
 	'beta.copy': '보고서 복사',
 	'beta.copied': '보고서가 복사되었습니다',
@@ -206,7 +228,8 @@ export const ui = {
 	'beta.rulesCheck': '확인',
 	'beta.rulesChecking': '데이터베이스에 조회 중…',
 	'beta.rulesFresh': '배포된 리비전이 현재 빌드와 일치합니다',
-	'beta.rulesStale': '데이터베이스가 다른 리비전을 실행 중입니다. 이 빌드는 아직 배포되지 않았습니다.',
+	'beta.rulesStale':
+		'데이터베이스가 다른 리비전을 실행 중입니다. 이 빌드는 아직 배포되지 않았습니다.',
 	'beta.rulesUnknown': '확인 불가: 네트워크 연결이 없거나 데이터베이스에 접근할 수 없습니다',
 	'pairs.startMode': '게임 시작 방식',
 	'pairs.modeAuto': '자동 시작',
@@ -220,5 +243,5 @@ export const ui = {
 	'review.partial': '부분 정답',
 	'review.back': '현재 질문으로 돌아가기',
 	'review.backToResults': '결과로 돌아가기',
-	'review.list': '이번 게임의 질문 목록',
+	'review.list': '이번 게임의 질문 목록'
 } as const;

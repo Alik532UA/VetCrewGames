@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Hayvanlar hakkında ücretsiz eğitici oyunlar: ne yediklerini, kaç tane kaldıklarını ve insanların hâlâ inandığı efsaneleri test edin. Hayvan refahını desteklemek amacıyla yapılmıştır.',
+	'app.description':
+		'Hayvanlar hakkında ücretsiz eğitici oyunlar: ne yediklerini, kaç tane kaldıklarını ve insanların hâlâ inandığı efsaneleri test edin. Hayvan refahını desteklemek amacıyla yapılmıştır.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Ne yerler?',
 	'menu.game.memory': 'Eşini bul',
@@ -13,28 +14,38 @@ export const ui = {
 	'menu.play': 'Oyna',
 	'menu.playOnline': 'Çevrim içi oyna',
 	'problem.offline': 'Oyun sunucusuna bağlantı yok. İnternetinizi kontrol edip tekrar deneyin.',
-	'problem.reload': 'Oyunun yeni bir sürümü yayınlandı ve bu sayfa eski kaldı. Sayfayı yenileyin, her şey çalışacaktır.',
-	'problem.mismatch': 'Sunucu kuralları bu sayfadan daha yeni: oyun şu anda güncelleniyor. Sayfayı birkaç dakika içinde tekrar yenileyin, sorun devam ederse geliştiriciye yazın.',
-	'problem.rules': 'Yeni veritabanı kuralları henüz Firebase\'de yayınlanmadı: oyunun bu sürümü, sunucunun şu anda çalıştırdığından farklı kurallar bekliyor. Tekrar denemek işe yaramaz; kuralların önce dağıtılması (deploy) gerekir.',
-	'problem.code': 'Bu durum oyun kodundaki bir hatadan kaynaklanıyor; tekrar denemek düzeltmeyecektir. Lütfen geliştiriciyle iletişime geçin: raporu kopyalayıp mesajınızda iletin.',
-	'problem.emulator': 'Yerel Firebase emülatörü yanıt vermiyor: geliştirici sürümü gerçek veritabanıyla değil, onunla iletişim kurar. Terminalde npm run emulators komutunu çalıştırın; zaten çalışıyorsa yeniden başlatın.',
+	'problem.reload':
+		'Oyunun yeni bir sürümü yayınlandı ve bu sayfa eski kaldı. Sayfayı yenileyin, her şey çalışacaktır.',
+	'problem.mismatch':
+		'Sunucu kuralları bu sayfadan daha yeni: oyun şu anda güncelleniyor. Sayfayı birkaç dakika içinde tekrar yenileyin, sorun devam ederse geliştiriciye yazın.',
+	'problem.rules':
+		"Yeni veritabanı kuralları henüz Firebase'de yayınlanmadı: oyunun bu sürümü, sunucunun şu anda çalıştırdığından farklı kurallar bekliyor. Tekrar denemek işe yaramaz; kuralların önce dağıtılması (deploy) gerekir.",
+	'problem.code':
+		'Bu durum oyun kodundaki bir hatadan kaynaklanıyor; tekrar denemek düzeltmeyecektir. Lütfen geliştiriciyle iletişime geçin: raporu kopyalayıp mesajınızda iletin.',
+	'problem.emulator':
+		'Yerel Firebase emülatörü yanıt vermiyor: geliştirici sürümü gerçek veritabanıyla değil, onunla iletişim kurar. Terminalde npm run emulators komutunu çalıştırın; zaten çalışıyorsa yeniden başlatın.',
 	'problem.copyReport': 'Raporu kopyala',
 	'problem.copied': 'Rapor kopyalandı',
 	'problem.contact': 'Geliştiriciyle iletişime geç',
-	'problem.contactHint': 'Size uygun herhangi bir mesajlaşma uygulamasından yazın ve kopyalanan raporu oraya yapıştırın.',
+	'problem.contactHint':
+		'Size uygun herhangi bir mesajlaşma uygulamasından yazın ve kopyalanan raporu oraya yapıştırın.',
 	'problem.writeVia': 'Geliştiriciye şu platformdan yaz:',
-	'online.searchBusy': 'Otomatik arama devam ederken başka hiçbir işlem yapılamaz; önce aramayı iptal edin.',
+	'online.searchBusy':
+		'Otomatik arama devam ederken başka hiçbir işlem yapılamaz; önce aramayı iptal edin.',
 	'online.search': 'Otomatik arama',
 	'online.searchGames': 'Oynanacak oyunlar',
 	'online.searchLast': 'En az bir oyun seçili kalmalıdır',
-	'online.searchHint': 'Seçilen oyunlardan birinde bir rakip bulacağız; etrafta kimse yoksa biri gelene kadar bekleyeceğiz.',
+	'online.searchHint':
+		'Seçilen oyunlardan birinde bir rakip bulacağız; etrafta kimse yoksa biri gelene kadar bekleyeceğiz.',
 	'online.searching': 'Oyuncu aranıyor…',
-	'online.waiting': 'Oyuncu bekleniyor. Birisi seçilen oyunlardan birini aradığı anda aynı odaya alınacaksınız.',
+	'online.waiting':
+		'Oyuncu bekleniyor. Birisi seçilen oyunlardan birini aradığı anda aynı odaya alınacaksınız.',
 	'online.found': 'Oyuncu bulundu — bağlanılıyor…',
 	'online.searchCancel': 'İptal',
 	'online.createTitle': 'Yeni oda:',
 	'online.everyoneHint': 'Oda listede görünür ve herkes katılabilir.',
-	'online.friendsHint': 'Oda listede görünmez: oyuncular yalnızca onlara gönderdiğiniz kodla katılabilir.',
+	'online.friendsHint':
+		'Oda listede görünmez: oyuncular yalnızca onlara gönderdiğiniz kodla katılabilir.',
 	'online.back': 'Geri',
 	'online.join': 'Katıl',
 	'online.opening': 'Oda açılıyor…',
@@ -79,10 +90,13 @@ export const ui = {
 	'pairs.roomLost': 'Oda artık mevcut değil — tekrar katılın.',
 	'pairs.removed': 'Oda sahibi sizi odadan çıkardı.',
 	'pairs.offline': 'Sunucuyla bağlantı kesildi — geri gelmesi bekleniyor.',
-	'pairs.rulesChanged': 'Sunucu kuralları güncellendi ve bu sayfa güncel değil, bu nedenle hamleler iletilemiyor. Sayfayı yenileyin — oyun kaldığı yerden devam edecektir.',
-	'pairs.newBuild': 'Oyunun yeni bir sürümü çıktı — sayfayı yenileyin. Oyun kuralları değişmediği sürece bulunduğunuz oda tekrar açılır.',
+	'pairs.rulesChanged':
+		'Sunucu kuralları güncellendi ve bu sayfa güncel değil, bu nedenle hamleler iletilemiyor. Sayfayı yenileyin — oyun kaldığı yerden devam edecektir.',
+	'pairs.newBuild':
+		'Oyunun yeni bir sürümü çıktı — sayfayı yenileyin. Oyun kuralları değişmediği sürece bulunduğunuz oda tekrar açılır.',
 	'pairs.reload': 'Sayfayı yenile',
-	'pairs.noLead': 'Oda sahibi ayrıldı ve buradaki hiç kimse liderliği devralamıyor. Odadan çıkabilir veya yeni bir oda oluşturabilirsiniz.',
+	'pairs.noLead':
+		'Oda sahibi ayrıldı ve buradaki hiç kimse liderliği devralamıyor. Odadan çıkabilir veya yeni bir oda oluşturabilirsiniz.',
 	'pairs.leaveRoom': 'Odadan ayrıl',
 	'pairs.playNext': 'Sonraki oyunda oyna',
 	'pairs.roomOlder': 'Bu oyun eski bir sürümde başlatıldı. Lütfen yeni bir oda oluşturun.',
@@ -102,11 +116,14 @@ export const ui = {
 	'pairs.avatarDone': 'Tamam',
 	'pairs.myAvatar': 'Avatarınız',
 	'pairs.inviteTitle': 'Şu odaya davet edildiniz:',
-	'pairs.inviteHint': 'Diğerleri sizi bu şekilde görecek. Şimdi veya daha sonra lobide değiştirebilirsiniz.',
+	'pairs.inviteHint':
+		'Diğerleri sizi bu şekilde görecek. Şimdi veya daha sonra lobide değiştirebilirsiniz.',
 	'pairs.inviteJoin': 'Katıl',
 	'pairs.inviteBack': 'Oda listesine dön',
-	'pairs.inviteAvatarTaken': 'Buradaki başka bir oyuncu bu avatarı zaten kullanıyor. Başka bir tane seçin veya doğrudan katılın; size rastgele boş bir avatar verilecektir.',
-	'pairs.avatarReplaced': 'Bu odadaki başka bir oyuncu zaten avatarınızı kullandığı için size farklı bir avatar verildi. Lobide değiştirebilirsiniz.',
+	'pairs.inviteAvatarTaken':
+		'Buradaki başka bir oyuncu bu avatarı zaten kullanıyor. Başka bir tane seçin veya doğrudan katılın; size rastgele boş bir avatar verilecektir.',
+	'pairs.avatarReplaced':
+		'Bu odadaki başka bir oyuncu zaten avatarınızı kullandığı için size farklı bir avatar verildi. Lobide değiştirebilirsiniz.',
 	'pairs.nickname': 'Kullanıcı adı',
 	'pairs.country': 'Bayrak',
 	'country.xr': 'Rus Gönüllü Kolordusu',
@@ -124,7 +141,8 @@ export const ui = {
 	'pairs.shownNewest': 'En yeniler gösteriliyor — daha fazlası da var',
 	'pairs.startingIn': 'Başlama süresi:',
 	'pairs.seconds': 'sn',
-	'pairs.roomsUnavailable': 'Oda listesine ulaşılamıyor. Kodla katılma ve oda oluşturma hâlâ çalışmaktadır.',
+	'pairs.roomsUnavailable':
+		'Oda listesine ulaşılamıyor. Kodla katılma ve oda oluşturma hâlâ çalışmaktadır.',
 	'menu.game.population': 'Hangisinin popülasyonu daha fazla?',
 	'menu.game.habitat': 'Nerede yaşarlar?',
 	'menu.game.mythbusters': 'Gerçek mi, Efsane mi?',
@@ -164,6 +182,8 @@ export const ui = {
 	'common.copyDenied': 'Tarayıcı panoya yazamadı. Klavyeden kopyalayın: Ctrl+C.',
 	'header.toggleTheme': 'Temayı değiştir',
 	'header.toggleLocale': 'Dili değiştir',
+	'header.searchLocale': 'Dil ara…',
+	'header.emptyLanguages': 'Dil bulunamadı',
 	'header.toggleFullscreen': 'Tam ekrana geç',
 	'header.exitFullscreen': 'Tam ekrandan çık',
 	'header.score': 'Toplam puan',
@@ -180,7 +200,8 @@ export const ui = {
 	'error.retry': 'Tekrar dene',
 	'error.goHome': 'Ana sayfaya dön',
 	'beta.title': 'Beta testi',
-	'beta.intro': 'Kontrol edilmeye değer maddelerin listesi. Maddeleri işaretleyin, ardından sondaki raporu kopyalayıp bize gönderin.',
+	'beta.intro':
+		'Kontrol edilmeye değer maddelerin listesi. Maddeleri işaretleyin, ardından sondaki raporu kopyalayıp bize gönderin.',
 	'beta.progress': 'Bu sürümde işaretlendi',
 	'beta.vote.none': 'Kontrol edilmedi',
 	'beta.vote.fail': 'Bozuk',
@@ -191,9 +212,12 @@ export const ui = {
 	'beta.coverage.manual': 'Yalnızca manuel',
 	'beta.coverage.testable': 'Henüz otomatik test yok',
 	'beta.coverage.covered': 'Test kapsamında',
-	'beta.coverage.manualHint': 'Bunu hiçbir makine denetlemez; burada kendi gözlerinizle incelemeniz gerekir.',
-	'beta.coverage.testableHint': 'Bu otomatik olarak denetlenebilir ancak henüz böyle bir test mevcut değil.',
-	'beta.coverage.coveredHint': 'Otomatik bir test bunu zaten denetliyor. Burada bir hata bulursanız test hatalıdır; bu da bizim için özellikle değerlidir.',
+	'beta.coverage.manualHint':
+		'Bunu hiçbir makine denetlemez; burada kendi gözlerinizle incelemeniz gerekir.',
+	'beta.coverage.testableHint':
+		'Bu otomatik olarak denetlenebilir ancak henüz böyle bir test mevcut değil.',
+	'beta.coverage.coveredHint':
+		'Otomatik bir test bunu zaten denetliyor. Burada bir hata bulursanız test hatalıdır; bu da bizim için özellikle değerlidir.',
 	'beta.stale': 'farklı bir sürümde işaretlendi',
 	'beta.copy': 'Raporu kopyala',
 	'beta.copied': 'Rapor kopyalandı',
@@ -201,7 +225,8 @@ export const ui = {
 	'beta.clearConfirm': 'Gerçekten temizlensin mi? Tekrar basın',
 	'beta.tabProgress': 'bu sekmede işaretlendi',
 	'beta.home': 'Ana Sayfa',
-	'beta.copyFailed': 'Tarayıcı kopyalamayı reddetti. Aşağıdaki metni seçip manuel olarak kopyalayın.',
+	'beta.copyFailed':
+		'Tarayıcı kopyalamayı reddetti. Aşağıdaki metni seçip manuel olarak kopyalayın.',
 	'beta.rulesTitle': 'Veritabanı erişim kuralları',
 	'beta.rulesCheck': 'Denetle',
 	'beta.rulesChecking': 'Veritabanına soruluyor…',
@@ -220,5 +245,5 @@ export const ui = {
 	'review.partial': 'kısmen doğru',
 	'review.back': 'Mevcut soruya dön',
 	'review.backToResults': 'Sonuçlara dön',
-	'review.list': 'Bu oyunun soruları',
+	'review.list': 'Bu oyunun soruları'
 } as const;

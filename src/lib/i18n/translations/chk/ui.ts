@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Kukkunen kákkáik ássingaw usun mannkémén: sounong me túmúnú meinisin usun met ra móngo, fitow mán chék ra kúnnó, me ekkewe kapas chofona aramas ra lúkú. Féérú ren an epwe túmúnú mannkémén.',
+	'app.description':
+		'Kukkunen kákkáik ássingaw usun mannkémén: sounong me túmúnú meinisin usun met ra móngo, fitow mán chék ra kúnnó, me ekkewe kapas chofona aramas ra lúkú. Féérú ren an epwe túmúnú mannkémén.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Met ra móngo?',
 	'menu.game.memory': 'Kútte eew pwichinnikkin',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Ina e eew rumw ren eew kákkáik sokkolo.',
 	'menu.play': 'Kákkáik',
 	'menu.playOnline': 'Kákkáik wóón internet',
-	'problem.offline': 'Ese chúen wor chónnóókun ngeni ewe server inen kákkáik. Nengeni omw internet me sounong sefál.',
-	'problem.reload': 'E feino minen kákkáik sefál, nge ei ror e nom minen me nóm. Ásopósopusefáni ei pekin taropwe pwe epwe angang meinisin.',
-	'problem.mismatch': 'Ekkewe allúkún ewe server ra fen miina sefál seni ei pekin taropwe: a fen kkatóónó sefál ewe kákkáik iei. Ásopósopusefáni pekin taropwe mwirin fitu minich, nge ika ese chúen angang, tótóri ewe chón féérú.',
-	'problem.rules': 'Ekkewe allúkún minen amwóchu pwóróus esamwo katowu ngeni Firebase: ei minen kákkáik e mochen allúk mi sokko seni minen e angang iei wóón ewe server. Kosapw chúen fen sounong pwe ese tíchik — mi fokkun lamot epwe emmwenitiw ekkewe allúk akenap.',
-	'problem.code': 'Eew osukosuk seni makkeeyan ewe kákkáik — ese tongeni túmúnú ika ka féri sefál. Kose mochen fós ngeni ewe chón féérú: kópikótó ewe repoot me tinano non omw puk.',
-	'problem.emulator': 'Ewe Firebase emulator ese chúen pwonúweni: minen eféérú kákkáik a fós ngeni i, nge ese fós ngeni minen wesewesen amwóchu pwóróus. Féérú npm run emulators non terminal — ika a fen mwékútúkút, asopósopusefáni.',
+	'problem.offline':
+		'Ese chúen wor chónnóókun ngeni ewe server inen kákkáik. Nengeni omw internet me sounong sefál.',
+	'problem.reload':
+		'E feino minen kákkáik sefál, nge ei ror e nom minen me nóm. Ásopósopusefáni ei pekin taropwe pwe epwe angang meinisin.',
+	'problem.mismatch':
+		'Ekkewe allúkún ewe server ra fen miina sefál seni ei pekin taropwe: a fen kkatóónó sefál ewe kákkáik iei. Ásopósopusefáni pekin taropwe mwirin fitu minich, nge ika ese chúen angang, tótóri ewe chón féérú.',
+	'problem.rules':
+		'Ekkewe allúkún minen amwóchu pwóróus esamwo katowu ngeni Firebase: ei minen kákkáik e mochen allúk mi sokko seni minen e angang iei wóón ewe server. Kosapw chúen fen sounong pwe ese tíchik — mi fokkun lamot epwe emmwenitiw ekkewe allúk akenap.',
+	'problem.code':
+		'Eew osukosuk seni makkeeyan ewe kákkáik — ese tongeni túmúnú ika ka féri sefál. Kose mochen fós ngeni ewe chón féérú: kópikótó ewe repoot me tinano non omw puk.',
+	'problem.emulator':
+		'Ewe Firebase emulator ese chúen pwonúweni: minen eféérú kákkáik a fós ngeni i, nge ese fós ngeni minen wesewesen amwóchu pwóróus. Féérú npm run emulators non terminal — ika a fen mwékútúkút, asopósopusefáni.',
 	'problem.copyReport': 'Kópikótó ewe repoot',
 	'problem.copied': 'A kópikótó ewe repoot',
 	'problem.contact': 'Fós ngeni ewe chón féérú',
-	'problem.contactHint': 'Makkeey wóón chék meni messanger ka mochen me afanafan ewe repoot mi kópikótó.',
+	'problem.contactHint':
+		'Makkeey wóón chék meni messanger ka mochen me afanafan ewe repoot mi kópikótó.',
 	'problem.writeVia': 'Tini fós ngeni ewe chón féérú wóón',
-	'online.searchBusy': 'Nupwen a chék mwékút kútta aramas, ese wor met kopwe fénú — amwóchu ewe kútta mwan.',
+	'online.searchBusy':
+		'Nupwen a chék mwékút kútta aramas, ese wor met kopwe fénú — amwóchu ewe kútta mwan.',
 	'online.search': 'Kúttafesen pwisin i',
 	'online.searchGames': 'Met sia kákkáik',
 	'online.searchLast': 'Epwe wor epwe nom non mwékútúkút eew chék kákkáik',
-	'online.searchHint': 'Aipwe kútte ngonuk eman chón kukkun kákkáik non ekkewe kákkáik ka fili — ika ese wor aramas, aipwe witiwit tori epwe feito eman.',
+	'online.searchHint':
+		'Aipwe kútte ngonuk eman chón kukkun kákkáik non ekkewe kákkáik ka fili — ika ese wor aramas, aipwe witiwit tori epwe feito eman.',
 	'online.searching': 'A chék kútta eman chón kákkáik…',
-	'online.waiting': 'A witiwit eman chón kákkáik. Nupwen eman e kútta ekkewe kákkáik ka fili, oupwe chék nom non ewe chék rumw.',
+	'online.waiting':
+		'A witiwit eman chón kákkáik. Nupwen eman e kútta ekkewe kákkáik ka fili, oupwe chék nom non ewe chék rumw.',
 	'online.found': 'A kúna eman chón kákkáik — a chónnóókwú…',
 	'online.searchCancel': 'Amwóchu',
 	'online.createTitle': 'Minaen rumw:',
 	'online.everyoneHint': 'Ei rumw epwe pwa wóón ewe makkeey, me emén me emén e tongeni tolong.',
-	'online.friendsHint': 'Ei rumw ese mak wóón ewe téttél: aramas repwe chék tolong ren ewe kóót ka tinano ngeniir.',
+	'online.friendsHint':
+		'Ei rumw ese mak wóón ewe téttél: aramas repwe chék tolong ren ewe kóót ka tinano ngeniir.',
 	'online.back': 'Seingeni',
 	'online.join': 'Tolong',
 	'online.opening': 'A suk ewe rumw…',
@@ -74,18 +86,23 @@ export const ui = {
 	'pairs.yourTurn': 'Omw fansoun',
 	'pairs.waitingFor': 'Fansoun',
 	'pairs.noRoom': 'Ese wor ei sokkun rumw.',
-	'pairs.oldVersion': 'A ffééru sefál ei kákkáik. Ásopósopusefáni ewe pekin taropwe — ámi me ruoman.',
+	'pairs.oldVersion':
+		'A ffééru sefál ei kákkáik. Ásopósopusefáni ewe pekin taropwe — ámi me ruoman.',
 	'pairs.roomClosed': 'A kouno ewe rumw — a wes ewe kákkáik.',
 	'pairs.roomLost': 'Ei rumw ese chúen kawor — tolong sefál non.',
 	'pairs.removed': 'Ewe chón amwóchu a asúkóló seni ewe rumw.',
 	'pairs.offline': 'Ese chúen wor chónnóókun ngeni ewe server — a witi an epwe liwinto.',
-	'pairs.rulesChanged': 'Ekkewe allúkún ewe server ra fen miina sefál nge ei pekin taropwe a nom me nóm, ina popun ese chúen mwékút ewe mwékútúkút. Ásopósopusefáni ewe pekin taropwe — ewe kákkáik epwe chék sópósópónó me ia a kouno me ie.',
-	'pairs.newBuild': 'A katowu minen kákkáik miina — ásopósopusefáni ei pekin taropwe. Ewe rumw ka nom non epwe suk sefál tiwenó ika e siwil allúkún ewe kákkáik.',
+	'pairs.rulesChanged':
+		'Ekkewe allúkún ewe server ra fen miina sefál nge ei pekin taropwe a nom me nóm, ina popun ese chúen mwékút ewe mwékútúkút. Ásopósopusefáni ewe pekin taropwe — ewe kákkáik epwe chék sópósópónó me ia a kouno me ie.',
+	'pairs.newBuild':
+		'A katowu minen kákkáik miina — ásopósopusefáni ei pekin taropwe. Ewe rumw ka nom non epwe suk sefál tiwenó ika e siwil allúkún ewe kákkáik.',
 	'pairs.reload': 'Ásopósopusefáni pekin taropwe',
-	'pairs.noLead': 'A towu ewe chón wisen amwóchu, me ese chúen wor eman epwe tongeni wisen emmwen. Ka tongeni towu seni ewe rumw are féérú ewe minaen rumw.',
+	'pairs.noLead':
+		'A towu ewe chón wisen amwóchu, me ese chúen wor eman epwe tongeni wisen emmwen. Ka tongeni towu seni ewe rumw are féérú ewe minaen rumw.',
 	'pairs.leaveRoom': 'Towu seni ewe rumw',
 	'pairs.playNext': 'Fiti ne ewe ppiilu mwuun',
-	'pairs.roomOlder': 'Ei kukkun piilu a poputa me non ew efein feiochu kewe. Kose mochen forata ew sefo rum.',
+	'pairs.roomOlder':
+		'Ei kukkun piilu a poputa me non ew efein feiochu kewe. Kose mochen forata ew sefo rum.',
 	'pairs.roomFull': 'Ei rum a ur — a fen wor engon me ruoman aramas.',
 	'pairs.opponentGone': 'Chon om fiti a fen chok nommwomw pwan ese foffor fitu fansoun.',
 	'pairs.takeTurn': 'Ngei om fansoun',
@@ -102,11 +119,14 @@ export const ui = {
 	'pairs.avatarDone': 'Wesino',
 	'pairs.myAvatar': 'Sasingomw',
 	'pairs.inviteTitle': 'Kopwe etto fiti ewe rum',
-	'pairs.inviteHint': 'Iei usun ekoch aramas repwe kuna ngonuk. Ka tongeni siwili iei are mwich non ewe lobby.',
+	'pairs.inviteHint':
+		'Iei usun ekoch aramas repwe kuna ngonuk. Ka tongeni siwili iei are mwich non ewe lobby.',
 	'pairs.inviteJoin': 'Fiti',
 	'pairs.inviteBack': 'Liwinsefanto ngeni tettenin rum',
-	'pairs.inviteAvatarTaken': 'Emon chon mwuun ikei a fen eea ei sasing. Finata pwan ew — are chok fiti, iwe kopwe angei ew ese kamo.',
-	'pairs.avatarReplaced': 'Emon chon mwuun non ei rum a fen eea sasingomw, ina minne ka angei ew sokkun. Ka tongeni siwili non ewe lobby.',
+	'pairs.inviteAvatarTaken':
+		'Emon chon mwuun ikei a fen eea ei sasing. Finata pwan ew — are chok fiti, iwe kopwe angei ew ese kamo.',
+	'pairs.avatarReplaced':
+		'Emon chon mwuun non ei rum a fen eea sasingomw, ina minne ka angei ew sokkun. Ka tongeni siwili non ewe lobby.',
 	'pairs.nickname': 'Kopit',
 	'pairs.country': 'Fnak',
 	'country.xr': 'Mwiichen Choofonun Chon Russia',
@@ -124,7 +144,8 @@ export const ui = {
 	'pairs.shownNewest': 'Pwarata kewe minafon chok — mi chok wor ekoch',
 	'pairs.startingIn': 'Epwe poputa non',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Ese tongeni suuk tettenin rum. Om fiti ren nampa me foratan ew rum a chok ammwet.',
+	'pairs.roomsUnavailable':
+		'Ese tongeni suuk tettenin rum. Om fiti ren nampa me foratan ew rum a chok ammwet.',
 	'menu.game.population': 'Iffa e mwittir chommong?',
 	'menu.game.habitat': 'Ia ra nom ie?',
 	'menu.game.mythbusters': 'Pwonet are osukosuk?',
@@ -142,7 +163,8 @@ export const ui = {
 	'memory.you': 'En',
 	'memory.rival': 'Chon Kufumw',
 	'memory.moves': 'Tetenin Makka',
-	'memory.resized': 'A siwil wewen me auran mesen kisin napanap. Ewe tetten a chok nonnom usun ewe poputan mwich.',
+	'memory.resized':
+		'A siwil wewen me auran mesen kisin napanap. Ewe tetten a chok nonnom usun ewe poputan mwich.',
 	'memory.relayout': 'Afanga sefani pwe epwe fichunong',
 	'memory.found': 'Kuna',
 	'memory.turn': 'Fansoun',
@@ -160,10 +182,14 @@ export const ui = {
 	'common.copy': 'Koppi',
 	'common.clear': 'Eimwno',
 	'common.copied': 'Fen Koppi',
-	'common.pasteDenied': 'Ewe browser ese mochen annea ewe pekin clipboard. Akappichaanong ren poumw: Ctrl+V.',
-	'common.copyDenied': 'Ewe browser ese mochen makkei ewe pekin clipboard. Koppi ren poumw: Ctrl+C.',
+	'common.pasteDenied':
+		'Ewe browser ese mochen annea ewe pekin clipboard. Akappichaanong ren poumw: Ctrl+V.',
+	'common.copyDenied':
+		'Ewe browser ese mochen makkei ewe pekin clipboard. Koppi ren poumw: Ctrl+C.',
 	'header.toggleTheme': 'Siwili napanapon',
 	'header.toggleLocale': 'Siwili fosun fonu',
+	'header.searchLocale': 'Kutta kapas…',
+	'header.emptyLanguages': 'Ese wor kapas mi kuna',
 	'header.toggleFullscreen': 'Amwochu unusen mesen kompiwter',
 	'header.exitFullscreen': 'Tou seni unusen mesen kompiwter',
 	'header.score': 'Unusen urumw',
@@ -180,7 +206,8 @@ export const ui = {
 	'error.retry': 'Sotuni sefan',
 	'error.goHome': 'Liwin ngeni leniomw',
 	'beta.title': 'Sossotun beta',
-	'beta.intro': 'Eew tetenin mettoch mi namot an epwe churi. Makkei ekkei mettoch, kopiiye ewe repot me mwirin iwe tinato ngenikem.',
+	'beta.intro':
+		'Eew tetenin mettoch mi namot an epwe churi. Makkei ekkei mettoch, kopiiye ewe repot me mwirin iwe tinato ngenikem.',
 	'beta.progress': 'Makketa non eei sokkun',
 	'beta.vote.none': 'Esamwo nengeni',
 	'beta.vote.fail': 'E ta',
@@ -192,8 +219,10 @@ export const ui = {
 	'beta.coverage.testable': 'Ese mwo wor sossotun mmasin',
 	'beta.coverage.covered': 'Mi wor sossot me ren mmasin',
 	'beta.coverage.manualHint': 'Ese wor mmasin epwe nengeni — mesomw chök mi lamot ikei.',
-	'beta.coverage.testableHint': 'Mmasin epwe tufich ne cheki, nge esamwo wor eei sokkun sossot iei.',
-	'beta.coverage.coveredHint': 'Ewor sossotun mmasin a fen nengeni eei. Ika ka künö eew mwääl ikei, ewe sossot a mwääl — iwe ewe a mmen auchea ngenikem.',
+	'beta.coverage.testableHint':
+		'Mmasin epwe tufich ne cheki, nge esamwo wor eei sokkun sossot iei.',
+	'beta.coverage.coveredHint':
+		'Ewor sossotun mmasin a fen nengeni eei. Ika ka künö eew mwääl ikei, ewe sossot a mwääl — iwe ewe a mmen auchea ngenikem.',
 	'beta.stale': 'makketa non eew sokkun mi koon',
 	'beta.copy': 'Kopiiye ewe repot',
 	'beta.copied': 'A wes ne kopii ewe repot',
@@ -207,12 +236,14 @@ export const ui = {
 	'beta.rulesChecking': 'A aisinó database…',
 	'beta.rulesFresh': 'Ewe sokkun a kawor a pacheer ngeni eei build',
 	'beta.rulesStale': 'Ewe database a kokkot ngeni eew sokkun mi SOKKONO — eei build esamwo kawor',
-	'beta.rulesUnknown': 'Ese tufich ne sinei: ese wor internet, are ese tufich ne pachetiw ngeni database',
+	'beta.rulesUnknown':
+		'Ese tufich ne sinei: ese wor internet, are ese tufich ne pachetiw ngeni database',
 	'pairs.startMode': 'Poputáán ewe urunlap',
 	'pairs.modeAuto': 'Pwisin poputá',
 	'pairs.modeConfirm': 'Witiwiti ngeni an epwe kapunguno',
 	'pairs.modeAutoHint': 'Ewe urunlap epwe pwisin poputá nupwen ruu chon urur ra tonoong.',
-	'pairs.modeConfirmHint': 'Ewe urunlap epwe witiwiti tori ewe chón aamwa epwe aitiita “Poputáán ewe urunlap”.',
+	'pairs.modeConfirmHint':
+		'Ewe urunlap epwe witiwiti tori ewe chón aamwa epwe aitiita “Poputáán ewe urunlap”.',
 	'review.question': 'Kapaseis',
 	'review.of': 'seni',
 	'review.correct': 'púng',
@@ -220,5 +251,5 @@ export const ui = {
 	'review.partial': 'púng ekit',
 	'review.back': 'Liwin ngeni ewe kapaseis non fansoun iei',
 	'review.backToResults': 'Liwin ngeni ekkewe feiitá',
-	'review.list': 'Kapasiesin eei urunlap',
+	'review.list': 'Kapasiesin eei urunlap'
 } as const;

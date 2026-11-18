@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Bezmaksas izglītojošas spēles par dzīvniekiem: pārbaudi savas zināšanas par to, ko tie ēd, cik to ir palicis savvaļā, un mītiem, kuriem cilvēki joprojām tic. Izstrādāts, lai atbalstītu dzīvnieku labturību.',
+	'app.description':
+		'Bezmaksas izglītojošas spēles par dzīvniekiem: pārbaudi savas zināšanas par to, ko tie ēd, cik to ir palicis savvaļā, un mītiem, kuriem cilvēki joprojām tic. Izstrādāts, lai atbalstītu dzīvnieku labturību.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Ko tie ēd?',
 	'menu.game.memory': 'Atrodi pāri',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Šī istaba ir paredzēta citai spēlei.',
 	'menu.play': 'Spēlēt',
 	'menu.playOnline': 'Spēlēt tiešsaistē',
-	'problem.offline': 'Nav savienojuma ar spēles serveri. Pārbaudiet interneta pieslēgumu un mēģiniet vēlreiz.',
-	'problem.reload': 'Ir iznākusi jauna spēles versija, un šī lapa ir novecojusi. Pārlādējiet lapu, un viss darbosies.',
-	'problem.mismatch': 'Servera noteikumi jau ir jaunāki par šo lapu: spēle pašlaik tiek atjaunināta. Pārlādējiet lapu pēc dažām minūtēm, un, ja tā joprojām nedarbojas, sazinieties ar izstrādātāju.',
-	'problem.rules': 'Jaunie datubāzes noteikumi vēl nav publicēti pakalpojumā Firebase: šī spēles versija paredz citus noteikumus nekā tie, kas pašlaik darbojas serverī. Atkārtots mēģinājums nepalīdzēs — vispirms ir jāievieš noteikumi.',
-	'problem.code': 'Šī ir kļūda spēles kodā — atkārtots mēģinājums to nenovērsīs. Lūdzu, sazinieties ar izstrādātāju: nokopējiet pārskatu un nosūtiet to ziņojumā.',
-	'problem.emulator': 'Vietējais Firebase emulators nereaģē: izstrādes versija sazinās ar to, nevis ar īsto datubāzi. Palaidiet terminālī komandu npm run emulators — un, ja tas jau darbojas, restartējiet to.',
+	'problem.offline':
+		'Nav savienojuma ar spēles serveri. Pārbaudiet interneta pieslēgumu un mēģiniet vēlreiz.',
+	'problem.reload':
+		'Ir iznākusi jauna spēles versija, un šī lapa ir novecojusi. Pārlādējiet lapu, un viss darbosies.',
+	'problem.mismatch':
+		'Servera noteikumi jau ir jaunāki par šo lapu: spēle pašlaik tiek atjaunināta. Pārlādējiet lapu pēc dažām minūtēm, un, ja tā joprojām nedarbojas, sazinieties ar izstrādātāju.',
+	'problem.rules':
+		'Jaunie datubāzes noteikumi vēl nav publicēti pakalpojumā Firebase: šī spēles versija paredz citus noteikumus nekā tie, kas pašlaik darbojas serverī. Atkārtots mēģinājums nepalīdzēs — vispirms ir jāievieš noteikumi.',
+	'problem.code':
+		'Šī ir kļūda spēles kodā — atkārtots mēģinājums to nenovērsīs. Lūdzu, sazinieties ar izstrādātāju: nokopējiet pārskatu un nosūtiet to ziņojumā.',
+	'problem.emulator':
+		'Vietējais Firebase emulators nereaģē: izstrādes versija sazinās ar to, nevis ar īsto datubāzi. Palaidiet terminālī komandu npm run emulators — un, ja tas jau darbojas, restartējiet to.',
 	'problem.copyReport': 'Kopēt pārskatu',
 	'problem.copied': 'Pārskats nokopēts',
 	'problem.contact': 'Sazināties ar izstrādātāju',
-	'problem.contactHint': 'Rakstiet jebkurā sev ērtā saziņas lietotnē un iekopējiet tur nokopēto pārskatu.',
+	'problem.contactHint':
+		'Rakstiet jebkurā sev ērtā saziņas lietotnē un iekopējiet tur nokopēto pārskatu.',
 	'problem.writeVia': 'Rakstīt izstrādātājam platformā',
-	'online.searchBusy': 'Kamēr darbojas automātiskā meklēšana, nekas cits nav pieejams — vispirms atceliet meklēšanu.',
+	'online.searchBusy':
+		'Kamēr darbojas automātiskā meklēšana, nekas cits nav pieejams — vispirms atceliet meklēšanu.',
 	'online.search': 'Automātiskā meklēšana',
 	'online.searchGames': 'Ko spēlējam',
 	'online.searchLast': 'Vismaz vienai spēlei jāpaliek ieslēgtai',
-	'online.searchHint': 'Mēs atradīsim pretinieku kādā no izvēlētajām spēlēm — un, ja neviena nebūs, pagaidīsim, līdz kāds pievienosies.',
+	'online.searchHint':
+		'Mēs atradīsim pretinieku kādā no izvēlētajām spēlēm — un, ja neviena nebūs, pagaidīsim, līdz kāds pievienosies.',
 	'online.searching': 'Meklē spēlētāju…',
-	'online.waiting': 'Gaida spēlētāju. Tiklīdz kāds meklēs kādu no izvēlētajām spēlēm, jūs nonāksiet vienā istabā.',
+	'online.waiting':
+		'Gaida spēlētāju. Tiklīdz kāds meklēs kādu no izvēlētajām spēlēm, jūs nonāksiet vienā istabā.',
 	'online.found': 'Spēlētājs atrasts — izveido savienojumu…',
 	'online.searchCancel': 'Atcelt',
 	'online.createTitle': 'Jauna istaba:',
 	'online.everyoneHint': 'Istaba ir redzama sarakstā, un ikviens var pievienoties.',
-	'online.friendsHint': 'Istaba nav redzama sarakstā: cilvēki var pievienoties tikai ar kodu, ko viņiem nosūtāt.',
+	'online.friendsHint':
+		'Istaba nav redzama sarakstā: cilvēki var pievienoties tikai ar kodu, ko viņiem nosūtāt.',
 	'online.back': 'Atpakaļ',
 	'online.join': 'Pievienoties',
 	'online.opening': 'Atver istabu…',
@@ -79,10 +91,13 @@ export const ui = {
 	'pairs.roomLost': 'Istaba vairs nav pieejama — pievienojieties vēlreiz.',
 	'pairs.removed': 'Istabas veidotājs izraidīja tevi no istabas.',
 	'pairs.offline': 'Nav savienojuma ar serveri — gaida, līdz tas atjaunosies.',
-	'pairs.rulesChanged': 'Servera noteikumi ir atjaunināti un šī lapa ir novecojusi, tāpēc gājieni netiek reģistrēti. Pārlādējiet lapu — spēle turpināsies no vietas, kur tā apstājās.',
-	'pairs.newBuild': 'Ir iznākusi jauna spēles versija — pārlādējiet lapu. Istaba, kurā atradāties, atvērsies no jauna, ja vien nav mainījušies spēles noteikumi.',
+	'pairs.rulesChanged':
+		'Servera noteikumi ir atjaunināti un šī lapa ir novecojusi, tāpēc gājieni netiek reģistrēti. Pārlādējiet lapu — spēle turpināsies no vietas, kur tā apstājās.',
+	'pairs.newBuild':
+		'Ir iznākusi jauna spēles versija — pārlādējiet lapu. Istaba, kurā atradāties, atvērsies no jauna, ja vien nav mainījušies spēles noteikumi.',
 	'pairs.reload': 'Pārlādēt lapu',
-	'pairs.noLead': 'Istabas veidotājs ir izgājis, un neviens cits šeit nevar pārņemt vadību. Vari pamest istabu vai izveidot jaunu.',
+	'pairs.noLead':
+		'Istabas veidotājs ir izgājis, un neviens cits šeit nevar pārņemt vadību. Vari pamest istabu vai izveidot jaunu.',
 	'pairs.leaveRoom': 'Pamest istabu',
 	'pairs.playNext': 'Spēlēt nākamajā spēlē',
 	'pairs.roomOlder': 'Šī spēle tika sākta vecākā versijā. Lūdzu, izveidojiet jaunu istabu.',
@@ -105,8 +120,10 @@ export const ui = {
 	'pairs.inviteHint': 'Šādi tevi redzēs citi. To vari mainīt tagad vai vēlāk uzgaidāmajā telpā.',
 	'pairs.inviteJoin': 'Pievienoties',
 	'pairs.inviteBack': 'Uz istabu sarakstu',
-	'pairs.inviteAvatarTaken': 'Cits spēlētājs šeit jau izmanto šo iemiesojumu. Izvēlies citu vai vienkārši pievienojies, un saņemsi brīvu tēlu.',
-	'pairs.avatarReplaced': 'Cits spēlētājs šajā istabā jau izmanto tavu iemiesojumu, tāpēc tev tika piešķirts cits. To vari mainīt uzgaidāmajā telpā.',
+	'pairs.inviteAvatarTaken':
+		'Cits spēlētājs šeit jau izmanto šo iemiesojumu. Izvēlies citu vai vienkārši pievienojies, un saņemsi brīvu tēlu.',
+	'pairs.avatarReplaced':
+		'Cits spēlētājs šajā istabā jau izmanto tavu iemiesojumu, tāpēc tev tika piešķirts cits. To vari mainīt uzgaidāmajā telpā.',
 	'pairs.nickname': 'Segvārds',
 	'pairs.country': 'Karogs',
 	'country.xr': 'Krievu brīvprātīgo korpuss',
@@ -118,13 +135,15 @@ export const ui = {
 	'pairs.everyone': 'Ikviens',
 	'pairs.rooms': 'Istabas',
 	'pairs.noRooms': 'Pagaidām nav atvērtu istabu',
-	'pairs.noRoomsHint': 'Izveidojiet istabu — tā parādīsies šeit ikvienam, kuram ir atvērta šī lapa.',
+	'pairs.noRoomsHint':
+		'Izveidojiet istabu — tā parādīsies šeit ikvienam, kuram ir atvērta šī lapa.',
 	'pairs.players': 'Spēlētāji',
 	'pairs.enter': 'Ieeja',
 	'pairs.shownNewest': 'Tiek rādītas jaunākās — pieejamas arī citas',
 	'pairs.startingIn': 'Starts pēc',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Istabu saraksts nav pieejams. Pievienošanās ar kodu un istabas izveide joprojām darbojas.',
+	'pairs.roomsUnavailable':
+		'Istabu saraksts nav pieejams. Pievienošanās ar kodu un istabas izveide joprojām darbojas.',
 	'menu.game.population': 'Kuru ir vairāk?',
 	'menu.game.habitat': 'Kur viņi dzīvo?',
 	'menu.game.mythbusters': 'Fakts vai mīts?',
@@ -164,6 +183,8 @@ export const ui = {
 	'common.copyDenied': 'Pārlūks nevarēja ierakstīt starpliktuvē. Kopējiet manuāli: Ctrl+C.',
 	'header.toggleTheme': 'Mainīt motīvu',
 	'header.toggleLocale': 'Mainīt valodu',
+	'header.searchLocale': 'Meklēt valodu…',
+	'header.emptyLanguages': 'Valodas nav atrastas',
 	'header.toggleFullscreen': 'Pilnekrāna režīms',
 	'header.exitFullscreen': 'Iziet no pilnekrāna režīma',
 	'header.score': 'Kopējais rezultāts',
@@ -180,7 +201,8 @@ export const ui = {
 	'error.retry': 'Mēģināt vēlreiz',
 	'error.goHome': 'Uz sākumu',
 	'beta.title': 'Beta testēšana',
-	'beta.intro': 'Saraksts ar lietām, ko vērts pārbaudīt. Atzīmējiet punktus, beigās nokopējiet ziņojumu un nosūtiet to mums.',
+	'beta.intro':
+		'Saraksts ar lietām, ko vērts pārbaudīt. Atzīmējiet punktus, beigās nokopējiet ziņojumu un nosūtiet to mums.',
 	'beta.progress': 'Atzīmēts šajā versijā',
 	'beta.vote.none': 'Nav pārbaudīts',
 	'beta.vote.fail': 'Nedarbojas',
@@ -191,9 +213,12 @@ export const ui = {
 	'beta.coverage.manual': 'Tikai manuāli',
 	'beta.coverage.testable': 'Automatizēta testa vēl nav',
 	'beta.coverage.covered': 'Pārklāts ar testu',
-	'beta.coverage.manualHint': 'Neviena programma to nepārbauda — šeit ir vajadzīgas jūsu pašu acis.',
-	'beta.coverage.testableHint': 'To varētu pārbaudīt automātiski, taču šāds tests vēl nav izveidots.',
-	'beta.coverage.coveredHint': 'To jau uzrauga automatizēts tests. Ja šeit atrodat kļūdu, tests nav pareizs — un tas mums ir īpaši vērtīgi.',
+	'beta.coverage.manualHint':
+		'Neviena programma to nepārbauda — šeit ir vajadzīgas jūsu pašu acis.',
+	'beta.coverage.testableHint':
+		'To varētu pārbaudīt automātiski, taču šāds tests vēl nav izveidots.',
+	'beta.coverage.coveredHint':
+		'To jau uzrauga automatizēts tests. Ja šeit atrodat kļūdu, tests nav pareizs — un tas mums ir īpaši vērtīgi.',
 	'beta.stale': 'atzīmēts citā versijā',
 	'beta.copy': 'Kopēt ziņojumu',
 	'beta.copied': 'Ziņojums nokopēts',
@@ -201,7 +226,8 @@ export const ui = {
 	'beta.clearConfirm': 'Vai tiešām notīrīt? Nospiediet vēlreiz',
 	'beta.tabProgress': 'atzīmēts šajā cilnē',
 	'beta.home': 'Sākums',
-	'beta.copyFailed': 'Pārlūkprogramma atteicās to nokopēt. Iezīmējiet tālāk esošo tekstu un nokopējiet to manuāli.',
+	'beta.copyFailed':
+		'Pārlūkprogramma atteicās to nokopēt. Iezīmējiet tālāk esošo tekstu un nokopējiet to manuāli.',
 	'beta.rulesTitle': 'Datubāzes piekļuves kārtulas',
 	'beta.rulesCheck': 'Pārbaudīt',
 	'beta.rulesChecking': 'Vaicā datubāzei…',
@@ -220,5 +246,5 @@ export const ui = {
 	'review.partial': 'daļēji pareizi',
 	'review.back': 'Atpakaļ pie pašreizējā jautājuma',
 	'review.backToResults': 'Atpakaļ pie rezultātiem',
-	'review.list': 'Šīs spēles jautājumi',
+	'review.list': 'Šīs spēles jautājumi'
 } as const;

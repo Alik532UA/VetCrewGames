@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Nemokami edukaciniai žaidimai apie gyvūnus: pasitikrinkite žinias apie jų mitybą, populiacijos dydį gamtoje ir gajus mitus. Sukurta gyvūnų gerovei remti.',
+	'app.description':
+		'Nemokami edukaciniai žaidimai apie gyvūnus: pasitikrinkite žinias apie jų mitybą, populiacijos dydį gamtoje ir gajus mitus. Sukurta gyvūnų gerovei remti.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Ką jie ėda?',
 	'menu.game.memory': 'Rask porą',
@@ -12,24 +13,34 @@ export const ui = {
 	'quiz.otherGame': 'Šis kambarys skirtas kitam žaidimui.',
 	'menu.play': 'Žaisti',
 	'menu.playOnline': 'Žaisti internetu',
-	'problem.offline': 'Nėra ryšio su žaidimo serveriu. Patikrinkite interneto ryšį ir bandykite dar kartą.',
-	'problem.reload': 'Išleista nauja žaidimo versija, o šis puslapis pasenęs. Iš naujo įkelkite puslapį ir viskas veiks.',
-	'problem.mismatch': 'Serverio taisyklės jau naujesnės nei šiame puslapyje: žaidimas šiuo metu atnaujinamas. Po kelių minučių iš naujo įkelkite puslapį, o jei vis tiek neveikia – parašykite kūrėjui.',
-	'problem.rules': 'Naujos duomenų bazės taisyklės dar nepaskelbtos „Firebase“: ši žaidimo versija tikisi kitokių taisyklių nei tos, kurias dabar naudoja serveris. Bandyti dar kartą nepadės – pirmiausia reikia įdiegti taisykles.',
-	'problem.code': 'Tai žaidimo kodo klaida – bandymas iš naujo nepadės. Susisiekite su kūrėju: nukopijuokite ataskaitą ir atsiųskite ją žinutėje.',
-	'problem.emulator': 'Vietinis „Firebase“ emuliatorius neatsako: kūrimo versija jungiasi prie jo, o ne prie tikrosios duomenų bazės. Paleiskite „npm run emulators“ terminale, o jei jis jau veikia – paleiskite iš naujo.',
+	'problem.offline':
+		'Nėra ryšio su žaidimo serveriu. Patikrinkite interneto ryšį ir bandykite dar kartą.',
+	'problem.reload':
+		'Išleista nauja žaidimo versija, o šis puslapis pasenęs. Iš naujo įkelkite puslapį ir viskas veiks.',
+	'problem.mismatch':
+		'Serverio taisyklės jau naujesnės nei šiame puslapyje: žaidimas šiuo metu atnaujinamas. Po kelių minučių iš naujo įkelkite puslapį, o jei vis tiek neveikia – parašykite kūrėjui.',
+	'problem.rules':
+		'Naujos duomenų bazės taisyklės dar nepaskelbtos „Firebase“: ši žaidimo versija tikisi kitokių taisyklių nei tos, kurias dabar naudoja serveris. Bandyti dar kartą nepadės – pirmiausia reikia įdiegti taisykles.',
+	'problem.code':
+		'Tai žaidimo kodo klaida – bandymas iš naujo nepadės. Susisiekite su kūrėju: nukopijuokite ataskaitą ir atsiųskite ją žinutėje.',
+	'problem.emulator':
+		'Vietinis „Firebase“ emuliatorius neatsako: kūrimo versija jungiasi prie jo, o ne prie tikrosios duomenų bazės. Paleiskite „npm run emulators“ terminale, o jei jis jau veikia – paleiskite iš naujo.',
 	'problem.copyReport': 'Kopijuoti ataskaitą',
 	'problem.copied': 'Ataskaita nukopijuota',
 	'problem.contact': 'Susisiekti su kūrėju',
-	'problem.contactHint': 'Rašykite per jums patogią susirašinėjimo programėlę ir įklijuokite nukopijuotą ataskaitą.',
+	'problem.contactHint':
+		'Rašykite per jums patogią susirašinėjimo programėlę ir įklijuokite nukopijuotą ataskaitą.',
 	'problem.writeVia': 'Rašyti kūrėjui per',
-	'online.searchBusy': 'Kol vyksta automatinė paieška, jokie kiti veiksmai negalimi – iš pradžių atšaukite paiešką.',
+	'online.searchBusy':
+		'Kol vyksta automatinė paieška, jokie kiti veiksmai negalimi – iš pradžių atšaukite paiešką.',
 	'online.search': 'Automatinė paieška',
 	'online.searchGames': 'Ką žaidžiame',
 	'online.searchLast': 'Turi likti pasirinktas bent vienas žaidimas',
-	'online.searchHint': 'Surasime varžovą viename iš pasirinktų žaidimų – o jei nieko nebus, palauksime, kol kas nors prisijungs.',
+	'online.searchHint':
+		'Surasime varžovą viename iš pasirinktų žaidimų – o jei nieko nebus, palauksime, kol kas nors prisijungs.',
 	'online.searching': 'Ieškoma žaidėjo…',
-	'online.waiting': 'Laukiama žaidėjo. Kai tik kas nors ieškos vieno iš pasirinktų žaidimų, pateksite į tą patį kambarį.',
+	'online.waiting':
+		'Laukiama žaidėjo. Kai tik kas nors ieškos vieno iš pasirinktų žaidimų, pateksite į tą patį kambarį.',
 	'online.found': 'Žaidėjas rastas – jungiamasi…',
 	'online.searchCancel': 'Atšaukti',
 	'online.createTitle': 'Naujas kambarys:',
@@ -79,10 +90,13 @@ export const ui = {
 	'pairs.roomLost': 'Kambarys nebepasiekiamas – prisijunkite iš naujo.',
 	'pairs.removed': 'Kambario šeimininkas pašalino jus iš kambario.',
 	'pairs.offline': 'Nėra ryšio su serveriu – laukiama, kol atsistatys.',
-	'pairs.rulesChanged': 'Serverio taisyklės buvo atnaujintos, o šis puslapis pasenęs, todėl ėjimai nevykdomi. Iš naujo įkelkite puslapį – žaidimas tęsis nuo ten, kur sustojote.',
-	'pairs.newBuild': 'Išleista nauja žaidimo versija – iš naujo įkelkite puslapį. Kambarys, kuriame buvote, vėl atsidarys, nebent pasikeitė žaidimo taisyklės.',
+	'pairs.rulesChanged':
+		'Serverio taisyklės buvo atnaujintos, o šis puslapis pasenęs, todėl ėjimai nevykdomi. Iš naujo įkelkite puslapį – žaidimas tęsis nuo ten, kur sustojote.',
+	'pairs.newBuild':
+		'Išleista nauja žaidimo versija – iš naujo įkelkite puslapį. Kambarys, kuriame buvote, vėl atsidarys, nebent pasikeitė žaidimo taisyklės.',
 	'pairs.reload': 'Iš naujo įkelti puslapį',
-	'pairs.noLead': 'Kambario šeimininkas išėjo, ir niekas čia negali perimti vedimo. Galite išeiti iš kambario arba sukurti naują.',
+	'pairs.noLead':
+		'Kambario šeimininkas išėjo, ir niekas čia negali perimti vedimo. Galite išeiti iš kambario arba sukurti naują.',
 	'pairs.leaveRoom': 'Išeiti iš kambario',
 	'pairs.playNext': 'Žaisti kitoje partijoje',
 	'pairs.roomOlder': 'Šis žaidimas buvo pradėtas senesnėje versijoje. Sukurkite naują kambarį.',
@@ -105,8 +119,10 @@ export const ui = {
 	'pairs.inviteHint': 'Taip jus matys kiti. Galite pakeisti dabar arba vėliau laukiamajame.',
 	'pairs.inviteJoin': 'Prisijungti',
 	'pairs.inviteBack': 'Į kambarių sąrašą',
-	'pairs.inviteAvatarTaken': 'Kitas žaidėjas jau naudoja šį avatarą. Pasirinkite kitą arba tiesiog prisijunkite ir gausite laisvą.',
-	'pairs.avatarReplaced': 'Kitas žaidėjas šiame kambaryje jau turi jūsų avatarą, todėl gavote kitokį. Galite jį pakeisti laukiamajame.',
+	'pairs.inviteAvatarTaken':
+		'Kitas žaidėjas jau naudoja šį avatarą. Pasirinkite kitą arba tiesiog prisijunkite ir gausite laisvą.',
+	'pairs.avatarReplaced':
+		'Kitas žaidėjas šiame kambaryje jau turi jūsų avatarą, todėl gavote kitokį. Galite jį pakeisti laukiamajame.',
 	'pairs.nickname': 'Slapyvardis',
 	'pairs.country': 'Vėliava',
 	'country.xr': 'Rusijos savanorių korpusas',
@@ -124,7 +140,8 @@ export const ui = {
 	'pairs.shownNewest': 'Rodomi naujausi – yra ir daugiau',
 	'pairs.startingIn': 'Prasideda po',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Kambarių sąrašas nepasiekiamas. Prisijungimas su kodu ir kambario kūrimas vis dar veikia.',
+	'pairs.roomsUnavailable':
+		'Kambarių sąrašas nepasiekiamas. Prisijungimas su kodu ir kambario kūrimas vis dar veikia.',
 	'menu.game.population': 'Kurių daugiau?',
 	'menu.game.habitat': 'Kur jie gyvena?',
 	'menu.game.mythbusters': 'Faktas ar mitas?',
@@ -164,6 +181,8 @@ export const ui = {
 	'common.copyDenied': 'Naršyklei nepavyko įrašyti į iškarpinę. Nukopijuokite klaviatūra: Ctrl+C.',
 	'header.toggleTheme': 'Keisti temą',
 	'header.toggleLocale': 'Keisti kalbą',
+	'header.searchLocale': 'Ieškoti kalbos…',
+	'header.emptyLanguages': 'Kalbų nerasta',
 	'header.toggleFullscreen': 'Viso ekrano režimas',
 	'header.exitFullscreen': 'Išeiti iš viso ekrano režimo',
 	'header.score': 'Bendras rezultatas',
@@ -180,7 +199,8 @@ export const ui = {
 	'error.retry': 'Bandyti vėl',
 	'error.goHome': 'Į pradžią',
 	'beta.title': 'Beta testavimas',
-	'beta.intro': 'Sąrašas dalykų, kuriuos verta patikrinti. Pažymėkite elementus, pabaigoje nukopijuokite ataskaitą ir atsiųskite ją mums.',
+	'beta.intro':
+		'Sąrašas dalykų, kuriuos verta patikrinti. Pažymėkite elementus, pabaigoje nukopijuokite ataskaitą ir atsiųskite ją mums.',
 	'beta.progress': 'Pažymėta šioje versijoje',
 	'beta.vote.none': 'Nepatikrinta',
 	'beta.vote.fail': 'Neveikia',
@@ -192,8 +212,10 @@ export const ui = {
 	'beta.coverage.testable': 'Automatizuoto testo dar nėra',
 	'beta.coverage.covered': 'Padengta testu',
 	'beta.coverage.manualHint': 'Jokia sistema to netikrina – čia reikalingos jūsų pačių akys.',
-	'beta.coverage.testableHint': 'Tai būtų galima patikrinti automatiškai, tačiau toks testas dar nesukurtas.',
-	'beta.coverage.coveredHint': 'Tai jau tikrina automatinis testas. Jei čia rasite klaidą, vadinasi, testas klaidingas – mums tai itin vertinga informacija.',
+	'beta.coverage.testableHint':
+		'Tai būtų galima patikrinti automatiškai, tačiau toks testas dar nesukurtas.',
+	'beta.coverage.coveredHint':
+		'Tai jau tikrina automatinis testas. Jei čia rasite klaidą, vadinasi, testas klaidingas – mums tai itin vertinga informacija.',
 	'beta.stale': 'pažymėta kitoje versijoje',
 	'beta.copy': 'Kopijuoti ataskaitą',
 	'beta.copied': 'Ataskaita nukopijuota',
@@ -201,7 +223,8 @@ export const ui = {
 	'beta.clearConfirm': 'Tikrai išvalyti? Paspauskite dar kartą',
 	'beta.tabProgress': 'pažymėta šioje kortelėje',
 	'beta.home': 'Pradžia',
-	'beta.copyFailed': 'Naršyklė atsisakė nukopijuoti. Pažymėkite tekstą žemiau ir nukopijuokite rankiniu būdu.',
+	'beta.copyFailed':
+		'Naršyklė atsisakė nukopijuoti. Pažymėkite tekstą žemiau ir nukopijuokite rankiniu būdu.',
 	'beta.rulesTitle': 'Duomenų bazės prieigos taisyklės',
 	'beta.rulesCheck': 'Tikrinti',
 	'beta.rulesChecking': 'Užklausiama duomenų bazė…',
@@ -220,5 +243,5 @@ export const ui = {
 	'review.partial': 'iš dalies teisingai',
 	'review.back': 'Grįžti prie esamo klausimo',
 	'review.backToResults': 'Grįžti prie rezultatų',
-	'review.list': 'Šio žaidimo klausimai',
+	'review.list': 'Šio žaidimo klausimai'
 } as const;

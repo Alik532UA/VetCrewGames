@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Jocuri educative gratuite despre animale: testează-ți cunoștințele despre hrana lor, câte exemplare au mai rămas în sălbăticie și miturile care încă persistă. Creat în sprijinul bunăstării animalelor.',
+	'app.description':
+		'Jocuri educative gratuite despre animale: testează-ți cunoștințele despre hrana lor, câte exemplare au mai rămas în sălbăticie și miturile care încă persistă. Creat în sprijinul bunăstării animalelor.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Cu ce se hrănesc?',
 	'menu.game.memory': 'Găsește perechea',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Acea cameră este pentru un alt joc.',
 	'menu.play': 'Joacă',
 	'menu.playOnline': 'Joacă online',
-	'problem.offline': 'Nu există conexiune la serverul jocului. Verifică conexiunea la internet și încearcă din nou.',
-	'problem.reload': 'A apărut o nouă versiune a jocului, iar această pagină este învechită. Reîncarcă pagina și totul va funcționa.',
-	'problem.mismatch': 'Regulile de pe server sunt deja mai noi decât cele din această pagină: jocul se actualizează chiar acum. Reîncarcă pagina peste câteva minute, iar dacă problema persistă, trimite un mesaj dezvoltatorului.',
-	'problem.rules': 'Noile reguli ale bazei de date nu au fost încă publicate pe Firebase: această versiune a jocului necesită reguli diferite față de cele care rulează acum pe server. Reîncercarea nu va ajuta — regulile trebuie mai întâi implementate.',
-	'problem.code': 'Aceasta este o eroare în codul jocului — reîncercarea nu o va rezolva. Te rugăm să contactezi dezvoltatorul: copiază raportul și trimite-l în mesaj.',
-	'problem.emulator': 'Emulatorul local Firebase nu răspunde: versiunea de dezvoltare comunică cu acesta, nu cu baza de date reală. Rulează npm run emulators într-un terminal — iar dacă rulează deja, repornește-l.',
+	'problem.offline':
+		'Nu există conexiune la serverul jocului. Verifică conexiunea la internet și încearcă din nou.',
+	'problem.reload':
+		'A apărut o nouă versiune a jocului, iar această pagină este învechită. Reîncarcă pagina și totul va funcționa.',
+	'problem.mismatch':
+		'Regulile de pe server sunt deja mai noi decât cele din această pagină: jocul se actualizează chiar acum. Reîncarcă pagina peste câteva minute, iar dacă problema persistă, trimite un mesaj dezvoltatorului.',
+	'problem.rules':
+		'Noile reguli ale bazei de date nu au fost încă publicate pe Firebase: această versiune a jocului necesită reguli diferite față de cele care rulează acum pe server. Reîncercarea nu va ajuta — regulile trebuie mai întâi implementate.',
+	'problem.code':
+		'Aceasta este o eroare în codul jocului — reîncercarea nu o va rezolva. Te rugăm să contactezi dezvoltatorul: copiază raportul și trimite-l în mesaj.',
+	'problem.emulator':
+		'Emulatorul local Firebase nu răspunde: versiunea de dezvoltare comunică cu acesta, nu cu baza de date reală. Rulează npm run emulators într-un terminal — iar dacă rulează deja, repornește-l.',
 	'problem.copyReport': 'Copiază raportul',
 	'problem.copied': 'Raport copiat',
 	'problem.contact': 'Contactează dezvoltatorul',
-	'problem.contactHint': 'Scrie pe orice platformă de mesagerie preferi și lipește acolo raportul copiat.',
+	'problem.contactHint':
+		'Scrie pe orice platformă de mesagerie preferi și lipește acolo raportul copiat.',
 	'problem.writeVia': 'Trimite mesaj dezvoltatorului pe',
-	'online.searchBusy': 'În timpul căutării automate, nicio altă opțiune nu este disponibilă — anulează mai întâi căutarea.',
+	'online.searchBusy':
+		'În timpul căutării automate, nicio altă opțiune nu este disponibilă — anulează mai întâi căutarea.',
 	'online.search': 'Căutare automată',
 	'online.searchGames': 'Ce jucăm',
 	'online.searchLast': 'Trebuie să rămână selectat cel puțin un joc',
-	'online.searchHint': 'Vom găsi un adversar la unul dintre jocurile alese — iar dacă nu este nimeni disponibil, vom aștepta până când se alătură cineva.',
+	'online.searchHint':
+		'Vom găsi un adversar la unul dintre jocurile alese — iar dacă nu este nimeni disponibil, vom aștepta până când se alătură cineva.',
 	'online.searching': 'Se caută un jucător…',
-	'online.waiting': 'Se așteaptă un jucător. De îndată ce cineva caută unul dintre jocurile alese, veți intra în aceeași cameră.',
+	'online.waiting':
+		'Se așteaptă un jucător. De îndată ce cineva caută unul dintre jocurile alese, veți intra în aceeași cameră.',
 	'online.found': 'Jucător găsit — se conectează…',
 	'online.searchCancel': 'Anulează',
 	'online.createTitle': 'Cameră nouă:',
 	'online.everyoneHint': 'Camera apare în listă și oricine se poate alătura.',
-	'online.friendsHint': 'Camera nu este listată public: ceilalți se pot alătura doar cu codul trimis de tine.',
+	'online.friendsHint':
+		'Camera nu este listată public: ceilalți se pot alătura doar cu codul trimis de tine.',
 	'online.back': 'Înapoi',
 	'online.join': 'Alătură-te',
 	'online.opening': 'Se deschide camera…',
@@ -79,13 +91,17 @@ export const ui = {
 	'pairs.roomLost': 'Camera nu mai este disponibilă — alătură-te din nou.',
 	'pairs.removed': 'Gazda te-a eliminat din cameră.',
 	'pairs.offline': 'Fără conexiune la server — se așteaptă restabilirea conexiunii.',
-	'pairs.rulesChanged': 'Regulile de pe server au fost actualizate, iar această pagină este învechită, astfel că mutările nu se înregistrează. Reîncarcă pagina — jocul va continua de unde a rămas.',
-	'pairs.newBuild': 'A apărut o nouă versiune a jocului — reîncarcă pagina. Camera în care erai se va redeschide, cu excepția cazului în care s-au schimbat regulile jocului.',
+	'pairs.rulesChanged':
+		'Regulile de pe server au fost actualizate, iar această pagină este învechită, astfel că mutările nu se înregistrează. Reîncarcă pagina — jocul va continua de unde a rămas.',
+	'pairs.newBuild':
+		'A apărut o nouă versiune a jocului — reîncarcă pagina. Camera în care erai se va redeschide, cu excepția cazului în care s-au schimbat regulile jocului.',
 	'pairs.reload': 'Reîncarcă pagina',
-	'pairs.noLead': 'Gazda a plecat și nimeni de aici nu poate prelua rolul de gazdă. Poți părăsi camera sau poți crea una nouă.',
+	'pairs.noLead':
+		'Gazda a plecat și nimeni de aici nu poate prelua rolul de gazdă. Poți părăsi camera sau poți crea una nouă.',
 	'pairs.leaveRoom': 'Părăsește camera',
 	'pairs.playNext': 'Joacă în următorul joc',
-	'pairs.roomOlder': 'Acest joc a fost început într-o versiune mai veche. Te rugăm să creezi o cameră nouă.',
+	'pairs.roomOlder':
+		'Acest joc a fost început într-o versiune mai veche. Te rugăm să creezi o cameră nouă.',
 	'pairs.roomFull': 'Camera este plină — are deja doisprezece jucători.',
 	'pairs.opponentGone': 'Adversarul tău a fost inactiv o vreme.',
 	'pairs.takeTurn': 'Preia rândul',
@@ -105,8 +121,10 @@ export const ui = {
 	'pairs.inviteHint': 'Așa te vor vedea ceilalți. Poți modifica acum sau mai târziu în lobby.',
 	'pairs.inviteJoin': 'Alătură-te',
 	'pairs.inviteBack': 'La lista de camere',
-	'pairs.inviteAvatarTaken': 'Un alt jucător din această cameră are deja acest avatar. Alege altul — sau pur și simplu intră și vei primi unul liber.',
-	'pairs.avatarReplaced': 'Un alt jucător din această cameră are deja avatarul tău, așa că ai primit altul. Îl poți schimba în lobby.',
+	'pairs.inviteAvatarTaken':
+		'Un alt jucător din această cameră are deja acest avatar. Alege altul — sau pur și simplu intră și vei primi unul liber.',
+	'pairs.avatarReplaced':
+		'Un alt jucător din această cameră are deja avatarul tău, așa că ai primit altul. Îl poți schimba în lobby.',
 	'pairs.nickname': 'Pseudonim',
 	'pairs.country': 'Steag',
 	'country.xr': 'Corpul Voluntarilor Ruși',
@@ -118,13 +136,15 @@ export const ui = {
 	'pairs.everyone': 'Oricine',
 	'pairs.rooms': 'Camere',
 	'pairs.noRooms': 'Nicio cameră deschisă încă',
-	'pairs.noRoomsHint': 'Creează una — va apărea aici pentru toți cei care au deschisă această pagină.',
+	'pairs.noRoomsHint':
+		'Creează una — va apărea aici pentru toți cei care au deschisă această pagină.',
 	'pairs.players': 'Jucători',
 	'pairs.enter': 'Intră',
 	'pairs.shownNewest': 'Se afișează cele mai recente — există și altele',
 	'pairs.startingIn': 'Începe în',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Lista camerelor nu este disponibilă. Conectarea prin cod și crearea unei camere funcționează în continuare.',
+	'pairs.roomsUnavailable':
+		'Lista camerelor nu este disponibilă. Conectarea prin cod și crearea unei camere funcționează în continuare.',
 	'menu.game.population': 'Cine sunt mai mulți?',
 	'menu.game.habitat': 'Unde trăiesc?',
 	'menu.game.mythbusters': 'Adevăr sau Mit?',
@@ -142,7 +162,8 @@ export const ui = {
 	'memory.you': 'Tu',
 	'memory.rival': 'Adversar',
 	'memory.moves': 'Mutări',
-	'memory.resized': 'Dimensiunea ecranului s-a modificat. Așezarea a rămas cea de la începerea jocului.',
+	'memory.resized':
+		'Dimensiunea ecranului s-a modificat. Așezarea a rămas cea de la începerea jocului.',
 	'memory.relayout': 'Rearanjează pentru potrivire',
 	'memory.found': 'Găsite',
 	'memory.turn': 'Rând',
@@ -164,6 +185,8 @@ export const ui = {
 	'common.copyDenied': 'Browserul nu a putut scrie în clipboard. Copiază manual: Ctrl+C.',
 	'header.toggleTheme': 'Schimbă tema',
 	'header.toggleLocale': 'Schimbă limba',
+	'header.searchLocale': 'Caută o limbă…',
+	'header.emptyLanguages': 'Nu s-au găsit limbi',
 	'header.toggleFullscreen': 'Ecran complet',
 	'header.exitFullscreen': 'Ieși din ecranul complet',
 	'header.score': 'Scor total',
@@ -180,7 +203,8 @@ export const ui = {
 	'error.retry': 'Încearcă din nou',
 	'error.goHome': 'Acasă',
 	'beta.title': 'Testare beta',
-	'beta.intro': 'O listă de elemente ce merită verificate. Bifează elementele, apoi copiază raportul de la final și trimite-ni-l.',
+	'beta.intro':
+		'O listă de elemente ce merită verificate. Bifează elementele, apoi copiază raportul de la final și trimite-ni-l.',
 	'beta.progress': 'Marcat pe această versiune',
 	'beta.vote.none': 'Neverificat',
 	'beta.vote.fail': 'Defect',
@@ -191,9 +215,12 @@ export const ui = {
 	'beta.coverage.manual': 'Doar verificare manuală',
 	'beta.coverage.testable': 'Fără test automat încă',
 	'beta.coverage.covered': 'Acoperit de un test',
-	'beta.coverage.manualHint': 'Niciun sistem automat nu verifică asta — doar propria ta atenție este necesară aici.',
-	'beta.coverage.testableHint': 'Acest lucru ar putea fi verificat automat, dar nu există încă un astfel de test.',
-	'beta.coverage.coveredHint': 'Un test automat monitorizează deja acest aspect. Dacă găsești o eroare aici, testul este incorect — iar acest lucru este deosebit de valoros pentru noi.',
+	'beta.coverage.manualHint':
+		'Niciun sistem automat nu verifică asta — doar propria ta atenție este necesară aici.',
+	'beta.coverage.testableHint':
+		'Acest lucru ar putea fi verificat automat, dar nu există încă un astfel de test.',
+	'beta.coverage.coveredHint':
+		'Un test automat monitorizează deja acest aspect. Dacă găsești o eroare aici, testul este incorect — iar acest lucru este deosebit de valoros pentru noi.',
 	'beta.stale': 'marcat pe o versiune diferită',
 	'beta.copy': 'Copiază raportul',
 	'beta.copied': 'Raport copiat',
@@ -201,12 +228,14 @@ export const ui = {
 	'beta.clearConfirm': 'Sigur ștergi? Apasă din nou',
 	'beta.tabProgress': 'marcat în această filă',
 	'beta.home': 'Acasă',
-	'beta.copyFailed': 'Browserul a refuzat copierea. Selectează textul de mai jos și copiază-l manual.',
+	'beta.copyFailed':
+		'Browserul a refuzat copierea. Selectează textul de mai jos și copiază-l manual.',
 	'beta.rulesTitle': 'Reguli de acces la baza de date',
 	'beta.rulesCheck': 'Verifică',
 	'beta.rulesChecking': 'Se interoghează baza de date…',
 	'beta.rulesFresh': 'Revizuirea implementată corespunde acestei versiuni',
-	'beta.rulesStale': 'Baza de date rulează o revizuire DIFERITĂ — această versiune nu este încă implementată',
+	'beta.rulesStale':
+		'Baza de date rulează o revizuire DIFERITĂ — această versiune nu este încă implementată',
 	'beta.rulesUnknown': 'Nu s-a putut determina: lipsă rețea sau baza de date este inaccesibilă',
 	'pairs.startMode': 'Pornirea jocului',
 	'pairs.modeAuto': 'Pornire automată',
@@ -220,5 +249,5 @@ export const ui = {
 	'review.partial': 'parțial corect',
 	'review.back': 'Înapoi la întrebarea curentă',
 	'review.backToResults': 'Înapoi la rezultate',
-	'review.list': 'Întrebările acestei partide',
+	'review.list': 'Întrebările acestei partide'
 } as const;

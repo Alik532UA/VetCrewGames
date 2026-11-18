@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Gratis pedagogiska spel om djur: testa vad du kan om vad de äter, hur många som finns kvar och myterna folk fortfarande tror på. Skapat till stöd för djurskydd och djurvälfärd.',
+	'app.description':
+		'Gratis pedagogiska spel om djur: testa vad du kan om vad de äter, hur många som finns kvar och myterna folk fortfarande tror på. Skapat till stöd för djurskydd och djurvälfärd.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Vad äter de?',
 	'menu.game.memory': 'Hitta ett par',
@@ -12,24 +13,34 @@ export const ui = {
 	'quiz.otherGame': 'Det rummet är till för ett annat spel.',
 	'menu.play': 'Spela',
 	'menu.playOnline': 'Spela online',
-	'problem.offline': 'Ingen anslutning till spelservern. Kontrollera ditt internet och försök igen.',
-	'problem.reload': 'En ny version av spelet har släppts och den här sidan är föråldrad. Ladda om sidan så fungerar allt igen.',
-	'problem.mismatch': 'Serverreglerna är redan nyare än den här sidan: spelet uppdateras just nu. Ladda om sidan om några minuter, och om det fortfarande inte fungerar, kontakta utvecklaren.',
-	'problem.rules': 'De nya databasreglerna har ännu inte publicerats till Firebase: den här versionen av spelet förväntar sig andra regler än de servern kör nu. Att försöka igen hjälper inte — reglerna måste driftsättas först.',
-	'problem.code': 'Det här är ett fel i spelkoden — att försöka igen löser det inte. Vänligen kontakta utvecklaren: kopiera rapporten och bifoga den i ditt meddelande.',
-	'problem.emulator': 'Den lokala Firebase-emulatorn svarar inte: utvecklingsversionen kommunicerar med den, inte med den riktiga databasen. Kör npm run emulators i en terminal — och starta om den om den redan körs.',
+	'problem.offline':
+		'Ingen anslutning till spelservern. Kontrollera ditt internet och försök igen.',
+	'problem.reload':
+		'En ny version av spelet har släppts och den här sidan är föråldrad. Ladda om sidan så fungerar allt igen.',
+	'problem.mismatch':
+		'Serverreglerna är redan nyare än den här sidan: spelet uppdateras just nu. Ladda om sidan om några minuter, och om det fortfarande inte fungerar, kontakta utvecklaren.',
+	'problem.rules':
+		'De nya databasreglerna har ännu inte publicerats till Firebase: den här versionen av spelet förväntar sig andra regler än de servern kör nu. Att försöka igen hjälper inte — reglerna måste driftsättas först.',
+	'problem.code':
+		'Det här är ett fel i spelkoden — att försöka igen löser det inte. Vänligen kontakta utvecklaren: kopiera rapporten och bifoga den i ditt meddelande.',
+	'problem.emulator':
+		'Den lokala Firebase-emulatorn svarar inte: utvecklingsversionen kommunicerar med den, inte med den riktiga databasen. Kör npm run emulators i en terminal — och starta om den om den redan körs.',
 	'problem.copyReport': 'Kopiera rapporten',
 	'problem.copied': 'Rapporten kopierad',
 	'problem.contact': 'Kontakta utvecklaren',
-	'problem.contactHint': 'Skriv i den meddelandeapp som passar dig bäst och klistra in den kopierade rapporten där.',
+	'problem.contactHint':
+		'Skriv i den meddelandeapp som passar dig bäst och klistra in den kopierade rapporten där.',
 	'problem.writeVia': 'Skriv till utvecklaren på',
-	'online.searchBusy': 'Medan den automatiska sökningen pågår är inget annat tillgängligt — avbryt sökningen först.',
+	'online.searchBusy':
+		'Medan den automatiska sökningen pågår är inget annat tillgängligt — avbryt sökningen först.',
 	'online.search': 'Automatisk sökning',
 	'online.searchGames': 'Vad vi spelar',
 	'online.searchLast': 'Minst ett spel måste vara valt',
-	'online.searchHint': 'Vi hittar en motståndare i något av de valda spelen — och om ingen är här väntar vi tills någon ansluter.',
+	'online.searchHint':
+		'Vi hittar en motståndare i något av de valda spelen — och om ingen är här väntar vi tills någon ansluter.',
 	'online.searching': 'Söker efter en spelare…',
-	'online.waiting': 'Väntar på en spelare. Så fort någon söker efter ett av de valda spelen hamnar ni i samma rum.',
+	'online.waiting':
+		'Väntar på en spelare. Så fort någon söker efter ett av de valda spelen hamnar ni i samma rum.',
 	'online.found': 'Spelare hittad — ansluter…',
 	'online.searchCancel': 'Avbryt',
 	'online.createTitle': 'Nytt rum:',
@@ -79,10 +90,13 @@ export const ui = {
 	'pairs.roomLost': 'Rummet är inte längre tillgängligt — gå med igen.',
 	'pairs.removed': 'Värden tog bort dig från rummet.',
 	'pairs.offline': 'Ingen anslutning till servern — väntar på att den ska återansluta.',
-	'pairs.rulesChanged': 'Serverreglerna har uppdaterats och den här sidan är föråldrad, så dragen går inte igenom. Ladda om sidan — spelet fortsätter där det slutade.',
-	'pairs.newBuild': 'En ny version av spelet har släppts — ladda om sidan. Rummet du var i öppnas igen såvida inte spelreglerna ändrats.',
+	'pairs.rulesChanged':
+		'Serverreglerna har uppdaterats och den här sidan är föråldrad, så dragen går inte igenom. Ladda om sidan — spelet fortsätter där det slutade.',
+	'pairs.newBuild':
+		'En ny version av spelet har släppts — ladda om sidan. Rummet du var i öppnas igen såvida inte spelreglerna ändrats.',
 	'pairs.reload': 'Ladda om sidan',
-	'pairs.noLead': 'Värden har lämnat och ingen här kan ta över ledningen. Du kan lämna rummet eller skapa ett nytt.',
+	'pairs.noLead':
+		'Värden har lämnat och ingen här kan ta över ledningen. Du kan lämna rummet eller skapa ett nytt.',
 	'pairs.leaveRoom': 'Lämna rummet',
 	'pairs.playNext': 'Spela i nästa omgång',
 	'pairs.roomOlder': 'Det här spelet startades i en äldre version. Vänligen skapa ett nytt rum.',
@@ -105,8 +119,10 @@ export const ui = {
 	'pairs.inviteHint': 'Så här kommer andra att se dig. Du kan ändra det nu eller senare i lobbyn.',
 	'pairs.inviteJoin': 'Gå med',
 	'pairs.inviteBack': 'Till rumslistan',
-	'pairs.inviteAvatarTaken': 'En annan spelare här har redan den här avataren. Välj en annan – eller gå bara med, så får du en ledig.',
-	'pairs.avatarReplaced': 'En annan spelare i det här rummet har redan din avatar, så du tilldelades en annan. Du kan ändra den i lobbyn.',
+	'pairs.inviteAvatarTaken':
+		'En annan spelare här har redan den här avataren. Välj en annan – eller gå bara med, så får du en ledig.',
+	'pairs.avatarReplaced':
+		'En annan spelare i det här rummet har redan din avatar, så du tilldelades en annan. Du kan ändra den i lobbyn.',
 	'pairs.nickname': 'Smeknamn',
 	'pairs.country': 'Flagga',
 	'country.xr': 'Ryska frivilligkåren',
@@ -124,7 +140,8 @@ export const ui = {
 	'pairs.shownNewest': 'Visar de senaste – det finns fler',
 	'pairs.startingIn': 'Startar om',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Rumslistan är inte tillgänglig. Det går fortfarande att gå med via kod och skapa rum.',
+	'pairs.roomsUnavailable':
+		'Rumslistan är inte tillgänglig. Det går fortfarande att gå med via kod och skapa rum.',
 	'menu.game.population': 'Vem har störst population?',
 	'menu.game.habitat': 'Var lever de?',
 	'menu.game.mythbusters': 'Fakta eller myt?',
@@ -164,6 +181,8 @@ export const ui = {
 	'common.copyDenied': 'Webbläsaren kunde inte skriva till urklipp. Kopiera manuellt: Ctrl+C.',
 	'header.toggleTheme': 'Byt tema',
 	'header.toggleLocale': 'Byt språk',
+	'header.searchLocale': 'Sök språk…',
+	'header.emptyLanguages': 'Inga språk hittades',
 	'header.toggleFullscreen': 'Helskärmsläge',
 	'header.exitFullscreen': 'Avsluta helskärmsläge',
 	'header.score': 'Totalpoäng',
@@ -180,7 +199,8 @@ export const ui = {
 	'error.retry': 'Försök igen',
 	'error.goHome': 'Till startsidan',
 	'beta.title': 'Betatestning',
-	'beta.intro': 'En lista över saker som bör kontrolleras. Bocka av punkterna, kopiera sedan rapporten i slutet och skicka den till oss.',
+	'beta.intro':
+		'En lista över saker som bör kontrolleras. Bocka av punkterna, kopiera sedan rapporten i slutet och skicka den till oss.',
 	'beta.progress': 'Markerat i denna version',
 	'beta.vote.none': 'Inte kontrollerad',
 	'beta.vote.fail': 'Trasig',
@@ -192,8 +212,10 @@ export const ui = {
 	'beta.coverage.testable': 'Inget automatiskt test än',
 	'beta.coverage.covered': 'Täcks av ett test',
 	'beta.coverage.manualHint': 'Ingen maskin kontrollerar detta – här behövs dina egna ögon.',
-	'beta.coverage.testableHint': 'Detta skulle kunna kontrolleras automatiskt, men något sådant test finns inte än.',
-	'beta.coverage.coveredHint': 'Ett automatiserat test bevakar redan detta. Om du hittar en bugg här är testet felaktigt – och det är extra värdefullt för oss.',
+	'beta.coverage.testableHint':
+		'Detta skulle kunna kontrolleras automatiskt, men något sådant test finns inte än.',
+	'beta.coverage.coveredHint':
+		'Ett automatiserat test bevakar redan detta. Om du hittar en bugg här är testet felaktigt – och det är extra värdefullt för oss.',
 	'beta.stale': 'markerat i en annan version',
 	'beta.copy': 'Kopiera rapporten',
 	'beta.copied': 'Rapporten har kopierats',
@@ -201,7 +223,8 @@ export const ui = {
 	'beta.clearConfirm': 'Vill du verkligen rensa? Tryck igen',
 	'beta.tabProgress': 'markerat på denna flik',
 	'beta.home': 'Startsida',
-	'beta.copyFailed': 'Webbläsaren tillät inte kopiering. Markera texten nedan och kopiera den manuellt.',
+	'beta.copyFailed':
+		'Webbläsaren tillät inte kopiering. Markera texten nedan och kopiera den manuellt.',
 	'beta.rulesTitle': 'Åtkomstregler för databas',
 	'beta.rulesCheck': 'Kontrollera',
 	'beta.rulesChecking': 'Frågar databasen…',
@@ -220,5 +243,5 @@ export const ui = {
 	'review.partial': 'delvis rätt',
 	'review.back': 'Tillbaka till aktuell fråga',
 	'review.backToResults': 'Tillbaka till resultaten',
-	'review.list': 'Det här spelets frågor',
+	'review.list': 'Det här spelets frågor'
 } as const;

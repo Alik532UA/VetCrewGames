@@ -207,6 +207,8 @@ export const ui = {
 	// handeling klinkt.
 	'header.toggleTheme': 'Thema wisselen',
 	'header.toggleLocale': 'Taal wisselen',
+	'header.searchLocale': 'Taal zoeken…',
+	'header.emptyLanguages': 'Geen talen gevonden',
 	'header.toggleFullscreen': 'Volledig scherm aan',
 	'header.exitFullscreen': 'Volledig scherm uit',
 	'header.score': 'Totaalscore',

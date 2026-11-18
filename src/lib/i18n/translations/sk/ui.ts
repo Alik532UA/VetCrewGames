@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Bezplatné vzdelávacie hry o zvieratách: otestujte si svoje vedomosti o tom, čím sa živia, koľko ich ešte žije vo voľnej prírode a akým mýtom o nich ľudia dodnes veria. Vytvorené na podporu dobrých životných podmienok a ochrany zvierat.',
+	'app.description':
+		'Bezplatné vzdelávacie hry o zvieratách: otestujte si svoje vedomosti o tom, čím sa živia, koľko ich ešte žije vo voľnej prírode a akým mýtom o nich ľudia dodnes veria. Vytvorené na podporu dobrých životných podmienok a ochrany zvierat.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Čím sa živia?',
 	'menu.game.memory': 'Nájdi pár',
@@ -12,29 +13,40 @@ export const ui = {
 	'quiz.otherGame': 'Táto miestnosť je určená pre inú hru.',
 	'menu.play': 'Hrať',
 	'menu.playOnline': 'Hrať online',
-	'problem.offline': 'Nie je k dispozícii pripojenie k hernému serveru. Skontrolujte internetové pripojenie a skúste to znova.',
-	'problem.reload': 'Vyšla nová verzia hry a táto stránka je zastaraná. Obnovte stránku a všetko bude fungovať.',
-	'problem.mismatch': 'Pravidlá na serveri sú novšie než táto stránka: hra sa práve aktualizuje. O niekoľko minút stránku obnovte, a ak stále nebude fungovať, napíšte vývojárovi.',
-	'problem.rules': 'Nové pravidlá databázy ešte nie sú nasadené vo Firebase: táto verzia hry očakáva iné pravidlá, než aké momentálne bežia na serveri. Opakovaný pokus nepomôže — pravidlá musia byť najprv nasadené.',
-	'problem.code': 'Ide o chybu v kóde hry — opakovaný pokus problém nevyrieši. Kontaktujte, prosím, vývojára: skopírujte chybové hlásenie a pošlite mu ho v správe.',
-	'problem.emulator': 'Lokálny emulátor Firebase neodpovedá: vývojová verzia komunikuje s ním, nie so skutočnou databázou. Spustite v termináli príkaz npm run emulators — a ak už beží, reštartujte ho.',
+	'problem.offline':
+		'Nie je k dispozícii pripojenie k hernému serveru. Skontrolujte internetové pripojenie a skúste to znova.',
+	'problem.reload':
+		'Vyšla nová verzia hry a táto stránka je zastaraná. Obnovte stránku a všetko bude fungovať.',
+	'problem.mismatch':
+		'Pravidlá na serveri sú novšie než táto stránka: hra sa práve aktualizuje. O niekoľko minút stránku obnovte, a ak stále nebude fungovať, napíšte vývojárovi.',
+	'problem.rules':
+		'Nové pravidlá databázy ešte nie sú nasadené vo Firebase: táto verzia hry očakáva iné pravidlá, než aké momentálne bežia na serveri. Opakovaný pokus nepomôže — pravidlá musia byť najprv nasadené.',
+	'problem.code':
+		'Ide o chybu v kóde hry — opakovaný pokus problém nevyrieši. Kontaktujte, prosím, vývojára: skopírujte chybové hlásenie a pošlite mu ho v správe.',
+	'problem.emulator':
+		'Lokálny emulátor Firebase neodpovedá: vývojová verzia komunikuje s ním, nie so skutočnou databázou. Spustite v termináli príkaz npm run emulators — a ak už beží, reštartujte ho.',
 	'problem.copyReport': 'Kopírovať hlásenie',
 	'problem.copied': 'Hlásenie skopírované',
 	'problem.contact': 'Kontaktovať vývojára',
-	'problem.contactHint': 'Napíšte cez ľubovoľnú komunikačnú aplikáciu a vložte tam skopírované hlásenie.',
+	'problem.contactHint':
+		'Napíšte cez ľubovoľnú komunikačnú aplikáciu a vložte tam skopírované hlásenie.',
 	'problem.writeVia': 'Napísať vývojárovi cez',
-	'online.searchBusy': 'Počas automatického vyhľadávania nie je k dispozícii nič iné — najprv zrušte vyhľadávanie.',
+	'online.searchBusy':
+		'Počas automatického vyhľadávania nie je k dispozícii nič iné — najprv zrušte vyhľadávanie.',
 	'online.search': 'Automatické vyhľadávanie',
 	'online.searchGames': 'Čo hráme',
 	'online.searchLast': 'Aspoň jedna hra musí zostať zapnutá',
-	'online.searchHint': 'Nájdeme vám súpera v jednej z vybraných hier — a ak nikto nebude online, počkáme, kým sa niekto pripojí.',
+	'online.searchHint':
+		'Nájdeme vám súpera v jednej z vybraných hier — a ak nikto nebude online, počkáme, kým sa niekto pripojí.',
 	'online.searching': 'Hľadá sa hráč…',
-	'online.waiting': 'Čaká sa na hráča. Hneď ako niekto vyhľadá jednu z vybraných hier, ocitnete sa v rovnakej miestnosti.',
+	'online.waiting':
+		'Čaká sa na hráča. Hneď ako niekto vyhľadá jednu z vybraných hier, ocitnete sa v rovnakej miestnosti.',
 	'online.found': 'Hráč sa našiel — pripája sa…',
 	'online.searchCancel': 'Zrušiť',
 	'online.createTitle': 'Nová miestnosť:',
 	'online.everyoneHint': 'Miestnosť sa zobrazí v zozname a môže sa pripojiť ktokoľvek.',
-	'online.friendsHint': 'Miestnosť nie je v zozname: pripojiť sa dá len pomocou kódu, ktorý pošlete.',
+	'online.friendsHint':
+		'Miestnosť nie je v zozname: pripojiť sa dá len pomocou kódu, ktorý pošlete.',
 	'online.back': 'Späť',
 	'online.join': 'Pripojiť sa',
 	'online.opening': 'Otvára sa miestnosť…',
@@ -79,10 +91,13 @@ export const ui = {
 	'pairs.roomLost': 'Miestnosť už nie je dostupná — pripojte sa znova.',
 	'pairs.removed': 'Hostiteľ vás odstránil z miestnosti.',
 	'pairs.offline': 'Žiadne pripojenie k serveru — čaká sa na obnovenie spojenia.',
-	'pairs.rulesChanged': 'Pravidlá servera boli aktualizované a táto stránka je zastaraná, preto ťahy neprechádzajú. Obnovte stránku — hra bude pokračovať tam, kde skončila.',
-	'pairs.newBuild': 'Vyšla nová verzia hry — obnovte stránku. Miestnosť, v ktorej ste boli, sa znova otvorí, pokiaľ sa nezmenili pravidlá hry.',
+	'pairs.rulesChanged':
+		'Pravidlá servera boli aktualizované a táto stránka je zastaraná, preto ťahy neprechádzajú. Obnovte stránku — hra bude pokračovať tam, kde skončila.',
+	'pairs.newBuild':
+		'Vyšla nová verzia hry — obnovte stránku. Miestnosť, v ktorej ste boli, sa znova otvorí, pokiaľ sa nezmenili pravidlá hry.',
 	'pairs.reload': 'Obnoviť stránku',
-	'pairs.noLead': 'Hostiteľ odišiel a nikto z prítomných nemôže prevziať vedenie hry. Môžete opustiť miestnosť alebo vytvoriť novú.',
+	'pairs.noLead':
+		'Hostiteľ odišiel a nikto z prítomných nemôže prevziať vedenie hry. Môžete opustiť miestnosť alebo vytvoriť novú.',
 	'pairs.leaveRoom': 'Opustiť miestnosť',
 	'pairs.playNext': 'Hrať v ďalšej hre',
 	'pairs.roomOlder': 'Táto hra bola spustená v staršej verzii. Vytvorte, prosím, novú miestnosť.',
@@ -105,8 +120,10 @@ export const ui = {
 	'pairs.inviteHint': 'Takto vás uvidia ostatní. Môžete to zmeniť teraz alebo neskôr v lobby.',
 	'pairs.inviteJoin': 'Pripojiť sa',
 	'pairs.inviteBack': 'Do zoznamu miestností',
-	'pairs.inviteAvatarTaken': 'Tento avatar už má iný hráč. Vyberte si iného — alebo sa rovno pripojte a dostanete voľného.',
-	'pairs.avatarReplaced': 'Vášho avatara už v tejto miestnosti má iný hráč, preto ste dostali iného. Môžete si ho zmeniť v lobby.',
+	'pairs.inviteAvatarTaken':
+		'Tento avatar už má iný hráč. Vyberte si iného — alebo sa rovno pripojte a dostanete voľného.',
+	'pairs.avatarReplaced':
+		'Vášho avatara už v tejto miestnosti má iný hráč, preto ste dostali iného. Môžete si ho zmeniť v lobby.',
 	'pairs.nickname': 'Prezývka',
 	'pairs.country': 'Vlajka',
 	'country.xr': 'Ruský dobrovoľnícky zbor',
@@ -124,7 +141,8 @@ export const ui = {
 	'pairs.shownNewest': 'Zobrazujú sa najnovšie — je ich viac',
 	'pairs.startingIn': 'Začína sa o',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Zoznam miestností nie je dostupný. Pripojenie pomocou kódu a vytvorenie miestnosti stále fungujú.',
+	'pairs.roomsUnavailable':
+		'Zoznam miestností nie je dostupný. Pripojenie pomocou kódu a vytvorenie miestnosti stále fungujú.',
 	'menu.game.population': 'Kto má vyššiu populáciu?',
 	'menu.game.habitat': 'Kde žijú?',
 	'menu.game.mythbusters': 'Fakt alebo mýtus?',
@@ -142,7 +160,8 @@ export const ui = {
 	'memory.you': 'Vy',
 	'memory.rival': 'Súper',
 	'memory.moves': 'Ťahy',
-	'memory.resized': 'Veľkosť obrazovky sa zmenila. Rozloženie zostalo také, aké bolo na začiatku hry.',
+	'memory.resized':
+		'Veľkosť obrazovky sa zmenila. Rozloženie zostalo také, aké bolo na začiatku hry.',
 	'memory.relayout': 'Prerozdeliť podľa obrazovky',
 	'memory.found': 'Nájdené',
 	'memory.turn': 'Ťah',
@@ -164,6 +183,8 @@ export const ui = {
 	'common.copyDenied': 'Prehliadač nepovolil zápis do schránky. Skopírujte ručne: Ctrl+C.',
 	'header.toggleTheme': 'Zmeniť motív',
 	'header.toggleLocale': 'Zmeniť jazyk',
+	'header.searchLocale': 'Hľadať jazyk…',
+	'header.emptyLanguages': 'Nenašli sa žiadne jazyky',
 	'header.toggleFullscreen': 'Celá obrazovka',
 	'header.exitFullscreen': 'Ukončiť celú obrazovku',
 	'header.score': 'Celkové skóre',
@@ -180,7 +201,8 @@ export const ui = {
 	'error.retry': 'Skúsiť znova',
 	'error.goHome': 'Domov',
 	'beta.title': 'Beta testovanie',
-	'beta.intro': 'Zoznam vecí, ktoré sa oplatí skontrolovať. Označte položky, na konci skopírujte správu a pošlite nám ju.',
+	'beta.intro':
+		'Zoznam vecí, ktoré sa oplatí skontrolovať. Označte položky, na konci skopírujte správu a pošlite nám ju.',
 	'beta.progress': 'Označené v tejto verzii',
 	'beta.vote.none': 'Neskontrolované',
 	'beta.vote.fail': 'Nefunguje',
@@ -191,9 +213,12 @@ export const ui = {
 	'beta.coverage.manual': 'Iba manuálne',
 	'beta.coverage.testable': 'Zatiaľ bez automatického testu',
 	'beta.coverage.covered': 'Pokryté testom',
-	'beta.coverage.manualHint': 'Túto položku nekontroluje žiadny systém – tu sú potrebné vaše vlastné oči.',
-	'beta.coverage.testableHint': 'Toto by sa dalo kontrolovať automaticky, ale takýto test zatiaľ neexistuje.',
-	'beta.coverage.coveredHint': 'Túto položku už sleduje automatický test. Ak tu nájdete chybu, test je nesprávny – a to je pre nás mimoriadne cenné.',
+	'beta.coverage.manualHint':
+		'Túto položku nekontroluje žiadny systém – tu sú potrebné vaše vlastné oči.',
+	'beta.coverage.testableHint':
+		'Toto by sa dalo kontrolovať automaticky, ale takýto test zatiaľ neexistuje.',
+	'beta.coverage.coveredHint':
+		'Túto položku už sleduje automatický test. Ak tu nájdete chybu, test je nesprávny – a to je pre nás mimoriadne cenné.',
 	'beta.stale': 'označené v inej verzii',
 	'beta.copy': 'Skopírovať správu',
 	'beta.copied': 'Správa bola skopírovaná',
@@ -201,13 +226,15 @@ export const ui = {
 	'beta.clearConfirm': 'Naozaj vymazať? Stlačte znova',
 	'beta.tabProgress': 'označené na tejto karte',
 	'beta.home': 'Domov',
-	'beta.copyFailed': 'Prehliadač odmietol text skopírovať. Označte text nižšie a skopírujte ho ručne.',
+	'beta.copyFailed':
+		'Prehliadač odmietol text skopírovať. Označte text nižšie a skopírujte ho ručne.',
 	'beta.rulesTitle': 'Pravidlá prístupu k databáze',
 	'beta.rulesCheck': 'Skontrolovať',
 	'beta.rulesChecking': 'Dopytujem databázu…',
 	'beta.rulesFresh': 'Nasadzovaná revízia sa zhoduje s týmto zostavením',
 	'beta.rulesStale': 'Databáza beží na INEJ revízii – toto zostavenie ešte nie je nasadené',
-	'beta.rulesUnknown': 'Nepodarilo sa zistiť: žiadne sieťové pripojenie alebo databáza nie je dostupná',
+	'beta.rulesUnknown':
+		'Nepodarilo sa zistiť: žiadne sieťové pripojenie alebo databáza nie je dostupná',
 	'pairs.startMode': 'Spustenie hry',
 	'pairs.modeAuto': 'Automatický štart',
 	'pairs.modeConfirm': 'Čakať na potvrdenie',
@@ -220,5 +247,5 @@ export const ui = {
 	'review.partial': 'čiastočne správne',
 	'review.back': 'Späť na aktuálnu otázku',
 	'review.backToResults': 'Späť na výsledky',
-	'review.list': 'Otázky tejto hry',
+	'review.list': 'Otázky tejto hry'
 } as const;

@@ -203,6 +203,8 @@ export const ui = {
 	// (ACCESSIBILITY-v8 § 4.1). Verb first, so it reads as an action.
 	'header.toggleTheme': 'Change theme',
 	'header.toggleLocale': 'Change language',
+	'header.searchLocale': 'Search language…',
+	'header.emptyLanguages': 'No languages found',
 	'header.toggleFullscreen': 'Enter fullscreen',
 	'header.exitFullscreen': 'Exit fullscreen',
 	'header.score': 'Total score',

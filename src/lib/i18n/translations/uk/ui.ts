@@ -221,6 +221,8 @@ export const ui = {
 	// Дієслово-дія, а не назва стану: «Змінити тему», не «Тема».
 	'header.toggleTheme': 'Змінити тему',
 	'header.toggleLocale': 'Змінити мову',
+	'header.searchLocale': 'Пошук мови…',
+	'header.emptyLanguages': 'Мов не знайдено',
 	'header.toggleFullscreen': 'На весь екран',
 	'header.exitFullscreen': 'Вийти з повноекранного режиму',
 	'header.score': 'Загальний рахунок',

@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Gry dla ekipy weterynarzy',
-	'app.description': 'Darmowe gry edukacyjne o zwierzętach: sprawdź, co wiesz o ich diecie, liczbach i popularnych mitach. Projekt wspierający ochronę zwierząt.',
+	'app.description':
+		'Darmowe gry edukacyjne o zwierzętach: sprawdź, co wiesz o ich diecie, liczbach i popularnych mitach. Projekt wspierający ochronę zwierząt.',
 	'menu.title': 'Gry dla ekipy weterynarzy',
 	'menu.game.feeding': 'Co jemy?',
 	'menu.game.memory': 'Znajdź parę',
@@ -13,28 +14,37 @@ export const ui = {
 	'menu.play': 'grać',
 	'menu.playOnline': 'Graj online',
 	'problem.offline': 'Brak połączenia z serwerem gry. Sprawdź internet i spróbuj ponownie.',
-	'problem.reload': 'Nowa wersja gry jest już dostępna, a ta strona jest stara. Odśwież stronę i wszystko będzie działać.',
-	'problem.mismatch': 'Zasady serwera są nowsze niż ta strona: gra jest aktualizowana. Odśwież stronę za kilka minut, a jeśli nadal nie będzie działać, napisz do programisty.',
-	'problem.rules': 'Nowe zasady podstawowe nie zostały jeszcze opublikowane w Firebase: ta wersja gry oczekuje innych zasad niż obecnie obowiązujące na serwerze. Ponowna próba nie pomoże - najpierw należy ustalić zasady.',
-	'problem.code': 'Problem leży w kodzie gry, ponowna próba go nie naprawi. Skontaktuj się z programistą: skopiuj raport i wyślij go w wiadomości.',
-	'problem.emulator': 'Lokalny emulator Firebase nie odpowiada: zespół deweloperski trafia do niego, a nie do prawdziwej bazy. Uruchom emulatory npm run w terminalu - a jeśli już działa, uruchom je ponownie.',
+	'problem.reload':
+		'Nowa wersja gry jest już dostępna, a ta strona jest stara. Odśwież stronę i wszystko będzie działać.',
+	'problem.mismatch':
+		'Zasady serwera są nowsze niż ta strona: gra jest aktualizowana. Odśwież stronę za kilka minut, a jeśli nadal nie będzie działać, napisz do programisty.',
+	'problem.rules':
+		'Nowe zasady podstawowe nie zostały jeszcze opublikowane w Firebase: ta wersja gry oczekuje innych zasad niż obecnie obowiązujące na serwerze. Ponowna próba nie pomoże - najpierw należy ustalić zasady.',
+	'problem.code':
+		'Problem leży w kodzie gry, ponowna próba go nie naprawi. Skontaktuj się z programistą: skopiuj raport i wyślij go w wiadomości.',
+	'problem.emulator':
+		'Lokalny emulator Firebase nie odpowiada: zespół deweloperski trafia do niego, a nie do prawdziwej bazy. Uruchom emulatory npm run w terminalu - a jeśli już działa, uruchom je ponownie.',
 	'problem.copyReport': 'Skopiuj raport',
 	'problem.copied': 'Raport skopiowany',
 	'problem.contact': 'Skontaktuj się z programistą',
 	'problem.contactHint': 'Napisz w wygodnym komunikatorze i wklej tam skopiowany raport.',
 	'problem.writeVia': 'Napisz do programisty w',
-	'online.searchBusy': 'Gdy trwa automatyczne wyszukiwanie, nic więcej nie jest dostępne - najpierw anuluj wyszukiwanie.',
+	'online.searchBusy':
+		'Gdy trwa automatyczne wyszukiwanie, nic więcej nie jest dostępne - najpierw anuluj wyszukiwanie.',
 	'online.search': 'Automatyczne wyszukiwanie',
 	'online.searchGames': 'W co gramy?',
 	'online.searchLast': 'Chociaż jeden mecz musi pozostać włączony',
-	'online.searchHint': 'Przeciwnika znajdziemy w jednej z wybranych gier, a jeśli nikogo nie będzie, poczekamy, aż ktoś przyjdzie.',
+	'online.searchHint':
+		'Przeciwnika znajdziemy w jednej z wybranych gier, a jeśli nikogo nie będzie, poczekamy, aż ktoś przyjdzie.',
 	'online.searching': 'Poszukujemy gracza...',
-	'online.waiting': 'Czekamy na gracza. Gdy tylko ktoś wyszuka grę z ulubionych, znajdziesz się w tym samym pokoju.',
+	'online.waiting':
+		'Czekamy na gracza. Gdy tylko ktoś wyszuka grę z ulubionych, znajdziesz się w tym samym pokoju.',
 	'online.found': 'Znaleźliśmy gracza - łączymy...',
 	'online.searchCancel': 'anulować',
 	'online.createTitle': 'Nowy pokój:',
 	'online.everyoneHint': 'Pokój pojawi się na liście i każdy będzie mógł do niego wejść.',
-	'online.friendsHint': 'Pokój nie zostanie wyświetlony na liście: możesz wejść tylko za pomocą przesłanego kodu.',
+	'online.friendsHint':
+		'Pokój nie zostanie wyświetlony na liście: możesz wejść tylko za pomocą przesłanego kodu.',
 	'online.back': 'Powrót',
 	'online.join': 'połączyć',
 	'online.opening': 'Otwieramy salę...',
@@ -74,15 +84,19 @@ export const ui = {
 	'pairs.yourTurn': 'twoja kolej',
 	'pairs.waitingFor': 'ruszaj się',
 	'pairs.noRoom': 'Nie ma takiego pokoju.',
-	'pairs.oldVersion': 'Gra została zaktualizowana. Załaduj ponownie stronę - zarówno Ty, jak i Twój przeciwnik.',
+	'pairs.oldVersion':
+		'Gra została zaktualizowana. Załaduj ponownie stronę - zarówno Ty, jak i Twój przeciwnik.',
 	'pairs.roomClosed': 'Pokój jest zamknięty – gra się kończy.',
 	'pairs.roomLost': 'Pokój nie jest już dostępny - wejdź do niego ponownie.',
 	'pairs.removed': 'Gospodarz usunął Cię z pokoju.',
 	'pairs.offline': 'Brak połączenia z serwerem - czekamy na jego powrót.',
-	'pairs.rulesChanged': 'Zasady serwera zostały zaktualizowane, a ta strona jest stara, więc przeniesienia nie dochodzą do skutku. Odśwież stronę: gra będzie kontynuowana w tym samym miejscu.',
-	'pairs.newBuild': 'Pojawiła się nowa wersja gry - odśwież stronę. Pokój, w którym byłeś, zostanie ponownie otwarty, jeśli zasady gry nie uległy zmianie.',
+	'pairs.rulesChanged':
+		'Zasady serwera zostały zaktualizowane, a ta strona jest stara, więc przeniesienia nie dochodzą do skutku. Odśwież stronę: gra będzie kontynuowana w tym samym miejscu.',
+	'pairs.newBuild':
+		'Pojawiła się nowa wersja gry - odśwież stronę. Pokój, w którym byłeś, zostanie ponownie otwarty, jeśli zasady gry nie uległy zmianie.',
 	'pairs.reload': 'Odśwież stronę',
-	'pairs.noLead': 'Nie ma właściciela i nikt z obecnych nie może przejąć zarządzania. Możesz opuścić pokój lub utworzyć nowy.',
+	'pairs.noLead':
+		'Nie ma właściciela i nikt z obecnych nie może przejąć zarządzania. Możesz opuścić pokój lub utworzyć nowy.',
 	'pairs.leaveRoom': 'Opuść pokój',
 	'pairs.playNext': 'Zagraj w następną grę',
 	'pairs.roomOlder': 'Ta gra została uruchomiona w starszej wersji gry. Utwórz nowy pokój.',
@@ -105,8 +119,10 @@ export const ui = {
 	'pairs.inviteHint': 'Tak będą Cię widzieć inni. Możesz to zmienić teraz lub później na czole.',
 	'pairs.inviteJoin': 'Wejdź',
 	'pairs.inviteBack': 'Do listy pokoi',
-	'pairs.inviteAvatarTaken': 'Ten awatar został już wybrany przez innego gracza. Wybierz inny — lub wpisz w ten sposób, a otrzymasz darmowy.',
-	'pairs.avatarReplaced': 'Twój awatar w tym pokoju został już wybrany przez innego gracza - masz innego. Możesz to zmienić na czole.',
+	'pairs.inviteAvatarTaken':
+		'Ten awatar został już wybrany przez innego gracza. Wybierz inny — lub wpisz w ten sposób, a otrzymasz darmowy.',
+	'pairs.avatarReplaced':
+		'Twój awatar w tym pokoju został już wybrany przez innego gracza - masz innego. Możesz to zmienić na czole.',
 	'pairs.nickname': 'pseudonim',
 	'pairs.country': 'Flaga',
 	'country.xr': 'Rosyjski korpus ochotniczy',
@@ -124,7 +140,8 @@ export const ui = {
 	'pairs.shownNewest': 'Pokazane są najnowsze - jest ich więcej',
 	'pairs.startingIn': 'Zaczynamy za',
 	'pairs.seconds': 'z',
-	'pairs.roomsUnavailable': 'Lista pokoi nie jest dostępna. Możesz wpisać kod i stworzyć pokój bez niego.',
+	'pairs.roomsUnavailable':
+		'Lista pokoi nie jest dostępna. Możesz wpisać kod i stworzyć pokój bez niego.',
 	'menu.game.population': 'Kto jeszcze?',
 	'menu.game.habitat': 'Gdzie mieszkamy?',
 	'menu.game.mythbusters': 'Prawda czy mit?',
@@ -142,7 +159,8 @@ export const ui = {
 	'memory.you': 'ty',
 	'memory.rival': 'Rywal',
 	'memory.moves': 'Chodziłem',
-	'memory.resized': 'Rozmiar ekranu uległ zmianie. Układ pozostał taki sam, od jakiego rozpoczęła się gra.',
+	'memory.resized':
+		'Rozmiar ekranu uległ zmianie. Układ pozostał taki sam, od jakiego rozpoczęła się gra.',
 	'memory.relayout': 'Rozprowadź ponownie',
 	'memory.found': 'Znaleziono',
 	'memory.turn': 'spacery',
@@ -164,6 +182,8 @@ export const ui = {
 	'common.copyDenied': 'Przeglądarka nie pozwalała na zapis do schowka. Kopiuj ręcznie: Ctrl+C.',
 	'header.toggleTheme': 'Zmień temat',
 	'header.toggleLocale': 'Zmień język',
+	'header.searchLocale': 'Szukaj języka…',
+	'header.emptyLanguages': 'Nie znaleziono języków',
 	'header.toggleFullscreen': 'Pełny ekran',
 	'header.exitFullscreen': 'Wyjdź z trybu pełnoekranowego',
 	'header.score': 'Całkowity wynik',
@@ -180,7 +200,8 @@ export const ui = {
 	'error.retry': 'Spróbuj ponownie',
 	'error.goHome': 'Na głównym',
 	'beta.title': 'Testy beta',
-	'beta.intro': 'Lista rzeczy do sprawdzenia. Zaznacz punkty, a na koniec skopiuj raport i prześlij go do nas.',
+	'beta.intro':
+		'Lista rzeczy do sprawdzenia. Zaznacz punkty, a na koniec skopiuj raport i prześlij go do nas.',
 	'beta.progress': 'Oznaczone w tej wersji',
 	'beta.vote.none': 'Nie zweryfikowano',
 	'beta.vote.fail': 'Nie działa',
@@ -192,8 +213,10 @@ export const ui = {
 	'beta.coverage.testable': 'Nie ma jeszcze autotestu',
 	'beta.coverage.covered': 'Objęte autotestem',
 	'beta.coverage.manualHint': 'Tego nie sprawdza żadna maszyna – potrzebuje tego Twoje oko.',
-	'beta.coverage.testableHint': 'Można to sprawdzić automatycznie, ale takiej kontroli jeszcze nie ma.',
-	'beta.coverage.coveredHint': 'Autotest już tu zagląda. Jeśli znajdziesz błąd, oznacza to, że test jest błędny, a to jest dla nas szczególnie cenne.',
+	'beta.coverage.testableHint':
+		'Można to sprawdzić automatycznie, ale takiej kontroli jeszcze nie ma.',
+	'beta.coverage.coveredHint':
+		'Autotest już tu zagląda. Jeśli znajdziesz błąd, oznacza to, że test jest błędny, a to jest dla nas szczególnie cenne.',
 	'beta.stale': 'zaznaczone w innej wersji',
 	'beta.copy': 'Skopiuj raport',
 	'beta.copied': 'Raport znajduje się w buforze',
@@ -201,12 +224,14 @@ export const ui = {
 	'beta.clearConfirm': 'Usunąć dokładnie? Kliknij ponownie',
 	'beta.tabProgress': 'zaznaczone w zakładce',
 	'beta.home': 'Na głównym',
-	'beta.copyFailed': 'Sama przeglądarka nie mogła skopiować. Wybierz poniższy tekst i skopiuj go ręcznie.',
+	'beta.copyFailed':
+		'Sama przeglądarka nie mogła skopiować. Wybierz poniższy tekst i skopiuj go ręcznie.',
 	'beta.rulesTitle': 'Zasady dostępu do baz danych',
 	'beta.rulesCheck': 'sprawdź',
 	'beta.rulesChecking': 'Pytam bazę...',
 	'beta.rulesFresh': 'Opublikowane wydanie pokrywa się z tym zbiorem',
-	'beta.rulesStale': 'W bazie znajduje się INNA wersja regulaminu - zbiór ten nie został jeszcze opublikowany',
+	'beta.rulesStale':
+		'W bazie znajduje się INNA wersja regulaminu - zbiór ten nie został jeszcze opublikowany',
 	'beta.rulesUnknown': 'Nie udało się nauczyć: brak sieci lub bazy danych',
 	'pairs.startMode': 'Początek imprezy',
 	'pairs.modeAuto': 'Autostart',
@@ -220,5 +245,5 @@ export const ui = {
 	'review.partial': 'częściowo',
 	'review.back': 'Na aktualne pytanie',
 	'review.backToResults': 'Do końca',
-	'review.list': 'Kwestia partii',
+	'review.list': 'Kwestia partii'
 } as const;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fly } from 'svelte/transition';
 	import { t } from '$lib/i18n';
 	import {
 		LANGUAGE_META,
@@ -53,7 +54,9 @@
 	): HTMLElement | null {
 		const edges = columnEdges(options);
 		const columnOf = (el: HTMLElement) =>
-			edges.findIndex((edge) => Math.abs(edge - el.getBoundingClientRect().left) < COLUMN_TOLERANCE);
+			edges.findIndex(
+				(edge) => Math.abs(edge - el.getBoundingClientRect().left) < COLUMN_TOLERANCE
+			);
 
 		const wanted = columnOf(cur) + direction;
 		if (wanted < 0 || wanted >= edges.length) return null;
@@ -102,7 +105,8 @@
 						: options[options.length - 1]
 					: options[(from + vertical + options.length) % options.length];
 		} else {
-			target = from === -1 ? options[0] : columnNeighbour(options, options[from], sideways as 1 | -1);
+			target =
+				from === -1 ? options[0] : columnNeighbour(options, options[from], sideways as 1 | -1);
 		}
 
 		event.preventDefault();
@@ -112,7 +116,7 @@
 </script>
 
 <!--
-	Панель вибору мови з пошуком і групами.
+	Панель вибору мови з пошуком і групами за взірцем CV / DigitalWorkshop.
 	`stopPropagation` запобігає закриттю при кліку по полю пошуку чи тлу панелі.
 -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -125,6 +129,7 @@
 	bind:this={panelEl}
 	onkeydown={handleKeydown}
 	onclick={(e) => e.stopPropagation()}
+	transition:fly={{ y: -8, duration: 180 }}
 >
 	<div class="lang-search-wrapper">
 		<!--
@@ -132,10 +137,11 @@
 		-->
 		<!-- svelte-ignore a11y_autofocus -->
 		<input
-			type="search"
+			type="text"
 			class="lang-search"
-			placeholder={t('header.toggleLocale')}
-			aria-label={t('header.toggleLocale')}
+			placeholder={t('header.searchLocale')}
+			aria-label={t('header.searchLocale')}
+			data-testid="lang-search-input"
 			bind:value={langQuery}
 			autofocus
 		/>
@@ -171,7 +177,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="lang-empty">—</p>
+				<p class="lang-empty">{t('header.emptyLanguages')}</p>
 			{/each}
 		</div>
 	</div>
@@ -186,14 +192,33 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-xs, 6px);
-		width: min(92vw, 760px);
-		max-height: min(80dvh, 540px);
+		width: min(92vw, 820px);
+		max-height: min(78dvh, 560px);
 		padding: calc(var(--fill-u) * 0.5);
 		border-radius: var(--radius-md);
 		border: 1px solid var(--color-border);
-		background: var(--color-bg-surface);
-		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+		background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
+		backdrop-filter: var(--blur-glass, blur(16px));
+		-webkit-backdrop-filter: var(--blur-glass, blur(16px));
+		box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 		box-sizing: border-box;
+	}
+
+	/*
+	 * На вузьких екранах панель фіксується відносно в'юпорта (як у CV і DigitalWorkshop).
+	 * Кнопка вибору мови стоїть не найправішою в шапці (праворуч є акаунт і повний екран),
+	 * тому абсолютне позиціонування з right: 0 виштовхувало ліву сторону панелі за межі екрана.
+	 */
+	@media (max-width: 768px) {
+		.lang-dropdown {
+			position: fixed;
+			top: calc(var(--fill-u) * 3.5);
+			left: calc(var(--fill-u) * 0.75);
+			right: calc(var(--fill-u) * 0.75);
+			width: auto;
+			max-height: calc(100dvh - var(--fill-u) * 5);
+			padding: calc(var(--fill-u) * 0.5);
+		}
 	}
 
 	.lang-search-wrapper {
@@ -208,10 +233,13 @@
 		font: inherit;
 		font-size: var(--font-size-sm, 0.875rem);
 		color: var(--color-text);
-		background: var(--color-bg-surface);
+		background: color-mix(in srgb, var(--color-text), transparent 93%);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm);
 		outline: none;
+		transition:
+			border-color 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.lang-search::placeholder {
@@ -231,8 +259,15 @@
 	}
 
 	.lang-columns {
-		columns: 145px;
-		column-gap: 12px;
+		columns: 150px;
+		column-gap: 14px;
+	}
+
+	/* На мобільних одна колонка зі зручним скролом (як у CV) */
+	@media (max-width: 600px) {
+		.lang-columns {
+			columns: 1;
+		}
 	}
 
 	.lang-group {
@@ -244,8 +279,8 @@
 	}
 
 	.lang-group-label {
-		padding: 4px 6px 2px;
-		font-size: 0.75rem;
+		padding: 4px 8px 2px;
+		font-size: 0.68rem;
 		font-weight: var(--font-weight-bold, 700);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -255,14 +290,16 @@
 	.lang-item {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 10px;
 		min-height: 36px;
-		padding: 4px 8px;
+		padding: 6px 10px;
 		border-radius: var(--radius-sm);
 		color: var(--color-text);
 		text-decoration: none;
 		font-size: var(--font-size-sm, 0.85rem);
-		transition: background 0.15s ease;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
 		cursor: pointer;
 	}
 
@@ -273,13 +310,14 @@
 	}
 
 	.lang-item.active {
-		background: var(--color-accent);
-		color: var(--color-text-on-accent);
+		background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+		color: var(--color-text);
 		font-weight: var(--font-weight-bold, 700);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, transparent);
 	}
 
 	.lang-item.active:hover {
-		background: var(--color-accent-hover, var(--color-accent));
+		background: color-mix(in srgb, var(--color-accent) 32%, transparent);
 	}
 
 	.flag {
@@ -300,6 +338,7 @@
 	.lang-empty {
 		padding: 16px;
 		text-align: center;
+		font-size: var(--font-size-sm, 0.875rem);
 		color: var(--color-text-muted);
 	}
 </style>

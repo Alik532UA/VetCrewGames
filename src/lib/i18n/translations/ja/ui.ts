@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': '動物について学べる無料の教育ゲーム：何を食べるか、あと何頭残っているか、そして今も信じられている迷信についての知識を試しましょう。動物福祉・保護活動への支援を目的として制作されました。',
+	'app.description':
+		'動物について学べる無料の教育ゲーム：何を食べるか、あと何頭残っているか、そして今も信じられている迷信についての知識を試しましょう。動物福祉・保護活動への支援を目的として制作されました。',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': '何を食べる？',
 	'menu.game.memory': 'ペアを探そう',
@@ -12,24 +13,33 @@ export const ui = {
 	'quiz.otherGame': 'そのルームは別のゲーム用です。',
 	'menu.play': 'プレイ',
 	'menu.playOnline': 'オンラインで遊ぶ',
-	'problem.offline': 'ゲームサーバーへの接続がありません。インターネット接続を確認して再試行してください。',
-	'problem.reload': 'ゲームの新しいバージョンがリリースされましたが、このページは古いバージョンです。ページを再読み込みすれば正常に動作します。',
-	'problem.mismatch': 'サーバーのルールがこのページよりも新しくなっています。現在ゲームがアップデート中です。数分後にページを再読み込みしてください。それでも解決しない場合は開発者にご連絡ください。',
-	'problem.rules': '新しいデータベースルールがまだFirebaseに反映されていません。このバージョンのゲームはサーバーが現在実行しているルールとは異なるルールを想定しています。再試行しても解決しません。まずルールをデプロイする必要があります。',
-	'problem.code': 'ゲームのコードに問題が発生しました。再試行しても解決しません。レポートをコピーしてメッセージに貼り付け、開発者までご連絡ください。',
-	'problem.emulator': 'ローカルのFirebaseエミュレーターが応答していません。開発ビルドは実際のデータベースではなくエミュレーターと通信します。ターミナルで npm run emulators を実行してください。すでに実行中の場合は再起動してください。',
+	'problem.offline':
+		'ゲームサーバーへの接続がありません。インターネット接続を確認して再試行してください。',
+	'problem.reload':
+		'ゲームの新しいバージョンがリリースされましたが、このページは古いバージョンです。ページを再読み込みすれば正常に動作します。',
+	'problem.mismatch':
+		'サーバーのルールがこのページよりも新しくなっています。現在ゲームがアップデート中です。数分後にページを再読み込みしてください。それでも解決しない場合は開発者にご連絡ください。',
+	'problem.rules':
+		'新しいデータベースルールがまだFirebaseに反映されていません。このバージョンのゲームはサーバーが現在実行しているルールとは異なるルールを想定しています。再試行しても解決しません。まずルールをデプロイする必要があります。',
+	'problem.code':
+		'ゲームのコードに問題が発生しました。再試行しても解決しません。レポートをコピーしてメッセージに貼り付け、開発者までご連絡ください。',
+	'problem.emulator':
+		'ローカルのFirebaseエミュレーターが応答していません。開発ビルドは実際のデータベースではなくエミュレーターと通信します。ターミナルで npm run emulators を実行してください。すでに実行中の場合は再起動してください。',
 	'problem.copyReport': 'レポートをコピー',
 	'problem.copied': 'レポートをコピーしました',
 	'problem.contact': '開発者に連絡',
-	'problem.contactHint': 'お好みのメッセンジャーでメッセージを作成し、コピーしたレポートを貼り付けてください。',
+	'problem.contactHint':
+		'お好みのメッセンジャーでメッセージを作成し、コピーしたレポートを貼り付けてください。',
 	'problem.writeVia': '開発者に連絡：',
 	'online.searchBusy': '自動マッチング中は他の操作ができません。先に検索をキャンセルしてください。',
 	'online.search': '自動マッチング',
 	'online.searchGames': 'プレイするゲーム',
 	'online.searchLast': '少なくとも1つのゲームを選択したままにする必要があります',
-	'online.searchHint': '選択したゲームのいずれかで対戦相手を探します。誰も見つからない場合はプレイヤーが来るまで待機します。',
+	'online.searchHint':
+		'選択したゲームのいずれかで対戦相手を探します。誰も見つからない場合はプレイヤーが来るまで待機します。',
 	'online.searching': 'プレイヤーを探しています…',
-	'online.waiting': '対戦相手を待っています。誰かが選択したゲームを探すと、同じルームに入室します。',
+	'online.waiting':
+		'対戦相手を待っています。誰かが選択したゲームを探すと、同じルームに入室します。',
 	'online.found': 'プレイヤーが見つかりました — 接続中…',
 	'online.searchCancel': 'キャンセル',
 	'online.createTitle': '新規ルーム：',
@@ -79,10 +89,13 @@ export const ui = {
 	'pairs.roomLost': 'ルームが見つかりません — もう一度参加し直してください。',
 	'pairs.removed': 'ホストによってルームから退出させられました。',
 	'pairs.offline': 'サーバーへの接続が切れました — 復帰を待っています。',
-	'pairs.rulesChanged': 'サーバー側のルールが更新されたため、このページの情報が古く、操作が反映されません。ページを再読み込みしてください — ゲームは中断したところから再開します。',
-	'pairs.newBuild': 'ゲームの新しいバージョンがリリースされました。ページを再読み込みしてください。ゲームルールが変更されていない限り、元のルームに再度入室できます。',
+	'pairs.rulesChanged':
+		'サーバー側のルールが更新されたため、このページの情報が古く、操作が反映されません。ページを再読み込みしてください — ゲームは中断したところから再開します。',
+	'pairs.newBuild':
+		'ゲームの新しいバージョンがリリースされました。ページを再読み込みしてください。ゲームルールが変更されていない限り、元のルームに再度入室できます。',
 	'pairs.reload': 'ページを再読み込み',
-	'pairs.noLead': 'ホストが退出しましたが、進行役を引き継げるプレイヤーがいません。ルームを退出するか、新しく作成してください。',
+	'pairs.noLead':
+		'ホストが退出しましたが、進行役を引き継げるプレイヤーがいません。ルームを退出するか、新しく作成してください。',
 	'pairs.leaveRoom': 'ルームを退出',
 	'pairs.playNext': '次のゲームに参加する',
 	'pairs.roomOlder': 'このゲームは古いバージョンで開始されました。新しいルームを作成してください。',
@@ -102,11 +115,14 @@ export const ui = {
 	'pairs.avatarDone': '完了',
 	'pairs.myAvatar': 'あなたのアバター',
 	'pairs.inviteTitle': 'ルームに招待されました',
-	'pairs.inviteHint': '他のプレイヤーにはこのように表示されます。今すぐ変更するか、ロビーで後から変更できます。',
+	'pairs.inviteHint':
+		'他のプレイヤーにはこのように表示されます。今すぐ変更するか、ロビーで後から変更できます。',
 	'pairs.inviteJoin': '参加する',
 	'pairs.inviteBack': 'ルーム一覧へ',
-	'pairs.inviteAvatarTaken': 'このアバターはすでに別のプレイヤーが使用しています。別のアバターを選ぶか、そのまま参加すれば空いているアバターが割り当てられます。',
-	'pairs.avatarReplaced': 'あなたのアバターはすでにこのルームの別プレイヤーが使用していたため、別のアバターが割り当てられました。ロビーで変更できます。',
+	'pairs.inviteAvatarTaken':
+		'このアバターはすでに別のプレイヤーが使用しています。別のアバターを選ぶか、そのまま参加すれば空いているアバターが割り当てられます。',
+	'pairs.avatarReplaced':
+		'あなたのアバターはすでにこのルームの別プレイヤーが使用していたため、別のアバターが割り当てられました。ロビーで変更できます。',
 	'pairs.nickname': 'ニックネーム',
 	'pairs.country': '国旗',
 	'country.xr': 'ロシア義勇軍団',
@@ -124,7 +140,8 @@ export const ui = {
 	'pairs.shownNewest': '最新順に表示中（さらにルームがあります）',
 	'pairs.startingIn': '開始まであと',
 	'pairs.seconds': '秒',
-	'pairs.roomsUnavailable': 'ルーム一覧を取得できません。コードによる参加とルーム作成は引き続き利用可能です。',
+	'pairs.roomsUnavailable':
+		'ルーム一覧を取得できません。コードによる参加とルーム作成は引き続き利用可能です。',
 	'menu.game.population': 'どちらの個体数が多い？',
 	'menu.game.habitat': 'どこに生息している？',
 	'menu.game.mythbusters': '真実か、迷信か？',
@@ -160,10 +177,14 @@ export const ui = {
 	'common.copy': 'コピー',
 	'common.clear': 'クリア',
 	'common.copied': 'コピーしました',
-	'common.pasteDenied': 'ブラウザがクリップボードへのアクセスを拒否しました。手動で貼り付けてください：Ctrl+V',
-	'common.copyDenied': 'ブラウザがクリップボードへの書き込みを拒否しました。手動でコピーしてください：Ctrl+C',
+	'common.pasteDenied':
+		'ブラウザがクリップボードへのアクセスを拒否しました。手動で貼り付けてください：Ctrl+V',
+	'common.copyDenied':
+		'ブラウザがクリップボードへの書き込みを拒否しました。手動でコピーしてください：Ctrl+C',
 	'header.toggleTheme': 'テーマを変更',
 	'header.toggleLocale': '言語を変更',
+	'header.searchLocale': '言語を検索…',
+	'header.emptyLanguages': '言語が見つかりません',
 	'header.toggleFullscreen': '全画面表示',
 	'header.exitFullscreen': '全画面表示を終了',
 	'header.score': 'トータルスコア',
@@ -180,7 +201,8 @@ export const ui = {
 	'error.retry': '再試行',
 	'error.goHome': 'ホームに戻る',
 	'beta.title': 'ベータテスト',
-	'beta.intro': '確認推奨項目のリストです。項目をチェックし、最後にレポートをコピーして送信してください。',
+	'beta.intro':
+		'確認推奨項目のリストです。項目をチェックし、最後にレポートをコピーして送信してください。',
 	'beta.progress': 'このバージョンでチェック済み',
 	'beta.vote.none': '未確認',
 	'beta.vote.fail': '不具合あり',
@@ -193,7 +215,8 @@ export const ui = {
 	'beta.coverage.covered': 'テスト対応済み',
 	'beta.coverage.manualHint': '自動チェックはありません。ご自身の目で確認する必要があります。',
 	'beta.coverage.testableHint': '自動化可能ですが、現在まだテストが作成されていません。',
-	'beta.coverage.coveredHint': '自動テストが設定されています。ここで不具合が見つかった場合はテスト側に誤りがあるため、非常に貴重な報告となります。',
+	'beta.coverage.coveredHint':
+		'自動テストが設定されています。ここで不具合が見つかった場合はテスト側に誤りがあるため、非常に貴重な報告となります。',
 	'beta.stale': '別のバージョンでチェック済み',
 	'beta.copy': 'レポートをコピー',
 	'beta.copied': 'レポートをコピーしました',
@@ -201,12 +224,14 @@ export const ui = {
 	'beta.clearConfirm': '本当にクリアしますか？もう一度押してください',
 	'beta.tabProgress': 'このタブでチェック済み',
 	'beta.home': 'ホーム',
-	'beta.copyFailed': 'ブラウザによりコピーが拒否されました。以下のテキストを選択して手動でコピーしてください。',
+	'beta.copyFailed':
+		'ブラウザによりコピーが拒否されました。以下のテキストを選択して手動でコピーしてください。',
 	'beta.rulesTitle': 'データベースアクセスルール',
 	'beta.rulesCheck': '確認',
 	'beta.rulesChecking': 'データベースに照会中…',
 	'beta.rulesFresh': 'デプロイ済みのリビジョンはこのビルドと一致しています',
-	'beta.rulesStale': 'データベースで異なるリビジョンが実行されています — このビルドはまだデプロイされていません',
+	'beta.rulesStale':
+		'データベースで異なるリビジョンが実行されています — このビルドはまだデプロイされていません',
 	'beta.rulesUnknown': '判定不能：ネットワーク未接続、またはデータベースにアクセスできません',
 	'pairs.startMode': 'ゲーム開始設定',
 	'pairs.modeAuto': '自動開始',
@@ -220,5 +245,5 @@ export const ui = {
 	'review.partial': '部分点',
 	'review.back': '現在の問題に戻る',
 	'review.backToResults': '結果に戻る',
-	'review.list': '今回のゲームの問題一覧',
+	'review.list': '今回のゲームの問題一覧'
 } as const;

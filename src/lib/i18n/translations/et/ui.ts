@@ -1,6 +1,7 @@
 export const ui = {
 	'app.title': 'Vet Crew Games',
-	'app.description': 'Tasuta harivad mängud loomadest: pane proovile oma teadmised sellest, mida nad söövad, kui palju neid alles on ning milliseid müüte nende kohta siiani usutakse. Loodud loomakaitse ja heaolu toetuseks.',
+	'app.description':
+		'Tasuta harivad mängud loomadest: pane proovile oma teadmised sellest, mida nad söövad, kui palju neid alles on ning milliseid müüte nende kohta siiani usutakse. Loodud loomakaitse ja heaolu toetuseks.',
 	'menu.title': 'Vet Crew Games',
 	'menu.game.feeding': 'Mida nad söövad?',
 	'menu.game.memory': 'Leia paar',
@@ -13,28 +14,38 @@ export const ui = {
 	'menu.play': 'Mängi',
 	'menu.playOnline': 'Mängi veebis',
 	'problem.offline': 'Ühendus mänguserveriga puudub. Kontrolli internetiühendust ja proovi uuesti.',
-	'problem.reload': 'Mängust on ilmunud uus versioon ja see leht on aegunud. Laadi leht uuesti ja kõik hakkab tööle.',
-	'problem.mismatch': 'Serveri reeglid on juba uuemad kui sellel lehel: mängu uuendatakse parajasti. Laadi leht mõne minuti pärast uuesti ja kui see ikka ei tööta, võta ühendust arendajaga.',
-	'problem.rules': 'Uued andmebaasireeglid pole veel Firebase\'is avaldatud: see mänguversioon eeldab teistsuguseid reegleid kui need, mis serveris praegu töötavad. Uuesti proovimine ei aita — reeglid tuleb esmalt juurutada.',
-	'problem.code': 'See on viga mängukoodis — uuesti proovimine seda ei lahenda. Palun võta ühendust arendajaga: kopeeri vearaport ja saada see oma sõnumis.',
-	'problem.emulator': 'Kohalik Firebase\'i emulaator ei vasta: arendusversioon suhtleb sellega, mitte päris andmebaasiga. Käivita terminalis npm run emulators — ja kui see juba töötab, taaskäivita see.',
+	'problem.reload':
+		'Mängust on ilmunud uus versioon ja see leht on aegunud. Laadi leht uuesti ja kõik hakkab tööle.',
+	'problem.mismatch':
+		'Serveri reeglid on juba uuemad kui sellel lehel: mängu uuendatakse parajasti. Laadi leht mõne minuti pärast uuesti ja kui see ikka ei tööta, võta ühendust arendajaga.',
+	'problem.rules':
+		"Uued andmebaasireeglid pole veel Firebase'is avaldatud: see mänguversioon eeldab teistsuguseid reegleid kui need, mis serveris praegu töötavad. Uuesti proovimine ei aita — reeglid tuleb esmalt juurutada.",
+	'problem.code':
+		'See on viga mängukoodis — uuesti proovimine seda ei lahenda. Palun võta ühendust arendajaga: kopeeri vearaport ja saada see oma sõnumis.',
+	'problem.emulator':
+		"Kohalik Firebase'i emulaator ei vasta: arendusversioon suhtleb sellega, mitte päris andmebaasiga. Käivita terminalis npm run emulators — ja kui see juba töötab, taaskäivita see.",
 	'problem.copyReport': 'Kopeeri raport',
 	'problem.copied': 'Raport kopeeritud',
 	'problem.contact': 'Võta ühendust arendajaga',
-	'problem.contactHint': 'Kirjuta endale sobivas sõnumirakenduses ja kleebi kopeeritud raport sinna.',
+	'problem.contactHint':
+		'Kirjuta endale sobivas sõnumirakenduses ja kleebi kopeeritud raport sinna.',
 	'problem.writeVia': 'Kirjuta arendajale platvormil',
-	'online.searchBusy': 'Automaatse otsingu ajal pole muud toimingud saadaval — esmalt tühista otsing.',
+	'online.searchBusy':
+		'Automaatse otsingu ajal pole muud toimingud saadaval — esmalt tühista otsing.',
 	'online.search': 'Automaatne otsing',
 	'online.searchGames': 'Mida me mängime',
 	'online.searchLast': 'Vähemalt üks mäng peab jääma valituks',
-	'online.searchHint': 'Leiame vastase ühes valitud mängudest — ja kui kedagi pole läheduses, ootame, kuni keegi liitub.',
+	'online.searchHint':
+		'Leiame vastase ühes valitud mängudest — ja kui kedagi pole läheduses, ootame, kuni keegi liitub.',
 	'online.searching': 'Mängija otsimine…',
-	'online.waiting': 'Mängija ootamine. Niipea kui keegi otsib mõnda valitud mängudest, satute samasse tuppa.',
+	'online.waiting':
+		'Mängija ootamine. Niipea kui keegi otsib mõnda valitud mängudest, satute samasse tuppa.',
 	'online.found': 'Mängija leitud — ühendamine…',
 	'online.searchCancel': 'Tühista',
 	'online.createTitle': 'Uus tuba:',
 	'online.everyoneHint': 'Tuba kuvatakse nimekirjas ja igaüks võib liituda.',
-	'online.friendsHint': 'Tuba nimekirjas ei kuvata: liituda saab ainult koodiga, mille neile saadad.',
+	'online.friendsHint':
+		'Tuba nimekirjas ei kuvata: liituda saab ainult koodiga, mille neile saadad.',
 	'online.back': 'Tagasi',
 	'online.join': 'Liitu',
 	'online.opening': 'Toa avamine…',
@@ -79,10 +90,13 @@ export const ui = {
 	'pairs.roomLost': 'Tuba pole enam saadaval — liitu uuesti.',
 	'pairs.removed': 'Mängujuht eemaldas sind toast.',
 	'pairs.offline': 'Ühendus serveriga puudub — oodatakse selle taastumist.',
-	'pairs.rulesChanged': 'Serveri reegleid on uuendatud ja see leht on aegunud, mistõttu käigud ei lähe läbi. Laadi leht uuesti — mäng jätkub sealt, kus pooleli jäi.',
-	'pairs.newBuild': 'Mängust on ilmunud uus versioon — laadi leht uuesti. Tuba, kus viibisid, avaneb uuesti, v.a juhul, kui mängureeglid on muutunud.',
+	'pairs.rulesChanged':
+		'Serveri reegleid on uuendatud ja see leht on aegunud, mistõttu käigud ei lähe läbi. Laadi leht uuesti — mäng jätkub sealt, kus pooleli jäi.',
+	'pairs.newBuild':
+		'Mängust on ilmunud uus versioon — laadi leht uuesti. Tuba, kus viibisid, avaneb uuesti, v.a juhul, kui mängureeglid on muutunud.',
 	'pairs.reload': 'Laadi leht uuesti',
-	'pairs.noLead': 'Mängujuht on lahkunud ja keegi siin ei saa juhtimist üle võtta. Saad toast lahkuda või luua uue toa.',
+	'pairs.noLead':
+		'Mängujuht on lahkunud ja keegi siin ei saa juhtimist üle võtta. Saad toast lahkuda või luua uue toa.',
 	'pairs.leaveRoom': 'Lahku toast',
 	'pairs.playNext': 'Mängi järgmises mängus',
 	'pairs.roomOlder': 'See mäng alustati vanemas versioonis. Palun loo uus tuba.',
@@ -105,8 +119,10 @@ export const ui = {
 	'pairs.inviteHint': 'Nii näevad sind teised. Saad seda muuta praegu või hiljem ooteruumis.',
 	'pairs.inviteJoin': 'Liitu',
 	'pairs.inviteBack': 'Tubade nimekirja',
-	'pairs.inviteAvatarTaken': 'Ühel siinsel mängijal on juba see avatar. Vali teine — või lihtsalt liitu ja sulle määratakse vaba avatar.',
-	'pairs.avatarReplaced': 'Ühel selle toa mängijal on juba sinu avatar, seega said teistsuguse. Saad seda ooteruumis muuta.',
+	'pairs.inviteAvatarTaken':
+		'Ühel siinsel mängijal on juba see avatar. Vali teine — või lihtsalt liitu ja sulle määratakse vaba avatar.',
+	'pairs.avatarReplaced':
+		'Ühel selle toa mängijal on juba sinu avatar, seega said teistsuguse. Saad seda ooteruumis muuta.',
 	'pairs.nickname': 'Hüüdnimi',
 	'pairs.country': 'Lipp',
 	'country.xr': 'Vene Vabatahtlike Korpus',
@@ -124,7 +140,8 @@ export const ui = {
 	'pairs.shownNewest': 'Kuvatakse uusimaid — tube on veel',
 	'pairs.startingIn': 'Algab:',
 	'pairs.seconds': 's',
-	'pairs.roomsUnavailable': 'Tubade nimekiri pole saadaval. Koodiga liitumine ja toa loomine toimivad endiselt.',
+	'pairs.roomsUnavailable':
+		'Tubade nimekiri pole saadaval. Koodiga liitumine ja toa loomine toimivad endiselt.',
 	'menu.game.population': 'Keda on rohkem?',
 	'menu.game.habitat': 'Kus nad elavad?',
 	'menu.game.mythbusters': 'Fakt või müüt?',
@@ -164,6 +181,8 @@ export const ui = {
 	'common.copyDenied': 'Brauser ei saanud lõikelauale kirjutada. Kopeeri käsitsi: Ctrl+C.',
 	'header.toggleTheme': 'Muuda kujundust',
 	'header.toggleLocale': 'Muuda keelt',
+	'header.searchLocale': 'Otsi keelt…',
+	'header.emptyLanguages': 'Keeli ei leitud',
 	'header.toggleFullscreen': 'Täisekraan',
 	'header.exitFullscreen': 'Välju täisekraanilt',
 	'header.score': 'Koguskoor',
@@ -180,7 +199,8 @@ export const ui = {
 	'error.retry': 'Proovi uuesti',
 	'error.goHome': 'Avalehele',
 	'beta.title': 'Beetatestimine',
-	'beta.intro': 'Nimekiri asjadest, mida tasub kontrollida. Märgi punktid, kopeeri lõpus raport ja saada see meile.',
+	'beta.intro':
+		'Nimekiri asjadest, mida tasub kontrollida. Märgi punktid, kopeeri lõpus raport ja saada see meile.',
 	'beta.progress': 'Märgitud selles versioonis',
 	'beta.vote.none': 'Kontrollimata',
 	'beta.vote.fail': 'Katki',
@@ -192,8 +212,10 @@ export const ui = {
 	'beta.coverage.testable': 'Automaattest veel puudub',
 	'beta.coverage.covered': 'Testiga kaetud',
 	'beta.coverage.manualHint': 'Ükski masin seda ei kontrolli — siin on vaja sinu enda silmi.',
-	'beta.coverage.testableHint': 'Seda saaks kontrollida automaatselt, kuid sellist testi veel pole.',
-	'beta.coverage.coveredHint': 'Automaattest juba jälgib seda. Kui leiad siit vea, eksib test — ja see on meile eriti väärtuslik.',
+	'beta.coverage.testableHint':
+		'Seda saaks kontrollida automaatselt, kuid sellist testi veel pole.',
+	'beta.coverage.coveredHint':
+		'Automaattest juba jälgib seda. Kui leiad siit vea, eksib test — ja see on meile eriti väärtuslik.',
 	'beta.stale': 'märgitud teises versioonis',
 	'beta.copy': 'Kopeeri raport',
 	'beta.copied': 'Raport kopeeritud',
@@ -207,7 +229,8 @@ export const ui = {
 	'beta.rulesChecking': 'Pärin andmebaasilt…',
 	'beta.rulesFresh': 'Juurutatud versioon ühtib selle ehitusega',
 	'beta.rulesStale': 'Andmebaas käitab TEIST versiooni — seda ehitust pole veel juurutatud',
-	'beta.rulesUnknown': 'Ei õnnestunud tuvastada: võrguühendus puudub või andmebaas pole kättesaadav',
+	'beta.rulesUnknown':
+		'Ei õnnestunud tuvastada: võrguühendus puudub või andmebaas pole kättesaadav',
 	'pairs.startMode': 'Mängu alustamine',
 	'pairs.modeAuto': 'Automaatne algus',
 	'pairs.modeConfirm': 'Oota kinnitust',
@@ -220,5 +243,5 @@ export const ui = {
 	'review.partial': 'osaliselt õige',
 	'review.back': 'Tagasi praeguse küsimuse juurde',
 	'review.backToResults': 'Tagasi tulemuste juurde',
-	'review.list': 'Selle mängu küsimused',
+	'review.list': 'Selle mängu küsimused'
 } as const;
