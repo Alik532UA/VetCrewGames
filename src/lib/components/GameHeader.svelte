@@ -205,6 +205,11 @@
 		animation: blur-in 3s ease both;
 	}
 
+	:global([dir='rtl']) .game-header {
+		margin-left: 0;
+		margin-right: calc(-50vw + 50%);
+	}
+
 	.game-header__inner {
 		width: 100%;
 		/* 1200px на телефонній одиниці; росте разом із кнопками, щоб ряд не збивався до середини. */

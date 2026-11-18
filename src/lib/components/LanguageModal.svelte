@@ -192,9 +192,10 @@
 	.lang-dropdown {
 		position: fixed;
 		top: calc(var(--fill-u) * 3.5);
-		right: max(
-			calc(var(--fill-u) * 0.75),
-			calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1)
+		right: clamp(
+			calc(var(--fill-u) * 0.5),
+			calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1),
+			calc(100vw - min(calc(100vw - var(--fill-u) * 1), 920px) - var(--fill-u) * 0.5)
 		);
 		left: auto;
 		z-index: 9501;
@@ -202,8 +203,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-		width: min(calc(100vw - var(--fill-u) * 1.5), 880px);
-		max-height: min(85dvh, calc(100dvh - var(--fill-u) * 5));
+		width: min(calc(100vw - var(--fill-u) * 1), 920px);
+		max-height: min(88dvh, calc(100dvh - var(--fill-u) * 4));
 		padding: 10px 12px;
 		border-radius: var(--radius-md);
 		border: 1px solid var(--color-border);
@@ -214,12 +215,13 @@
 		box-sizing: border-box;
 	}
 
-	/* В RTL панель акуратно вирівнюється за лівим краєм кнопок шапки */
+	/* В RTL панель акуратно вирівнюється за лівим краєм кнопок шапки та не виходить за екран */
 	:global([dir='rtl']) .lang-dropdown {
 		right: auto;
-		left: max(
-			calc(var(--fill-u) * 0.75),
-			calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1)
+		left: clamp(
+			calc(var(--fill-u) * 0.5),
+			calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1),
+			calc(100vw - min(calc(100vw - var(--fill-u) * 1), 920px) - var(--fill-u) * 0.5)
 		);
 	}
 
@@ -255,13 +257,11 @@
 
 	.lang-groups {
 		overflow-y: auto;
-		flex: 1;
-		min-height: 0;
 		padding-inline-end: 2px;
 	}
 
 	.lang-columns {
-		columns: 180px;
+		columns: 195px;
 		column-gap: 16px;
 	}
 
@@ -334,8 +334,6 @@
 
 	.lang-label {
 		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.lang-empty {

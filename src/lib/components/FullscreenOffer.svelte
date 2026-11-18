@@ -64,11 +64,7 @@
 	const which = guideFor(navigator.userAgent, navigator.maxTouchPoints ?? 0);
 	const guide = GUIDES[which];
 	const titleKey = $derived(
-		view === 'choice'
-			? 'install.title.choice'
-			: view === 'already'
-				? 'install.title.already'
-				: guide.title
+		view === 'choice' ? 'install.title.choice' : view === 'already' ? 'install.title.already' : guide.title
 	);
 
 	let dialog = $state<HTMLDialogElement>();
