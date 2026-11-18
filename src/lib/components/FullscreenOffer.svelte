@@ -77,7 +77,8 @@
 
 	onMount(() => {
 		if (!dialog) return;
-		typeof dialog.showModal === 'function' ? dialog.showModal() : dialog.setAttribute('open', '');
+		if (typeof dialog.showModal === 'function') dialog.showModal();
+		else dialog.setAttribute('open', '');
 		(view === 'choice' ? first : heading)?.focus();
 	});
 
@@ -164,10 +165,8 @@
 						<span
 							class="offer__icon"
 							class:offer__icon--edge={step.icon === 'installEdge'}
-							aria-hidden="true"
+							aria-hidden="true"><DynamicIcon icon={STEP_ICONS[step.icon]} /></span
 						>
-							<DynamicIcon icon={STEP_ICONS[step.icon]} />
-						</span>
 						<span>{@html formatFont(label(step.text))}</span>
 					</li>
 				{/each}
@@ -300,26 +299,26 @@
 		height: calc(var(--fill-u) * 1.5);
 	}
 
-	.offer__label,
-	.offer__lead {
-		font-weight: var(--font-weight-bold);
-	}
-
 	.offer__label {
 		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-bold);
 		line-height: 1.25;
 	}
 
-	.offer__lead,
-	.offer__note {
-		margin: 0;
-		color: var(--color-text-on-panel);
+	.offer__lead {
+		font-weight: var(--font-weight-bold);
 	}
 
 	.offer__hint {
 		font-size: var(--font-size-sm);
 		line-height: 1.35;
 		max-width: 44ch;
+	}
+
+	.offer__lead,
+	.offer__note {
+		margin: 0;
+		color: var(--color-text-on-panel);
 	}
 
 	.offer__steps {
