@@ -111,7 +111,13 @@
 		<div class="offer__head">
 			<h2 class="offer__title" id="fullscreen-offer-title" tabindex="-1" bind:this={heading}>
 				{@html formatFont(
-					label(view === 'choice' ? 'install.title.choice' : view === 'already' ? 'install.title.already' : guide.title)
+					label(
+						view === 'choice'
+							? 'install.title.choice'
+							: view === 'already'
+								? 'install.title.already'
+								: guide.title
+					)
 				)}
 			</h2>
 			<button
@@ -119,8 +125,8 @@
 				class="offer__close btn-secondary"
 				onclick={close}
 				aria-label={t('common.close')}
-				data-testid="fullscreen-offer-close-btn"
-			><X aria-hidden="true" /></button>
+				data-testid="fullscreen-offer-close-btn"><X aria-hidden="true" /></button
+			>
 		</div>
 
 		{#if view === 'choice'}
@@ -149,12 +155,7 @@
 				<span class="offer__hint">{@html formatFont(label('install.appHint'))}</span>
 			</button>
 		{:else if view === 'already'}
-			<FullscreenAlready
-				{label}
-				{fullscreenIcon}
-				onfullscreen={goFullscreen}
-				onclose={close}
-			/>
+			<FullscreenAlready {label} {fullscreenIcon} onfullscreen={goFullscreen} onclose={close} />
 		{:else}
 			{#if mode === 'blocked'}
 				<p class="offer__lead" data-testid="fullscreen-offer-lead-text">
@@ -197,14 +198,14 @@
 
 <style>
 	/*
-	 * ВІКНО КНОПКИ «НА ВЕСЬ ЕКРАН» — як CountryPicker.svelte:
-	 * на мобільному займає ~95% екрана, на десктопі обмежене 34 одиницями.
+	 * ВІКНО КНОПКИ «НА ВЕСЬ ЕКРАН» — як AvatarChooser.svelte:
+	 * на мобільному займає ~95% ширини екрана, на десктопі обмежене 34 одиницями.
+	 * Висота — за розміром вмісту: без штучного розтягування на весь екран і дірок між кнопками.
 	 */
 	.offer {
 		--edge: clamp(8px, 2vmin, 24px);
 		width: min(calc(100vw - 2 * var(--edge)), calc(var(--fill-u) * 34));
 		max-width: none;
-		height: min(calc(100dvh - 2 * var(--edge)), calc(var(--fill-u) * 44));
 		max-height: calc(100dvh - 2 * var(--edge));
 		padding: 0;
 		border: none;
@@ -221,11 +222,9 @@
 	.offer__window {
 		display: flex;
 		flex-direction: column;
-		justify-content: space-between;
 		gap: var(--space-md);
 		width: 100%;
-		height: 100%;
-		max-height: 100%;
+		max-height: calc(100dvh - 2 * var(--edge));
 		padding: clamp(var(--space-md), 3vw, var(--space-lg));
 		border-radius: var(--radius-md);
 		background: var(--color-bg-panel);
@@ -260,31 +259,50 @@
 		border-radius: var(--radius-sm);
 	}
 
-	/* Пункт вибору — плитка зі значком, назвою й поясненням: вибір читається до натиску. */
+	/* Пункт вибору — плитка зі значком зверху (як у .menu-tiles), назвою й поясненням. */
 	.offer__option {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: var(--space-xs) var(--space-md);
+		display: flex;
+		flex-direction: column;
 		align-items: center;
+		text-align: center;
+		gap: var(--space-xs);
 		min-height: 44px;
-		padding: var(--space-md);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
+		padding: var(--space-lg) var(--space-md);
+		border: 1px solid color-mix(in srgb, var(--color-bg-card), black 25%);
+		border-radius: var(--radius-lg);
 		background: var(--color-bg-card);
 		color: var(--color-text);
 		font: inherit;
-		text-align: left;
 		cursor: pointer;
+		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease,
+			box-shadow 0.15s ease,
+			transform 0.15s ease;
 	}
 
 	@media (hover: hover) {
 		.offer__option:hover {
 			border-color: var(--color-accent);
+			background-color: var(--color-bg-card-hover);
+			box-shadow: 0 6px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+			transform: translateY(-2px);
 		}
 	}
 
+	.offer__option:active {
+		box-shadow: 0 2px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
+		transform: translateY(2px);
+	}
+
 	.offer__option .offer__icon {
-		grid-row: span 2;
+		margin-bottom: var(--space-xs);
+	}
+
+	.offer__option .offer__icon :global(svg) {
+		width: min(calc(var(--fill-u) * 4.5), 14svh, 18vw);
+		height: min(calc(var(--fill-u) * 4.5), 14svh, 18vw);
 	}
 
 	.offer__icon {
@@ -311,13 +329,20 @@
 		height: calc(var(--fill-u) * 1.5);
 	}
 
-	.offer__label,
+	.offer__label {
+		font-size: var(--font-size-lg);
+		font-weight: var(--font-weight-bold);
+		line-height: 1.25;
+	}
+
 	.offer__lead {
 		font-weight: var(--font-weight-bold);
 	}
 
 	.offer__hint {
 		font-size: var(--font-size-sm);
+		line-height: 1.35;
+		max-width: 44ch;
 	}
 
 	.offer__lead,
@@ -329,8 +354,6 @@
 	.offer__steps {
 		display: flex;
 		flex-direction: column;
-		justify-content: space-evenly;
-		flex: 1;
 		gap: var(--space-sm);
 		margin: 0;
 		padding: 0;
@@ -370,4 +393,3 @@
 		font-weight: var(--font-weight-bold);
 	}
 </style>
-

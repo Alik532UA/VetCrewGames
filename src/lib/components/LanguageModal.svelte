@@ -184,17 +184,23 @@
 </div>
 
 <style>
+	/*
+	 * Позиціювання відносно в'юпорта (як у CV і DigitalWorkshop).
+	 * Кнопка вибору мови стоїть не на самому краї шапки, тому абсолютне прив'язування
+	 * до кнопки виштовхувало панель за екран на вузьких екранах, а в RTL (іврит) — за лівий край вікна.
+	 */
 	.lang-dropdown {
-		position: absolute;
-		top: calc(100% + var(--fill-u) * 0.375);
-		right: 0;
+		position: fixed;
+		top: calc(var(--fill-u) * 3.5);
+		right: max(calc(var(--fill-u) * 1), calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1));
+		left: auto;
 		z-index: 9501;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-xs, 6px);
-		width: min(92vw, 820px);
-		max-height: min(78dvh, 560px);
-		padding: calc(var(--fill-u) * 0.5);
+		gap: 6px;
+		width: min(calc(100vw - var(--fill-u) * 2), 880px);
+		max-height: 85dvh;
+		padding: 10px 12px;
 		border-radius: var(--radius-md);
 		border: 1px solid var(--color-border);
 		background: color-mix(in srgb, var(--color-bg-surface) 92%, transparent);
@@ -204,26 +210,27 @@
 		box-sizing: border-box;
 	}
 
-	/*
-	 * На вузьких екранах панель фіксується відносно в'юпорта (як у CV і DigitalWorkshop).
-	 * Кнопка вибору мови стоїть не найправішою в шапці (праворуч є акаунт і повний екран),
-	 * тому абсолютне позиціонування з right: 0 виштовхувало ліву сторону панелі за межі екрана.
-	 */
+	/* В RTL панель акуратно вирівнюється за лівим краєм кнопок шапки */
+	:global([dir='rtl']) .lang-dropdown {
+		right: auto;
+		left: max(calc(var(--fill-u) * 1), calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1));
+	}
+
 	@media (max-width: 768px) {
-		.lang-dropdown {
-			position: fixed;
+		.lang-dropdown,
+		:global([dir='rtl']) .lang-dropdown {
 			top: calc(var(--fill-u) * 3.5);
 			left: calc(var(--fill-u) * 0.75);
 			right: calc(var(--fill-u) * 0.75);
 			width: auto;
 			max-height: calc(100dvh - var(--fill-u) * 5);
-			padding: calc(var(--fill-u) * 0.5);
+			padding: 10px;
 		}
 	}
 
 	.lang-search-wrapper {
 		flex-shrink: 0;
-		padding-bottom: 4px;
+		padding-bottom: 2px;
 	}
 
 	.lang-search {
@@ -231,7 +238,7 @@
 		box-sizing: border-box;
 		padding: 8px 12px;
 		font: inherit;
-		font-size: var(--font-size-sm, 0.875rem);
+		font-size: 0.85rem;
 		color: var(--color-text);
 		background: color-mix(in srgb, var(--color-text), transparent 93%);
 		border: 1px solid var(--color-border);
@@ -255,12 +262,12 @@
 		overflow-y: auto;
 		flex: 1;
 		min-height: 0;
-		padding-right: 2px;
+		padding-inline-end: 2px;
 	}
 
 	.lang-columns {
-		columns: 150px;
-		column-gap: 14px;
+		columns: 180px;
+		column-gap: 16px;
 	}
 
 	/* На мобільних одна колонка зі зручним скролом (як у CV) */
@@ -274,12 +281,12 @@
 		break-inside: avoid;
 		display: flex;
 		flex-direction: column;
-		gap: 2px;
-		padding-bottom: 10px;
+		gap: 1px;
+		padding-bottom: 8px;
 	}
 
 	.lang-group-label {
-		padding: 4px 8px 2px;
+		padding: 3px 8px 2px;
 		font-size: 0.68rem;
 		font-weight: var(--font-weight-bold, 700);
 		text-transform: uppercase;
@@ -290,13 +297,14 @@
 	.lang-item {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		min-height: 36px;
-		padding: 6px 10px;
+		gap: 8px;
+		min-height: 28px;
+		padding: 4px 8px;
 		border-radius: var(--radius-sm);
 		color: var(--color-text);
 		text-decoration: none;
-		font-size: var(--font-size-sm, 0.85rem);
+		font-size: 0.85rem;
+		white-space: nowrap;
 		transition:
 			background 0.15s ease,
 			color 0.15s ease;
@@ -330,15 +338,15 @@
 	}
 
 	.lang-label {
+		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.lang-empty {
 		padding: 16px;
 		text-align: center;
-		font-size: var(--font-size-sm, 0.875rem);
+		font-size: 0.85rem;
 		color: var(--color-text-muted);
 	}
 </style>
