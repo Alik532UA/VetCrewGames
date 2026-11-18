@@ -63,6 +63,13 @@
 	);
 	const which = guideFor(navigator.userAgent, navigator.maxTouchPoints ?? 0);
 	const guide = GUIDES[which];
+	const titleKey = $derived(
+		view === 'choice'
+			? 'install.title.choice'
+			: view === 'already'
+				? 'install.title.already'
+				: guide.title
+	);
 
 	let dialog = $state<HTMLDialogElement>();
 	let first = $state<HTMLButtonElement>();
@@ -70,9 +77,7 @@
 
 	onMount(() => {
 		if (!dialog) return;
-		if (typeof dialog.showModal === 'function') dialog.showModal();
-		else dialog.setAttribute('open', '');
-		// У виборі — на перший пункт (Enter і є «на весь екран»), у кроках — на заголовок.
+		typeof dialog.showModal === 'function' ? dialog.showModal() : dialog.setAttribute('open', '');
 		(view === 'choice' ? first : heading)?.focus();
 	});
 
@@ -89,12 +94,7 @@
 			close();
 			return;
 		}
-		if (await isAppAlreadyInstalled()) {
-			view = 'already';
-			heading?.focus();
-			return;
-		}
-		view = 'steps';
+		view = (await isAppAlreadyInstalled()) ? 'already' : 'steps';
 		heading?.focus();
 	}
 </script>
@@ -110,15 +110,7 @@
 	<div class="offer__window fill" data-testid="fullscreen-offer-panel">
 		<div class="offer__head">
 			<h2 class="offer__title" id="fullscreen-offer-title" tabindex="-1" bind:this={heading}>
-				{@html formatFont(
-					label(
-						view === 'choice'
-							? 'install.title.choice'
-							: view === 'already'
-								? 'install.title.already'
-								: guide.title
-					)
-				)}
+				{@html formatFont(label(titleKey))}
 			</h2>
 			<button
 				type="button"
@@ -132,7 +124,7 @@
 		{#if view === 'choice'}
 			<button
 				type="button"
-				class="offer__option"
+				class="offer__option menu-btn"
 				bind:this={first}
 				onclick={goFullscreen}
 				data-testid="fullscreen-offer-browser-btn"
@@ -143,7 +135,7 @@
 			</button>
 			<button
 				type="button"
-				class="offer__option"
+				class="offer__option menu-btn"
 				onclick={install}
 				data-testid="fullscreen-offer-install-btn"
 			>
@@ -172,8 +164,10 @@
 						<span
 							class="offer__icon"
 							class:offer__icon--edge={step.icon === 'installEdge'}
-							aria-hidden="true"><DynamicIcon icon={STEP_ICONS[step.icon]} /></span
+							aria-hidden="true"
 						>
+							<DynamicIcon icon={STEP_ICONS[step.icon]} />
+						</span>
 						<span>{@html formatFont(label(step.text))}</span>
 					</li>
 				{/each}
@@ -205,13 +199,10 @@
 	.offer {
 		--edge: clamp(8px, 2vmin, 24px);
 		width: min(calc(100vw - 2 * var(--edge)), calc(var(--fill-u) * 34));
-		max-width: none;
 		max-height: calc(100dvh - 2 * var(--edge));
 		padding: 0;
 		border: none;
 		background: transparent;
-		color: inherit;
-		overflow: visible;
 	}
 
 	.offer::backdrop {
@@ -261,39 +252,19 @@
 
 	/* Пункт вибору — плитка зі значком зверху (як у .menu-tiles), назвою й поясненням. */
 	.offer__option {
-		display: flex;
 		flex-direction: column;
-		align-items: center;
-		text-align: center;
 		gap: var(--space-xs);
 		min-height: 44px;
 		padding: var(--space-lg) var(--space-md);
-		border: 1px solid color-mix(in srgb, var(--color-bg-card), black 25%);
 		border-radius: var(--radius-lg);
-		background: var(--color-bg-card);
-		color: var(--color-text);
 		font: inherit;
-		cursor: pointer;
-		box-shadow: 0 4px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
-		transition:
-			border-color 0.15s ease,
-			background-color 0.15s ease,
-			box-shadow 0.15s ease,
-			transform 0.15s ease;
+		text-align: center;
 	}
 
 	@media (hover: hover) {
 		.offer__option:hover {
 			border-color: var(--color-accent);
-			background-color: var(--color-bg-card-hover);
-			box-shadow: 0 6px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
-			transform: translateY(-2px);
 		}
-	}
-
-	.offer__option:active {
-		box-shadow: 0 2px 0 color-mix(in srgb, var(--color-bg-card), black 35%);
-		transform: translateY(2px);
 	}
 
 	.offer__option .offer__icon {
@@ -329,26 +300,26 @@
 		height: calc(var(--fill-u) * 1.5);
 	}
 
-	.offer__label {
-		font-size: var(--font-size-lg);
-		font-weight: var(--font-weight-bold);
-		line-height: 1.25;
-	}
-
+	.offer__label,
 	.offer__lead {
 		font-weight: var(--font-weight-bold);
 	}
 
-	.offer__hint {
-		font-size: var(--font-size-sm);
-		line-height: 1.35;
-		max-width: 44ch;
+	.offer__label {
+		font-size: var(--font-size-lg);
+		line-height: 1.25;
 	}
 
 	.offer__lead,
 	.offer__note {
 		margin: 0;
 		color: var(--color-text-on-panel);
+	}
+
+	.offer__hint {
+		font-size: var(--font-size-sm);
+		line-height: 1.35;
+		max-width: 44ch;
 	}
 
 	.offer__steps {

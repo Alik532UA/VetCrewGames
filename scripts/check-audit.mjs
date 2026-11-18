@@ -124,10 +124,22 @@ if (!report) {
 /**
  * Свідомо дозволені консультативні сповіщення (наприклад, DoS обробки форм на суто статичних сайтах без сервера).
  * GHSA-3r8g-jcqq-3p5j: SvelteKit DoS while parsing form data from remote functions (статичний експорт не парсить форми).
+ * GHSA-pfhg-q3qv-9q6r: SvelteKit URL redirection via form submission (статичний сайт без серверних form actions).
+ * GHSA-27mw-82g8-phjj: SvelteKit XSS via cache-control header (статичний хостинг на GitHub Pages без користувацьких заголовків).
+ * GHSA-6cf5-gc4q-fm3x: SvelteKit query.batch collision (статичний сайт не використовує remote functions).
+ * GHSA-fc5q-39xc-vjpf: picomatch ReDoS у збирачі / інструментах розробки (vite/tinyglobby/fdir).
  */
 const ALLOWED_ADVISORIES = new Set([
 	'GHSA-3r8g-jcqq-3p5j',
-	'https://github.com/advisories/GHSA-3r8g-jcqq-3p5j'
+	'https://github.com/advisories/GHSA-3r8g-jcqq-3p5j',
+	'GHSA-pfhg-q3qv-9q6r',
+	'https://github.com/advisories/GHSA-pfhg-q3qv-9q6r',
+	'GHSA-27mw-82g8-phjj',
+	'https://github.com/advisories/GHSA-27mw-82g8-phjj',
+	'GHSA-6cf5-gc4q-fm3x',
+	'https://github.com/advisories/GHSA-6cf5-gc4q-fm3x',
+	'GHSA-fc5q-39xc-vjpf',
+	'https://github.com/advisories/GHSA-fc5q-39xc-vjpf'
 ]);
 
 function isVulnerabilityBlocking(pkg, info, vulnerabilities, visited = new Set()) {
@@ -169,7 +181,9 @@ const breakdown = Object.entries(levels)
 	.map(([level, n]) => `${n} ${level}`)
 	.join(', ');
 
-console.log(`🔒 npm audit: ${total} знахідок${breakdown ? ` (${breakdown})` : ''}, поріг ${THRESHOLD[0]}`);
+console.log(
+	`🔒 npm audit: ${total} знахідок${breakdown ? ` (${breakdown})` : ''}, поріг ${THRESHOLD[0]}`
+);
 
 if (blocking > 0) {
 	console.error(`❌ уразливостей рівня ${THRESHOLD.join('/')}: ${blocking}`);

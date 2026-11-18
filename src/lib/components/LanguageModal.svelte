@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { t } from '$lib/i18n';
+	import { t, formatFont } from '$lib/i18n';
 	import {
 		LANGUAGE_META,
 		LANGUAGE_GROUP_ORDER,
@@ -177,7 +177,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="lang-empty">{t('header.emptyLanguages')}</p>
+				<p class="lang-empty">{@html formatFont(t('header.emptyLanguages'))}</p>
 			{/each}
 		</div>
 	</div>
@@ -192,14 +192,18 @@
 	.lang-dropdown {
 		position: fixed;
 		top: calc(var(--fill-u) * 3.5);
-		right: max(calc(var(--fill-u) * 1), calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1));
+		right: max(
+			calc(var(--fill-u) * 0.75),
+			calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1)
+		);
 		left: auto;
 		z-index: 9501;
+		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-		width: min(calc(100vw - var(--fill-u) * 2), 880px);
-		max-height: 85dvh;
+		width: min(calc(100vw - var(--fill-u) * 1.5), 880px);
+		max-height: min(85dvh, calc(100dvh - var(--fill-u) * 5));
 		padding: 10px 12px;
 		border-radius: var(--radius-md);
 		border: 1px solid var(--color-border);
@@ -213,19 +217,10 @@
 	/* В RTL панель акуратно вирівнюється за лівим краєм кнопок шапки */
 	:global([dir='rtl']) .lang-dropdown {
 		right: auto;
-		left: max(calc(var(--fill-u) * 1), calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1));
-	}
-
-	@media (max-width: 768px) {
-		.lang-dropdown,
-		:global([dir='rtl']) .lang-dropdown {
-			top: calc(var(--fill-u) * 3.5);
-			left: calc(var(--fill-u) * 0.75);
-			right: calc(var(--fill-u) * 0.75);
-			width: auto;
-			max-height: calc(100dvh - var(--fill-u) * 5);
-			padding: 10px;
-		}
+		left: max(
+			calc(var(--fill-u) * 0.75),
+			calc((100vw - var(--fill-u) * 75) / 2 + var(--fill-u) * 1)
+		);
 	}
 
 	.lang-search-wrapper {
@@ -270,8 +265,8 @@
 		column-gap: 16px;
 	}
 
-	/* На мобільних одна колонка зі зручним скролом (як у CV) */
-	@media (max-width: 600px) {
+	/* На вузьких контейнерах (наприклад, телефон) одна колонка зі зручним скролом */
+	@container (max-width: 400px) {
 		.lang-columns {
 			columns: 1;
 		}
