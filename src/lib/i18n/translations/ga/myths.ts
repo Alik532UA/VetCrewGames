@@ -68,7 +68,7 @@ export const myths = {
 	'myth.alligator-tongue.statement': 'Níl teanga ar bith ag ailigéadair',
 	'myth.alligator-tongue.explanation': 'Miotas. Tá teanga acu, ach tá sí ceangailte de bhun a mbéil ionas nach féidir leo í a chur amach.',
 	'myth.alligator-teeth.statement': 'Athnuachann ailigéadair a gcuid fiacla go leanúnach',
-	'myth.alligator-teeth.explanation': 'Fíric. Is féidir le hail общий3,000 fiacail a chaitheamh le linn a shaoil, á n-athsholáthar de réir mar a chaitear iad.',
+	'myth.alligator-teeth.explanation': 'Fíric. Is féidir le hailígeadar suas le 3,000 fiacail a chaitheamh le linn a shaoil, á n-athsholáthar de réir mar a chaitear iad.',
 	'myth.chameleon-color.statement': 'Athraíonn caimilíon a dhath go príomha le dul i bhfolach ina thimpeallacht',
 	'myth.chameleon-color.explanation': 'Miotas. Is chun a theocht a rialáil nó chun a ghiúmar a chur in iúl do chaimilíoin eile a athraíonn sé dath go príomha.',
 	'myth.chameleon-eyes.statement': 'Is féidir le caimilíoin a súile a bhogadh go neamhspleách ar a chéile',

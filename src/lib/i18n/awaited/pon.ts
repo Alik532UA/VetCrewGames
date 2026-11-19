@@ -1,5 +1,5 @@
-export const awaited: Record<string, string> = {
-	'awaited.title': 'You are expected in the game',
-	'awaited.return': 'Go back',
-	'awaited.leave': 'Leave the room',
-};
+export const awaited = {
+	'awaited.title': "Komw awiawi nan rumw wet",
+	'awaited.return': "Pwurala",
+	'awaited.leave': "Kohsang nan rumw wet"
+} as const;

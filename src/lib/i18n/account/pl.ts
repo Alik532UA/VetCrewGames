@@ -57,7 +57,7 @@ export const account: Record<string, string> = {
 	'account.avatarIcon.cherry': 'Wiśnia',
 	'account.avatarIcon.apple': 'Jabłko',
 	'account.avatarIcon.grape': 'Winogrona',
-	'account.avatarTakenBy': 'zajęty: {imię}',
+	'account.avatarTakenBy': 'zajęty: {name}',
 	'account.save': 'zapisz',
 	'account.signOut': 'Wyloguj się z konta',
 	'account.findTitle': 'Znajdź ludzi',

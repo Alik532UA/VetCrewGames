@@ -326,7 +326,7 @@ export const myths = {
 	'myth.squirrel-rabies.statement': 'Teyinler quduruv hastalığınıñ keniş tarqalğan taşıyıcılarıdır',
 	'myth.squirrel-rabies.explanation': 'Efsane. Teyin kibi ufaq kemiricilerde quduruv hastalığı aman-aman iç bir vaqıt rastkelmey.',
 	'myth.toucan-beak.statement': 'Tukannıñ tumşığı ğayet ağır ve qattıdır',
-	'myth.toucan-beak.explanation': 'Efsane. Tumşıq kerçekten de pek yeñildir; ol süñgер kibi qovuq kemik teşkilâtınen pekitilgen keratinden ibarettir.',
+	'myth.toucan-beak.explanation': 'Efsane. Tumşıq kerçekten de pek yeñildir; ol süñger kibi qovuq kemik teşkilâtınen pekitilgen keratinden ibarettir.',
 	'myth.toucan-temp.statement': 'Tukanlar beden araretini tertipke qoymaq içün büyük tumşıqlarını qullanalar',
 	'myth.toucan-temp.explanation': 'Kerçek. Qan artıq sıcaqnı tışqa çıqarmaq içün tumşıqqa aqa ve fil qulaqları kibi vazife becere.',
 	'myth.walrus-tusk.statement': 'Tek erkek morjlarnıñ azı dişleri bar',

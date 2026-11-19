@@ -95,7 +95,7 @@ export const animals = {
 	'animal.giant_anteater': 'Dev Qarıncaaşar',
 	'animal.goose': 'Qaz',
 	'animal.hamster': 'Homyak',
-	'animal.hawk': 'Qarçıgъa',
+	'animal.hawk': 'Qarçığa',
 	'animal.hedgehog': 'Kirpi',
 	'animal.honey_badger': 'Bal Porsuğ̆ı',
 	'animal.horse': 'At',

@@ -73,7 +73,7 @@ export const crew = {
 	'pairs.crew.porcupine': 'Tikenli Poruk',
 	'pairs.crew.raccoon': 'Mısqallı Yenot',
 	'pairs.crew.red_panda': 'Oynaqlı Qızıl Panda',
-	'pairs.crew.shark': 'Boz K акула',
+	'pairs.crew.shark': 'Boz Akula',
 	'pairs.crew.sheep': 'Yünlü Qoy',
 	'pairs.crew.sifaka': 'Oynaqlı Sifaka',
 	'pairs.crew.sloth': 'Asta Lenivets',
