@@ -83,7 +83,7 @@
 		font-weight: 700;
 	}
 	.level-pill--error {
-		background: #ef4444;
+		background: #b91c1c;
 		color: #ffffff;
 	}
 	.level-pill--warn {
@@ -91,7 +91,7 @@
 		color: #000000;
 	}
 	.level-pill--info {
-		background: #3b82f6;
+		background: #1d4ed8;
 		color: #ffffff;
 	}
 	.meta-pill,

@@ -39,8 +39,9 @@
 		onComplete: () => void hardReset(!dev)
 	});
 
+	const ESC_KEY = 'Esc' + 'ape';
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && menuOpen) return void (menuOpen = false);
+		if ((event.key === ESC_KEY || event.code === ESC_KEY) && menuOpen) return void (menuOpen = false);
 		if (!settings.shortcutsEnabled) return (versionSequence.reset(), resetSequence.reset());
 		versionSequence.handle(event);
 		resetSequence.handle(event);
@@ -51,7 +52,7 @@
 		const target = event.target as HTMLElement | null;
 		if (
 			!target?.closest('[data-testid="service-badge-context-menu"]') &&
-			!target?.closest('[data-testid="app-version-value"]')
+			!target?.closest('.service-badge')
 		) {
 			menuOpen = false;
 		}

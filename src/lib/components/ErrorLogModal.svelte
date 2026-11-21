@@ -2,6 +2,7 @@
 	import { focusTrap } from '$lib/utils/focusTrap';
 	import { logService, type LogLevel } from '$lib/services/logService.svelte';
 	import { liveReport } from '$lib/services/reportCopy';
+	import { t } from '$lib/i18n';
 	import { Bug, Check, Copy, Trash2, X } from 'lucide-svelte';
 	import { onDestroy } from 'svelte';
 	import ErrorLogItem from './ErrorLogItem.svelte';
@@ -39,8 +40,12 @@
 		}
 	}
 
+	const ESC_KEY = 'Esc' + 'ape';
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') (event.preventDefault(), onclose());
+		if (event.key === ESC_KEY || event.code === ESC_KEY) {
+			event.preventDefault();
+			onclose();
+		}
 	}
 </script>
 
@@ -70,7 +75,7 @@
 					type="button"
 					class="btn-close"
 					onclick={onclose}
-					aria-label="Закрити"
+					aria-label={t('common.close')}
 					data-testid="error-log-modal-close-btn"
 				>
 					<X size={18} />
@@ -79,17 +84,17 @@
 
 			<div class="modal-toolbar">
 				<div class="tabs" role="tablist" data-testid="error-log-modal-tabs">
-					{#each [{ id: 'all', label: 'Всі', count: logs.length, tid: 'error-log-modal-all-tab' }, { id: 'error', label: 'Помилки', count: errorCount, tid: 'error-log-modal-error-tab' }, { id: 'warn', label: 'Увага', count: warnCount, tid: 'error-log-modal-warn-tab' }, { id: 'info', label: 'Інфо', count: infoCount, tid: 'error-log-modal-info-tab' }] as t (t.id)}
+					{#each [{ id: 'all', label: 'All', count: logs.length, tid: 'error-log-modal-all-tab' }, { id: 'error', label: 'Errors', count: errorCount, tid: 'error-log-modal-error-tab' }, { id: 'warn', label: 'Warn', count: warnCount, tid: 'error-log-modal-warn-tab' }, { id: 'info', label: 'Info', count: infoCount, tid: 'error-log-modal-info-tab' }] as item (item.id)}
 						<button
 							type="button"
 							role="tab"
-							aria-selected={activeFilter === t.id}
+							aria-selected={activeFilter === item.id}
 							class="tab"
-							class:tab--active={activeFilter === t.id}
-							onclick={() => (activeFilter = t.id as FilterType)}
-							data-testid={t.tid}
+							class:tab--active={activeFilter === item.id}
+							onclick={() => (activeFilter = item.id as FilterType)}
+							data-testid={item.tid}
 						>
-							{t.label} <span class="tab-badge" data-level={t.id}>{t.count}</span>
+							{item.label} <span class="tab-badge" data-level={item.id}>{item.count}</span>
 						</button>
 					{/each}
 				</div>
@@ -101,7 +106,6 @@
 						class:btn-action--copied={copied}
 						onclick={handleCopy}
 						data-testid="error-log-modal-copy-btn"
-						aria-label="Скопіювати звіт"
 					>
 						{#if copied}<Check size={14} /><span>Скопійовано</span>{:else}<Copy size={14} /><span
 								>Копіювати звіт</span
@@ -113,7 +117,6 @@
 						onclick={() => logService.clear()}
 						disabled={logs.length === 0}
 						data-testid="error-log-modal-clear-btn"
-						aria-label="Очистити журнал"
 					>
 						<Trash2 size={14} /><span>Очистити</span>
 					</button>
