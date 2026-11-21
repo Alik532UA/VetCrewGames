@@ -10,6 +10,7 @@
 	import { logService } from '$lib/services/logService.svelte';
 	import { hardReset, RESET_PRESSES_DEV, RESET_PRESSES_PROD } from '$lib/services/resetService';
 	import { settings } from '$lib/services/settings.svelte';
+	import ServiceBadgeMenu from './ServiceBadgeMenu.svelte';
 
 	const appVersion = __APP_VERSION__;
 	const urlDebug = $derived(browser && page.url.searchParams.get('debug') === '1');
@@ -107,24 +108,22 @@
 		</button>
 
 		{#if menuOpen}
-			{#await import('./ServiceBadgeMenu.svelte') then { default: ServiceBadgeMenu }}
-				<ServiceBadgeMenu
-					errorCount={logService.errorCount}
-					onclick={copyReport}
-					onview={() => {
-						menuOpen = false;
-						modalOpen = true;
-					}}
-					onclear={() => {
-						logService.clear();
-						menuOpen = false;
-					}}
-					onhide={() => {
-						menuOpen = false;
-						hidden = true;
-					}}
-				/>
-			{/await}
+			<ServiceBadgeMenu
+				errorCount={logService.errorCount}
+				onclick={copyReport}
+				onview={() => {
+					menuOpen = false;
+					modalOpen = true;
+				}}
+				onclear={() => {
+					logService.clear();
+					menuOpen = false;
+				}}
+				onhide={() => {
+					menuOpen = false;
+					hidden = true;
+				}}
+			/>
 		{/if}
 	</div>
 

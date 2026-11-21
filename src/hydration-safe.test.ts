@@ -47,6 +47,11 @@ const LAZY: Record<string, { name: string; guard: RegExp; why: string }> = {
 		name: 'ToastReport',
 		guard: /\{#await import\('\.\/ToastReport\.svelte'\) then \{ default: ToastReport \}\}/,
 		why: 'гілка `then` існує лише після того, як шматок доїхав'
+	},
+	'src/lib/components/ServiceBadge.svelte': {
+		name: 'ErrorLogModal',
+		guard: /\{#await import\('\.\/ErrorLogModal\.svelte'\) then \{ default: ErrorLogModal \}\}/,
+		why: 'діалог логів відкривається лише з меню бейджа'
 	}
 };
 
